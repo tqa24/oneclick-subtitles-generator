@@ -7,42 +7,110 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Subtitles Generator</h1>
-
-    <section id="url-input-section">
-        <h2>Generate from YouTube URL</h2>
-        <input type="text" id="youtube-url" placeholder="Enter YouTube URL">
-        <button id="submit-url-button">Generate timed subtitles</button>
-    </section>
-
-    <section id="search-input-section">
-        <h2>Generate from YouTube Search</h2>
-        <input type="text" id="youtube-title" placeholder="Enter YouTube Title/Keywords">
-        <button id="search-youtube-button">Search YouTube</button>
-        <div id="search-results" style="display: none;">
-            <!-- Search results will be displayed here -->
+    <div class="container">
+        <div class="header">
+            <h1>Subtitles Generator</h1>
+            <button id="settings-btn" class="settings-btn" title="Settings">⚙️</button>
         </div>
-    </section>
+        <p>Generate timed subtitles from video or audio content using Gemini AI</p>
 
-    <section id="file-input-section">
-        <h2>Generate from File Upload</h2>
-        <input type="file" id="file-upload" accept="video/*,audio/*">
-        <button id="submit-file-button">Generate timed subtitles</button>
-    </section>
-
-    <section id="status-section">
-        <h2>Status</h2>
-        <p id="status-message">Idle</p>
-    </section>
-
-    <section id="download-section" style="display: none;">
-        <h2>Download</h2>
-        <button id="download-button" disabled>Download Subtitles</button>
-        <div id="result-display">
-            <!-- Result/Preview might go here -->
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <span class="close-btn">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="api-key-section">
+                        <h3>API Keys</h3>
+                        <p>Enter your API keys to use the application. These keys are stored locally in your browser and never sent to our servers.</p>
+                        
+                        <div class="api-key-input">
+                            <label for="gemini-api-key">Gemini API Key <span class="required">*</span></label>
+                            <div class="key-input-container">
+                                <input type="password" id="gemini-api-key" placeholder="Enter your Gemini API key">
+                                <button class="toggle-visibility" data-for="gemini-api-key">Show</button>
+                            </div>
+                            <div class="instructions-steps">
+                                <h4>Get Gemini API Key:</h4>
+                                <ol>
+                                    <li>Login to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                                    <li>Click 'Get API Key'</li>
+                                    <li>Create a new key or select existing</li>
+                                    <li>Copy your API key</li>
+                                    <li>Paste it into the field above</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <div class="api-key-input">
+                            <label for="youtube-api-key">YouTube API Key <span class="required">*</span></label>
+                            <div class="key-input-container">
+                                <input type="password" id="youtube-api-key" placeholder="Enter your YouTube API key">
+                                <button class="toggle-visibility" data-for="youtube-api-key">Show</button>
+                            </div>
+                            <div class="instructions-steps">
+                                <h4>Get YouTube API Key:</h4>
+                                <ol>
+                                    <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
+                                    <li>Create or select a project</li>
+                                    <li>Enable 'YouTube Data API v3'</li>
+                                    <li>Go to credentials</li>
+                                    <li>Generate API key</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button id="save-settings" class="primary-btn">Save Settings</button>
+                    </div>
+                </div>
+            </div>
         </div>
-    </section>
 
-    <script src="script.js"></script>
+        <div class="input-methods">
+            <h2>Choose an input method:</h2>
+            <div class="tabs">
+                <button class="tab-button active" data-tab="youtube-url">YouTube URL</button>
+                <button class="tab-button" data-tab="youtube-search">YouTube Search</button>
+                <button class="tab-button" data-tab="file-upload">Upload File</button>
+            </div>
+
+            <div class="tab-content active" id="youtube-url-content">
+                <label for="youtube-url-input">Enter YouTube URL:</label>
+                <input type="text" id="youtube-url-input" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+
+            <div class="tab-content" id="youtube-search-content">
+                <label for="youtube-search-input">Search YouTube Video:</label>
+                <input type="text" id="youtube-search-input" placeholder="Enter video title...">
+                <div id="search-results"></div>
+            </div>
+
+            <div class="tab-content" id="file-upload-content">
+                <label for="file-upload-input">Upload Video or Audio File:</label>
+                <input type="file" id="file-upload-input" accept="video/*,audio/*">
+                <div id="file-info"></div>
+            </div>
+        </div>
+
+        <button id="generate-btn">Generate timed subtitles</button>
+
+        <div class="output-container">
+            <div id="status" class="status"></div>
+            <div id="preview-container" class="preview-container">
+                <h3>Subtitle Preview</h3>
+                <div id="subtitles-preview"></div>
+            </div>
+            <div class="download-options">
+                <button id="download-srt" disabled>Download SRT</button>
+                <button id="download-json" disabled>Download JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
