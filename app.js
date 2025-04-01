@@ -339,7 +339,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
         
         let match;
+        let hasTimestamps = false;
+        
         while ((match = regexWithMs.exec(text)) !== null) {
+            hasTimestamps = true;
             // Extract time components with milliseconds
             const startMin = parseInt(match[1]);
             const startSec = parseInt(match[2]);
@@ -369,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const regexOriginal = /\[\s*(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\s*\](?:\n|\r\n?)+(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
             
             while ((match = regexOriginal.exec(text)) !== null) {
+                hasTimestamps = true;
                 // Extract time components
                 const startMin = parseInt(match[1]);
                 const startSec = parseInt(match[2]);
@@ -391,10 +395,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // If still no subtitles, try a more generic approach
-        if (subtitles.length === 0) {
-            console.warn('No subtitles found with standard patterns, trying generic parsing');
-            // ... existing fallback code ...
+        // If no explicit timestamps found, create approximate timestamps based on line breaks
+        if (!hasTimestamps) {
+            console.warn('No timestamps found in response, generating approximate timestamps');
+            
+            // Split the text by line breaks
+            const lines = text.split(/\n+/).filter(line => line.trim() !== '');
+            
+            // Calculate average line duration based on typical song length (estimated 3 minutes for songs)
+            // This will give each line roughly equal time distribution
+            const totalLines = lines.length;
+            const estimatedDurationSec = 180; // 3 minutes in seconds
+            const avgLineDurationSec = Math.floor(estimatedDurationSec / totalLines);
+            
+            lines.forEach((line, index) => {
+                const startTimeSec = index * avgLineDurationSec;
+                const endTimeSec = (index + 1) * avgLineDurationSec;
+                
+                // Convert to MM:SS format
+                const startMin = Math.floor(startTimeSec / 60);
+                const startSec = startTimeSec % 60;
+                const endMin = Math.floor(endTimeSec / 60);
+                const endSec = endTimeSec % 60;
+                
+                const startTime = `${startMin}:${startSec.toString().padStart(2, '0')}.000`;
+                const endTime = `${endMin}:${endSec.toString().padStart(2, '0')}.000`;
+                
+                subtitles.push({
+                    id: index + 1,
+                    startTime,
+                    endTime,
+                    text: line.trim()
+                });
+            });
         }
         
         console.log('Extracted subtitles:', subtitles);
