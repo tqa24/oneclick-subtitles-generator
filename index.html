@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtitles Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Subtitles Generator</h1>
+
+    <section id="url-input-section">
+        <h2>Generate from YouTube URL</h2>
+        <input type="text" id="youtube-url" placeholder="Enter YouTube URL">
+        <button id="submit-url-button">Generate timed subtitles</button>
+    </section>
+
+    <section id="search-input-section">
+        <h2>Generate from YouTube Search</h2>
+        <input type="text" id="youtube-title" placeholder="Enter YouTube Title/Keywords">
+        <button id="search-youtube-button">Search YouTube</button>
+        <div id="search-results" style="display: none;">
+            <!-- Search results will be displayed here -->
+        </div>
+    </section>
+
+    <section id="file-input-section">
+        <h2>Generate from File Upload</h2>
+        <input type="file" id="file-upload" accept="video/*,audio/*">
+        <button id="submit-file-button">Generate timed subtitles</button>
+    </section>
+
+    <section id="status-section">
+        <h2>Status</h2>
+        <p id="status-message">Idle</p>
+    </section>
+
+    <section id="download-section" style="display: none;">
+        <h2>Download</h2>
+        <button id="download-button" disabled>Download Subtitles</button>
+        <div id="result-display">
+            <!-- Result/Preview might go here -->
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
