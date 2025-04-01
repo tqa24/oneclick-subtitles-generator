@@ -7,6 +7,7 @@ import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
 
 function App() {
+  // We'll use t in error messages, so we need to keep it
   const { t } = useTranslation();
   const [apiKeysSet, setApiKeysSet] = useState({
     gemini: false,
@@ -398,6 +399,7 @@ function App() {
       <OutputContainer 
         status={status}
         subtitlesData={subtitlesData}
+        selectedVideo={selectedVideo}
       />
       
       {showSettings && (

@@ -1,16 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
 import SubtitlesPreview from './previews/SubtitlesPreview';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 
-const OutputContainer = ({ status, subtitlesData }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo }) => {
   const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTimingEditor, setShowTimingEditor] = useState(false);
   const [editedSubtitles, setEditedSubtitles] = useState(null);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [videoSource, setVideoSource] = useState('');
+  
+  // Set video source when a video is selected
+  useEffect(() => {
+    if (selectedVideo?.url) {
+      setVideoSource(selectedVideo.url);
+      // Save to localStorage for persistence
+      localStorage.setItem('current_video_url', selectedVideo.url);
+    } else {
+      // Try to load from localStorage if no video is selected
+      const savedUrl = localStorage.getItem('current_video_url');
+      if (savedUrl) {
+        setVideoSource(savedUrl);
+      }
+    }
+  }, [selectedVideo]);
   
   // Convert subtitles data format for LyricsDisplay
   const formatSubtitlesForLyricsDisplay = (subtitles) => {
@@ -114,6 +130,7 @@ const OutputContainer = ({ status, subtitlesData }) => {
                 setCurrentTime={setCurrentTime}
                 subtitle={displaySubtitles.find(s => currentTime >= s.start && currentTime <= s.end)?.text || ''}
                 setDuration={setVideoDuration}
+                videoSource={videoSource}
               />
               
               <LyricsDisplay 

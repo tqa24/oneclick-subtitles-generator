@@ -23,14 +23,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     onSave(geminiApiKey, youtubeApiKey);
     onClose();
   };
-  
-  // Generate masked version of API key
-  const maskKey = (key) => {
-    if (!key) return '';
-    if (key.length <= 8) return '••••••••';
-    
-    return key.substring(0, 4) + '••••••••' + key.substring(key.length - 4);
-  };
 
   return (
     <div className="settings-modal-overlay">

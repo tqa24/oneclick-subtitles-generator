@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo }) => {
@@ -25,25 +25,8 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
     return debouncedValue;
   };
   
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  
-  // Search YouTube when query changes
-  useEffect(() => {
-    if (debouncedSearchQuery.length < 3) {
-      setSearchResults([]);
-      return;
-    }
-    
-    if (!apiKeysSet.youtube) {
-      setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
-      return;
-    }
-    
-    searchYouTube(debouncedSearchQuery);
-  }, [debouncedSearchQuery, apiKeysSet.youtube, t]);
-  
-  // Search YouTube API
-  const searchYouTube = async (query) => {
+  // Search YouTube API - using useCallback to allow it in the dependency array
+  const searchYouTube = useCallback(async (query) => {
     setIsSearching(true);
     setError('');
     
@@ -79,7 +62,24 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [t]);
+  
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  
+  // Search YouTube when query changes
+  useEffect(() => {
+    if (debouncedSearchQuery.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    if (!apiKeysSet.youtube) {
+      setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
+      return;
+    }
+    
+    searchYouTube(debouncedSearchQuery);
+  }, [debouncedSearchQuery, apiKeysSet.youtube, t, searchYouTube]);
   
   // Handle search input change
   const handleSearchChange = (e) => {
