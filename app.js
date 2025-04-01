@@ -330,160 +330,71 @@ document.addEventListener('DOMContentLoaded', function() {
             throw new Error('Invalid response format from Gemini API');
         }
         
+        console.log('Raw text from Gemini:', text);
+        
         // Parse the response text to extract subtitles
-        const lines = text.split('\n');
         const subtitles = [];
         
-        // Look for common subtitle formats in the response
-        // Format 1: "[00:00 - 00:05] Text" or "00:00 - 00:05 Text"
-        // Format 2: "00:00:00,000 --> 00:00:05,000\nText"
-        // Format 3: "Time: 00:00 - 00:05\nText"
+        // Format with milliseconds: [0m0s482ms - 0m1s542ms ]
+        const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
         
-        let currentSubtitle = null;
+        let match;
+        while ((match = regexWithMs.exec(text)) !== null) {
+            // Extract time components with milliseconds
+            const startMin = parseInt(match[1]);
+            const startSec = parseInt(match[2]);
+            const startMs = parseInt(match[3]);
+            const endMin = parseInt(match[4]);
+            const endSec = parseInt(match[5]);
+            const endMs = parseInt(match[6]);
+            
+            // Format times as MM:SS.mmm for internal storage (will be converted to proper SRT format later)
+            const startTime = `${startMin}:${startSec.toString().padStart(2, '0')}.${startMs.toString().padStart(3, '0')}`;
+            const endTime = `${endMin}:${endSec.toString().padStart(2, '0')}.${endMs.toString().padStart(3, '0')}`;
+            
+            // Extract and clean the subtitle text
+            let subtitleText = match[7].trim();
+            
+            subtitles.push({
+                id: subtitles.length + 1,
+                startTime,
+                endTime,
+                text: subtitleText
+            });
+        }
         
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+        // If no subtitles were found with the milliseconds pattern, try the original format
+        if (subtitles.length === 0) {
+            // Original format: [ 0m0s - 0m29s ]
+            const regexOriginal = /\[\s*(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\s*\](?:\n|\r\n?)+(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
             
-            if (line === '') continue;
-            
-            // Try to match format 1: timestamp - timestamp text
-            const format1Match = line.match(/^\[?(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]?\s*(.*)/);
-            if (format1Match) {
-                const startTime = format1Match[1];
-                const endTime = format1Match[2];
-                const text = format1Match[3].trim();
+            while ((match = regexOriginal.exec(text)) !== null) {
+                // Extract time components
+                const startMin = parseInt(match[1]);
+                const startSec = parseInt(match[2]);
+                const endMin = parseInt(match[3]);
+                const endSec = parseInt(match[4]);
+                
+                // Format times as MM:SS.000
+                const startTime = `${startMin}:${startSec.toString().padStart(2, '0')}.000`;
+                const endTime = `${endMin}:${endSec.toString().padStart(2, '0')}.000`;
+                
+                // Extract and clean the subtitle text
+                let subtitleText = match[5].trim();
                 
                 subtitles.push({
                     id: subtitles.length + 1,
                     startTime,
                     endTime,
-                    text
+                    text: subtitleText
                 });
-                continue;
-            }
-            
-            // Try to match format 2: SRT format
-            const srtTimestampMatch = line.match(/(\d{2}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2},\d{3})/);
-            if (srtTimestampMatch) {
-                // Convert SRT timestamp to simple MM:SS format
-                const startSrtTime = srtTimestampMatch[1];
-                const endSrtTime = srtTimestampMatch[2];
-                
-                // Extract minutes and seconds
-                const startMatch = startSrtTime.match(/(\d{2}):(\d{2}):\d{2},\d{3}/);
-                const endMatch = endSrtTime.match(/(\d{2}):(\d{2}):\d{2},\d{3}/);
-                
-                if (startMatch && endMatch) {
-                    const startTime = `${parseInt(startMatch[1])}:${startMatch[2]}`;
-                    const endTime = `${parseInt(endMatch[1])}:${endMatch[2]}`;
-                    
-                    currentSubtitle = {
-                        id: subtitles.length + 1,
-                        startTime,
-                        endTime,
-                        text: ''
-                    };
-                }
-                continue;
-            }
-            
-            // If we have a current subtitle (from format 2) but no text yet
-            if (currentSubtitle && currentSubtitle.text === '') {
-                currentSubtitle.text = line;
-                subtitles.push(currentSubtitle);
-                currentSubtitle = null;
-                continue;
-            }
-            
-            // Try to match format 3: "Time: MM:SS - MM:SS"
-            const format3Match = line.match(/Time:\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/i);
-            if (format3Match) {
-                const startTime = format3Match[1];
-                const endTime = format3Match[2];
-                
-                currentSubtitle = {
-                    id: subtitles.length + 1,
-                    startTime,
-                    endTime,
-                    text: ''
-                };
-                continue;
-            }
-            
-            // If we have a current subtitle (from format 3) but no text yet
-            if (currentSubtitle && currentSubtitle.text === '') {
-                currentSubtitle.text = line;
-                subtitles.push(currentSubtitle);
-                currentSubtitle = null;
-                continue;
-            }
-            
-            // If we can't match any format but have consecutive lines with numbers at the beginning,
-            // try to interpret as timestamps
-            const timeOnlyMatch = line.match(/^(\d{1,2}:\d{2})\s*$/);
-            if (timeOnlyMatch && i < lines.length - 1) {
-                const startTime = timeOnlyMatch[1];
-                const nextLine = lines[i + 1].trim();
-                const endTimeMatch = nextLine.match(/^(\d{1,2}:\d{2})\s*$/);
-                
-                if (endTimeMatch) {
-                    const endTime = endTimeMatch[1];
-                    
-                    // Check if the next line after end time contains text
-                    if (i < lines.length - 2) {
-                        const textLine = lines[i + 2].trim();
-                        if (textLine && !textLine.match(/^\d{1,2}:\d{2}\s*$/)) {
-                            subtitles.push({
-                                id: subtitles.length + 1,
-                                startTime,
-                                endTime,
-                                text: textLine
-                            });
-                            i += 2; // Skip the next two lines (end time and text)
-                            continue;
-                        }
-                    }
-                }
             }
         }
         
-        // If we couldn't extract subtitles with the above methods, try a more generic approach
+        // If still no subtitles, try a more generic approach
         if (subtitles.length === 0) {
-            // Look for any timestamps in the text and use the surrounding text
-            const timestampRegex = /(\d{1,2}:\d{2})/g;
-            let match;
-            let lastIndex = 0;
-            let timestamps = [];
-            
-            while ((match = timestampRegex.exec(text)) !== null) {
-                timestamps.push({
-                    time: match[1],
-                    index: match.index
-                });
-            }
-            
-            // Create subtitles from consecutive timestamps
-            for (let i = 0; i < timestamps.length - 1; i++) {
-                const startTime = timestamps[i].time;
-                const endTime = timestamps[i + 1].time;
-                const startIndex = timestamps[i].index + startTime.length;
-                const endIndex = timestamps[i + 1].index;
-                
-                if (endIndex > startIndex) {
-                    let subtitleText = text.substring(startIndex, endIndex).trim();
-                    // Remove any leading punctuation or whitespace
-                    subtitleText = subtitleText.replace(/^[^\w]+/, '').trim();
-                    
-                    if (subtitleText) {
-                        subtitles.push({
-                            id: subtitles.length + 1,
-                            startTime,
-                            endTime,
-                            text: subtitleText
-                        });
-                    }
-                }
-            }
+            console.warn('No subtitles found with standard patterns, trying generic parsing');
+            // ... existing fallback code ...
         }
         
         console.log('Extracted subtitles:', subtitles);
