@@ -1,0 +1,71 @@
+{
+  "common": {
+    "undo": "Undo",
+    "reset": "Reset",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "header": {
+    "title": "Subtitles Generator",
+    "tagline": "Generate timed subtitles with AI"
+  },
+  "inputMethods": {
+    "title": "Select Video Source",
+    "youtubeUrl": "YouTube URL",
+    "youtubeSearch": "Search YouTube",
+    "fileUpload": "Upload File",
+    "enterYoutubeUrl": "Enter YouTube URL",
+    "searchForVideos": "Search for videos",
+    "dragDropFiles": "Drag & drop files here, or click to select",
+    "supportedFormats": "Supported formats: MP4, WEBM, MP3, WAV (max 25MB)"
+  },
+  "output": {
+    "processingVideo": "Processing. This may take a few minutes...",
+    "generationSuccess": "Subtitles generated successfully!",
+    "videoPreview": "Video Preview with Subtitles",
+    "subtitlesPreview": "Subtitle Preview",
+    "downloadSrt": "Download SRT",
+    "downloadJson": "Download JSON",
+    "editTimings": "Edit Timings",
+    "hideEditor": "Hide Timing Editor"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKeys": "API Keys",
+    "geminiApiKey": "Gemini API Key",
+    "youtubeApiKey": "YouTube API Key",
+    "apiKeyDescription": "Your API key is stored locally in your browser and never sent to our servers.",
+    "getApiKey": "Get Gemini API Key",
+    "getYoutubeApiKey": "Get YouTube API Key",
+    "show": "Show",
+    "hide": "Hide",
+    "save": "Save Settings",
+    "cancel": "Cancel",
+    "keySet": "Set",
+    "keyNotSet": "Not Set",
+    "geminiApiKeyPlaceholder": "Enter your Gemini API key",
+    "youtubeApiKeyPlaceholder": "Enter your YouTube API key",
+    "geminiApiKeyHelp": "Required for all functions. Get one at",
+    "youtubeApiKeyHelp": "Required for YouTube search. Get one at",
+    "geminiStep1": "Login to Google AI Studio",
+    "geminiStep2": "Click 'Get API Key'",
+    "geminiStep3": "Create a new key or select existing",
+    "geminiStep4": "Copy your API key",
+    "geminiStep5": "Paste it into the field above",
+    "youtubeStep1": "Go to Google Cloud Console",
+    "youtubeStep2": "Create or select a project",
+    "youtubeStep3": "Enable 'YouTube Data API v3'",
+    "youtubeStep4": "Go to credentials",
+    "youtubeStep5": "Generate API key"
+  },
+  "lyrics": {
+    "synchronizedLyrics": "Synchronized Lyrics",
+    "stickyTimingsToggle": "Sticky Timings",
+    "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles."
+  },
+  "errors": {
+    "apiKeyRequired": "Please set your API key in the settings first.",
+    "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
+    "invalidFile": "Invalid file format or size. Please check the supported formats."
+  }
+}

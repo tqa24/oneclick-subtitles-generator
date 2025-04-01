@@ -1,0 +1,77 @@
+/* Header.css */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.app-logo {
+  height: 40px;
+  width: auto;
+  margin-right: 1rem;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.settings-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #555;
+}
+
+.settings-button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.settings-button svg {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .app-title {
+    font-size: 1.4rem;
+  }
+  
+  .app-logo {
+    height: 30px;
+  }
+  
+  .settings-button span {
+    display: none;
+  }
+  
+  .settings-button svg {
+    margin-right: 0;
+  }
+}

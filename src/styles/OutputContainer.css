@@ -1,0 +1,141 @@
+/* OutputContainer.css - Styling for the output section */
+
+.output-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.status {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.status.loading {
+  background-color: #f0f7ff;
+  color: #0070f3;
+  border-left: 4px solid #0070f3;
+}
+
+.status.success {
+  background-color: #f0fff4;
+  color: #0d9488;
+  border-left: 4px solid #0d9488;
+}
+
+.status.error {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border-left: 4px solid #e11d48;
+}
+
+.status.info {
+  background-color: #fff7ed;
+  color: #f59e0b;
+  border-left: 4px solid #f59e0b;
+}
+
+.preview-section {
+  margin-bottom: 2rem;
+}
+
+.preview-section h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.video-subtitle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.preview-container {
+  margin-bottom: 1.5rem;
+}
+
+.preview-container h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.download-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.download-btn, .edit-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.download-btn {
+  background-color: #4a6cf7;
+  color: white;
+  border: none;
+}
+
+.download-btn:hover {
+  background-color: #3a5ce5;
+}
+
+.download-btn:disabled {
+  background-color: #a9b7f7;
+  cursor: not-allowed;
+}
+
+.edit-btn {
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.edit-btn:hover {
+  background-color: #e5e5e5;
+}
+
+.edit-btn.active {
+  background-color: #4a6cf7;
+  color: white;
+  border: 1px solid #4a6cf7;
+}
+
+.edit-btn:disabled {
+  background-color: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .download-options {
+    flex-direction: column;
+  }
+  
+  .download-btn, .edit-btn {
+    width: 100%;
+  }
+}

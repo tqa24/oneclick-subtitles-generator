@@ -1,0 +1,164 @@
+/* LyricsDisplay.css */
+.lyrics-display {
+  width: 100%;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.lyrics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.lyrics-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.editing-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sticky-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+}
+
+.sticky-toggle input {
+  margin-right: 5px;
+}
+
+.undo-btn, .reset-btn {
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.undo-btn:hover, .reset-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.undo-btn:disabled, .reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.timeline-container {
+  width: 100%;
+  height: 50px;
+  margin-bottom: 1rem;
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.subtitle-timeline {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.lyrics-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.lyric-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.lyric-item:last-child {
+  border-bottom: none;
+}
+
+.lyric-item:hover {
+  background-color: #f0f0f0;
+}
+
+.lyric-item.current {
+  background-color: #e6f7ff;
+}
+
+.lyric-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lyric-text {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.timing-controls {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.time-control {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  font-family: monospace;
+  font-size: 0.9rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.time-control:hover {
+  background-color: #e0e0e0;
+}
+
+.time-control.dragging {
+  background-color: #d0d0d0;
+  cursor: grabbing;
+}
+
+.time-separator {
+  margin: 0 5px;
+  color: #999;
+}
+
+.progress-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background-color: #1890ff;
+  transition: width 0.1s linear;
+}
+
+.help-text {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}

@@ -1,0 +1,75 @@
+/* InputMethods.css */
+.input-methods-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.input-title {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.input-tabs {
+  display: flex;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  margin-right: 0.5rem;
+  border: none;
+  background: none;
+  color: #666;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+  color: #4a6cf7;
+  border-bottom-color: #4a6cf7;
+}
+
+.tab-btn:hover:not(.active) {
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+.tab-btn svg {
+  margin-right: 0.5rem;
+}
+
+.input-content {
+  padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .input-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-btn span {
+    display: none;
+  }
+  
+  .tab-btn svg {
+    margin-right: 0;
+  }
+}

@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Settings modal functionality
     settingsBtn.addEventListener('click', function() {
         settingsModal.style.display = 'block';
+        updateApiKeyHelp(); // Update API key help instructions
     });
     
     closeBtn.addEventListener('click', function() {
@@ -734,6 +735,38 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             notification.style.display = 'none';
         }, 3000);
+    }
+    
+    function updateApiKeyHelp() {
+        // Add help text for API keys with links
+        const geminiApiKeyHelp = document.getElementById('gemini-api-key-help');
+        const youtubeApiKeyHelp = document.getElementById('youtube-api-key-help');
+        
+        if (geminiApiKeyHelp) {
+            geminiApiKeyHelp.innerHTML = `
+                <h4>Get Gemini API Key</h4>
+                <ol>
+                    <li>Login to <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                    <li>Click 'Get API Key'</li>
+                    <li>Create a new key or select existing</li>
+                    <li>Copy your API key</li>
+                    <li>Paste it into the field above</li>
+                </ol>
+            `;
+        }
+        
+        if (youtubeApiKeyHelp) {
+            youtubeApiKeyHelp.innerHTML = `
+                <h4>Get YouTube API Key</h4>
+                <ol>
+                    <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a></li>
+                    <li>Create or select a project</li>
+                    <li>Enable 'YouTube Data API v3'</li>
+                    <li>Go to credentials</li>
+                    <li>Generate API key</li>
+                </ol>
+            `;
+        }
     }
     
     function showStatus(message, type = '') {

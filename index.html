@@ -99,13 +99,42 @@
 
         <div class="output-container">
             <div id="status" class="status"></div>
+            
+            <!-- Video Preview Section (New) -->
+            <div id="preview-section" class="preview-section" style="display: none;">
+                <h3>Video Preview with Subtitles</h3>
+                <div class="video-container">
+                    <div id="video-wrapper">
+                        <!-- Video player will be inserted here -->
+                    </div>
+                    <div id="video-subtitle" class="video-subtitle"></div>
+                </div>
+                
+                <!-- Timeline Visualization (New) -->
+                <div class="timeline-container">
+                    <canvas id="subtitle-timeline" class="subtitle-timeline"></canvas>
+                </div>
+                
+                <!-- Edit Controls (New) -->
+                <div class="edit-controls">
+                    <label class="sticky-toggle">
+                        <input type="checkbox" id="sticky-toggle" checked>
+                        <span>Sticky Timings</span>
+                    </label>
+                    <button id="undo-btn" class="secondary-btn" disabled>Undo</button>
+                    <button id="reset-btn" class="error-btn" disabled>Reset</button>
+                </div>
+            </div>
+            
             <div id="preview-container" class="preview-container">
                 <h3>Subtitle Preview</h3>
                 <div id="subtitles-preview"></div>
             </div>
+            
             <div class="download-options">
                 <button id="download-srt" disabled>Download SRT</button>
                 <button id="download-json" disabled>Download JSON</button>
+                <button id="edit-timings" disabled>Edit Timings</button>
             </div>
         </div>
     </div>
