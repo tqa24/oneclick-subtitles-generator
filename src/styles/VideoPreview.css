@@ -1,0 +1,210 @@
+/* VideoPreview.css - Styling for video preview component */
+
+.video-preview {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  background-color: #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Native Video Player Styles */
+.native-video-container {
+  position: relative;
+}
+
+.video-player {
+  width: 100%;
+  max-height: 500px;
+  background-color: #000;
+}
+
+/* Custom Video Player Styles (for YouTube fallback) */
+.custom-video-container {
+  position: relative;
+  width: 100%;
+  background-color: #000;
+  color: white;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.custom-video-preview {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  background-color: #000;
+  background-size: cover;
+  background-position: center;
+}
+
+.custom-controls {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.play-pause-button {
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.play-pause-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.time-display {
+  position: absolute;
+  bottom: 40px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.custom-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 3;
+}
+
+.progress-track {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: #4a6cf7;
+  transition: width 0.1s linear;
+}
+
+.video-subtitle {
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  text-align: center;
+  padding: 12px;
+  font-size: 18px;
+  min-height: 20px;
+}
+
+.player-notice {
+  background-color: #f8f9fa;
+  color: #555;
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 14px;
+  border-top: 1px solid #eee;
+}
+
+.player-notice p {
+  margin: 0;
+}
+
+/* Video downloading styles */
+.video-downloading {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  min-height: 200px;
+}
+
+.download-progress {
+  width: 100%;
+  height: 20px;
+  background-color: #ddd;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #4a6cf7;
+  transition: width 0.3s ease;
+}
+
+.download-text {
+  font-size: 16px;
+  color: #555;
+}
+
+/* Error message */
+.error {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+/* Empty state */
+.no-video-message {
+  padding: 60px 20px;
+  text-align: center;
+  color: #666;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .video-player {
+    max-height: 350px;
+  }
+  
+  .play-pause-button {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .time-display {
+    bottom: 30px;
+    font-size: 12px;
+  }
+  
+  .video-subtitle {
+    font-size: 14px;
+    padding: 8px;
+  }
+}

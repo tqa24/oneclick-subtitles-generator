@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import './styles/App.css';
 import Header from './components/Header';
 import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
+import { startYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 
 function App() {
   // We'll use t in error messages, so we need to keep it
@@ -20,6 +21,8 @@ function App() {
   const [subtitlesData, setSubtitlesData] = useState(null);
   const [status, setStatus] = useState({ message: '', type: '' });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPreloadingVideo, setIsPreloadingVideo] = useState(false);
+  const preloadVideoFrameRef = useRef(null);
 
   // Initialize API keys from localStorage
   useEffect(() => {
@@ -103,9 +106,17 @@ function App() {
       if (activeTab === 'youtube-url' && selectedVideo) {
         input = selectedVideo.url;
         inputType = 'youtube';
+        
+        // Start preloading YouTube video immediately
+        preloadYouTubeVideo(selectedVideo.url);
+        
       } else if (activeTab === 'youtube-search' && selectedVideo) {
         input = selectedVideo.url;
         inputType = 'youtube';
+        
+        // Start preloading YouTube video immediately
+        preloadYouTubeVideo(selectedVideo.url);
+        
       } else if (activeTab === 'file-upload' && uploadedFile) {
         input = uploadedFile;
         inputType = isVideoFile(uploadedFile.type) ? 'video' : 'audio';
@@ -371,6 +382,105 @@ function App() {
     console.log('Extracted subtitles:', subtitles);
     return subtitles;
   };
+
+  // Add function to preload YouTube video
+  const preloadYouTubeVideo = (videoUrl) => {
+    console.log('Preloading YouTube video:', videoUrl);
+    
+    // Ensure we're only preloading YouTube videos
+    if (!videoUrl || (!videoUrl.includes('youtube.com') && !videoUrl.includes('youtu.be'))) {
+      return;
+    }
+    
+    setIsPreloadingVideo(true);
+    
+    // Store the URL in localStorage for the VideoPreview component to use
+    localStorage.setItem('current_video_url', videoUrl);
+    
+    // Start the background download process for the YouTube video
+    try {
+      const videoId = startYoutubeVideoDownload(videoUrl);
+      console.log('Started background download for YouTube video ID:', videoId);
+    } catch (error) {
+      console.warn('Failed to start background download:', error);
+      // Continue anyway - this is just for optimization
+    }
+    
+    // Create a hidden iframe to load the YouTube API and start buffering the video
+    if (!document.querySelector('#preload-youtube-iframe')) {
+      const iframe = document.createElement('iframe');
+      iframe.id = 'preload-youtube-iframe';
+      iframe.style.display = 'none';
+      iframe.src = 'about:blank';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <script src="https://www.youtube.com/iframe_api"></script>
+            <style>
+              #player { position: absolute; top: 0; left: 0; width: 1px; height: 1px; }
+            </style>
+          </head>
+          <body>
+            <div id="player"></div>
+            <script>
+              let player;
+              function onYouTubeIframeAPIReady() {
+                let videoId = "${extractYoutubeVideoId(videoUrl)}";
+                player = new YT.Player('player', {
+                  videoId: videoId,
+                  playerVars: { 
+                    'autoplay': 0, 
+                    'controls': 0,
+                    'playsinline': 1,
+                    'fs': 0,
+                    'rel': 0
+                  },
+                  events: {
+                    'onReady': function(event) {
+                      // Just load the video without playing it
+                      event.target.mute();
+                      event.target.cueVideoById(videoId);
+                      console.log('YouTube player preloaded');
+                      
+                      // Also preload the YouTube API script for the main document
+                      if (!window.parent.YT) {
+                        const tag = document.createElement('script');
+                        tag.src = 'https://www.youtube.com/iframe_api';
+                        window.parent.document.body.appendChild(tag);
+                      }
+                    }
+                  }
+                });
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+      
+      // Store the iframe reference
+      preloadVideoFrameRef.current = iframe;
+    }
+  };
+  
+  // Cleanup function for the preloaded video
+  useEffect(() => {
+    return () => {
+      // Clean up the preloading iframe when component unmounts
+      if (preloadVideoFrameRef.current) {
+        try {
+          document.body.removeChild(preloadVideoFrameRef.current);
+        } catch (e) {
+          console.error('Error removing preload iframe:', e);
+        }
+      }
+    };
+  }, []);
 
   return (
     <div className="app-container">
