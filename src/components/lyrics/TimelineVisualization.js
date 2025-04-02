@@ -1,8 +1,26 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 
 const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick }) => {
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState(0);
+  const isPanning = useRef(false);
+  const lastPanX = useRef(0);
+
+  // Calculate visible time range
+  const getVisibleTimeRange = useCallback(() => {
+    const maxLyricTime = lyrics.length > 0 
+      ? Math.max(...lyrics.map(lyric => lyric.end))
+      : duration;
+    const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
+    
+    const visibleDuration = timelineEnd / zoom;
+    const start = Math.max(0, panOffset);
+    const end = Math.min(timelineEnd, start + visibleDuration);
+    
+    return { start, end, total: timelineEnd };
+  }, [lyrics, duration, zoom, panOffset]);
 
   // Draw the timeline visualization
   const drawTimeline = useCallback(() => {
@@ -26,24 +44,26 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
     ctx.fillStyle = '#f5f5f5';
     ctx.fillRect(0, 0, displayWidth, displayHeight);
     
-    // Find the max time to use same scale as drawing
-    const maxLyricTime = lyrics.length > 0 
-      ? Math.max(...lyrics.map(lyric => lyric.end))
-      : duration;
+    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const visibleDuration = visibleEnd - visibleStart;
     
-    // Use the greater of actual duration or max lyric time 
-    const timelineEnd = Math.max(maxLyricTime, duration) * 1.05; // Add 5% padding
+    // Function to convert time to x coordinate
+    const timeToX = (time) => {
+      return ((time - visibleStart) / visibleDuration) * displayWidth;
+    };
     
-    // Draw lyric segments FIRST (below time markers)
+    // Draw lyric segments
     lyrics.forEach((lyric, index) => {
-      const startX = (lyric.start / timelineEnd) * displayWidth;
-      const endX = (lyric.end / timelineEnd) * displayWidth;
-      const segmentWidth = Math.max(1, endX - startX); // Ensure minimum width
+      // Skip segments completely outside visible range
+      if (lyric.end < visibleStart || lyric.start > visibleEnd) return;
+      
+      const startX = timeToX(lyric.start);
+      const endX = timeToX(lyric.end);
+      const segmentWidth = Math.max(2, endX - startX); // Minimum width of 2px
       
       // Get a color based on the index
       const hue = (index * 30) % 360;
       ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.7)`;
-      // Draw segments in lower 70% of canvas height
       ctx.fillRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
       
       // Draw border
@@ -51,13 +71,15 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
       ctx.strokeRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
     });
     
-    // Draw time markers ON TOP
+    // Draw time markers
     ctx.fillStyle = '#ddd';
     
-    // Calculate proper spacing for time markers based on timeline length
-    const timeStep = Math.max(1, Math.ceil(timelineEnd / 15));
-    for (let i = 0; i <= timelineEnd; i += timeStep) {
-      const x = (i / timelineEnd) * displayWidth;
+    // Calculate proper spacing for time markers based on zoom level
+    const timeStep = Math.max(1, Math.ceil(visibleDuration / 15));
+    const firstMarker = Math.floor(visibleStart / timeStep) * timeStep;
+    
+    for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
+      const x = timeToX(time);
       // Draw full-height vertical lines
       ctx.fillRect(x, 0, 1, displayHeight);
       
@@ -66,32 +88,33 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
       ctx.font = '10px Arial';
       ctx.textBaseline = 'top';
       ctx.textAlign = 'left';
-      ctx.fillText(`${i}s`, x + 3, 2);
+      ctx.fillText(`${Math.round(time)}s`, x + 3, 2);
       ctx.fillStyle = '#ddd';
     }
     
-    // Draw current time indicator - make it more visible
-    const currentX = (currentTime / timelineEnd) * displayWidth;
-    
-    // Draw indicator shadow for better visibility
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(currentX - 2, 0, 4, displayHeight);
-    
-    // Draw indicator
-    ctx.fillStyle = 'red';
-    ctx.fillRect(currentX - 1, 0, 3, displayHeight);
-    
-    // Draw playhead triangle at the top
-    ctx.beginPath();
-    ctx.moveTo(currentX - 6, 0);
-    ctx.lineTo(currentX + 6, 0);
-    ctx.lineTo(currentX, 6);
-    ctx.closePath();
-    ctx.fillStyle = 'red';
-    ctx.fill();
-  }, [lyrics, currentTime, duration]);
+    // Draw current time indicator
+    if (currentTime >= visibleStart && currentTime <= visibleEnd) {
+      const currentX = timeToX(currentTime);
+      
+      // Draw indicator shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(currentX - 2, 0, 4, displayHeight);
+      
+      // Draw indicator
+      ctx.fillStyle = 'red';
+      ctx.fillRect(currentX - 1, 0, 3, displayHeight);
+      
+      // Draw playhead triangle
+      ctx.beginPath();
+      ctx.moveTo(currentX - 6, 0);
+      ctx.lineTo(currentX + 6, 0);
+      ctx.lineTo(currentX, 6);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }, [lyrics, currentTime, duration, zoom, panOffset, getVisibleTimeRange]);
 
-  // Initialize and resize the canvas for proper pixel density
+  // Initialize and handle canvas resize
   useEffect(() => {
     if (timelineRef.current) {
       const canvas = timelineRef.current;
@@ -99,60 +122,134 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
       
       const resizeCanvas = () => {
         const rect = container.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        
         canvas.style.width = `${rect.width}px`;
         canvas.style.height = '50px';
-        
-        canvas.width = Math.floor(rect.width * dpr);
-        canvas.height = 50 * dpr;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.scale(dpr, dpr);
-        
         drawTimeline();
       };
       
       window.addEventListener('resize', resizeCanvas);
       resizeCanvas();
       
-      return () => {
-        window.removeEventListener('resize', resizeCanvas);
-      };
+      return () => window.removeEventListener('resize', resizeCanvas);
     }
   }, [drawTimeline]);
   
-  // Draw timeline when lyrics or currentTime change
+  // Handle timeline updates
   useEffect(() => {
     if (timelineRef.current && lyrics.length > 0) {
       lastTimeRef.current = currentTime;
       drawTimeline();
     }
-  }, [lyrics, currentTime, duration, drawTimeline]);
-  
-  // Force redraw timeline when currentTime changes
-  useEffect(() => {
-    if (Math.abs(lastTimeRef.current - currentTime) > 0.01) {
-      lastTimeRef.current = currentTime;
-      if (timelineRef.current) {
-        drawTimeline();
-      }
-    }
-  }, [currentTime, drawTimeline]);
+  }, [lyrics, currentTime, duration, zoom, panOffset, drawTimeline]);
 
+  // Handle mouse down for panning
+  const handleMouseDown = (e) => {
+    if (e.button === 0) { // Left click only
+      e.preventDefault(); // Prevent text selection
+      isPanning.current = true;
+      lastPanX.current = e.clientX;
+      e.currentTarget.style.cursor = 'grabbing';
+    }
+  };
+
+  // Handle mouse move for panning
+  const handleMouseMove = (e) => {
+    if (!isPanning.current) return;
+    
+    e.preventDefault();
+    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const rect = timelineRef.current.getBoundingClientRect();
+    const deltaX = e.clientX - lastPanX.current;
+    const timeDelta = (deltaX / rect.width) * (visibleEnd - visibleStart);
+    
+    // Calculate new pan offset
+    const newPanOffset = Math.max(0, panOffset - timeDelta);
+    
+    // Only update if we're not at the boundaries or if we're moving away from them
+    const isAtStart = panOffset <= 0;
+    const isAtEnd = visibleEnd >= timelineEnd;
+    
+    if ((!isAtStart || deltaX < 0) && (!isAtEnd || deltaX > 0)) {
+      // Additional boundary check for the end
+      if (isAtEnd && deltaX > 0) {
+        // If at the end, only allow panning left
+        if (timeDelta > 0) {
+          setPanOffset(newPanOffset);
+        }
+      } else {
+        setPanOffset(newPanOffset);
+      }
+      lastPanX.current = e.clientX;
+    }
+  };
+
+  // Handle mouse up to end panning
+  const handleMouseUp = (e) => {
+    if (isPanning.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isPanning.current = false;
+      if (timelineRef.current) {
+        timelineRef.current.style.cursor = 'grab';
+      }
+      
+      // Add a small delay before allowing zoom
+      setTimeout(() => {
+        isPanning.current = false;
+      }, 50);
+    }
+  };
+
+  // Improve zoom behavior to respect boundaries
+  const handleWheel = (e) => {
+    // Prevent zooming while panning or immediately after panning
+    if (isPanning.current) return;
+    
+    e.preventDefault();
+    
+    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const rect = timelineRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const timeAtMouse = visibleStart + (mouseX / rect.width) * (visibleEnd - visibleStart);
+    
+    let newZoom = zoom;
+    if (e.deltaY < 0) {
+      // When zooming in, ensure we don't zoom too much at the boundaries
+      newZoom = Math.min(50, zoom * 1.1);
+    } else {
+      // When zooming out, prevent zooming out if we're showing everything
+      if (visibleStart <= 0 && visibleEnd >= timelineEnd && zoom <= 1) {
+        return;
+      }
+      newZoom = Math.max(1, zoom / 1.1);
+    }
+    
+    // Only update zoom if it changed
+    if (newZoom !== zoom) {
+      const newVisibleDuration = (visibleEnd - visibleStart) * (zoom / newZoom);
+      const newStart = timeAtMouse - (mouseX / rect.width) * newVisibleDuration;
+      
+      // Ensure the new pan offset doesn't exceed boundaries
+      const maxPanOffset = timelineEnd - (timelineEnd / newZoom);
+      const boundedPanOffset = Math.max(0, Math.min(maxPanOffset, newStart));
+      
+      setPanOffset(boundedPanOffset);
+      setZoom(newZoom);
+    }
+  };
+
+  // Handle timeline click with zoom consideration
   const handleTimelineClick = (e) => {
-    if (!timelineRef.current || !duration || !onTimelineClick) return;
+    // Prevent click event if we were just panning
+    if (!timelineRef.current || !duration || !onTimelineClick || isPanning.current) {
+      return;
+    }
     
     const rect = timelineRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const timelineWidth = rect.width;
+    const { start: visibleStart, end: visibleEnd } = getVisibleTimeRange();
     
-    const maxLyricTime = lyrics.length > 0 
-      ? Math.max(...lyrics.map(lyric => lyric.end))
-      : duration;
-    const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
-    
-    const newTime = (clickX / timelineWidth) * timelineEnd;
+    const newTime = visibleStart + (clickX / rect.width) * (visibleEnd - visibleStart);
     
     if (newTime >= 0 && newTime <= duration) {
       onTimelineClick(Math.min(duration, newTime));
@@ -163,9 +260,39 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
     <div className="timeline-container">
       <canvas 
         ref={timelineRef}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         onClick={handleTimelineClick}
         className="subtitle-timeline"
+        style={{ cursor: isPanning.current ? 'grabbing' : 'grab' }}
       />
+      <div className="timeline-controls">
+        <button 
+          onClick={() => setZoom(Math.max(1, zoom / 1.5))}
+          disabled={zoom <= 1}
+        >
+          -
+        </button>
+        <span>{Math.round(zoom * 100)}%</span>
+        <button 
+          onClick={() => setZoom(Math.min(50, zoom * 1.5))}
+          disabled={zoom >= 50}
+        >
+          +
+        </button>
+        <button 
+          onClick={() => {
+            setZoom(1);
+            setPanOffset(0);
+          }}
+          disabled={zoom === 1 && panOffset === 0}
+        >
+          Reset
+        </button>
+      </div>
     </div>
   );
 };
