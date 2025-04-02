@@ -8,8 +8,8 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
   
-  // Maximum file size in MB
-  const MAX_FILE_SIZE_MB = 200;
+  // Maximum file size in MB (2GB = 2048MB)
+  const MAX_FILE_SIZE_MB = 2048;
   
   // Supported file formats
   const SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"];
@@ -124,40 +124,39 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   return (
     <div className="file-upload-input">
       <div 
-        className={`upload-dropzone ${isDragOver ? 'drag-over' : ''} ${fileInfo ? 'has-file' : ''}`}
+        className={`drag-drop-area ${isDragOver ? 'drag-over' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleBrowseClick}
       >
-        <input 
-          type="file" 
+        <input
+          type="file"
           ref={fileInputRef}
-          id="file-upload-input" 
-          className="hidden-file-input"
-          accept="video/*,audio/*" 
           onChange={handleFileChange}
+          accept=".mp4,.mov,.avi,.mp3,.wav,.aac,.ogg"
+          style={{ display: 'none' }}
         />
         
-        {!fileInfo ? (
-          <div className="upload-placeholder">
-            <div className="upload-icon-container">
-              <svg className="upload-icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="1.5" fill="none">
+        {!uploadedFile ? (
+          <>
+            <div className="upload-icon">
+              <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="1" fill="none">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
               </svg>
             </div>
             <div className="upload-text">
-              <h3>{t('fileUpload.dragDropText', 'Drag & Drop your Video or Audio here')}</h3>
-              <p>{t('fileUpload.orText', 'or')}</p>
-              <p className="browse-text">{t('fileUpload.browse', 'Click to browse files')}</p>
+              <h3>{t('inputMethods.dragDropText')}</h3>
+              <p>{t('inputMethods.orText')}</p>
+              <p className="browse-text">{t('inputMethods.browse')}</p>
             </div>
             <div className="upload-instructions">
-              <p className="upload-help-text">{t('fileUpload.helpText', 'Supported formats: MP4, MOV, AVI, MP3, WAV, AAC, OGG')}</p>
-              <p className="upload-max-size">{t('fileUpload.maxSize', 'Maximum size: {{size}} MB', { size: MAX_FILE_SIZE_MB })}</p>
+              <p className="upload-help-text">{t('inputMethods.supportedFormats')}</p>
+              <p className="upload-help-text">{t('inputMethods.maxFileSize')}</p>
             </div>
-          </div>
+          </>
         ) : (
           <div className="file-info-card">
             <div className="file-preview">

@@ -20,7 +20,11 @@
     "enterYoutubeUrl": "Nhập URL YouTube",
     "searchForVideos": "Tìm kiếm video",
     "dragDropFiles": "Kéo và thả tập tin vào đây hoặc nhấp để chọn",
-    "supportedFormats": "Định dạng hỗ trợ: MP4, WEBM, MP3, WAV (tối đa 25MB)"
+    "dragDropText": "Kéo & Thả Video hoặc Audio vào đây",
+    "orText": "hoặc",
+    "browse": "Nhấp để chọn tập tin",
+    "supportedFormats": "Định dạng hỗ trợ: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
+    "maxFileSize": "Kích thước tối đa: 2 GB"
   },
   "output": {
     "processingVideo": "Đang xử lý. Có thể mất vài phút...",

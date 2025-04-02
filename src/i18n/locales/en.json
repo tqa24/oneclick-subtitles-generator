@@ -20,7 +20,11 @@
     "enterYoutubeUrl": "Enter YouTube URL",
     "searchForVideos": "Search for videos",
     "dragDropFiles": "Drag & drop files here, or click to select",
-    "supportedFormats": "Supported formats: MP4, WEBM, MP3, WAV (max 25MB)"
+    "dragDropText": "Drag & Drop your Video or Audio here",
+    "orText": "or",
+    "browse": "Click to browse files",
+    "supportedFormats": "Supported formats: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
+    "maxFileSize": "Maximum size: 2 GB"
   },
   "output": {
     "processingVideo": "Processing. This may take a few minutes...",
