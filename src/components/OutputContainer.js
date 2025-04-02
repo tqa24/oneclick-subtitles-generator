@@ -5,7 +5,7 @@ import SubtitlesPreview from './previews/SubtitlesPreview';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, onRetryGemini, isGenerating }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, onRetryGemini, isGenerating }) => {
   const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTimingEditor, setShowTimingEditor] = useState(false);
@@ -15,27 +15,26 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, onRetryGemini, 
   const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   
-  // Set video source when a video is selected
+  // Set video source when a video is selected or file is uploaded
   useEffect(() => {
-    // Clear any existing video source when there's no selected video
-    if (!selectedVideo) {
-      setVideoSource('');
+    // First check for uploaded file
+    const uploadedFileUrl = localStorage.getItem('current_file_url');
+    if (uploadedFileUrl) {
+      console.log('Setting video source to uploaded file:', uploadedFileUrl);
+      setVideoSource(uploadedFileUrl);
       return;
     }
 
-    // For YouTube videos, use the URL directly
-    if (selectedVideo.url) {
+    // Then check for YouTube video
+    if (selectedVideo?.url) {
+      console.log('Setting video source to YouTube URL:', selectedVideo.url);
       setVideoSource(selectedVideo.url);
       return;
     }
 
-    // For uploaded files, get the URL from localStorage
-    const uploadedFileUrl = localStorage.getItem('current_file_url');
-    if (uploadedFileUrl) {
-      setVideoSource(uploadedFileUrl);
-      return;
-    }
-  }, [selectedVideo]);
+    // Clear video source if nothing is selected
+    setVideoSource('');
+  }, [selectedVideo, uploadedFile]);
   
   // Convert subtitles data format for LyricsDisplay
   const formatSubtitlesForLyricsDisplay = (subtitles) => {

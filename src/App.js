@@ -578,6 +578,7 @@ function App() {
         status={status}
         subtitlesData={subtitlesData}
         selectedVideo={selectedVideo}
+        uploadedFile={uploadedFile}
         onRetryGemini={retryGeminiRequest}
         isGenerating={isGenerating}
       />
