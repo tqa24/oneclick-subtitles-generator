@@ -35,7 +35,9 @@
     "downloadSrt": "Download SRT",
     "downloadJson": "Download JSON",
     "editTimings": "Edit Timings",
-    "hideEditor": "Hide Timing Editor"
+    "hideEditor": "Hide Timing Editor",
+    "retryGemini": "Retry with Gemini",
+    "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request"
   },
   "settings": {
     "title": "Settings",

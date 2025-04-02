@@ -34,7 +34,9 @@
     "downloadSrt": "SRT 다운로드",
     "downloadJson": "JSON 다운로드",
     "editTimings": "타이밍 편집",
-    "hideEditor": "타이밍 편집기 숨기기"
+    "hideEditor": "타이밍 편집기 숨기기",
+    "retryGemini": "Gemini로 다시 시도",
+    "retryGeminiTooltip": "Gemini로 자막을 다시 생성해보세요"
   },
   "settings": {
     "title": "설정",

@@ -35,7 +35,9 @@
     "downloadSrt": "Tải xuống SRT",
     "downloadJson": "Tải xuống JSON",
     "editTimings": "Chỉnh sửa thời gian",
-    "hideEditor": "Ẩn trình chỉnh sửa thời gian"
+    "hideEditor": "Ẩn trình chỉnh sửa thời gian",
+    "retryGemini": "Thử lại với Gemini",
+    "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới"
   },
   "settings": {
     "title": "Cài đặt",
