@@ -401,41 +401,37 @@ function App() {
   };
 
   const parseGeminiResponse = (response) => {
-    // Extract text from the response
-    let text = '';
-    
-    if (response && 
-        response.candidates && 
-        response.candidates[0] && 
-        response.candidates[0].content && 
-        response.candidates[0].content.parts && 
-        response.candidates[0].content.parts[0] && 
-        response.candidates[0].content.parts[0].text) {
-        text = response.candidates[0].content.parts[0].text;
-    } else {
-        console.error('Unexpected response format:', response);
-        throw new Error('Invalid response format from Gemini API');
+    if (!response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response format from Gemini API');
     }
     
+    const text = response.candidates[0].content.parts[0].text;
     console.log('Raw text from Gemini:', text);
     
     const subtitles = [];
     let hasTimestamps = false;
     let match;
 
-    // 1. Try new timestamp format: [0m2s - 0m2s]
-    const regexTimestamps = /\[(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\]\s*([^\[\n]*?)(?=\n*\[|$)/gs;
+    // Try new format with descriptions and on-screen text: [0:08 - 0:16] (Description) or [0:24 - 0:25] (On-screen text: Text)
+    const regexNewFormat = /\[(\d+):(\d+)\s*-\s*(\d+):(\d+)\]\s*(?:\((.*?)\)|(.+?)(?=\[|$))/gs;
     
-    while ((match = regexTimestamps.exec(text)) !== null) {
+    while ((match = regexNewFormat.exec(text)) !== null) {
         hasTimestamps = true;
         const startMin = parseInt(match[1]);
         const startSec = parseInt(match[2]);
         const endMin = parseInt(match[3]);
         const endSec = parseInt(match[4]);
-        const content = match[5].trim();
         
-        // Only add subtitles with actual content
+        // Get either the parenthetical content or the regular text
+        let content = match[5] || match[6];
         if (content) {
+            content = content.trim();
+            
+            // Handle on-screen text markers
+            if (content.startsWith('On-screen text:')) {
+                content = content.substring('On-screen text:'.length).trim();
+            }
+            
             subtitles.push({
                 id: subtitles.length + 1,
                 start: startMin * 60 + startSec,
@@ -444,49 +440,10 @@ function App() {
             });
         }
     }
-
-    if (subtitles.length > 0) {
-        // Remove duplicate or overlapping subtitles
-        const uniqueSubtitles = [];
-        const seen = new Set();
-        
-        subtitles.sort((a, b) => a.start - b.start).forEach(sub => {
-            const key = `${sub.start}-${sub.end}-${sub.text}`;
-            if (!seen.has(key)) {
-                seen.add(key);
-                uniqueSubtitles.push(sub);
-            }
-        });
-        
-        return uniqueSubtitles;
-    }
-
-    // 2. Try format with milliseconds: [0m0s482ms - 0m1s542ms]
-    const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
-    while ((match = regexWithMs.exec(text)) !== null) {
-        hasTimestamps = true;
-        const startMin = parseInt(match[1]);
-        const startSec = parseInt(match[2]);
-        const startMs = parseInt(match[3]);
-        const endMin = parseInt(match[4]);
-        const endSec = parseInt(match[5]);
-        const endMs = parseInt(match[6]);
-        
-        const startTime = startMin * 60 + startSec + startMs / 1000;
-        const endTime = endMin * 60 + endSec + endMs / 1000;
-        
-        let subtitleText = match[7].trim();
-        
-        subtitles.push({
-            id: subtitles.length + 1,
-            start: startTime,
-            end: endTime,
-            text: subtitleText
-        });
-    }
     
-    // 3. Try original range format: [0m0s - 0m29s]
+    // If no subtitles found with new format, try other formats
     if (subtitles.length === 0) {
+        // Original timestamp format: [0m0s - 0m29s]
         const regexOriginal = /\[\s*(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\s*\](?:\n|\r\n?)+(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
         
         while ((match = regexOriginal.exec(text)) !== null) {
@@ -496,10 +453,33 @@ function App() {
             const endMin = parseInt(match[3]);
             const endSec = parseInt(match[4]);
             
-            const startTime = startMin * 60 + startSec;
-            const endTime = endMin * 60 + endSec;
-            
             let subtitleText = match[5].trim();
+            
+            subtitles.push({
+                id: subtitles.length + 1,
+                start: startMin * 60 + startSec,
+                end: endMin * 60 + endSec,
+                text: subtitleText
+            });
+        }
+    }
+
+    // Try format with milliseconds: [0m0s482ms - 0m1s542ms]
+    if (subtitles.length === 0) {
+        const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
+        while ((match = regexWithMs.exec(text)) !== null) {
+            hasTimestamps = true;
+            const startMin = parseInt(match[1]);
+            const startSec = parseInt(match[2]);
+            const startMs = parseInt(match[3]);
+            const endMin = parseInt(match[4]);
+            const endSec = parseInt(match[5]);
+            const endMs = parseInt(match[6]);
+            
+            const startTime = startMin * 60 + startSec + startMs / 1000;
+            const endTime = endMin * 60 + endSec + endMs / 1000;
+            
+            let subtitleText = match[7].trim();
             
             subtitles.push({
                 id: subtitles.length + 1,
@@ -510,7 +490,7 @@ function App() {
         }
     }
     
-    // 4. Try single timestamp format: [0m2s]
+    // Try single timestamp format: [0m2s]
     if (subtitles.length === 0) {
         const regexSingleTimestamp = /\[(\d+)m(\d+)s\]\s*([^\[\n]*?)(?=\n*\[|$)/gs;
         const matches = [];
@@ -543,7 +523,7 @@ function App() {
             });
         }
     }
-    
+
     // If no timestamps were recognized, throw an error with the raw text
     if (!hasTimestamps) {
         throw new Error(JSON.stringify({
@@ -553,8 +533,20 @@ function App() {
         }));
     }
     
-    console.log('Extracted subtitles:', subtitles);
-    return subtitles;
+    // Remove duplicate subtitles and sort by start time
+    const uniqueSubtitles = [];
+    const seen = new Set();
+    
+    subtitles.sort((a, b) => a.start - b.start).forEach(sub => {
+        const key = `${sub.start}-${sub.end}-${sub.text}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            uniqueSubtitles.push(sub);
+        }
+    });
+
+    console.log('Extracted subtitles:', uniqueSubtitles);
+    return uniqueSubtitles;
   };
 
   // Add function to preload YouTube video
