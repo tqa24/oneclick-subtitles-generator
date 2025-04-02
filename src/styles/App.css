@@ -1,10 +1,27 @@
-/* App.css - Basic styling for the main application container */
+/* App.css - Main application styling */
 
 .app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-primary);
+  transition: background-color var(--transition-speed);
+}
+
+.app-main {
+  flex: 1;
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.app-content {
+  background-color: var(--background-secondary);
+  border-radius: 12px;
   padding: 2rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .generate-btn {
@@ -12,28 +29,89 @@
   width: 100%;
   padding: 1rem;
   margin: 1.5rem 0;
-  background-color: #4a6cf7;
+  background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.generate-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
 }
 
 .generate-btn:hover {
-  background-color: #3a5ce5;
+  background-color: var(--secondary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px var(--shadow-color);
+}
+
+.generate-btn:active::after {
+  animation: ripple 0.8s ease-out;
 }
 
 .generate-btn:disabled {
-  background-color: #a9b7f7;
+  background-color: var(--text-muted);
+  transform: none;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
-/* Success animation */
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(100, 100);
+    opacity: 0;
+  }
+}
+
 @keyframes success-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(74, 108, 247, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(74, 108, 247, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(74, 108, 247, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(var(--primary-color-rgb), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0); }
+}
+
+/* Responsive adaptations */
+@media (max-width: 768px) {
+  .app-main {
+    padding: 1rem;
+  }
+  
+  .app-content {
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-main {
+    padding: 0.5rem;
+  }
+  
+  .app-content {
+    padding: 1rem;
+  }
+  
+  .generate-btn {
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
 }

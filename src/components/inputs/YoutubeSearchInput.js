@@ -95,19 +95,47 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
   
   return (
     <div className="youtube-search-input">
-      <label htmlFor="youtube-search-input">{t('youtube.searchLabel', 'Search YouTube Video:')}</label>
-      <input 
-        type="text" 
-        id="youtube-search-input" 
-        placeholder={t('youtube.searchPlaceholder', 'Enter video title...')}
-        value={searchQuery}
-        onChange={handleSearchChange}
-      />
+      <div className="search-field-container">
+        <label htmlFor="youtube-search-input" className="search-label">
+          {t('youtube.searchLabel', 'Search YouTube Video:')}
+        </label>
+        <div className="search-input-wrapper">
+          <svg className="search-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="text" 
+            id="youtube-search-input" 
+            className="youtube-search-field"
+            placeholder={t('youtube.searchPlaceholder', 'Enter video title...')}
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          {searchQuery && (
+            <button 
+              className="clear-search-btn" 
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
       
       <div className="search-results">
         {error && <p className="error">{error}</p>}
         
-        {isSearching && <p>{t('youtube.searching', 'Searching...')}</p>}
+        {isSearching && (
+          <div className="searching-indicator">
+            <div className="search-spinner"></div>
+            <p>{t('youtube.searching', 'Searching...')}</p>
+          </div>
+        )}
         
         {!isSearching && searchResults.length > 0 && (
           searchResults.map(video => (

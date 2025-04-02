@@ -4,74 +4,159 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background-color: var(--background-primary);
+  box-shadow: 0 2px 10px var(--shadow-color);
   position: relative;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.logo-container {
+.title-container {
   display: flex;
   align-items: center;
-}
-
-.app-logo {
-  height: 40px;
-  width: auto;
-  margin-right: 1rem;
 }
 
 .app-title {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.app-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--primary-color);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.title-container:hover .app-title::after {
+  width: 100%;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.language-selector {
+  position: relative;
+}
+
+.language-selector select {
+  appearance: none;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.5rem 2rem 0.5rem 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.language-selector::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--text-primary);
+  pointer-events: none;
+}
+
+.language-selector select:hover {
+  border-color: var(--primary-color);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
+  height: 38px;
+  width: 38px;
+}
+
+.theme-toggle:hover {
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color);
+  transform: rotate(15deg);
+}
+
+.theme-toggle svg {
+  stroke: var(--text-primary);
+  transition: stroke 0.3s ease, transform 0.5s ease;
 }
 
 .settings-button {
   display: flex;
   align-items: center;
-  background: none;
-  border: 1px solid #ddd;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #555;
+  transition: all 0.2s ease;
+  color: var(--text-primary);
 }
 
 .settings-button:hover {
-  background-color: #f5f5f5;
-  border-color: #ccc;
+  background-color: var(--primary-color-light);
+  border-color: var(--primary-color);
 }
 
 .settings-button svg {
   margin-right: 0.5rem;
+  stroke: var(--text-primary);
+  transition: stroke 0.3s ease;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .app-header {
     padding: 0.75rem 1rem;
-    flex-wrap: wrap;
   }
   
   .app-title {
     font-size: 1.4rem;
   }
-  
-  .app-logo {
-    height: 30px;
-  }
-  
+}
+
+@media (max-width: 600px) {
   .settings-button span {
     display: none;
   }
   
   .settings-button svg {
     margin-right: 0;
+  }
+  
+  .settings-button {
+    padding: 0.5rem;
+    width: 38px;
+    height: 38px;
+    justify-content: center;
+  }
+  
+  .header-actions {
+    gap: 8px;
   }
 }

@@ -1,0 +1,94 @@
+{
+  "common": {
+    "undo": "Hoàn tác",
+    "reset": "Đặt lại",
+    "save": "Lưu",
+    "cancel": "Hủy bỏ"
+  },
+  "header": {
+    "appTitle": "Trình Tạo Phụ Đề Một-Nhấp",
+    "appLogoAlt": "Logo Trình Tạo Phụ Đề Một-Nhấp",
+    "settings": "Cài đặt",
+    "settingsAria": "Mở cài đặt",
+    "tagline": "Tạo phụ đề có thời gian với AI"
+  },
+  "inputMethods": {
+    "title": "Chọn nguồn video",
+    "youtubeUrl": "URL YouTube",
+    "youtubeSearch": "Tìm kiếm YouTube",
+    "fileUpload": "Tải lên tập tin",
+    "enterYoutubeUrl": "Nhập URL YouTube",
+    "searchForVideos": "Tìm kiếm video",
+    "dragDropFiles": "Kéo và thả tập tin vào đây hoặc nhấp để chọn",
+    "supportedFormats": "Định dạng hỗ trợ: MP4, WEBM, MP3, WAV (tối đa 25MB)"
+  },
+  "output": {
+    "processingVideo": "Đang xử lý. Có thể mất vài phút...",
+    "generationSuccess": "Phụ đề đã được tạo thành công!",
+    "videoPreview": "Xem trước video với phụ đề",
+    "subtitlesPreview": "Xem trước phụ đề",
+    "downloadSrt": "Tải xuống SRT",
+    "downloadJson": "Tải xuống JSON",
+    "editTimings": "Chỉnh sửa thời gian",
+    "hideEditor": "Ẩn trình chỉnh sửa thời gian"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "appearance": "Giao diện",
+    "apiKeys": "Khóa API",
+    "geminiApiKey": "Khóa API Gemini",
+    "youtubeApiKey": "Khóa API YouTube",
+    "apiKeyDescription": "Khóa API được lưu trữ cục bộ trong trình duyệt của bạn và không bao giờ được gửi đến máy chủ của chúng tôi.",
+    "getApiKey": "Lấy khóa API Gemini",
+    "getYoutubeApiKey": "Lấy khóa API YouTube",
+    "show": "Hiện",
+    "hide": "Ẩn",
+    "save": "Lưu cài đặt",
+    "cancel": "Hủy bỏ",
+    "keySet": "Đã cài đặt",
+    "keyNotSet": "Chưa cài đặt",
+    "geminiApiKeyPlaceholder": "Nhập khóa API Gemini của bạn",
+    "youtubeApiKeyPlaceholder": "Nhập khóa API YouTube của bạn",
+    "geminiApiKeyHelp": "Cần thiết cho tất cả các chức năng. Lấy tại",
+    "youtubeApiKeyHelp": "Cần thiết cho tìm kiếm YouTube. Lấy tại",
+    "geminiStep1": "Đăng nhập vào Google AI Studio",
+    "geminiStep2": "Nhấp vào 'Lấy khóa API'",
+    "geminiStep3": "Tạo khóa mới hoặc chọn khóa hiện có",
+    "geminiStep4": "Sao chép khóa API của bạn",
+    "geminiStep5": "Dán vào trường trên",
+    "youtubeStep1": "Truy cập Google Cloud Console",
+    "youtubeStep2": "Tạo hoặc chọn một dự án",
+    "youtubeStep3": "Kích hoạt 'YouTube Data API v3'",
+    "youtubeStep4": "Đi đến thông tin xác thực",
+    "youtubeStep5": "Tạo khóa API",
+    "cache": "Quản lý bộ nhớ đệm",
+    "cacheDescription": "Xóa tất cả phụ đề và video đã tải xuống để giải phóng dung lượng.",
+    "clearCache": "Xóa bộ nhớ đệm",
+    "clearingCache": "Đang xóa bộ nhớ đệm...",
+    "cacheClearedSuccess": "Đã xóa bộ nhớ đệm thành công!",
+    "cacheClearError": "Lỗi khi xóa bộ nhớ đệm. Vui lòng thử lại.",
+    "confirmClearCache": "Bạn có chắc chắn muốn xóa tất cả phụ đề và video đã lưu trong bộ nhớ đệm? Hành động này không thể hoàn tác."
+  },
+  "lyrics": {
+    "synchronizedLyrics": "Phụ đề đồng bộ hóa",
+    "stickyTimingsToggle": "Thời gian cố định",
+    "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ cố định sẽ điều chỉnh tất cả phụ đề theo sau."
+  },
+  "errors": {
+    "apiKeyRequired": "Vui lòng cài đặt khóa API trong phần cài đặt trước.",
+    "invalidInput": "Vui lòng cung cấp đầu vào hợp lệ (URL YouTube, kết quả tìm kiếm, hoặc tập tin tải lên).",
+    "invalidFile": "Định dạng hoặc kích thước tập tin không hợp lệ. Kiểm tra các định dạng được hỗ trợ."
+  },
+  "theme": {
+    "themeSelector": "Chủ đề",
+    "dark": "Chế độ tối",
+    "light": "Chế độ sáng",
+    "system": "Sử dụng cài đặt hệ thống"
+  },
+  "language": {
+    "languageSelector": "Chọn ngôn ngữ",
+    "en": "English (Tiếng Anh)",
+    "ko": "한국어 (Tiếng Hàn)",
+    "vi": "Tiếng Việt"
+  }
+}

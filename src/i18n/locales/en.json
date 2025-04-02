@@ -6,7 +6,10 @@
     "cancel": "Cancel"
   },
   "header": {
-    "title": "Subtitles Generator",
+    "appTitle": "One-click Subtitles Generator",
+    "appLogoAlt": "One-click Subtitles Generator Logo",
+    "settings": "Settings",
+    "settingsAria": "Open Settings",
     "tagline": "Generate timed subtitles with AI"
   },
   "inputMethods": {
@@ -31,6 +34,7 @@
   },
   "settings": {
     "title": "Settings",
+    "appearance": "Appearance",
     "apiKeys": "API Keys",
     "geminiApiKey": "Gemini API Key",
     "youtubeApiKey": "YouTube API Key",
@@ -56,7 +60,14 @@
     "youtubeStep2": "Create or select a project",
     "youtubeStep3": "Enable 'YouTube Data API v3'",
     "youtubeStep4": "Go to credentials",
-    "youtubeStep5": "Generate API key"
+    "youtubeStep5": "Generate API key",
+    "cache": "Cache Management",
+    "cacheDescription": "Clear all cached subtitles and downloaded videos to free up space.",
+    "clearCache": "Clear Cache",
+    "clearingCache": "Clearing Cache...",
+    "cacheClearedSuccess": "Cache cleared successfully!",
+    "cacheClearError": "Error clearing cache. Please try again.",
+    "confirmClearCache": "Are you sure you want to clear all cached subtitles and videos? This cannot be undone."
   },
   "lyrics": {
     "synchronizedLyrics": "Synchronized Subtitles",
@@ -67,5 +78,17 @@
     "apiKeyRequired": "Please set your API key in the settings first.",
     "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
     "invalidFile": "Invalid file format or size. Please check the supported formats."
+  },
+  "theme": {
+    "themeSelector": "Theme",
+    "dark": "Dark Mode",
+    "light": "Light Mode",
+    "system": "Use System Settings"
+  },
+  "language": {
+    "languageSelector": "Select Language",
+    "en": "English",
+    "ko": "한국어 (Korean)",
+    "vi": "Tiếng Việt (Vietnamese)"
   }
 }

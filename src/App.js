@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import './styles/App.css';
 import Header from './components/Header';
@@ -9,7 +9,6 @@ import { startYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoD
 import { generateFileCacheId } from './utils/cacheUtils';
 
 function App() {
-  // We'll use t in error messages, so we need to keep it
   const { t } = useTranslation();
   const [apiKeysSet, setApiKeysSet] = useState({
     gemini: false,
@@ -24,6 +23,25 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreloadingVideo, setIsPreloadingVideo] = useState(false);
   const preloadVideoFrameRef = useRef(null);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  // Listen for theme changes from other components
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'theme' || !event.key) {
+        const newTheme = localStorage.getItem('theme') || 'light';
+        setTheme(newTheme);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Initialize API keys from localStorage
   useEffect(() => {
@@ -75,7 +93,7 @@ function App() {
     setStatus({ message: 'Settings saved successfully!', type: 'success' });
   };
 
-  // New function to check if cached subtitles exist
+  // Check if cached subtitles exist
   const checkCachedSubtitles = async (cacheId) => {
     try {
       const response = await fetch(`http://localhost:3004/api/subtitle-exists/${cacheId}`);
@@ -87,7 +105,7 @@ function App() {
     }
   };
 
-  // New function to save subtitles to cache
+  // Save subtitles to cache
   const saveSubtitlesToCache = async (cacheId, subtitles) => {
     try {
       const response = await fetch('http://localhost:3004/api/save-subtitles', {
@@ -122,28 +140,28 @@ function App() {
     return null;
   };
 
-  const generateSubtitles = async () => {
+  const generateSubtitles = useCallback(async () => {
     // Validate API keys
     if (!apiKeysSet.gemini) {
-      setStatus({ message: 'Please set your Gemini API key in the settings first.', type: 'error' });
+      setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
       setShowSettings(true);
       return;
     }
     
     if (activeTab === 'youtube-search' && !apiKeysSet.youtube) {
-      setStatus({ message: 'Please set your YouTube API key in the settings first.', type: 'error' });
+      setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
       setShowSettings(true);
       return;
     }
 
     // Validate input
     if (!validateInput()) {
-      setStatus({ message: 'Please provide a valid input (YouTube URL, search result, or file upload).', type: 'error' });
+      setStatus({ message: t('errors.invalidInput'), type: 'error' });
       return;
     }
 
     setIsGenerating(true);
-    setStatus({ message: 'Processing. This may take a few minutes...', type: 'loading' });
+    setStatus({ message: t('output.processingVideo'), type: 'loading' });
     setSubtitlesData(null);
 
     try {
@@ -195,27 +213,27 @@ function App() {
         await saveSubtitlesToCache(cacheId, subtitles);
       }
       
-      setStatus({ message: 'Subtitles generated successfully!', type: 'success' });
+      setStatus({ message: t('output.generationSuccess'), type: 'success' });
     } catch (error) {
       console.error('Error generating subtitles:', error);
       setStatus({ message: `Error: ${error.message}`, type: 'error' });
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t]);
 
   // Function to retry Gemini request (ignores cache)
-  const retryGeminiRequest = async () => {
+  const retryGeminiRequest = useCallback(async () => {
     // Validate API keys
     if (!apiKeysSet.gemini) {
-      setStatus({ message: 'Please set your Gemini API key in the settings first.', type: 'error' });
+      setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
       setShowSettings(true);
       return;
     }
     
     // Validate input
     if (!validateInput()) {
-      setStatus({ message: 'Please provide a valid input (YouTube URL, search result, or file upload).', type: 'error' });
+      setStatus({ message: t('errors.invalidInput'), type: 'error' });
       return;
     }
 
@@ -251,14 +269,14 @@ function App() {
         await saveSubtitlesToCache(cacheId, subtitles);
       }
       
-      setStatus({ message: 'Subtitles regenerated successfully!', type: 'success' });
+      setStatus({ message: t('output.generationSuccess'), type: 'success' });
     } catch (error) {
       console.error('Error regenerating subtitles:', error);
       setStatus({ message: `Error: ${error.message}`, type: 'error' });
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t]);
 
   const validateInput = () => {
     if (activeTab === 'youtube-url') {
@@ -519,9 +537,6 @@ function App() {
       console.warn('Failed to start background download:', error);
       // Continue anyway - this is just for optimization
     }
-    
-    // We no longer need to create a hidden iframe with YouTube API
-    // This was causing the googleads.g.doubleclick.net errors
   };
   
   // Cleanup function for the preloaded video
@@ -551,37 +566,56 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <>
       <Header 
         onSettingsClick={() => setShowSettings(true)} 
       />
       
-      <InputMethods 
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        selectedVideo={selectedVideo}
-        setSelectedVideo={setSelectedVideo}
-        uploadedFile={uploadedFile}
-        setUploadedFile={setUploadedFile}
-        apiKeysSet={apiKeysSet}
-      />
-      
-      <button 
-        className="generate-btn" 
-        onClick={generateSubtitles}
-        disabled={isGenerating || !validateInput()}
-      >
-        {isGenerating ? 'Generating...' : 'Generate timed subtitles'}
-      </button>
-      
-      <OutputContainer 
-        status={status}
-        subtitlesData={subtitlesData}
-        selectedVideo={selectedVideo}
-        uploadedFile={uploadedFile}
-        onRetryGemini={retryGeminiRequest}
-        isGenerating={isGenerating}
-      />
+      <main className="app-main">
+        <InputMethods 
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+          uploadedFile={uploadedFile}
+          setUploadedFile={setUploadedFile}
+          apiKeysSet={apiKeysSet}
+        />
+        
+        <div className="buttons-container">
+          <button 
+            className="generate-btn pulse"
+            onClick={generateSubtitles}
+            disabled={isGenerating || !validateInput()}
+          >
+            {isGenerating ? t('output.processingVideo') : t('header.tagline')}
+          </button>
+          
+          {(subtitlesData || status.type === 'error') && !isGenerating && (
+            <button 
+              className="retry-gemini-btn" 
+              onClick={retryGeminiRequest}
+              disabled={isGenerating}
+              title={t('output.retryGeminiTooltip', 'Request a new transcription from Gemini, ignoring cached results')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M1 4v6h6"></path>
+                <path d="M23 20v-6h-6"></path>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+              </svg>
+              {t('output.retryGemini', 'Retry Gemini Request')}
+            </button>
+          )}
+        </div>
+        
+        <OutputContainer 
+          status={status}
+          subtitlesData={subtitlesData}
+          selectedVideo={selectedVideo}
+          uploadedFile={uploadedFile}
+          isGenerating={isGenerating}
+        />
+      </main>
       
       {showSettings && (
         <SettingsModal 
@@ -590,7 +624,7 @@ function App() {
           apiKeysSet={apiKeysSet}
         />
       )}
-    </div>
+    </>
   );
 }
 

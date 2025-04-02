@@ -1,0 +1,94 @@
+{
+  "common": {
+    "undo": "실행 취소",
+    "reset": "초기화",
+    "save": "저장",
+    "cancel": "취소"
+  },
+  "header": {
+    "appTitle": "원클릭 자막 생성기",
+    "appLogoAlt": "원클릭 자막 생성기 로고",
+    "settings": "설정",
+    "settingsAria": "설정 열기",
+    "tagline": "AI로 시간이 표시된 자막 생성하기"
+  },
+  "inputMethods": {
+    "title": "비디오 소스 선택",
+    "youtubeUrl": "YouTube URL",
+    "youtubeSearch": "YouTube 검색",
+    "fileUpload": "파일 업로드",
+    "enterYoutubeUrl": "YouTube URL 입력",
+    "searchForVideos": "비디오 검색",
+    "dragDropFiles": "여기에 파일을 끌어다 놓거나 클릭하여 선택하세요",
+    "supportedFormats": "지원 형식: MP4, WEBM, MP3, WAV (최대 25MB)"
+  },
+  "output": {
+    "processingVideo": "처리 중입니다. 몇 분 정도 소요될 수 있습니다...",
+    "generationSuccess": "자막이 성공적으로 생성되었습니다!",
+    "videoPreview": "자막이 있는 비디오 미리보기",
+    "subtitlesPreview": "자막 미리보기",
+    "downloadSrt": "SRT 다운로드",
+    "downloadJson": "JSON 다운로드",
+    "editTimings": "타이밍 편집",
+    "hideEditor": "타이밍 편집기 숨기기"
+  },
+  "settings": {
+    "title": "설정",
+    "appearance": "모양",
+    "apiKeys": "API 키",
+    "geminiApiKey": "Gemini API 키",
+    "youtubeApiKey": "YouTube API 키",
+    "apiKeyDescription": "API 키는 브라우저에 로컬로 저장되며 절대 우리 서버로 전송되지 않습니다.",
+    "getApiKey": "Gemini API 키 받기",
+    "getYoutubeApiKey": "YouTube API 키 받기",
+    "show": "표시",
+    "hide": "숨기기",
+    "save": "설정 저장",
+    "cancel": "취소",
+    "keySet": "설정됨",
+    "keyNotSet": "설정되지 않음",
+    "geminiApiKeyPlaceholder": "Gemini API 키 입력",
+    "youtubeApiKeyPlaceholder": "YouTube API 키 입력",
+    "geminiApiKeyHelp": "모든 기능에 필요합니다. 다음에서 받으세요",
+    "youtubeApiKeyHelp": "YouTube 검색에 필요합니다. 다음에서 받으세요",
+    "geminiStep1": "Google AI Studio에 로그인",
+    "geminiStep2": "'API 키 받기' 클릭",
+    "geminiStep3": "새 키 생성 또는 기존 키 선택",
+    "geminiStep4": "API 키 복사",
+    "geminiStep5": "위 필드에 붙여넣기",
+    "youtubeStep1": "Google Cloud Console 방문",
+    "youtubeStep2": "프로젝트 생성 또는 선택",
+    "youtubeStep3": "'YouTube Data API v3' 활성화",
+    "youtubeStep4": "사용자 인증 정보로 이동",
+    "youtubeStep5": "API 키 생성",
+    "cache": "캐시 관리",
+    "cacheDescription": "공간을 확보하기 위해 모든 캐시된 자막과 다운로드된 비디오를 지웁니다.",
+    "clearCache": "캐시 지우기",
+    "clearingCache": "캐시 지우는 중...",
+    "cacheClearedSuccess": "캐시가 성공적으로 지워졌습니다!",
+    "cacheClearError": "캐시 지우기 오류. 다시 시도하세요.",
+    "confirmClearCache": "모든 캐시된 자막과 비디오를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다."
+  },
+  "lyrics": {
+    "synchronizedLyrics": "동기화된 자막",
+    "stickyTimingsToggle": "고정 타이밍",
+    "timingInstructions": "타임스탬프를 드래그하여 각 자막의 타이밍을 조정하세요. 고정 모드는 그 이후의 모든 자막을 조정합니다."
+  },
+  "errors": {
+    "apiKeyRequired": "먼저 설정에서 API 키를 설정하세요.",
+    "invalidInput": "유효한 입력(YouTube URL, 검색 결과 또는 파일 업로드)을 제공하세요.",
+    "invalidFile": "유효하지 않은 파일 형식 또는 크기입니다. 지원되는 형식을 확인하세요."
+  },
+  "theme": {
+    "themeSelector": "테마",
+    "dark": "다크 모드",
+    "light": "라이트 모드",
+    "system": "시스템 설정 사용"
+  },
+  "language": {
+    "languageSelector": "언어 선택",
+    "en": "English (영어)",
+    "ko": "한국어",
+    "vi": "Tiếng Việt (베트남어)"
+  }
+}

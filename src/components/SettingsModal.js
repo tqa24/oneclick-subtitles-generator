@@ -61,7 +61,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
         </div>
         
         <div className="settings-content">
-          <div className="api-key-section">
+          <div className="settings-section api-key-section">
             <h3>{t('settings.apiKeys', 'API Keys')}</h3>
             
             <div className="api-key-input">
@@ -86,8 +86,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                   type="button" 
                   className="toggle-visibility" 
                   onClick={() => setShowGeminiKey(!showGeminiKey)}
+                  aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
                 >
-                  {showGeminiKey ? '🙈' : '👁️'}
+                  {showGeminiKey ? t('settings.hide') : t('settings.show')}
                 </button>
               </div>
               
@@ -135,8 +136,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                   type="button" 
                   className="toggle-visibility" 
                   onClick={() => setShowYoutubeKey(!showYoutubeKey)}
+                  aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
                 >
-                  {showYoutubeKey ? '🙈' : '👁️'}
+                  {showYoutubeKey ? t('settings.hide') : t('settings.show')}
                 </button>
               </div>
               
@@ -162,7 +164,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
               </div>
             </div>
           </div>
-          <div className="cache-section">
+          
+          <div className="settings-section cache-section">
             <h3>{t('settings.cache', 'Cache Management')}</h3>
             <p className="cache-description">
               {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}

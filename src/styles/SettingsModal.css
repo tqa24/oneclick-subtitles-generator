@@ -14,15 +14,22 @@
 }
 
 .settings-modal {
-  background-color: white;
-  border-radius: 8px;
+  background-color: var(--background-primary);
+  border-radius: 12px;
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px var(--shadow-color);
   overflow: hidden;
+  animation: modal-appear 0.3s ease-out;
+  transition: background-color var(--transition-speed);
+}
+
+@keyframes modal-appear {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .settings-header {
@@ -30,13 +37,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
 }
 
 .settings-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .close-btn {
@@ -44,13 +53,16 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   padding: 0;
   line-height: 1;
+  transition: color 0.2s;
 }
 
 .close-btn:hover {
-  color: #333;
+  color: var(--text-primary);
+  transform: rotate(90deg);
+  transition: transform 0.3s ease;
 }
 
 .settings-content {
@@ -59,11 +71,145 @@
   flex: 1;
 }
 
+/* Settings sections styling */
+.settings-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+/* Appearance section with language and theme */
+.appearance-section .setting-option {
+  margin-bottom: 1.5rem;
+}
+
+.appearance-section .setting-option label {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.appearance-section select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color var(--transition-speed), color var(--transition-speed);
+}
+
+.appearance-section select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+/* Theme options */
+.theme-options {
+  display: flex;
+  gap: 10px;
+}
+
+.theme-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-option:hover {
+  transform: translateY(-3px);
+}
+
+.theme-option.selected {
+  border-color: var(--primary-color);
+}
+
+.theme-preview {
+  width: 100%;
+  height: 70px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.theme-preview-header {
+  height: 25%;
+  width: 100%;
+}
+
+.theme-preview-content {
+  height: 75%;
+  width: 100%;
+}
+
+/* Light theme preview */
+.light-theme .theme-preview-header {
+  background-color: #ffffff;
+  border-bottom: 2px solid #eaeaea;
+}
+
+.light-theme .theme-preview-content {
+  background-color: #f8f9fa;
+}
+
+/* Dark theme preview */
+.dark-theme .theme-preview-header {
+  background-color: #121212;
+  border-bottom: 2px solid #2d2d2d;
+}
+
+.dark-theme .theme-preview-content {
+  background-color: #1e1e1e;
+}
+
+/* System theme preview */
+.system-theme .theme-preview-header {
+  background: linear-gradient(to right, #ffffff 50%, #121212 50%);
+  border-bottom: 2px solid #eaeaea;
+}
+
+.system-theme .theme-preview-content {
+  background: linear-gradient(to right, #f8f9fa 50%, #1e1e1e 50%);
+}
+
+.theme-option span {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+/* API key section styles */
 .api-key-section h3 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.2rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .api-key-input {
@@ -75,6 +221,7 @@
   align-items: center;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .api-key-status {
@@ -86,13 +233,13 @@
 }
 
 .api-key-status.set {
-  background-color: #e6f7ff;
-  color: #0070f3;
+  background-color: var(--success-background);
+  color: var(--success-color);
 }
 
 .api-key-status.not-set {
-  background-color: #fff2e8;
-  color: #fa541c;
+  background-color: var(--warning-background);
+  color: var(--warning-color);
 }
 
 .input-with-toggle {
@@ -103,64 +250,135 @@
 .input-with-toggle input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-family: monospace;
   font-size: 1rem;
   width: 100%;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s, 
+    background-color var(--transition-speed), 
+    color var(--transition-speed);
 }
 
 .input-with-toggle input:focus {
   outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
 }
 
 .toggle-visibility {
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: var(--background-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 0 4px 4px 0;
   cursor: pointer;
-  font-size: 1.2rem;
-  color: #999;
-  padding: 4px;
+  color: var(--text-secondary);
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .toggle-visibility:hover {
-  color: #666;
+  background-color: var(--primary-color-light);
+  color: var(--text-primary);
 }
 
 .api-key-help {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .api-key-help a {
-  color: #1890ff;
+  color: var(--primary-color);
   text-decoration: none;
   margin-left: 5px;
+  transition: color var(--transition-speed);
 }
 
 .api-key-help a:hover {
   text-decoration: underline;
 }
 
+.api-key-instructions {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  transition: background-color var(--transition-speed);
+}
+
+.api-key-instructions h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.api-key-instructions ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.api-key-instructions li {
+  margin-bottom: 0.3rem;
+  color: var(--text-secondary);
+}
+
+/* Cache section */
+.cache-section {
+  margin-top: 0;
+}
+
+.cache-description {
+  margin: 0.5rem 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.clear-cache-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.clear-cache-btn:hover {
+  background-color: var(--error-color);
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.clear-cache-btn:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* Footer with action buttons */
 .settings-footer {
   display: flex;
   justify-content: flex-end;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
   gap: 0.75rem;
+  transition: border-color var(--transition-speed);
 }
 
 .cancel-btn {
   padding: 0.5rem 1rem;
-  background-color: #f5f5f5;
-  border: 1px solid #d9d9d9;
+  background-color: var(--background-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -168,14 +386,14 @@
 }
 
 .cancel-btn:hover {
-  background-color: #e8e8e8;
+  background-color: var(--background-secondary);
 }
 
 .save-btn {
   padding: 0.5rem 1rem;
-  background-color: #1890ff;
+  background-color: var(--primary-color);
   color: white;
-  border: 1px solid #1890ff;
+  border: 1px solid var(--primary-color);
   border-radius: 4px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -183,38 +401,31 @@
 }
 
 .save-btn:hover {
-  background-color: #0070f3;
-  border-color: #0070f3;
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  transform: translateY(-2px);
 }
 
-.cache-section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #eee;
-}
-
-.cache-description {
-  margin: 0.5rem 0 1rem;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.clear-cache-btn {
-  padding: 0.75rem 1.5rem;
-  background-color: #ff4d4f;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.clear-cache-btn:hover {
-  background-color: #ff7875;
-}
-
-.clear-cache-btn:disabled {
-  background-color: #ffa39e;
-  cursor: not-allowed;
+/* Responsive adaptations */
+@media (max-width: 480px) {
+  .settings-content {
+    padding: 1rem;
+  }
+  
+  .theme-options {
+    flex-direction: column;
+  }
+  
+  .theme-option {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .theme-preview {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 0;
+    margin-right: 10px;
+  }
 }

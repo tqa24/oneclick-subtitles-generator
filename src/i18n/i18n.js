@@ -3,6 +3,8 @@ import { initReactI18next } from 'react-i18next';
 
 // Import translations
 import enTranslation from './locales/en.json';
+import koTranslation from './locales/ko.json';
+import viTranslation from './locales/vi.json';
 
 // Configure i18next
 i18n
@@ -11,9 +13,15 @@ i18n
     resources: {
       en: {
         translation: enTranslation
+      },
+      ko: {
+        translation: koTranslation
+      },
+      vi: {
+        translation: viTranslation
       }
     },
-    lng: 'en', // default language
+    lng: localStorage.getItem('preferred_language') || 'en', // use stored preference or default to English
     fallbackLng: 'en', // fallback language
     interpolation: {
       escapeValue: false // react already safes from xss
