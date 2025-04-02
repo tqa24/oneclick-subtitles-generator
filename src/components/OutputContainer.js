@@ -77,6 +77,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               onLyricClick={handleLyricClick}
               onUpdateLyrics={handleUpdateLyrics}
               allowEditing={true}
+              duration={videoDuration}
             />
           </div>
         </>
