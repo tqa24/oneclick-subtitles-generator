@@ -24,94 +24,67 @@
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
-.generate-btn {
-  display: block;
-  width: 100%;
-  padding: 1rem;
+.buttons-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
   margin: 1.5rem 0;
-  background-color: var(--primary-color);
+}
+
+.buttons-container .generate-btn {
+  width: auto;
+  flex: 1;
+  margin: 0;
+}
+
+.buttons-container .retry-gemini-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 1rem 1.5rem;
+  background-color: #10a37f; /* Gemini green color */
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(16, 163, 127, 0.3);
+  white-space: nowrap;
 }
 
-.generate-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.5);
-  opacity: 0;
-  border-radius: 100%;
-  transform: scale(1, 1) translate(-50%, -50%);
-  transform-origin: 50% 50%;
-}
-
-.generate-btn:hover {
-  background-color: var(--secondary-color);
+.buttons-container .retry-gemini-btn:hover {
+  background-color: #0c8d6e;
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px var(--shadow-color);
+  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.4);
 }
 
-.generate-btn:active::after {
-  animation: ripple 0.8s ease-out;
-}
-
-.generate-btn:disabled {
-  background-color: var(--text-muted);
+.buttons-container .retry-gemini-btn:disabled {
+  background-color: rgba(16, 163, 127, 0.5);
+  cursor: not-allowed;
   transform: none;
   box-shadow: none;
-  cursor: not-allowed;
 }
 
-@keyframes ripple {
-  0% {
-    transform: scale(0, 0);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(100, 100);
-    opacity: 0;
-  }
+.buttons-container .retry-gemini-btn svg {
+  stroke: white;
+  transition: transform 0.3s ease;
 }
 
-@keyframes success-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(var(--primary-color-rgb), 0); }
-  100% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0); }
+.buttons-container .retry-gemini-btn:hover svg {
+  transform: rotate(180deg);
 }
 
-/* Responsive adaptations */
-@media (max-width: 768px) {
-  .app-main {
-    padding: 1rem;
+@media (max-width: 640px) {
+  .buttons-container {
+    flex-direction: column;
   }
   
-  .app-content {
-    padding: 1.5rem;
-    border-radius: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .app-main {
-    padding: 0.5rem;
-  }
-  
-  .app-content {
-    padding: 1rem;
-  }
-  
-  .generate-btn {
-    padding: 0.8rem;
-    font-size: 1rem;
+  .buttons-container .generate-btn,
+  .buttons-container .retry-gemini-btn {
+    width: 100%;
   }
 }

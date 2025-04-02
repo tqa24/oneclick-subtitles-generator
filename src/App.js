@@ -584,7 +584,7 @@ function App() {
         
         <div className="buttons-container">
           <button 
-            className="generate-btn pulse"
+            className="generate-btn"
             onClick={generateSubtitles}
             disabled={isGenerating || !validateInput()}
           >
