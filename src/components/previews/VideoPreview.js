@@ -23,8 +23,21 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   // Initialize video source
   useEffect(() => {
     const loadVideo = async () => {
+      // Reset video state when source changes
+      setIsLoaded(false);
+      setVideoUrl('');
+      setError('');
+      
       if (!videoSource) {
-        // Try to load from localStorage as fallback
+        // First check for a locally uploaded file
+        const localFileUrl = localStorage.getItem('current_file_url');
+        if (localFileUrl) {
+          console.log('Loading local file URL:', localFileUrl);
+          setVideoUrl(localFileUrl);
+          return;
+        }
+        
+        // If no local file, try to load from YouTube URL in localStorage
         const savedVideoUrl = localStorage.getItem('current_video_url');
         if (savedVideoUrl) {
           await processVideoUrl(savedVideoUrl);

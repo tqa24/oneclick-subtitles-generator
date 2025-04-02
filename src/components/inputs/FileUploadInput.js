@@ -48,6 +48,13 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile }) => {
     
     if (file) {
       if (validateFile(file)) {
+        // Clear previous video URL from localStorage when uploading a new file
+        localStorage.removeItem('current_video_url');
+        
+        // Create a local object URL for the file to be used in video preview
+        const objectUrl = URL.createObjectURL(file);
+        localStorage.setItem('current_file_url', objectUrl);
+        
         setUploadedFile(file);
         displayFileInfo(file);
       } else {
