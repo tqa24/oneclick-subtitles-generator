@@ -281,7 +281,7 @@ function App() {
         if (cachedSubtitles) {
           console.log('Loading subtitles from cache for ID:', cacheId);
           setSubtitlesData(cachedSubtitles);
-          setStatus({ message: 'Subtitles loaded from cache!', type: 'success' });
+          setStatus({ message: t('output.subtitlesLoadedFromCache'), type: 'success' });
           setIsGenerating(false);
           return;
         }

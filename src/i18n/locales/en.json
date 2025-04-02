@@ -25,6 +25,7 @@
   "output": {
     "processingVideo": "Processing. This may take a few minutes...",
     "generationSuccess": "Subtitles generated successfully!",
+    "subtitlesLoadedFromCache": "Subtitles loaded from cache!",
     "videoPreview": "Video Preview with Subtitles",
     "subtitlesPreview": "Subtitle Preview",
     "downloadSrt": "Download SRT",

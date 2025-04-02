@@ -25,6 +25,7 @@
   "output": {
     "processingVideo": "Đang xử lý. Có thể mất vài phút...",
     "generationSuccess": "Phụ đề đã được tạo thành công!",
+    "subtitlesLoadedFromCache": "Đã tải phụ đề từ bộ nhớ đệm!",
     "videoPreview": "Xem trước video với phụ đề",
     "subtitlesPreview": "Xem trước phụ đề",
     "downloadSrt": "Tải xuống SRT",
