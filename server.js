@@ -50,7 +50,7 @@ app.get('/api/video-exists/:videoId', (req, res) => {
 
 // API endpoint to download a YouTube video
 app.post('/api/download-video', async (req, res) => {
-  const { videoId, quality = '18' } = req.body; // 18 = 360p, 22 = 720p, 137 = 1080p (video only)
+  const { videoId } = req.body;
   
   if (!videoId) {
     return res.status(400).json({ error: 'Video ID is required' });
@@ -68,35 +68,68 @@ app.post('/api/download-video', async (req, res) => {
   }
   
   try {
+    console.log(`Downloading video: ${videoId}`);
     const videoURL = `https://www.youtube.com/watch?v=${videoId}`;
     
-    // Check if video exists and is downloadable
+    // Get video info
     const info = await ytdl.getInfo(videoURL);
     if (!info) {
       return res.status(404).json({ error: 'Video not found or not available' });
     }
     
-    console.log(`Downloading video: ${info.videoDetails.title} (${videoId})`);
+    console.log(`Found video: ${info.videoDetails.title}`);
     
-    // Downloading with a specific quality, or fallback to highest quality with audio
-    const stream = ytdl(videoURL, {
-      quality: quality,
-      filter: 'audioandvideo'
+    // Find the best mp4 format with both audio and video
+    // We're prioritizing mp4 with audio+video for maximum compatibility
+    const formats = ytdl.filterFormats(info.formats, 'videoandaudio');
+    const mp4Formats = formats.filter(format => format.container === 'mp4');
+    
+    // Sort by quality (height) in descending order
+    mp4Formats.sort((a, b) => {
+      const qualityA = a.height || 0;
+      const qualityB = b.height || 0;
+      return qualityB - qualityA;
     });
     
-    // Create a write stream for the downloaded video
+    // Choose a medium quality for faster download and better compatibility
+    // (not too high res to avoid timeouts, not too low res to maintain decent quality)
+    let selectedFormat;
+    
+    // Try to find a medium quality format first (360p or 480p)
+    const mediumFormats = mp4Formats.filter(format => 
+      format.height >= 360 && format.height <= 480);
+    
+    if (mediumFormats.length > 0) {
+      selectedFormat = mediumFormats[0];
+    } else if (mp4Formats.length > 0) {
+      // If no medium quality, take the lowest available quality
+      mp4Formats.sort((a, b) => (a.height || 0) - (b.height || 0));
+      selectedFormat = mp4Formats[0];
+    } else if (formats.length > 0) {
+      // If no mp4 format available, take any format with both audio and video
+      selectedFormat = formats[0];
+    } else {
+      return res.status(400).json({ error: 'No suitable video format found' });
+    }
+    
+    console.log(`Selected format: ${selectedFormat.qualityLabel || selectedFormat.quality}, container: ${selectedFormat.container}`);
+    
+    // Download the video
+    const stream = ytdl.downloadFromInfo(info, { format: selectedFormat });
     const writer = fs.createWriteStream(videoPath);
     
     // Handle download events
     let downloadedBytes = 0;
-    const totalBytes = parseInt(info.formats.find(format => format.itag === parseInt(quality))?.contentLength) || 0;
+    let totalBytes = parseInt(selectedFormat.contentLength) || 0;
     
     stream.on('data', (chunk) => {
       downloadedBytes += chunk.length;
       if (totalBytes > 0) {
         const progress = (downloadedBytes / totalBytes) * 100;
-        // Just log for now, we could implement WebSockets for real-time progress updates
-        console.log(`Download progress: ${Math.round(progress)}%`);
+        // Log progress every 1MB
+        if (downloadedBytes % (1024 * 1024) < chunk.length) {
+          console.log(`Download progress: ${Math.round(progress)}%, ${(downloadedBytes/(1024*1024)).toFixed(2)}MB`);
+        }
       }
     });
     
@@ -116,7 +149,33 @@ app.post('/api/download-video', async (req, res) => {
     // Handle errors during download
     writer.on('error', (err) => {
       console.error('Error writing file:', err);
+      
+      // Clean up incomplete file
+      try {
+        if (fs.existsSync(videoPath)) {
+          fs.unlinkSync(videoPath);
+        }
+      } catch (e) {
+        console.error('Error cleaning up incomplete file:', e);
+      }
+      
       res.status(500).json({ error: 'Failed to download video' });
+    });
+    
+    // Handle errors in ytdl stream
+    stream.on('error', (err) => {
+      console.error('Error in download stream:', err);
+      
+      // Clean up incomplete file
+      try {
+        if (fs.existsSync(videoPath)) {
+          fs.unlinkSync(videoPath);
+        }
+      } catch (e) {
+        console.error('Error cleaning up incomplete file:', e);
+      }
+      
+      res.status(500).json({ error: 'Failed to download video stream' });
     });
     
   } catch (error) {

@@ -6,7 +6,7 @@
 const downloadQueue = {};
 
 // Server URL for the local YouTube download server
-const SERVER_URL = 'http://localhost:3003';
+const SERVER_URL = 'http://localhost:3004';
 
 /**
  * Starts downloading a YouTube video to the local videos folder
@@ -61,10 +61,7 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          videoId: videoId,
-          quality: '18' // Using 360p for faster downloads and compatibility
-        }),
+        body: JSON.stringify({ videoId }),
       });
       
       if (!downloadResponse.ok) {
@@ -84,10 +81,6 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
       console.error('Error in background download process:', error);
       downloadQueue[videoId].status = 'error';
       downloadQueue[videoId].error = error.message;
-      
-      // Use a YouTube thumbnail as fallback for UI
-      downloadQueue[videoId].url = `https://img.youtube.com/vi/${videoId}/0.jpg`;
-      downloadQueue[videoId].isImage = true;
     }
   })();
   
@@ -162,12 +155,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) =>
       
       if (++attempts >= maxAttempts) {
         clearInterval(checkInterval);
-        // If timeout reached, return whatever we have or reject
-        if (status.url) {
-          resolve(status.url);
-        } else {
-          reject(new Error('Download timeout exceeded'));
-        }
+        reject(new Error('Download timeout exceeded'));
       }
     }, 500);
   });
