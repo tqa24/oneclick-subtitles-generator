@@ -49,25 +49,31 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   // Display formatted subtitles or edited subtitles
   const displaySubtitles = subtitlesData;
   
+  // Only render if there's a status message or subtitles data
+  if (!status.message && !subtitlesData) {
+    return null;
+  }
+
   return (
     <div className="output-container">
-      <div className={`status ${status.type}`}>{status.message}</div>
+      {status.message && (
+        <div className={`status ${status.type}`}>{status.message}</div>
+      )}
       
-      {displaySubtitles && (
+      {subtitlesData && (
         <>
-          {/* Video Preview with Subtitles - Always shown */}
           <div className="preview-section">
             <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
             
             <VideoPreview 
               currentTime={currentTabIndex}
               setCurrentTime={setCurrentTabIndex}
-              subtitle={displaySubtitles.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
+              subtitle={subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
               videoSource={videoSource}
             />
             
             <LyricsDisplay 
-              matchedLyrics={formatSubtitlesForLyricsDisplay(displaySubtitles)}
+              matchedLyrics={formatSubtitlesForLyricsDisplay(subtitlesData)}
               currentTime={currentTabIndex}
               onLyricClick={handleLyricClick}
               onUpdateLyrics={handleUpdateLyrics}

@@ -562,39 +562,33 @@ function App() {
           apiKeysSet={apiKeysSet}
         />
         
-        <div className="buttons-container">
-          <button 
-            className="generate-btn"
-            onClick={generateSubtitles}
-            disabled={isGenerating || !validateInput()}
-          >
-            {isGenerating ? t('output.processingVideo') : t('header.tagline')}
-          </button>
-          
-          {(subtitlesData || status.type === 'error') && !isGenerating && (
+        {validateInput() && (
+          <div className="buttons-container">
             <button 
-              className="retry-gemini-btn" 
-              onClick={retryGeminiRequest}
+              className="generate-btn"
+              onClick={generateSubtitles}
               disabled={isGenerating}
-              title={t('output.retryGeminiTooltip', 'Request a new transcription from Gemini, ignoring cached results')}
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M1 4v6h6"></path>
-                <path d="M23 20v-6h-6"></path>
-                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-              </svg>
-              {t('output.retryGemini', 'Retry Gemini Request')}
+              {isGenerating ? t('output.processingVideo') : t('header.tagline')}
             </button>
-          )}
-        </div>
-        
-        <OutputContainer 
-          status={status}
-          subtitlesData={subtitlesData}
-          selectedVideo={selectedVideo}
-          uploadedFile={uploadedFile}
-          isGenerating={isGenerating}
-        />
+            
+            {(subtitlesData || status.type === 'error') && !isGenerating && (
+              <button 
+                className="retry-gemini-btn" 
+                onClick={retryGeminiRequest}
+                disabled={isGenerating}
+                title={t('output.retryGeminiTooltip', 'Request a new transcription from Gemini, ignoring cached results')}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <path d="M1 4v6h6"></path>
+                  <path d="M23 20v-6h-6"></path>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                </svg>
+                {t('output.retryGemini', 'Retry Gemini Request')}
+              </button>
+            )}
+          </div>
+        )}
       </main>
       
       {showSettings && (
