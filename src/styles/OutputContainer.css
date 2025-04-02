@@ -307,45 +307,6 @@
   transition: background-color var(--transition-speed);
 }
 
-.retry-gemini-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0.75rem 1.5rem;
-  background-color: #10a37f; /* Gemini green color */
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(16, 163, 127, 0.3);
-}
-
-.retry-gemini-btn:hover {
-  background-color: #0c8d6e;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.4);
-}
-
-.retry-gemini-btn:disabled {
-  background-color: rgba(16, 163, 127, 0.5);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.retry-gemini-btn svg {
-  stroke: white;
-  transition: transform 0.3s ease;
-}
-
-.retry-gemini-btn:hover svg {
-  transform: rotate(180deg);
-}
-
 .retry-hint {
   font-size: 0.85rem;
   color: var(--text-secondary);

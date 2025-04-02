@@ -32,46 +32,66 @@
   margin: 1.5rem 0;
 }
 
-.buttons-container .generate-btn {
-  width: auto;
-  flex: 1;
-  margin: 0;
-}
-
+.buttons-container .generate-btn,
 .buttons-container .retry-gemini-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 1rem 1.5rem;
-  background-color: #10a37f; /* Gemini green color */
-  color: white;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(16, 163, 127, 0.3);
+  box-shadow: 0 2px 6px var(--shadow-color);
   white-space: nowrap;
 }
 
-.buttons-container .retry-gemini-btn:hover {
-  background-color: #0c8d6e;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 163, 127, 0.4);
+.buttons-container .generate-btn {
+  flex: 1;
+  background-color: var(--primary-color);
+  color: white;
 }
 
+.buttons-container .retry-gemini-btn {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.buttons-container .generate-btn:hover,
+.buttons-container .retry-gemini-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.buttons-container .generate-btn:hover {
+  background-color: var(--primary-color-dark, #0056b3);
+}
+
+.buttons-container .retry-gemini-btn:hover {
+  background-color: var(--secondary-color-dark, #0c8d6e);
+}
+
+.buttons-container .generate-btn:disabled,
 .buttons-container .retry-gemini-btn:disabled {
-  background-color: rgba(16, 163, 127, 0.5);
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
+.buttons-container .generate-btn svg,
 .buttons-container .retry-gemini-btn svg {
+  width: 18px;
+  height: 18px;
   stroke: white;
   transition: transform 0.3s ease;
+}
+
+.buttons-container .generate-btn:hover svg {
+  transform: translateY(-2px);
 }
 
 .buttons-container .retry-gemini-btn:hover svg {
