@@ -8,6 +8,9 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
   const isPanning = useRef(false);
   const lastPanX = useRef(0);
 
+  // Track whether we just finished panning
+  const justPanned = useRef(false);
+
   // Calculate visible time range
   const getVisibleTimeRange = useCallback(() => {
     const maxLyricTime = lyrics.length > 0 
@@ -147,6 +150,7 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
     if (e.button === 0) { // Left click only
       e.preventDefault(); // Prevent text selection
       isPanning.current = true;
+      justPanned.current = false; // Reset the panned state
       lastPanX.current = e.clientX;
       e.currentTarget.style.cursor = 'grabbing';
     }
@@ -161,6 +165,10 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
     const rect = timelineRef.current.getBoundingClientRect();
     const deltaX = e.clientX - lastPanX.current;
     const timeDelta = (deltaX / rect.width) * (visibleEnd - visibleStart);
+    
+    if (Math.abs(deltaX) > 2) { // If we've moved more than 2 pixels
+      justPanned.current = true; // Mark that we've panned
+    }
     
     // Calculate new pan offset
     const newPanOffset = Math.max(0, panOffset - timeDelta);
@@ -192,11 +200,11 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
       if (timelineRef.current) {
         timelineRef.current.style.cursor = 'grab';
       }
-      
-      // Add a small delay before allowing zoom
+
+      // Clear the panned state after a short delay
       setTimeout(() => {
-        isPanning.current = false;
-      }, 50);
+        justPanned.current = false;
+      }, 100);
     }
   };
 
@@ -240,8 +248,8 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
 
   // Handle timeline click with zoom consideration
   const handleTimelineClick = (e) => {
-    // Prevent click event if we were just panning
-    if (!timelineRef.current || !duration || !onTimelineClick || isPanning.current) {
+    // Prevent seeking if we just finished panning
+    if (!timelineRef.current || !duration || !onTimelineClick || justPanned.current) {
       return;
     }
     
