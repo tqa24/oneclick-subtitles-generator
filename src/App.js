@@ -6,6 +6,7 @@ import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
 import { startYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
+import { generateFileCacheId } from './utils/cacheUtils';
 
 function App() {
   // We'll use t in error messages, so we need to keep it
@@ -74,6 +75,53 @@ function App() {
     setStatus({ message: 'Settings saved successfully!', type: 'success' });
   };
 
+  // New function to check if cached subtitles exist
+  const checkCachedSubtitles = async (cacheId) => {
+    try {
+      const response = await fetch(`http://localhost:3004/api/subtitle-exists/${cacheId}`);
+      const data = await response.json();
+      return data.exists ? data.subtitles : null;
+    } catch (error) {
+      console.error('Error checking subtitle cache:', error);
+      return null;
+    }
+  };
+
+  // New function to save subtitles to cache
+  const saveSubtitlesToCache = async (cacheId, subtitles) => {
+    try {
+      const response = await fetch('http://localhost:3004/api/save-subtitles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cacheId,
+          subtitles
+        })
+      });
+      
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to save subtitles to cache:', result.error);
+      }
+    } catch (error) {
+      console.error('Error saving subtitles to cache:', error);
+    }
+  };
+
+  // Generate a cache ID based on the input
+  const generateCacheId = (input, inputType) => {
+    if (inputType === 'youtube') {
+      // For YouTube videos, use the video ID as the cache ID
+      return extractYoutubeVideoId(input);
+    } else if (inputType === 'file') {
+      // For files, generate a hash of the file content
+      return generateFileCacheId(input);
+    }
+    return null;
+  };
+
   const generateSubtitles = async () => {
     // Validate API keys
     if (!apiKeysSet.gemini) {
@@ -102,10 +150,12 @@ function App() {
       // Prepare input based on active tab
       let input = null;
       let inputType = '';
+      let cacheId = null;
 
       if (activeTab === 'youtube-url' && selectedVideo) {
         input = selectedVideo.url;
         inputType = 'youtube';
+        cacheId = extractYoutubeVideoId(selectedVideo.url);
         
         // Start preloading YouTube video immediately
         preloadYouTubeVideo(selectedVideo.url);
@@ -113,6 +163,7 @@ function App() {
       } else if (activeTab === 'youtube-search' && selectedVideo) {
         input = selectedVideo.url;
         inputType = 'youtube';
+        cacheId = extractYoutubeVideoId(selectedVideo.url);
         
         // Start preloading YouTube video immediately
         preloadYouTubeVideo(selectedVideo.url);
@@ -120,11 +171,30 @@ function App() {
       } else if (activeTab === 'file-upload' && uploadedFile) {
         input = uploadedFile;
         inputType = isVideoFile(uploadedFile.type) ? 'video' : 'audio';
+        cacheId = await generateFileCacheId(uploadedFile);
       }
 
-      // Call the API service to generate subtitles
+      // Check for cached subtitles
+      if (cacheId) {
+        const cachedSubtitles = await checkCachedSubtitles(cacheId);
+        if (cachedSubtitles) {
+          console.log('Loading subtitles from cache for ID:', cacheId);
+          setSubtitlesData(cachedSubtitles);
+          setStatus({ message: 'Subtitles loaded from cache!', type: 'success' });
+          setIsGenerating(false);
+          return;
+        }
+      }
+
+      // Call the API service to generate subtitles if not cached
       const subtitles = await callGeminiApi(input, inputType);
       setSubtitlesData(subtitles);
+      
+      // Save to cache for future use
+      if (cacheId && subtitles && subtitles.length > 0) {
+        await saveSubtitlesToCache(cacheId, subtitles);
+      }
+      
       setStatus({ message: 'Subtitles generated successfully!', type: 'success' });
     } catch (error) {
       console.error('Error generating subtitles:', error);
@@ -254,21 +324,11 @@ function App() {
   };
 
   const saveDebugResponse = (response) => {
-    const debugData = {
-      timestamp: new Date().toISOString(),
-      response: response
-    };
-    const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `gemini-response-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    }, 0);
+    // Instead of downloading the file, we'll log it to console and ensure it's saved to cache
+    console.log('Gemini API response received:', response);
+    
+    // The actual response data will be saved through the saveSubtitlesToCache function
+    // No need to download files anymore
   };
 
   const parseGeminiResponse = (response) => {

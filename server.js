@@ -2,6 +2,7 @@
  * Local server for downloading YouTube videos
  * This server handles downloading YouTube videos to a local 'videos' directory
  * Now using yt-dlp (Python) for more reliable downloads
+ * Also handles caching of subtitles to avoid repeated Gemini API calls
  */
 
 const express = require('express');
@@ -19,6 +20,13 @@ if (!fs.existsSync(VIDEOS_DIR)) {
   console.log(`Created videos directory at ${VIDEOS_DIR}`);
 }
 
+// Ensure subtitles directory exists
+const SUBTITLES_DIR = path.join(__dirname, 'subtitles');
+if (!fs.existsSync(SUBTITLES_DIR)) {
+  fs.mkdirSync(SUBTITLES_DIR, { recursive: true });
+  console.log(`Created subtitles directory at ${SUBTITLES_DIR}`);
+}
+
 // Enable CORS for the frontend application
 app.use(cors({
   origin: 'http://localhost:3005', // Your React app's address
@@ -26,10 +34,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Increased limit for base64 encoded files
 
 // Serve the videos directory
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
+
+// Serve the subtitles directory (if needed)
+app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 
 // API endpoint to check if a video exists
 app.get('/api/video-exists/:videoId', (req, res) => {
@@ -46,6 +57,58 @@ app.get('/api/video-exists/:videoId', (req, res) => {
     });
   } else {
     res.json({ exists: false });
+  }
+});
+
+// API endpoint to check if subtitles exist
+app.get('/api/subtitle-exists/:cacheId', (req, res) => {
+  const { cacheId } = req.params;
+  const subtitlePath = path.join(SUBTITLES_DIR, `${cacheId}.json`);
+  
+  if (fs.existsSync(subtitlePath)) {
+    console.log(`Cached subtitles found for ${cacheId}`);
+    try {
+      const subtitlesData = JSON.parse(fs.readFileSync(subtitlePath, 'utf8'));
+      res.json({
+        exists: true,
+        subtitles: subtitlesData
+      });
+    } catch (error) {
+      console.error('Error reading cached subtitles:', error);
+      res.json({ exists: false });
+    }
+  } else {
+    console.log(`No cached subtitles found for ${cacheId}`);
+    res.json({ exists: false });
+  }
+});
+
+// API endpoint to save subtitles
+app.post('/api/save-subtitles', (req, res) => {
+  const { cacheId, subtitles } = req.body;
+  
+  if (!cacheId || !subtitles) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Missing required data (cacheId or subtitles)' 
+    });
+  }
+  
+  try {
+    const subtitlePath = path.join(SUBTITLES_DIR, `${cacheId}.json`);
+    fs.writeFileSync(subtitlePath, JSON.stringify(subtitles, null, 2));
+    console.log(`Saved subtitles to cache: ${cacheId}`);
+    
+    res.json({
+      success: true,
+      message: 'Subtitles saved to cache successfully'
+    });
+  } catch (error) {
+    console.error('Error saving subtitles to cache:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to save subtitles to cache'
+    });
   }
 });
 
@@ -167,4 +230,5 @@ app.post('/api/download-video', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`YouTube download server running on port ${PORT}`);
   console.log(`Videos directory: ${VIDEOS_DIR}`);
+  console.log(`Subtitles directory: ${SUBTITLES_DIR}`);
 });
