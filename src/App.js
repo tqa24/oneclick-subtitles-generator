@@ -538,6 +538,15 @@ function App() {
     };
   }, []);
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    // Reset states when changing tabs
+    setSelectedVideo(null);
+    setUploadedFile(null);
+    setSubtitlesData(null);
+    setStatus({ message: '', type: '' });
+  };
+
   return (
     <div className="app-container">
       <Header 
@@ -546,7 +555,7 @@ function App() {
       
       <InputMethods 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         selectedVideo={selectedVideo}
         setSelectedVideo={setSelectedVideo}
         uploadedFile={uploadedFile}

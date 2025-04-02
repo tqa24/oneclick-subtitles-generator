@@ -17,7 +17,7 @@ const MODEL_CONFIG = {
 };
 
 // File upload configuration
-const MAX_FILE_SIZE_MB = 20; // Maximum file size in MB for inline uploads
+const MAX_FILE_SIZE_MB = 200; // Maximum file size in MB for inline uploads
 
 // Supported file formats
 const SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"];

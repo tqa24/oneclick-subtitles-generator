@@ -17,7 +17,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
       case 'file-upload':
         return <FileUploadInput onVideoSelect={onVideoSelect} uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} />;
       default:
-        return <YoutubeUrlInput onVideoSelect={onVideoSelect} selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} />;
+        return null;
     }
   };
 

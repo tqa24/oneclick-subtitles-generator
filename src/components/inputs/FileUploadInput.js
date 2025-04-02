@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const FileUploadInput = ({ uploadedFile, setUploadedFile }) => {
+const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   const { t } = useTranslation();
   const [fileInfo, setFileInfo] = useState(null);
   const [error, setError] = useState('');
   
   // Maximum file size in MB
-  const MAX_FILE_SIZE_MB = 20;
+  const MAX_FILE_SIZE_MB = 200;
   
   // Supported file formats
   const SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"];
@@ -48,18 +48,25 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile }) => {
     
     if (file) {
       if (validateFile(file)) {
-        // Clear previous video URL from localStorage when uploading a new file
+        // Clear ALL video-related state and storage
         localStorage.removeItem('current_video_url');
+        localStorage.removeItem('current_file_url');
         
-        // Create a local object URL for the file to be used in video preview
+        // Create a local object URL for the file
         const objectUrl = URL.createObjectURL(file);
         localStorage.setItem('current_file_url', objectUrl);
+        
+        // Clear any selected YouTube video state via parent callback
+        if (onVideoSelect) {
+          onVideoSelect(null);
+        }
         
         setUploadedFile(file);
         displayFileInfo(file);
       } else {
         setUploadedFile(null);
         setFileInfo(null);
+        localStorage.removeItem('current_file_url');
       }
     }
   };
