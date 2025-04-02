@@ -118,9 +118,9 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
           <div className="url-examples">
             <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
             <ul>
-              <li>https://www.youtube.com/watch?v=dQw4w9WgXcQ</li>
-              <li>https://youtu.be/dQw4w9WgXcQ</li>
-              <li>youtube.com/watch?v=dQw4w9WgXcQ</li>
+              <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+              <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
+              <li>{t('youtubeUrlInput.example3', 'youtube.com/watch?v=dQw4w9WgXcQ')}</li>
             </ul>
           </div>
         </div>
