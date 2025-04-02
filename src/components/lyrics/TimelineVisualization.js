@@ -13,8 +13,6 @@ const TimelineVisualization = ({
   const lastTimeRef = useRef(0);
   const isPanning = useRef(false);
   const lastPanX = useRef(0);
-
-  // Track whether we just finished panning
   const justPanned = useRef(false);
 
   // Calculate visible time range
@@ -214,43 +212,6 @@ const TimelineVisualization = ({
     }
   };
 
-  // Improve zoom behavior to respect boundaries
-  const handleWheel = (e) => {
-    // Prevent zooming while panning or immediately after panning
-    if (isPanning.current) return;
-    
-    e.preventDefault();
-    
-    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
-    const rect = timelineRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const timeAtMouse = visibleStart + (mouseX / rect.width) * (visibleEnd - visibleStart);
-    
-    let newZoom = zoom;
-    if (e.deltaY < 0) {
-      // When zooming in, ensure we don't zoom too much at the boundaries
-      newZoom = Math.min(50, zoom * 1.1);
-    } else {
-      // When zooming out, prevent zooming out if we're showing everything
-      if (visibleStart <= 0 && visibleEnd >= timelineEnd && zoom <= 1) {
-        return;
-      }
-      newZoom = Math.max(1, zoom / 1.1);
-    }
-    
-    // Only update zoom if it changed
-    if (newZoom !== zoom) {
-      const newVisibleDuration = (visibleEnd - visibleStart) * (zoom / newZoom);
-      const newStart = timeAtMouse - (mouseX / rect.width) * newVisibleDuration;
-      
-      // Ensure the new pan offset doesn't exceed boundaries
-      const maxPanOffset = timelineEnd - (timelineEnd / newZoom);
-      const boundedPanOffset = Math.max(0, Math.min(maxPanOffset, newStart));
-      
-      setPanOffset(boundedPanOffset);
-    }
-  };
-
   // Handle timeline click with zoom consideration
   const handleTimelineClick = (e) => {
     // Prevent seeking if we just finished panning
@@ -273,7 +234,6 @@ const TimelineVisualization = ({
     <div className="timeline-container">
       <canvas 
         ref={timelineRef}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
