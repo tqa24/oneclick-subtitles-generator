@@ -404,18 +404,52 @@ function App() {
     
     console.log('Raw text from Gemini:', text);
     
-    // Parse the response text to extract subtitles
     const subtitles = [];
-    
-    // Format with milliseconds: [0m0s482ms - 0m1s542ms ]
-    const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
-    
-    let match;
     let hasTimestamps = false;
+    let match;
+
+    // 1. Try new timestamp format: [0m2s - 0m2s]
+    const regexTimestamps = /\[(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\]\s*([^\[\n]*?)(?=\n*\[|$)/gs;
     
+    while ((match = regexTimestamps.exec(text)) !== null) {
+        hasTimestamps = true;
+        const startMin = parseInt(match[1]);
+        const startSec = parseInt(match[2]);
+        const endMin = parseInt(match[3]);
+        const endSec = parseInt(match[4]);
+        const content = match[5].trim();
+        
+        // Only add subtitles with actual content
+        if (content) {
+            subtitles.push({
+                id: subtitles.length + 1,
+                start: startMin * 60 + startSec,
+                end: endMin * 60 + endSec,
+                text: content
+            });
+        }
+    }
+
+    if (subtitles.length > 0) {
+        // Remove duplicate or overlapping subtitles
+        const uniqueSubtitles = [];
+        const seen = new Set();
+        
+        subtitles.sort((a, b) => a.start - b.start).forEach(sub => {
+            const key = `${sub.start}-${sub.end}-${sub.text}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueSubtitles.push(sub);
+            }
+        });
+        
+        return uniqueSubtitles;
+    }
+
+    // 2. Try format with milliseconds: [0m0s482ms - 0m1s542ms]
+    const regexWithMs = /\[\s*(\d+)m(\d+)s(\d+)ms\s*-\s*(\d+)m(\d+)s(\d+)ms\s*\]\s*(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
     while ((match = regexWithMs.exec(text)) !== null) {
         hasTimestamps = true;
-        // Extract time components with milliseconds
         const startMin = parseInt(match[1]);
         const startSec = parseInt(match[2]);
         const startMs = parseInt(match[3]);
@@ -423,11 +457,9 @@ function App() {
         const endSec = parseInt(match[5]);
         const endMs = parseInt(match[6]);
         
-        // Format times as MM:SS.mmm for internal storage (will be converted to proper SRT format later)
         const startTime = startMin * 60 + startSec + startMs / 1000;
         const endTime = endMin * 60 + endSec + endMs / 1000;
         
-        // Extract and clean the subtitle text
         let subtitleText = match[7].trim();
         
         subtitles.push({
@@ -438,24 +470,20 @@ function App() {
         });
     }
     
-    // If no subtitles were found with the milliseconds pattern, try the original format
+    // 3. Try original range format: [0m0s - 0m29s]
     if (subtitles.length === 0) {
-        // Original format: [ 0m0s - 0m29s ]
         const regexOriginal = /\[\s*(\d+)m(\d+)s\s*-\s*(\d+)m(\d+)s\s*\](?:\n|\r\n?)+(.*?)(?=\[\s*\d+m\d+s|\s*$)/gs;
         
         while ((match = regexOriginal.exec(text)) !== null) {
             hasTimestamps = true;
-            // Extract time components
             const startMin = parseInt(match[1]);
             const startSec = parseInt(match[2]);
             const endMin = parseInt(match[3]);
             const endSec = parseInt(match[4]);
             
-            // Convert to seconds for internal representation
             const startTime = startMin * 60 + startSec;
             const endTime = endMin * 60 + endSec;
             
-            // Extract and clean the subtitle text
             let subtitleText = match[5].trim();
             
             subtitles.push({
@@ -467,15 +495,45 @@ function App() {
         }
     }
     
+    // 4. Try single timestamp format: [0m2s]
+    if (subtitles.length === 0) {
+        const regexSingleTimestamp = /\[(\d+)m(\d+)s\]\s*([^\[\n]*?)(?=\n*\[|$)/gs;
+        const matches = [];
+        
+        while ((match = regexSingleTimestamp.exec(text)) !== null) {
+            const min = parseInt(match[1]);
+            const sec = parseInt(match[2]);
+            const content = match[3].trim();
+            
+            if (content && !content.match(/^\d+\.\d+s$/)) {
+                hasTimestamps = true;
+                matches.push({
+                    startTime: min * 60 + sec,
+                    text: content
+                });
+            }
+        }
+    
+        if (matches.length > 0) {
+            matches.forEach((curr, index) => {
+                const next = matches[index + 1];
+                const endTime = next ? next.startTime : curr.startTime + 4;
+    
+                subtitles.push({
+                    id: subtitles.length + 1,
+                    start: curr.startTime,
+                    end: endTime,
+                    text: curr.text
+                });
+            });
+        }
+    }
+    
     // If no explicit timestamps found, create approximate timestamps based on line breaks
     if (!hasTimestamps) {
         console.warn('No timestamps found in response, generating approximate timestamps');
         
-        // Split the text by line breaks
         const lines = text.split(/\n+/).filter(line => line.trim() !== '');
-        
-        // Calculate average line duration based on typical song length (estimated 3 minutes for songs)
-        // This will give each line roughly equal time distribution
         const totalLines = lines.length;
         const estimatedDurationSec = 180; // 3 minutes in seconds
         const avgLineDurationSec = estimatedDurationSec / totalLines;
