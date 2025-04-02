@@ -299,7 +299,21 @@ function App() {
       setStatus({ message: t('output.generationSuccess'), type: 'success' });
     } catch (error) {
       console.error('Error generating subtitles:', error);
-      setStatus({ message: `Error: ${error.message}`, type: 'error' });
+      try {
+        // Try to parse the error if it's our special format error
+        const errorData = JSON.parse(error.message);
+        if (errorData.type === 'unrecognized_format') {
+          setStatus({
+            message: `${errorData.message}\n\nRaw text from Gemini:\n${errorData.rawText}`,
+            type: 'error'
+          });
+        } else {
+          setStatus({ message: `Error: ${error.message}`, type: 'error' });
+        }
+      } catch {
+        // If error message isn't JSON, just show it directly
+        setStatus({ message: `Error: ${error.message}`, type: 'error' });
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -529,26 +543,13 @@ function App() {
         }
     }
     
-    // If no explicit timestamps found, create approximate timestamps based on line breaks
+    // If no timestamps were recognized, throw an error with the raw text
     if (!hasTimestamps) {
-        console.warn('No timestamps found in response, generating approximate timestamps');
-        
-        const lines = text.split(/\n+/).filter(line => line.trim() !== '');
-        const totalLines = lines.length;
-        const estimatedDurationSec = 180; // 3 minutes in seconds
-        const avgLineDurationSec = estimatedDurationSec / totalLines;
-        
-        lines.forEach((line, index) => {
-            const startTime = index * avgLineDurationSec;
-            const endTime = (index + 1) * avgLineDurationSec;
-            
-            subtitles.push({
-                id: index + 1,
-                start: startTime,
-                end: endTime,
-                text: line.trim()
-            });
-        });
+        throw new Error(JSON.stringify({
+            type: 'unrecognized_format',
+            message: 'Unrecognized subtitle format. Please add handling for this new format and try again.',
+            rawText: text
+        }));
     }
     
     console.log('Extracted subtitles:', subtitles);

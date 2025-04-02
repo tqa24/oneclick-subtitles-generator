@@ -149,7 +149,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
               </svg>
             </div>
             <div className="upload-text">
-              <h3>{t('fileUpload.dragDropText', 'Drag & Drop your file here')}</h3>
+              <h3>{t('fileUpload.dragDropText', 'Drag & Drop your Video or Audio here')}</h3>
               <p>{t('fileUpload.orText', 'or')}</p>
               <p className="browse-text">{t('fileUpload.browse', 'Click to browse files')}</p>
             </div>

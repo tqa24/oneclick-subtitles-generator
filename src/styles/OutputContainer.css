@@ -77,6 +77,10 @@
   background-color: var(--error-background);
   color: var(--error-color);
   border-left: 4px solid var(--error-color);
+  white-space: pre-wrap;
+  font-family: monospace;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .status.error::before {
