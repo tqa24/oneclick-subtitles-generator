@@ -220,6 +220,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     // Only seek if the difference is significant to avoid loops
     if (Math.abs(videoElement.currentTime - currentTime) > 0.1) {
       videoElement.currentTime = currentTime;
+      // Auto-play when seeking to a new time
+      videoElement.play().catch(err => {
+        // Ignore play() errors that might occur due to browser autoplay policies
+        console.warn('Auto-play failed:', err);
+      });
     }
   }, [currentTime, isLoaded]);
   

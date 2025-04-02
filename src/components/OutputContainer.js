@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
-import SubtitlesPreview from './previews/SubtitlesPreview';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 
@@ -164,12 +163,6 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, o
               onUpdateLyrics={handleUpdateLyrics}
               allowEditing={true}
             />
-          </div>
-          
-          {/* Subtitles Preview */}
-          <div className="preview-container">
-            <h3>{t('output.subtitlesPreview', 'Subtitle Preview')}</h3>
-            <SubtitlesPreview subtitles={displaySubtitles} />
           </div>
           
           {/* Download options */}
