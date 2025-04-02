@@ -1,10 +1,16 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 
-const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick }) => {
+const TimelineVisualization = ({ 
+  lyrics, 
+  currentTime, 
+  duration, 
+  onTimelineClick,
+  zoom,
+  panOffset,
+  setPanOffset
+}) => {
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
-  const [zoom, setZoom] = useState(1);
-  const [panOffset, setPanOffset] = useState(0);
   const isPanning = useRef(false);
   const lastPanX = useRef(0);
 
@@ -242,7 +248,6 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
       const boundedPanOffset = Math.max(0, Math.min(maxPanOffset, newStart));
       
       setPanOffset(boundedPanOffset);
-      setZoom(newZoom);
     }
   };
 
@@ -277,30 +282,6 @@ const TimelineVisualization = ({ lyrics, currentTime, duration, onTimelineClick 
         className="subtitle-timeline"
         style={{ cursor: isPanning.current ? 'grabbing' : 'grab' }}
       />
-      <div className="timeline-controls">
-        <button 
-          onClick={() => setZoom(Math.max(1, zoom / 1.5))}
-          disabled={zoom <= 1}
-        >
-          -
-        </button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <button 
-          onClick={() => setZoom(Math.min(50, zoom * 1.5))}
-          disabled={zoom >= 50}
-        >
-          +
-        </button>
-        <button 
-          onClick={() => {
-            setZoom(1);
-            setPanOffset(0);
-          }}
-          disabled={zoom === 1 && panOffset === 0}
-        >
-          Reset
-        </button>
-      </div>
     </div>
   );
 };

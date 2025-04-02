@@ -8,13 +8,43 @@ const LyricsHeader = ({
   canUndo,
   isAtOriginalState,
   onUndo,
-  onReset
+  onReset,
+  zoom,
+  setZoom,
+  panOffset,
+  setPanOffset
 }) => {
   const { t } = useTranslation();
 
   return (
     <div className="lyrics-header">
-      <h3>{t('lyrics.synchronizedLyrics', 'Synchronized Lyrics')}</h3>
+      <div className="zoom-controls">
+        <button 
+          onClick={() => setZoom(Math.max(1, zoom / 1.5))}
+          disabled={zoom <= 1}
+          title={t('timeline.zoomOut', 'Zoom out')}
+        >
+          -
+        </button>
+        <span>{Math.round(zoom * 100)}%</span>
+        <button 
+          onClick={() => setZoom(Math.min(50, zoom * 1.5))}
+          disabled={zoom >= 50}
+          title={t('timeline.zoomIn', 'Zoom in')}
+        >
+          +
+        </button>
+        <button 
+          onClick={() => {
+            setZoom(1);
+            setPanOffset(0);
+          }}
+          disabled={zoom === 1 && panOffset === 0}
+          title={t('timeline.resetZoom', 'Reset zoom')}
+        >
+          Reset
+        </button>
+      </div>
       
       {allowEditing && (
         <div className="editing-controls">

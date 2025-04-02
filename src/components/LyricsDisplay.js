@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
@@ -15,6 +15,8 @@ const LyricsDisplay = ({
   allowEditing = false 
 }) => {
   const { t } = useTranslation();
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState(0);
   
   const {
     lyrics,
@@ -69,6 +71,10 @@ const LyricsDisplay = ({
         isAtOriginalState={isAtOriginalState}
         onUndo={handleUndo}
         onReset={handleReset}
+        zoom={zoom}
+        setZoom={setZoom}
+        panOffset={panOffset}
+        setPanOffset={setPanOffset}
       />
       
       <TimelineVisualization 
@@ -76,6 +82,9 @@ const LyricsDisplay = ({
         currentTime={currentTime}
         duration={duration}
         onTimelineClick={onLyricClick}
+        zoom={zoom}
+        panOffset={panOffset}
+        setPanOffset={setPanOffset}
       />
       
       <div className="lyrics-container">
