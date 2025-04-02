@@ -21,7 +21,6 @@ function App() {
   const [subtitlesData, setSubtitlesData] = useState(null);
   const [status, setStatus] = useState({ message: '', type: '' });
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isPreloadingVideo, setIsPreloadingVideo] = useState(false);
   const preloadVideoFrameRef = useRef(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
@@ -128,17 +127,101 @@ function App() {
     }
   };
 
-  // Generate a cache ID based on the input
-  const generateCacheId = (input, inputType) => {
-    if (inputType === 'youtube') {
-      // For YouTube videos, use the video ID as the cache ID
-      return extractYoutubeVideoId(input);
-    } else if (inputType === 'file') {
-      // For files, generate a hash of the file content
-      return generateFileCacheId(input);
+  const validateInput = useCallback(() => {
+    if (activeTab === 'youtube-url') {
+      return selectedVideo !== null;
+    } else if (activeTab === 'youtube-search') {
+      return selectedVideo !== null;
+    } else if (activeTab === 'file-upload') {
+      return uploadedFile !== null;
     }
-    return null;
-  };
+    return false;
+  }, [activeTab, selectedVideo, uploadedFile]);
+
+  const callGeminiApi = useCallback(async (input, inputType) => {
+    const geminiApiKey = localStorage.getItem('gemini_api_key');
+    const MODEL = "gemini-2.5-pro-exp-03-25";
+    
+    let requestData = {
+      model: MODEL,
+      contents: []
+    };
+
+    if (inputType === 'youtube') {
+      requestData.contents = [
+        {
+          role: "user",
+          parts: [
+            { text: "Transcribe this video" },
+            { 
+              fileData: {
+                fileUri: input
+              }
+            }
+          ]
+        }
+      ];
+    } else if (inputType === 'video') {
+      const base64Data = await fileToBase64(input);
+      requestData.contents = [
+        {
+          role: "user",
+          parts: [
+            { text: "Transcribe this video" },
+            {
+              inlineData: {
+                mimeType: input.type,
+                data: base64Data
+              }
+            }
+          ]
+        }
+      ];
+    } else if (inputType === 'audio') {
+      const base64Data = await fileToBase64(input);
+      requestData.contents = [
+        {
+          role: "user",
+          parts: [
+            { text: "Transcribe this audio" },
+            {
+              inlineData: {
+                mimeType: input.type,
+                data: base64Data
+              }
+            }
+          ]
+        }
+      ];
+    }
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`, 
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      saveDebugResponse(data);
+      
+      return parseGeminiResponse(data);
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      throw new Error('Failed to generate subtitles. Please try again.');
+    }
+  }, []);
 
   const generateSubtitles = useCallback(async () => {
     // Validate API keys
@@ -220,9 +303,8 @@ function App() {
     } finally {
       setIsGenerating(false);
     }
-  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t]);
+  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t, callGeminiApi, validateInput]);
 
-  // Function to retry Gemini request (ignores cache)
   const retryGeminiRequest = useCallback(async () => {
     // Validate API keys
     if (!apiKeysSet.gemini) {
@@ -276,113 +358,11 @@ function App() {
     } finally {
       setIsGenerating(false);
     }
-  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t]);
-
-  const validateInput = () => {
-    if (activeTab === 'youtube-url') {
-      return selectedVideo !== null;
-    } else if (activeTab === 'youtube-search') {
-      return selectedVideo !== null;
-    } else if (activeTab === 'file-upload') {
-      return uploadedFile !== null;
-    }
-    return false;
-  };
+  }, [activeTab, selectedVideo, uploadedFile, apiKeysSet, t, callGeminiApi, validateInput]);
 
   const isVideoFile = (mimeType) => {
     const SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"];
     return SUPPORTED_VIDEO_FORMATS.includes(mimeType);
-  };
-
-  const callGeminiApi = async (input, inputType) => {
-    const geminiApiKey = localStorage.getItem('gemini_api_key');
-    const MODEL = "gemini-2.5-pro-exp-03-25";
-    
-    let requestData = {
-      model: MODEL,
-      contents: []
-    };
-
-    if (inputType === 'youtube') {
-      // YouTube URL case
-      requestData.contents = [
-        {
-          role: "user",
-          parts: [
-            { text: "Transcribe this video" },
-            { 
-              fileData: {
-                fileUri: input
-              }
-            }
-          ]
-        }
-      ];
-    } else if (inputType === 'video') {
-      // Uploaded video file case
-      const base64Data = await fileToBase64(input);
-      requestData.contents = [
-        {
-          role: "user",
-          parts: [
-            { text: "Transcribe this video" },
-            {
-              inlineData: {
-                mimeType: input.type,
-                data: base64Data
-              }
-            }
-          ]
-        }
-      ];
-    } else if (inputType === 'audio') {
-      // Uploaded audio file case
-      const base64Data = await fileToBase64(input);
-      requestData.contents = [
-        {
-          role: "user",
-          parts: [
-            { text: "Transcribe this audio" },
-            {
-              inlineData: {
-                mimeType: input.type,
-                data: base64Data
-              }
-            }
-          ]
-        }
-      ];
-    }
-
-    try {
-      // Call the Gemini API
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`, 
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData)
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      // Save debug response
-      saveDebugResponse(data);
-      
-      // Parse the response to extract subtitles
-      return parseGeminiResponse(data);
-    } catch (error) {
-      console.error('Error calling Gemini API:', error);
-      throw new Error('Failed to generate subtitles. Please try again.');
-    }
   };
 
   const fileToBase64 = (file) => {
@@ -541,11 +521,11 @@ function App() {
   
   // Cleanup function for the preloaded video
   useEffect(() => {
+    const currentFrame = preloadVideoFrameRef.current;
     return () => {
-      // Clean up the preloading iframe when component unmounts
-      if (preloadVideoFrameRef.current) {
+      if (currentFrame) {
         try {
-          document.body.removeChild(preloadVideoFrameRef.current);
+          document.body.removeChild(currentFrame);
         } catch (e) {
           console.error('Error removing preload iframe:', e);
         }

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeUrlInput = ({ selectedVideo, setSelectedVideo }) => {
+const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [isTitleEditable, setIsTitleEditable] = useState(false);
@@ -78,7 +77,6 @@ const YoutubeUrlInput = ({ selectedVideo, setSelectedVideo }) => {
             onChange={handleUrlChange}
             placeholder={t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., youtube.com/watch?v=...)')}
             className={`youtube-url-field ${error ? 'error-input' : ''}`}
-            disabled={isLoading}
           />
           {url && (
             <button 
