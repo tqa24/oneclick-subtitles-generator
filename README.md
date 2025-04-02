@@ -38,7 +38,15 @@ To start the development server:
 npm start
 ```
 
-This will launch the application on [http://localhost:3000](http://localhost:3000) in your default web browser.
+This will launch the application on [http://localhost:3005](http://localhost:3005) in your default web browser.
+
+To start both the frontend and backend servers:
+
+```bash
+npm run dev
+```
+
+This will start the React application on port 3005 and the server on port 3004.
 
 ## Building for Production
 

@@ -12,6 +12,8 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo }) => {
   const [editedSubtitles, setEditedSubtitles] = useState(null);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoSource, setVideoSource] = useState('');
+  const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   
   // Set video source when a video is selected
   useEffect(() => {
