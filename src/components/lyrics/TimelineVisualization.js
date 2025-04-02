@@ -14,20 +14,22 @@ const TimelineVisualization = ({
   const isPanning = useRef(false);
   const lastPanX = useRef(0);
   const justPanned = useRef(false);
+  const animationFrameRef = useRef(null);
+  const currentZoomRef = useRef(zoom);
 
-  // Calculate visible time range
+  // Calculate visible time range first, since drawTimeline depends on it
   const getVisibleTimeRange = useCallback(() => {
     const maxLyricTime = lyrics.length > 0 
       ? Math.max(...lyrics.map(lyric => lyric.end))
       : duration;
     const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
     
-    const visibleDuration = timelineEnd / zoom;
+    const visibleDuration = timelineEnd / currentZoomRef.current;
     const start = Math.max(0, panOffset);
     const end = Math.min(timelineEnd, start + visibleDuration);
     
     return { start, end, total: timelineEnd };
-  }, [lyrics, duration, zoom, panOffset]);
+  }, [lyrics, duration, panOffset]);
 
   // Draw the timeline visualization
   const drawTimeline = useCallback(() => {
@@ -119,7 +121,68 @@ const TimelineVisualization = ({
       ctx.closePath();
       ctx.fill();
     }
-  }, [lyrics, currentTime, duration, zoom, panOffset, getVisibleTimeRange]);
+  }, [lyrics, currentTime, duration, getVisibleTimeRange]);
+
+  // Smoothly animate zoom
+  const animateZoom = useCallback((targetZoom) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    const startZoom = currentZoomRef.current;
+    const zoomDiff = targetZoom - startZoom;
+    const startTime = performance.now();
+    const animDuration = 300; // Animation duration in ms
+
+    // Calculate the time range before zooming
+    const { start: oldStart, end: oldEnd, total: timelineEnd } = getVisibleTimeRange();
+    const oldVisibleDuration = oldEnd - oldStart;
+    const oldViewCenter = oldStart + (oldVisibleDuration / 2);
+
+    const animate = (time) => {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / animDuration, 1);
+      
+      // Ease out cubic function for smooth deceleration
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+      currentZoomRef.current = startZoom + (zoomDiff * easeOutCubic);
+      
+      // Calculate new visible duration at current zoom level
+      const newVisibleDuration = timelineEnd / currentZoomRef.current;
+      
+      // Calculate new pan offset to maintain the same view center
+      const newStart = oldViewCenter - (newVisibleDuration / 2);
+      const boundedStart = Math.min(Math.max(0, newStart), timelineEnd - newVisibleDuration);
+      
+      setPanOffset(boundedStart);
+      drawTimeline();
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        currentZoomRef.current = targetZoom;
+        drawTimeline();
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [getVisibleTimeRange, setPanOffset, drawTimeline]);
+
+  // Update zoom with animation when zoom prop changes
+  useEffect(() => {
+    if (zoom !== currentZoomRef.current) {
+      animateZoom(zoom);
+    }
+  }, [zoom, animateZoom]);
+
+  // Clean up animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   // Initialize and handle canvas resize
   useEffect(() => {
