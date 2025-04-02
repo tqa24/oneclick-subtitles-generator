@@ -15,7 +15,8 @@ function App() {
     youtube: false
   });
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState('youtube-url');
+  // Initialize activeTab from localStorage or default to 'youtube-url'
+  const [activeTab, setActiveTab] = useState(localStorage.getItem('lastActiveTab') || 'youtube-url');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [subtitlesData, setSubtitlesData] = useState(null);
@@ -593,6 +594,9 @@ function App() {
   }, []);
 
   const handleTabChange = (tab) => {
+    // Save the new tab selection to localStorage first
+    localStorage.setItem('lastActiveTab', tab);
+    
     setActiveTab(tab);
     // Reset states when changing tabs
     setSelectedVideo(null);
