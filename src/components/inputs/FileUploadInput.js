@@ -48,11 +48,14 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
     
     if (file) {
       if (validateFile(file)) {
-        // Clear ALL video-related state and storage
+        // Clear ALL video-related storage first
         localStorage.removeItem('current_video_url');
-        localStorage.removeItem('current_file_url');
+        if (localStorage.getItem('current_file_url')) {
+          URL.revokeObjectURL(localStorage.getItem('current_file_url'));
+          localStorage.removeItem('current_file_url');
+        }
         
-        // Create a local object URL for the file
+        // Create a new object URL for the file
         const objectUrl = URL.createObjectURL(file);
         localStorage.setItem('current_file_url', objectUrl);
         
@@ -66,7 +69,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
       } else {
         setUploadedFile(null);
         setFileInfo(null);
-        localStorage.removeItem('current_file_url');
+        if (localStorage.getItem('current_file_url')) {
+          URL.revokeObjectURL(localStorage.getItem('current_file_url'));
+          localStorage.removeItem('current_file_url');
+        }
       }
     }
   };

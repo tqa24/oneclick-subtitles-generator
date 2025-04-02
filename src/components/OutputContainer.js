@@ -17,16 +17,23 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, onRetryGemini, 
   
   // Set video source when a video is selected
   useEffect(() => {
-    if (selectedVideo?.url) {
+    // Clear any existing video source when there's no selected video
+    if (!selectedVideo) {
+      setVideoSource('');
+      return;
+    }
+
+    // For YouTube videos, use the URL directly
+    if (selectedVideo.url) {
       setVideoSource(selectedVideo.url);
-      // Save to localStorage for persistence
-      localStorage.setItem('current_video_url', selectedVideo.url);
-    } else {
-      // Try to load from localStorage if no video is selected
-      const savedUrl = localStorage.getItem('current_video_url');
-      if (savedUrl) {
-        setVideoSource(savedUrl);
-      }
+      return;
+    }
+
+    // For uploaded files, get the URL from localStorage
+    const uploadedFileUrl = localStorage.getItem('current_file_url');
+    if (uploadedFileUrl) {
+      setVideoSource(uploadedFileUrl);
+      return;
     }
   }, [selectedVideo]);
   

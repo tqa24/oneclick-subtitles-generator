@@ -29,30 +29,30 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       setError('');
       
       if (!videoSource) {
-        // First check for a locally uploaded file
-        const localFileUrl = localStorage.getItem('current_file_url');
-        if (localFileUrl) {
-          console.log('Loading local file URL:', localFileUrl);
-          setVideoUrl(localFileUrl);
-          return;
-        }
-        
-        // If no local file, try to load from YouTube URL in localStorage
-        const savedVideoUrl = localStorage.getItem('current_video_url');
-        if (savedVideoUrl) {
-          await processVideoUrl(savedVideoUrl);
-        } else {
-          setError(t('preview.noVideo', 'No video source available. Please select a video first.'));
-        }
+        setError(t('preview.noVideo', 'No video source available. Please select a video first.'));
+        return;
+      }
+
+      // If it's a blob URL (from file upload), use it directly
+      if (videoSource.startsWith('blob:')) {
+        console.log('Loading file URL:', videoSource);
+        setVideoUrl(videoSource);
         return;
       }
       
-      await processVideoUrl(videoSource);
+      // If it's a YouTube URL, handle download
+      if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
+        await processVideoUrl(videoSource);
+        return;
+      }
+
+      // For any other URL, try to use it directly
+      setVideoUrl(videoSource);
     };
     
     loadVideo();
   }, [videoSource, t]);
-  
+
   // Check download status at interval if we have a videoId
   useEffect(() => {
     if (!videoId) return;
