@@ -204,6 +204,62 @@ function App() {
     }
   };
 
+  // Function to retry Gemini request (ignores cache)
+  const retryGeminiRequest = async () => {
+    // Validate API keys
+    if (!apiKeysSet.gemini) {
+      setStatus({ message: 'Please set your Gemini API key in the settings first.', type: 'error' });
+      setShowSettings(true);
+      return;
+    }
+    
+    // Validate input
+    if (!validateInput()) {
+      setStatus({ message: 'Please provide a valid input (YouTube URL, search result, or file upload).', type: 'error' });
+      return;
+    }
+
+    setIsGenerating(true);
+    setStatus({ message: 'Retrying request to Gemini. This may take a few minutes...', type: 'loading' });
+
+    try {
+      // Prepare input based on active tab
+      let input = null;
+      let inputType = '';
+      let cacheId = null;
+
+      if (activeTab === 'youtube-url' && selectedVideo) {
+        input = selectedVideo.url;
+        inputType = 'youtube';
+        cacheId = extractYoutubeVideoId(selectedVideo.url);
+      } else if (activeTab === 'youtube-search' && selectedVideo) {
+        input = selectedVideo.url;
+        inputType = 'youtube';
+        cacheId = extractYoutubeVideoId(selectedVideo.url);
+      } else if (activeTab === 'file-upload' && uploadedFile) {
+        input = uploadedFile;
+        inputType = isVideoFile(uploadedFile.type) ? 'video' : 'audio';
+        cacheId = await generateFileCacheId(uploadedFile);
+      }
+
+      // Call the API service to generate subtitles (skip cache check for retry)
+      const subtitles = await callGeminiApi(input, inputType);
+      setSubtitlesData(subtitles);
+      
+      // Update cache with new result
+      if (cacheId && subtitles && subtitles.length > 0) {
+        await saveSubtitlesToCache(cacheId, subtitles);
+      }
+      
+      setStatus({ message: 'Subtitles regenerated successfully!', type: 'success' });
+    } catch (error) {
+      console.error('Error regenerating subtitles:', error);
+      setStatus({ message: `Error: ${error.message}`, type: 'error' });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const validateInput = () => {
     if (activeTab === 'youtube-url') {
       return selectedVideo !== null;
@@ -510,6 +566,8 @@ function App() {
         status={status}
         subtitlesData={subtitlesData}
         selectedVideo={selectedVideo}
+        onRetryGemini={retryGeminiRequest}
+        isGenerating={isGenerating}
       />
       
       {showSettings && (

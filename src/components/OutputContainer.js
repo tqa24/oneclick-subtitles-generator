@@ -5,7 +5,7 @@ import SubtitlesPreview from './previews/SubtitlesPreview';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, onRetryGemini, isGenerating }) => {
   const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTimingEditor, setShowTimingEditor] = useState(false);
@@ -119,6 +119,28 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo }) => {
   return (
     <div className="output-container">
       <div className={`status ${status.type}`}>{status.message}</div>
+      
+      {/* Add Retry button when we have subtitles already or we're not generating them */}
+      {(displaySubtitles || status.type === 'error') && !isGenerating && (
+        <div className="retry-gemini-container">
+          <button 
+            className="retry-gemini-btn" 
+            onClick={onRetryGemini}
+            disabled={isGenerating}
+            title={t('output.retryGeminiTooltip', 'Request a new transcription from Gemini, ignoring cached results')}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M1 4v6h6"></path>
+              <path d="M23 20v-6h-6"></path>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+            </svg>
+            {t('output.retryGemini', 'Retry Gemini Request')}
+          </button>
+          <span className="retry-hint">
+            {t('output.retryHint', 'Not satisfied with the results? Request a new transcription.')}
+          </span>
+        </div>
+      )}
       
       {displaySubtitles && (
         <>

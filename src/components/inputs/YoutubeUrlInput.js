@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeUrlInput = ({ onVideoSelect }) => {
+const YoutubeUrlInput = ({ selectedVideo, setSelectedVideo }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +49,7 @@ const YoutubeUrlInput = ({ onVideoSelect }) => {
         thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`
       };
       
-      onVideoSelect(videoData);
+      setSelectedVideo(videoData);
     } catch (error) {
       console.error('Error fetching video:', error);
       setError(t('youtubeUrlInput.fetchError', 'Failed to fetch video information'));
