@@ -186,3 +186,35 @@
   background-color: #0070f3;
   border-color: #0070f3;
 }
+
+.cache-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.cache-description {
+  margin: 0.5rem 0 1rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.clear-cache-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-cache-btn:hover {
+  background-color: #ff7875;
+}
+
+.clear-cache-btn:disabled {
+  background-color: #ffa39e;
+  cursor: not-allowed;
+}

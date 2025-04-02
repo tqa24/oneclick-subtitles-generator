@@ -87,7 +87,9 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
   };
   
   // Handle search result selection
-  const handleResultClick = (video) => {
+  const handleVideoSelect = (video) => {
+    // Clear any existing file URLs when selecting a YouTube video
+    localStorage.removeItem('current_file_url');
     setSelectedVideo(video);
   };
   
@@ -112,7 +114,7 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
             <div 
               key={video.id} 
               className={`search-result-item ${selectedVideo?.id === video.id ? 'selected' : ''}`}
-              onClick={() => handleResultClick(video)}
+              onClick={() => handleVideoSelect(video)}
             >
               <img 
                 src={video.thumbnail} 

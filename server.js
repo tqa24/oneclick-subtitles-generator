@@ -27,14 +27,42 @@ if (!fs.existsSync(SUBTITLES_DIR)) {
   console.log(`Created subtitles directory at ${SUBTITLES_DIR}`);
 }
 
-// Enable CORS for the frontend application
+// Configure CORS with all needed methods
 app.use(cors({
-  origin: 'http://localhost:3005', // Your React app's address
-  methods: ['GET', 'POST'],
+  origin: 'http://localhost:3005',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json({ limit: '50mb' })); // Increased limit for base64 encoded files
+
+// New endpoint to clear cache
+app.delete('/api/clear-cache', (req, res) => {
+  try {
+    // Clear subtitles directory
+    const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
+    subtitleFiles.forEach(file => {
+      fs.unlinkSync(path.join(SUBTITLES_DIR, file));
+    });
+
+    // Clear videos directory
+    const videoFiles = fs.readdirSync(VIDEOS_DIR);
+    videoFiles.forEach(file => {
+      fs.unlinkSync(path.join(VIDEOS_DIR, file));
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Cache cleared successfully' 
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to clear cache' 
+    });
+  }
+});
 
 // Serve the videos directory
 app.use('/videos', express.static(path.join(__dirname, 'videos')));

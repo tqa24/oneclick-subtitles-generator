@@ -58,6 +58,19 @@ const YoutubeUrlInput = ({ selectedVideo, setSelectedVideo }) => {
     }
   };
 
+  const handleUrlChange = (e) => {
+    const url = e.target.value.trim();
+    setUrl(url);
+    
+    if (isValidYoutubeUrl(url)) {
+      // Clear any existing file URLs when selecting a YouTube video
+      localStorage.removeItem('current_file_url');
+      setSelectedVideo({ url });
+    } else {
+      setSelectedVideo(null);
+    }
+  };
+
   return (
     <div className="youtube-url-input">
       <form onSubmit={handleSubmit}>
@@ -65,7 +78,7 @@ const YoutubeUrlInput = ({ selectedVideo, setSelectedVideo }) => {
           <input
             type="text"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={handleUrlChange}
             placeholder={t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., https://www.youtube.com/watch?v=...)')}
             className={error ? 'error-input' : ''}
             disabled={isLoading}

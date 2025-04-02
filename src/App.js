@@ -545,6 +545,9 @@ function App() {
     setUploadedFile(null);
     setSubtitlesData(null);
     setStatus({ message: '', type: '' });
+    // Clear all video-related localStorage items
+    localStorage.removeItem('current_video_url');
+    localStorage.removeItem('current_file_url');
   };
 
   return (

@@ -8,6 +8,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
   
   // Load saved API keys on component mount
   useEffect(() => {
@@ -17,6 +18,33 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
   }, []);
+  
+  // Handle clear cache
+  const handleClearCache = async () => {
+    if (window.confirm(t('settings.confirmClearCache', 'Are you sure you want to clear all cached subtitles and videos? This cannot be undone.'))) {
+      setClearingCache(true);
+      try {
+        const response = await fetch('http://localhost:3004/api/clear-cache', {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          // Clear localStorage video/subtitle related items
+          localStorage.removeItem('current_video_url');
+          localStorage.removeItem('current_file_url');
+          alert(t('settings.cacheClearedSuccess', 'Cache cleared successfully!'));
+        } else {
+          throw new Error(data.error || 'Failed to clear cache');
+        }
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+        alert(t('settings.cacheClearError', 'Error clearing cache. Please try again.'));
+      } finally {
+        setClearingCache(false);
+      }
+    }
+  };
   
   // Handle save button click
   const handleSave = () => {
@@ -133,6 +161,21 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 </ol>
               </div>
             </div>
+          </div>
+          <div className="cache-section">
+            <h3>{t('settings.cache', 'Cache Management')}</h3>
+            <p className="cache-description">
+              {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
+            </p>
+            <button 
+              className="clear-cache-btn" 
+              onClick={handleClearCache}
+              disabled={clearingCache}
+            >
+              {clearingCache 
+                ? t('settings.clearingCache', 'Clearing Cache...')
+                : t('settings.clearCache', 'Clear Cache')}
+            </button>
           </div>
         </div>
         
