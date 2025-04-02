@@ -7,6 +7,7 @@ import LyricsDisplay from './LyricsDisplay';
 const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
 
   const handleLyricClick = (time) => {
     setCurrentTabIndex(time);
@@ -17,11 +18,11 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   };
 
   const formatSubtitlesForLyricsDisplay = (subtitles) => {
-    return subtitles.map(sub => ({
+    return subtitles?.map(sub => ({
       ...sub,
       startTime: sub.start,
       endTime: sub.end
-    }));
+    })) || [];
   };
 
   // Set video source when a video is selected or file is uploaded
@@ -45,18 +46,15 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
     // Clear video source if nothing is selected
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
-  
-  // Display formatted subtitles or edited subtitles
-  const displaySubtitles = subtitlesData;
-  
-  // Only render if there's a status message or subtitles data
-  if (!status.message && !subtitlesData) {
+
+  // Don't render anything if there's no content to show
+  if (!status?.message && !subtitlesData) {
     return null;
   }
 
   return (
     <div className="output-container">
-      {status.message && (
+      {status?.message && (
         <div className={`status ${status.type}`}>{status.message}</div>
       )}
       
@@ -70,6 +68,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               setCurrentTime={setCurrentTabIndex}
               subtitle={subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
               videoSource={videoSource}
+              setDuration={setVideoDuration}
             />
             
             <LyricsDisplay 

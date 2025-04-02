@@ -589,6 +589,14 @@ function App() {
             )}
           </div>
         )}
+        
+        <OutputContainer 
+          status={status}
+          subtitlesData={subtitlesData}
+          selectedVideo={selectedVideo}
+          uploadedFile={uploadedFile}
+          isGenerating={isGenerating}
+        />
       </main>
       
       {showSettings && (
