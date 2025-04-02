@@ -8,7 +8,6 @@ import LyricsDisplay from './LyricsDisplay';
 const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, onRetryGemini, isGenerating }) => {
   const { t } = useTranslation();
   const [currentTime, setCurrentTime] = useState(0);
-  const [showTimingEditor, setShowTimingEditor] = useState(false);
   const [editedSubtitles, setEditedSubtitles] = useState(null);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoSource, setVideoSource] = useState('');
@@ -114,11 +113,6 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, o
     URL.revokeObjectURL(url);
   };
   
-  // Toggle timing editor
-  const toggleTimingEditor = () => {
-    setShowTimingEditor(!showTimingEditor);
-  };
-
   // Display formatted subtitles or edited subtitles
   const displaySubtitles = editedSubtitles || subtitlesData;
   
@@ -150,29 +144,27 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, o
       
       {displaySubtitles && (
         <>
-          {/* Video Preview with Subtitles (Shown when editing timings) */}
-          {showTimingEditor && (
-            <div className="preview-section">
-              <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
-              
-              <VideoPreview 
-                currentTime={currentTime}
-                setCurrentTime={setCurrentTime}
-                subtitle={displaySubtitles.find(s => currentTime >= s.start && currentTime <= s.end)?.text || ''}
-                setDuration={setVideoDuration}
-                videoSource={videoSource}
-              />
-              
-              <LyricsDisplay 
-                matchedLyrics={formatSubtitlesForLyricsDisplay(displaySubtitles)}
-                currentTime={currentTime}
-                onLyricClick={handleLyricClick}
-                duration={videoDuration}
-                onUpdateLyrics={handleUpdateLyrics}
-                allowEditing={true}
-              />
-            </div>
-          )}
+          {/* Video Preview with Subtitles - Always shown */}
+          <div className="preview-section">
+            <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
+            
+            <VideoPreview 
+              currentTime={currentTime}
+              setCurrentTime={setCurrentTime}
+              subtitle={displaySubtitles.find(s => currentTime >= s.start && currentTime <= s.end)?.text || ''}
+              setDuration={setVideoDuration}
+              videoSource={videoSource}
+            />
+            
+            <LyricsDisplay 
+              matchedLyrics={formatSubtitlesForLyricsDisplay(displaySubtitles)}
+              currentTime={currentTime}
+              onLyricClick={handleLyricClick}
+              duration={videoDuration}
+              onUpdateLyrics={handleUpdateLyrics}
+              allowEditing={true}
+            />
+          </div>
           
           {/* Subtitles Preview */}
           <div className="preview-container">
@@ -196,16 +188,6 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, o
               disabled={!displaySubtitles}
             >
               {t('output.downloadJson', 'Download JSON')}
-            </button>
-            
-            <button 
-              className={`edit-btn ${showTimingEditor ? 'active' : ''}`} 
-              onClick={toggleTimingEditor} 
-              disabled={!displaySubtitles}
-            >
-              {showTimingEditor 
-                ? t('output.hideEditor', 'Hide Timing Editor') 
-                : t('output.editTimings', 'Edit Timings')}
             </button>
           </div>
         </>
