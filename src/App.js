@@ -452,8 +452,6 @@ function App() {
       return;
     }
     
-    setIsPreloadingVideo(true);
-    
     // Store the URL in localStorage for the VideoPreview component to use
     localStorage.setItem('current_video_url', videoUrl);
     
@@ -466,66 +464,8 @@ function App() {
       // Continue anyway - this is just for optimization
     }
     
-    // Create a hidden iframe to load the YouTube API and start buffering the video
-    if (!document.querySelector('#preload-youtube-iframe')) {
-      const iframe = document.createElement('iframe');
-      iframe.id = 'preload-youtube-iframe';
-      iframe.style.display = 'none';
-      iframe.src = 'about:blank';
-      document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <script src="https://www.youtube.com/iframe_api"></script>
-            <style>
-              #player { position: absolute; top: 0; left: 0; width: 1px; height: 1px; }
-            </style>
-          </head>
-          <body>
-            <div id="player"></div>
-            <script>
-              let player;
-              function onYouTubeIframeAPIReady() {
-                let videoId = "${extractYoutubeVideoId(videoUrl)}";
-                player = new YT.Player('player', {
-                  videoId: videoId,
-                  playerVars: { 
-                    'autoplay': 0, 
-                    'controls': 0,
-                    'playsinline': 1,
-                    'fs': 0,
-                    'rel': 0
-                  },
-                  events: {
-                    'onReady': function(event) {
-                      // Just load the video without playing it
-                      event.target.mute();
-                      event.target.cueVideoById(videoId);
-                      console.log('YouTube player preloaded');
-                      
-                      // Also preload the YouTube API script for the main document
-                      if (!window.parent.YT) {
-                        const tag = document.createElement('script');
-                        tag.src = 'https://www.youtube.com/iframe_api';
-                        window.parent.document.body.appendChild(tag);
-                      }
-                    }
-                  }
-                });
-              }
-            </script>
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-      
-      // Store the iframe reference
-      preloadVideoFrameRef.current = iframe;
-    }
+    // We no longer need to create a hidden iframe with YouTube API
+    // This was causing the googleads.g.doubleclick.net errors
   };
   
   // Cleanup function for the preloaded video
