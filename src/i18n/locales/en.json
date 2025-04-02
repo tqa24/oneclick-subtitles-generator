@@ -59,7 +59,7 @@
     "youtubeStep5": "Generate API key"
   },
   "lyrics": {
-    "synchronizedLyrics": "Synchronized Lyrics",
+    "synchronizedLyrics": "Synchronized Subtitles",
     "stickyTimingsToggle": "Sticky Timings",
     "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles."
   },

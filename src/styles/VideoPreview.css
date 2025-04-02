@@ -113,13 +113,21 @@
 }
 
 .video-subtitle {
-  position: relative;
+  position: absolute;
+  bottom: 60px; /* Position above the video controls */
+  left: 0;
+  right: 0;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
   text-align: center;
   padding: 12px;
-  font-size: 18px;
-  min-height: 20px;
+  margin: 0 auto;
+  max-width: 90%;
+  z-index: 2;
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1.4;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .player-notice {
