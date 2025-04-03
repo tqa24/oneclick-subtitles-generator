@@ -1,9 +1,9 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 
 // Simple hash function for consistent colors
 const hashString = (str) => {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) {
+  for (let i = 0; str.length > i; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
@@ -29,23 +29,72 @@ const TimelineVisualization = ({
   const currentZoomRef = useRef(zoom);
   const autoScrollRef = useRef(null);
   const isScrollingRef = useRef(false);
+  const [playheadX, setPlayheadX] = useState(null);
+  const canvasWidthRef = useRef(0);
 
-  // Calculate visible time range first, since drawTimeline depends on it
+  // Calculate visible time range with playhead-centered zoom
   const getVisibleTimeRange = useCallback(() => {
     const maxLyricTime = lyrics.length > 0 
       ? Math.max(...lyrics.map(lyric => lyric.end))
       : duration;
     const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
     
-    const visibleDuration = timelineEnd / currentZoomRef.current;
+    // Update currentZoomRef to match external zoom prop
+    const prevZoom = currentZoomRef.current;
+    currentZoomRef.current = zoom;
+    
+    // If zoom changed, recalculate panOffset to keep playhead centered
+    if (prevZoom !== zoom && duration > 0) {
+      const prevVisibleDuration = timelineEnd / prevZoom;
+      const newVisibleDuration = timelineEnd / zoom;
+      
+      // Calculate relative position of playhead in previous view (0-1)
+      const relativePlayheadPos = (currentTime - panOffset) / prevVisibleDuration;
+      
+      // Apply the relative position to the new visible duration
+      const newPanOffset = Math.max(0, currentTime - (relativePlayheadPos * newVisibleDuration));
+      
+      // Ensure we don't go past the end
+      const maxPanOffset = Math.max(0, timelineEnd - newVisibleDuration);
+      
+      // Use requestAnimationFrame to avoid state update during render
+      if (panOffset !== Math.min(newPanOffset, maxPanOffset)) {
+        requestAnimationFrame(() => {
+          setPanOffset(Math.min(newPanOffset, maxPanOffset));
+        });
+      }
+    }
+    
+    const visibleDuration = timelineEnd / zoom;
     const start = panOffset;
     const end = Math.min(timelineEnd, start + visibleDuration);
     
-    // Update currentZoomRef to match external zoom prop
-    currentZoomRef.current = zoom;
-    
     return { start, end, total: timelineEnd };
-  }, [lyrics, duration, panOffset, zoom]);
+  }, [lyrics, duration, panOffset, zoom, currentTime, setPanOffset]);
+
+  // Calculate the playhead position on screen
+  const calculatePlayheadPosition = useCallback(() => {
+    if (!timelineRef.current || !duration) return null;
+    
+    const canvas = timelineRef.current;
+    const displayWidth = canvas.clientWidth;
+    canvasWidthRef.current = displayWidth;
+    
+    const { start: visibleStart, end: visibleEnd } = getVisibleTimeRange();
+    const visibleDuration = visibleEnd - visibleStart;
+    
+    // Calculate the pixel position
+    if (currentTime >= visibleStart && currentTime <= visibleEnd) {
+      return ((currentTime - visibleStart) / visibleDuration) * displayWidth;
+    }
+    
+    return null;
+  }, [currentTime, getVisibleTimeRange, duration]);
+
+  // Store the playhead position before zooming
+  useEffect(() => {
+    setPlayheadX(calculatePlayheadPosition());
+  }, [calculatePlayheadPosition]);
 
   // Draw the timeline visualization with optimizations
   const drawTimeline = useCallback(() => {
@@ -55,6 +104,7 @@ const TimelineVisualization = ({
     const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for non-transparent canvas
     const displayWidth = canvas.clientWidth;
     const displayHeight = canvas.clientHeight;
+    canvasWidthRef.current = displayWidth;
     
     // Set canvas dimensions with proper DPR handling
     const dpr = window.devicePixelRatio || 1;
@@ -91,7 +141,8 @@ const TimelineVisualization = ({
     
     // Batch time markers drawing
     ctx.beginPath();
-    ctx.fillStyle = borderColor;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
     
     for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
       const x = timeToX(time);
@@ -155,6 +206,9 @@ const TimelineVisualization = ({
     if (currentTime >= visibleStart && currentTime <= visibleEnd) {
       const currentX = timeToX(currentTime);
       
+      // Store the current playhead position for zoom animations
+      setPlayheadX(currentX);
+      
       // Use path for better performance
       ctx.beginPath();
       ctx.fillStyle = primaryColor;
@@ -171,62 +225,16 @@ const TimelineVisualization = ({
     }
   }, [lyrics, currentTime, duration, getVisibleTimeRange]);
 
-  // Throttle zoom animation
+  // Simplified zoom animation function - just set zoom and let getVisibleTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-
-    const startZoom = currentZoomRef.current;
-    const zoomDiff = targetZoom - startZoom;
-    const startTime = performance.now();
-    const animDuration = 200;
-
-    const { total: timelineEnd } = getVisibleTimeRange();
-
-    // Calculate the new center point based on current playhead position
-    const newViewCenter = currentTime;
-    const startPanOffset = panOffset;
-
-    let lastDrawTime = 0;
-    const minDrawInterval = 1000 / 60;
-
-    const animate = (time) => {
-      if (time - lastDrawTime < minDrawInterval) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      
-      lastDrawTime = time;
-      const elapsed = time - startTime;
-      const progress = Math.min(elapsed / animDuration, 1);
-      
-      // Ease out cubic function for smooth deceleration
-      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-      currentZoomRef.current = startZoom + (zoomDiff * easeOutCubic);
-      
-      // Calculate new visible duration at current zoom level
-      const newVisibleDuration = timelineEnd / currentZoomRef.current;
-      
-      // Center the view on the playhead position
-      const newPanOffset = Math.max(0, Math.min(
-        newViewCenter - (newVisibleDuration / 2),
-        timelineEnd - newVisibleDuration
-      ));
-      
-      setPanOffset(newPanOffset);
-      drawTimeline();
-
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      } else {
-        currentZoomRef.current = targetZoom;
-        drawTimeline();
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, [getVisibleTimeRange, setPanOffset, drawTimeline, currentTime, panOffset]);
+    
+    // Let getVisibleTimeRange recalculate panOffset to center on playhead
+    currentZoomRef.current = targetZoom;
+    drawTimeline();
+  }, [drawTimeline]);
 
   // Update zoom with animation when zoom prop changes
   useEffect(() => {
