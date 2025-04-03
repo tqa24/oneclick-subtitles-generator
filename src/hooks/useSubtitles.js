@@ -139,6 +139,7 @@ export const useSubtitles = (t) => {
 
     return {
         subtitlesData,
+        setSubtitlesData,
         status,
         setStatus,
         isGenerating,

@@ -21,6 +21,7 @@ function App() {
 
   const {
     subtitlesData,
+    setSubtitlesData,
     status,
     setStatus,
     isGenerating,
@@ -148,6 +149,8 @@ function App() {
     setActiveTab(tab);
     setSelectedVideo(null);
     setUploadedFile(null);
+    setStatus({}); // Reset status
+    setSubtitlesData(null); // Reset subtitles data
     localStorage.removeItem('current_video_url');
     localStorage.removeItem('current_file_url');
   };
