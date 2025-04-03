@@ -8,17 +8,20 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [editedLyrics, setEditedLyrics] = useState(null);
 
   const handleLyricClick = (time) => {
     setCurrentTabIndex(time);
   };
 
   const handleUpdateLyrics = (updatedLyrics) => {
-    // Handle lyrics update logic if needed
+    setEditedLyrics(updatedLyrics);
   };
 
   const formatSubtitlesForLyricsDisplay = (subtitles) => {
-    return subtitles?.map(sub => ({
+    // If we have edited lyrics, use those instead of the original subtitles
+    const sourceData = editedLyrics || subtitles;
+    return sourceData?.map(sub => ({
       ...sub,
       startTime: sub.start,
       endTime: sub.end
@@ -87,6 +90,11 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
 
+  // Reset edited lyrics when subtitlesData changes (new video/generation)
+  useEffect(() => {
+    setEditedLyrics(null);
+  }, [subtitlesData]);
+
   // Don't render anything if there's no content to show
   if (!status?.message && !subtitlesData) {
     return null;
@@ -106,7 +114,8 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
             <VideoPreview 
               currentTime={currentTabIndex}
               setCurrentTime={setCurrentTabIndex}
-              subtitle={subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
+              subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || 
+                       subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
               videoSource={videoSource}
               setDuration={setVideoDuration}
             />
