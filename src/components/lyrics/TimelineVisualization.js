@@ -27,6 +27,8 @@ const TimelineVisualization = ({
   const justPanned = useRef(false);
   const animationFrameRef = useRef(null);
   const currentZoomRef = useRef(zoom);
+  const autoScrollRef = useRef(null);
+  const isScrollingRef = useRef(false);
 
   // Calculate visible time range first, since drawTimeline depends on it
   const getVisibleTimeRange = useCallback(() => {
@@ -178,14 +180,16 @@ const TimelineVisualization = ({
     const startZoom = currentZoomRef.current;
     const zoomDiff = targetZoom - startZoom;
     const startTime = performance.now();
-    const animDuration = 200; // Reduced animation duration for better performance
+    const animDuration = 200;
 
-    const { start: oldStart, end: oldEnd, total: timelineEnd } = getVisibleTimeRange();
-    const oldVisibleDuration = oldEnd - oldStart;
-    const oldViewCenter = oldStart + (oldVisibleDuration / 2);
+    const { total: timelineEnd } = getVisibleTimeRange();
+
+    // Calculate the new center point based on current playhead position
+    const newViewCenter = currentTime;
+    const startPanOffset = panOffset;
 
     let lastDrawTime = 0;
-    const minDrawInterval = 1000 / 60; // Cap at 60fps
+    const minDrawInterval = 1000 / 60;
 
     const animate = (time) => {
       if (time - lastDrawTime < minDrawInterval) {
@@ -204,11 +208,13 @@ const TimelineVisualization = ({
       // Calculate new visible duration at current zoom level
       const newVisibleDuration = timelineEnd / currentZoomRef.current;
       
-      // Calculate new pan offset to maintain the same view center
-      const newStart = oldViewCenter - (newVisibleDuration / 2);
-      const boundedStart = Math.min(Math.max(0, newStart), timelineEnd - newVisibleDuration);
+      // Center the view on the playhead position
+      const newPanOffset = Math.max(0, Math.min(
+        newViewCenter - (newVisibleDuration / 2),
+        timelineEnd - newVisibleDuration
+      ));
       
-      setPanOffset(boundedStart);
+      setPanOffset(newPanOffset);
       drawTimeline();
 
       if (progress < 1) {
@@ -220,7 +226,7 @@ const TimelineVisualization = ({
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [getVisibleTimeRange, setPanOffset, drawTimeline]);
+  }, [getVisibleTimeRange, setPanOffset, drawTimeline, currentTime, panOffset]);
 
   // Update zoom with animation when zoom prop changes
   useEffect(() => {
@@ -265,6 +271,67 @@ const TimelineVisualization = ({
       drawTimeline();
     }
   }, [lyrics, currentTime, duration, zoom, panOffset, drawTimeline]);
+
+  // Ensure playhead stays visible by auto-scrolling
+  useEffect(() => {
+    if (!duration || isPanning.current) return;
+    
+    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const visibleDuration = visibleEnd - visibleStart;
+    const margin = visibleDuration * 0.2;
+
+    // Only scroll if we're significantly off-center and not already scrolling
+    const isFarFromCenter = Math.abs(currentTime - (visibleStart + visibleDuration / 2)) > visibleDuration * 0.3;
+    
+    if (!isScrollingRef.current && (currentTime < visibleStart + margin || currentTime > visibleEnd - margin) && isFarFromCenter) {
+      isScrollingRef.current = true;
+      
+      const totalVisibleDuration = timelineEnd / currentZoomRef.current;
+      const halfVisibleDuration = totalVisibleDuration / 2;
+      const targetOffset = Math.max(0, Math.min(currentTime - halfVisibleDuration, timelineEnd - totalVisibleDuration));
+      
+      // Don't scroll if we're already close to the target
+      if (Math.abs(targetOffset - panOffset) < 0.1) {
+        isScrollingRef.current = false;
+        return;
+      }
+
+      // Cancel any existing animation
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+      }
+
+      const startPanOffset = panOffset;
+      const endPanOffset = targetOffset;
+      const startTime = performance.now();
+      const animDuration = 500;
+
+      const animate = (time) => {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / animDuration, 1);
+        
+        const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+        const newOffset = startPanOffset + (endPanOffset - startPanOffset) * easeOutProgress;
+        
+        setPanOffset(newOffset);
+        
+        if (progress < 1) {
+          autoScrollRef.current = requestAnimationFrame(animate);
+        } else {
+          isScrollingRef.current = false;
+          autoScrollRef.current = null;
+        }
+      };
+      
+      autoScrollRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+      }
+    };
+  }, [currentTime, duration, getVisibleTimeRange, panOffset, setPanOffset]);
 
   // Handle mouse down for panning
   const handleMouseDown = (e) => {
