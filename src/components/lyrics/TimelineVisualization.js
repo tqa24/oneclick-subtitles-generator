@@ -1,5 +1,16 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 
+// Simple hash function for consistent colors
+const hashString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+};
+
 const TimelineVisualization = ({ 
   lyrics, 
   currentTime, 
@@ -106,23 +117,36 @@ const TimelineVisualization = ({
       const endX = timeToX(lyric.end);
       return (endX - startX) >= minSegmentWidth;
     });
-    
-    // Batch render segments
-    visibleLyrics.forEach((lyric, index) => {
+
+    // Create a buffer for batch rendering
+    const segmentBuffer = [];
+    visibleLyrics.forEach(lyric => {
       const startX = timeToX(lyric.start);
       const endX = timeToX(lyric.end);
       const segmentWidth = endX - startX;
       
-      const hue = (index * 30) % 360;
+      // Generate consistent color based on lyric content
+      const hash = hashString(lyric.text);
+      const hue = hash % 360;
+      const saturation = 70 + (hash % 20); // Vary saturation slightly
       const isDark = computedStyle.backgroundColor.includes('rgb(30, 30, 30)');
       const lightness = isDark ? '40%' : '60%';
       const alpha = isDark ? '0.8' : '0.7';
       
-      ctx.fillStyle = `hsla(${hue}, 70%, ${lightness}, ${alpha})`;
-      ctx.fillRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
-      
-      ctx.strokeStyle = `hsla(${hue}, 70%, ${isDark ? '50%' : '40%'}, 0.9)`;
-      ctx.strokeRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
+      segmentBuffer.push({
+        x: startX,
+        width: segmentWidth,
+        fillStyle: `hsla(${hue}, ${saturation}%, ${lightness}, ${alpha})`,
+        strokeStyle: `hsla(${hue}, ${saturation}%, ${isDark ? '50%' : '40%'}, 0.9)`
+      });
+    });
+
+    // Batch render segments for better performance
+    segmentBuffer.forEach(segment => {
+      ctx.fillStyle = segment.fillStyle;
+      ctx.fillRect(segment.x, displayHeight * 0.3, segment.width, displayHeight * 0.7);
+      ctx.strokeStyle = segment.strokeStyle;
+      ctx.strokeRect(segment.x, displayHeight * 0.3, segment.width, displayHeight * 0.7);
     });
     
     // Draw current time indicator
