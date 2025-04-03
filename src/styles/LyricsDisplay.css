@@ -244,13 +244,71 @@
   border-radius: 4px;
 }
 
+.lyric-item-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 40px; /* Ensure minimum height for better spacing */
+}
+
 .lyric-item {
-  padding: 10px 14px;
+  position: relative;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
-  position: relative;
   transition: all 0.3s ease;
   color: var(--text-primary);
+}
+
+/* Add a visual indicator for the insert zone */
+.lyric-item::after {
+  content: '';
+  position: absolute;
+  left: 24px; /* Align with edit/delete buttons */
+  bottom: -1px;
+  width: 40px;
+  height: 2px;
+  background: transparent;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.lyric-item:hover::after {
+  background: var(--border-color);
+}
+
+.insert-lyric-button {
+  position: absolute;
+  left: 44px;
+  bottom: -15px;
+  width: 28px; /* Slightly larger */
+  height: 28px; /* Slightly larger */
+  border-radius: 50%;
+  background: var(--primary-color-light);
+  border: 1px solid var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100; /* Ensure it's above other elements */
+  color: var(--primary-color);
+  transform: translateX(-50%) scale(1);
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: all 0.15s ease-out;
+}
+
+.insert-lyric-button:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(-50%) scale(1.2);
+  box-shadow: 0 3px 8px var(--shadow-color);
+}
+
+/* Make button visible immediately when container is hovered */
+.insert-lyric-button {
+  opacity: 1;
+  visibility: visible;
 }
 
 .lyric-item:last-child {

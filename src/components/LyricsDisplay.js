@@ -32,7 +32,8 @@ const LyricsDisplay = ({
     isDragging,
     getLastDragEnd,
     handleDeleteLyric,
-    handleTextEdit
+    handleTextEdit,
+    handleInsertLyric
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -104,6 +105,8 @@ const LyricsDisplay = ({
             getLastDragEnd={getLastDragEnd}
             onDelete={handleDeleteLyric}
             onTextEdit={handleTextEdit}
+            onInsert={handleInsertLyric}
+            hasNextLyric={index < lyrics.length - 1}
           />
         ))}
       </div>

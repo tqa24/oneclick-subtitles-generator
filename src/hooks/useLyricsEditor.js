@@ -175,6 +175,73 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
   };
 
+  const handleInsertLyric = (index) => {
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    
+    const prevLyric = lyrics[index];
+    const nextLyric = lyrics[index + 1];
+    
+    // Calculate the gap between the two lyrics
+    const gap = nextLyric.start - prevLyric.end;
+    
+    // If the gap is too small (less than 0.2s), expand it by moving the next lyric
+    const minGap = 0.2;
+    let newStartTime = prevLyric.end;
+    let newEndTime = nextLyric.start;
+    
+    if (gap < minGap) {
+      // Move the next lyric to create minimum gap
+      const lengthToAdd = minGap - gap;
+      newEndTime = nextLyric.start + lengthToAdd;
+      
+      // Update all following lyrics to maintain gaps
+      const updatedLyrics = lyrics.map((lyric, i) => {
+        if (i <= index) return lyric;
+        return {
+          ...lyric,
+          start: lyric.start + lengthToAdd,
+          end: lyric.end + lengthToAdd
+        };
+      });
+      
+      const newLyric = {
+        text: '',
+        start: newStartTime,
+        end: newEndTime - minGap
+      };
+      
+      const finalLyrics = [
+        ...updatedLyrics.slice(0, index + 1),
+        newLyric,
+        ...updatedLyrics.slice(index + 1)
+      ];
+      
+      setLyrics(finalLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(finalLyrics);
+      }
+    } else {
+      // If gap is large enough, insert in the middle
+      const midPoint = prevLyric.end + gap / 2;
+      const newLyric = {
+        text: '',
+        start: prevLyric.end,
+        end: midPoint + (gap / 4) // Give the new lyric 75% of the first half of the gap
+      };
+      
+      const updatedLyrics = [
+        ...lyrics.slice(0, index + 1),
+        newLyric,
+        ...lyrics.slice(index + 1)
+      ];
+      
+      setLyrics(updatedLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(updatedLyrics);
+      }
+    }
+  };
+
   return {
     lyrics,
     isSticky,
@@ -189,6 +256,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     isDragging,
     getLastDragEnd,
     handleDeleteLyric,
-    handleTextEdit
+    handleTextEdit,
+    handleInsertLyric
   };
 };
