@@ -37,65 +37,109 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0.75rem 1.5rem;
+  gap: 10px;
+  padding: 0.85rem 1.8rem;
   border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px var(--shadow-color);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px var(--shadow-color);
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
 }
 
 .buttons-container .generate-btn {
   flex: 1;
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
   color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .buttons-container .retry-gemini-btn {
-  background-color: var(--secondary-color);
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
   color: white;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.buttons-container .generate-btn::before,
+.buttons-container .retry-gemini-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
 }
 
 .buttons-container .generate-btn:hover,
 .buttons-container .retry-gemini-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--shadow-color);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.buttons-container .generate-btn:hover {
-  background-color: var(--primary-color-dark, #0056b3);
+.buttons-container .generate-btn:hover::before,
+.buttons-container .retry-gemini-btn:hover::before {
+  left: 100%;
 }
 
-.buttons-container .retry-gemini-btn:hover {
-  background-color: var(--secondary-color-dark, #0c8d6e);
+.buttons-container .generate-btn:active,
+.buttons-container .retry-gemini-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .buttons-container .generate-btn:disabled,
 .buttons-container .retry-gemini-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  filter: saturate(0.8) brightness(0.9);
 }
 
 .buttons-container .generate-btn svg,
 .buttons-container .retry-gemini-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   stroke: white;
-  transition: transform 0.3s ease;
+  stroke-width: 2;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .buttons-container .generate-btn:hover svg {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.1);
 }
 
 .buttons-container .retry-gemini-btn:hover svg {
-  transform: rotate(180deg);
+  transform: rotate(180deg) scale(1.1);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(65, 88, 208, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(65, 88, 208, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(65, 88, 208, 0);
+  }
+}
+
+.buttons-container .generate-btn:not(:disabled) {
+  animation: pulse 2s infinite;
 }
 
 @media (max-width: 640px) {
