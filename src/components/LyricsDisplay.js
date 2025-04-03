@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
@@ -17,6 +17,7 @@ const LyricsDisplay = ({
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState(0);
+  const lyricsContainerRef = useRef(null);
   
   const {
     lyrics,
@@ -42,6 +43,41 @@ const LyricsDisplay = ({
     return currentTime >= lyric.start && 
       (nextLyric ? currentTime < nextLyric.start : currentTime <= lyric.end);
   });
+
+  // Auto-scroll to the current lyric with accurate positioning
+  useEffect(() => {
+    if (currentIndex >= 0 && lyricsContainerRef.current) {
+      const container = lyricsContainerRef.current;
+      const lyricElement = container.children[currentIndex];
+      
+      if (lyricElement) {
+        // Get precise measurements of the container and element
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = lyricElement.getBoundingClientRect();
+        
+        // Calculate relative positions
+        const containerScrollTop = container.scrollTop;
+        const elementRelativeTop = elementRect.top - containerRect.top + containerScrollTop;
+        
+        // Calculate the ideal scroll position to center the current lyric
+        const idealScrollTop = elementRelativeTop - (containerRect.height / 2) + (elementRect.height / 2);
+        
+        // Only scroll if the element is not already in view with some margin
+        const margin = containerRect.height * 0.2; // 20% margin
+        const isInView = (
+          elementRelativeTop >= containerScrollTop + margin &&
+          elementRelativeTop + elementRect.height <= containerScrollTop + containerRect.height - margin
+        );
+        
+        if (!isInView) {
+          container.scrollTo({
+            top: idealScrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  }, [currentIndex]);
 
   // Setup drag event handlers
   const handleMouseDown = (e, index, field) => {
@@ -90,7 +126,7 @@ const LyricsDisplay = ({
         setPanOffset={setPanOffset}
       />
       
-      <div className="lyrics-container">
+      <div className="lyrics-container" ref={lyricsContainerRef}>
         {lyrics.map((lyric, index) => (
           <LyricItem
             key={index}

@@ -11,6 +11,7 @@ import '../../styles/VideoPreview.css';
 const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
+  const seekLockRef = useRef(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
@@ -185,12 +186,26 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     };
     
     const handleTimeUpdate = () => {
-      setCurrentTime(videoElement.currentTime);
+      // Only update currentTime if we're not in a seek operation
+      if (!seekLockRef.current) {
+        setCurrentTime(videoElement.currentTime);
+      }
       setIsPlaying(!videoElement.paused);
     };
     
     const handlePlayPauseEvent = () => {
       setIsPlaying(!videoElement.paused);
+    };
+
+    const handleSeeking = () => {
+      seekLockRef.current = true;
+    };
+
+    const handleSeeked = () => {
+      // Release the seek lock after a short delay to ensure the timeupdate event doesn't override
+      setTimeout(() => {
+        seekLockRef.current = false;
+      }, 100);
     };
     
     // Add event listeners
@@ -199,6 +214,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     videoElement.addEventListener('timeupdate', handleTimeUpdate);
     videoElement.addEventListener('play', handlePlayPauseEvent);
     videoElement.addEventListener('pause', handlePlayPauseEvent);
+    videoElement.addEventListener('seeking', handleSeeking);
+    videoElement.addEventListener('seeked', handleSeeked);
     
     // Clean up
     return () => {
@@ -207,6 +224,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       videoElement.removeEventListener('timeupdate', handleTimeUpdate);
       videoElement.removeEventListener('play', handlePlayPauseEvent);
       videoElement.removeEventListener('pause', handlePlayPauseEvent);
+      videoElement.removeEventListener('seeking', handleSeeking);
+      videoElement.removeEventListener('seeked', handleSeeked);
     };
   }, [videoUrl, setCurrentTime, setDuration, t]);
   
@@ -219,12 +238,26 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     
     // Only seek if the difference is significant to avoid loops
     if (Math.abs(videoElement.currentTime - currentTime) > 0.1) {
+      // Set the seek lock to prevent timeupdate from overriding our seek
+      seekLockRef.current = true;
+      
+      // Store the playing state
+      const wasPlaying = !videoElement.paused;
+      
+      // Pause first to ensure accurate seeking
+      if (wasPlaying) {
+        videoElement.pause();
+      }
+      
+      // Set the new time
       videoElement.currentTime = currentTime;
-      // Auto-play when seeking to a new time
-      videoElement.play().catch(err => {
-        // Ignore play() errors that might occur due to browser autoplay policies
-        console.warn('Auto-play failed:', err);
-      });
+      
+      // Resume playing if it was playing before
+      if (wasPlaying) {
+        videoElement.play().catch(err => {
+          console.warn('Auto-play failed:', err);
+        });
+      }
     }
   }, [currentTime, isLoaded]);
   
