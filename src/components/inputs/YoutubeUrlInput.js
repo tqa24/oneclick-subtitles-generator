@@ -6,7 +6,6 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
-  const [isTitleEditable, setIsTitleEditable] = useState(false);
 
   useEffect(() => {
     if (selectedVideo) {
@@ -25,42 +24,54 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
     return (match && match[7].length === 11) ? match[7] : null;
   };
 
-  const handleUrlChange = (e) => {
+  const fetchVideoTitle = async (videoId) => {
+    try {
+      const youtubeApiKey = localStorage.getItem('youtube_api_key');
+      if (!youtubeApiKey) {
+        console.warn('YouTube API key not found');
+        return null;
+      }
+      
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${youtubeApiKey}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('YouTube API request failed');
+      }
+      
+      const data = await response.json();
+      if (data.items && data.items.length > 0) {
+        return data.items[0].snippet.title;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching video title:', error);
+      return null;
+    }
+  };
+
+  const handleUrlChange = async (e) => {
     const url = e.target.value.trim();
     setUrl(url);
     
     if (isValidYoutubeUrl(url)) {
-      // Clear any existing file URLs when selecting a YouTube video
       localStorage.removeItem('current_file_url');
       
-      // Extract the video ID and set the selected video
       const videoId = extractVideoId(url);
       if (videoId) {
+        const title = await fetchVideoTitle(videoId) || 'YouTube Video';
         setSelectedVideo({
           id: videoId,
           url: url,
           source: 'youtube',
-          title: 'YouTube Video',
+          title: title,
           thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`
         });
       }
     } else {
       setSelectedVideo(null);
     }
-  };
-
-  const handleTitleChange = (e) => {
-    setVideoTitle(e.target.value);
-    if (selectedVideo) {
-      setSelectedVideo({
-        ...selectedVideo,
-        title: e.target.value
-      });
-    }
-  };
-
-  const toggleTitleEdit = () => {
-    setIsTitleEditable(!isTitleEditable);
   };
 
   return (
@@ -134,42 +145,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
             className="thumbnail"
           />
           <div className="video-info">
-            {isTitleEditable ? (
-              <div className="title-edit-container">
-                <input
-                  type="text"
-                  value={videoTitle}
-                  onChange={handleTitleChange}
-                  className="video-title-input"
-                  autoFocus
-                  onBlur={toggleTitleEdit}
-                  onKeyDown={(e) => e.key === 'Enter' && toggleTitleEdit()}
-                />
-                <button 
-                  className="save-title-btn" 
-                  onClick={toggleTitleEdit}
-                  aria-label="Save title"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="title-display">
-                <h3 className="video-title">{videoTitle}</h3>
-                <button 
-                  className="edit-title-btn" 
-                  onClick={toggleTitleEdit}
-                  aria-label="Edit title"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-              </div>
-            )}
+            <h3 className="video-title">{videoTitle}</h3>
             <p className="video-id">Video ID: <span className="video-id-value">{selectedVideo.id}</span></p>
           </div>
         </div>
