@@ -155,6 +155,26 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
 
   const getLastDragEnd = () => dragInfo.current.lastDragEnd;
 
+  const handleDeleteLyric = (index) => {
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    const updatedLyrics = lyrics.filter((_, i) => i !== index);
+    setLyrics(updatedLyrics);
+    if (onUpdateLyrics) {
+      onUpdateLyrics(updatedLyrics);
+    }
+  };
+
+  const handleTextEdit = (index, newText) => {
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    const updatedLyrics = lyrics.map((lyric, i) => 
+      i === index ? { ...lyric, text: newText } : lyric
+    );
+    setLyrics(updatedLyrics);
+    if (onUpdateLyrics) {
+      onUpdateLyrics(updatedLyrics);
+    }
+  };
+
   return {
     lyrics,
     isSticky,
@@ -167,6 +187,8 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleDrag,
     endDrag,
     isDragging,
-    getLastDragEnd
+    getLastDragEnd,
+    handleDeleteLyric,
+    handleTextEdit
   };
 };

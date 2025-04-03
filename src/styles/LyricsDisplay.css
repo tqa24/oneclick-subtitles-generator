@@ -268,14 +268,126 @@
 
 .lyric-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+.lyric-controls {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.lyric-item:hover .lyric-controls {
+  opacity: 1;
+}
+
+.edit-lyric-btn,
+.delete-lyric-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-lyric-btn:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background-color: var(--primary-color-light);
+  transform: translateY(-1px);
+}
+
+.delete-lyric-btn:hover {
+  color: var(--error-color);
+  border-color: var(--error-color);
+  background-color: var(--error-color-light);
+  transform: translateY(-1px);
+}
+
+.edit-lyric-btn svg,
+.delete-lyric-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.edit-lyric-btn:hover svg {
+  transform: rotate(-15deg);
+}
+
+.delete-lyric-btn:hover svg {
+  transform: rotate(90deg);
 }
 
 .lyric-text {
   flex: 1;
   margin-right: 1rem;
-  transition: color var(--transition-speed);
+  cursor: pointer;
+  user-select: none;
+}
+
+.lyric-text span {
+  display: block;
+  padding: 4px 0;
+}
+
+.lyric-text-input {
+  width: 100%;
+  padding: 4px 8px;
+  margin: -4px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: inherit;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.lyric-text-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+.delete-lyric-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-left: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.delete-lyric-btn:hover {
+  opacity: 1;
+  color: var(--error-color);
+  border-color: var(--error-color);
+  background-color: var(--error-color-light);
+  transform: translateY(-1px);
+}
+
+.delete-lyric-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.delete-lyric-btn:hover svg {
+  transform: rotate(90deg);
 }
 
 .timing-controls {
