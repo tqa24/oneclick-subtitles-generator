@@ -1,5 +1,17 @@
 # Subtitles Generator
 
+## Screenshots
+
+Here are some screenshots showcasing the application:
+
+| ![Screenshot 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Screenshot 2](readme_assets/Screenshot%202025-04-03%20184027.png) |
+|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
+| **Upload Video Interface**                                         | **Generated Subtitles Preview**                                    |
+
+| ![Screenshot 3](readme_assets/Screenshot%202025-04-03%20184200.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-03%20184306.png) |
+|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
+| **Timeline Visualization**                                         | **Settings Panel**                                                 |
+
 A web application for generating timed subtitles for videos using Google's Gemini AI technology.
 
 ## Features
