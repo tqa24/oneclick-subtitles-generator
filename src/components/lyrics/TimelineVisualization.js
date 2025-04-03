@@ -360,7 +360,13 @@ const TimelineVisualization = ({
     const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
     const rect = timelineRef.current.getBoundingClientRect();
     const deltaX = e.clientX - lastPanX.current;
-    const timeDelta = (deltaX / rect.width) * (visibleEnd - visibleStart);
+    
+    // Increase panning sensitivity with a multiplier
+    const panSensitivity = 1.05; // Higher value = more sensitive panning
+    const scaledDeltaX = deltaX * panSensitivity;
+    
+    // Apply sensitivity to time delta calculation
+    const timeDelta = (scaledDeltaX / rect.width) * (visibleEnd - visibleStart);
     
     if (Math.abs(deltaX) > 2) { // If we've moved more than 2 pixels
       justPanned.current = true; // Mark that we've panned
