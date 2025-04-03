@@ -25,29 +25,35 @@ const TimelineVisualization = ({
     const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
     
     const visibleDuration = timelineEnd / currentZoomRef.current;
-    const start = Math.max(0, panOffset);
+    const start = panOffset;
     const end = Math.min(timelineEnd, start + visibleDuration);
     
+    // Update currentZoomRef to match external zoom prop
+    currentZoomRef.current = zoom;
+    
     return { start, end, total: timelineEnd };
-  }, [lyrics, duration, panOffset]);
+  }, [lyrics, duration, panOffset, zoom]);
 
-  // Draw the timeline visualization
+  // Draw the timeline visualization with optimizations
   const drawTimeline = useCallback(() => {
     const canvas = timelineRef.current;
     if (!canvas || !duration) return;
     
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for non-transparent canvas
     const displayWidth = canvas.clientWidth;
     const displayHeight = canvas.clientHeight;
     
-    // Set canvas dimensions for proper resolution
+    // Set canvas dimensions with proper DPR handling
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = displayWidth * dpr;
-    canvas.height = displayHeight * dpr;
-    ctx.scale(dpr, dpr);
+    const scaledWidth = displayWidth * dpr;
+    const scaledHeight = displayHeight * dpr;
     
-    // Clear canvas
-    ctx.clearRect(0, 0, displayWidth, displayHeight);
+    // Only resize canvas if dimensions have changed
+    if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+      canvas.width = scaledWidth;
+      canvas.height = scaledHeight;
+      ctx.scale(dpr, dpr);
+    }
     
     // Get computed colors from the container element for theme support
     const computedStyle = getComputedStyle(canvas.parentElement);
@@ -64,41 +70,49 @@ const TimelineVisualization = ({
     const visibleDuration = visibleEnd - visibleStart;
     
     // Function to convert time to x coordinate
-    const timeToX = (time) => {
-      return ((time - visibleStart) / visibleDuration) * displayWidth;
-    };
-    
-    // Draw time markers with theme-aware colors
-    ctx.fillStyle = borderColor;
+    const timeToX = (time) => ((time - visibleStart) / visibleDuration) * displayWidth;
     
     // Calculate proper spacing for time markers based on zoom level
     const timeStep = Math.max(1, Math.ceil(visibleDuration / 15));
     const firstMarker = Math.floor(visibleStart / timeStep) * timeStep;
     
+    // Batch time markers drawing
+    ctx.beginPath();
+    ctx.fillStyle = borderColor;
+    
     for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
       const x = timeToX(time);
-      // Draw full-height vertical lines
-      ctx.fillRect(x, 0, 1, displayHeight);
-      
-      // Draw time labels at the top
-      ctx.fillStyle = textColor;
-      ctx.font = '10px Arial';
-      ctx.textBaseline = 'top';
-      ctx.textAlign = 'left';
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, displayHeight);
+    }
+    ctx.stroke();
+    
+    // Draw time labels
+    ctx.font = '10px Arial';
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = textColor;
+    
+    for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
+      const x = timeToX(time);
       ctx.fillText(`${Math.round(time)}s`, x + 3, 2);
-      ctx.fillStyle = borderColor;
     }
     
-    // Draw lyric segments
-    lyrics.forEach((lyric, index) => {
-      // Skip segments completely outside visible range
-      if (lyric.end < visibleStart || lyric.start > visibleEnd) return;
-      
+    // Optimize lyric segments rendering
+    const minSegmentWidth = 2; // Minimum width to render a segment
+    const visibleLyrics = lyrics.filter(lyric => {
+      if (lyric.end < visibleStart || lyric.start > visibleEnd) return false;
       const startX = timeToX(lyric.start);
       const endX = timeToX(lyric.end);
-      const segmentWidth = Math.max(2, endX - startX); // Minimum width of 2px
+      return (endX - startX) >= minSegmentWidth;
+    });
+    
+    // Batch render segments
+    visibleLyrics.forEach((lyric, index) => {
+      const startX = timeToX(lyric.start);
+      const endX = timeToX(lyric.end);
+      const segmentWidth = endX - startX;
       
-      // Get a color based on the index with theme-aware alpha
       const hue = (index * 30) % 360;
       const isDark = computedStyle.backgroundColor.includes('rgb(30, 30, 30)');
       const lightness = isDark ? '40%' : '60%';
@@ -107,7 +121,6 @@ const TimelineVisualization = ({
       ctx.fillStyle = `hsla(${hue}, 70%, ${lightness}, ${alpha})`;
       ctx.fillRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
       
-      // Draw border with theme-aware color
       ctx.strokeStyle = `hsla(${hue}, 70%, ${isDark ? '50%' : '40%'}, 0.9)`;
       ctx.strokeRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
     });
@@ -116,25 +129,23 @@ const TimelineVisualization = ({
     if (currentTime >= visibleStart && currentTime <= visibleEnd) {
       const currentX = timeToX(currentTime);
       
-      // Draw indicator shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.fillRect(currentX - 2, 0, 4, displayHeight);
-      
-      // Draw indicator
+      // Use path for better performance
+      ctx.beginPath();
       ctx.fillStyle = primaryColor;
-      ctx.fillRect(currentX - 1, 0, 3, displayHeight);
       
       // Draw playhead triangle
-      ctx.beginPath();
       ctx.moveTo(currentX - 6, 0);
       ctx.lineTo(currentX + 6, 0);
       ctx.lineTo(currentX, 6);
       ctx.closePath();
       ctx.fill();
+      
+      // Draw indicator line
+      ctx.fillRect(currentX - 1, 0, 3, displayHeight);
     }
   }, [lyrics, currentTime, duration, getVisibleTimeRange]);
 
-  // Smoothly animate zoom
+  // Throttle zoom animation
   const animateZoom = useCallback((targetZoom) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -143,14 +154,22 @@ const TimelineVisualization = ({
     const startZoom = currentZoomRef.current;
     const zoomDiff = targetZoom - startZoom;
     const startTime = performance.now();
-    const animDuration = 300; // Animation duration in ms
+    const animDuration = 200; // Reduced animation duration for better performance
 
-    // Calculate the time range before zooming
     const { start: oldStart, end: oldEnd, total: timelineEnd } = getVisibleTimeRange();
     const oldVisibleDuration = oldEnd - oldStart;
     const oldViewCenter = oldStart + (oldVisibleDuration / 2);
 
+    let lastDrawTime = 0;
+    const minDrawInterval = 1000 / 60; // Cap at 60fps
+
     const animate = (time) => {
+      if (time - lastDrawTime < minDrawInterval) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      
+      lastDrawTime = time;
       const elapsed = time - startTime;
       const progress = Math.min(elapsed / animDuration, 1);
       
@@ -295,12 +314,22 @@ const TimelineVisualization = ({
     
     const rect = timelineRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const { start: visibleStart, end: visibleEnd } = getVisibleTimeRange();
+    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const visibleDuration = visibleEnd - visibleStart;
     
-    const newTime = visibleStart + (clickX / rect.width) * (visibleEnd - visibleStart);
+    const newTime = visibleStart + (clickX / rect.width) * visibleDuration;
     
     if (newTime >= 0 && newTime <= duration) {
-      onTimelineClick(Math.min(duration, newTime));
+      // Calculate new pan offset while maintaining current zoom level
+      const totalVisibleDuration = timelineEnd / currentZoomRef.current;
+      const halfVisibleDuration = totalVisibleDuration / 2;
+      const newPanOffset = Math.max(0, Math.min(newTime - halfVisibleDuration, timelineEnd - totalVisibleDuration));
+      
+      // Update pan offset first, then trigger the time change
+      setPanOffset(newPanOffset);
+      requestAnimationFrame(() => {
+        onTimelineClick(Math.min(duration, newTime));
+      });
     }
   };
 
