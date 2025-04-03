@@ -6,11 +6,11 @@ Here are some screenshots showcasing the application:
 
 | ![Screenshot 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Screenshot 2](readme_assets/Screenshot%202025-04-03%20184027.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Upload Video Interface**                                         | **Generated Subtitles Preview**                                    |
+| **Upload Video Interface**                                         | **KR/EN/VI Light/Dark theme support**                                    |
 
 | ![Screenshot 3](readme_assets/Screenshot%202025-04-03%20184200.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-03%20184306.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Timeline Visualization**                                         | **Settings Panel**                                                 |
+| **Using Gemini 2.5 Pro Video Understanding**                                         | **Timings adjust/add/remove/edit texts**                                                 |
 
 A web application for generating timed subtitles for videos using Google's Gemini AI technology.
 
