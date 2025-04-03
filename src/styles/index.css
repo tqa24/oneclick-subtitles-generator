@@ -25,6 +25,7 @@
   --error-background: rgba(239, 68, 68, 0.1);
   --info-background: rgba(59, 130, 246, 0.1);
   --transition-speed: 0.3s;
+  --theme-lightness: 60%;
 }
 
 [data-theme="dark"] {
@@ -48,6 +49,7 @@
   --warning-background: rgba(245, 158, 11, 0.15);
   --error-background: rgba(248, 113, 113, 0.15);
   --info-background: rgba(96, 165, 250, 0.15);
+  --theme-lightness: 40%;
 }
 
 body {

@@ -49,8 +49,15 @@ const TimelineVisualization = ({
     // Clear canvas
     ctx.clearRect(0, 0, displayWidth, displayHeight);
     
+    // Get computed colors from the container element for theme support
+    const computedStyle = getComputedStyle(canvas.parentElement);
+    const bgColor = computedStyle.backgroundColor;
+    const borderColor = computedStyle.borderColor;
+    const textColor = computedStyle.color;
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    
     // Draw background
-    ctx.fillStyle = '#f5f5f5';
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, displayWidth, displayHeight);
     
     const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
@@ -61,27 +68,8 @@ const TimelineVisualization = ({
       return ((time - visibleStart) / visibleDuration) * displayWidth;
     };
     
-    // Draw lyric segments
-    lyrics.forEach((lyric, index) => {
-      // Skip segments completely outside visible range
-      if (lyric.end < visibleStart || lyric.start > visibleEnd) return;
-      
-      const startX = timeToX(lyric.start);
-      const endX = timeToX(lyric.end);
-      const segmentWidth = Math.max(2, endX - startX); // Minimum width of 2px
-      
-      // Get a color based on the index
-      const hue = (index * 30) % 360;
-      ctx.fillStyle = `hsla(${hue}, 70%, 60%, 0.7)`;
-      ctx.fillRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
-      
-      // Draw border
-      ctx.strokeStyle = `hsla(${hue}, 70%, 40%, 0.9)`;
-      ctx.strokeRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
-    });
-    
-    // Draw time markers
-    ctx.fillStyle = '#ddd';
+    // Draw time markers with theme-aware colors
+    ctx.fillStyle = borderColor;
     
     // Calculate proper spacing for time markers based on zoom level
     const timeStep = Math.max(1, Math.ceil(visibleDuration / 15));
@@ -93,24 +81,47 @@ const TimelineVisualization = ({
       ctx.fillRect(x, 0, 1, displayHeight);
       
       // Draw time labels at the top
-      ctx.fillStyle = '#666';
+      ctx.fillStyle = textColor;
       ctx.font = '10px Arial';
       ctx.textBaseline = 'top';
       ctx.textAlign = 'left';
       ctx.fillText(`${Math.round(time)}s`, x + 3, 2);
-      ctx.fillStyle = '#ddd';
+      ctx.fillStyle = borderColor;
     }
+    
+    // Draw lyric segments
+    lyrics.forEach((lyric, index) => {
+      // Skip segments completely outside visible range
+      if (lyric.end < visibleStart || lyric.start > visibleEnd) return;
+      
+      const startX = timeToX(lyric.start);
+      const endX = timeToX(lyric.end);
+      const segmentWidth = Math.max(2, endX - startX); // Minimum width of 2px
+      
+      // Get a color based on the index with theme-aware alpha
+      const hue = (index * 30) % 360;
+      const isDark = computedStyle.backgroundColor.includes('rgb(30, 30, 30)');
+      const lightness = isDark ? '40%' : '60%';
+      const alpha = isDark ? '0.8' : '0.7';
+      
+      ctx.fillStyle = `hsla(${hue}, 70%, ${lightness}, ${alpha})`;
+      ctx.fillRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
+      
+      // Draw border with theme-aware color
+      ctx.strokeStyle = `hsla(${hue}, 70%, ${isDark ? '50%' : '40%'}, 0.9)`;
+      ctx.strokeRect(startX, displayHeight * 0.3, segmentWidth, displayHeight * 0.7);
+    });
     
     // Draw current time indicator
     if (currentTime >= visibleStart && currentTime <= visibleEnd) {
       const currentX = timeToX(currentTime);
       
       // Draw indicator shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
       ctx.fillRect(currentX - 2, 0, 4, displayHeight);
       
       // Draw indicator
-      ctx.fillStyle = 'red';
+      ctx.fillStyle = primaryColor;
       ctx.fillRect(currentX - 1, 0, 3, displayHeight);
       
       // Draw playhead triangle
