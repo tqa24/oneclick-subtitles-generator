@@ -111,7 +111,11 @@
   "lyrics": {
     "synchronizedLyrics": "Phụ đề đồng bộ hóa",
     "stickyTimingsToggle": "Thời gian cố định",
-    "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ cố định sẽ điều chỉnh tất cả phụ đề theo sau."
+    "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ cố định sẽ điều chỉnh tất cả phụ đề theo sau.",
+    "editTooltip": "Chỉnh sửa văn bản phụ đề",
+    "deleteTooltip": "Xóa phụ đề",
+    "insertTooltip": "Chèn phụ đề mới",
+    "mergeTooltip": "Gộp hai phụ đề"
   },
   "errors": {
     "apiKeyRequired": "Vui lòng cài đặt khóa API trong phần cài đặt trước.",

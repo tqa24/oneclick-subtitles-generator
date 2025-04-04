@@ -26,6 +26,7 @@
     "supportedFormats": "Supported formats: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
     "maxFileSize": "Maximum size: 2 GB"
   },
+
   "output": {
     "processingVideo": "Processing. This may take a few minutes...",
     "generationSuccess": "Subtitles generated successfully!",
@@ -111,7 +112,11 @@
   "lyrics": {
     "synchronizedLyrics": "Synchronized Subtitles",
     "stickyTimingsToggle": "Sticky Timings",
-    "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles."
+    "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles.",
+    "editTooltip": "Edit lyric text",
+    "deleteTooltip": "Delete lyric",
+    "insertTooltip": "Insert new lyric",
+    "mergeTooltip": "Merge two lyrics"
   },
   "errors": {
     "apiKeyRequired": "Please set your API key in the settings first.",

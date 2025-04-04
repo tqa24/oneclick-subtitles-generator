@@ -1,4 +1,5 @@
 import React, { useState, useRef, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const LyricItem = ({
   lyric,
@@ -16,6 +17,7 @@ const LyricItem = ({
   onMerge,
   hasNextLyric
 }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(lyric.text);
   const [showInsertButton, setShowInsertButton] = useState(false);
@@ -66,7 +68,7 @@ const LyricItem = ({
               <button
                 className="edit-lyric-btn"
                 onClick={handleEditClick}
-                title="Edit lyric text"
+                title={t('lyrics.editTooltip')}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -79,7 +81,7 @@ const LyricItem = ({
                   e.stopPropagation();
                   onDelete(index);
                 }}
-                title="Delete lyric"
+                title={t('lyrics.deleteTooltip')}
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                   <path d="M18 6L6 18M6 6l12 12"/>
@@ -150,7 +152,7 @@ const LyricItem = ({
               e.stopPropagation();
               onInsert(index);
             }}
-            title="Insert new lyric"
+            title={t('lyrics.insertTooltip')}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -164,7 +166,7 @@ const LyricItem = ({
               e.stopPropagation();
               onMerge(index);
             }}
-            title="Merge with next lyric"
+            title={t('lyrics.mergeTooltip')}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M8 18h8M8 6h8M12 2v20"/>
