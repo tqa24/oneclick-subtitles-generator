@@ -10,9 +10,20 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [editedLyrics, setEditedLyrics] = useState(null);
+  const [seekTime, setSeekTime] = useState(null); // Track when seeking happens
 
   const handleLyricClick = (time) => {
     setCurrentTabIndex(time);
+  };
+
+  const handleVideoSeek = (time) => {
+    // Set the seek time to trigger timeline centering
+    setSeekTime(time);
+
+    // Reset the seek time in the next frame to allow future seeks
+    requestAnimationFrame(() => {
+      setSeekTime(null);
+    });
   };
 
   const handleUpdateLyrics = (updatedLyrics) => {
@@ -130,6 +141,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
                        subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
               videoSource={videoSource}
               setDuration={setVideoDuration}
+              onSeek={handleVideoSeek}
             />
 
             <LyricsDisplay
@@ -139,6 +151,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               onUpdateLyrics={handleUpdateLyrics}
               allowEditing={true}
               duration={videoDuration}
+              seekTime={seekTime}
             />
 
             <div className="download-options">

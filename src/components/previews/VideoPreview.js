@@ -8,7 +8,7 @@ import {
 } from '../../utils/videoDownloader';
 import '../../styles/VideoPreview.css';
 
-const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -224,6 +224,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       // Update the current time immediately when seeking is complete
       setCurrentTime(videoElement.currentTime);
       lastTimeUpdateRef.current = performance.now();
+
+      // Notify parent component about the seek operation
+      if (onSeek) {
+        onSeek(videoElement.currentTime);
+      }
 
       // Release the seek lock immediately
       seekLockRef.current = false;
