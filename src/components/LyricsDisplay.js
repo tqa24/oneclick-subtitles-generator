@@ -19,6 +19,7 @@ const LyricsDisplay = ({
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const lyricsContainerRef = useRef(null);
+  const lastTimeRef = useRef(currentTime); // Track the last currentTime value
 
   const {
     lyrics,
@@ -79,6 +80,26 @@ const LyricsDisplay = ({
       }
     }
   }, [currentIndex]);
+
+  // Center the timeline view when currentTime changes significantly (due to seeking)
+  useEffect(() => {
+    // Calculate the time difference
+    const timeDiff = Math.abs(currentTime - lastTimeRef.current);
+
+    // If the time difference is significant (more than 1 second), it's likely a seek operation
+    if (timeDiff > 1) {
+      // Center the timeline on the new time
+      setCenterTimelineAt(currentTime);
+
+      // Reset the center time in the next frame to allow future updates
+      requestAnimationFrame(() => {
+        setCenterTimelineAt(null);
+      });
+    }
+
+    // Update the last time reference
+    lastTimeRef.current = currentTime;
+  }, [currentTime]);
 
   // Setup drag event handlers
   const handleMouseDown = (e, index, field) => {

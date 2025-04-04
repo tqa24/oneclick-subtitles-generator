@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 
 // Simple hash function for consistent colors
 const hashString = (str) => {
@@ -49,18 +49,20 @@ const TimelineVisualization = ({
 }) => {
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
-  const isPanning = useRef(false);
-  const lastPanX = useRef(0);
-  const lastPanOffset = useRef(null);
-  const justPanned = useRef(false);
   const animationFrameRef = useRef(null);
   const currentZoomRef = useRef(zoom);
   const autoScrollRef = useRef(null);
   const isScrollingRef = useRef(false);
-  // We keep this state even though it's not directly used in rendering
-  // It's used by the zoom animation to maintain playhead position
-  const [playheadX, setPlayheadX] = useState(null);
   const canvasWidthRef = useRef(0);
+
+  // Track the last time the user manually interacted with the timeline
+  const lastManualPanTime = useRef(0);
+
+  // Flag to completely disable auto-scrolling
+  const disableAutoScroll = useRef(false);
+
+  // Debug counter to track state updates
+  const debugCounter = useRef(0);
 
   // Calculate minimum zoom level to limit visible timeline to 300 seconds
   const calculateMinZoom = useCallback((totalDuration) => {
@@ -152,9 +154,47 @@ const TimelineVisualization = ({
   }, [currentTime, getVisibleTimeRange, duration]);
 
   // Store the playhead position before zooming
+  // This effect is no longer needed since we removed the playhead animation
   useEffect(() => {
-    setPlayheadX(calculatePlayheadPosition());
+    // No-op - we've removed the playhead animation
   }, [calculatePlayheadPosition]);
+
+  // Function to center the timeline view on a specific time
+  const centerTimelineOnTime = useCallback((time) => {
+    if (!duration) return;
+
+    // Get the current timeline end
+    const maxLyricTime = lyrics.length > 0
+      ? Math.max(...lyrics.map(lyric => lyric.end))
+      : duration;
+    const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
+
+    // Ensure we respect the minimum zoom level
+    const minZoom = calculateMinZoom(timelineEnd);
+    const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
+
+    // Calculate visible duration based on effective zoom
+    const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
+    const halfVisibleDuration = totalVisibleDuration / 2;
+
+    // Center the view on the specified time
+    const newPanOffset = Math.max(0, Math.min(time - halfVisibleDuration, timelineEnd - totalVisibleDuration));
+
+    // Update the pan offset
+    setPanOffset(newPanOffset);
+
+    // Record this as a manual interaction to prevent auto-scrolling
+    lastManualPanTime.current = performance.now();
+
+    console.log(`Centered timeline on time: ${time}s, new offset: ${newPanOffset}`);
+  }, [lyrics, duration, calculateMinZoom, setPanOffset]);
+
+  // Watch for centerOnTime prop changes
+  useEffect(() => {
+    if (centerOnTime !== undefined && centerOnTime !== null) {
+      centerTimelineOnTime(centerOnTime);
+    }
+  }, [centerOnTime, centerTimelineOnTime]);
 
   // Helper function to calculate visible time range with a temporary pan offset
   // This avoids creating a dependency on the state panOffset during active panning
@@ -325,10 +365,8 @@ const TimelineVisualization = ({
     if (currentTime >= visibleStart && currentTime <= visibleEnd) {
       const currentX = timeToX(currentTime);
 
-      // Store the current playhead position for zoom animations
-      if (tempPanOffset === null) {
-        setPlayheadX(currentX);
-      }
+      // We no longer need to store the playhead position for zoom animations
+      // since we've removed the dragging functionality
 
       // Use path for better performance
       ctx.beginPath();
@@ -372,42 +410,9 @@ const TimelineVisualization = ({
     }
   }, [zoom, animateZoom]);
 
-  // Function to center the timeline view on a specific time
-  const centerTimelineOnTime = useCallback((time) => {
-    if (!duration) return;
 
-    // Get the current timeline end
-    const maxLyricTime = lyrics.length > 0
-      ? Math.max(...lyrics.map(lyric => lyric.end))
-      : duration;
-    const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
 
-    // Ensure we respect the minimum zoom level
-    const minZoom = calculateMinZoom(timelineEnd);
-    const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
 
-    // Calculate visible duration based on effective zoom
-    const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
-    const halfVisibleDuration = totalVisibleDuration / 2;
-
-    // Center the view on the specified time
-    const newPanOffset = Math.max(0, Math.min(time - halfVisibleDuration, timelineEnd - totalVisibleDuration));
-
-    // Update the pan offset
-    setPanOffset(newPanOffset);
-
-    // Record this as a manual interaction to prevent auto-scrolling
-    lastManualPanTime.current = performance.now();
-
-    console.log(`Centered timeline on time: ${time}s, new offset: ${newPanOffset}`);
-  }, [lyrics, duration, calculateMinZoom, setPanOffset]);
-
-  // Watch for centerOnTime prop changes
-  useEffect(() => {
-    if (centerOnTime !== undefined && centerOnTime !== null) {
-      centerTimelineOnTime(centerOnTime);
-    }
-  }, [centerOnTime, centerTimelineOnTime]);
 
   // Clean up animation frame on unmount
   useEffect(() => {
@@ -485,24 +490,15 @@ const TimelineVisualization = ({
     }
   }, [lyrics, currentTime, duration, zoom, panOffset, drawTimeline]);
 
-  // Track the last time the user manually panned
-  const lastManualPanTime = useRef(0);
 
-  // Flag to completely disable auto-scrolling
-  const disableAutoScroll = useRef(false);
-
-  // Debug counter to track state updates
-  const debugCounter = useRef(0);
 
   // Ensure playhead stays visible by auto-scrolling, but only when absolutely necessary
   useEffect(() => {
     // COMPLETELY DISABLE auto-scroll if:
     // 1. No duration set yet
-    // 2. Currently panning
-    // 3. Recently manually panned (within last 5 seconds)
-    // 4. User has explicitly disabled it
+    // 2. Recently manually interacted with (within last 5 seconds)
+    // 3. User has explicitly disabled it
     if (!duration ||
-        isPanning.current ||
         (performance.now() - lastManualPanTime.current < 5000) ||
         disableAutoScroll.current) {
       return;
@@ -547,13 +543,7 @@ const TimelineVisualization = ({
       const animDuration = 800; // Slower animation
 
       const animate = (time) => {
-        // If user started panning during animation, cancel it immediately
-        if (isPanning.current) {
-          console.log('Auto-scroll cancelled: user is panning');
-          isScrollingRef.current = false;
-          autoScrollRef.current = null;
-          return;
-        }
+        // We no longer need to check for panning since we've removed that functionality
 
         const elapsed = time - startTime;
         const progress = Math.min(elapsed / animDuration, 1);
@@ -582,127 +572,10 @@ const TimelineVisualization = ({
     };
   }, [currentTime, duration, getVisibleTimeRange, panOffset, setPanOffset, calculateMinZoom]);
 
-  // Handle mouse down for panning
-  const handleMouseDown = (e) => {
-    if (e.button === 0) { // Left click only
-      e.preventDefault(); // Prevent text selection
-      isPanning.current = true;
-      justPanned.current = false; // Reset the panned state
-      lastPanX.current = e.clientX;
-      e.currentTarget.style.cursor = 'grabbing';
-
-      // Record the time of this manual interaction
-      lastManualPanTime.current = performance.now();
-
-      // Cancel any existing animation frame
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      // Cancel any auto-scrolling
-      if (autoScrollRef.current) {
-        cancelAnimationFrame(autoScrollRef.current);
-        autoScrollRef.current = null;
-        isScrollingRef.current = false;
-        console.log('Auto-scroll cancelled: user started panning');
-      }
-    }
-  };
-
-  // Handle mouse move for panning - optimized version
-  const handleMouseMove = (e) => {
-    if (!isPanning.current) return;
-
-    e.preventDefault();
-
-    // Calculate delta since last move
-    const deltaX = e.clientX - lastPanX.current;
-
-    // Always update for smoother panning, even with small movements
-    justPanned.current = true; // Mark that we've panned
-
-    // Get current visible range
-    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
-    const rect = timelineRef.current.getBoundingClientRect();
-
-    // Increase panning sensitivity with a multiplier
-    const panSensitivity = 2.0; // Much higher value for more sensitive panning
-    const scaledDeltaX = deltaX * panSensitivity;
-
-    // Apply sensitivity to time delta calculation
-    const timeDelta = (scaledDeltaX / rect.width) * (visibleEnd - visibleStart);
-
-    // Calculate new pan offset - ensure it's at least 0
-    let newPanOffset = Math.max(0, panOffset - timeDelta);
-
-    // Boundary check for the end
-    if (visibleEnd >= timelineEnd && timeDelta < 0) {
-      // If at the end, only allow panning left
-      newPanOffset = panOffset;
-    }
-
-    // Cancel any existing animation frame
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    // Instead of updating state, directly redraw with the new offset
-    // This avoids React re-renders during panning for better performance
-    animationFrameRef.current = requestAnimationFrame(() => {
-      drawTimeline(newPanOffset);
-    });
-
-    // Store the new offset to apply when panning ends
-    lastPanOffset.current = newPanOffset;
-
-    // Always update the last X position for smoother tracking
-    lastPanX.current = e.clientX;
-
-    // Record the time of this manual interaction
-    lastManualPanTime.current = performance.now();
-  };
-
-  // Handle mouse up to end panning
-  const handleMouseUp = (e) => {
-    if (isPanning.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      isPanning.current = false;
-
-      if (timelineRef.current) {
-        timelineRef.current.style.cursor = 'grab';
-      }
-
-      // Apply the final pan offset to state only once at the end of panning
-      if (lastPanOffset.current !== null && lastPanOffset.current !== panOffset) {
-        setPanOffset(lastPanOffset.current);
-        lastPanOffset.current = null;
-
-        // Record the time of this manual pan to prevent auto-scrolling immediately after
-        lastManualPanTime.current = performance.now();
-        console.log(`Manual pan completed. New offset: ${panOffset}`);
-      }
-
-      // Clear the panned state after a short delay
-      setTimeout(() => {
-        justPanned.current = false;
-      }, 100);
-
-      // Ensure we draw one last time with the final state
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(() => {
-        drawTimeline();
-      });
-    }
-  };
-
   // Handle timeline click with zoom consideration
   const handleTimelineClick = (e) => {
-    // Prevent seeking if we just finished panning
-    if (!timelineRef.current || !duration || !onTimelineClick || justPanned.current) {
+    // Check if we can handle the click
+    if (!timelineRef.current || !duration || !onTimelineClick) {
       return;
     }
 
@@ -735,13 +608,9 @@ const TimelineVisualization = ({
     <div className="timeline-container">
       <canvas
         ref={timelineRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
         onClick={handleTimelineClick}
         className="subtitle-timeline"
-        style={{ cursor: isPanning.current ? 'grabbing' : 'grab' }}
+        style={{ cursor: 'pointer' }}
       />
     </div>
   );
