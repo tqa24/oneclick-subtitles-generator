@@ -3,7 +3,7 @@ import { parseGeminiResponse } from '../utils/subtitleParser';
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const MODEL = "gemini-2.5-pro-exp-03-25";
-    
+
     let requestData = {
         model: MODEL,
         contents: []
@@ -15,7 +15,7 @@ export const callGeminiApi = async (input, inputType) => {
                 role: "user",
                 parts: [
                     { text: "Transcribe this video" },
-                    { 
+                    {
                         fileData: {
                             fileUri: input
                         }
@@ -23,13 +23,18 @@ export const callGeminiApi = async (input, inputType) => {
                 ]
             }
         ];
-    } else if (inputType === 'video' || inputType === 'audio') {
+    } else if (inputType === 'video' || inputType === 'audio' || inputType === 'file-upload') {
+        // For file-upload, treat it the same as video/audio files
         const base64Data = await fileToBase64(input);
+
+        // Determine content type based on file MIME type
+        const contentType = input.type.startsWith('video/') ? 'video' : 'audio';
+
         requestData.contents = [
             {
                 role: "user",
                 parts: [
-                    { text: `Transcribe this ${inputType}` },
+                    { text: `Transcribe this ${contentType}` },
                     {
                         inlineData: {
                             mimeType: input.type,
@@ -43,7 +48,7 @@ export const callGeminiApi = async (input, inputType) => {
 
     try {
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`, 
+            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
             {
                 method: 'POST',
                 headers: {
@@ -60,7 +65,7 @@ export const callGeminiApi = async (input, inputType) => {
 
         const data = await response.json();
         console.log('Gemini API response:', data);
-        
+
         return parseGeminiResponse(data);
     } catch (error) {
         console.error('Error calling Gemini API:', error);
