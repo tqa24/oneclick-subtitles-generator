@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/ParallelProcessingStatus.css';
+import { FiRefreshCw } from 'react-icons/fi';
 
 /**
  * Component to display the status of parallel segment processing
@@ -8,11 +9,12 @@ import '../styles/ParallelProcessingStatus.css';
  * @param {Array} props.segments - Array of segment status objects
  * @param {string} props.overallStatus - Overall processing status message
  * @param {string} props.statusType - Status type (loading, success, error, warning)
+ * @param {Function} props.onRetrySegment - Function to retry processing a specific segment
  * @returns {JSX.Element} - Rendered component
  */
-const ParallelProcessingStatus = ({ segments, overallStatus, statusType }) => {
+const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment }) => {
   const { t } = useTranslation();
-  
+
   if (!segments || segments.length === 0) {
     return (
       <div className={`status ${statusType}`}>
@@ -20,25 +22,37 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType }) => {
       </div>
     );
   }
-  
+
   return (
     <div className="parallel-processing-container">
       <div className={`status ${statusType}`}>
         {overallStatus}
       </div>
-      
+
       <div className="segments-status">
         <h4>{t('output.segmentsStatus', 'Segments Status')}</h4>
         <div className="segments-grid">
           {segments.map((segment, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`segment-status ${segment.status}`}
               title={segment.message}
             >
               <span className="segment-number">{index + 1}</span>
               <span className="segment-indicator"></span>
               <span className="segment-message">{segment.shortMessage || segment.status}</span>
+              {segment.status === 'success' && segment.shortMessage === t('output.done', 'Hoàn thành') && (
+                <button
+                  className="segment-retry-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRetrySegment && onRetrySegment(index);
+                  }}
+                  title={t('output.retrySegment', 'Retry this segment')}
+                >
+                  <FiRefreshCw size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>

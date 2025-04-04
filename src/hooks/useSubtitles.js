@@ -3,7 +3,7 @@ import { callGeminiApi } from '../services/geminiService';
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
-import { getVideoDuration, processLongVideo } from '../utils/videoProcessor';
+import { getVideoDuration, processLongVideo, retrySegmentProcessing } from '../utils/videoProcessor';
 
 export const useSubtitles = (t) => {
     const [subtitlesData, setSubtitlesData] = useState(null);
@@ -281,6 +281,37 @@ export const useSubtitles = (t) => {
         }
     }, [t]);
 
+    // Function to retry a specific segment
+    const retrySegment = useCallback(async (segmentIndex, segments) => {
+        if (!subtitlesData || isGenerating) {
+            return false;
+        }
+
+        setIsGenerating(true);
+
+        try {
+            // Retry processing the specific segment
+            const updatedSubtitles = await retrySegmentProcessing(
+                segmentIndex,
+                segments,
+                subtitlesData,
+                setStatus,
+                t
+            );
+
+            // Update the subtitles data with the new results
+            setSubtitlesData(updatedSubtitles);
+            setStatus({ message: t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }), type: 'success' });
+            return true;
+        } catch (error) {
+            console.error('Error retrying segment:', error);
+            setStatus({ message: `${t('errors.segmentRetryFailed', 'Failed to retry segment')}: ${error.message}`, type: 'error' });
+            return false;
+        } finally {
+            setIsGenerating(false);
+        }
+    }, [subtitlesData, isGenerating, t]);
+
     return {
         subtitlesData,
         setSubtitlesData,
@@ -289,6 +320,7 @@ export const useSubtitles = (t) => {
         isGenerating,
         generateSubtitles,
         retryGeneration,
-        updateSegmentsStatus
+        updateSegmentsStatus,
+        retrySegment
     };
 };

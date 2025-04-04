@@ -78,6 +78,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
 /* Status colors */
@@ -123,4 +124,32 @@
     opacity: 0.6;
     transform: scale(0.8);
   }
+}
+
+/* Refresh button styles */
+.segment-retry-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #3498db;
+  padding: 4px;
+  margin-left: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.segment-retry-btn:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+  transform: rotate(30deg);
+}
+
+[data-theme="dark"] .segment-retry-btn {
+  color: #5dade2;
+}
+
+[data-theme="dark"] .segment-retry-btn:hover {
+  background-color: rgba(93, 173, 226, 0.2);
 }

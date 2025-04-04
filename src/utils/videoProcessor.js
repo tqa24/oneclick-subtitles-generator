@@ -294,6 +294,95 @@ export const createVideoSegment = (originalFile, startTime, endTime, segmentInde
  * @param {Function} t - Translation function
  * @returns {Promise<Array>} - Array of subtitle objects
  */
+/**
+ * Retry processing a specific segment
+ * @param {number} segmentIndex - The index of the segment to retry
+ * @param {Array} segments - Array of segment objects with URLs
+ * @param {Array} currentSubtitles - Current subtitles array
+ * @param {Function} onStatusUpdate - Callback for status updates
+ * @param {Function} t - Translation function
+ * @returns {Promise<Array>} - Updated array of subtitle objects
+ */
+export const retrySegmentProcessing = async (segmentIndex, segments, currentSubtitles, onStatusUpdate, t) => {
+    if (!segments || !segments[segmentIndex]) {
+        throw new Error(`Segment ${segmentIndex + 1} not found`);
+    }
+
+    const segment = segments[segmentIndex];
+    const startTime = segmentIndex * getMaxSegmentDurationSeconds();
+    const segmentCacheId = `segment_${segment.name}`;
+
+    // Update status to show we're retrying this segment
+    onStatusUpdate({
+        message: t('output.retryingSegment', 'Retrying segment {{segmentNumber}}...', { segmentNumber: segmentIndex + 1 }),
+        type: 'loading'
+    });
+
+    // Function to update just this segment's status
+    const updateSegmentStatus = (status, message) => {
+        // Create the status object
+        const segmentStatus = {
+            index: segmentIndex,
+            status,
+            message,
+            shortMessage: status === 'loading' ? t('output.processing') :
+                         status === 'success' ? t('output.done') :
+                         status === 'error' ? t('output.failed') :
+                         status === 'cached' ? t('output.cached') :
+                         status === 'pending' ? t('output.pending') : ''
+        };
+
+        // Dispatch event to update UI for just this segment
+        const event = new CustomEvent('segmentStatusUpdate', {
+            detail: [segmentStatus]
+        });
+        window.dispatchEvent(event);
+    };
+
+    try {
+        // Update status to show we're processing
+        updateSegmentStatus('loading', t('output.processing', 'Processing...'));
+
+        // Process the segment
+        const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t);
+
+        // Update status to show success
+        updateSegmentStatus('success', t('output.processingComplete', 'Processing complete'));
+
+        // If we have current subtitles, replace the ones from this segment
+        if (currentSubtitles && currentSubtitles.length > 0) {
+            // Remove subtitles from this segment's time range
+            const segmentStartTime = startTime;
+            const segmentEndTime = startTime + getMaxSegmentDurationSeconds();
+
+            // Filter out subtitles in this segment's time range
+            const filteredSubtitles = currentSubtitles.filter(subtitle =>
+                subtitle.start < segmentStartTime || subtitle.start >= segmentEndTime
+            );
+
+            // Add the new subtitles
+            const updatedSubtitles = [...filteredSubtitles, ...newSegmentSubtitles];
+
+            // Sort by start time
+            updatedSubtitles.sort((a, b) => a.start - b.start);
+
+            // Renumber IDs
+            updatedSubtitles.forEach((subtitle, index) => {
+                subtitle.id = index + 1;
+            });
+
+            return updatedSubtitles;
+        }
+
+        // If we don't have current subtitles, just return the new ones
+        return newSegmentSubtitles;
+    } catch (error) {
+        console.error(`Error retrying segment ${segmentIndex + 1}:`, error);
+        updateSegmentStatus('error', error.message || t('output.processingFailed', 'Processing failed'));
+        throw error;
+    }
+};
+
 export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
     // Create an array to track segment status
     const segmentStatusArray = [];
@@ -367,6 +456,12 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
 
         // Process all segments in parallel
         const segments = splitResult.segments;
+
+        // Dispatch event with segments for potential retries later
+        const segmentsEvent = new CustomEvent('videoSegmentsUpdate', {
+            detail: segments
+        });
+        window.dispatchEvent(segmentsEvent);
 
         // Update status to show we're processing in parallel
         onStatusUpdate({

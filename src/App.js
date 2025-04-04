@@ -29,7 +29,7 @@ function App() {
     isGenerating,
     generateSubtitles,
     retryGeneration,
-    updateSegmentsStatus
+    retrySegment
   } = useSubtitles(t);
 
   // Apply theme to document
@@ -37,12 +37,29 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // State to store video segments for retrying
+  const [videoSegments, setVideoSegments] = useState([]);
+
   // Listen for segment status updates
   useEffect(() => {
     // Set up event listener for segment status updates
     const handleSegmentStatusUpdate = (event) => {
       if (event.detail && Array.isArray(event.detail)) {
-        setSegmentsStatus(event.detail);
+        // If this is a full update (all segments), replace the array
+        if (event.detail.length > 1) {
+          setSegmentsStatus(event.detail);
+        } else {
+          // If this is a single segment update, update just that segment
+          const updatedSegment = event.detail[0];
+          setSegmentsStatus(prevStatus => {
+            const newStatus = [...prevStatus];
+            const index = newStatus.findIndex(s => s.index === updatedSegment.index);
+            if (index !== -1) {
+              newStatus[index] = updatedSegment;
+            }
+            return newStatus;
+          });
+        }
       }
     };
 
@@ -52,6 +69,24 @@ function App() {
     // Clean up
     return () => {
       window.removeEventListener('segmentStatusUpdate', handleSegmentStatusUpdate);
+    };
+  }, []);
+
+  // Listen for video segments update
+  useEffect(() => {
+    // Set up event listener for video segments
+    const handleVideoSegmentsUpdate = (event) => {
+      if (event.detail && Array.isArray(event.detail)) {
+        setVideoSegments(event.detail);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('videoSegmentsUpdate', handleVideoSegmentsUpdate);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('videoSegmentsUpdate', handleVideoSegmentsUpdate);
     };
   }, []);
 
@@ -267,6 +302,8 @@ function App() {
           isGenerating={isGenerating}
           segmentsStatus={segmentsStatus}
           activeTab={activeTab}
+          onRetrySegment={retrySegment}
+          videoSegments={videoSegments}
         />
       </main>
 
