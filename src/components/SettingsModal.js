@@ -10,16 +10,19 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(30); // Default to 30 minutes
+  const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash-lite'); // Default model
 
   // Load saved settings on component mount
   useEffect(() => {
     const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
     const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '30');
+    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash-lite';
 
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
     setSegmentDuration(savedSegmentDuration);
+    setGeminiModel(savedGeminiModel);
   }, []);
 
   // Handle clear cache
@@ -51,11 +54,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
 
   // Handle save button click
   const handleSave = () => {
-    // Save segment duration to localStorage
+    // Save settings to localStorage
     localStorage.setItem('segment_duration', segmentDuration.toString());
+    localStorage.setItem('gemini_model', geminiModel);
 
-    // Notify parent component about API keys and segment duration
-    onSave(geminiApiKey, youtubeApiKey, segmentDuration);
+    // Notify parent component about API keys, segment duration, and model
+    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel);
     onClose();
   };
 
@@ -193,6 +197,34 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 <option value="20">20 {t('settings.minutes', 'minutes')}</option>
                 <option value="30">30 {t('settings.minutes', 'minutes')}</option>
                 <option value="45">45 {t('settings.minutes', 'minutes')}</option>
+              </select>
+            </div>
+
+            <div className="gemini-model-setting">
+              <label htmlFor="gemini-model">
+                {t('settings.geminiModel', 'Gemini Model')}
+              </label>
+              <p className="setting-description">
+                {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
+              </p>
+              <select
+                id="gemini-model"
+                value={geminiModel}
+                onChange={(e) => setGeminiModel(e.target.value)}
+                className="gemini-model-select"
+              >
+                <option value="gemini-2.5-pro-exp-03-25">
+                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest)')}
+                </option>
+                <option value="gemini-2.0-flash-thinking-exp-01-21">
+                  {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, tied on slowest)')}
+                </option>
+                <option value="gemini-2.0-flash">
+                  {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
+                </option>
+                <option value="gemini-2.0-flash-lite">
+                  {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
+                </option>
               </select>
             </div>
           </div>

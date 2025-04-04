@@ -45,6 +45,7 @@
     "serverSplitting": "Đang tải lên và chia video trên máy chủ...",
     "processingSegment": "Đang xử lý phần {{current}}...",
     "processingAllSegments": "Đang xử lý tất cả {{count}} phần song song...",
+    "processingInParallel": "Đang xử lý song song...",
     "retryingSegment": "Đang thử lại phần {{current}} (lần thử {{attempt}})...",
     "someSegmentsFailed": "Một số phần không thể xử lý. Phụ đề có thể không đầy đủ.",
     "segmentsStatus": "Trạng thái các phần",
@@ -56,7 +57,8 @@
     "processing": "Đang xử lý",
     "done": "Hoàn thành",
     "failed": "Thất bại",
-    "cached": "Đã lưu trữ"
+    "cached": "Đã lưu trữ",
+    "pending": "Đang chờ"
   },
   "settings": {
     "title": "Cài đặt",
@@ -91,6 +93,12 @@
     "segmentDuration": "Độ dài phân đoạn (phút)",
     "segmentDurationDescription": "Chọn độ dài của mỗi phân đoạn video khi xử lý video dài. Phân đoạn ngắn hơn sẽ xử lý nhanh hơn nhưng có thể kém chính xác hơn.",
     "minutes": "phút",
+    "geminiModel": "Mô hình Gemini",
+    "geminiModelDescription": "Chọn mô hình Gemini để sử dụng cho việc phiên âm. Các mô hình khác nhau cung cấp sự cân bằng giữa độ chính xác và tốc độ.",
+    "modelBestAccuracy": "Gemini 2.5 Pro (Độ chính xác tốt nhất, chậm nhất)",
+    "modelSecondBest": "Gemini 2.0 Flash Thinking (Độ chính xác thứ hai, cũng chậm nhất)",
+    "modelThirdBest": "Gemini 2.0 Flash (Độ chính xác thứ ba, chấp nhận được, tốc độ trung bình)",
+    "modelFastest": "Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất - chỉ dùng để kiểm tra)",
     "cache": "Quản lý bộ nhớ đệm",
     "cacheDescription": "Xóa tất cả phụ đề và video đã tải xuống để giải phóng dung lượng.",
     "clearCache": "Xóa bộ nhớ đệm",

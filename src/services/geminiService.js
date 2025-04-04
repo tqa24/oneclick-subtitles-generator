@@ -2,8 +2,8 @@ import { parseGeminiResponse } from '../utils/subtitleParser';
 
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
-    // const MODEL = "gemini-2.5-pro-exp-03-25";
-    const MODEL = "gemini-2.0-flash-lite";
+    // Get the model from localStorage or use default
+    const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash-lite";
 
     let requestData = {
         model: MODEL,

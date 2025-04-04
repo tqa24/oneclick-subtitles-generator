@@ -5,7 +5,7 @@ import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [] }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -104,7 +104,8 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   return (
     <div className="output-container">
       {status?.message && (
-        segmentsStatus.length > 0 ? (
+        // Only show segments status for file upload method and when segments exist
+        activeTab === 'file-upload' && segmentsStatus.length > 0 ? (
           <ParallelProcessingStatus
             segments={segmentsStatus}
             overallStatus={status.message}

@@ -94,7 +94,7 @@ function App() {
     }
   }, []);
 
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration, geminiModel) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -111,6 +111,11 @@ function App() {
     // Save segment duration
     if (segmentDuration) {
       localStorage.setItem('segment_duration', segmentDuration.toString());
+    }
+
+    // Save Gemini model
+    if (geminiModel) {
+      localStorage.setItem('gemini_model', geminiModel);
     }
 
     // Update state
@@ -261,6 +266,7 @@ function App() {
           uploadedFile={uploadedFile}
           isGenerating={isGenerating}
           segmentsStatus={segmentsStatus}
+          activeTab={activeTab}
         />
       </main>
 

@@ -145,9 +145,9 @@ async function processSegment(segment, segmentIndex, startTime, segmentCacheId, 
     let success = false;
     let segmentSubtitles = null;
 
-    // Update status to show which segment is being processed
+    // Update status to show we're processing in parallel
     onStatusUpdate({
-        message: t('output.processingSegment', 'Processing segment {{current}}...', { current: segmentIndex + 1 }),
+        message: t('output.processingInParallel', 'Processing in parallel...'),
         type: 'loading'
     });
 
@@ -194,12 +194,9 @@ async function processSegment(segment, segmentIndex, startTime, segmentCacheId, 
                 throw new Error(`Failed to process segment ${segmentIndex+1} after ${maxRetries} attempts`);
             }
 
-            // Update status for retry
+            // Update status for retry - keep using the parallel processing message
             onStatusUpdate({
-                message: t('output.retryingSegment', 'Retrying segment {{current}} (attempt {{attempt}})...', {
-                    current: segmentIndex + 1,
-                    attempt: retryCount + 1
-                }),
+                message: t('output.processingInParallel', 'Processing in parallel...'),
                 type: 'loading'
             });
 
@@ -308,10 +305,12 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
             index,
             status,
             message,
+            // Use simple status indicators without segment numbers
             shortMessage: status === 'loading' ? t('output.processing') :
                          status === 'success' ? t('output.done') :
                          status === 'error' ? t('output.failed') :
-                         status === 'cached' ? t('output.cached') : ''
+                         status === 'cached' ? t('output.cached') :
+                         status === 'pending' ? t('output.pending') : ''
         };
 
         // Dispatch event to update UI
@@ -369,9 +368,9 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
         // Process all segments in parallel
         const segments = splitResult.segments;
 
-        // Update status to show we're processing all segments
+        // Update status to show we're processing in parallel
         onStatusUpdate({
-            message: t('output.processingAllSegments', 'Processing all {{count}} segments in parallel...', { count: segments.length }),
+            message: t('output.processingInParallel', 'Processing in parallel...'),
             type: 'loading'
         });
 
@@ -402,7 +401,7 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
                 }
 
                 // If not cached, process the segment
-                updateSegmentStatus(i, 'loading', t('output.processingSegment', 'Processing segment {{current}}...', { current: i + 1 }));
+                updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'));
                 const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t);
                 updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'));
                 return result;
