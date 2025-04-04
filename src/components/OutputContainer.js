@@ -5,7 +5,7 @@ import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, videoSegments = [], retryingSegments = [] }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -152,6 +152,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               allowEditing={true}
               duration={videoDuration}
               seekTime={seekTime}
+              timeFormat={timeFormat}
             />
 
             <div className="download-options">

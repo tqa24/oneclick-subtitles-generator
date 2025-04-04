@@ -1,0 +1,73 @@
+/**
+ * Utility functions for formatting time in different formats
+ */
+
+/**
+ * Format time in seconds to a specific format
+ * @param {number} timeInSeconds - Time in seconds
+ * @param {string} format - Format to use ('seconds' or 'hms')
+ * @returns {string} - Formatted time string
+ */
+export const formatTime = (timeInSeconds, format = 'seconds') => {
+  if (timeInSeconds === undefined || timeInSeconds === null) {
+    return '';
+  }
+
+  if (format === 'seconds') {
+    // Format as seconds with 2 decimal places
+    return timeInSeconds.toFixed(2) + 's';
+  } else if (format === 'hms') {
+    // Format as HH:MM:SS
+    const hours = Math.floor(timeInSeconds / 3600);
+    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    const milliseconds = Math.floor((timeInSeconds % 1) * 100);
+
+    // Only show hours if there are any
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+    } else {
+      return `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+    }
+  }
+
+  // Default fallback
+  return timeInSeconds.toFixed(2) + 's';
+};
+
+/**
+ * Parse a formatted time string back to seconds
+ * @param {string} timeString - Formatted time string
+ * @returns {number} - Time in seconds
+ */
+export const parseTimeString = (timeString) => {
+  // Remove the 's' suffix if present
+  timeString = timeString.replace('s', '');
+
+  // Check if it's in HH:MM:SS.mmm format
+  if (timeString.includes(':')) {
+    const parts = timeString.split(':');
+
+    if (parts.length === 3) {
+      // HH:MM:SS.mmm format
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      const secondsParts = parts[2].split('.');
+      const seconds = parseInt(secondsParts[0], 10);
+      const milliseconds = secondsParts.length > 1 ? parseInt(secondsParts[1], 10) : 0;
+
+      return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+    } else if (parts.length === 2) {
+      // MM:SS.mmm format
+      const minutes = parseInt(parts[0], 10);
+      const secondsParts = parts[1].split('.');
+      const seconds = parseInt(secondsParts[0], 10);
+      const milliseconds = secondsParts.length > 1 ? parseInt(secondsParts[1], 10) : 0;
+
+      return minutes * 60 + seconds + milliseconds / 1000;
+    }
+  }
+
+  // Assume it's just seconds
+  return parseFloat(timeString);
+};

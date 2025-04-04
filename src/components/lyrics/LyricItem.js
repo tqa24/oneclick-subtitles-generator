@@ -1,5 +1,6 @@
 import React, { useState, useRef, memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatTime } from '../../utils/timeFormatter';
 
 const LyricItem = ({
   lyric,
@@ -15,7 +16,8 @@ const LyricItem = ({
   onTextEdit,
   onInsert,
   onMerge,
-  hasNextLyric
+  hasNextLyric,
+  timeFormat = 'seconds'
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -118,7 +120,7 @@ const LyricItem = ({
                 className={`time-control start-time ${isDragging(index, 'start') ? 'dragging' : ''}`}
                 onMouseDown={(e) => onMouseDown(e, index, 'start')}
               >
-                {lyric.start.toFixed(2)}s
+                {formatTime(lyric.start, timeFormat)}
               </span>
 
               <span className="time-separator">-</span>
@@ -127,7 +129,7 @@ const LyricItem = ({
                 className={`time-control end-time ${isDragging(index, 'end') ? 'dragging' : ''}`}
                 onMouseDown={(e) => onMouseDown(e, index, 'end')}
               >
-                {lyric.end.toFixed(2)}s
+                {formatTime(lyric.end, timeFormat)}
               </span>
             </div>
           )}

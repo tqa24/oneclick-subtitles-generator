@@ -20,6 +20,7 @@ function App() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [segmentsStatus, setSegmentsStatus] = useState([]);
+  const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'seconds');
 
   const {
     subtitlesData,
@@ -130,7 +131,7 @@ function App() {
     }
   }, []);
 
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration, geminiModel) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration, geminiModel, timeFormat) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -147,6 +148,12 @@ function App() {
     // Save segment duration
     if (segmentDuration) {
       localStorage.setItem('segment_duration', segmentDuration.toString());
+    }
+
+    // Save time format
+    if (timeFormat) {
+      localStorage.setItem('time_format', timeFormat);
+      setTimeFormat(timeFormat);
     }
 
     // Save Gemini model
@@ -306,6 +313,7 @@ function App() {
           onRetrySegment={retrySegment}
           videoSegments={videoSegments}
           retryingSegments={retryingSegments}
+          timeFormat={timeFormat}
         />
       </main>
 

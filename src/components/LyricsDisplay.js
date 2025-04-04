@@ -13,7 +13,8 @@ const LyricsDisplay = ({
   duration,
   onUpdateLyrics,
   allowEditing = false,
-  seekTime = null
+  seekTime = null,
+  timeFormat = 'seconds'
 }) => {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
@@ -138,6 +139,7 @@ const LyricsDisplay = ({
         panOffset={panOffset}
         setPanOffset={setPanOffset}
         centerOnTime={centerTimelineAt}
+        timeFormat={timeFormat}
       />
 
       <div className="lyrics-container" ref={lyricsContainerRef}>
@@ -167,6 +169,7 @@ const LyricsDisplay = ({
             onInsert={handleInsertLyric}
             onMerge={handleMergeLyrics}
             hasNextLyric={index < lyrics.length - 1}
+            timeFormat={timeFormat}
           />
         ))}
       </div>

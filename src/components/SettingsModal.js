@@ -11,6 +11,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [clearingCache, setClearingCache] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(30); // Default to 30 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash-lite'); // Default model
+  const [timeFormat, setTimeFormat] = useState('seconds'); // Default to seconds format
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -18,11 +19,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
     const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '30');
     const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash-lite';
+    const savedTimeFormat = localStorage.getItem('time_format') || 'seconds';
 
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
     setSegmentDuration(savedSegmentDuration);
     setGeminiModel(savedGeminiModel);
+    setTimeFormat(savedTimeFormat);
   }, []);
 
   // Handle clear cache
@@ -57,9 +60,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     // Save settings to localStorage
     localStorage.setItem('segment_duration', segmentDuration.toString());
     localStorage.setItem('gemini_model', geminiModel);
+    localStorage.setItem('time_format', timeFormat);
 
-    // Notify parent component about API keys, segment duration, and model
-    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel);
+    // Notify parent component about API keys, segment duration, model, and time format
+    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);
     onClose();
   };
 
@@ -225,6 +229,24 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 <option value="gemini-2.0-flash-lite">
                   {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
                 </option>
+              </select>
+            </div>
+
+            <div className="time-format-setting">
+              <label htmlFor="time-format">
+                {t('settings.timeFormat', 'Time Format')}
+              </label>
+              <p className="setting-description">
+                {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
+              </p>
+              <select
+                id="time-format"
+                value={timeFormat}
+                onChange={(e) => setTimeFormat(e.target.value)}
+                className="time-format-select"
+              >
+                <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
+                <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
               </select>
             </div>
           </div>

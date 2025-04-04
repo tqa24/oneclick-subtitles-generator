@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useRef } from 'react';
+import { formatTime } from '../../utils/timeFormatter';
 
 // Simple hash function for consistent colors
 const hashString = (str) => {
@@ -45,7 +46,8 @@ const TimelineVisualization = ({
   zoom,
   panOffset,
   setPanOffset,
-  centerOnTime // New prop to center the view on a specific time
+  centerOnTime, // Prop to center the view on a specific time
+  timeFormat = 'seconds' // Prop to control time display format
 }) => {
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
@@ -294,7 +296,7 @@ const TimelineVisualization = ({
 
       for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
         const x = timeToX(time);
-        ctx.fillText(`${Math.round(time)}s`, x + 3, 2);
+        ctx.fillText(formatTime(time, timeFormat), x + 3, 2);
       }
     }
 

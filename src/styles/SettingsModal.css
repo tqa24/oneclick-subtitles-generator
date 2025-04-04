@@ -359,13 +359,15 @@
 }
 
 .segment-duration-setting,
-.gemini-model-setting {
+.gemini-model-setting,
+.time-format-setting {
   margin-top: 0.5rem;
   margin-bottom: 1.5rem;
 }
 
 .segment-duration-setting label,
-.gemini-model-setting label {
+.gemini-model-setting label,
+.time-format-setting label {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -379,7 +381,8 @@
 }
 
 .segment-duration-select,
-.gemini-model-select {
+.gemini-model-select,
+.time-format-select {
   width: 100%;
   max-width: 400px;
   padding: 0.75rem;
@@ -393,7 +396,8 @@
 }
 
 .segment-duration-select:focus,
-.gemini-model-select:focus {
+.gemini-model-select:focus,
+.time-format-select:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
