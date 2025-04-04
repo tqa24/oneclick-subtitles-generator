@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 
-const LyricItem = ({ 
-  lyric, 
-  index, 
-  isCurrentLyric, 
+const LyricItem = ({
+  lyric,
+  index,
+  isCurrentLyric,
   currentTime,
   allowEditing,
   isDragging,
@@ -44,7 +44,7 @@ const LyricItem = ({
   };
 
   return (
-    <div 
+    <div
       className="lyric-item-container"
       onMouseEnter={() => setShowInsertButton(true)}
       onMouseLeave={() => setShowInsertButton(false)}
@@ -86,8 +86,8 @@ const LyricItem = ({
               </button>
             </div>
           )}
-          
-          <div className="lyric-text" onClick={(e) => e.stopPropagation()}>
+
+          <div className="lyric-text">
             {isEditing ? (
               <input
                 ref={textInputRef}
@@ -101,13 +101,14 @@ const LyricItem = ({
               />
             ) : (
               <span onClick={(e) => {
+                e.stopPropagation(); // Stop propagation to prevent double click handling
                 if (!isEditing) {
                   onLyricClick(lyric.start);
                 }
               }}>{lyric.text}</span>
             )}
           </div>
-          
+
           {allowEditing && (
             <div className="timing-controls">
               <span
@@ -116,9 +117,9 @@ const LyricItem = ({
               >
                 {lyric.start.toFixed(2)}s
               </span>
-              
+
               <span className="time-separator">-</span>
-              
+
               <span
                 className={`time-control end-time ${isDragging(index, 'end') ? 'dragging' : ''}`}
                 onMouseDown={(e) => onMouseDown(e, index, 'end')}
@@ -128,9 +129,9 @@ const LyricItem = ({
             </div>
           )}
         </div>
-        
+
         {isCurrentLyric && (
-          <div 
+          <div
             className="progress-indicator"
             style={{
               width: `${Math.min(100, Math.max(0, ((currentTime - lyric.start) / (lyric.end - lyric.start)) * 100))}%`
@@ -140,7 +141,7 @@ const LyricItem = ({
       </div>
 
       {allowEditing && hasNextLyric && showInsertButton && (
-        <div 
+        <div
           className="insert-lyric-button"
           onClick={(e) => {
             e.stopPropagation();

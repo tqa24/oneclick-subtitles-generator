@@ -6,19 +6,20 @@ import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
 
-const LyricsDisplay = ({ 
-  matchedLyrics, 
-  currentTime, 
-  onLyricClick, 
-  duration, 
-  onUpdateLyrics, 
-  allowEditing = false 
+const LyricsDisplay = ({
+  matchedLyrics,
+  currentTime,
+  onLyricClick,
+  duration,
+  onUpdateLyrics,
+  allowEditing = false
 }) => {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState(0);
+  const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const lyricsContainerRef = useRef(null);
-  
+
   const {
     lyrics,
     isSticky,
@@ -40,7 +41,7 @@ const LyricsDisplay = ({
   // Find current lyric index based on time
   const currentIndex = lyrics.findIndex((lyric, index) => {
     const nextLyric = lyrics[index + 1];
-    return currentTime >= lyric.start && 
+    return currentTime >= lyric.start &&
       (nextLyric ? currentTime < nextLyric.start : currentTime <= lyric.end);
   });
 
@@ -49,26 +50,26 @@ const LyricsDisplay = ({
     if (currentIndex >= 0 && lyricsContainerRef.current) {
       const container = lyricsContainerRef.current;
       const lyricElement = container.children[currentIndex];
-      
+
       if (lyricElement) {
         // Get precise measurements of the container and element
         const containerRect = container.getBoundingClientRect();
         const elementRect = lyricElement.getBoundingClientRect();
-        
+
         // Calculate relative positions
         const containerScrollTop = container.scrollTop;
         const elementRelativeTop = elementRect.top - containerRect.top + containerScrollTop;
-        
+
         // Calculate the ideal scroll position to center the current lyric
         const idealScrollTop = elementRelativeTop - (containerRect.height / 2) + (elementRect.height / 2);
-        
+
         // Only scroll if the element is not already in view with some margin
         const margin = containerRect.height * 0.2; // 20% margin
         const isInView = (
           elementRelativeTop >= containerScrollTop + margin &&
           elementRelativeTop + elementRect.height <= containerScrollTop + containerRect.height - margin
         );
-        
+
         if (!isInView) {
           container.scrollTo({
             top: idealScrollTop,
@@ -87,12 +88,12 @@ const LyricsDisplay = ({
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
-  
+
   const handleMouseMove = (e) => {
     e.preventDefault();
     handleDrag(e.clientX, duration);
   };
-  
+
   const handleMouseUp = (e) => {
     e.preventDefault();
     document.removeEventListener('mousemove', handleMouseMove);
@@ -102,7 +103,7 @@ const LyricsDisplay = ({
 
   return (
     <div className="lyrics-display">
-      <LyricsHeader 
+      <LyricsHeader
         allowEditing={allowEditing}
         isSticky={isSticky}
         setIsSticky={setIsSticky}
@@ -115,8 +116,8 @@ const LyricsDisplay = ({
         panOffset={panOffset}
         setPanOffset={setPanOffset}
       />
-      
-      <TimelineVisualization 
+
+      <TimelineVisualization
         lyrics={lyrics}
         currentTime={currentTime}
         duration={duration}
@@ -124,8 +125,9 @@ const LyricsDisplay = ({
         zoom={zoom}
         panOffset={panOffset}
         setPanOffset={setPanOffset}
+        centerOnTime={centerTimelineAt}
       />
-      
+
       <div className="lyrics-container" ref={lyricsContainerRef}>
         {lyrics.map((lyric, index) => (
           <LyricItem
@@ -136,7 +138,16 @@ const LyricsDisplay = ({
             currentTime={currentTime}
             allowEditing={allowEditing}
             isDragging={isDragging}
-            onLyricClick={onLyricClick}
+            onLyricClick={(time) => {
+              // Center the timeline on the clicked lyric
+              setCenterTimelineAt(time);
+              // Reset the center time in the next frame to allow future clicks to work
+              requestAnimationFrame(() => {
+                setCenterTimelineAt(null);
+              });
+              // Call the original onLyricClick function
+              onLyricClick(time);
+            }}
             onMouseDown={handleMouseDown}
             getLastDragEnd={getLastDragEnd}
             onDelete={handleDeleteLyric}
@@ -146,7 +157,7 @@ const LyricsDisplay = ({
           />
         ))}
       </div>
-      
+
       {allowEditing && (
         <div className="help-text">
           <p>{t('lyrics.timingInstructions')}</p>
