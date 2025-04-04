@@ -278,10 +278,18 @@
   background: var(--border-color);
 }
 
-.insert-lyric-button {
+.between-lyrics-controls {
   position: absolute;
-  left: 44px;
+  left: 40px;
   bottom: -15px;
+  display: flex;
+  gap: 8px;
+  z-index: 100; /* Ensure it's above other elements */
+  transform: translateX(-50%);
+}
+
+.insert-lyric-button,
+.merge-lyrics-button {
   width: 28px; /* Slightly larger */
   height: 28px; /* Slightly larger */
   border-radius: 50%;
@@ -291,22 +299,23 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 100; /* Ensure it's above other elements */
   color: var(--primary-color);
-  transform: translateX(-50%) scale(1);
   box-shadow: 0 2px 4px var(--shadow-color);
   transition: all 0.15s ease-out;
+  transform: scale(1);
 }
 
-.insert-lyric-button:hover {
+.insert-lyric-button:hover,
+.merge-lyrics-button:hover {
   background: var(--primary-color);
   color: white;
-  transform: translateX(-50%) scale(1.2);
+  transform: scale(1.2);
   box-shadow: 0 3px 8px var(--shadow-color);
 }
 
-/* Make button visible immediately when container is hovered */
-.insert-lyric-button {
+/* Make buttons visible immediately when container is hovered */
+.insert-lyric-button,
+.merge-lyrics-button {
   opacity: 1;
   visibility: visible;
 }
@@ -342,7 +351,8 @@
 }
 
 .edit-lyric-btn,
-.delete-lyric-btn {
+.delete-lyric-btn,
+.merge-lyric-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -422,7 +432,6 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  margin-left: 8px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background: var(--background-primary);

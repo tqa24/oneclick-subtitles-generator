@@ -13,6 +13,7 @@ const LyricItem = ({
   onDelete,
   onTextEdit,
   onInsert,
+  onMerge,
   hasNextLyric
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -142,18 +143,33 @@ const LyricItem = ({
       </div>
 
       {allowEditing && hasNextLyric && showInsertButton && (
-        <div
-          className="insert-lyric-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onInsert(index);
-          }}
-          title="Insert new lyric"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
+        <div className="between-lyrics-controls">
+          <div
+            className="insert-lyric-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInsert(index);
+            }}
+            title="Insert new lyric"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </div>
+
+          <div
+            className="merge-lyrics-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMerge(index);
+            }}
+            title="Merge with next lyric"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M8 18h8M8 6h8M12 2v20"/>
+            </svg>
+          </div>
         </div>
       )}
     </div>
