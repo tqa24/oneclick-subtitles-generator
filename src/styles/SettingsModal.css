@@ -421,6 +421,60 @@
   font-size: 0.9rem;
 }
 
+/* Cache status message */
+.cache-status-message {
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.status-success {
+  background-color: var(--success-background);
+  color: var(--success-color);
+  border-left: 3px solid var(--success-color);
+}
+
+.status-error {
+  background-color: var(--error-background);
+  color: var(--error-color);
+  border-left: 3px solid var(--error-color);
+}
+
+/* Cache details */
+.cache-details {
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.cache-details-item {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cache-details-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cache-details-item h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.cache-details-item p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
 .clear-cache-btn {
   padding: 0.75rem 1.5rem;
   background-color: var(--error-color);
@@ -430,6 +484,7 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
+  margin-top: 1rem;
 }
 
 .clear-cache-btn:hover {

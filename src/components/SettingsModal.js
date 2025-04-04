@@ -12,6 +12,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [segmentDuration, setSegmentDuration] = useState(30); // Default to 30 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash-lite'); // Default model
   const [timeFormat, setTimeFormat] = useState('seconds'); // Default to seconds format
+  const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
+  const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -30,28 +32,52 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
 
   // Handle clear cache
   const handleClearCache = async () => {
-    if (window.confirm(t('settings.confirmClearCache', 'Are you sure you want to clear all cached subtitles and videos? This cannot be undone.'))) {
-      setClearingCache(true);
-      try {
-        const response = await fetch('http://localhost:3004/api/clear-cache', {
-          method: 'DELETE'
-        });
+    // No confirmation prompt as requested
+    setClearingCache(true);
+    setCacheDetails(null); // Reset previous details
+    setCacheStatus({ message: '', type: '' }); // Reset status message
 
-        const data = await response.json();
-        if (data.success) {
-          // Clear localStorage video/subtitle related items
-          localStorage.removeItem('current_video_url');
-          localStorage.removeItem('current_file_url');
-          alert(t('settings.cacheClearedSuccess', 'Cache cleared successfully!'));
+    try {
+      const response = await fetch('http://localhost:3004/api/clear-cache', {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Clear localStorage video/subtitle related items
+        localStorage.removeItem('current_video_url');
+        localStorage.removeItem('current_file_url');
+
+        // Check if details exist in the response
+        if (data.details) {
+          // Store the cache details for display
+          setCacheDetails(data.details);
+
+          // Set success message with details
+          const totalFiles = data.details.totalCount || 0;
+          const totalSize = data.details.formattedTotalSize || '0 Bytes';
+          setCacheStatus({
+            message: t('settings.cacheClearedDetails', 'Cache cleared: {{totalFiles}} files ({{totalSize}})', { totalFiles, totalSize }),
+            type: 'success'
+          });
         } else {
-          throw new Error(data.error || 'Failed to clear cache');
+          // Fallback for when details are missing
+          setCacheStatus({
+            message: t('settings.cacheClearedSuccess', 'Cache cleared successfully!'),
+            type: 'success'
+          });
         }
-      } catch (error) {
-        console.error('Error clearing cache:', error);
-        alert(t('settings.cacheClearError', 'Error clearing cache. Please try again.'));
-      } finally {
-        setClearingCache(false);
+      } else {
+        throw new Error(data.error || 'Failed to clear cache');
       }
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      setCacheStatus({
+        message: t('settings.cacheClearError', 'Error clearing cache: {{errorMessage}}', { errorMessage: error.message }),
+        type: 'error'
+      });
+    } finally {
+      setClearingCache(false);
     }
   };
 
@@ -256,6 +282,43 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
             <p className="cache-description">
               {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
             </p>
+
+            {/* Cache status message */}
+            {cacheStatus.message && (
+              <div className={`cache-status-message status-${cacheStatus.type}`}>
+                {cacheStatus.message}
+              </div>
+            )}
+
+            {/* Cache details */}
+            {cacheDetails && (
+              <div className="cache-details">
+                <div className="cache-details-item">
+                  <h4>{t('settings.videosCleared', 'Videos')}:</h4>
+                  <p>
+                    {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
+                    ({cacheDetails.videos?.formattedSize || '0 Bytes'})
+                  </p>
+                </div>
+
+                <div className="cache-details-item">
+                  <h4>{t('settings.segmentsCleared', 'Segments')}:</h4>
+                  <p>
+                    {cacheDetails.segments?.count || 0} {t('settings.files', 'files')}
+                    ({cacheDetails.segments?.formattedSize || '0 Bytes'})
+                  </p>
+                </div>
+
+                <div className="cache-details-item">
+                  <h4>{t('settings.subtitlesCleared', 'Subtitles')}:</h4>
+                  <p>
+                    {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
+                    ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
+                  </p>
+                </div>
+              </div>
+            )}
+
             <button
               className="clear-cache-btn"
               onClick={handleClearCache}

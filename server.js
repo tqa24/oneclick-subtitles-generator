@@ -44,30 +44,85 @@ app.use(cors({
 
 app.use(express.json({ limit: '500mb' })); // Increased limit for base64 encoded files
 
-// New endpoint to clear cache
+// Helper function to get file size in bytes
+const getFileSize = (filePath) => {
+  try {
+    const stats = fs.statSync(filePath);
+    return stats.size;
+  } catch (error) {
+    console.error(`Error getting file size for ${filePath}:`, error);
+    return 0;
+  }
+};
+
+// Helper function to format bytes to human-readable size
+const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
+// New endpoint to clear cache with detailed information
 app.delete('/api/clear-cache', (req, res) => {
   try {
+    const details = {
+      subtitles: { count: 0, size: 0, files: [] },
+      videos: { count: 0, size: 0, files: [] },
+      segments: { count: 0, size: 0, files: [] },
+      totalCount: 0,
+      totalSize: 0
+    };
+
     // Clear subtitles directory
     const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
     subtitleFiles.forEach(file => {
-      fs.unlinkSync(path.join(SUBTITLES_DIR, file));
+      const filePath = path.join(SUBTITLES_DIR, file);
+      const fileSize = getFileSize(filePath);
+      details.subtitles.count++;
+      details.subtitles.size += fileSize;
+      details.subtitles.files.push({ name: file, size: fileSize });
+      fs.unlinkSync(filePath);
     });
 
     // Clear videos directory
     const videoFiles = fs.readdirSync(VIDEOS_DIR);
     videoFiles.forEach(file => {
-      fs.unlinkSync(path.join(VIDEOS_DIR, file));
+      const filePath = path.join(VIDEOS_DIR, file);
+      const fileSize = getFileSize(filePath);
+      details.videos.count++;
+      details.videos.size += fileSize;
+      details.videos.files.push({ name: file, size: fileSize });
+      fs.unlinkSync(filePath);
     });
 
     // Clear segments directory
     const segmentFiles = fs.readdirSync(SEGMENTS_DIR);
     segmentFiles.forEach(file => {
-      fs.unlinkSync(path.join(SEGMENTS_DIR, file));
+      const filePath = path.join(SEGMENTS_DIR, file);
+      const fileSize = getFileSize(filePath);
+      details.segments.count++;
+      details.segments.size += fileSize;
+      details.segments.files.push({ name: file, size: fileSize });
+      fs.unlinkSync(filePath);
     });
+
+    // Calculate totals
+    details.totalCount = details.subtitles.count + details.videos.count + details.segments.count;
+    details.totalSize = details.subtitles.size + details.videos.size + details.segments.size;
+
+    // Format sizes for human readability
+    details.subtitles.formattedSize = formatBytes(details.subtitles.size);
+    details.videos.formattedSize = formatBytes(details.videos.size);
+    details.segments.formattedSize = formatBytes(details.segments.size);
+    details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({
       success: true,
-      message: 'Cache cleared successfully'
+      message: 'Cache cleared successfully',
+      details: details
     });
   } catch (error) {
     console.error('Error clearing cache:', error);
