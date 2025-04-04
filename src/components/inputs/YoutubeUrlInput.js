@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
+const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, onDownloadVideoOnly }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
@@ -31,15 +31,15 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
         console.warn('YouTube API key not found');
         return null;
       }
-      
+
       const response = await fetch(
         `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${youtubeApiKey}`
       );
-      
+
       if (!response.ok) {
         throw new Error('YouTube API request failed');
       }
-      
+
       const data = await response.json();
       if (data.items && data.items.length > 0) {
         return data.items[0].snippet.title;
@@ -54,10 +54,10 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
   const handleUrlChange = async (e) => {
     const url = e.target.value.trim();
     setUrl(url);
-    
+
     if (isValidYoutubeUrl(url)) {
       localStorage.removeItem('current_file_url');
-      
+
       const videoId = extractVideoId(url);
       if (videoId) {
         const title = await fetchVideoTitle(videoId) || 'YouTube Video';
@@ -90,9 +90,9 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
             className={`youtube-url-field ${error ? 'error-input' : ''}`}
           />
           {url && (
-            <button 
-              type="button" 
-              className="clear-url-btn" 
+            <button
+              type="button"
+              className="clear-url-btn"
               onClick={() => {
                 setUrl('');
                 setSelectedVideo(null);
@@ -105,7 +105,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
           )}
         </div>
       </div>
-      
+
       {error && (
         <div className="error-message">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
@@ -116,7 +116,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
           <span>{error}</span>
         </div>
       )}
-      
+
       {!selectedVideo && (
         <div className="youtube-instructions">
           <h3>{t('youtubeUrlInput.instructionsTitle', 'How to use')}</h3>
@@ -125,7 +125,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
             <li>{t('youtubeUrlInput.instructionsStep2', 'Copy the URL from your browser address bar')}</li>
             <li>{t('youtubeUrlInput.instructionsStep3', 'Paste the URL above')}</li>
           </ol>
-          
+
           <div className="url-examples">
             <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
             <ul>
@@ -136,17 +136,34 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
           </div>
         </div>
       )}
-      
+
       {selectedVideo && selectedVideo.id && (
         <div className="selected-video-preview">
-          <img 
-            src={`https://img.youtube.com/vi/${selectedVideo.id}/0.jpg`} 
-            alt={videoTitle} 
-            className="thumbnail"
-          />
+          <div className="thumbnail-container">
+            <img
+              src={`https://img.youtube.com/vi/${selectedVideo.id}/0.jpg`}
+              alt={videoTitle}
+              className="thumbnail"
+            />
+          </div>
           <div className="video-info">
             <h3 className="video-title">{videoTitle}</h3>
             <p className="video-id">Video ID: <span className="video-id-value">{selectedVideo.id}</span></p>
+
+            {onDownloadVideoOnly && (
+              <button
+                className="download-video-btn"
+                onClick={onDownloadVideoOnly}
+                title={t('youtube.downloadVideoOnly', 'Download video only')}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                {t('youtube.downloadVideoOnly', 'Download Video')}
+              </button>
+            )}
           </div>
         </div>
       )}

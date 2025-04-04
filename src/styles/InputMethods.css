@@ -759,12 +759,29 @@
   border-left: 3px solid var(--primary-color);
 }
 
-.search-result-thumbnail {
+.search-thumbnail-container {
+  flex-shrink: 0;
   width: 120px;
   height: 68px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: transform 0.3s ease;
+}
+
+.search-result-item:hover .search-thumbnail-container {
+  transform: scale(1.02);
+}
+
+.search-result-thumbnail {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 4px;
-  margin-right: 0.75rem;
+  transition: transform 0.5s ease;
+}
+
+.search-result-item:hover .search-result-thumbnail {
+  transform: scale(1.08);
 }
 
 .search-result-info {
@@ -772,6 +789,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding: 0.25rem 0;
+  gap: 0.5rem;
 }
 
 .search-result-title {
@@ -789,4 +808,154 @@
 .search-result-channel {
   font-size: 0.85rem;
   color: var(--text-secondary);
+}
+
+/* Selected video preview */
+.selected-video-preview {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 1.5rem;
+  padding: 1.2rem;
+  background-color: var(--background-primary);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: background-color var(--transition-speed);
+  animation: fade-in 0.5s ease-out;
+}
+
+.thumbnail-container {
+  flex-shrink: 0;
+  width: 160px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px var(--shadow-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.thumbnail-container:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.thumbnail-container:hover .thumbnail {
+  transform: scale(1.1);
+}
+
+.video-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-left: 1rem;
+  flex: 1;
+}
+
+.video-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.video-id {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.video-id-value {
+  font-family: monospace;
+  background-color: var(--background-tertiary);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+/* Download video button */
+.download-video-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.6rem 1.2rem;
+  margin-top: 0.75rem;
+  background-color: var(--background-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  align-self: flex-start;
+}
+
+.download-video-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.download-video-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.download-video-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.download-video-btn:hover svg {
+  transform: translateY(2px);
+  stroke: white;
+}
+
+.search-download-btn {
+  margin-top: 0;
+  margin-left: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  background-color: var(--background-secondary);
+}
+
+.search-download-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.search-result-item:hover {
+  background-color: var(--background-secondary);
+}
+
+.search-result-item.selected {
+  background-color: rgba(var(--primary-rgb, 0, 123, 255), 0.08);
+  border-left: 3px solid var(--primary-color);
+}
+
+.search-result-content {
+  display: flex;
+  flex: 1;
+  cursor: pointer;
+  gap: 0.75rem;
 }

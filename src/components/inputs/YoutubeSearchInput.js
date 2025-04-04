@@ -1,47 +1,47 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo }) => {
+const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo, onDownloadVideoOnly }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Debounce function for search
   const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
-    
+
     useEffect(() => {
       const handler = setTimeout(() => {
         setDebouncedValue(value);
       }, delay);
-      
+
       return () => {
         clearTimeout(handler);
       };
     }, [value, delay]);
-    
+
     return debouncedValue;
   };
-  
+
   // Search YouTube API - using useCallback to allow it in the dependency array
   const searchYouTube = useCallback(async (query) => {
     setIsSearching(true);
     setError('');
-    
+
     try {
       const youtubeApiKey = localStorage.getItem('youtube_api_key');
       const response = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=${encodeURIComponent(query)}&type=video&key=${youtubeApiKey}`
       );
-      
+
       if (!response.ok) {
         throw new Error('YouTube API request failed');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.items && data.items.length > 0) {
         const formattedResults = data.items.map(item => ({
           id: item.id.videoId,
@@ -50,7 +50,7 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
           channel: item.snippet.channelTitle,
           url: `https://www.youtube.com/watch?v=${item.id.videoId}`
         }));
-        
+
         setSearchResults(formattedResults);
       } else {
         setSearchResults([]);
@@ -63,36 +63,36 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
       setIsSearching(false);
     }
   }, [t]);
-  
+
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  
+
   // Search YouTube when query changes
   useEffect(() => {
     if (debouncedSearchQuery.length < 3) {
       setSearchResults([]);
       return;
     }
-    
+
     if (!apiKeysSet.youtube) {
       setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
       return;
     }
-    
+
     searchYouTube(debouncedSearchQuery);
   }, [debouncedSearchQuery, apiKeysSet.youtube, t, searchYouTube]);
-  
+
   // Handle search input change
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
   };
-  
+
   // Handle search result selection
   const handleVideoSelect = (video) => {
     // Clear any existing file URLs when selecting a YouTube video
     localStorage.removeItem('current_file_url');
     setSelectedVideo(video);
   };
-  
+
   return (
     <div className="youtube-search-input">
       <div className="search-field-container">
@@ -104,17 +104,17 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input 
-            type="text" 
-            id="youtube-search-input" 
+          <input
+            type="text"
+            id="youtube-search-input"
             className="youtube-search-field"
             placeholder={t('youtube.searchPlaceholder', 'Enter video title...')}
             value={searchQuery}
             onChange={handleSearchChange}
           />
           {searchQuery && (
-            <button 
-              className="clear-search-btn" 
+            <button
+              className="clear-search-btn"
               onClick={() => setSearchQuery('')}
               aria-label="Clear search"
             >
@@ -126,33 +126,53 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
           )}
         </div>
       </div>
-      
+
       <div className="search-results">
         {error && <p className="error">{error}</p>}
-        
+
         {isSearching && (
           <div className="searching-indicator">
             <div className="search-spinner"></div>
             <p>{t('youtube.searching', 'Searching...')}</p>
           </div>
         )}
-        
+
         {!isSearching && searchResults.length > 0 && (
           searchResults.map(video => (
-            <div 
-              key={video.id} 
+            <div
+              key={video.id}
               className={`search-result-item ${selectedVideo?.id === video.id ? 'selected' : ''}`}
-              onClick={() => handleVideoSelect(video)}
             >
-              <img 
-                src={video.thumbnail} 
-                alt={video.title} 
-                className="search-result-thumbnail"
-              />
-              <div className="search-result-info">
-                <div className="search-result-title">{video.title}</div>
-                <div className="search-result-channel">{video.channel}</div>
+              <div
+                className="search-result-content"
+                onClick={() => handleVideoSelect(video)}
+              >
+                <div className="search-thumbnail-container">
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    className="search-result-thumbnail"
+                  />
+                </div>
+                <div className="search-result-info">
+                  <div className="search-result-title">{video.title}</div>
+                  <div className="search-result-channel">{video.channel}</div>
+                </div>
               </div>
+
+              {selectedVideo?.id === video.id && onDownloadVideoOnly && (
+                <button
+                  className="download-video-btn search-download-btn"
+                  onClick={onDownloadVideoOnly}
+                  title={t('youtube.downloadVideoOnly', 'Download video only')}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </button>
+              )}
             </div>
           ))
         )}

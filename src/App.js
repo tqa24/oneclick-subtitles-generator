@@ -6,6 +6,7 @@ import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
 import { useSubtitles } from './hooks/useSubtitles';
+import { downloadYoutubeVideo } from './utils/videoDownloader';
 
 function App() {
   const { t } = useTranslation();
@@ -51,7 +52,7 @@ function App() {
   useEffect(() => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const youtubeApiKey = localStorage.getItem('youtube_api_key');
-    
+
     setApiKeysSet({
       gemini: !!geminiApiKey,
       youtube: !!youtubeApiKey
@@ -68,7 +69,7 @@ function App() {
         message += 'YouTube API key';
       }
       message += ' in the settings to use this application.';
-      
+
       setStatus({ message, type: 'info' });
     }
   }, []);
@@ -80,13 +81,13 @@ function App() {
     } else {
       localStorage.removeItem('gemini_api_key');
     }
-    
+
     if (youtubeKey) {
       localStorage.setItem('youtube_api_key', youtubeKey);
     } else {
       localStorage.removeItem('youtube_api_key');
     }
-    
+
     // Update state
     setApiKeysSet({
       gemini: !!geminiKey,
@@ -144,6 +145,33 @@ function App() {
     await retryGeneration(input, inputType, apiKeysSet);
   };
 
+  const handleDownloadVideoOnly = async () => {
+    if (!selectedVideo) {
+      setStatus({ message: t('errors.invalidInput'), type: 'error' });
+      return;
+    }
+
+    setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+
+    try {
+      // Use the existing downloadYoutubeVideo function
+      const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
+        setStatus({
+          message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
+          type: 'loading'
+        });
+      });
+
+      // Open the video in a new tab
+      window.open(videoUrl, '_blank');
+
+      setStatus({ message: t('output.videoDownloadComplete', 'Video download complete!'), type: 'success' });
+    } catch (error) {
+      console.error('Error downloading video:', error);
+      setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
+    }
+  };
+
   const handleTabChange = (tab) => {
     localStorage.setItem('lastActiveTab', tab);
     setActiveTab(tab);
@@ -157,12 +185,12 @@ function App() {
 
   return (
     <>
-      <Header 
-        onSettingsClick={() => setShowSettings(true)} 
+      <Header
+        onSettingsClick={() => setShowSettings(true)}
       />
-      
+
       <main className="app-main">
-        <InputMethods 
+        <InputMethods
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           selectedVideo={selectedVideo}
@@ -170,21 +198,22 @@ function App() {
           uploadedFile={uploadedFile}
           setUploadedFile={setUploadedFile}
           apiKeysSet={apiKeysSet}
+          onDownloadVideoOnly={handleDownloadVideoOnly}
         />
-        
+
         {validateInput() && (
           <div className="buttons-container">
-            <button 
+            <button
               className="generate-btn"
               onClick={handleGenerateSubtitles}
               disabled={isGenerating}
             >
               {isGenerating ? t('output.processingVideo') : t('header.tagline')}
             </button>
-            
+
             {(subtitlesData || status.type === 'error') && !isGenerating && (
-              <button 
-                className="retry-gemini-btn" 
+              <button
+                className="retry-gemini-btn"
                 onClick={handleRetryGeneration}
                 disabled={isGenerating}
                 title={t('output.retryGeminiTooltip')}
@@ -199,8 +228,8 @@ function App() {
             )}
           </div>
         )}
-        
-        <OutputContainer 
+
+        <OutputContainer
           status={status}
           subtitlesData={subtitlesData}
           selectedVideo={selectedVideo}
@@ -208,9 +237,9 @@ function App() {
           isGenerating={isGenerating}
         />
       </main>
-      
+
       {showSettings && (
-        <SettingsModal 
+        <SettingsModal
           onClose={() => setShowSettings(false)}
           onSave={saveApiKeys}
           apiKeysSet={apiKeysSet}

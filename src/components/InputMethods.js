@@ -5,17 +5,31 @@ import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
 import '../styles/InputMethods.css';
 
-const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab }) => {
+const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, onDownloadVideoOnly }) => {
   const { t } = useTranslation();
 
   const renderInputMethod = () => {
     switch (activeTab) {
       case 'youtube-url':
-        return <YoutubeUrlInput onVideoSelect={onVideoSelect} selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} />;
+        return <YoutubeUrlInput
+          onVideoSelect={onVideoSelect}
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+          onDownloadVideoOnly={onDownloadVideoOnly}
+        />;
       case 'youtube-search':
-        return <YoutubeSearchInput apiKeysSet={apiKeysSet} selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo} />;
+        return <YoutubeSearchInput
+          apiKeysSet={apiKeysSet}
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+          onDownloadVideoOnly={onDownloadVideoOnly}
+        />;
       case 'file-upload':
-        return <FileUploadInput onVideoSelect={onVideoSelect} uploadedFile={uploadedFile} setUploadedFile={setUploadedFile} />;
+        return <FileUploadInput
+          onVideoSelect={onVideoSelect}
+          uploadedFile={uploadedFile}
+          setUploadedFile={setUploadedFile}
+        />;
       default:
         return null;
     }
@@ -27,9 +41,9 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         <h2 className="input-title">
           {t('inputMethods.title', 'Select Video Source')}
         </h2>
-        
+
         <div className="input-tabs">
-          <button 
+          <button
             className={`tab-btn ${activeTab === 'youtube-url' ? 'active' : ''}`}
             onClick={() => setActiveTab('youtube-url')}
           >
@@ -39,8 +53,8 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
             </svg>
             {t('inputMethods.youtubeUrl', 'YouTube URL')}
           </button>
-          
-          <button 
+
+          <button
             className={`tab-btn ${activeTab === 'youtube-search' ? 'active' : ''}`}
             onClick={() => setActiveTab('youtube-search')}
           >
@@ -50,8 +64,8 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
             </svg>
             {t('inputMethods.youtubeSearch', 'Search YouTube')}
           </button>
-          
-          <button 
+
+          <button
             className={`tab-btn ${activeTab === 'file-upload' ? 'active' : ''}`}
             onClick={() => setActiveTab('file-upload')}
           >
@@ -64,7 +78,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           </button>
         </div>
       </div>
-      
+
       <div className="input-content">
         {renderInputMethod()}
       </div>
