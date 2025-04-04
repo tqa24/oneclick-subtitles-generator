@@ -43,6 +43,7 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - [Python](https://www.python.org/) (v3.8 or higher)
 - [uv](https://github.com/astral-sh/uv) (faster Python package installer)
 - Google Gemini API key
+- Google YouTube API key
 
 ## Installation
 
