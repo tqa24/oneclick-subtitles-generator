@@ -126,27 +126,13 @@
   transform: rotate(180deg) scale(1.1);
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(65, 88, 208, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(65, 88, 208, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(65, 88, 208, 0);
-  }
-}
-
-.buttons-container .generate-btn:not(:disabled) {
-  animation: pulse 2s infinite;
-}
+/* Pulse animation removed to prevent dizziness */
 
 @media (max-width: 640px) {
   .buttons-container {
     flex-direction: column;
   }
-  
+
   .buttons-container .generate-btn,
   .buttons-container .retry-gemini-btn {
     width: 100%;

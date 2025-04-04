@@ -37,7 +37,26 @@
     "editTimings": "Chỉnh sửa thời gian",
     "hideEditor": "Ẩn trình chỉnh sửa thời gian",
     "retryGemini": "Thử lại với Gemini",
-    "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới"
+    "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới",
+    "longVideoWarning": "Bạn đã tải lên video dài {{duration}} phút. Quá trình xử lý có thể lâu hơn bình thường do nhiều cuộc gọi Gemini.",
+    "longVideoProcessing": "Đang xử lý video dài hơn 30 phút. Điều này có thể mất một lúc...",
+    "processingDirectly": "Đang xử lý video trực tiếp...",
+    "clientSideSegmentation": "Đang xử lý video theo phần trên thiết bị của bạn...",
+    "serverSplitting": "Đang tải lên và chia video trên máy chủ...",
+    "processingSegment": "Đang xử lý phần {{current}}...",
+    "processingAllSegments": "Đang xử lý tất cả {{count}} phần song song...",
+    "retryingSegment": "Đang thử lại phần {{current}} (lần thử {{attempt}})...",
+    "someSegmentsFailed": "Một số phần không thể xử lý. Phụ đề có thể không đầy đủ.",
+    "segmentsStatus": "Trạng thái các phần",
+    "pendingProcessing": "Đang chờ xử lý...",
+    "checkingCache": "Đang kiểm tra bộ nhớ đệm...",
+    "loadedFromCache": "Đã tải từ bộ nhớ đệm",
+    "processingComplete": "Xử lý hoàn tất",
+    "processingFailed": "Xử lý thất bại",
+    "processing": "Đang xử lý",
+    "done": "Hoàn thành",
+    "failed": "Thất bại",
+    "cached": "Đã lưu trữ"
   },
   "settings": {
     "title": "Cài đặt",
@@ -68,13 +87,18 @@
     "youtubeStep3": "Kích hoạt 'YouTube Data API v3'",
     "youtubeStep4": "Đi đến thông tin xác thực",
     "youtubeStep5": "Tạo khóa API",
+    "videoProcessing": "Xử lý video",
+    "segmentDuration": "Độ dài phân đoạn (phút)",
+    "segmentDurationDescription": "Chọn độ dài của mỗi phân đoạn video khi xử lý video dài. Phân đoạn ngắn hơn sẽ xử lý nhanh hơn nhưng có thể kém chính xác hơn.",
+    "minutes": "phút",
     "cache": "Quản lý bộ nhớ đệm",
     "cacheDescription": "Xóa tất cả phụ đề và video đã tải xuống để giải phóng dung lượng.",
     "clearCache": "Xóa bộ nhớ đệm",
     "clearingCache": "Đang xóa bộ nhớ đệm...",
     "cacheClearedSuccess": "Đã xóa bộ nhớ đệm thành công!",
     "cacheClearError": "Lỗi khi xóa bộ nhớ đệm. Vui lòng thử lại.",
-    "confirmClearCache": "Bạn có chắc chắn muốn xóa tất cả phụ đề và video đã lưu trong bộ nhớ đệm? Hành động này không thể hoàn tác."
+    "confirmClearCache": "Bạn có chắc chắn muốn xóa tất cả phụ đề và video đã lưu trong bộ nhớ đệm? Hành động này không thể hoàn tác.",
+    "savedSuccessfully": "Đã lưu cài đặt thành công!"
   },
   "lyrics": {
     "synchronizedLyrics": "Phụ đề đồng bộ hóa",
@@ -85,7 +109,9 @@
     "apiKeyRequired": "Vui lòng cài đặt khóa API trong phần cài đặt trước.",
     "invalidInput": "Vui lòng cung cấp đầu vào hợp lệ (URL YouTube, kết quả tìm kiếm, hoặc tập tin tải lên).",
     "invalidFile": "Định dạng hoặc kích thước tập tin không hợp lệ. Kiểm tra các định dạng được hỗ trợ.",
-    "geminiOverloaded": "[503 Dịch vụ không khả dụng] Mô hình đang quá tải. Vui lòng đợi vài phút và thử lại, hoặc tạo một dự án Google Cloud mới và tạo khóa API mới."
+    "geminiOverloaded": "[503 Dịch vụ không khả dụng] Mô hình đang quá tải. Vui lòng đợi vài phút và thử lại, hoặc tạo một dự án Google Cloud mới và tạo khóa API mới.",
+    "tokenLimitExceeded": "Phần video quá lớn để Gemini xử lý. Vui lòng thử với video ngắn hơn hoặc chất lượng video thấp hơn.",
+    "fileSizeTooLarge": "Kích thước tập tin ({{size}}MB) vượt quá giới hạn đề nghị {{maxSize}}MB. Vui lòng sử dụng tập tin nhỏ hơn hoặc video chất lượng thấp hơn."
   },
   "theme": {
     "themeSelector": "Chủ đề",

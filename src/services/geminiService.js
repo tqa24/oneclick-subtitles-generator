@@ -2,7 +2,8 @@ import { parseGeminiResponse } from '../utils/subtitleParser';
 
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
-    const MODEL = "gemini-2.5-pro-exp-03-25";
+    // const MODEL = "gemini-2.5-pro-exp-03-25";
+    const MODEL = "gemini-2.0-flash-lite";
 
     let requestData = {
         model: MODEL,
@@ -14,7 +15,7 @@ export const callGeminiApi = async (input, inputType) => {
             {
                 role: "user",
                 parts: [
-                    { text: "Transcribe this video" },
+                    { text: "Transcribe this video. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum." },
                     {
                         fileData: {
                             fileUri: input
@@ -30,11 +31,23 @@ export const callGeminiApi = async (input, inputType) => {
         // Determine content type based on file MIME type
         const contentType = input.type.startsWith('video/') ? 'video' : 'audio';
 
+        // Check if this is a video segment with time range metadata
+        let transcriptionPrompt = `Transcribe this ${contentType}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum.`;
+
+        if (input.segmentStartTime !== undefined && input.segmentEndTime !== undefined) {
+            const startMinutes = Math.floor(input.segmentStartTime / 60);
+            const startSeconds = Math.floor(input.segmentStartTime % 60);
+            const endMinutes = Math.floor(input.segmentEndTime / 60);
+            const endSeconds = Math.floor(input.segmentEndTime % 60);
+
+            transcriptionPrompt = `Transcribe this ${contentType} segment from ${startMinutes}:${startSeconds.toString().padStart(2, '0')} to ${endMinutes}:${endSeconds.toString().padStart(2, '0')}. IMPORTANT: Only focus on this specific time range. Ignore any content outside this range. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum.`;
+        }
+
         requestData.contents = [
             {
                 role: "user",
                 parts: [
-                    { text: `Transcribe this ${contentType}` },
+                    { text: transcriptionPrompt },
                     {
                         inlineData: {
                             mimeType: input.type,

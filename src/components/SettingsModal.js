@@ -9,16 +9,19 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
-  
-  // Load saved API keys on component mount
+  const [segmentDuration, setSegmentDuration] = useState(30); // Default to 30 minutes
+
+  // Load saved settings on component mount
   useEffect(() => {
     const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
-    
+    const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '30');
+
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
+    setSegmentDuration(savedSegmentDuration);
   }, []);
-  
+
   // Handle clear cache
   const handleClearCache = async () => {
     if (window.confirm(t('settings.confirmClearCache', 'Are you sure you want to clear all cached subtitles and videos? This cannot be undone.'))) {
@@ -27,7 +30,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
         const response = await fetch('http://localhost:3004/api/clear-cache', {
           method: 'DELETE'
         });
-        
+
         const data = await response.json();
         if (data.success) {
           // Clear localStorage video/subtitle related items
@@ -45,10 +48,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
       }
     }
   };
-  
+
   // Handle save button click
   const handleSave = () => {
-    onSave(geminiApiKey, youtubeApiKey);
+    // Save segment duration to localStorage
+    localStorage.setItem('segment_duration', segmentDuration.toString());
+
+    // Notify parent component about API keys and segment duration
+    onSave(geminiApiKey, youtubeApiKey, segmentDuration);
     onClose();
   };
 
@@ -59,44 +66,44 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
           <h2>{t('settings.title', 'Settings')}</h2>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
-        
+
         <div className="settings-content">
           <div className="settings-section api-key-section">
             <h3>{t('settings.apiKeys', 'API Keys')}</h3>
-            
+
             <div className="api-key-input">
               <label htmlFor="gemini-api-key">
                 {t('settings.geminiApiKey', 'Gemini API Key')}
                 <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
-                  {apiKeysSet.gemini 
-                    ? t('settings.keySet', 'Set') 
+                  {apiKeysSet.gemini
+                    ? t('settings.keySet', 'Set')
                     : t('settings.keyNotSet', 'Not Set')}
                 </span>
               </label>
-              
+
               <div className="input-with-toggle">
-                <input 
-                  type={showGeminiKey ? "text" : "password"} 
-                  id="gemini-api-key" 
-                  value={geminiApiKey} 
+                <input
+                  type={showGeminiKey ? "text" : "password"}
+                  id="gemini-api-key"
+                  value={geminiApiKey}
                   onChange={(e) => setGeminiApiKey(e.target.value)}
                   placeholder={t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
                 />
-                <button 
-                  type="button" 
-                  className="toggle-visibility" 
+                <button
+                  type="button"
+                  className="toggle-visibility"
                   onClick={() => setShowGeminiKey(!showGeminiKey)}
                   aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
                 >
                   {showGeminiKey ? t('settings.hide') : t('settings.show')}
                 </button>
               </div>
-              
+
               <p className="api-key-help">
-                {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')} 
-                <a 
-                  href="https://aistudio.google.com/app/apikey" 
-                  target="_blank" 
+                {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')}
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
                   rel="noopener noreferrer"
                 >
                   Google AI Studio
@@ -113,40 +120,40 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 </ol>
               </div>
             </div>
-            
+
             <div className="api-key-input">
               <label htmlFor="youtube-api-key">
                 {t('settings.youtubeApiKey', 'YouTube API Key')}
                 <span className={`api-key-status ${apiKeysSet.youtube ? 'set' : 'not-set'}`}>
-                  {apiKeysSet.youtube 
-                    ? t('settings.keySet', 'Set') 
+                  {apiKeysSet.youtube
+                    ? t('settings.keySet', 'Set')
                     : t('settings.keyNotSet', 'Not Set')}
                 </span>
               </label>
-              
+
               <div className="input-with-toggle">
-                <input 
-                  type={showYoutubeKey ? "text" : "password"} 
-                  id="youtube-api-key" 
-                  value={youtubeApiKey} 
+                <input
+                  type={showYoutubeKey ? "text" : "password"}
+                  id="youtube-api-key"
+                  value={youtubeApiKey}
                   onChange={(e) => setYoutubeApiKey(e.target.value)}
                   placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
                 />
-                <button 
-                  type="button" 
-                  className="toggle-visibility" 
+                <button
+                  type="button"
+                  className="toggle-visibility"
                   onClick={() => setShowYoutubeKey(!showYoutubeKey)}
                   aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
                 >
                   {showYoutubeKey ? t('settings.hide') : t('settings.show')}
                 </button>
               </div>
-              
+
               <p className="api-key-help">
-                {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')} 
-                <a 
-                  href="https://console.cloud.google.com/apis/credentials" 
-                  target="_blank" 
+                {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')}
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
                   rel="noopener noreferrer"
                 >
                   Google Cloud Console
@@ -164,24 +171,49 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
               </div>
             </div>
           </div>
-          
+
+          <div className="settings-section video-processing-section">
+            <h3>{t('settings.videoProcessing', 'Video Processing')}</h3>
+            <div className="segment-duration-setting">
+              <label htmlFor="segment-duration">
+                {t('settings.segmentDuration', 'Segment Duration (minutes)')}
+              </label>
+              <p className="setting-description">
+                {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
+              </p>
+              <select
+                id="segment-duration"
+                value={segmentDuration}
+                onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
+                className="segment-duration-select"
+              >
+                <option value="5">5 {t('settings.minutes', 'minutes')}</option>
+                <option value="10">10 {t('settings.minutes', 'minutes')}</option>
+                <option value="15">15 {t('settings.minutes', 'minutes')}</option>
+                <option value="20">20 {t('settings.minutes', 'minutes')}</option>
+                <option value="30">30 {t('settings.minutes', 'minutes')}</option>
+                <option value="45">45 {t('settings.minutes', 'minutes')}</option>
+              </select>
+            </div>
+          </div>
+
           <div className="settings-section cache-section">
             <h3>{t('settings.cache', 'Cache Management')}</h3>
             <p className="cache-description">
               {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
             </p>
-            <button 
-              className="clear-cache-btn" 
+            <button
+              className="clear-cache-btn"
               onClick={handleClearCache}
               disabled={clearingCache}
             >
-              {clearingCache 
+              {clearingCache
                 ? t('settings.clearingCache', 'Clearing Cache...')
                 : t('settings.clearCache', 'Clear Cache')}
             </button>
           </div>
         </div>
-        
+
         <div className="settings-footer">
           <button className="cancel-btn" onClick={onClose}>
             {t('common.cancel', 'Cancel')}

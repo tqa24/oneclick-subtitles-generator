@@ -19,6 +19,7 @@ function App() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [segmentsStatus, setSegmentsStatus] = useState([]);
 
   const {
     subtitlesData,
@@ -27,13 +28,32 @@ function App() {
     setStatus,
     isGenerating,
     generateSubtitles,
-    retryGeneration
+    retryGeneration,
+    updateSegmentsStatus
   } = useSubtitles(t);
 
   // Apply theme to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Listen for segment status updates
+  useEffect(() => {
+    // Set up event listener for segment status updates
+    const handleSegmentStatusUpdate = (event) => {
+      if (event.detail && Array.isArray(event.detail)) {
+        setSegmentsStatus(event.detail);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('segmentStatusUpdate', handleSegmentStatusUpdate);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('segmentStatusUpdate', handleSegmentStatusUpdate);
+    };
+  }, []);
 
   // Listen for theme changes from other components
   useEffect(() => {
@@ -74,7 +94,7 @@ function App() {
     }
   }, []);
 
-  const saveApiKeys = (geminiKey, youtubeKey) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -88,6 +108,11 @@ function App() {
       localStorage.removeItem('youtube_api_key');
     }
 
+    // Save segment duration
+    if (segmentDuration) {
+      localStorage.setItem('segment_duration', segmentDuration.toString());
+    }
+
     // Update state
     setApiKeysSet({
       gemini: !!geminiKey,
@@ -95,7 +120,7 @@ function App() {
     });
 
     // Show success notification
-    setStatus({ message: 'Settings saved successfully!', type: 'success' });
+    setStatus({ message: t('settings.savedSuccessfully', 'Settings saved successfully!'), type: 'success' });
   };
 
   const validateInput = () => {
@@ -235,6 +260,7 @@ function App() {
           selectedVideo={selectedVideo}
           uploadedFile={uploadedFile}
           isGenerating={isGenerating}
+          segmentsStatus={segmentsStatus}
         />
       </main>
 

@@ -36,7 +36,26 @@
     "editTimings": "타이밍 편집",
     "hideEditor": "타이밍 편집기 숨기기",
     "retryGemini": "Gemini로 다시 시도",
-    "retryGeminiTooltip": "Gemini로 자막을 다시 생성해보세요"
+    "retryGeminiTooltip": "Gemini로 자막을 다시 생성해보세요",
+    "longVideoWarning": "{{duration}}분 길이의 비디오를 업로드했습니다. 여러 Gemini 호출로 인해 처리 시간이 평소보다 길어질 수 있습니다.",
+    "longVideoProcessing": "30분 이상의 비디오를 처리 중입니다. 시간이 다소 걸릴 수 있습니다...",
+    "processingDirectly": "비디오를 직접 처리하는 중...",
+    "clientSideSegmentation": "장치에서 비디오를 세그먼트로 처리하는 중...",
+    "serverSplitting": "서버에 비디오를 업로드하고 분할하는 중...",
+    "processingSegment": "세그먼트 {{current}} 처리 중...",
+    "processingAllSegments": "모든 {{count}}개의 세그먼트를 병렬로 처리 중...",
+    "retryingSegment": "세그먼트 {{current}} 재시도 중 (시도 {{attempt}})...",
+    "someSegmentsFailed": "일부 세그먼트 처리에 실패했습니다. 자막이 불완전할 수 있습니다.",
+    "segmentsStatus": "세그먼트 상태",
+    "pendingProcessing": "처리 대기 중...",
+    "checkingCache": "캐시 확인 중...",
+    "loadedFromCache": "캐시에서 불러옴",
+    "processingComplete": "처리 완료",
+    "processingFailed": "처리 실패",
+    "processing": "처리 중",
+    "done": "완료",
+    "failed": "실패",
+    "cached": "캐시됨"
   },
   "settings": {
     "title": "설정",
@@ -67,13 +86,18 @@
     "youtubeStep3": "'YouTube Data API v3' 활성화",
     "youtubeStep4": "사용자 인증 정보로 이동",
     "youtubeStep5": "API 키 생성",
+    "videoProcessing": "비디오 처리",
+    "segmentDuration": "세그먼트 길이 (분)",
+    "segmentDurationDescription": "긴 비디오를 처리할 때 각 비디오 세그먼트의 길이를 선택하세요. 짧은 세그먼트는 더 빠르게 처리되지만 정확도가 떨어질 수 있습니다.",
+    "minutes": "분",
     "cache": "캐시 관리",
     "cacheDescription": "공간을 확보하기 위해 모든 캐시된 자막과 다운로드된 비디오를 지웁니다.",
     "clearCache": "캐시 지우기",
     "clearingCache": "캐시 지우는 중...",
     "cacheClearedSuccess": "캐시가 성공적으로 지워졌습니다!",
     "cacheClearError": "캐시 지우기 오류. 다시 시도하세요.",
-    "confirmClearCache": "모든 캐시된 자막과 비디오를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다."
+    "confirmClearCache": "모든 캐시된 자막과 비디오를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "savedSuccessfully": "설정이 성공적으로 저장되었습니다!"
   },
   "lyrics": {
     "synchronizedLyrics": "동기화된 자막",
@@ -84,7 +108,9 @@
     "apiKeyRequired": "먼저 설정에서 API 키를 설정하세요.",
     "invalidInput": "유효한 입력(YouTube URL, 검색 결과 또는 파일 업로드)을 제공하세요.",
     "invalidFile": "유효하지 않은 파일 형식 또는 크기입니다. 지원되는 형식을 확인하세요.",
-    "geminiOverloaded": "[503 서비스 사용 불가] 모델이 과부하 상태입니다. 잠시 후 다시 시도하거나, 새 Google Cloud 프로젝트를 만들고 새 API 키를 생성하세요."
+    "geminiOverloaded": "[503 서비스 사용 불가] 모델이 과부하 상태입니다. 잠시 후 다시 시도하거나, 새 Google Cloud 프로젝트를 만들고 새 API 키를 생성하세요.",
+    "tokenLimitExceeded": "비디오 세그먼트가 Gemini가 처리하기에 너무 큽니다. 더 짧은 비디오나 더 낮은 화질의 비디오를 사용해 보세요.",
+    "fileSizeTooLarge": "파일 크기({{size}}MB)가 권장 최대치 {{maxSize}}MB를 초과합니다. 더 작은 파일이나 더 낮은 화질의 비디오를 사용해 주세요."
   },
   "theme": {
     "themeSelector": "테마",

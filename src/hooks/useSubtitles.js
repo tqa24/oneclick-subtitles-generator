@@ -3,11 +3,19 @@ import { callGeminiApi } from '../services/geminiService';
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
+import { getVideoDuration, processLongVideo } from '../utils/videoProcessor';
 
 export const useSubtitles = (t) => {
     const [subtitlesData, setSubtitlesData] = useState(null);
     const [status, setStatus] = useState({ message: '', type: '' });
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Function to update segment status and dispatch event
+    const updateSegmentsStatus = useCallback((segments) => {
+        // Dispatch custom event with segment status
+        const event = new CustomEvent('segmentStatusUpdate', { detail: segments });
+        window.dispatchEvent(event);
+    }, []);
 
     const checkCachedSubtitles = async (cacheId) => {
         try {
@@ -60,6 +68,24 @@ export const useSubtitles = (t) => {
                 preloadYouTubeVideo(input);
             } else if (inputType === 'file-upload') {
                 cacheId = await generateFileCacheId(input);
+
+                // Check if this is a video file and get its duration
+                if (input.type.startsWith('video/')) {
+                    try {
+                        const duration = await getVideoDuration(input);
+                        const durationMinutes = Math.floor(duration / 60);
+
+                        // If video is longer than 30 minutes, show warning and use special processing
+                        if (durationMinutes > 30) {
+                            setStatus({
+                                message: t('output.longVideoWarning', 'You uploaded a {{duration}} minute video. Processing can be longer than usual due to multiple Gemini calls.', { duration: durationMinutes }),
+                                type: 'loading'
+                            });
+                        }
+                    } catch (error) {
+                        console.warn('Error getting video duration:', error);
+                    }
+                }
             }
 
             // Check cache
@@ -74,7 +100,31 @@ export const useSubtitles = (t) => {
             }
 
             // Generate new subtitles
-            const subtitles = await callGeminiApi(input, inputType);
+            let subtitles;
+
+            // Check if this is a long video that needs special processing
+            if (inputType === 'file-upload' && input.type.startsWith('video/')) {
+                try {
+                    const duration = await getVideoDuration(input);
+                    const durationMinutes = Math.floor(duration / 60);
+
+                    if (durationMinutes > 30) {
+                        // Process long video by splitting it into segments
+                        subtitles = await processLongVideo(input, setStatus, t);
+                    } else {
+                        // Process normally for shorter videos
+                        subtitles = await callGeminiApi(input, inputType);
+                    }
+                } catch (error) {
+                    console.error('Error checking video duration:', error);
+                    // Fallback to normal processing
+                    subtitles = await callGeminiApi(input, inputType);
+                }
+            } else {
+                // Normal processing for non-video files or YouTube
+                subtitles = await callGeminiApi(input, inputType);
+            }
+
             setSubtitlesData(subtitles);
 
             // Cache the results
@@ -87,12 +137,27 @@ export const useSubtitles = (t) => {
         } catch (error) {
             console.error('Error generating subtitles:', error);
             try {
-                // Check for 503 Service Unavailable error
+                // Check for specific Gemini API errors
                 if (error.message && (
                     (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                     error.message.includes('The model is overloaded')
                 )) {
                     setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
+                    setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
+                } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
+                    // Extract file size and max size from error message
+                    const sizeMatch = error.message.match(/(\d+)MB\) exceeds the recommended maximum of (\d+)MB/);
+                    if (sizeMatch && sizeMatch.length >= 3) {
+                        const size = sizeMatch[1];
+                        const maxSize = sizeMatch[2];
+                        setStatus({
+                            message: t('errors.fileSizeTooLarge', 'File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video.', { size, maxSize }),
+                            type: 'error'
+                        });
+                    } else {
+                        setStatus({ message: error.message, type: 'error' });
+                    }
                 } else {
                     const errorData = JSON.parse(error.message);
                     if (errorData.type === 'unrecognized_format') {
@@ -105,12 +170,27 @@ export const useSubtitles = (t) => {
                     }
                 }
             } catch {
-                // Check for 503 Service Unavailable error in the catch block too
+                // Check for specific Gemini API errors in the catch block too
                 if (error.message && (
                     (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                     error.message.includes('The model is overloaded')
                 )) {
                     setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
+                    setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
+                } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
+                    // Extract file size and max size from error message
+                    const sizeMatch = error.message.match(/(\d+)MB\) exceeds the recommended maximum of (\d+)MB/);
+                    if (sizeMatch && sizeMatch.length >= 3) {
+                        const size = sizeMatch[1];
+                        const maxSize = sizeMatch[2];
+                        setStatus({
+                            message: t('errors.fileSizeTooLarge', 'File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video.', { size, maxSize }),
+                            type: 'error'
+                        });
+                    } else {
+                        setStatus({ message: error.message, type: 'error' });
+                    }
                 } else {
                     setStatus({ message: `Error: ${error.message}`, type: 'error' });
                 }
@@ -131,7 +211,31 @@ export const useSubtitles = (t) => {
         setStatus({ message: 'Retrying request to Gemini. This may take a few minutes...', type: 'loading' });
 
         try {
-            const subtitles = await callGeminiApi(input, inputType);
+            let subtitles;
+
+            // Check if this is a long video that needs special processing
+            if (inputType === 'file-upload' && input.type.startsWith('video/')) {
+                try {
+                    const duration = await getVideoDuration(input);
+                    const durationMinutes = Math.floor(duration / 60);
+
+                    if (durationMinutes > 30) {
+                        // Process long video by splitting it into segments
+                        subtitles = await processLongVideo(input, setStatus, t);
+                    } else {
+                        // Process normally for shorter videos
+                        subtitles = await callGeminiApi(input, inputType);
+                    }
+                } catch (error) {
+                    console.error('Error checking video duration:', error);
+                    // Fallback to normal processing
+                    subtitles = await callGeminiApi(input, inputType);
+                }
+            } else {
+                // Normal processing for non-video files or YouTube
+                subtitles = await callGeminiApi(input, inputType);
+            }
+
             setSubtitlesData(subtitles);
 
             // Cache the new results
@@ -147,12 +251,27 @@ export const useSubtitles = (t) => {
         } catch (error) {
             console.error('Error regenerating subtitles:', error);
 
-            // Check for 503 Service Unavailable error
+            // Check for specific Gemini API errors
             if (error.message && (
                 (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                 error.message.includes('The model is overloaded')
             )) {
                 setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+            } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
+                setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
+            } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
+                // Extract file size and max size from error message
+                const sizeMatch = error.message.match(/(\d+)MB\) exceeds the recommended maximum of (\d+)MB/);
+                if (sizeMatch && sizeMatch.length >= 3) {
+                    const size = sizeMatch[1];
+                    const maxSize = sizeMatch[2];
+                    setStatus({
+                        message: t('errors.fileSizeTooLarge', 'File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video.', { size, maxSize }),
+                        type: 'error'
+                    });
+                } else {
+                    setStatus({ message: error.message, type: 'error' });
+                }
             } else {
                 setStatus({ message: `Error: ${error.message}`, type: 'error' });
             }
@@ -169,6 +288,7 @@ export const useSubtitles = (t) => {
         setStatus,
         isGenerating,
         generateSubtitles,
-        retryGeneration
+        retryGeneration,
+        updateSegmentsStatus
     };
 };

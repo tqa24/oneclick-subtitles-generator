@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
+import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [] }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -39,7 +40,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
       };
       const startTime = timeFormat(subtitle.start);
       const endTime = timeFormat(subtitle.end);
-      
+
       return `${id}\n${startTime} --> ${endTime}\n${subtitle.text}\n`;
     }).join('\n');
   };
@@ -103,24 +104,32 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   return (
     <div className="output-container">
       {status?.message && (
-        <div className={`status ${status.type}`}>{status.message}</div>
+        segmentsStatus.length > 0 ? (
+          <ParallelProcessingStatus
+            segments={segmentsStatus}
+            overallStatus={status.message}
+            statusType={status.type}
+          />
+        ) : (
+          <div className={`status ${status.type}`}>{status.message}</div>
+        )
       )}
-      
+
       {subtitlesData && (
         <>
           <div className="preview-section">
             <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
-            
-            <VideoPreview 
+
+            <VideoPreview
               currentTime={currentTabIndex}
               setCurrentTime={setCurrentTabIndex}
-              subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || 
+              subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text ||
                        subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
               videoSource={videoSource}
               setDuration={setVideoDuration}
             />
-            
-            <LyricsDisplay 
+
+            <LyricsDisplay
               matchedLyrics={formatSubtitlesForLyricsDisplay(subtitlesData)}
               currentTime={currentTabIndex}
               onLyricClick={handleLyricClick}
@@ -130,7 +139,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
             />
 
             <div className="download-options">
-              <button 
+              <button
                 className="download-btn"
                 onClick={handleSRTDownload}
                 disabled={!subtitlesData || isGenerating}
@@ -142,7 +151,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
                 </svg>
                 {t('output.downloadSrt', 'Download SRT')}
               </button>
-              <button 
+              <button
                 className="download-btn"
                 onClick={handleJSONDownload}
                 disabled={!subtitlesData || isGenerating}

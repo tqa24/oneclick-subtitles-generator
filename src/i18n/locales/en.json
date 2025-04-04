@@ -37,7 +37,26 @@
     "editTimings": "Edit Timings",
     "hideEditor": "Hide Timing Editor",
     "retryGemini": "Retry with Gemini",
-    "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request"
+    "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request",
+    "longVideoWarning": "You uploaded a {{duration}} minute video. Processing can be longer than usual due to multiple Gemini calls.",
+    "longVideoProcessing": "Processing video longer than 30 minutes. This may take a while...",
+    "processingDirectly": "Processing video directly...",
+    "clientSideSegmentation": "Processing video in segments on your device...",
+    "serverSplitting": "Uploading and splitting video on server...",
+    "processingSegment": "Processing segment {{current}}...",
+    "processingAllSegments": "Processing all {{count}} segments in parallel...",
+    "retryingSegment": "Retrying segment {{current}} (attempt {{attempt}})...",
+    "someSegmentsFailed": "Some segments failed to process. The subtitles may be incomplete.",
+    "segmentsStatus": "Segments Status",
+    "pendingProcessing": "Waiting to be processed...",
+    "checkingCache": "Checking cache...",
+    "loadedFromCache": "Loaded from cache",
+    "processingComplete": "Processing complete",
+    "processingFailed": "Processing failed",
+    "processing": "Processing",
+    "done": "Done",
+    "failed": "Failed",
+    "cached": "Cached"
   },
   "settings": {
     "title": "Settings",
@@ -68,13 +87,18 @@
     "youtubeStep3": "Enable 'YouTube Data API v3'",
     "youtubeStep4": "Go to credentials",
     "youtubeStep5": "Generate API key",
+    "videoProcessing": "Video Processing",
+    "segmentDuration": "Segment Duration (minutes)",
+    "segmentDurationDescription": "Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.",
+    "minutes": "minutes",
     "cache": "Cache Management",
     "cacheDescription": "Clear all cached subtitles and downloaded videos to free up space.",
     "clearCache": "Clear Cache",
     "clearingCache": "Clearing Cache...",
     "cacheClearedSuccess": "Cache cleared successfully!",
     "cacheClearError": "Error clearing cache. Please try again.",
-    "confirmClearCache": "Are you sure you want to clear all cached subtitles and videos? This cannot be undone."
+    "confirmClearCache": "Are you sure you want to clear all cached subtitles and videos? This cannot be undone.",
+    "savedSuccessfully": "Settings saved successfully!"
   },
   "lyrics": {
     "synchronizedLyrics": "Synchronized Subtitles",
@@ -85,7 +109,9 @@
     "apiKeyRequired": "Please set your API key in the settings first.",
     "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
     "invalidFile": "Invalid file format or size. Please check the supported formats.",
-    "geminiOverloaded": "[503 Service Unavailable] The model is overloaded. Please wait a few minutes and try again, or create a new Google Cloud project and generate a new API key."
+    "geminiOverloaded": "[503 Service Unavailable] The model is overloaded. Please wait a few minutes and try again, or create a new Google Cloud project and generate a new API key.",
+    "tokenLimitExceeded": "The video segment is too large for Gemini to process. Please try with a shorter video or lower video quality.",
+    "fileSizeTooLarge": "File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video."
   },
   "theme": {
     "themeSelector": "Theme",
