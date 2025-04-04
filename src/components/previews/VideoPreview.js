@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  downloadYoutubeVideo, 
-  startYoutubeVideoDownload, 
+import {
+  downloadYoutubeVideo,
+  startYoutubeVideoDownload,
   checkDownloadStatus,
-  extractYoutubeVideoId 
+  extractYoutubeVideoId
 } from '../../utils/videoDownloader';
 import '../../styles/VideoPreview.css';
 
@@ -12,6 +12,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
+  const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
+  const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       setIsLoaded(false);
       setVideoUrl('');
       setError('');
-      
+
       if (!videoSource) {
         setError(t('preview.noVideo', 'No video source available. Please select a video first.'));
         return;
@@ -40,7 +42,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         setVideoUrl(videoSource);
         return;
       }
-      
+
       // If it's a YouTube URL, handle download
       if (videoSource.includes('youtube.com') || videoSource.includes('youtu.be')) {
         await processVideoUrl(videoSource);
@@ -50,24 +52,24 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       // For any other URL, try to use it directly
       setVideoUrl(videoSource);
     };
-    
+
     loadVideo();
   }, [videoSource, t]);
 
   // Check download status at interval if we have a videoId
   useEffect(() => {
     if (!videoId) return;
-    
+
     // Clear any existing interval
     if (downloadCheckInterval) {
       clearInterval(downloadCheckInterval);
     }
-    
+
     // Set up a new interval to check download status
     const interval = setInterval(() => {
       const status = checkDownloadStatus(videoId);
       setDownloadProgress(status.progress);
-      
+
       if (status.status === 'completed') {
         setVideoUrl(status.url);
         setIsDownloading(false);
@@ -78,37 +80,37 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         clearInterval(interval);
       }
     }, 1000);
-    
+
     setDownloadCheckInterval(interval);
-    
+
     // Clean up on unmount
     return () => clearInterval(interval);
   }, [videoId, t]);
-  
+
   // Process the video URL (download if it's YouTube)
   const processVideoUrl = async (url) => {
     console.log('Processing video URL:', url);
-    
+
     // Reset states
     setError('');
     setIsLoaded(false);
-    
+
     // Check if it's a YouTube URL
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       try {
         setIsDownloading(true);
         setDownloadProgress(0);
-        
+
         // Store the URL for future use
         localStorage.setItem('current_video_url', url);
-        
+
         // Extract video ID
         const extractedVideoId = extractYoutubeVideoId(url);
-        
+
         // Start the download process but don't wait for it to complete
         const id = startYoutubeVideoDownload(url);
         setVideoId(id);
-        
+
         // Check initial status - it might already be complete if cached
         const initialStatus = checkDownloadStatus(id);
         if (initialStatus.status === 'completed') {
@@ -125,7 +127,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       setVideoUrl(url);
     }
   };
-  
+
   // Clean up interval on component unmount
   useEffect(() => {
     return () => {
@@ -134,21 +136,21 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       }
     };
   }, [downloadCheckInterval]);
-  
+
   // Handle native video element
   useEffect(() => {
     const videoElement = videoRef.current;
     if (!videoElement) return;
-    
+
     // Validate the video URL
     if (!videoUrl) {
       console.log('Empty video URL provided');
       setError(t('preview.videoError', 'No video URL provided.'));
       return;
     }
-    
+
     console.log('Setting up video element with URL:', videoUrl);
-    
+
     // Event handlers
     const handleMetadataLoaded = () => {
       console.log('Video metadata loaded successfully for:', videoUrl);
@@ -156,7 +158,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       setDuration(videoElement.duration);
       setError(''); // Clear any previous errors
     };
-    
+
     const handleError = (e) => {
       // Get more detailed information about the error
       let errorDetails = '';
@@ -179,22 +181,39 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
             errorDetails = `Unknown error (code: ${errorCode}).`;
         }
       }
-      
+
       console.error('Video element error:', e, errorDetails);
       setError(t('preview.videoError', `Error loading video: ${errorDetails}`));
       setIsLoaded(false);
     };
-    
+
     const handleTimeUpdate = () => {
       // Only update currentTime if we're not in a seek operation
       if (!seekLockRef.current) {
-        setCurrentTime(videoElement.currentTime);
+        // Throttle time updates to reduce unnecessary re-renders
+        // Only update if more than 100ms has passed since the last update
+        const now = performance.now();
+        if (now - lastTimeUpdateRef.current > 100) {
+          setCurrentTime(videoElement.currentTime);
+          lastTimeUpdateRef.current = now;
+        }
       }
-      setIsPlaying(!videoElement.paused);
+
+      // Only update isPlaying if the state has actually changed
+      const currentlyPlaying = !videoElement.paused;
+      if (currentlyPlaying !== lastPlayStateRef.current) {
+        setIsPlaying(currentlyPlaying);
+        lastPlayStateRef.current = currentlyPlaying;
+      }
     };
-    
+
     const handlePlayPauseEvent = () => {
-      setIsPlaying(!videoElement.paused);
+      // Only update isPlaying if the state has actually changed
+      const currentlyPlaying = !videoElement.paused;
+      if (currentlyPlaying !== lastPlayStateRef.current) {
+        setIsPlaying(currentlyPlaying);
+        lastPlayStateRef.current = currentlyPlaying;
+      }
     };
 
     const handleSeeking = () => {
@@ -202,12 +221,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     };
 
     const handleSeeked = () => {
-      // Release the seek lock after a short delay to ensure the timeupdate event doesn't override
-      setTimeout(() => {
-        seekLockRef.current = false;
-      }, 100);
+      // Update the current time immediately when seeking is complete
+      setCurrentTime(videoElement.currentTime);
+      lastTimeUpdateRef.current = performance.now();
+
+      // Release the seek lock immediately
+      seekLockRef.current = false;
     };
-    
+
     // Add event listeners
     videoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
     videoElement.addEventListener('error', handleError);
@@ -216,7 +237,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     videoElement.addEventListener('pause', handlePlayPauseEvent);
     videoElement.addEventListener('seeking', handleSeeking);
     videoElement.addEventListener('seeked', handleSeeked);
-    
+
     // Clean up
     return () => {
       videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
@@ -228,44 +249,43 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       videoElement.removeEventListener('seeked', handleSeeked);
     };
   }, [videoUrl, setCurrentTime, setDuration, t]);
-  
+
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     const videoElement = videoRef.current;
     if (!videoElement) return;
-    
+
     // Only seek if the difference is significant to avoid loops
-    if (Math.abs(videoElement.currentTime - currentTime) > 0.1) {
+    // Increased threshold to 0.2 seconds to further reduce unnecessary seeks
+    if (Math.abs(videoElement.currentTime - currentTime) > 0.2) {
       // Set the seek lock to prevent timeupdate from overriding our seek
       seekLockRef.current = true;
-      
+
       // Store the playing state
       const wasPlaying = !videoElement.paused;
-      
-      // Pause first to ensure accurate seeking
-      if (wasPlaying) {
-        videoElement.pause();
-      }
-      
-      // Set the new time
+      lastPlayStateRef.current = wasPlaying;
+
+      // Set the new time without pausing first
+      // This reduces the play/pause flickering
       videoElement.currentTime = currentTime;
-      
-      // Resume playing if it was playing before
-      if (wasPlaying) {
-        videoElement.play().catch(err => {
-          console.warn('Auto-play failed:', err);
-        });
-      }
+
+      // Update the last time update reference
+      lastTimeUpdateRef.current = performance.now();
+
+      // Release the seek lock after a very short delay
+      setTimeout(() => {
+        seekLockRef.current = false;
+      }, 50);
     }
   }, [currentTime, isLoaded]);
-  
+
   return (
     <div className="video-preview">
       <div className="video-container">
         {error && <div className="error">{error}</div>}
-        
+
         {isDownloading ? (
           <div className="video-downloading">
             <div className="download-progress">
@@ -278,7 +298,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         ) : (
           videoUrl ? (
             <div className="native-video-container">
-              <video 
+              <video
                 ref={videoRef}
                 controls
                 className="video-player"
@@ -288,7 +308,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                 <source src={videoUrl} type="video/mp4" />
                 {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
               </video>
-              
+
               <div className="video-subtitle">
                 {subtitle}
               </div>

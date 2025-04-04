@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 
 const LyricItem = ({
   lyric,
@@ -134,7 +134,8 @@ const LyricItem = ({
           <div
             className="progress-indicator"
             style={{
-              width: `${Math.min(100, Math.max(0, ((currentTime - lyric.start) / (lyric.end - lyric.start)) * 100))}%`
+              width: '100%',
+              transform: `scaleX(${Math.min(1, Math.max(0, (currentTime - lyric.start) / (lyric.end - lyric.start)))})`
             }}
           />
         )}
@@ -159,4 +160,18 @@ const LyricItem = ({
   );
 };
 
-export default LyricItem;
+// Use memo to prevent unnecessary re-renders
+const MemoizedLyricItem = memo(LyricItem, (prevProps, nextProps) => {
+  // Only re-render if these props change
+  if (prevProps.isCurrentLyric !== nextProps.isCurrentLyric) return false;
+  if (prevProps.isCurrentLyric && prevProps.currentTime !== nextProps.currentTime) return false;
+  if (prevProps.lyric !== nextProps.lyric) return false;
+  if (prevProps.isDragging !== nextProps.isDragging) return false;
+  if (prevProps.showInsertButton !== nextProps.showInsertButton) return false;
+  if (prevProps.isEditing !== nextProps.isEditing) return false;
+
+  // Don't re-render for other prop changes
+  return true;
+});
+
+export default MemoizedLyricItem;
