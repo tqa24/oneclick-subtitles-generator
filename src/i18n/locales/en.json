@@ -107,6 +107,16 @@
     "examplesTitle": "Supported URL formats:",
     "example1": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "example2": "https://youtu.be/dQw4w9WgXcQ",
-    "example3": "youtube.com/watch?v=dQw4w9WgXcQ"
+    "example3": "youtube.com/watch?v=dQw4w9WgXcQ",
+    "videoId": "Video ID:"
+  },
+  "youtube": {
+    "searchLabel": "Search YouTube Video:",
+    "searchPlaceholder": "Enter video title...",
+    "searching": "Searching...",
+    "noResults": "No results found.",
+    "searchError": "Error searching YouTube. Please try again or enter a URL directly.",
+    "noApiKey": "Please set your YouTube API key in the settings first.",
+    "downloadVideoOnly": "Download Video"
   }
 }

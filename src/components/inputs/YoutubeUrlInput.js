@@ -148,7 +148,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, onDownloadVideoOnly 
           </div>
           <div className="video-info">
             <h3 className="video-title">{videoTitle}</h3>
-            <p className="video-id">Video ID: <span className="video-id-value">{selectedVideo.id}</span></p>
+            <p className="video-id">{t('youtubeUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
 
             {onDownloadVideoOnly && (
               <button

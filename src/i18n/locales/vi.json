@@ -107,6 +107,16 @@
     "examplesTitle": "Các định dạng URL được hỗ trợ:",
     "example1": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "example2": "https://youtu.be/dQw4w9WgXcQ",
-    "example3": "youtube.com/watch?v=dQw4w9WgXcQ"
+    "example3": "youtube.com/watch?v=dQw4w9WgXcQ",
+    "videoId": "ID Video:"
+  },
+  "youtube": {
+    "searchLabel": "Tìm kiếm video YouTube:",
+    "searchPlaceholder": "Nhập tiêu đề video...",
+    "searching": "Đang tìm kiếm...",
+    "noResults": "Không tìm thấy kết quả.",
+    "searchError": "Lỗi khi tìm kiếm YouTube. Vui lòng thử lại hoặc nhập URL trực tiếp.",
+    "noApiKey": "Vui lòng thiết lập khóa API YouTube trong cài đặt trước.",
+    "downloadVideoOnly": "Tải xuống video"
   }
 }
