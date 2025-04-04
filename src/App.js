@@ -29,7 +29,8 @@ function App() {
     isGenerating,
     generateSubtitles,
     retryGeneration,
-    retrySegment
+    retrySegment,
+    retryingSegments
   } = useSubtitles(t);
 
   // Apply theme to document
@@ -304,6 +305,7 @@ function App() {
           activeTab={activeTab}
           onRetrySegment={retrySegment}
           videoSegments={videoSegments}
+          retryingSegments={retryingSegments}
         />
       </main>
 

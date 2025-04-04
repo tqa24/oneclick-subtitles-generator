@@ -5,7 +5,7 @@ import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, videoSegments = [] }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, videoSegments = [], retryingSegments = [] }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -111,6 +111,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
             overallStatus={status.message}
             statusType={status.type}
             onRetrySegment={(segmentIndex) => onRetrySegment && onRetrySegment(segmentIndex, videoSegments)}
+            retryingSegments={retryingSegments}
           />
         ) : (
           <div className={`status ${status.type}`}>{status.message}</div>

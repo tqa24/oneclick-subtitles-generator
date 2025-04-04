@@ -153,3 +153,40 @@
 [data-theme="dark"] .segment-retry-btn:hover {
   background-color: rgba(93, 173, 226, 0.2);
 }
+
+/* Retrying indicator styles */
+.segment-retrying-indicator {
+  color: #3498db;
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme="dark"] .segment-retrying-indicator {
+  color: #5dade2;
+}
+
+/* Spinning animation for the refresh icon */
+.spinning {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Add a new status color for retrying state */
+.segment-status.retrying .segment-indicator {
+  background-color: #3498db;
+  animation: pulse 1.5s infinite;
+}
+
+[data-theme="dark"] .segment-status.retrying .segment-indicator {
+  background-color: #5dade2;
+}

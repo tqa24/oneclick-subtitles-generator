@@ -329,7 +329,8 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
                          status === 'success' ? t('output.done') :
                          status === 'error' ? t('output.failed') :
                          status === 'cached' ? t('output.cached') :
-                         status === 'pending' ? t('output.pending') : ''
+                         status === 'pending' ? t('output.pending') :
+                         status === 'retrying' ? t('output.retrying', 'Retrying...') : ''
         };
 
         // Dispatch event to update UI for just this segment
@@ -340,8 +341,8 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
     };
 
     try {
-        // Update status to show we're processing
-        updateSegmentStatus('loading', t('output.processing', 'Processing...'));
+        // Update status to show we're retrying this segment
+        updateSegmentStatus('retrying', t('output.retryingSegment', 'Retrying segment...'));
 
         // Process the segment
         const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t);

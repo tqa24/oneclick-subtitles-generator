@@ -10,9 +10,10 @@ import { FiRefreshCw } from 'react-icons/fi';
  * @param {string} props.overallStatus - Overall processing status message
  * @param {string} props.statusType - Status type (loading, success, error, warning)
  * @param {Function} props.onRetrySegment - Function to retry processing a specific segment
+ * @param {Array} props.retryingSegments - Array of segment indices that are currently being retried
  * @returns {JSX.Element} - Rendered component
  */
-const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment }) => {
+const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment, retryingSegments = [] }) => {
   const { t } = useTranslation();
 
   if (!segments || segments.length === 0) {
@@ -41,7 +42,8 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
               <span className="segment-number">{index + 1}</span>
               <span className="segment-indicator"></span>
               <span className="segment-message">{segment.shortMessage || segment.status}</span>
-              {segment.status === 'success' && segment.shortMessage === t('output.done', 'Hoàn thành') && (
+              {/* Show refresh button for completed segments that aren't currently being retried */}
+              {segment.status === 'success' && segment.shortMessage === t('output.done', 'Hoàn thành') && !retryingSegments.includes(index) && (
                 <button
                   className="segment-retry-btn"
                   onClick={(e) => {
@@ -52,6 +54,13 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                 >
                   <FiRefreshCw size={14} />
                 </button>
+              )}
+
+              {/* Show spinning refresh icon for segments that are currently being retried */}
+              {(segment.status === 'retrying' || retryingSegments.includes(index)) && (
+                <span className="segment-retrying-indicator" title={t('output.retryingSegment', 'Retrying this segment...')}>
+                  <FiRefreshCw size={14} className="spinning" />
+                </span>
               )}
             </div>
           ))}

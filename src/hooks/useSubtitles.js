@@ -281,13 +281,27 @@ export const useSubtitles = (t) => {
         }
     }, [t]);
 
+    // State to track which segments are currently being retried
+    const [retryingSegments, setRetryingSegments] = useState([]);
+
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments) => {
-        if (!subtitlesData || isGenerating) {
+        if (!subtitlesData) {
             return false;
         }
 
-        setIsGenerating(true);
+        // Mark this segment as retrying
+        setRetryingSegments(prev => [...prev, segmentIndex]);
+
+        // Update the segment status to show it's retrying
+        const retryingStatus = {
+            index: segmentIndex,
+            status: 'retrying',
+            message: t('output.retryingSegment', 'Retrying segment...'),
+            shortMessage: t('output.retrying', 'Retrying...')
+        };
+        const event = new CustomEvent('segmentStatusUpdate', { detail: [retryingStatus] });
+        window.dispatchEvent(event);
 
         try {
             // Retry processing the specific segment
@@ -295,22 +309,48 @@ export const useSubtitles = (t) => {
                 segmentIndex,
                 segments,
                 subtitlesData,
-                setStatus,
+                (status) => {
+                    // Only update the overall status if it's a success message
+                    if (status.type === 'success') {
+                        setStatus(status);
+                    }
+                },
                 t
             );
 
             // Update the subtitles data with the new results
             setSubtitlesData(updatedSubtitles);
-            setStatus({ message: t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }), type: 'success' });
+
+            // Show a brief success message
+            setStatus({
+                message: t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }),
+                type: 'success'
+            });
             return true;
         } catch (error) {
             console.error('Error retrying segment:', error);
-            setStatus({ message: `${t('errors.segmentRetryFailed', 'Failed to retry segment')}: ${error.message}`, type: 'error' });
+
+            // Update the segment status to show the error
+            const errorStatus = {
+                index: segmentIndex,
+                status: 'error',
+                message: error.message || t('output.processingFailed', 'Processing failed'),
+                shortMessage: t('output.failed', 'Failed')
+            };
+            const errorEvent = new CustomEvent('segmentStatusUpdate', { detail: [errorStatus] });
+            window.dispatchEvent(errorEvent);
+
+            // Show error message
+            setStatus({
+                message: `${t('errors.segmentRetryFailed', 'Failed to retry segment {{segmentNumber}}', { segmentNumber: segmentIndex + 1 })}: ${error.message}`,
+                type: 'error'
+            });
             return false;
         } finally {
-            setIsGenerating(false);
+            // Remove this segment from the retrying list
+            setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
         }
-    }, [subtitlesData, isGenerating, t]);
+    }, [subtitlesData, t]);
 
     return {
         subtitlesData,
@@ -321,6 +361,7 @@ export const useSubtitles = (t) => {
         generateSubtitles,
         retryGeneration,
         updateSegmentsStatus,
-        retrySegment
+        retrySegment,
+        retryingSegments
     };
 };
