@@ -84,7 +84,8 @@
   "errors": {
     "apiKeyRequired": "Please set your API key in the settings first.",
     "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
-    "invalidFile": "Invalid file format or size. Please check the supported formats."
+    "invalidFile": "Invalid file format or size. Please check the supported formats.",
+    "geminiOverloaded": "[503 Service Unavailable] The model is overloaded. Please wait a few minutes and try again, or create a new Google Cloud project and generate a new API key."
   },
   "theme": {
     "themeSelector": "Theme",

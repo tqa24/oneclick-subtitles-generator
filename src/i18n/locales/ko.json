@@ -83,7 +83,8 @@
   "errors": {
     "apiKeyRequired": "먼저 설정에서 API 키를 설정하세요.",
     "invalidInput": "유효한 입력(YouTube URL, 검색 결과 또는 파일 업로드)을 제공하세요.",
-    "invalidFile": "유효하지 않은 파일 형식 또는 크기입니다. 지원되는 형식을 확인하세요."
+    "invalidFile": "유효하지 않은 파일 형식 또는 크기입니다. 지원되는 형식을 확인하세요.",
+    "geminiOverloaded": "[503 서비스 사용 불가] 모델이 과부하 상태입니다. 잠시 후 다시 시도하거나, 새 Google Cloud 프로젝트를 만들고 새 API 키를 생성하세요."
   },
   "theme": {
     "themeSelector": "테마",

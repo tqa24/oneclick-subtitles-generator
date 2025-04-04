@@ -84,7 +84,8 @@
   "errors": {
     "apiKeyRequired": "Vui lòng cài đặt khóa API trong phần cài đặt trước.",
     "invalidInput": "Vui lòng cung cấp đầu vào hợp lệ (URL YouTube, kết quả tìm kiếm, hoặc tập tin tải lên).",
-    "invalidFile": "Định dạng hoặc kích thước tập tin không hợp lệ. Kiểm tra các định dạng được hỗ trợ."
+    "invalidFile": "Định dạng hoặc kích thước tập tin không hợp lệ. Kiểm tra các định dạng được hỗ trợ.",
+    "geminiOverloaded": "[503 Dịch vụ không khả dụng] Mô hình đang quá tải. Vui lòng đợi vài phút và thử lại, hoặc tạo một dự án Google Cloud mới và tạo khóa API mới."
   },
   "theme": {
     "themeSelector": "Chủ đề",

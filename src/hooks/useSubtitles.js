@@ -32,7 +32,7 @@ export const useSubtitles = (t) => {
                     subtitles
                 })
             });
-            
+
             const result = await response.json();
             if (!result.success) {
                 console.error('Failed to save subtitles to cache:', result.error);
@@ -76,28 +76,44 @@ export const useSubtitles = (t) => {
             // Generate new subtitles
             const subtitles = await callGeminiApi(input, inputType);
             setSubtitlesData(subtitles);
-            
+
             // Cache the results
             if (cacheId && subtitles && subtitles.length > 0) {
                 await saveSubtitlesToCache(cacheId, subtitles);
             }
-            
+
             setStatus({ message: t('output.generationSuccess'), type: 'success' });
             return true;
         } catch (error) {
             console.error('Error generating subtitles:', error);
             try {
-                const errorData = JSON.parse(error.message);
-                if (errorData.type === 'unrecognized_format') {
-                    setStatus({
-                        message: `${errorData.message}\n\nRaw text from Gemini:\n${errorData.rawText}`,
-                        type: 'error'
-                    });
+                // Check for 503 Service Unavailable error
+                if (error.message && (
+                    (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
+                    error.message.includes('The model is overloaded')
+                )) {
+                    setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                } else {
+                    const errorData = JSON.parse(error.message);
+                    if (errorData.type === 'unrecognized_format') {
+                        setStatus({
+                            message: `${errorData.message}\n\nRaw text from Gemini:\n${errorData.rawText}`,
+                            type: 'error'
+                        });
+                    } else {
+                        setStatus({ message: `Error: ${error.message}`, type: 'error' });
+                    }
+                }
+            } catch {
+                // Check for 503 Service Unavailable error in the catch block too
+                if (error.message && (
+                    (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
+                    error.message.includes('The model is overloaded')
+                )) {
+                    setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
                 } else {
                     setStatus({ message: `Error: ${error.message}`, type: 'error' });
                 }
-            } catch {
-                setStatus({ message: `Error: ${error.message}`, type: 'error' });
             }
             return false;
         } finally {
@@ -117,7 +133,7 @@ export const useSubtitles = (t) => {
         try {
             const subtitles = await callGeminiApi(input, inputType);
             setSubtitlesData(subtitles);
-            
+
             // Cache the new results
             if (inputType === 'youtube') {
                 const cacheId = extractYoutubeVideoId(input);
@@ -125,12 +141,21 @@ export const useSubtitles = (t) => {
                     await saveSubtitlesToCache(cacheId, subtitles);
                 }
             }
-            
+
             setStatus({ message: t('output.generationSuccess'), type: 'success' });
             return true;
         } catch (error) {
             console.error('Error regenerating subtitles:', error);
-            setStatus({ message: `Error: ${error.message}`, type: 'error' });
+
+            // Check for 503 Service Unavailable error
+            if (error.message && (
+                (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
+                error.message.includes('The model is overloaded')
+            )) {
+                setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+            } else {
+                setStatus({ message: `Error: ${error.message}`, type: 'error' });
+            }
             return false;
         } finally {
             setIsGenerating(false);
