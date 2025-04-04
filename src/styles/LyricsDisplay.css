@@ -531,12 +531,15 @@ body.lyrics-dragging .time-control.dragging {
   background-color: var(--primary-color);
   transform-origin: left center;
   will-change: transform;
-  transition: transform 0.1s linear, background-color var(--transition-speed);
+  /* Remove transition for continuous animation */
+  transition: background-color var(--transition-speed);
   /* Use hardware acceleration for smoother animation */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
+  /* Add a subtle glow effect */
+  box-shadow: 0 0 4px rgba(67, 97, 238, 0.5);
 }
 
 .help-text {

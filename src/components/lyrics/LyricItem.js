@@ -1,6 +1,74 @@
-import React, { useState, useRef, memo } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '../../utils/timeFormatter';
+
+// Continuous progress indicator component
+const ContinuousProgressIndicator = ({ lyric, isCurrentLyric, currentTime }) => {
+  const progressRef = useRef(null);
+  const animationRef = useRef(null);
+  const videoRef = useRef(document.querySelector('video')); // Reference to the video element
+
+  // Function to update the progress indicator
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const updateProgress = () => {
+    if (!progressRef.current || !isCurrentLyric) return;
+
+    // Get the current time from the video element if available, otherwise use the prop
+    const video = videoRef.current;
+    const time = video && !video.paused ? video.currentTime : currentTime;
+
+    // Calculate the progress percentage
+    const progress = Math.min(1, Math.max(0, (time - lyric.start) / (lyric.end - lyric.start)));
+
+    // Update the transform
+    progressRef.current.style.transform = `scaleX(${progress})`;
+
+    // Continue the animation if this is the current lyric
+    if (isCurrentLyric) {
+      animationRef.current = requestAnimationFrame(updateProgress);
+    }
+  };
+
+  // Set up the animation when the component mounts or when isCurrentLyric changes
+  useEffect(() => {
+    // If this is the current lyric, start the animation
+    if (isCurrentLyric) {
+      // Make sure we have the latest video reference
+      videoRef.current = document.querySelector('video');
+
+      // Start the animation
+      animationRef.current = requestAnimationFrame(updateProgress);
+    }
+
+    // Clean up the animation when the component unmounts or when isCurrentLyric changes
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isCurrentLyric, lyric]); // Include the entire lyric object to handle any changes
+
+  // Update when currentTime changes (for seeking)
+  useEffect(() => {
+    if (isCurrentLyric) {
+      updateProgress();
+    }
+  }, [currentTime, isCurrentLyric]); // Include isCurrentLyric in the dependency array
+
+  // Only render if this is the current lyric
+  if (!isCurrentLyric) return null;
+
+  return (
+    <div
+      ref={progressRef}
+      className="progress-indicator"
+      style={{
+        width: '100%',
+        transform: `scaleX(${Math.min(1, Math.max(0, (currentTime - lyric.start) / (lyric.end - lyric.start)))})` // Initial value
+      }}
+    />
+  );
+};
 
 const LyricItem = ({
   lyric,
@@ -57,7 +125,7 @@ const LyricItem = ({
       <div
         data-lyric-index={index}
         className={`lyric-item ${isCurrentLyric ? 'current' : ''}`}
-        onClick={(e) => {
+        onClick={() => {
           if (Date.now() - getLastDragEnd() < 100) {
             return;
           }
@@ -135,15 +203,11 @@ const LyricItem = ({
           )}
         </div>
 
-        {isCurrentLyric && (
-          <div
-            className="progress-indicator"
-            style={{
-              width: '100%',
-              transform: `scaleX(${Math.min(1, Math.max(0, (currentTime - lyric.start) / (lyric.end - lyric.start)))})`
-            }}
-          />
-        )}
+        <ContinuousProgressIndicator
+          lyric={lyric}
+          isCurrentLyric={isCurrentLyric}
+          currentTime={currentTime}
+        />
       </div>
 
       {allowEditing && hasNextLyric && showInsertButton && (
