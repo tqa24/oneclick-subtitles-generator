@@ -17,10 +17,10 @@ const LyricsHeader = ({
   const { t } = useTranslation();
   const durationRef = useRef(0);
 
-  // Calculate minimum zoom level based on duration to limit view to 600 seconds
+  // Calculate minimum zoom level based on duration to limit view to 300 seconds
   const calculateMinZoom = (duration) => {
-    if (!duration || duration <= 600) return 1;
-    return duration / 600; // Ensure max visible time is 600 seconds
+    if (!duration || duration <= 300) return 1;
+    return duration / 300; // Ensure max visible time is 300 seconds
   };
 
   // Get current video duration from the video element

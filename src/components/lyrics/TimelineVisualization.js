@@ -32,10 +32,10 @@ const TimelineVisualization = ({
   const [playheadX, setPlayheadX] = useState(null);
   const canvasWidthRef = useRef(0);
 
-  // Calculate minimum zoom level to limit visible timeline to 600 seconds
+  // Calculate minimum zoom level to limit visible timeline to 300 seconds
   const calculateMinZoom = useCallback((totalDuration) => {
-    if (!totalDuration || totalDuration <= 600) return 1;
-    return totalDuration / 600; // Ensure max visible time is 600 seconds
+    if (!totalDuration || totalDuration <= 300) return 1;
+    return totalDuration / 300; // Ensure max visible time is 300 seconds
   }, []);
 
   // Ensure zoom level respects the minimum zoom
@@ -45,7 +45,7 @@ const TimelineVisualization = ({
       if (zoom < minZoom) {
         // Use requestAnimationFrame to avoid state update during render
         requestAnimationFrame(() => {
-          setPanOffset(Math.min(panOffset, Math.max(0, duration - 600)));
+          setPanOffset(Math.min(panOffset, Math.max(0, duration - 300)));
           // We don't call setZoom here as it would create a loop with the parent component
           // The parent component's useEffect will handle this
         });
@@ -93,8 +93,8 @@ const TimelineVisualization = ({
     // Calculate visible duration based on effective zoom
     const visibleDuration = timelineEnd / effectiveZoom;
 
-    // Ensure visible duration doesn't exceed 600 seconds
-    const maxVisibleDuration = Math.min(visibleDuration, 600);
+    // Ensure visible duration doesn't exceed 300 seconds
+    const maxVisibleDuration = Math.min(visibleDuration, 300);
 
     const start = panOffset;
     const end = Math.min(timelineEnd, start + maxVisibleDuration);
@@ -336,8 +336,8 @@ const TimelineVisualization = ({
       const minZoom = calculateMinZoom(timelineEnd);
       const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
 
-      // Limit visible duration to 600 seconds
-      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 600);
+      // Limit visible duration to 300 seconds
+      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
       const halfVisibleDuration = totalVisibleDuration / 2;
       const targetOffset = Math.max(0, Math.min(currentTime - halfVisibleDuration, timelineEnd - totalVisibleDuration));
 
@@ -473,7 +473,7 @@ const TimelineVisualization = ({
       const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
 
       // Calculate new pan offset while maintaining current zoom level
-      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 600);
+      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
       const halfVisibleDuration = totalVisibleDuration / 2;
       const newPanOffset = Math.max(0, Math.min(newTime - halfVisibleDuration, timelineEnd - totalVisibleDuration));
 
