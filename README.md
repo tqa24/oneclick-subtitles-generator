@@ -4,17 +4,17 @@
 
 Here are some screenshots showcasing the application:
 
-| ![Screenshot 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Screenshot 2](readme_assets/Screenshot%202025-04-03%20184027.png) |
+| ![Screenshot 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Screenshot 2](readme_assets/Screenshot%202025-04-05%20001543.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Upload Video Interface**                                         | **KR/EN/VI Light/Dark Theme Support**                              |
+| **KR/EN/VI Light/Dark Theme Support**                                         | **Can be use to just Download Video**                              |
 
-| ![Screenshot 3](readme_assets/Screenshot%202025-04-03%20184200.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-03%20184306.png) |
+| ![Screenshot 3](readme_assets/Screenshot%202025-04-05%20001838.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-05%20001444.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Using Gemini 2.5 Pro Video Understanding**                       | **Timings Adjust/Add/Remove/Edit Texts**                           |
+| **Parallel Processing Status/Retry**                       | **Timings Adjust/Add/Remove/Edit, Merge Texts**                           |
 
 | ![Screenshot 5](readme_assets/Screenshot%202025-04-03%20184934.png) | ![Screenshot 6](readme_assets/Screenshot%202025-04-03%20184944.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **API Key Settings, Clearing Cache**                               | **Download Options (SRT/JSON)**                                    |
+| **API, Segmenting, Models, Format, Cache Settings**                               | **Download Options (SRT/JSON)**                                    |
 
 A web application for generating timed subtitles for videos using Google's Gemini AI technology.
 
@@ -29,6 +29,12 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - Multi-language support (English, Korean, Vietnamese)
 - Sticky timing adjustments for batch modifications
 - Undo/Reset functionality for editing
+- Parallel processing for long videos
+- Merge adjacent subtitle lines with a single click
+- Customizable time display format (seconds or HH:MM:SS)
+- Optimized performance for long videos with many subtitles
+- Smooth, continuous progress indicator for current subtitle
+- Dark mode support for all UI components
 
 ## Prerequisites
 
@@ -82,12 +88,15 @@ This will launch the application in your default web browser.
    - Wait for Gemini AI to process the video/audio
    - Review the generated subtitles
 
-3. **Edit Timings** (if needed):
+3. **Edit Timings and Text** (if needed):
    - Use the timeline visualization for precise adjustments
    - Drag subtitle timing handles to adjust start/end times
    - Enable "Sticky Timings" to adjust all following subtitles
    - Use "Undo" to revert changes or "Reset" to start over
-   - Click on any lyric to jump to that timestamp in the video
+   - Click on any subtitle text to jump to that timestamp in the video
+   - Edit subtitle text directly with the edit button
+   - Delete unwanted subtitles or add new empty ones
+   - Merge adjacent subtitle lines with the merge button
 
 4. **Download Subtitles**:
    - Click "Download SRT" for standard subtitle format
@@ -97,8 +106,11 @@ This will launch the application in your default web browser.
 
 Adjust settings via the gear icon in the top-right corner:
 - Change interface language (English, Korean, Vietnamese)
-- Manage API settings
-- Clearing caches
+- Manage API settings (Gemini and YouTube)
+- Select Gemini model (balance between accuracy and speed)
+- Configure segment duration for long videos
+- Choose time display format (seconds or HH:MM:SS)
+- Clear caches and manage storage
 
 ## Technical Details
 
@@ -107,6 +119,20 @@ Adjust settings via the gear icon in the top-right corner:
 - Timeline visualization with HTML5 Canvas
 - Efficient caching system for generated subtitles
 - Real-time subtitle synchronization with video playback
+- Virtualized rendering for optimal performance with long videos
+- Parallel processing for handling videos longer than 15 minutes
+- Responsive design that works on various screen sizes
+- Hardware-accelerated animations for smooth user experience
+
+## Performance Optimizations
+
+- **Virtualized Rendering**: Only renders visible subtitle items, greatly improving performance for long videos
+- **Limited Timeline Segments**: Intelligently limits the number of segments rendered in the timeline visualization
+- **Throttled Drag Operations**: Reduces lag when adjusting subtitle timings through efficient event handling
+- **Hardware Acceleration**: Uses GPU acceleration for smooth animations and transitions
+- **Adaptive Time Markers**: Dynamically adjusts the number of time markers based on zoom level
+- **Efficient DOM Updates**: Minimizes unnecessary re-renders through React memo and careful state management
+- **Continuous Animation**: Uses requestAnimationFrame for smooth progress indicator animation
 
 ## License
 
@@ -139,6 +165,8 @@ SOFTWARE.
 - Internationalization with [i18next](https://www.i18next.com/)
 - Video processing with [FFmpeg](https://ffmpeg.org/)
 - Timeline visualization using HTML5 Canvas
-- YouTube integration with youtube-dl
+- YouTube integration with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - SRT subtitle format parsing and generation
 - Icons from [Heroicons](https://heroicons.com/)
+- Virtualization with [react-window](https://github.com/bvaughn/react-window)
+- Optimized animations with requestAnimationFrame
