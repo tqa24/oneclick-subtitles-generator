@@ -270,33 +270,46 @@ const TimelineVisualization = ({
     // Function to convert time to x coordinate
     const timeToX = (time) => ((time - visibleStart) / visibleDuration) * displayWidth;
 
-    // Calculate proper spacing for time markers based on zoom level
-    // Use fewer time markers for better performance
-    const timeStep = Math.max(1, Math.ceil(visibleDuration / 10));
+    // Calculate proper spacing for time markers based on zoom level and visible duration
+    // Adaptive time step calculation for better performance with long videos
+    const maxMarkers = 20; // Maximum number of time markers to display
+    const timeStep = Math.max(1, Math.ceil(visibleDuration / maxMarkers));
     const firstMarker = Math.floor(visibleStart / timeStep) * timeStep;
 
-    // Batch time markers drawing
-    ctx.beginPath();
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 1;
+    // Only draw time markers if we're not actively panning or if the visible duration is reasonable
+    if (tempPanOffset === null || visibleDuration < 300) {
+      // Batch time markers drawing
+      ctx.beginPath();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
 
-    for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
-      const x = timeToX(time);
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, displayHeight);
-    }
-    ctx.stroke();
+      // Limit the number of markers to draw
+      const markerCount = Math.min(maxMarkers, Math.ceil(visibleDuration / timeStep));
 
-    // Draw time labels - only if not actively panning for better performance
-    if (tempPanOffset === null) {
-      ctx.font = '10px Arial';
-      ctx.textBaseline = 'top';
-      ctx.textAlign = 'left';
-      ctx.fillStyle = textColor;
+      for (let i = 0; i <= markerCount; i++) {
+        const time = firstMarker + (i * timeStep);
+        if (time > visibleEnd) break;
 
-      for (let time = firstMarker; time <= visibleEnd; time += timeStep) {
         const x = timeToX(time);
-        ctx.fillText(formatTime(time, timeFormat), x + 3, 2);
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, displayHeight);
+      }
+      ctx.stroke();
+
+      // Draw time labels - only if not actively panning for better performance
+      if (tempPanOffset === null) {
+        ctx.font = '10px Arial';
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = textColor;
+
+        for (let i = 0; i <= markerCount; i++) {
+          const time = firstMarker + (i * timeStep);
+          if (time > visibleEnd) break;
+
+          const x = timeToX(time);
+          ctx.fillText(formatTime(time, timeFormat), x + 3, 2);
+        }
       }
     }
 
@@ -304,22 +317,51 @@ const TimelineVisualization = ({
     // Increase minimum segment width during panning for better performance
     const minSegmentWidth = tempPanOffset !== null ? 4 : 2;
 
-    // Filter visible lyrics - use a more efficient approach
+    // Filter visible lyrics - use a more efficient approach with segment limiting
     const visibleLyrics = [];
-    for (let i = 0; i < lyrics.length; i++) {
+    const maxSegmentsToRender = 300; // Limit the number of segments to render for performance
+
+    // Binary search to find the approximate starting index
+    let startIdx = 0;
+    let endIdx = lyrics.length - 1;
+
+    // Find the first lyric that might be visible
+    while (startIdx <= endIdx) {
+      const midIdx = Math.floor((startIdx + endIdx) / 2);
+      const midLyric = lyrics[midIdx];
+
+      if (midLyric.end < visibleStart) {
+        startIdx = midIdx + 1;
+      } else {
+        endIdx = midIdx - 1;
+      }
+    }
+
+    // Collect visible lyrics starting from the found index
+    let segmentCount = 0;
+    for (let i = startIdx; i < lyrics.length && segmentCount < maxSegmentsToRender; i++) {
       const lyric = lyrics[i];
-      // Quick boundary check before expensive calculations
-      if (lyric.end < visibleStart || lyric.start > visibleEnd) continue;
+
+      // Stop once we're past the visible area
+      if (lyric.start > visibleEnd) break;
 
       const startX = timeToX(lyric.start);
       const endX = timeToX(lyric.end);
+
+      // Only add if the segment is wide enough to be visible
       if ((endX - startX) >= minSegmentWidth) {
         visibleLyrics.push({
           lyric,
           startX,
           width: endX - startX
         });
+        segmentCount++;
       }
+    }
+
+    // If we hit the segment limit, add an indicator
+    if (segmentCount >= maxSegmentsToRender && lyrics.length > maxSegmentsToRender) {
+      console.log(`Timeline rendering limited to ${maxSegmentsToRender} segments out of ${lyrics.length} total`);
     }
 
     // Batch render all segments with same fill color

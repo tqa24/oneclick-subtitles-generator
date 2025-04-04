@@ -1,4 +1,24 @@
 /* LyricsDisplay.css */
+/* Optimize performance during dragging */
+body.lyrics-dragging {
+  cursor: grabbing !important;
+}
+
+body.lyrics-dragging * {
+  /* Disable transitions during dragging for better performance */
+  transition: none !important;
+  /* Disable pointer events on all elements except the dragged element */
+  pointer-events: none;
+}
+
+body.lyrics-dragging .time-control.dragging {
+  /* Re-enable pointer events on the dragged element */
+  pointer-events: auto !important;
+  /* Use hardware acceleration for the dragged element */
+  transform: scale(1.05) translateZ(0);
+  will-change: transform;
+}
+
 .lyrics-display {
   width: 100%;
   background-color: var(--background-primary);
@@ -220,13 +240,14 @@
   text-align: center;
 }
 
-.lyrics-container {
-  max-height: 350px;
-  overflow-y: auto;
+.lyrics-container-wrapper {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background-color: var(--background-secondary);
   transition: border-color var(--transition-speed), background-color var(--transition-speed);
+}
+
+.lyrics-container {
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
 }
@@ -492,6 +513,8 @@
   transform: scale(1.05);
   box-shadow: 0 2px 8px var(--shadow-color);
   z-index: 10;
+  /* Use hardware acceleration */
+  will-change: transform;
 }
 
 .time-separator {

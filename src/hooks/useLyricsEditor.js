@@ -70,35 +70,58 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
   };
 
+  // Keep track of the last updated value to avoid unnecessary updates
+  const lastUpdatedValueRef = useRef({ index: -1, field: null, value: 0 });
+
   const updateTimings = (index, field, newValue, duration) => {
+    // Skip if the value hasn't changed significantly
+    if (lastUpdatedValueRef.current.index === index &&
+        lastUpdatedValueRef.current.field === field &&
+        Math.abs(lastUpdatedValueRef.current.value - newValue) < 0.001) {
+      return;
+    }
+
+    // Update the last updated value
+    lastUpdatedValueRef.current = { index, field, value: newValue };
+
     const oldLyrics = [...lyrics];
-    const currentLyric = { ...oldLyrics[index] };
+    const currentLyric = oldLyrics[index]; // Avoid unnecessary spread
     const delta = newValue - currentLyric[field];
 
     if (Math.abs(delta) < 0.001) return;
 
-    const updatedLyrics = oldLyrics.map((lyric, i) => {
+    // Create a new array only if we're actually changing something
+    const updatedLyrics = [];
+
+    // Only process lyrics that need to be updated
+    for (let i = 0; i < oldLyrics.length; i++) {
+      const lyric = oldLyrics[i];
+
       if (i === index) {
+        // Update the current lyric
         if (field === 'start') {
           const length = lyric.end - lyric.start;
-          return {
+          updatedLyrics.push({
             ...lyric,
             start: newValue,
             end: newValue + length
-          };
+          });
         } else {
-          return { ...lyric, [field]: newValue };
+          updatedLyrics.push({ ...lyric, [field]: newValue });
         }
       } else if (i > index && isSticky) {
+        // Update subsequent lyrics if sticky mode is on
         const newStart = Math.max(0, lyric.start + delta);
-        return {
+        updatedLyrics.push({
           ...lyric,
           start: newStart,
           end: Math.max(newStart + 0.1, lyric.end + delta)
-        };
+        });
+      } else {
+        // Keep unchanged lyrics as-is (no spread needed)
+        updatedLyrics.push(lyric);
       }
-      return lyric;
-    });
+    }
 
     setLyrics(updatedLyrics);
     if (onUpdateLyrics) {
@@ -117,10 +140,15 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     };
   };
 
+  // Throttle state to reduce updates
+  const lastUpdateTimeRef = useRef(0);
+  const pendingUpdateRef = useRef(null);
+
   const handleDrag = (clientX, duration) => {
     const { dragging, index, field, startX, startValue } = dragInfo.current;
     if (!dragging) return;
 
+    // Calculate the new value
     const deltaX = clientX - startX;
     const deltaTime = deltaX * 0.01;
     let newValue = startValue + deltaTime;
@@ -133,11 +161,39 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
 
     newValue = Math.round(newValue * 100) / 100;
+
+    // Throttle updates to reduce rendering
+    const now = performance.now();
+    if (now - lastUpdateTimeRef.current < 30) { // Limit to ~33fps
+      // If we already have a pending update, cancel it
+      if (pendingUpdateRef.current) {
+        cancelAnimationFrame(pendingUpdateRef.current);
+      }
+
+      // Schedule a new update
+      pendingUpdateRef.current = requestAnimationFrame(() => {
+        updateTimings(index, field, newValue, duration);
+        pendingUpdateRef.current = null;
+      });
+      return;
+    }
+
+    // Update immediately if enough time has passed
+    lastUpdateTimeRef.current = now;
     updateTimings(index, field, newValue, duration);
   };
 
   const endDrag = () => {
+    // Cancel any pending animation frame
+    if (pendingUpdateRef.current) {
+      cancelAnimationFrame(pendingUpdateRef.current);
+      pendingUpdateRef.current = null;
+    }
+
+    // Record the time of the drag end
     dragInfo.current.lastDragEnd = Date.now();
+
+    // Reset drag state
     dragInfo.current = {
       ...dragInfo.current,
       dragging: false,
@@ -146,6 +202,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       startX: 0,
       startValue: 0
     };
+
+    // Reset the last updated value reference
+    lastUpdatedValueRef.current = { index: -1, field: null, value: 0 };
   };
 
   const isDragging = (index, field) =>

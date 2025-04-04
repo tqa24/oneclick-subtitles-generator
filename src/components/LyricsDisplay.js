@@ -1,10 +1,56 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
 import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
+import { FixedSizeList as List } from 'react-window';
+
+// Virtualized row renderer for lyrics
+const VirtualizedLyricRow = ({ index, style, data }) => {
+  const {
+    lyrics,
+    currentIndex,
+    currentTime,
+    allowEditing,
+    isDragging,
+    onLyricClick,
+    onMouseDown,
+    getLastDragEnd,
+    onDelete,
+    onTextEdit,
+    onInsert,
+    onMerge,
+    timeFormat
+  } = data;
+
+  const lyric = lyrics[index];
+  const hasNextLyric = index < lyrics.length - 1;
+
+  return (
+    <div style={style}>
+      <LyricItem
+        key={index}
+        lyric={lyric}
+        index={index}
+        isCurrentLyric={index === currentIndex}
+        currentTime={currentTime}
+        allowEditing={allowEditing}
+        isDragging={isDragging}
+        onLyricClick={onLyricClick}
+        onMouseDown={onMouseDown}
+        getLastDragEnd={getLastDragEnd}
+        onDelete={onDelete}
+        onTextEdit={onTextEdit}
+        onInsert={onInsert}
+        onMerge={onMerge}
+        hasNextLyric={hasNextLyric}
+        timeFormat={timeFormat}
+      />
+    </div>
+  );
+};
 
 const LyricsDisplay = ({
   matchedLyrics,
@@ -48,38 +94,14 @@ const LyricsDisplay = ({
       (nextLyric ? currentTime < nextLyric.start : currentTime <= lyric.end);
   });
 
+  // Reference to the virtualized list
+  const listRef = useRef(null);
+
   // Auto-scroll to the current lyric with accurate positioning
   useEffect(() => {
-    if (currentIndex >= 0 && lyricsContainerRef.current) {
-      const container = lyricsContainerRef.current;
-      const lyricElement = container.children[currentIndex];
-
-      if (lyricElement) {
-        // Get precise measurements of the container and element
-        const containerRect = container.getBoundingClientRect();
-        const elementRect = lyricElement.getBoundingClientRect();
-
-        // Calculate relative positions
-        const containerScrollTop = container.scrollTop;
-        const elementRelativeTop = elementRect.top - containerRect.top + containerScrollTop;
-
-        // Calculate the ideal scroll position to center the current lyric
-        const idealScrollTop = elementRelativeTop - (containerRect.height / 2) + (elementRect.height / 2);
-
-        // Only scroll if the element is not already in view with some margin
-        const margin = containerRect.height * 0.2; // 20% margin
-        const isInView = (
-          elementRelativeTop >= containerScrollTop + margin &&
-          elementRelativeTop + elementRect.height <= containerScrollTop + containerRect.height - margin
-        );
-
-        if (!isInView) {
-          container.scrollTo({
-            top: idealScrollTop,
-            behavior: 'smooth'
-          });
-        }
-      }
+    if (currentIndex >= 0 && listRef.current) {
+      // Scroll to the current index in the virtualized list
+      listRef.current.scrollToItem(currentIndex, 'center');
     }
   }, [currentIndex]);
 
@@ -93,24 +115,43 @@ const LyricsDisplay = ({
     }
   }, [seekTime]);
 
-  // Setup drag event handlers
+  // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
     e.preventDefault();
     e.stopPropagation();
     startDrag(index, field, e.clientX, lyrics[index][field]);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+
+    // Use passive event listeners for better performance
+    document.addEventListener('mousemove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp, { passive: false });
+
+    // Add a class to the body to indicate dragging is in progress
+    document.body.classList.add('lyrics-dragging');
   };
 
+  // Use a throttled mouse move handler
+  const lastMoveTimeRef = useRef(0);
   const handleMouseMove = (e) => {
     e.preventDefault();
-    handleDrag(e.clientX, duration);
+
+    // Throttle mousemove events
+    const now = performance.now();
+    if (now - lastMoveTimeRef.current < 16) { // ~60fps
+      return;
+    }
+    lastMoveTimeRef.current = now;
+
+    // Use requestAnimationFrame for smoother updates
+    requestAnimationFrame(() => {
+      handleDrag(e.clientX, duration);
+    });
   };
 
   const handleMouseUp = (e) => {
     e.preventDefault();
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
+    document.body.classList.remove('lyrics-dragging');
     endDrag();
   };
 
@@ -142,36 +183,44 @@ const LyricsDisplay = ({
         timeFormat={timeFormat}
       />
 
-      <div className="lyrics-container" ref={lyricsContainerRef}>
-        {lyrics.map((lyric, index) => (
-          <LyricItem
-            key={index}
-            lyric={lyric}
-            index={index}
-            isCurrentLyric={index === currentIndex}
-            currentTime={currentTime}
-            allowEditing={allowEditing}
-            isDragging={isDragging}
-            onLyricClick={(time) => {
-              // Center the timeline on the clicked lyric
-              setCenterTimelineAt(time);
-              // Reset the center time in the next frame to allow future clicks to work
-              requestAnimationFrame(() => {
-                setCenterTimelineAt(null);
-              });
-              // Call the original onLyricClick function
-              onLyricClick(time);
+      <div className="lyrics-container-wrapper">
+        {lyrics.length > 0 && (
+          <List
+            ref={listRef}
+            className="lyrics-container"
+            height={350} // Fixed height for the container
+            width="100%"
+            itemCount={lyrics.length}
+            itemSize={60} // Average height of a lyric item
+            overscanCount={5} // Number of items to render outside of the visible area
+            itemData={{
+              lyrics,
+              currentIndex,
+              currentTime,
+              allowEditing,
+              isDragging,
+              onLyricClick: (time) => {
+                // Center the timeline on the clicked lyric
+                setCenterTimelineAt(time);
+                // Reset the center time in the next frame to allow future clicks to work
+                requestAnimationFrame(() => {
+                  setCenterTimelineAt(null);
+                });
+                // Call the original onLyricClick function
+                onLyricClick(time);
+              },
+              onMouseDown: handleMouseDown,
+              getLastDragEnd,
+              onDelete: handleDeleteLyric,
+              onTextEdit: handleTextEdit,
+              onInsert: handleInsertLyric,
+              onMerge: handleMergeLyrics,
+              timeFormat
             }}
-            onMouseDown={handleMouseDown}
-            getLastDragEnd={getLastDragEnd}
-            onDelete={handleDeleteLyric}
-            onTextEdit={handleTextEdit}
-            onInsert={handleInsertLyric}
-            onMerge={handleMergeLyrics}
-            hasNextLyric={index < lyrics.length - 1}
-            timeFormat={timeFormat}
-          />
-        ))}
+          >
+            {VirtualizedLyricRow}
+          </List>
+        )}
       </div>
 
       {allowEditing && (
