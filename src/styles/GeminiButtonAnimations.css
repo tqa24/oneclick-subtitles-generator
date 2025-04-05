@@ -11,7 +11,7 @@
   pointer-events: none;
   overflow: hidden;
   border-radius: inherit;
-  z-index: 0;
+  z-index: 1; /* Increased from 0 to ensure proper stacking context */
 }
 
 /* Gemini mini icons - these will be positioned around the button */
@@ -36,7 +36,7 @@
 /* Dynamic icons should only be visible when active */
 .gemini-mini-icon.dynamic {
   opacity: 0;
-  z-index: 10; /* Ensure dynamic icons appear above static ones */
+  z-index: 2; /* Ensure dynamic icons appear above static ones but below other UI elements */
 }
 
 /* Special styling for different particle types */

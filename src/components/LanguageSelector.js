@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LanguageSelector.css';
+import { createPortal } from 'react-dom';
 
 const LanguageSelector = () => {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
@@ -27,6 +29,29 @@ const LanguageSelector = () => {
     setIsOpen(false);
   };
 
+  // Calculate menu position when button is clicked
+  const calculateMenuPosition = () => {
+    if (buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+      // Position the menu below the button
+      setMenuPosition({
+        top: buttonRect.bottom + scrollTop,
+        left: buttonRect.left + scrollLeft,
+      });
+    }
+  };
+
+  // Toggle menu open/closed
+  const toggleMenu = () => {
+    if (!isOpen) {
+      calculateMenuPosition();
+    }
+    setIsOpen(!isOpen);
+  };
+
   // Close the menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -45,6 +70,20 @@ const LanguageSelector = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Update menu position when window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      if (isOpen) {
+        calculateMenuPosition();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e, code) => {
@@ -77,7 +116,7 @@ const LanguageSelector = () => {
       <button
         ref={buttonRef}
         className="language-selector-button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleMenu}
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label={t('language.languageSelector')}
@@ -94,11 +133,15 @@ const LanguageSelector = () => {
         </span>
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div
           ref={menuRef}
           className="language-menu"
           role="menu"
+          style={{
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`,
+          }}
         >
           <div className="language-menu-header">
             <span className="language-menu-title">{t('language.languageSelector')}</span>
@@ -132,7 +175,8 @@ const LanguageSelector = () => {
               </button>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

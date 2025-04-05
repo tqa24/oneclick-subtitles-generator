@@ -2,7 +2,7 @@
 
 .language-selector-container {
   position: relative;
-  z-index: 100;
+  z-index: 9999; /* Extremely high z-index to ensure it's above everything */
 }
 
 /* Main button styling */
@@ -130,19 +130,20 @@
 
 /* Dropdown menu styling */
 .language-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  position: fixed; /* Changed from absolute to fixed to ensure it's not affected by parent positioning */
+  /* Position will be set dynamically via JavaScript */
   min-width: 220px;
   background-color: var(--md-surface-2);
   border-radius: var(--md-shape-medium);
   box-shadow: var(--md-elevation-level3);
   overflow: hidden;
-  z-index: 101;
+  z-index: 10000; /* Extremely high z-index to ensure it's above everything */
   animation: language-menu-appear var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
-  transform-origin: top center;
+  transform-origin: top left;
   backdrop-filter: blur(10px);
-  border: 1px solid var(--md-outline-variant);
+  border: 2px solid var(--md-primary); /* Make the border more visible */
+  max-height: 80vh; /* Limit height to prevent overflow */
+  overflow-y: auto; /* Add scrolling if needed */
 }
 
 @keyframes language-menu-appear {

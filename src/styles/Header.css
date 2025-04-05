@@ -40,6 +40,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  z-index: 1000; /* Ensure header actions are above other elements */
 }
 
 /* Material Design 3 pill-shaped language selector */
