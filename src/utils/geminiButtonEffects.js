@@ -4,13 +4,14 @@
 
 // Physics constants
 const PHYSICS = {
-  friction: 0.95,
-  bounce: 0.7,
-  gravity: 0.05,
-  maxVelocity: 3,
+  friction: 0.97,       // Higher friction for slower movement (was 0.95)
+  bounce: 0.4,          // Lower bounce for more elegant collisions (was 0.7)
+  gravity: 0.02,        // Reduced gravity for gentler center pull (was 0.05)
+  maxVelocity: 1.5,     // Lower max velocity for more controlled movement (was 3)
   collisionDistance: 15,
-  cursorForce: 0.8,
-  cursorRadius: 40
+  cursorForce: 0.4,     // Reduced cursor force for subtler interactions (was 0.8)
+  cursorRadius: 60,     // Larger radius for smoother influence (was 40)
+  damping: 0.92         // Additional damping to slow down movements
 };
 
 // Color schemes for particles
@@ -239,12 +240,17 @@ export const initGeminiButtonEffects = () => {
                  (p.element.parentNode && p.element.parentNode.parentNode === iconContainer);
         });
 
-        // Simply activate the existing particles
+        // Activate the existing particles with scattered velocities
         currentParticles.forEach(particle => {
           particle.isActive = true;
-          // Give a small random velocity on hover
-          particle.vx = (Math.random() - 0.5) * 2;
-          particle.vy = (Math.random() - 0.5) * 2;
+
+          // Give each particle a unique direction to create a scattered effect
+          const angle = Math.random() * Math.PI * 2; // Random angle in radians
+          const speed = 0.2 + Math.random() * 0.4; // Random speed between 0.2 and 0.6
+
+          // Convert angle and speed to x,y velocity components
+          particle.vx = Math.cos(angle) * speed;
+          particle.vy = Math.sin(angle) * speed;
         });
 
         console.log(`Activated ${currentParticles.length} particles for button ${buttonId} (${button.classList.contains('generate-btn') ? 'generate' : 'retry'})`);
@@ -302,7 +308,7 @@ const createParticles = (buttonElement, container, limit) => {
   });
 
   // Create a unique set of particles for this button
-  const variants = ['standard', 'simplified', 'rounded', 'sharp'];
+  const variant = 'standard'; // Only using standard variant
   const particleTypes = [
     { type: 'normal', chance: 0.6 },
     { type: 'trail', chance: 0.2 },
@@ -347,20 +353,7 @@ const createParticles = (buttonElement, container, limit) => {
       colorSchemeIndex = 3 + Math.floor(Math.random() * 3);
     }
 
-    // Choose a random variant with weighted distribution
-    // Standard is most common, others are rarer
-    const variantWeights = [0.7, 0.1, 0.1, 0.1]; // standard, simplified, rounded, sharp
-    randomWeight = Math.random();
-    cumulativeWeight = 0;
-    let variant = 'standard';
-
-    for (let j = 0; j < variants.length; j++) {
-      cumulativeWeight += variantWeights[j];
-      if (randomWeight <= cumulativeWeight) {
-        variant = variants[j];
-        break;
-      }
-    }
+    // Using only standard variant
 
     // Determine particle type
     randomWeight = Math.random();
@@ -375,21 +368,12 @@ const createParticles = (buttonElement, container, limit) => {
       }
     }
 
-    // Assign random position - different distribution for each button
+    // Assign random position - scattered throughout the button
     let x, y;
-    if (isGenerateButton) {
-      // Generate button has more particles in the center
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.pow(Math.random(), 0.5) * 40; // Square root for more uniform distribution
-      x = 50 + Math.cos(angle) * distance;
-      y = 50 + Math.sin(angle) * distance;
-    } else {
-      // Retry button has more particles around the edges
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 30 + Math.random() * 30; // 30-60% from center
-      x = 50 + Math.cos(angle) * distance;
-      y = 50 + Math.sin(angle) * distance;
-    }
+
+    // Fully random positions across the button for a scattered look
+    x = 10 + Math.random() * 80; // 10-90% of width
+    y = 10 + Math.random() * 80; // 10-90% of height
 
     // Ensure within bounds
     x = Math.max(5, Math.min(95, x));
@@ -405,8 +389,9 @@ const createParticles = (buttonElement, container, limit) => {
       vx: 0,
       vy: 0,
       size: getSizeInPixels(sizeClass),
-      rotation: Math.random() * 360,
-      rotationSpeed: (Math.random() - 0.5) * (isGenerateButton ? 1 : 3), // Retry button has faster rotation
+      // No rotation for Gemini icons
+      rotation: 0,
+      rotationSpeed: 0,
       isActive: false,
       returnToOrigin: false,
       isFilled: isFilled,
@@ -426,8 +411,9 @@ const createParticles = (buttonElement, container, limit) => {
     particle.className = `gemini-mini-icon ${sizeClass} dynamic ${particleType}`;
     particle.style.left = `${x}%`;
     particle.style.top = `${y}%`;
-    particle.style.transform = `rotate(${particleObj.rotation}deg)`;
-    particle.innerHTML = createGeminiSVG(isFilled, colorSchemeIndex, variant);
+    // No rotation for Gemini icons
+    particle.style.transform = `scale(1)`;
+    particle.innerHTML = createGeminiSVG(isFilled, colorSchemeIndex);
 
     // Add to container and particle collection
     container.appendChild(particle);
@@ -440,9 +426,10 @@ const createParticles = (buttonElement, container, limit) => {
         trailParticle.className = `gemini-mini-icon ${sizeClass} dynamic trail-particle`;
         trailParticle.style.left = `${x}%`;
         trailParticle.style.top = `${y}%`;
-        trailParticle.style.transform = `rotate(${particleObj.rotation}deg) scale(${0.8 - t * 0.15})`;
+        // No rotation for Gemini icons
+        trailParticle.style.transform = `scale(${0.8 - t * 0.15})`;
         trailParticle.style.opacity = `${0.6 - t * 0.15}`;
-        trailParticle.innerHTML = createGeminiSVG(isFilled, colorSchemeIndex, variant);
+        trailParticle.innerHTML = createGeminiSVG(isFilled, colorSchemeIndex);
 
         container.appendChild(trailParticle);
         particleObj.trailParticles.push({
@@ -476,7 +463,7 @@ const getSizeInPixels = (sizeClass) => {
 /**
  * Create the Gemini SVG markup with option for filled version
  */
-const createGeminiSVG = (isFilled, colorSchemeIndex = 0, variant = 'standard') => {
+const createGeminiSVG = (isFilled, colorSchemeIndex = 0) => {
   // Get color scheme (default to first scheme if invalid index)
   const scheme = COLOR_SCHEMES[colorSchemeIndex] || COLOR_SCHEMES[0];
 
@@ -490,26 +477,8 @@ const createGeminiSVG = (isFilled, colorSchemeIndex = 0, variant = 'standard') =
     `<stop offset="${stop.offset}" stop-color="${stop.color}" />`
   ).join('');
 
-  // Different path variants for more visual variety
-  let pathD = '';
-
-  switch(variant) {
-    case 'simplified':
-      // Simplified version with fewer points
-      pathD = 'M14 28C14 21 14 7 14 0C14 7 14 21 14 28ZM0 14C7 14 21 14 28 14C21 14 7 14 0 14Z';
-      break;
-    case 'rounded':
-      // Rounded corners version
-      pathD = 'M14 28C14 26 13.6 24 12.9 22.5C12.2 20.8 11.2 19.4 9.9 18.1C8.6 16.8 7.2 15.8 5.5 15.1C3.8 14.4 1.9 14 0 14C1.9 14 3.8 13.6 5.5 12.9C7.2 12.2 8.6 11.2 9.9 9.9C11.2 8.6 12.2 7.2 12.9 5.5C13.6 3.8 14 1.9 14 0C14 1.9 14.4 3.8 15.1 5.5C15.8 7.2 16.8 8.6 18.1 9.9C19.4 11.2 20.8 12.2 22.5 12.9C24.2 13.6 26 14 28 14C26 14 24.2 14.4 22.5 15.1C20.8 15.8 19.4 16.8 18.1 18.1C16.8 19.4 15.8 20.8 15.1 22.5C14.4 24.2 14 26 14 28Z';
-      break;
-    case 'sharp':
-      // Sharp corners version
-      pathD = 'M14 28L14 0L14 28ZM0 14L28 14L0 14Z';
-      break;
-    default:
-      // Standard Gemini icon path
-      pathD = 'M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z';
-  }
+  // Only use the standard Gemini icon path (no plus icons)
+  const pathD = 'M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z';
 
   // Add filter for glow effect if specified
   const filterId = `glow-${Math.floor(Math.random() * 10000)}`;
@@ -533,91 +502,12 @@ const createGeminiSVG = (isFilled, colorSchemeIndex = 0, variant = 'standard') =
 };
 
 /**
- * Handle mouse movement over buttons to track cursor position
+ * Handle mouse movement over buttons - simplified to do nothing
+ * We keep this function to maintain compatibility with existing event listeners
  */
-const handleMouseMove = (event) => {
-  const button = event.currentTarget;
-  const rect = button.getBoundingClientRect();
-
-  // Calculate cursor position relative to button
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-
-  // Update CSS variables for cursor position
-  button.style.setProperty('--cursor-x', x);
-  button.style.setProperty('--cursor-y', y);
-
-  // Determine if this is the generate button or retry button for different effects
-  const isGenerateButton = button.classList.contains('generate-btn');
-
-  // Find particles belonging to this button and apply physics
-  const buttonParticles = particles.filter(p => {
-    // Check if the particle belongs to this button (either directly or via container)
-    const parent = p.element.parentNode;
-    return (parent === button || parent.parentNode === button) && p.isActive;
-  });
-
-  // Apply cursor force to nearby particles
-  buttonParticles.forEach(particle => {
-    // Convert percentage positions to pixel values
-    const particleX = (particle.x / 100) * rect.width;
-    const particleY = (particle.y / 100) * rect.height;
-
-    // Calculate distance from cursor to particle
-    const dx = x - particleX;
-    const dy = y - particleY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Different cursor interaction based on button type
-    if (isGenerateButton) {
-      // Generate button: particles are attracted to cursor
-      if (distance < PHYSICS.cursorRadius * 1.5) { // Larger radius for generate button
-        // Calculate force (stronger when closer)
-        const force = (1 - distance / (PHYSICS.cursorRadius * 1.5)) * PHYSICS.cursorForce * 0.7;
-
-        // Apply force toward cursor (attract)
-        particle.vx += (dx / distance) * force;
-        particle.vy += (dy / distance) * force;
-
-        // Increase rotation speed when near cursor
-        particle.rotationSpeed *= 1.01;
-
-        // Special effects for different particle types
-        if (particle.particleType === 'pulse') {
-          // Pulse particles pulse faster near cursor
-          particle.pulseSpeed *= 1.05;
-        }
-      }
-    } else {
-      // Retry button: particles are repelled from cursor with swirl effect
-      if (distance < PHYSICS.cursorRadius) {
-        // Calculate force (stronger when closer)
-        const force = (1 - distance / PHYSICS.cursorRadius) * PHYSICS.cursorForce;
-
-        // Apply force in the opposite direction (repel from cursor)
-        particle.vx -= (dx / distance) * force;
-        particle.vy -= (dy / distance) * force;
-
-        // Add swirl effect (perpendicular force)
-        const swirlForce = force * 0.5;
-        particle.vx += (dy / distance) * swirlForce;
-        particle.vy -= (dx / distance) * swirlForce;
-
-        // Special effects for different particle types
-        if (particle.particleType === 'trail') {
-          // Trail particles get a speed boost
-          particle.vx *= 1.05;
-          particle.vy *= 1.05;
-        }
-      }
-    }
-
-    // For all particles, limit max rotation speed
-    const maxRotationSpeed = 5;
-    if (Math.abs(particle.rotationSpeed) > maxRotationSpeed) {
-      particle.rotationSpeed = Math.sign(particle.rotationSpeed) * maxRotationSpeed;
-    }
-  });
+const handleMouseMove = () => {
+  // No cursor interaction - removed to prevent sucking effect
+  // No rotation animation for Gemini icons
 };
 
 /**
@@ -634,9 +524,35 @@ const animateParticles = () => {
       particle.vx *= PHYSICS.friction;
       particle.vy *= PHYSICS.friction;
 
-      // Apply gravity (subtle pull toward center)
-      particle.vx += (50 - particle.x) * 0.0005;
-      particle.vy += (50 - particle.y) * 0.0005;
+      // Apply additional damping for more elegant movement
+      particle.vx *= PHYSICS.damping;
+      particle.vy *= PHYSICS.damping;
+
+      // No center gravity - just random gentle movement
+      // Add very subtle random movement to create a floating effect
+      particle.vx += (Math.random() - 0.5) * 0.01;
+      particle.vy += (Math.random() - 0.5) * 0.01;
+
+      // Apply the velocity
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+
+      // Boundary checking - bounce off edges with reduced velocity
+      if (particle.x < 5) {
+        particle.x = 5;
+        particle.vx = Math.abs(particle.vx) * 0.5; // Bounce with reduced energy
+      } else if (particle.x > 95) {
+        particle.x = 95;
+        particle.vx = -Math.abs(particle.vx) * 0.5; // Bounce with reduced energy
+      }
+
+      if (particle.y < 5) {
+        particle.y = 5;
+        particle.vy = Math.abs(particle.vy) * 0.5; // Bounce with reduced energy
+      } else if (particle.y > 95) {
+        particle.y = 95;
+        particle.vy = -Math.abs(particle.vy) * 0.5; // Bounce with reduced energy
+      }
 
       // Update pulse effect
       particle.pulsePhase += particle.pulseSpeed;
@@ -667,64 +583,25 @@ const animateParticles = () => {
       // const prevX = particle.x;
       // const prevY = particle.y;
 
-      // Update position
-      particle.x += particle.vx;
-      particle.y += particle.vy;
+      // Position is already updated with boundary checking above
 
-      // Boundary collision with improved physics
-      if (particle.x < 0) {
-        particle.x = 0;
-        particle.vx *= -PHYSICS.bounce;
-        // Add some random vertical velocity on horizontal bounce
-        particle.vy += (Math.random() - 0.5) * 0.5;
-      } else if (particle.x > 100) {
-        particle.x = 100;
-        particle.vx *= -PHYSICS.bounce;
-        // Add some random vertical velocity on horizontal bounce
-        particle.vy += (Math.random() - 0.5) * 0.5;
-      }
-
-      if (particle.y < 0) {
-        particle.y = 0;
-        particle.vy *= -PHYSICS.bounce;
-        // Add some random horizontal velocity on vertical bounce
-        particle.vx += (Math.random() - 0.5) * 0.5;
-      } else if (particle.y > 100) {
-        particle.y = 100;
-        particle.vy *= -PHYSICS.bounce;
-        // Add some random horizontal velocity on vertical bounce
-        particle.vx += (Math.random() - 0.5) * 0.5;
-      }
-
-      // Update rotation - different for each variant
-      if (particle.variant === 'sharp') {
-        // Sharp variants rotate faster
-        particle.rotation += particle.rotationSpeed * 1.5;
-      } else if (particle.variant === 'simplified') {
-        // Simplified variants rotate slower
-        particle.rotation += particle.rotationSpeed * 0.7;
-      } else {
-        particle.rotation += particle.rotationSpeed;
-      }
+      // No rotation for Gemini icons
 
       // No constellation mode
     }
-    // Return to origin if flagged
+    // When mouse leaves, just slow down and fade out instead of returning to origin
     else if (particle.returnToOrigin) {
-      // Calculate distance to origin
-      const dx = particle.originX - particle.x;
-      const dy = particle.originY - particle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      // Apply stronger damping to gradually stop movement
+      particle.vx *= 0.9;
+      particle.vy *= 0.9;
 
-      // If close enough to origin, snap to it
-      if (distance < 0.5) {
-        particle.x = particle.originX;
-        particle.y = particle.originY;
+      // Apply the velocity
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+
+      // If almost stopped, mark as not returning to origin
+      if (Math.abs(particle.vx) < 0.01 && Math.abs(particle.vy) < 0.01) {
         particle.returnToOrigin = false;
-      } else {
-        // Move toward origin with easing
-        particle.x += dx * 0.1;
-        particle.y += dy * 0.1;
       }
 
       // No connections to hide
@@ -755,7 +632,8 @@ const animateParticles = () => {
       }
     }
 
-    particle.element.style.transform = `rotate(${particle.rotation}deg) scale(${pulseScale})`;
+    // No rotation, only scale for pulse effect
+    particle.element.style.transform = `scale(${pulseScale})`;
 
     // Set opacity based on activity and particle type
     let opacity = 0;
@@ -771,8 +649,8 @@ const animateParticles = () => {
     particle.element.style.opacity = opacity.toString();
   });
 
-  // Check for collisions between particles with improved physics
-  handleCollisionsAdvanced();
+  // Collision detection disabled to prevent intense fighting of icons
+  // handleCollisionsAdvanced();
 
   // Continue animation loop
   requestAnimationFrame(animateParticles);
@@ -800,13 +678,10 @@ const updateTrailParticles = (particle) => {
     trail.x += (particle.x - trail.x) * (1 / delay);
     trail.y += (particle.y - trail.y) * (1 / delay);
 
-    // Update rotation to follow main particle
-    trail.rotation += (particle.rotation - trail.rotation) * 0.1;
-
-    // Apply position and rotation
+    // Apply position and scale (no rotation)
     trail.element.style.left = `${trail.x}%`;
     trail.element.style.top = `${trail.y}%`;
-    trail.element.style.transform = `rotate(${trail.rotation}deg) scale(${0.8 - i * 0.15})`;
+    trail.element.style.transform = `scale(${0.8 - i * 0.15})`;
 
     // Fade opacity based on speed
     const dx = trail.x - oldX;
@@ -821,126 +696,7 @@ const updateTrailParticles = (particle) => {
 
 
 
-/**
- * Handle collisions between particles with advanced physics
- */
-const handleCollisionsAdvanced = () => {
-  // Group particles by their parent button to avoid checking collisions across buttons
-  const buttonGroups = {};
-
-  particles.forEach(particle => {
-    if (!particle.element.isConnected) return;
-
-    // Find the button parent - could be either direct parent or grandparent
-    let parent = particle.element.parentNode;
-    if (parent && !parent.classList.contains('generate-btn') && !parent.classList.contains('retry-gemini-btn')) {
-      parent = parent.parentNode;
-    }
-
-    if (!buttonGroups[parent]) {
-      buttonGroups[parent] = [];
-    }
-    buttonGroups[parent].push(particle);
-  });
-
-  // Check collisions within each button group
-  Object.values(buttonGroups).forEach(group => {
-    for (let i = 0; i < group.length; i++) {
-      const p1 = group[i];
-      if (!p1.isActive) continue;
-
-      for (let j = i + 1; j < group.length; j++) {
-        const p2 = group[j];
-        if (!p2.isActive) continue;
-
-        // Calculate distance between particles
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // Use size for collision detection, with a small buffer
-        const collisionBuffer = 0.5; // Extra buffer to make collisions more likely
-        const minDistance = (p1.size + p2.size) / 2 + collisionBuffer;
-
-        // If collision detected
-        if (distance < minDistance) {
-          // Calculate collision normal
-          const nx = dx / distance;
-          const ny = dy / distance;
-
-          // Calculate relative velocity
-          const vx = p1.vx - p2.vx;
-          const vy = p1.vy - p2.vy;
-
-          // Calculate relative velocity in terms of the normal direction
-          const velAlongNormal = vx * nx + vy * ny;
-
-          // Do not resolve if velocities are separating
-          if (velAlongNormal > 0) continue;
-
-          // Calculate restitution (bounciness) - vary based on particle types
-          let restitution = PHYSICS.bounce;
-
-          // Pulse particles are bouncier
-          if (p1.particleType === 'pulse' || p2.particleType === 'pulse') {
-            restitution += 0.1;
-          }
-
-          // Calculate impulse scalar with mass consideration
-          const invMass1 = 1 / (p1.mass || 1);
-          const invMass2 = 1 / (p2.mass || 1);
-          const impulseScalar = -(1 + restitution) * velAlongNormal / (invMass1 + invMass2);
-
-          // Apply impulse with mass consideration
-          p1.vx += impulseScalar * nx * invMass1;
-          p1.vy += impulseScalar * ny * invMass1;
-          p2.vx -= impulseScalar * nx * invMass2;
-          p2.vy -= impulseScalar * ny * invMass2;
-
-          // Move particles apart to prevent sticking
-          const overlap = minDistance - distance;
-          const percent = 0.6; // Penetration resolution percentage
-          const moveX = overlap * nx * percent;
-          const moveY = overlap * ny * percent;
-
-          // Move proportional to inverse mass
-          const totalInvMass = invMass1 + invMass2;
-          p1.x += moveX * (invMass1 / totalInvMass);
-          p1.y += moveY * (invMass1 / totalInvMass);
-          p2.x -= moveX * (invMass2 / totalInvMass);
-          p2.y -= moveY * (invMass2 / totalInvMass);
-
-          // Add some random rotation on collision
-          p1.rotationSpeed += (Math.random() - 0.5) * 0.5;
-          p2.rotationSpeed += (Math.random() - 0.5) * 0.5;
-
-          // Special effects for different particle types
-          if (p1.particleType === 'trail' || p2.particleType === 'trail') {
-            // Trail particles get a speed boost on collision
-            const boost = 0.3;
-            if (p1.particleType === 'trail') {
-              p1.vx *= (1 + boost);
-              p1.vy *= (1 + boost);
-            }
-            if (p2.particleType === 'trail') {
-              p2.vx *= (1 + boost);
-              p2.vy *= (1 + boost);
-            }
-          }
-
-          if (p1.particleType === 'pulse' || p2.particleType === 'pulse') {
-            // Pulse particles affect the other particle's pulse phase
-            if (p1.particleType === 'pulse') {
-              p2.pulsePhase = p1.pulsePhase;
-            } else {
-              p1.pulsePhase = p2.pulsePhase;
-            }
-          }
-        }
-      }
-    }
-  });
-};
+// Collision detection removed - no longer needed
 
 
 

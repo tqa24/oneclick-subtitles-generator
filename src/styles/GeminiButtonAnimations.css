@@ -24,8 +24,8 @@
   stroke: currentColor;
   fill: none;
   stroke-width: 1.5;
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
-  transition: transform 0.15s var(--md-easing-emphasized), opacity 0.15s var(--md-easing-emphasized);
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+  transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
 }
 
 /* Static icons should be visible by default */
