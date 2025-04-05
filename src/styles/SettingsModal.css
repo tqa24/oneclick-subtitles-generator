@@ -268,45 +268,60 @@
   position: relative;
 }
 
+/* Material Design 3 pill-style input */
 .input-with-toggle input {
   flex: 1;
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-body-medium-size);
   width: 100%;
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  transition: border-color 0.2s, box-shadow 0.2s,
-    background-color var(--transition-speed),
-    color var(--transition-speed);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
+/* Material Design 3 focus and hover states for input */
 .input-with-toggle input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--primary-color-light);
+  border-color: var(--md-primary);
+  box-shadow: var(--md-elevation-level2);
 }
 
+.input-with-toggle input:hover {
+  border-color: var(--md-primary-container);
+  background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Material Design 3 pill-style toggle button */
 .toggle-visibility {
   position: absolute;
   right: 0;
   top: 0;
   bottom: 0;
-  background-color: var(--background-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 0 4px 4px 0;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0 var(--md-shape-pill) var(--md-shape-pill) 0;
   cursor: pointer;
-  color: var(--text-secondary);
-  padding: 0 0.8rem;
-  font-size: 0.85rem;
-  transition: background-color 0.2s, color 0.2s;
+  color: var(--md-on-surface-variant);
+  padding: 0 1rem;
+  font-size: var(--md-label-small-size);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-weight: 500;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Material Design 3 hover state for toggle button */
 .toggle-visibility:hover {
-  background-color: var(--primary-color-light);
-  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--md-surface-2), var(--md-primary) 10%);
+  color: var(--md-primary);
 }
 
 .api-key-help {
@@ -378,34 +393,57 @@
   font-size: 0.9rem;
 }
 
+/* Material Design 3 pill-style select controls */
 .segment-duration-select,
 .gemini-model-select,
 .time-format-select {
   width: 100%;
   max-width: 400px;
-  padding: 0.75rem;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--md-shape-pill);
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: var(--md-body-medium-size);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  appearance: none; /* Remove default arrow */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
 }
 
+/* Material Design 3 focus and hover states */
 .segment-duration-select:focus,
 .gemini-model-select:focus,
 .time-format-select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+  border-color: var(--md-primary);
+  box-shadow: var(--md-elevation-level2);
 }
 
+.segment-duration-select:hover,
+.gemini-model-select:hover,
+.time-format-select:hover {
+  border-color: var(--md-primary-container);
+  background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Material Design 3 option styles */
 .segment-duration-select option,
-.gemini-model-select option {
-  background-color: var(--background-secondary);
-  color: var(--text-primary);
-  padding: 0.5rem;
+.gemini-model-select option,
+.time-format-select option {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  padding: 0.75rem;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-size: var(--md-body-medium-size);
 }
 
 /* Cache section */
@@ -464,20 +502,19 @@
   transition: color var(--transition-speed);
 }
 
-/* Material Design 3 button for clear cache */
+/* Material Design 3 pill-style button for clear cache */
 .clear-cache-btn {
   padding: 10px 24px;
   background-color: var(--md-error);
   color: var(--md-on-error);
   border: none;
-  border-radius: var(--button-border-radius);
+  border-radius: var(--md-shape-pill);
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
   cursor: pointer;
-  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
-              background-color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   margin-top: 16px;
   display: flex;
   align-items: center;
@@ -485,6 +522,7 @@
   box-shadow: var(--md-elevation-level1);
   position: relative;
   overflow: hidden;
+  min-width: 120px;
 }
 
 /* State layer for hover effect */
@@ -535,23 +573,23 @@
   transition: border-color var(--transition-speed);
 }
 
-/* Material Design 3 outlined button */
+/* Material Design 3 pill-style outlined button */
 .cancel-btn {
   padding: 10px 24px;
   background-color: transparent;
   color: var(--md-primary);
   border: 1px solid var(--md-outline);
-  border-radius: var(--button-border-radius);
+  border-radius: var(--md-shape-pill);
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
   cursor: pointer;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
-              color var(--md-duration-medium2) var(--md-easing-standard),
-              border-color var(--md-duration-medium2) var(--md-easing-standard),
-              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   position: relative;
   overflow: hidden;
+  min-width: 100px;
+  text-align: center;
 }
 
 /* State layer for hover effect */
@@ -575,23 +613,24 @@
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
-/* Material Design 3 filled button */
+/* Material Design 3 pill-style filled button */
 .save-btn {
   padding: 10px 24px;
   background-color: var(--md-primary);
   color: var(--md-on-primary);
   border: none;
-  border-radius: var(--button-border-radius);
+  border-radius: var(--md-shape-pill);
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
   cursor: pointer;
-  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
-              background-color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
   position: relative;
   overflow: hidden;
+  min-width: 100px;
+  text-align: center;
 }
 
 /* State layer for hover effect */
