@@ -9,7 +9,7 @@ import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
 import { useSubtitles } from './hooks/useSubtitles';
 import { downloadYoutubeVideo } from './utils/videoDownloader';
-import { initGeminiButtonEffects, resetGeminiButtonState } from './utils/geminiButtonEffects';
+import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 
 function App() {
   const { t } = useTranslation();
@@ -143,6 +143,43 @@ function App() {
       setStatus({ message, type: 'info' });
     }
   }, []);
+
+  // Initialize Gemini button effects
+  useEffect(() => {
+    console.log('Initializing Gemini button effects');
+    // Use a small delay to ensure the DOM is fully rendered
+    const timer = setTimeout(() => {
+      initGeminiButtonEffects();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Re-initialize Gemini button effects when subtitles data changes
+  useEffect(() => {
+    if (subtitlesData && subtitlesData.length > 0) {
+      console.log('Re-initializing Gemini button effects after subtitles data change');
+      // Use a small delay to ensure the DOM is updated
+      const timer = setTimeout(() => {
+        initGeminiButtonEffects();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [subtitlesData]);
+
+  // Reset all Gemini button effects when status changes
+  useEffect(() => {
+    if (status && (status.type === 'success' || status.type === 'error')) {
+      console.log('Resetting all Gemini button effects after status change');
+      // Use a small delay to ensure the DOM is updated
+      const timer = setTimeout(() => {
+        resetAllGeminiButtonEffects();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const saveApiKeys = (geminiKey, youtubeKey, segmentDuration, geminiModel, timeFormat) => {
     // Save to localStorage

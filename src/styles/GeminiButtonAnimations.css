@@ -25,6 +25,47 @@
   fill: none;
   stroke-width: 1.5;
   filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+  transition: transform 0.15s var(--md-easing-emphasized), opacity 0.15s var(--md-easing-emphasized);
+}
+
+/* Static icons should be visible by default */
+.gemini-mini-icon:not(.dynamic) {
+  opacity: 0.7;
+}
+
+/* Dynamic icons should only be visible when active */
+.gemini-mini-icon.dynamic {
+  opacity: 0;
+  z-index: 10; /* Ensure dynamic icons appear above static ones */
+}
+
+/* Special styling for different particle types */
+.gemini-mini-icon.pulse {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+  transition: transform 0.2s var(--md-easing-emphasized), opacity 0.2s var(--md-easing-emphasized);
+}
+
+.gemini-mini-icon.trail {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+}
+
+.gemini-mini-icon.trail-particle {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+  transition: transform 0.1s linear, opacity 0.1s linear;
+}
+
+/* Particle connections for constellation effect */
+.gemini-particle-connection {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.6), transparent);
+  height: 2px;
+  transform-origin: 0 0;
+  transition: opacity 0.3s var(--md-easing-emphasized);
+  z-index: 1;
+  border-radius: 1px;
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
 }
 
 /* Different sizes for variety */
@@ -51,7 +92,7 @@
 .gemini-mini-icon.random-5 { top: 40%; left: 30%; }
 .gemini-mini-icon.random-6 { top: 60%; right: 25%; }
 
-/* Animation keyframes for the mini icons */
+/* Animation keyframes for the mini icons - expanded with more variations */
 @keyframes float-up {
   0% { transform: translateY(10px) scale(0.8); opacity: 0; }
   20% { opacity: 0.7; }
@@ -59,11 +100,53 @@
   100% { transform: translateY(-15px) scale(1.2); opacity: 0; }
 }
 
-@keyframes float-diagonal {
+@keyframes float-down {
+  0% { transform: translateY(-10px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translateY(15px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-left {
+  0% { transform: translateX(10px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translateX(-15px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-right {
+  0% { transform: translateX(-10px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translateX(15px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-diagonal-1 {
   0% { transform: translate(5px, 5px) scale(0.8); opacity: 0; }
   20% { opacity: 0.7; }
   80% { opacity: 0.5; }
   100% { transform: translate(-10px, -10px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-diagonal-2 {
+  0% { transform: translate(-5px, 5px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translate(10px, -10px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-diagonal-3 {
+  0% { transform: translate(5px, -5px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translate(-10px, 10px) scale(1.2); opacity: 0; }
+}
+
+@keyframes float-diagonal-4 {
+  0% { transform: translate(-5px, -5px) scale(0.8); opacity: 0; }
+  20% { opacity: 0.7; }
+  80% { opacity: 0.5; }
+  100% { transform: translate(10px, 10px) scale(1.2); opacity: 0; }
 }
 
 @keyframes pulse-fade {
@@ -72,10 +155,37 @@
   100% { transform: scale(0.8); opacity: 0; }
 }
 
-@keyframes rotate-fade {
+@keyframes pulse-fade-rotate {
+  0% { transform: scale(0.8) rotate(0deg); opacity: 0; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 0.7; }
+  100% { transform: scale(0.8) rotate(360deg); opacity: 0; }
+}
+
+@keyframes rotate-fade-cw {
   0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
   50% { transform: rotate(180deg) scale(1.2); opacity: 0.7; }
   100% { transform: rotate(360deg) scale(0.8); opacity: 0; }
+}
+
+@keyframes rotate-fade-ccw {
+  0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
+  50% { transform: rotate(-180deg) scale(1.2); opacity: 0.7; }
+  100% { transform: rotate(-360deg) scale(0.8); opacity: 0; }
+}
+
+@keyframes swing {
+  0% { transform: rotate(0deg); opacity: 0; }
+  25% { transform: rotate(15deg); opacity: 0.7; }
+  50% { transform: rotate(0deg); opacity: 0.8; }
+  75% { transform: rotate(-15deg); opacity: 0.7; }
+  100% { transform: rotate(0deg); opacity: 0; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+  40% { transform: translateY(-10px) scale(1.1); opacity: 0.7; }
+  60% { transform: translateY(-5px) scale(1.05); opacity: 0.6; }
+  80% { transform: translateY(-8px) scale(1.08); opacity: 0.5; }
 }
 
 /* Idle state animations - subtle and occasional */
@@ -132,6 +242,13 @@
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon {
   animation-iteration-count: infinite;
   opacity: 0.9; /* Make icons more visible during processing */
+}
+
+/* Special processing state - show all particles */
+.generate-btn.processing .gemini-mini-icon,
+.retry-gemini-btn.processing .gemini-mini-icon {
+  opacity: 0.8 !important;
+  transition: opacity 0.3s var(--md-easing-emphasized);
 }
 
 /* Add glow effect to buttons when processing */
@@ -212,36 +329,11 @@
   --cursor-y: 50%;
 }
 
-/* Cursor-reactive animations */
-.generate-btn:not(:disabled):hover .gemini-mini-icon.cursor-reactive,
-.retry-gemini-btn:not(:disabled):hover .gemini-mini-icon.cursor-reactive {
-  opacity: 0.7;
-  transition: transform 0.3s var(--md-easing-emphasized);
-  transform: translate(
-    calc((var(--cursor-x) - 50%) * -0.1px),
-    calc((var(--cursor-y) - 50%) * -0.1px)
-  );
-}
+/* Cursor-reactive animations - removed in favor of physics-based interactions */
+/* This is now handled by the JavaScript physics engine */
 
-/* Special animation for the cursor-following icon */
-.gemini-cursor-follower {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s var(--md-easing-standard);
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
-}
-
-.generate-btn:hover .gemini-cursor-follower,
-.retry-gemini-btn:hover .gemini-cursor-follower {
-  opacity: 0.8;
-  transform: translate(
-    calc(var(--cursor-x) * 1px - 10px),
-    calc(var(--cursor-y) * 1px - 10px)
-  );
-}
+/* Special animation for the cursor-following icon - removed in favor of physics-based interactions */
+/* This is now handled by the JavaScript physics engine */
 
 /* Different colors for the icons based on button type */
 .generate-btn .gemini-mini-icon {

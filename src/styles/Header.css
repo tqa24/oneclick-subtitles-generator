@@ -26,11 +26,15 @@
   font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   letter-spacing: -0.5px;
   transition: transform 0.3s ease;
+  cursor: pointer; /* Indicate it's clickable */
 }
 
 .app-title:hover {
   transform: scale(1.02);
+  text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
 }
+
+
 
 .header-actions {
   display: flex;

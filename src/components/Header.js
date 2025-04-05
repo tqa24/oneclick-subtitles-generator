@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/Header.css';
 import LanguageSelector from './LanguageSelector';
+import GeminiHeaderAnimation from './GeminiHeaderAnimation';
 
 const Header = ({ onSettingsClick }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
 
 
@@ -81,6 +82,9 @@ const Header = ({ onSettingsClick }) => {
 
   return (
     <header className="app-header">
+      {/* Gemini constellation animation */}
+      <GeminiHeaderAnimation />
+
       <div className="title-container">
         <h1 className="app-title">
           {t('header.appTitle')}
