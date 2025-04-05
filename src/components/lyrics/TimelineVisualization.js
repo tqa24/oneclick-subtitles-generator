@@ -308,7 +308,8 @@ const TimelineVisualization = ({
           if (time > visibleEnd) break;
 
           const x = timeToX(time);
-          ctx.fillText(formatTime(time, timeFormat), x + 3, 2);
+          // Position time labels with more space from the top
+          ctx.fillText(formatTime(time, timeFormat), x + 3, 5);
         }
       }
     }
@@ -369,8 +370,25 @@ const TimelineVisualization = ({
       // Group segments by color for batch rendering
       const colorGroups = new Map();
 
+      // Reserve space at the top for time markers and labels (25px)
+      const timeMarkerSpace = 25;
+      const availableHeight = displayHeight - timeMarkerSpace;
+
+      // Create a deterministic random height for each lyric based on its text
+      // This ensures the same lyric always gets the same height
+      const getRandomHeight = (text) => {
+        // Use the same hash function we use for colors
+        const hash = hashString(text);
+        // Generate a height between 40% and 85% of the available height
+        // This provides good visual distinction while maintaining readability
+        // and ensuring segments don't get too small or too large
+        return 0.4 + (hash % 45) / 100;
+      };
+
       for (const { lyric, startX, width } of visibleLyrics) {
         const { fillStyle, strokeStyle } = getLyricColor(lyric.text, isDark);
+        // Calculate a random height for this segment
+        const heightPercentage = getRandomHeight(lyric.text);
 
         if (!colorGroups.has(fillStyle)) {
           colorGroups.set(fillStyle, {
@@ -382,7 +400,12 @@ const TimelineVisualization = ({
 
         colorGroups.get(fillStyle).segments.push({
           x: startX,
-          width: width
+          width: width,
+          height: heightPercentage,
+          // Calculate the actual pixel height based on available height (after reserving space for time markers)
+          actualHeight: availableHeight * heightPercentage,
+          // Position segments below the time marker space and center them in the remaining available height
+          y: timeMarkerSpace + (availableHeight * 0.5 - (availableHeight * heightPercentage * 0.5))
         });
       }
 
@@ -392,14 +415,14 @@ const TimelineVisualization = ({
 
         // Draw all fills for this color at once
         for (const segment of group.segments) {
-          ctx.fillRect(segment.x, displayHeight * 0.3, segment.width, displayHeight * 0.7);
+          ctx.fillRect(segment.x, segment.y, segment.width, segment.actualHeight);
         }
 
         // Only draw strokes if not actively panning (for better performance)
         if (tempPanOffset === null) {
           ctx.strokeStyle = group.stroke;
           for (const segment of group.segments) {
-            ctx.strokeRect(segment.x, displayHeight * 0.3, segment.width, displayHeight * 0.7);
+            ctx.strokeRect(segment.x, segment.y, segment.width, segment.actualHeight);
           }
         }
       });
