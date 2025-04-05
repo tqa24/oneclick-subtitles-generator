@@ -100,7 +100,6 @@
     "geminiModel": "Mô hình Gemini",
     "geminiModelDescription": "Chọn mô hình Gemini để sử dụng cho việc phiên âm. Các mô hình khác nhau cung cấp sự cân bằng giữa độ chính xác và tốc độ.",
     "modelBestAccuracy": "Gemini 2.5 Pro (Độ chính xác tốt nhất, chậm nhất)",
-    "modelSecondBest": "Gemini 2.0 Flash Thinking (Độ chính xác thứ hai, cũng chậm nhất)",
     "modelThirdBest": "Gemini 2.0 Flash (Độ chính xác thứ ba, chấp nhận được, tốc độ trung bình)",
     "modelFastest": "Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất - chỉ dùng để kiểm tra)",
     "cache": "Quản lý bộ nhớ đệm",

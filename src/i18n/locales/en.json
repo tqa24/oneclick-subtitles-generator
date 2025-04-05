@@ -101,7 +101,6 @@
     "geminiModel": "Gemini Model",
     "geminiModelDescription": "Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.",
     "modelBestAccuracy": "Gemini 2.5 Pro (Best accuracy, slowest)",
-    "modelSecondBest": "Gemini 2.0 Flash Thinking (Second best, tied on slowest)",
     "modelThirdBest": "Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)",
     "modelFastest": "Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)",
     "cache": "Cache Management",

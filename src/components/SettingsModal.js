@@ -246,9 +246,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 <option value="gemini-2.5-pro-exp-03-25">
                   {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest)')}
                 </option>
-                <option value="gemini-2.0-flash-thinking-exp-01-21">
-                  {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, tied on slowest)')}
-                </option>
                 <option value="gemini-2.0-flash">
                   {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
                 </option>
