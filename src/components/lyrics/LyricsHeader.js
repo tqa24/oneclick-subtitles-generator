@@ -80,8 +80,53 @@ const LyricsHeader = ({
   return (
     <div className="timeline-controls-container">
       <div className="combined-controls">
-        {allowEditing && (
-          <div className="editing-controls">
+        <div className="controls-top-row">
+          {allowEditing && (
+            <>
+              <div className="editing-controls">
+                <button
+                  className="undo-btn"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  title={t('common.undo', 'Undo')}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <path d="M3 10h10a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H3"></path>
+                    <polyline points="3 10 9 4 3 10 9 16"></polyline>
+                  </svg>
+                </button>
+
+                <button
+                  className="redo-btn"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  title={t('common.redo', 'Redo')}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <path d="M21 10h-10a4 4 0 0 0-4 4v0a4 4 0 0 0 4 4h10"></path>
+                    <polyline points="21 10 15 4 21 10 15 16"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <button
+                className="reset-btn"
+                onClick={onReset}
+                disabled={isAtOriginalState}
+                title={t('common.reset', 'Reset')}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9h4.5"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="21" y1="3" x2="14" y2="10"></line>
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="controls-bottom-row">
+          {allowEditing && (
             <label className="sticky-toggle">
               <input
                 type="checkbox"
@@ -90,56 +135,19 @@ const LyricsHeader = ({
               />
               <span>{t('lyrics.stickyTimingsToggleShort', 'Stick')}</span>
             </label>
+          )}
 
-            <button
-              className="undo-btn"
-              onClick={onUndo}
-              disabled={!canUndo}
-              title={t('common.undo', 'Undo')}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M3 10h10a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4H3"></path>
-                <polyline points="3 10 9 4 3 10 9 16"></polyline>
-              </svg>
-            </button>
-
-            <button
-              className="redo-btn"
-              onClick={onRedo}
-              disabled={!canRedo}
-              title={t('common.redo', 'Redo')}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M21 10h-10a4 4 0 0 0-4 4v0a4 4 0 0 0 4 4h10"></path>
-                <polyline points="21 10 15 4 21 10 15 16"></polyline>
-              </svg>
-            </button>
-
-            <button
-              className="reset-btn"
-              onClick={onReset}
-              disabled={isAtOriginalState}
-              title={t('common.reset', 'Reset')}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9h4.5"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="21" y1="3" x2="14" y2="10"></line>
-              </svg>
-            </button>
-          </div>
-        )}
-
-        <div className="zoom-controls">
-          <div
-            className="zoom-slider"
-            title={t('timeline.dragToZoom', 'Drag to adjust zoom')}
-          >
+          <div className="zoom-controls">
             <div
-              className="zoom-handle"
-              onMouseDown={handleZoomDragStart}
+              className="zoom-slider"
+              title={t('timeline.dragToZoom', 'Drag to adjust zoom')}
             >
-              <span>{Math.round(zoom * 100)}%</span>
+              <div
+                className="zoom-handle"
+                onMouseDown={handleZoomDragStart}
+              >
+                <span>{Math.round(zoom * 100)}%</span>
+              </div>
             </div>
           </div>
         </div>

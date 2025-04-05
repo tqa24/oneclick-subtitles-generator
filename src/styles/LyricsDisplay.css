@@ -65,13 +65,15 @@ body.lyrics-dragging .time-control.dragging {
   width: 100%;
 }
 
-/* Timeline controls container - horizontal layout */
+/* Timeline controls container - adjusted for two-line layout */
 .timeline-controls-container {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
+  width: auto;
 }
+
+/* Removed duplicate timeline-controls-container style */
 
 /* Timeline placeholder for LyricsHeader */
 .timeline-placeholder {
@@ -106,13 +108,13 @@ body.lyrics-dragging .time-control.dragging {
 .editing-controls {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 4px; /* Further reduced gap */
   height: 100%;
-  order: 1; /* Position at the beginning */
   white-space: nowrap; /* Prevent wrapping */
 }
 
-/* Material Design 3 sticky toggle - compact design */
+/* Material Design 3 sticky toggle - compact design for bottom row */
 .sticky-toggle {
   display: flex;
   align-items: center;
@@ -123,10 +125,13 @@ body.lyrics-dragging .time-control.dragging {
   font-weight: 500;
   color: var(--md-primary);
   transition: color var(--transition-speed), background-color var(--md-duration-medium2) var(--md-easing-standard);
-  padding: 4px 8px; /* Reduced padding */
+  padding: 2px 6px; /* Further reduced padding */
   border-radius: var(--md-shape-pill);
   position: relative;
   overflow: hidden;
+  height: 20px; /* Fixed height */
+  flex-shrink: 0; /* Prevent shrinking */
+  background-color: var(--md-surface-2);
 }
 
 /* State layer for hover effect */
@@ -159,7 +164,7 @@ body.lyrics-dragging .time-control.dragging {
   background-color: transparent;
   border: none;
   border-radius: 50%; /* Circular buttons */
-  padding: 6px;
+  padding: 4px;
   cursor: pointer;
   color: var(--md-primary);
   display: flex;
@@ -170,9 +175,9 @@ body.lyrics-dragging .time-control.dragging {
               transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
   overflow: hidden;
-  width: 28px; /* Fixed width */
-  height: 28px; /* Fixed height */
-  min-width: 28px; /* Ensure minimum width */
+  width: 24px; /* Reduced width */
+  height: 24px; /* Reduced height */
+  min-width: 24px; /* Ensure minimum width */
 }
 
 .undo-btn svg, .redo-btn svg, .reset-btn svg {
@@ -234,21 +239,52 @@ body.lyrics-dragging .time-control.dragging {
 
 /* Removed duplicate disabled state */
 
-/* Material Design 3 combined controls - merged pill design */
+/* Material Design 3 combined controls - merged pill design with two-line layout */
 .combined-controls {
   display: flex;
-  align-items: center;
+  flex-direction: column; /* Stack content vertically */
   justify-content: space-between;
-  border-radius: var(--md-shape-pill); /* Pill shape */
+  border-radius: 20px;
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
   box-shadow: var(--md-elevation-level1);
-  height: 36px; /* Reduced height */
+  height: 50px; /* Match timeline height */
   width: auto; /* Allow natural width */
   flex-shrink: 0; /* Prevent shrinking */
-  padding: 0 4px 0 8px; /* Padding for content */
+  padding: 4px 8px; /* Padding for content */
   overflow: hidden;
-  gap: 8px; /* Gap between elements */
+}
+
+/* Top row for editing controls */
+.controls-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+/* Ensure editing controls take up available space */
+.controls-top-row .editing-controls {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+/* Position reset button at the end */
+.controls-top-row .reset-btn {
+  margin-left: auto;
+}
+
+/* Bottom row for zoom controls and sticky toggle */
+.controls-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50%;
+  padding-top: 2px;
 }
 
 /* Zoom controls inside combined pill */
@@ -257,9 +293,7 @@ body.lyrics-dragging .time-control.dragging {
   align-items: center;
   justify-content: center;
   height: 100%;
-  order: 2; /* Position at the end */
-  border-left: 1px solid var(--md-outline-variant);
-  padding-left: 8px;
+  flex: 1; /* Take up remaining space */
 }
 
 /* Zoom slider for draggable zoom control */
