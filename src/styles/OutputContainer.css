@@ -31,7 +31,7 @@
 
 .preview-section h3 {
   font-size: 1.2rem;
-  margin-bottom: 1rem;
+  margin: 1rem;
   color: var(--text-primary);
   transition: color var(--transition-speed);
   display: flex;

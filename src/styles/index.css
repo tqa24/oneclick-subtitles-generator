@@ -40,6 +40,10 @@
   --md-state-focus-opacity: 12%;
   --md-state-pressed-opacity: 12%;
   --md-state-dragged-opacity: 16%;
+
+  /* RGB values for shadow effects */
+  --md-primary-rgb: 103, 80, 164; /* Purple 600 */
+  --md-tertiary-rgb: 0, 110, 144; /* Teal 700 */
 }
 
 /* Dark theme variables are now handled by Material Design 3 tokens */

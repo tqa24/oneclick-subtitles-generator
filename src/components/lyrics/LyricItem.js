@@ -89,8 +89,13 @@ const LyricItem = ({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(lyric.text);
-  // No longer need showInsertButton state as buttons are always in the controls
   const textInputRef = useRef(null);
+
+  // State for showing insert arrows
+  const [showInsertArrows, setShowInsertArrows] = useState(false);
+  
+  // State for showing merge arrows
+  const [showMergeArrows, setShowMergeArrows] = useState(false);
 
   const handleEditClick = (e) => {
     e.stopPropagation();
@@ -112,6 +117,34 @@ const LyricItem = ({
     } else if (e.key === 'Escape') {
       setIsEditing(false);
       setEditText(lyric.text);
+    }
+  };
+  
+  // Handle insert above
+  const handleInsertAbove = (e) => {
+    e.stopPropagation();
+    onInsert(index - 1 >= 0 ? index - 1 : 0);
+  };
+  
+  // Handle insert below
+  const handleInsertBelow = (e) => {
+    e.stopPropagation();
+    onInsert(index);
+  };
+  
+  // Handle merge with above
+  const handleMergeAbove = (e) => {
+    e.stopPropagation();
+    if (index > 0) {
+      onMerge(index - 1);
+    }
+  };
+  
+  // Handle merge with below
+  const handleMergeBelow = (e) => {
+    e.stopPropagation();
+    if (hasNextLyric) {
+      onMerge(index);
     }
   };
 
@@ -155,31 +188,81 @@ const LyricItem = ({
               </button>
               {hasNextLyric && (
                 <>
-                  <button
-                    className="insert-lyric-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onInsert(index);
-                    }}
-                    title={t('lyrics.insertTooltip', 'Add new empty line')}
+                  <div
+                    className="insert-lyric-button-container"
+                    onMouseEnter={() => setShowInsertArrows(true)}
+                    onMouseLeave={() => setShowInsertArrows(false)}
                   >
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
-                  <button
-                    className="merge-lyrics-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMerge(index);
-                    }}
-                    title={t('lyrics.mergeTooltip', 'Merge two lyrics')}
+                    <div
+                      className="insert-lyric-button"
+                      title={t('lyrics.insertTooltip', 'Add new line')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </div>
+                    {showInsertArrows && (
+                      <div className="arrow-buttons">
+                        <button
+                          className="arrow-button up"
+                          onClick={handleInsertAbove}
+                          title={t('lyrics.insertAbove', 'Add above')}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                            <polyline points="18 15 12 9 6 15"></polyline>
+                          </svg>
+                        </button>
+                        <button
+                          className="arrow-button down"
+                          onClick={handleInsertBelow}
+                          title={t('lyrics.insertBelow', 'Add below')}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className="merge-lyrics-button-container"
+                    onMouseEnter={() => setShowMergeArrows(true)}
+                    onMouseLeave={() => setShowMergeArrows(false)}
                   >
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                      <path d="M8 18h8M8 6h8M12 2v20"/>
-                    </svg>
-                  </button>
+                    <div
+                      className="merge-lyrics-button"
+                      title={t('lyrics.mergeTooltip', 'Merge lyrics')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <path d="M8 18h8M8 6h8M12 2v20"/>
+                      </svg>
+                    </div>
+                    {showMergeArrows && (
+                      <div className="arrow-buttons">
+                        <button
+                          className="arrow-button up"
+                          onClick={handleMergeAbove}
+                          title={t('lyrics.mergeAbove', 'Merge with above')}
+                          disabled={index <= 0}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                            <polyline points="18 15 12 9 6 15"></polyline>
+                          </svg>
+                        </button>
+                        <button
+                          className="arrow-button down"
+                          onClick={handleMergeBelow}
+                          title={t('lyrics.mergeBelow', 'Merge with below')}
+                          disabled={!hasNextLyric}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -235,8 +318,6 @@ const LyricItem = ({
           currentTime={currentTime}
         />
       </div>
-
-      {/* Buttons moved to lyric-controls */}
     </div>
   );
 };

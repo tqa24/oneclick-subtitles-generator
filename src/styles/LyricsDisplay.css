@@ -503,6 +503,102 @@ body.lyrics-dragging .time-control.dragging {
   box-shadow: var(--md-elevation-level2);
 }
 
+/* Container for button and arrows */
+.insert-lyric-button-container,
+.merge-lyrics-button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Arrow buttons styling */
+.arrow-buttons {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--md-primary-container);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--md-on-primary-container);
+  box-shadow: var(--md-elevation-level2);
+  transition: all var(--md-duration-medium2) var(--md-easing-emphasized);
+  padding: 0;
+}
+
+.arrow-button:hover {
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level3);
+}
+
+.arrow-button:active {
+  transform: scale(0.95);
+}
+
+.arrow-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Position the arrow buttons */
+.arrow-buttons .arrow-button.up {
+  top: -28px;
+  animation: slide-in-up 0.2s var(--md-easing-emphasized);
+}
+
+.arrow-buttons .arrow-button.down {
+  bottom: -28px;
+  animation: slide-in-down 0.2s var(--md-easing-emphasized);
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Different colors for merge buttons */
+.merge-lyrics-button {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.merge-lyrics-button-container .arrow-button {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
 /* Make buttons visible immediately when container is hovered */
 .insert-lyric-button,
 .merge-lyrics-button {

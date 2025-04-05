@@ -43,7 +43,7 @@
   --md-state-dragged-opacity: 0.16;
 
   /* Shape tokens - using pill shapes for buttons */
-  --md-shape-small: 8px;
+  --md-shape-small: 12px;
   --md-shape-medium: 16px;
   --md-shape-large: 24px;
   --md-shape-extra-large: 32px;
