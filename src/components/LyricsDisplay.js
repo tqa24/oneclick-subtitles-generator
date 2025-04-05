@@ -106,7 +106,9 @@ const LyricsDisplay = ({
     setIsSticky,
     isAtOriginalState,
     canUndo,
+    canRedo,
     handleUndo,
+    handleRedo,
     handleReset,
     startDrag,
     handleDrag,
@@ -195,13 +197,13 @@ const LyricsDisplay = ({
           isSticky={isSticky}
           setIsSticky={setIsSticky}
           canUndo={canUndo}
+          canRedo={canRedo}
           isAtOriginalState={isAtOriginalState}
           onUndo={handleUndo}
+          onRedo={handleRedo}
           onReset={handleReset}
           zoom={zoom}
           setZoom={setZoom}
-          panOffset={panOffset}
-          setPanOffset={setPanOffset}
         />
 
         <TimelineVisualization

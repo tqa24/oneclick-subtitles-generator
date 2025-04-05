@@ -102,19 +102,13 @@ body.lyrics-dragging .time-control.dragging {
   transform: rotate(15deg);
 }
 
-/* Material Design 3 editing controls - super compact design */
+/* Material Design 3 editing controls - inside combined pill */
 .editing-controls {
   display: flex;
   align-items: center;
-  gap: 6px; /* Reduced gap */
-  background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--md-shape-pill);
-  padding: 4px 8px; /* Reduced padding */
-  box-shadow: var(--md-elevation-level1);
-  height: 36px; /* Reduced height */
-  width: auto; /* Allow natural width */
-  flex-shrink: 0; /* Prevent shrinking */
+  gap: 4px; /* Further reduced gap */
+  height: 100%;
+  order: 1; /* Position at the beginning */
   white-space: nowrap; /* Prevent wrapping */
 }
 
@@ -161,7 +155,7 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 /* Material Design 3 icon buttons for editing controls */
-.undo-btn, .reset-btn {
+.undo-btn, .redo-btn, .reset-btn {
   background-color: transparent;
   border: none;
   border-radius: 50%; /* Circular buttons */
@@ -181,7 +175,7 @@ body.lyrics-dragging .time-control.dragging {
   min-width: 28px; /* Ensure minimum width */
 }
 
-.undo-btn svg, .reset-btn svg {
+.undo-btn svg, .redo-btn svg, .reset-btn svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
@@ -189,7 +183,7 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 /* State layer for hover effect */
-.undo-btn::before, .reset-btn::before {
+.undo-btn::before, .redo-btn::before, .reset-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -202,48 +196,49 @@ body.lyrics-dragging .time-control.dragging {
   border-radius: 50%;
 }
 
-.undo-btn:hover::before, .reset-btn:hover::before {
+.undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
-.undo-btn:hover, .reset-btn:hover {
+.undo-btn:hover, .redo-btn:hover, .reset-btn:hover {
   transform: scale(1.1);
 }
 
-.undo-btn:active::before, .reset-btn:active::before {
+.undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
-.undo-btn:active, .reset-btn:active {
+.undo-btn:active, .redo-btn:active, .reset-btn:active {
   transform: scale(0.95);
 }
 
 /* Disabled state */
-.undo-btn:disabled, .reset-btn:disabled {
+.undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled {
   opacity: 0.38;
   cursor: not-allowed;
   transform: none;
 }
 
+/* Button hover animations */
 .undo-btn:hover svg {
   transform: translateX(-3px);
+}
+
+.redo-btn:hover svg {
+  transform: translateX(3px);
 }
 
 .reset-btn:hover svg {
   transform: rotate(45deg);
 }
 
-.undo-btn:disabled, .reset-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
+/* Removed duplicate disabled state */
 
-/* Material Design 3 zoom controls - super compact design */
-.zoom-controls {
+/* Material Design 3 combined controls - merged pill design */
+.combined-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   border-radius: var(--md-shape-pill); /* Pill shape */
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
@@ -251,8 +246,20 @@ body.lyrics-dragging .time-control.dragging {
   height: 36px; /* Reduced height */
   width: auto; /* Allow natural width */
   flex-shrink: 0; /* Prevent shrinking */
-  padding: 0;
+  padding: 0 4px 0 8px; /* Padding for content */
   overflow: hidden;
+  gap: 8px; /* Gap between elements */
+}
+
+/* Zoom controls inside combined pill */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  order: 2; /* Position at the end */
+  border-left: 1px solid var(--md-outline-variant);
+  padding-left: 8px;
 }
 
 /* Zoom slider for draggable zoom control */
