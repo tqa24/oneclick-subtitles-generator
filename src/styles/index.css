@@ -44,6 +44,7 @@
   /* RGB values for shadow effects */
   --md-primary-rgb: 103, 80, 164; /* Purple 600 */
   --md-tertiary-rgb: 0, 110, 144; /* Teal 700 */
+  --md-surface-rgb: 255, 251, 254; /* Light mode surface */
 }
 
 /* Dark theme variables are now handled by Material Design 3 tokens */
@@ -56,6 +57,9 @@
   --warning-color: #ffa726; /* Material warning color for dark theme */
   --success-background: color-mix(in srgb, #66bb6a, transparent 90%);
   --warning-background: color-mix(in srgb, #ffa726, transparent 90%);
+
+  /* Dark mode RGB values */
+  --md-surface-rgb: 28, 27, 31; /* Dark mode surface */
 }
 
 /* Material Design 3 typography */

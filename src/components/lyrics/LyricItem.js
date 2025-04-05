@@ -93,9 +93,55 @@ const LyricItem = ({
 
   // State for showing insert arrows
   const [showInsertArrows, setShowInsertArrows] = useState(false);
-  
+  const insertTimeoutRef = useRef(null);
+
   // State for showing merge arrows
   const [showMergeArrows, setShowMergeArrows] = useState(false);
+  const mergeTimeoutRef = useRef(null);
+
+  // Handle insert container mouse enter
+  const handleInsertMouseEnter = () => {
+    if (insertTimeoutRef.current) {
+      clearTimeout(insertTimeoutRef.current);
+      insertTimeoutRef.current = null;
+    }
+    setShowInsertArrows(true);
+  };
+
+  // Handle insert container mouse leave
+  const handleInsertMouseLeave = () => {
+    insertTimeoutRef.current = setTimeout(() => {
+      setShowInsertArrows(false);
+    }, 300); // 300ms delay before hiding
+  };
+
+  // Handle merge container mouse enter
+  const handleMergeMouseEnter = () => {
+    if (mergeTimeoutRef.current) {
+      clearTimeout(mergeTimeoutRef.current);
+      mergeTimeoutRef.current = null;
+    }
+    setShowMergeArrows(true);
+  };
+
+  // Handle merge container mouse leave
+  const handleMergeMouseLeave = () => {
+    mergeTimeoutRef.current = setTimeout(() => {
+      setShowMergeArrows(false);
+    }, 300); // 300ms delay before hiding
+  };
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (insertTimeoutRef.current) {
+        clearTimeout(insertTimeoutRef.current);
+      }
+      if (mergeTimeoutRef.current) {
+        clearTimeout(mergeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleEditClick = (e) => {
     e.stopPropagation();
@@ -119,19 +165,19 @@ const LyricItem = ({
       setEditText(lyric.text);
     }
   };
-  
+
   // Handle insert above
   const handleInsertAbove = (e) => {
     e.stopPropagation();
     onInsert(index - 1 >= 0 ? index - 1 : 0);
   };
-  
+
   // Handle insert below
   const handleInsertBelow = (e) => {
     e.stopPropagation();
     onInsert(index);
   };
-  
+
   // Handle merge with above
   const handleMergeAbove = (e) => {
     e.stopPropagation();
@@ -139,7 +185,7 @@ const LyricItem = ({
       onMerge(index - 1);
     }
   };
-  
+
   // Handle merge with below
   const handleMergeBelow = (e) => {
     e.stopPropagation();
@@ -190,8 +236,8 @@ const LyricItem = ({
                 <>
                   <div
                     className="insert-lyric-button-container"
-                    onMouseEnter={() => setShowInsertArrows(true)}
-                    onMouseLeave={() => setShowInsertArrows(false)}
+                    onMouseEnter={handleInsertMouseEnter}
+                    onMouseLeave={handleInsertMouseLeave}
                   >
                     <div
                       className="insert-lyric-button"
@@ -227,8 +273,8 @@ const LyricItem = ({
                   </div>
                   <div
                     className="merge-lyrics-button-container"
-                    onMouseEnter={() => setShowMergeArrows(true)}
-                    onMouseLeave={() => setShowMergeArrows(false)}
+                    onMouseEnter={handleMergeMouseEnter}
+                    onMouseLeave={handleMergeMouseLeave}
                   >
                     <div
                       className="merge-lyrics-button"
