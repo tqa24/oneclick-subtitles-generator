@@ -118,51 +118,64 @@
   margin-top: 1.5rem;
 }
 
+/* Material Design 3 pill-shaped buttons */
 .download-btn, .edit-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: var(--md-shape-pill);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-.download-btn {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
+  height: 44px; /* Fixed height for consistency */
   position: relative;
   overflow: hidden;
 }
 
-.download-btn::after {
+/* Material Design 3 download button */
+.download-btn {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* State layer for hover effect */
+.download-btn::before {
   content: '';
   position: absolute;
-  width: 100%;
-  height: 100%;
   top: 0;
-  left: -100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.2) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  transition: left 0.5s ease;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.download-btn:hover::before {
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.download-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
 }
 
 .download-btn:hover {
-  background-color: var(--secondary-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px var(--shadow-color);
+  box-shadow: var(--md-elevation-level2);
 }
 
-.download-btn:hover::after {
-  left: 100%;
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .download-btn:disabled {
@@ -170,41 +183,66 @@
   transform: none;
   box-shadow: none;
   cursor: not-allowed;
+  opacity: 0.38;
 }
 
 .download-btn svg {
   width: 18px;
   height: 18px;
-  stroke: white;
-  transition: transform 0.3s ease;
+  stroke: currentColor;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
 }
 
 .download-btn:hover svg {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
+/* Material Design 3 edit button */
 .edit-btn {
-  background-color: var(--background-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease, border-color var(--transition-speed), color var(--transition-speed);
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+/* State layer for hover effect */
+.edit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.edit-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
+.edit-btn:active::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
 .edit-btn:hover {
-  background-color: var(--background-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px var(--shadow-color);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .edit-btn.active {
-  background-color: var(--primary-color);
-  color: white;
-  border: 1px solid var(--primary-color);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: 1px solid var(--md-primary-container);
 }
 
 .edit-btn:disabled {
-  background-color: var(--background-tertiary);
-  color: var(--text-muted);
+  opacity: 0.38;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -214,7 +252,7 @@
   width: 18px;
   height: 18px;
   stroke: currentColor;
-  transition: transform 0.3s ease;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
 }
 
 .edit-btn:hover svg:not(.edit-btn:disabled svg) {

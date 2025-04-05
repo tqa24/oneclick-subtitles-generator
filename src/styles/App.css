@@ -16,12 +16,30 @@
   padding: 1.5rem;
 }
 
+/* Material Design 3 container with enhanced styling */
 .app-content {
-  background-color: var(--background-secondary);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px var(--shadow-color);
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: 32px;
+  box-shadow: var(--md-elevation-level3);
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add subtle background pattern for more visual interest */
+.app-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--md-primary), transparent 92%) 0%, transparent 50%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .buttons-container {
@@ -32,22 +50,25 @@
   margin: 1.5rem 0;
 }
 
+/* Material Design 3 button styles */
 .buttons-container .generate-btn,
 .buttons-container .retry-gemini-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 0.85rem 1.8rem;
+  gap: 12px;
+  padding: 16px 24px;
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  letter-spacing: -0.01em;
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  box-shadow: var(--md-elevation-level2);
   white-space: nowrap;
   position: relative;
   overflow: hidden;
@@ -55,78 +76,109 @@
 
 .buttons-container .generate-btn {
   flex: 1;
-  background: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
-  color: white;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  /* Pill-shaped button for Material Design 3 look */
+  padding: 16px 28px;
+  font-size: calc(var(--md-label-large-size) + 1px);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  box-shadow: var(--md-elevation-level2);
+  border-radius: var(--md-shape-pill);
+  height: 52px; /* Fixed height for consistency */
 }
 
 .buttons-container .retry-gemini-btn {
-  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
-  color: white;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+  /* Pill-shaped button for Material Design 3 look */
+  padding: 16px 24px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  box-shadow: var(--md-elevation-level2);
+  border-radius: var(--md-shape-pill);
+  height: 52px; /* Fixed height for consistency */
 }
 
+/* State layer for hover effect */
 .buttons-container .generate-btn::before,
 .buttons-container .retry-gemini-btn::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: 0.5s;
-}
-
-.buttons-container .generate-btn:hover,
-.buttons-container .retry-gemini-btn:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
 }
 
 .buttons-container .generate-btn:hover::before,
 .buttons-container .retry-gemini-btn:hover::before {
-  left: 100%;
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.buttons-container .generate-btn:active::before,
+.buttons-container .retry-gemini-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
+}
+
+.buttons-container .generate-btn:hover,
+.buttons-container .retry-gemini-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level3);
 }
 
 .buttons-container .generate-btn:active,
 .buttons-container .retry-gemini-btn:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .buttons-container .generate-btn:disabled,
 .buttons-container .retry-gemini-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.38;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-  filter: saturate(0.8) brightness(0.9);
 }
 
 .buttons-container .generate-btn svg,
 .buttons-container .retry-gemini-btn svg {
   width: 20px;
   height: 20px;
-  stroke: white;
+  stroke: currentColor;
   stroke-width: 2;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
 }
 
 .buttons-container .generate-btn:hover svg {
-  transform: translateY(-2px) scale(1.1);
+  transform: translateY(-2px);
 }
 
 .buttons-container .retry-gemini-btn:hover svg {
-  transform: rotate(180deg) scale(1.1);
+  transform: rotate(180deg);
 }
 
 /* Pulse animation removed to prevent dizziness */
+
+/* Material Design 3 typography for app title */
+.app-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--md-on-surface);
+  transition: color var(--transition-speed);
+  font-size: var(--md-headline-medium-size);
+  line-height: var(--md-headline-medium-height);
+  font-weight: 500; /* Lighter weight for Material Design */
+  letter-spacing: -0.5px;
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+
+/* Removed decorative underline as requested */
 
 @media (max-width: 640px) {
   .buttons-container {

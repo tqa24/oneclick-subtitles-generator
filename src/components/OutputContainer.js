@@ -68,17 +68,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
     URL.revokeObjectURL(url);
   };
 
-  const handleSRTDownload = () => {
-    if (subtitlesData) {
-      downloadFile(convertToSRT(subtitlesData), 'subtitles.srt', 'text/plain');
-    }
-  };
-
-  const handleJSONDownload = () => {
-    if (subtitlesData) {
-      downloadFile(JSON.stringify(subtitlesData, null, 2), 'subtitles.json', 'application/json');
-    }
-  };
+  // Download functions moved to event listeners
 
   // Set video source when a video is selected or file is uploaded
   const [videoSource, setVideoSource] = useState('');
@@ -105,7 +95,28 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   // Reset edited lyrics when subtitlesData changes (new video/generation)
   useEffect(() => {
     setEditedLyrics(null);
-  }, [subtitlesData]);
+
+    // Add event listeners for download buttons in LyricsDisplay
+    const handleSRTDownloadEvent = () => {
+      if (subtitlesData && !isGenerating) {
+        downloadFile(convertToSRT(editedLyrics || subtitlesData), 'subtitles.srt', 'text/plain');
+      }
+    };
+
+    const handleJSONDownloadEvent = () => {
+      if (subtitlesData && !isGenerating) {
+        downloadFile(JSON.stringify(editedLyrics || subtitlesData, null, 2), 'subtitles.json', 'application/json');
+      }
+    };
+
+    window.addEventListener('download-srt', handleSRTDownloadEvent);
+    window.addEventListener('download-json', handleJSONDownloadEvent);
+
+    return () => {
+      window.removeEventListener('download-srt', handleSRTDownloadEvent);
+      window.removeEventListener('download-json', handleJSONDownloadEvent);
+    };
+  }, [subtitlesData, editedLyrics, isGenerating]);
 
   // Don't render anything if there's no content to show
   if (!status?.message && !subtitlesData) {
@@ -155,32 +166,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               timeFormat={timeFormat}
             />
 
-            <div className="download-options">
-              <button
-                className="download-btn"
-                onClick={handleSRTDownload}
-                disabled={!subtitlesData || isGenerating}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                {t('output.downloadSrt', 'Download SRT')}
-              </button>
-              <button
-                className="download-btn"
-                onClick={handleJSONDownload}
-                disabled={!subtitlesData || isGenerating}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                {t('output.downloadJson', 'Download JSON')}
-              </button>
-            </div>
+            {/* Download buttons moved to LyricsDisplay component */}
           </div>
         </>
       )}

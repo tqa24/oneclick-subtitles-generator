@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
 import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
-import { FixedSizeList as List } from 'react-window';
+import { VariableSizeList as List } from 'react-window';
 
 // Virtualized row renderer for lyrics
 const VirtualizedLyricRow = ({ index, style, data }) => {
@@ -66,7 +66,39 @@ const LyricsDisplay = ({
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
-  const lyricsContainerRef = useRef(null);
+  const rowHeights = useRef({});
+
+  // Function to calculate row height based on text content
+  const getRowHeight = index => {
+    // If we already calculated this height, return it
+    if (rowHeights.current[index] !== undefined) {
+      return rowHeights.current[index];
+    }
+
+    const lyric = matchedLyrics[index];
+    if (!lyric) return 50; // Default height
+
+    // Calculate height based on text length
+    const text = lyric.text || '';
+    const lineCount = text.split('\n').length; // Count actual line breaks
+    const estimatedLines = Math.ceil(text.length / 40); // Estimate based on characters per line
+    const lines = Math.max(lineCount, estimatedLines);
+
+    // Base height + additional height per line
+    const height = 50 + (lines > 1 ? (lines - 1) * 20 : 0);
+
+    // Cache the calculated height
+    rowHeights.current[index] = height;
+    return height;
+  };
+
+  // Reset row heights when lyrics change
+  useEffect(() => {
+    rowHeights.current = {};
+    if (listRef.current) {
+      listRef.current.resetAfterIndex(0);
+    }
+  }, [matchedLyrics]);
 
   const {
     lyrics,
@@ -156,42 +188,44 @@ const LyricsDisplay = ({
   };
 
   return (
-    <div className="lyrics-display">
-      <LyricsHeader
-        allowEditing={allowEditing}
-        isSticky={isSticky}
-        setIsSticky={setIsSticky}
-        canUndo={canUndo}
-        isAtOriginalState={isAtOriginalState}
-        onUndo={handleUndo}
-        onReset={handleReset}
-        zoom={zoom}
-        setZoom={setZoom}
-        panOffset={panOffset}
-        setPanOffset={setPanOffset}
-      />
+    <div className={`lyrics-display ${Object.keys(isDragging()).length > 0 ? 'dragging-active' : ''}`}>
+      <div className="timeline-controls-wrapper">
+        <LyricsHeader
+          allowEditing={allowEditing}
+          isSticky={isSticky}
+          setIsSticky={setIsSticky}
+          canUndo={canUndo}
+          isAtOriginalState={isAtOriginalState}
+          onUndo={handleUndo}
+          onReset={handleReset}
+          zoom={zoom}
+          setZoom={setZoom}
+          panOffset={panOffset}
+          setPanOffset={setPanOffset}
+        />
 
-      <TimelineVisualization
-        lyrics={lyrics}
-        currentTime={currentTime}
-        duration={duration}
-        onTimelineClick={onLyricClick}
-        zoom={zoom}
-        panOffset={panOffset}
-        setPanOffset={setPanOffset}
-        centerOnTime={centerTimelineAt}
-        timeFormat={timeFormat}
-      />
+        <TimelineVisualization
+          lyrics={lyrics}
+          currentTime={currentTime}
+          duration={duration}
+          onTimelineClick={onLyricClick}
+          zoom={zoom}
+          panOffset={panOffset}
+          setPanOffset={setPanOffset}
+          centerOnTime={centerTimelineAt}
+          timeFormat={timeFormat}
+        />
+      </div>
 
       <div className="lyrics-container-wrapper">
         {lyrics.length > 0 && (
           <List
             ref={listRef}
             className="lyrics-container"
-            height={350} // Fixed height for the container
+            height={300} // Reduced height for more compact view
             width="100%"
             itemCount={lyrics.length}
-            itemSize={60} // Average height of a lyric item
+            itemSize={getRowHeight} // Dynamic row heights based on content
             overscanCount={5} // Number of items to render outside of the visible area
             itemData={{
               lyrics,
@@ -224,8 +258,28 @@ const LyricsDisplay = ({
       </div>
 
       {allowEditing && (
-        <div className="help-text">
-          <p>{t('lyrics.timingInstructions')}</p>
+        <div className="help-text-container">
+          <div className="help-text">
+            <p>{t('lyrics.timingInstructions')}</p>
+          </div>
+          <div className="download-buttons">
+            <button className="download-srt-btn" onClick={() => window.dispatchEvent(new CustomEvent('download-srt'))}>
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              {t('output.downloadSrt', 'Download SRT')}
+            </button>
+            <button className="download-json-btn" onClick={() => window.dispatchEvent(new CustomEvent('download-json'))}>
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              {t('output.downloadJson', 'Download JSON')}
+            </button>
+          </div>
         </div>
       )}
     </div>

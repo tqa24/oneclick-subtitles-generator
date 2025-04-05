@@ -9,26 +9,45 @@ body.lyrics-dragging * {
   transition: none !important;
   /* Disable pointer events on all elements except the dragged element */
   pointer-events: none;
+  /* Disable hover effects completely */
+  transform: none !important;
 }
 
 body.lyrics-dragging .time-control.dragging {
   /* Re-enable pointer events on the dragged element */
   pointer-events: auto !important;
   /* Use hardware acceleration for the dragged element */
-  transform: scale(1.05) translateZ(0);
+  transform: scale(1.05) translateZ(0) !important; /* Override the transform:none */
   will-change: transform;
 }
 
+/* Material Design 3 card for lyrics display - enhanced styling */
 .lyrics-display {
   width: 100%;
-  background-color: var(--background-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 3px 10px var(--shadow-color);
+  background-color: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--card-border-radius);
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: var(--md-elevation-level2);
   transition: background-color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
-  animation: slide-up 0.4s ease-out;
+  animation: slideIn var(--md-duration-medium4) var(--md-easing-emphasized-decelerate);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add subtle gradient background for more visual interest */
+.lyrics-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--md-primary), transparent 95%) 0%, transparent 50%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes slide-up {
@@ -36,18 +55,37 @@ body.lyrics-dragging .time-control.dragging {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.lyrics-header {
+/* More compact lyrics header */
+/* Timeline controls wrapper - horizontal layout */
+.timeline-controls-wrapper {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
+  margin-bottom: 0.75rem;
+  width: 100%;
 }
 
+/* Timeline controls container - horizontal layout */
+.timeline-controls-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Timeline placeholder for LyricsHeader */
+.timeline-placeholder {
+  flex: 1;
+  height: 50px;
+  display: none; /* Hidden in the actual component */
+}
+
+/* Material Design 3 typography for header */
 .lyrics-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: var(--md-title-medium-size);
+  line-height: var(--md-title-medium-height);
+  font-weight: var(--md-title-medium-weight);
   color: var(--text-primary);
   display: flex;
   align-items: center;
@@ -64,50 +102,83 @@ body.lyrics-dragging .time-control.dragging {
   transform: rotate(15deg);
 }
 
+/* Material Design 3 editing controls - super compact design */
 .editing-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 6px; /* Reduced gap */
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  padding: 4px 8px; /* Reduced padding */
+  box-shadow: var(--md-elevation-level1);
+  height: 36px; /* Reduced height */
+  width: auto; /* Allow natural width */
+  flex-shrink: 0; /* Prevent shrinking */
+  white-space: nowrap; /* Prevent wrapping */
 }
 
+/* Material Design 3 sticky toggle - compact design */
 .sticky-toggle {
   display: flex;
   align-items: center;
   cursor: pointer;
   user-select: none;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  transition: color var(--transition-speed);
-  padding: 6px 10px;
-  border-radius: 4px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
+  font-size: var(--md-label-small-size); /* Smaller font */
+  line-height: var(--md-label-small-height);
+  font-weight: 500;
+  color: var(--md-primary);
+  transition: color var(--transition-speed), background-color var(--md-duration-medium2) var(--md-easing-standard);
+  padding: 4px 8px; /* Reduced padding */
+  border-radius: var(--md-shape-pill);
+  position: relative;
+  overflow: hidden;
 }
 
-.sticky-toggle:hover {
-  background-color: var(--background-tertiary);
+/* State layer for hover effect */
+.sticky-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.sticky-toggle:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .sticky-toggle input {
   margin-right: 8px;
-  accent-color: var(--primary-color);
+  accent-color: var(--md-primary);
+  width: 18px;
+  height: 18px;
 }
 
+/* Material Design 3 icon buttons for editing controls */
 .undo-btn, .reset-btn {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.9rem;
+  background-color: transparent;
+  border: none;
+  border-radius: 50%; /* Circular buttons */
+  padding: 6px;
   cursor: pointer;
-  color: var(--text-primary);
+  color: var(--md-primary);
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: all 0.3s ease, color var(--transition-speed),
-    background-color var(--transition-speed),
-    border-color var(--transition-speed);
+  justify-content: center;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  position: relative;
+  overflow: hidden;
+  width: 28px; /* Fixed width */
+  height: 28px; /* Fixed height */
+  min-width: 28px; /* Ensure minimum width */
 }
 
 .undo-btn svg, .reset-btn svg {
@@ -117,9 +188,41 @@ body.lyrics-dragging .time-control.dragging {
   transition: transform 0.3s ease;
 }
 
+/* State layer for hover effect */
+.undo-btn::before, .reset-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.undo-btn:hover::before, .reset-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
 .undo-btn:hover, .reset-btn:hover {
-  background-color: var(--background-tertiary);
-  transform: translateY(-2px);
+  transform: scale(1.1);
+}
+
+.undo-btn:active::before, .reset-btn:active::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
+}
+
+.undo-btn:active, .reset-btn:active {
+  transform: scale(0.95);
+}
+
+/* Disabled state */
+.undo-btn:disabled, .reset-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .undo-btn:hover svg {
@@ -136,56 +239,80 @@ body.lyrics-dragging .time-control.dragging {
   transform: none;
 }
 
+/* Material Design 3 zoom controls - super compact design */
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-}
-
-.zoom-controls button {
-  background-color: var(--background-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 2px 8px;
-  cursor: pointer;
-  font-size: 14px;
-  min-width: 24px;
-  color: var(--text-primary);
-  transition: all 0.2s ease;
-}
-
-.zoom-controls button:not(:disabled):hover {
-  background-color: var(--background-tertiary);
-  transform: translateY(-1px);
-}
-
-.zoom-controls button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.zoom-controls span {
-  font-size: 12px;
-  color: var(--text-secondary);
-  min-width: 48px;
-  text-align: center;
-}
-
-.timeline-container {
-  width: 100%;
-  height: 60px;
-  margin: 0.5rem 0;
-  position: relative;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  justify-content: center;
+  border-radius: var(--md-shape-pill); /* Pill shape */
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elevation-level1);
+  height: 36px; /* Reduced height */
+  width: auto; /* Allow natural width */
+  flex-shrink: 0; /* Prevent shrinking */
+  padding: 0;
   overflow: hidden;
-  background-color: var(--background-secondary);
+}
+
+/* Zoom slider for draggable zoom control */
+.zoom-slider {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: ew-resize;
+  padding: 0 12px;
+}
+
+/* Zoom handle with percentage display */
+.zoom-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--md-primary);
+  font-size: var(--md-label-small-size);
+  font-weight: 500;
+  font-family: 'Roboto Mono', monospace;
+  user-select: none;
+  transition: transform var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+/* Hover effect for zoom handle */
+.zoom-handle:hover {
+  transform: scale(1.05);
+}
+
+/* Active state for zoom handle */
+.zoom-handle:active {
+  transform: scale(0.95);
+  transition: transform var(--md-duration-short4) var(--md-easing-standard);
+}
+
+/* Zoom percentage display - updated for compact design */
+.zoom-handle span {
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  font-weight: 500;
+  color: var(--md-primary);
+  text-align: center;
+  font-family: 'Roboto Mono', monospace; /* Monospace font for better readability */
+  white-space: nowrap;
+}
+
+/* Timeline container - now in horizontal layout */
+.timeline-container {
+  flex: 1; /* Take up available space */
+  height: 50px; /* Reduced height */
+  position: relative;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-medium);
+  overflow: hidden;
+  background-color: var(--md-surface-1);
   /* Removed transition to prevent shaking */
-  box-shadow: inset 0 0 10px var(--shadow-color);
+  box-shadow: var(--md-elevation-level1);
+  min-width: 200px; /* Ensure minimum width */
 }
 
 .subtitle-timeline {
@@ -240,11 +367,29 @@ body.lyrics-dragging .time-control.dragging {
   text-align: center;
 }
 
+/* Material Design 3 container for lyrics - enhanced styling */
 .lyrics-container-wrapper {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--background-secondary);
-  transition: border-color var(--transition-speed), background-color var(--transition-speed);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--card-border-radius);
+  background-color: var(--md-surface-1);
+  transition: border-color var(--transition-speed), background-color var(--transition-speed), box-shadow var(--transition-speed);
+  box-shadow: var(--md-elevation-level2);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Add subtle highlight to the top edge */
+.lyrics-container-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--md-primary);
+  opacity: 0.7;
+  z-index: 2;
 }
 
 .lyrics-container {
@@ -273,65 +418,84 @@ body.lyrics-dragging .time-control.dragging {
   min-height: 40px; /* Ensure minimum height for better spacing */
 }
 
+/* Material Design 3 list item for lyrics - improved for multi-line text */
 .lyric-item {
   position: relative;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 12px 16px;
+  padding-right: 16px; /* Standard padding */
+  border-bottom: 1px solid var(--md-outline-variant);
   cursor: pointer;
-  transition: all 0.3s ease;
-  color: var(--text-primary);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  color: var(--md-on-surface);
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
+  z-index: 1;
+  min-height: 48px; /* Minimum height for consistency */
+  height: auto !important; /* Override fixed height from virtualized list */
+  overflow: visible; /* Ensure content is fully visible */
 }
 
-/* Add a visual indicator for the insert zone */
-.lyric-item::after {
-  content: '';
-  position: absolute;
-  left: 24px; /* Align with edit/delete buttons */
-  bottom: -1px;
-  width: 40px;
-  height: 2px;
-  background: transparent;
-  transition: all 0.2s ease;
-  pointer-events: none;
-}
+/* Removed redundant bar under control buttons */
 
-.lyric-item:hover::after {
-  background: var(--border-color);
-}
-
+/* Material Design 3 between lyrics controls */
 .between-lyrics-controls {
   position: absolute;
-  left: 40px;
-  bottom: -15px;
+  right: 16px; /* Align with the lyric controls */
+  bottom: -16px;
   display: flex;
   gap: 8px;
   z-index: 100; /* Ensure it's above other elements */
-  transform: translateX(-50%);
 }
 
+/* Material Design 3 FAB buttons for insert and merge */
 .insert-lyric-button,
 .merge-lyrics-button {
-  width: 28px; /* Slightly larger */
-  height: 28px; /* Slightly larger */
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--primary-color-light);
-  border: 1px solid var(--primary-color);
+  background-color: var(--md-primary-container);
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--primary-color);
-  box-shadow: 0 2px 4px var(--shadow-color);
-  transition: all 0.15s ease-out;
+  color: var(--md-on-primary-container);
+  box-shadow: var(--md-elevation-level1);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
   transform: scale(1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.insert-lyric-button::before,
+.merge-lyrics-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.insert-lyric-button:hover::before,
+.merge-lyrics-button:hover::before {
+  background-color: rgba(0, 0, 0, var(--md-state-hover-opacity));
 }
 
 .insert-lyric-button:hover,
 .merge-lyrics-button:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.2);
-  box-shadow: 0 3px 8px var(--shadow-color);
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level2);
 }
 
 /* Make buttons visible immediately when container is hovered */
@@ -345,61 +509,140 @@ body.lyrics-dragging .time-control.dragging {
   border-bottom: none;
 }
 
-.lyric-item:hover {
-  background-color: var(--background-tertiary);
+/* Material Design 3 state layers for list items - enhanced styling */
+.lyric-item:hover:not(.dragging) {
+  background-color: color-mix(in srgb, var(--md-on-surface), transparent var(--md-state-hover-opacity));
+  /* Removed the transform that pushed items to the right */
+}
+
+/* Disable all hover effects during dragging */
+.dragging-active .lyric-item:hover,
+.dragging-active .time-control:hover:not(.dragging),
+.dragging-active .edit-lyric-btn:hover,
+.dragging-active .delete-lyric-btn:hover,
+.dragging-active .insert-lyric-button:hover,
+.dragging-active .merge-lyrics-button:hover {
+  background-color: transparent;
+  transform: none;
+  border-color: var(--md-outline-variant);
+  color: var(--md-on-surface);
+  box-shadow: none;
+}
+
+/* Disable SVG hover animations during dragging */
+.dragging-active .edit-lyric-btn:hover svg,
+.dragging-active .delete-lyric-btn:hover svg,
+.dragging-active .insert-lyric-button:hover svg,
+.dragging-active .merge-lyrics-button:hover svg {
+  transform: none;
 }
 
 .lyric-item.current {
-  background-color: var(--primary-color-light);
-  border-left: 3px solid var(--primary-color);
+  background-color: color-mix(in srgb, var(--md-primary), transparent 85%);
+  border-left: 4px solid var(--md-primary);
+  /* Adjust padding to compensate for the border without pushing content right */
+  padding-left: calc(16px - 4px); /* Default 16px minus the 4px border */
+  font-weight: 500;
+  box-shadow: inset 0 0 8px color-mix(in srgb, var(--md-primary), transparent 80%);
 }
 
+/* Material Design 3 lyric content - improved for multi-line text */
 .lyric-content {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start; /* Align to top for multi-line text */
+  gap: 12px;
+  position: relative;
+  width: 100%;
+  flex-wrap: wrap; /* Allow wrapping for very long content */
 }
 
+/* Allow lyric text to wrap to multiple lines - improved for very long text */
+.lyric-text {
+  flex: 1;
+  overflow: visible; /* Allow content to be fully visible */
+  white-space: normal; /* Allow text to wrap */
+  margin-right: 16px; /* Space between text and timing controls */
+  line-height: 1.5; /* Increased line height for better readability */
+  word-break: break-word; /* Break long words if needed */
+  padding: 4px 0; /* Add some vertical padding */
+  min-height: 24px; /* Minimum height to prevent collapsing */
+  display: block; /* Ensure block display for proper wrapping */
+  width: 100%; /* Use full width available */
+}
+
+/* Material Design 3 controls container - positioned on the left */
 .lyric-controls {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  left: 0;
+  z-index: 10;
+  margin-right: 12px; /* Space between buttons and text */
 }
 
 .lyric-item:hover .lyric-controls {
   opacity: 1;
 }
 
+/* Material Design 3 unified button styles for all lyric control buttons */
 .edit-lyric-btn,
 .delete-lyric-btn,
 .merge-lyric-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--background-primary);
-  color: var(--text-secondary);
+  border: none;
+  border-radius: 50%;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  overflow: hidden;
 }
 
-.edit-lyric-btn:hover {
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-  background-color: var(--primary-color-light);
-  transform: translateY(-1px);
+/* State layer for hover effect */
+.edit-lyric-btn::before,
+.delete-lyric-btn::before,
+.merge-lyric-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
 }
 
-.delete-lyric-btn:hover {
-  color: var(--error-color);
-  border-color: var(--error-color);
-  background-color: var(--error-color-light);
-  transform: translateY(-1px);
+.edit-lyric-btn:hover::before,
+.delete-lyric-btn:hover::before,
+.merge-lyric-btn:hover::before {
+  background-color: rgba(0, 0, 0, var(--md-state-hover-opacity));
+}
+
+.edit-lyric-btn:hover,
+.delete-lyric-btn:hover,
+.merge-lyric-btn:hover {
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Specific colors for delete button */
+.delete-lyric-btn {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
 }
 
 .edit-lyric-btn svg,
@@ -446,81 +689,104 @@ body.lyrics-dragging .time-control.dragging {
   box-shadow: 0 0 0 2px var(--primary-color-light);
 }
 
-.delete-lyric-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--background-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s ease;
+/* SVG animations for button icons */
+.edit-lyric-btn svg,
+.delete-lyric-btn svg,
+.insert-lyric-button svg,
+.merge-lyrics-button svg {
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
 }
 
-.delete-lyric-btn:hover {
-  opacity: 1;
-  color: var(--error-color);
-  border-color: var(--error-color);
-  background-color: var(--error-color-light);
-  transform: translateY(-1px);
-}
-
-.delete-lyric-btn svg {
-  transition: transform 0.2s ease;
+.edit-lyric-btn:hover svg {
+  transform: rotate(15deg);
 }
 
 .delete-lyric-btn:hover svg {
   transform: rotate(90deg);
 }
 
+.insert-lyric-button:hover svg {
+  transform: scale(1.2);
+}
+
+.merge-lyrics-button:hover svg {
+  transform: scale(1.2);
+}
+
+/* Material Design 3 timing controls - improved for multi-line text */
 .timing-controls {
   display: flex;
   align-items: center;
-  white-space: nowrap;
+  gap: 8px;
+  margin-left: auto; /* Push to right side */
+  margin-right: 16px; /* Push slightly left from the edge */
+  font-size: var(--md-label-medium-size); /* Larger font size */
+  line-height: var(--md-label-medium-height);
+  color: var(--md-on-surface-variant);
+  transition: color var(--transition-speed);
+  white-space: nowrap; /* Prevent wrapping */
+  position: relative; /* For positioning */
+  min-width: 140px; /* Ensure minimum width for timing controls */
+  align-self: flex-start; /* Align to top of container for multi-line text */
+  margin-top: 4px; /* Small top margin for alignment */
 }
 
+/* Material Design 3 time control - larger and more visible */
 .time-control {
   display: inline-block;
-  padding: 4px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background-color: var(--background-primary);
-  font-family: monospace;
-  font-size: 0.9rem;
+  padding: 6px 10px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-small);
+  background-color: var(--md-surface-1);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-body-small-size); /* Larger font size */
+  font-weight: 500; /* Medium weight for better visibility */
   cursor: grab;
   user-select: none;
-  color: var(--text-primary);
-  transition: all 0.2s ease, color var(--transition-speed),
-    background-color var(--transition-speed),
-    border-color var(--transition-speed);
+  color: var(--md-on-surface);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  min-width: 60px; /* Ensure minimum width for timing display */
+  text-align: center; /* Center the text */
 }
 
-.time-control:hover {
-  background-color: var(--primary-color-light);
-  border-color: var(--primary-color);
+/* Material Design 3 time control hover state */
+.time-control:hover:not(.dragging) {
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+  color: var(--md-on-primary-container);
   transform: translateY(-2px);
 }
 
+/* Disable hover effects on all time controls during dragging */
+body.lyrics-dragging .time-control:hover:not(.dragging) {
+  background-color: var(--md-surface-1);
+  border-color: var(--md-outline-variant);
+  color: var(--md-on-surface);
+  transform: none;
+}
+
+/* Material Design 3 time control dragging state */
 .time-control.dragging {
-  background-color: var(--primary-color-light);
-  border-color: var(--primary-color);
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+  color: var(--md-on-primary-container);
   cursor: grabbing;
   transform: scale(1.05);
-  box-shadow: 0 2px 8px var(--shadow-color);
+  box-shadow: var(--md-elevation-level2);
   z-index: 10;
   /* Use hardware acceleration */
   will-change: transform;
 }
 
+/* Material Design 3 time separator */
 .time-separator {
   margin: 0 5px;
-  color: var(--text-secondary);
+  color: var(--md-on-surface-variant);
   transition: color var(--transition-speed);
+  font-size: var(--md-label-small-size);
 }
 
 .progress-indicator {
@@ -542,15 +808,94 @@ body.lyrics-dragging .time-control.dragging {
   box-shadow: 0 0 4px rgba(67, 97, 238, 0.5);
 }
 
+/* Help text container with download buttons */
+.help-text-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  gap: 16px;
+  width: 100%;
+}
+
+/* More compact help text */
 .help-text {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  flex: 1;
+  font-size: 0.85rem; /* Smaller font */
+  color: var(--md-on-surface-variant);
   font-style: italic;
   transition: color var(--transition-speed);
-  line-height: 1.5;
-  padding: 0.75rem;
-  background-color: var(--background-secondary);
-  border-radius: 6px;
-  border-left: 3px solid var(--primary-color);
+  line-height: 1.4;
+  padding: 0.5rem 0.75rem; /* Reduced padding */
+  background-color: var(--md-surface-1);
+  border-radius: var(--md-shape-small);
+  border-left: 3px solid var(--md-primary);
+  opacity: 0.9; /* Slightly transparent */
+}
+
+/* Download buttons container */
+.download-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Material Design 3 download buttons */
+.download-srt-btn,
+.download-json-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-size: var(--md-label-small-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.download-srt-btn::before,
+.download-json-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.download-srt-btn:hover::before,
+.download-json-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-on-primary-container), transparent var(--md-state-hover-opacity));
+}
+
+.download-srt-btn:hover,
+.download-json-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.download-srt-btn:active,
+.download-json-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.download-srt-btn:disabled,
+.download-json-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

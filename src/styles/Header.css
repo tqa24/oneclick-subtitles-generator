@@ -38,58 +38,170 @@
   gap: 12px;
 }
 
-.language-selector {
+/* Material Design 3 innovative language selector */
+.language-selector-container {
   position: relative;
 }
 
-.language-selector select {
-  appearance: none;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-primary);
+.language-selector-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  padding: 8px 12px;
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 0.5rem 2rem 0.5rem 0.8rem;
-  transition: all 0.2s ease;
+  height: 40px;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  overflow: visible;
+  box-shadow: var(--md-elevation-level1);
 }
 
-.language-selector::after {
-  content: '';
+.language-selector-wrapper:hover {
+  box-shadow: var(--md-elevation-level2);
+  border-color: var(--md-primary);
+}
+
+.language-selector-globe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: var(--md-primary);
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.language-selector-wrapper:hover .language-selector-globe {
+  transform: rotate(20deg);
+}
+
+/* Add a click effect */
+.language-selector-wrapper:active {
+  transform: scale(0.98);
+}
+
+.language-selector-current {
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-right: 8px;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+
+.language-selector-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-on-surface-variant);
+  transition: transform var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.language-selector-arrow.rotated {
+  transform: rotate(180deg);
+  color: var(--md-primary);
+}
+
+/* Language options dropdown */
+.language-selector-options {
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid var(--text-primary);
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-shape-medium);
+  box-shadow: var(--md-elevation-level3);
+  padding: 8px 0;
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-10px);
   pointer-events: none;
+  transition: opacity var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-standard);
+  overflow: hidden;
 }
 
-.language-selector select:hover {
-  border-color: var(--primary-color);
+/* Language selector options - visible when dropdown is open */
+.language-selector-options {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
+/* Individual language option */
+.language-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium1) var(--md-easing-standard);
+}
+
+.language-option:hover {
+  background-color: color-mix(in srgb, var(--md-primary), transparent 90%);
+}
+
+.language-option.active {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 500;
+}
+
+.language-flag {
+  margin-right: 12px;
+  font-size: 1.2rem;
+}
+
+.language-name {
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+
+/* Old language selector styles removed */
+
+/* Material Design 3 theme toggle button */
 .theme-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.5rem;
+  background: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 50%; /* Circular button */
+  padding: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-primary);
-  height: 38px;
-  width: 38px;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  color: var(--md-on-surface);
+  height: 40px;
+  width: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.theme-toggle:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .theme-toggle:hover {
-  background-color: var(--primary-color-light);
-  border-color: var(--primary-color);
+  border-color: var(--md-primary);
   transform: rotate(15deg);
 }
 
@@ -98,34 +210,63 @@
   transition: stroke 0.3s ease, transform 0.5s ease;
 }
 
+/* Material Design 3 pill-shaped settings button */
 .settings-button {
   display: flex;
   align-items: center;
-  background: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
+  background: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  padding: 8px 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--text-primary);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  color: var(--md-on-surface);
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  font-weight: 500; /* Medium weight for consistency */
+  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  height: 40px; /* Fixed height for consistency */
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.settings-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.settings-button:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .settings-button:hover {
-  background-color: var(--primary-color-light);
-  border-color: var(--primary-color);
+  border-color: var(--md-primary);
+  transform: translateY(-2px);
 }
 
 .settings-button svg {
-  margin-right: 0.5rem;
-  stroke: var(--text-primary);
-  transition: stroke 0.3s ease;
+  margin-right: 8px;
+  stroke: currentColor;
+  transition: stroke var(--md-duration-medium2) var(--md-easing-standard);
 }
 
 @media (max-width: 768px) {
   .app-header {
     padding: 0.75rem 1rem;
   }
-  
+
   .app-title {
     font-size: 1.4rem;
   }
@@ -135,18 +276,18 @@
   .settings-button span {
     display: none;
   }
-  
+
   .settings-button svg {
     margin-right: 0;
   }
-  
+
   .settings-button {
     padding: 0.5rem;
     width: 38px;
     height: 38px;
     justify-content: center;
   }
-  
+
   .header-actions {
     gap: 8px;
   }

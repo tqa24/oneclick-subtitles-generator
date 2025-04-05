@@ -43,34 +43,62 @@
   border: none;
 }
 
+/* Material Design 3 pill-shaped tab buttons */
 .tab-btn {
   display: flex;
   align-items: center;
-  padding: 0.5rem 1rem;
-  margin-right: 0;
-  border: 1px solid var(--border-color);
-  background: var(--background-primary);
-  color: var(--text-secondary);
+  padding: 8px 16px;
+  margin-right: 8px;
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface);
+  color: var(--md-on-surface-variant);
   font-weight: 500;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 6px;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  border-radius: var(--md-shape-pill);
+  position: relative;
+  overflow: hidden;
+  height: 40px; /* Fixed height for consistency */
 }
 
 .tab-btn::after {
   display: none;
 }
 
+/* Material Design 3 active state for tab buttons */
 .tab-btn.active {
-  color: var(--primary-color);
+  color: var(--md-primary);
   font-weight: 600;
-  border-color: var(--primary-color);
-  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+}
+
+/* State layer for hover effect */
+.tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.tab-btn:hover:not(.active)::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .tab-btn:hover:not(.active) {
-  border-color: var(--text-secondary);
-  background: var(--background-tertiary);
+  border-color: var(--md-outline);
+  transform: translateY(-2px);
 }
 
 .tab-btn svg {
@@ -146,25 +174,26 @@
   box-shadow: 0 0 0 1px var(--error-color-light);
 }
 
+/* Material Design 3 icon button */
 .clear-url-btn {
   position: absolute;
-  right: 10px;
+  right: 12px;
   background: none;
   border: none;
-  font-size: 16px;
-  color: var(--text-secondary);
+  color: var(--md-on-surface-variant);
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: 8px;
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .clear-url-btn:hover {
-  background-color: var(--background-tertiary);
-  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--md-on-surface-variant), transparent 90%);
+  color: var(--md-on-surface);
 }
 
 .generate-btn {
@@ -552,24 +581,48 @@
   font-size: 0.9rem;
 }
 
+/* Material Design 3 pill-shaped remove button */
 .remove-file-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--md-shape-pill);
   border: none;
-  background-color: rgba(var(--danger-rgb, 255, 59, 48), 0.1);
-  color: var(--danger-color, #ff3b30);
-  font-size: 0.85rem;
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  position: relative;
+  overflow: hidden;
+  height: 36px; /* Fixed height for consistency */
+}
+
+/* State layer for hover effect */
+.remove-file-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.remove-file-btn:hover::before {
+  background-color: rgba(0, 0, 0, var(--md-state-hover-opacity));
 }
 
 .remove-file-btn:hover {
-  background-color: rgba(var(--danger-rgb, 255, 59, 48), 0.15);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .remove-file-btn:active {
@@ -878,61 +931,121 @@
   border-radius: 4px;
 }
 
-/* Download video button */
+/* Material Design 3 download video button */
 .download-video-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0.6rem 1.2rem;
+  padding: 8px 16px;
   margin-top: 0.75rem;
-  background-color: var(--background-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-shape-pill);
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  font-weight: var(--md-label-medium-weight);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  box-shadow: var(--md-elevation-level1);
   align-self: flex-start;
+  position: relative;
+  overflow: hidden;
+  height: 36px; /* Fixed height for consistency */
+}
+
+/* State layer for hover effect */
+.download-video-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.download-video-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
+.download-video-btn:active::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
 .download-video-btn:hover {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px var(--shadow-color);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .download-video-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px var(--shadow-color);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .download-video-btn svg {
   width: 16px;
   height: 16px;
-  transition: transform 0.3s ease;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
 }
 
 .download-video-btn:hover svg {
   transform: translateY(2px);
-  stroke: white;
 }
 
+/* Material Design 3 search download button */
 .search-download-btn {
   margin-top: 0;
   margin-left: 0.75rem;
-  padding: 0.5rem;
+  padding: 8px;
   border-radius: 50%;
-  box-shadow: 0 2px 4px var(--shadow-color);
-  background-color: var(--background-secondary);
+  box-shadow: var(--md-elevation-level1);
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  position: relative;
+  overflow: hidden;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* State layer for hover effect */
+.search-download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.search-download-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .search-download-btn:hover {
-  transform: translateY(-2px) scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .search-result-item {

@@ -13,17 +13,18 @@
   backdrop-filter: blur(3px);
 }
 
+/* Material Design 3 modal */
 .settings-modal {
   background-color: var(--background-primary);
-  border-radius: 12px;
+  border-radius: var(--modal-border-radius);
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 20px var(--shadow-color);
+  box-shadow: var(--md-elevation-level3);
   overflow: hidden;
-  animation: modal-appear 0.3s ease-out; /* Using standardized animation */
+  animation: modal-appear var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
   transition: background-color var(--transition-speed);
 }
 
@@ -420,22 +421,23 @@
 
 /* Cache status message styles now come from global index.css */
 
-/* Cache details */
+/* Material Design 3 card for cache details */
 .cache-details {
-  background-color: var(--background-secondary);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  margin: 1rem 0;
-  font-size: 0.95rem;
-  animation: fadeIn 0.3s ease;
-  box-shadow: 0 2px 8px var(--shadow-color);
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .cache-details-item {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--md-outline-variant);
   transition: border-color var(--transition-speed);
 }
 
@@ -446,49 +448,78 @@
 }
 
 .cache-details-item h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.95rem;
+  margin: 0 0 8px 0;
+  font-size: var(--md-title-small-size);
+  line-height: var(--md-title-small-height);
+  font-weight: var(--md-title-small-weight);
   color: var(--text-primary);
-  font-weight: 600;
   transition: color var(--transition-speed);
 }
 
 .cache-details-item p {
   margin: 0;
   color: var(--text-secondary);
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
   transition: color var(--transition-speed);
 }
 
+/* Material Design 3 button for clear cache */
 .clear-cache-btn {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--error-color);
-  color: white;
+  padding: 10px 24px;
+  background-color: var(--md-error);
+  color: var(--md-on-error);
   border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 1rem;
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px var(--shadow-color);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.clear-cache-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+}
+
+.clear-cache-btn:hover::before {
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.clear-cache-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
 }
 
 .clear-cache-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px var(--shadow-color);
-  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .clear-cache-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px var(--shadow-color);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .clear-cache-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.38;
   transform: none;
   box-shadow: none;
   cursor: not-allowed;
@@ -504,52 +535,94 @@
   transition: border-color var(--transition-speed);
 }
 
+/* Material Design 3 outlined button */
 .cancel-btn {
-  padding: 0.75rem 1.25rem;
-  background-color: var(--background-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 10px 24px;
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
   cursor: pointer;
-  transition: all 0.3s ease, background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
-  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  overflow: hidden;
 }
 
-.cancel-btn:hover {
-  background-color: var(--background-secondary);
-  transform: translateY(-2px);
-  box-shadow: 0 3px 8px var(--shadow-color);
+/* State layer for hover effect */
+.cancel-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
 }
 
-.cancel-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 1px 3px var(--shadow-color);
+.cancel-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
+.cancel-btn:active::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
+}
+
+/* Material Design 3 filled button */
 .save-btn {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
-  color: white;
+  padding: 10px 24px;
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
   border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
   cursor: pointer;
-  transition: all 0.3s ease, background-color var(--transition-speed);
-  box-shadow: 0 2px 6px var(--shadow-color);
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.save-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+}
+
+.save-btn:hover::before {
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.save-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
 }
 
 .save-btn:hover {
-  background-color: var(--secondary-color);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px var(--shadow-color);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .save-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px var(--shadow-color);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Responsive adaptations */

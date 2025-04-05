@@ -5,13 +5,14 @@ import '../styles/Header.css';
 const Header = ({ onSettingsClick }) => {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
 
   // Function to change the language
   const changeLanguage = (lng) => {
     i18n.changeLanguage(lng);
     localStorage.setItem('preferred_language', lng);
   };
-  
+
   // Function to toggle between light and dark themes
   const toggleTheme = () => {
     let newTheme;
@@ -21,11 +22,11 @@ const Header = ({ onSettingsClick }) => {
     } else {
       newTheme = 'light';
     }
-    
+
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
-    
+
     // Force re-render by triggering a storage event
     window.dispatchEvent(new Event('storage'));
   };
@@ -37,10 +38,10 @@ const Header = ({ onSettingsClick }) => {
         document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
       }
     };
-    
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     mediaQuery.addEventListener('change', handleSystemThemeChange);
-    
+
     return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, []);
 
@@ -51,6 +52,21 @@ const Header = ({ onSettingsClick }) => {
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
+
+  // Handle click outside to close language dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const container = document.querySelector('.language-selector-container');
+      if (container && !container.contains(event.target) && languageDropdownOpen) {
+        setLanguageDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [languageDropdownOpen]);
 
   // Get icon for the current theme
   const getThemeIcon = () => {
@@ -90,21 +106,66 @@ const Header = ({ onSettingsClick }) => {
           {t('header.appTitle')}
         </h1>
       </div>
-      
+
       <div className="header-actions">
-        <div className="language-selector">
-          <select 
-            onChange={(e) => changeLanguage(e.target.value)} 
-            value={i18n.language}
-            aria-label={t('language.languageSelector')}
+        <div className="language-selector-container">
+          <div
+            className="language-selector-wrapper"
+            onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
           >
-            <option value="en">{t('language.en')}</option>
-            <option value="ko">{t('language.ko')}</option>
-            <option value="vi">{t('language.vi')}</option>
-          </select>
+            <div className="language-selector-globe">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <div className="language-selector-current">
+              {t(`language.${i18n.language}`)}
+            </div>
+            <div className={`language-selector-arrow ${languageDropdownOpen ? 'rotated' : ''}`}>
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </div>
+          {languageDropdownOpen && (
+            <div className="language-selector-options">
+              <div
+                className={`language-option ${i18n.language === 'en' ? 'active' : ''}`}
+                onClick={() => {
+                  changeLanguage('en');
+                  setLanguageDropdownOpen(false);
+                }}
+              >
+                <span className="language-flag">🇺🇸</span>
+                <span className="language-name">{t('language.en')}</span>
+              </div>
+              <div
+                className={`language-option ${i18n.language === 'ko' ? 'active' : ''}`}
+                onClick={() => {
+                  changeLanguage('ko');
+                  setLanguageDropdownOpen(false);
+                }}
+              >
+                <span className="language-flag">🇰🇷</span>
+                <span className="language-name">{t('language.ko')}</span>
+              </div>
+              <div
+                className={`language-option ${i18n.language === 'vi' ? 'active' : ''}`}
+                onClick={() => {
+                  changeLanguage('vi');
+                  setLanguageDropdownOpen(false);
+                }}
+              >
+                <span className="language-flag">🇻🇳</span>
+                <span className="language-name">{t('language.vi')}</span>
+              </div>
+            </div>
+          )}
         </div>
-        
-        <button 
+
+        <button
           className="theme-toggle"
           onClick={toggleTheme}
           aria-label={getThemeLabel()}
@@ -112,8 +173,8 @@ const Header = ({ onSettingsClick }) => {
         >
           {getThemeIcon()}
         </button>
-        
-        <button 
+
+        <button
           className="settings-button"
           onClick={onSettingsClick}
           aria-label={t('header.settingsAria')}

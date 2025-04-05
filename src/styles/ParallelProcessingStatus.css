@@ -3,65 +3,125 @@
   width: 100%;
 }
 
+/* Material Design 3 card for segments status - enhanced styling */
 .segments-status {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: var(--background-secondary);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px var(--shadow-color);
-  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
+  margin-top: 24px;
+  padding: 20px;
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--md-elevation-level2);
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed), transform var(--md-duration-medium3) var(--md-easing-emphasized);
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  overflow: hidden;
+  animation: slideIn var(--md-duration-medium4) var(--md-easing-emphasized-decelerate);
 }
 
+/* Add subtle gradient background for more visual interest */
+.segments-status::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(to bottom right, color-mix(in srgb, var(--md-secondary), transparent 92%) 0%, transparent 70%);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Material Design 3 typography for header - enhanced styling */
 .segments-status h4 {
   margin-top: 0;
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
-  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: var(--md-title-medium-size);
+  line-height: var(--md-title-medium-height);
+  font-weight: var(--md-title-medium-weight);
+  color: var(--md-on-surface);
   transition: color var(--transition-speed);
+  position: relative;
+  z-index: 1;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--md-outline-variant);
 }
 
+/* Material Design 3 grid layout - enhanced styling */
 .segments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
+/* Material Design 3 card for segment status - enhanced styling */
 .segment-status {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  background-color: var(--background-primary);
-  box-shadow: 0 1px 3px var(--shadow-color);
-  transition: all 0.2s ease, background-color var(--transition-speed), color var(--transition-speed);
-  color: var(--text-primary);
+  padding: 16px;
+  border-radius: var(--md-shape-medium);
+  background-color: var(--md-surface);
+  box-shadow: var(--md-elevation-level1);
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--transition-speed),
+              color var(--transition-speed);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Material Design 3 hover state - enhanced styling */
 .segment-status:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 3px 6px var(--shadow-color);
+  transform: translateY(-4px);
+  box-shadow: var(--md-elevation-level3);
+  background-color: color-mix(in srgb, var(--md-surface), rgba(0, 0, 0, var(--md-state-hover-opacity)));
 }
 
+/* Add subtle highlight effect on hover */
+.segment-status::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background-color: var(--md-primary);
+  opacity: 0.1;
+  transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.segment-status:hover::after {
+  height: 100%;
+}
+
+/* Material Design 3 typography for segment items */
 .segment-number {
-  font-weight: bold;
-  margin-right: 8px;
-  min-width: 20px;
+  font-weight: var(--md-label-large-weight);
+  margin-right: 12px;
+  min-width: 24px;
   text-align: center;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
 }
 
 .segment-indicator {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 12px;
 }
 
 .segment-message {
-  font-size: 12px;
+  font-size: var(--md-body-small-size);
+  line-height: var(--md-body-small-height);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
+  color: var(--md-on-surface-variant);
 }
 
 /* Status colors using CSS variables */
@@ -70,8 +130,8 @@
 }
 
 .segment-status.loading .segment-indicator {
-  background-color: var(--info-color);
-  animation: pulse 1.5s infinite;
+  background-color: var(--md-primary);
+  animation: pulse var(--md-duration-long2) var(--md-easing-standard) infinite;
 }
 
 .segment-status.success .segment-indicator {
@@ -90,66 +150,65 @@
   background-color: var(--primary-color);
 }
 
-@keyframes pulse {
-  0% {
-    opacity: 0.6;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    opacity: 0.6;
-    transform: scale(0.8);
-  }
-}
+/* Using global pulse animation from material-tokens.css */
 
-/* Refresh button styles */
+/* Material Design 3 icon button for refresh */
 .segment-retry-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--info-color);
-  padding: 0.25rem;
-  margin-left: 0.25rem;
+  color: var(--md-primary);
+  padding: 8px;
+  margin-left: 4px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease, color var(--transition-speed), background-color var(--transition-speed);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.segment-retry-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.segment-retry-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 .segment-retry-btn:hover {
-  background-color: var(--primary-color-light);
   transform: rotate(30deg);
 }
 
-/* Retrying indicator styles */
+/* Material Design 3 retrying indicator */
 .segment-retrying-indicator {
-  color: var(--info-color);
-  margin-left: 0.25rem;
+  color: var(--md-primary);
+  margin-left: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Spinning animation for the refresh icon */
+/* Material Design 3 animations */
 .spinning {
-  animation: spin 1.5s linear infinite;
+  animation: spin var(--md-duration-long2) linear infinite;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Add a new status color for retrying state */
+/* Material Design 3 status colors */
 .segment-status.retrying .segment-indicator {
-  background-color: var(--info-color);
-  animation: pulse 1.5s infinite;
+  background-color: var(--md-primary);
+  animation: pulse var(--md-duration-long2) var(--md-easing-standard) infinite;
 }

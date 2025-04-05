@@ -16,25 +16,29 @@
   transition: color var(--transition-speed);
 }
 
+/* Material Design 3 text field */
 .youtube-url-field {
   width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.8rem;
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 16px 16px 16px 48px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--button-border-radius);
+  font-size: var(--md-body-large-size);
+  line-height: var(--md-body-large-height);
   background-color: var(--background-primary);
   color: var(--text-primary);
-  transition: all 0.3s ease;
+  transition: border-color var(--md-duration-medium2) var(--md-easing-standard),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
 }
 
 .youtube-url-field:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--primary-color-light);
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 1px var(--md-primary);
 }
 
 .youtube-url-field.error-input {
-  border-color: var(--error-color);
+  border-color: var(--md-error);
+  box-shadow: 0 0 0 1px var(--md-error);
 }
 
 .selected-video-preview {
@@ -105,16 +109,19 @@
   margin-left: 0.5rem;
 }
 
+/* Material Design 3 error message */
 .error-message {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  color: var(--error-color);
-  background-color: var(--error-background);
-  border-radius: 6px;
-  animation: shake 0.5s ease-in-out;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px 16px;
+  color: var(--md-error);
+  background-color: color-mix(in srgb, var(--md-error-container), transparent 70%);
+  border-radius: var(--md-shape-small);
+  animation: shake var(--md-duration-medium4) var(--md-easing-emphasized);
+  font-size: var(--md-body-small-size);
+  line-height: var(--md-body-small-height);
 }
 
 @keyframes shake {
