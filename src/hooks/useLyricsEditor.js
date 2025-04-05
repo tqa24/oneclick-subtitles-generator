@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [lyrics, setLyrics] = useState([]);
   const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   const [originalLyrics, setOriginalLyrics] = useState([]);
   const [isAtOriginalState, setIsAtOriginalState] = useState(true);
   const [isSticky, setIsSticky] = useState(true);
@@ -46,12 +47,41 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
 
   const handleUndo = () => {
     if (history.length > 0) {
+      // Get the current state and the last history state
+      const currentState = JSON.parse(JSON.stringify(lyrics));
       const lastState = history[history.length - 1];
+
+      // Add current state to redo stack
+      setRedoStack(prevRedoStack => [...prevRedoStack, currentState]);
+
+      // Set lyrics to the last history state
       setLyrics(lastState);
       if (onUpdateLyrics) {
         onUpdateLyrics(lastState);
       }
+
+      // Remove the last state from history
       setHistory(prevHistory => prevHistory.slice(0, -1));
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      // Get the current state and the last redo state
+      const currentState = JSON.parse(JSON.stringify(lyrics));
+      const redoState = redoStack[redoStack.length - 1];
+
+      // Add current state to history
+      setHistory(prevHistory => [...prevHistory, currentState]);
+
+      // Set lyrics to the redo state
+      setLyrics(redoState);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(redoState);
+      }
+
+      // Remove the last state from redo stack
+      setRedoStack(prevRedoStack => prevRedoStack.slice(0, -1));
     }
   };
 
@@ -61,7 +91,13 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       const originalState = JSON.parse(JSON.stringify(originalLyrics));
 
       if (JSON.stringify(currentState) !== JSON.stringify(originalState)) {
+        // Add current state to history
         setHistory(prevHistory => [...prevHistory, currentState]);
+
+        // Clear redo stack when resetting
+        setRedoStack([]);
+
+        // Set lyrics to original state
         setLyrics(originalState);
         if (onUpdateLyrics) {
           onUpdateLyrics(originalState);
@@ -73,7 +109,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   // Keep track of the last updated value to avoid unnecessary updates
   const lastUpdatedValueRef = useRef({ index: -1, field: null, value: 0 });
 
-  const updateTimings = (index, field, newValue, duration) => {
+  const updateTimings = (index, field, newValue, _duration) => {
     // Skip if the value hasn't changed significantly
     if (lastUpdatedValueRef.current.index === index &&
         lastUpdatedValueRef.current.field === field &&
@@ -100,12 +136,21 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (i === index) {
         // Update the current lyric
         if (field === 'start') {
-          const length = lyric.end - lyric.start;
-          updatedLyrics.push({
-            ...lyric,
-            start: newValue,
-            end: newValue + length
-          });
+          if (isSticky) {
+            // When sticky mode is on, maintain the duration by adjusting the end time
+            const length = lyric.end - lyric.start;
+            updatedLyrics.push({
+              ...lyric,
+              start: newValue,
+              end: newValue + length
+            });
+          } else {
+            // When sticky mode is off, only adjust the start time
+            updatedLyrics.push({
+              ...lyric,
+              start: newValue
+            });
+          }
         } else {
           updatedLyrics.push({ ...lyric, [field]: newValue });
         }
@@ -155,8 +200,10 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
 
     const lyric = lyrics[index];
     if (field === 'start') {
-      newValue = Math.max(0, Math.min(lyric.end - 0.1, newValue));
+      // Only restrict start time to be non-negative
+      newValue = Math.max(0, newValue);
     } else {
+      // For end time, ensure it's after the start time and within duration
       newValue = Math.max(lyric.start + 0.1, Math.min(duration || 9999, newValue));
     }
 
@@ -333,13 +380,28 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
   };
 
+  // Add event listener for redo action
+  useEffect(() => {
+    const handleRedoEvent = () => {
+      handleRedo();
+    };
+
+    window.addEventListener('redo-action', handleRedoEvent);
+
+    return () => {
+      window.removeEventListener('redo-action', handleRedoEvent);
+    };
+  }, [redoStack, lyrics]);
+
   return {
     lyrics,
     isSticky,
     setIsSticky,
     isAtOriginalState,
     canUndo: history.length > 0,
+    canRedo: redoStack.length > 0,
     handleUndo,
+    handleRedo,
     handleReset,
     startDrag,
     handleDrag,

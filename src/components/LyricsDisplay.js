@@ -6,6 +6,20 @@ import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
 import { VariableSizeList as List } from 'react-window';
+import { convertToSRT } from '../utils/subtitleConverter';
+
+// Helper function to download files
+const downloadFile = (content, filename, type = 'text/plain') => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 // Virtualized row renderer for lyrics
 const VirtualizedLyricRow = ({ index, style, data }) => {
@@ -106,7 +120,9 @@ const LyricsDisplay = ({
     setIsSticky,
     isAtOriginalState,
     canUndo,
+    canRedo,
     handleUndo,
+    handleRedo,
     handleReset,
     startDrag,
     handleDrag,
@@ -146,6 +162,32 @@ const LyricsDisplay = ({
       console.log(`Centering timeline on video seek: ${seekTime}s`);
     }
   }, [seekTime]);
+
+  // Add event listeners for download buttons in LyricsDisplay
+  useEffect(() => {
+    // Add event listeners for download buttons in LyricsDisplay
+    const handleSRTDownload = () => {
+      if (lyrics && lyrics.length > 0) {
+        const srtContent = convertToSRT(lyrics).join('\n\n');
+        downloadFile(srtContent, 'subtitles.srt');
+      }
+    };
+
+    const handleJSONDownload = () => {
+      if (lyrics && lyrics.length > 0) {
+        const jsonContent = JSON.stringify(lyrics, null, 2);
+        downloadFile(jsonContent, 'subtitles.json', 'application/json');
+      }
+    };
+
+    window.addEventListener('download-srt', handleSRTDownload);
+    window.addEventListener('download-json', handleJSONDownload);
+
+    return () => {
+      window.removeEventListener('download-srt', handleSRTDownload);
+      window.removeEventListener('download-json', handleJSONDownload);
+    };
+  }, [lyrics]);
 
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
@@ -189,31 +231,35 @@ const LyricsDisplay = ({
 
   return (
     <div className={`lyrics-display ${Object.keys(isDragging()).length > 0 ? 'dragging-active' : ''}`}>
-      <LyricsHeader
-        allowEditing={allowEditing}
-        isSticky={isSticky}
-        setIsSticky={setIsSticky}
-        canUndo={canUndo}
-        isAtOriginalState={isAtOriginalState}
-        onUndo={handleUndo}
-        onReset={handleReset}
-        zoom={zoom}
-        setZoom={setZoom}
-        panOffset={panOffset}
-        setPanOffset={setPanOffset}
-      />
+      <div className="controls-timeline-container">
+        <LyricsHeader
+          allowEditing={allowEditing}
+          isSticky={isSticky}
+          setIsSticky={setIsSticky}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          isAtOriginalState={isAtOriginalState}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onReset={handleReset}
+          zoom={zoom}
+          setZoom={setZoom}
+          panOffset={panOffset}
+          setPanOffset={setPanOffset}
+        />
 
-      <TimelineVisualization
-        lyrics={lyrics}
-        currentTime={currentTime}
-        duration={duration}
-        onTimelineClick={onLyricClick}
-        zoom={zoom}
-        panOffset={panOffset}
-        setPanOffset={setPanOffset}
-        centerOnTime={centerTimelineAt}
-        timeFormat={timeFormat}
-      />
+        <TimelineVisualization
+          lyrics={lyrics}
+          currentTime={currentTime}
+          duration={duration}
+          onTimelineClick={onLyricClick}
+          zoom={zoom}
+          panOffset={panOffset}
+          setPanOffset={setPanOffset}
+          centerOnTime={centerTimelineAt}
+          timeFormat={timeFormat}
+        />
+      </div>
 
       <div className="lyrics-container-wrapper">
         {lyrics.length > 0 && (
@@ -255,11 +301,40 @@ const LyricsDisplay = ({
         )}
       </div>
 
-      {allowEditing && (
-        <div className="help-text">
-          <p>{t('lyrics.timingInstructions')}</p>
+      <div className="help-text-container">
+        {allowEditing && (
+          <div className="help-text">
+            <p>{t('lyrics.timingInstructions')}</p>
+          </div>
+        )}
+
+        <div className="download-buttons">
+          <button
+            className="download-btn"
+            onClick={() => window.dispatchEvent(new Event('download-srt'))}
+            disabled={!lyrics.length}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            {t('output.downloadSrt', 'Download SRT')}
+          </button>
+          <button
+            className="download-btn"
+            onClick={() => window.dispatchEvent(new Event('download-json'))}
+            disabled={!lyrics.length}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            {t('output.downloadJson', 'Download JSON')}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

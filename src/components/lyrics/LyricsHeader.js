@@ -6,8 +6,10 @@ const LyricsHeader = ({
   isSticky,
   setIsSticky,
   canUndo,
+  canRedo,
   isAtOriginalState,
   onUndo,
+  onRedo,
   onReset,
   zoom,
   setZoom,
@@ -53,68 +55,120 @@ const LyricsHeader = ({
     }
   }, [zoom, setZoom]);
 
+  // Set initial zoom level when component mounts
+  useEffect(() => {
+    const videoElement = document.querySelector('video');
+    if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
+      durationRef.current = videoElement.duration;
+      const minZoom = calculateMinZoom(durationRef.current);
+      setZoom(minZoom);
+    }
+  }, []);
+
   return (
-    <div className="lyrics-header">
-      <div className="zoom-controls">
-        <button
-          onClick={() => {
-            const minZoom = calculateMinZoom(durationRef.current);
-            setZoom(Math.max(minZoom, zoom / 1.5));
-          }}
-          disabled={zoom <= calculateMinZoom(durationRef.current)}
-          title={t('timeline.zoomOut', 'Zoom out')}
-        >
-          -
-        </button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <button
-          onClick={() => setZoom(Math.min(50, zoom * 1.5))}
-          disabled={zoom >= 50}
-          title={t('timeline.zoomIn', 'Zoom in')}
-        >
-          +
-        </button>
-        <button
-          onClick={() => {
-            const minZoom = calculateMinZoom(durationRef.current);
-            setZoom(minZoom);
-            setPanOffset(0);
-          }}
-          disabled={(zoom === calculateMinZoom(durationRef.current)) && panOffset === 0}
-          title={t('timeline.resetZoom', 'Reset zoom')}
-        >
-          Reset
-        </button>
+    <div className="combined-controls">
+      {/* Top row for editing controls */}
+      <div className="controls-top-row">
+        {allowEditing && (
+          <div className="editing-controls">
+            <button
+              className="undo-btn"
+              onClick={onUndo}
+              disabled={!canUndo}
+              title={t('common.undo', 'Undo')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M3 10h10c4.42 0 8 3.58 8 8v2M3 10l6-6M3 10l6 6"/>
+              </svg>
+            </button>
+
+            <button
+              className="redo-btn"
+              onClick={onRedo}
+              disabled={!canRedo}
+              title={t('common.redo', 'Redo')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M21 10h-10c-4.42 0-8 3.58-8 8v2M21 10l-6-6M21 10l-6 6"/>
+              </svg>
+            </button>
+
+            <button
+              className="reset-btn"
+              onClick={onReset}
+              disabled={isAtOriginalState}
+              title={t('common.reset', 'Reset')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9h4.5"/>
+                <path d="M16 5l4 4-4 4"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      {allowEditing && (
-        <div className="editing-controls">
+      {/* Bottom row for zoom controls and sticky toggle */}
+      <div className="controls-bottom-row">
+        {allowEditing && (
           <label className="sticky-toggle">
             <input
               type="checkbox"
               checked={isSticky}
               onChange={(e) => setIsSticky(e.target.checked)}
             />
-            <span>{t('lyrics.stickyTimingsToggle', 'Sticky Timings')}</span>
+            <span>{t('lyrics.stickyTimingsToggle', 'Stick')}</span>
           </label>
+        )}
 
+        <div className="zoom-controls">
           <button
-            className="undo-btn"
-            onClick={onUndo}
-            disabled={!canUndo}
+            onClick={() => {
+              const minZoom = calculateMinZoom(durationRef.current);
+              setZoom(Math.max(minZoom, zoom / 1.5));
+            }}
+            disabled={zoom <= calculateMinZoom(durationRef.current)}
+            title={t('timeline.zoomOut', 'Zoom out')}
           >
-            {t('common.undo', 'Undo')}
+            -
           </button>
 
-          <button
-            className="reset-btn"
-            onClick={onReset}
-            disabled={isAtOriginalState}
+          <div
+            className="zoom-slider"
+            title={t('timeline.dragToZoom', 'Drag to zoom')}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startZoom = zoom;
+              const minZoom = calculateMinZoom(durationRef.current);
+
+              const handleMouseMove = (moveEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                // Increased sensitivity for more responsive zooming
+                const newZoom = Math.max(minZoom, Math.min(50, startZoom + (deltaX * 0.05)));
+                setZoom(newZoom);
+              };
+
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
           >
-            {t('common.reset', 'Reset')}
+            <span>{Math.round(zoom * 100)}%</span>
+          </div>
+
+          <button
+            onClick={() => setZoom(Math.min(50, zoom * 1.5))}
+            disabled={zoom >= 50}
+            title={t('timeline.zoomIn', 'Zoom in')}
+          >
+            +
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };

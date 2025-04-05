@@ -60,9 +60,69 @@ body.lyrics-dragging .time-control.dragging {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem; /* Reduced margin */
+  margin-bottom: 0.5rem; /* Further reduced margin */
   flex-wrap: wrap;
   gap: 8px; /* Reduced gap */
+  width: 100%;
+}
+
+/* Container for controls and timeline */
+.controls-timeline-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+/* Material Design 3 combined controls - merged pill design with two-line layout */
+.combined-controls {
+  display: flex;
+  flex-direction: column; /* Stack content vertically */
+  justify-content: space-between;
+  border-radius: 20px;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elevation-level1);
+  height: 50px; /* Match timeline height */
+  width: auto; /* Allow natural width */
+  flex-shrink: 0; /* Prevent shrinking */
+  padding: 4px 8px; /* Padding for content */
+  overflow: hidden;
+  order: 1; /* Position on the left */
+}
+
+/* Top row for editing controls */
+.controls-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50%;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+/* Ensure editing controls take up available space */
+.controls-top-row .editing-controls {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+/* Position reset button at the end */
+.controls-top-row .reset-btn {
+  margin-left: auto;
+}
+
+/* Bottom row for zoom controls and sticky toggle */
+.controls-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 50%;
+  padding-top: 2px;
 }
 
 /* Material Design 3 typography for header */
@@ -91,14 +151,8 @@ body.lyrics-dragging .time-control.dragging {
 .editing-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--md-shape-pill);
-  padding: 6px 12px;
-  box-shadow: var(--md-elevation-level1);
-  height: 44px; /* Fixed height to match zoom controls */
+  gap: 4px;
+  height: 100%;
 }
 
 /* Material Design 3 sticky toggle */
@@ -107,15 +161,16 @@ body.lyrics-dragging .time-control.dragging {
   align-items: center;
   cursor: pointer;
   user-select: none;
-  font-size: var(--md-label-medium-size);
-  line-height: var(--md-label-medium-height);
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
   font-weight: 500;
   color: var(--md-primary);
   transition: color var(--transition-speed), background-color var(--md-duration-medium2) var(--md-easing-standard);
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: var(--md-shape-pill);
   position: relative;
   overflow: hidden;
+  margin-right: 8px;
 }
 
 /* State layer for hover effect */
@@ -144,28 +199,30 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 /* Material Design 3 pill-shaped buttons */
-.undo-btn, .reset-btn {
+.undo-btn, .redo-btn, .reset-btn {
   background-color: transparent;
   border: none;
-  border-radius: var(--md-shape-pill);
-  padding: 8px 16px;
-  font-size: var(--md-label-medium-size);
-  line-height: var(--md-label-medium-height);
+  border-radius: 50%;
+  padding: 4px;
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
   font-weight: 500;
   cursor: pointer;
   color: var(--md-primary);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
               color var(--md-duration-medium2) var(--md-easing-standard),
               transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
   overflow: hidden;
-  height: 32px; /* Fixed height */
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
 }
 
-.undo-btn svg, .reset-btn svg {
+.undo-btn svg, .redo-btn svg, .reset-btn svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
@@ -173,7 +230,7 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 /* State layer for hover effect */
-.undo-btn::before, .reset-btn::before {
+.undo-btn::before, .redo-btn::before, .reset-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -183,79 +240,91 @@ body.lyrics-dragging .time-control.dragging {
   background-color: transparent;
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
   pointer-events: none;
-  border-radius: var(--md-shape-pill);
+  border-radius: 50%;
 }
 
-.undo-btn:hover::before, .reset-btn:hover::before {
+.undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
-.undo-btn:active::before, .reset-btn:active::before {
+.undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
-.undo-btn:hover, .reset-btn:hover {
-  transform: translateY(-2px);
+.undo-btn:hover, .redo-btn:hover, .reset-btn:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  transform: scale(1.1);
 }
 
 .undo-btn:hover svg {
-  transform: translateX(-3px);
+  transform: translateX(-2px);
+}
+
+.redo-btn:hover svg {
+  transform: translateX(2px);
 }
 
 .reset-btn:hover svg {
   transform: rotate(45deg);
 }
 
-.undo-btn:disabled, .reset-btn:disabled {
+.undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Material Design 3 zoom controls - improved design */
+/* Zoom controls inside combined pill */
 .zoom-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: var(--md-shape-pill); /* Pill shape */
-  background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  box-shadow: var(--md-elevation-level1);
-  height: 44px; /* Fixed height */
+  justify-content: center;
+  height: 100%;
+  flex: 1; /* Take up remaining space */
+}
+
+/* Zoom slider for draggable zoom control */
+.zoom-slider {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: ew-resize;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.zoom-slider:hover {
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 80%);
 }
 
 /* Material Design 3 buttons for zoom controls - improved design */
 .zoom-controls button {
   background-color: transparent;
   border: none;
-  border-radius: var(--md-shape-pill); /* Pill shape for buttons */
-  padding: 6px 12px; /* Wider padding for text buttons */
+  border-radius: 50%; /* Circular buttons */
+  padding: 4px;
   cursor: pointer;
-  font-size: var(--md-label-medium-size);
-  font-weight: 500;
-  min-height: 32px;
-  color: var(--md-primary); /* Primary color */
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
-              color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  color: var(--md-primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
   overflow: hidden;
-}
-
-/* Plus and minus buttons */
-.zoom-controls button:nth-child(1),
-.zoom-controls button:nth-child(3) {
-  border-radius: 50%;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
+  width: 24px; /* Reduced width */
+  height: 24px; /* Reduced height */
+  min-width: 24px; /* Ensure minimum width */
+  font-size: 16px;
   font-weight: bold;
 }
+
+/* Plus and minus buttons - already styled in the main button style */
 
 /* State layer for hover effect */
 .zoom-controls button::before {
@@ -276,7 +345,9 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 .zoom-controls button:not(:disabled):hover {
-  transform: translateY(-2px);
+  transform: scale(1.1);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
 }
 
 .zoom-controls button:disabled {
@@ -285,21 +356,20 @@ body.lyrics-dragging .time-control.dragging {
 }
 
 /* Zoom percentage display */
-.zoom-controls span {
-  font-size: var(--md-label-medium-size);
-  line-height: var(--md-label-medium-height);
+.zoom-slider span {
+  font-size: var(--md-label-small-size); /* Smaller font */
+  line-height: var(--md-label-small-height);
   font-weight: 500;
   color: var(--md-on-surface);
-  min-width: 60px;
   text-align: center;
   font-family: 'Roboto Mono', monospace; /* Monospace font for better readability */
+  user-select: none; /* Prevent text selection */
 }
 
 /* More compact timeline container */
 .timeline-container {
-  width: 100%;
+  flex: 1; /* Take up remaining space */
   height: 50px; /* Reduced height */
-  margin: 0.5rem 0;
   position: relative;
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--md-shape-medium);
@@ -307,6 +377,7 @@ body.lyrics-dragging .time-control.dragging {
   background-color: var(--md-surface-1);
   /* Removed transition to prevent shaking */
   box-shadow: var(--md-elevation-level1);
+  min-width: 0; /* Allow container to shrink below content size */
 }
 
 .subtitle-timeline {
@@ -803,9 +874,18 @@ body.lyrics-dragging .time-control:hover:not(.dragging) {
   box-shadow: 0 0 4px rgba(67, 97, 238, 0.5);
 }
 
+/* Help text container with download buttons */
+.help-text-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  gap: 16px;
+  width: 100%;
+}
+
 /* More compact help text */
 .help-text {
-  margin-top: 0.5rem; /* Reduced margin */
   font-size: 0.85rem; /* Smaller font */
   color: var(--md-on-surface-variant);
   font-style: italic;
@@ -816,4 +896,59 @@ body.lyrics-dragging .time-control:hover:not(.dragging) {
   border-radius: var(--md-shape-small);
   border-left: 3px solid var(--md-primary);
   opacity: 0.9; /* Slightly transparent */
+  flex: 1;
+}
+
+/* Download buttons container */
+.download-buttons {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Material Design 3 download buttons */
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-size: var(--md-label-small-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+}
+
+.download-btn:hover {
+  background-color: color-mix(in srgb, var(--md-primary-container) 90%, var(--md-primary));
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.download-btn svg {
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
+.download-btn:hover svg {
+  transform: translateY(2px);
 }
