@@ -3,103 +3,29 @@
 .output-container {
   background-color: var(--background-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 15px var(--shadow-color);
+  box-shadow: 0 2px 8px var(--shadow-color);
   padding: 1.5rem;
   margin-top: 1.5rem;
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
-  animation: fade-in-up 0.5s ease-out;
+  animation: slideIn 0.5s ease-out;
 }
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* Status styles now come from global index.css */
 .status {
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
   margin-bottom: 1.5rem;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  animation: status-appear 0.3s ease-out;
-  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
-@keyframes status-appear {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.status::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.status.loading {
-  background-color: var(--info-background);
-  color: var(--info-color);
-  border-left: 4px solid var(--info-color);
-}
-
-.status.loading::before {
-  background-color: var(--info-color);
-  animation: pulse 1.5s infinite;
-}
-
-.status.success {
-  background-color: var(--success-background);
-  color: var(--success-color);
-  border-left: 4px solid var(--success-color);
-}
-
-.status.success::before {
-  background-color: var(--success-color);
-}
-
+/* Additional styles specific to error status in output container */
 .status.error {
-  background-color: var(--error-background);
-  color: var(--error-color);
-  border-left: 4px solid var(--error-color);
   white-space: pre-wrap;
   font-family: monospace;
   max-height: 400px;
   overflow-y: auto;
 }
 
-.status.error::before {
-  background-color: var(--error-color);
-}
-
-.status.info {
-  background-color: var(--warning-background);
-  color: var(--warning-color);
-  border-left: 4px solid var(--warning-color);
-}
-
-.status.info::before {
-  background-color: var(--warning-color);
-}
-
 .preview-section {
   margin-bottom: 2rem;
-  animation: fade-in 0.5s ease-out;
+  animation: fadeIn 0.3s ease;
 }
 
 .preview-section h3 {
@@ -319,15 +245,15 @@
   .output-container {
     padding: 1.25rem;
   }
-  
+
   .preview-container {
     padding: 1.25rem;
   }
-  
+
   .download-options {
     flex-direction: column;
   }
-  
+
   .download-btn, .edit-btn {
     width: 100%;
   }
@@ -337,11 +263,11 @@
   .output-container {
     padding: 1rem;
   }
-  
+
   .preview-container {
     padding: 1rem;
   }
-  
+
   .status {
     padding: 0.75rem 1rem;
     font-size: 0.9rem;

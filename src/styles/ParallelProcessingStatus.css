@@ -1,62 +1,45 @@
 .parallel-processing-container {
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   width: 100%;
 }
 
 .segments-status {
-  margin-top: 15px;
-  padding: 15px;
-  background-color: #f5f5f5;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background-secondary);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Dark mode */
-[data-theme="dark"] .segments-status {
-  background-color: #2a2a2a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .segments-status h4 {
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 16px;
-  color: #333;
-}
-
-[data-theme="dark"] .segments-status h4 {
-  color: #e0e0e0;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
 }
 
 .segments-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  gap: 0.75rem;
 }
 
 .segment-status {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-[data-theme="dark"] .segment-status {
-  background-color: #3a3a3a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  color: #e0e0e0;
+  background-color: var(--background-primary);
+  box-shadow: 0 1px 3px var(--shadow-color);
+  transition: all 0.2s ease, background-color var(--transition-speed), color var(--transition-speed);
+  color: var(--text-primary);
 }
 
 .segment-status:hover {
   transform: translateY(-2px);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="dark"] .segment-status:hover {
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 6px var(--shadow-color);
 }
 
 .segment-number {
@@ -81,34 +64,30 @@
   flex-grow: 1;
 }
 
-/* Status colors */
+/* Status colors using CSS variables */
 .segment-status.pending .segment-indicator {
-  background-color: #ccc;
-}
-
-[data-theme="dark"] .segment-status.pending .segment-indicator {
-  background-color: #666;
+  background-color: var(--text-muted);
 }
 
 .segment-status.loading .segment-indicator {
-  background-color: #3498db;
+  background-color: var(--info-color);
   animation: pulse 1.5s infinite;
 }
 
 .segment-status.success .segment-indicator {
-  background-color: #2ecc71;
+  background-color: var(--success-color);
 }
 
 .segment-status.error .segment-indicator {
-  background-color: #e74c3c;
+  background-color: var(--error-color);
 }
 
 .segment-status.warning .segment-indicator {
-  background-color: #f39c12;
+  background-color: var(--warning-color);
 }
 
 .segment-status.cached .segment-indicator {
-  background-color: #9b59b6;
+  background-color: var(--primary-color);
 }
 
 @keyframes pulse {
@@ -131,40 +110,28 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #3498db;
-  padding: 4px;
-  margin-left: 4px;
+  color: var(--info-color);
+  padding: 0.25rem;
+  margin-left: 0.25rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color var(--transition-speed), background-color var(--transition-speed);
 }
 
 .segment-retry-btn:hover {
-  background-color: rgba(52, 152, 219, 0.1);
+  background-color: var(--primary-color-light);
   transform: rotate(30deg);
-}
-
-[data-theme="dark"] .segment-retry-btn {
-  color: #5dade2;
-}
-
-[data-theme="dark"] .segment-retry-btn:hover {
-  background-color: rgba(93, 173, 226, 0.2);
 }
 
 /* Retrying indicator styles */
 .segment-retrying-indicator {
-  color: #3498db;
-  margin-left: 4px;
+  color: var(--info-color);
+  margin-left: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-[data-theme="dark"] .segment-retrying-indicator {
-  color: #5dade2;
 }
 
 /* Spinning animation for the refresh icon */
@@ -183,10 +150,6 @@
 
 /* Add a new status color for retrying state */
 .segment-status.retrying .segment-indicator {
-  background-color: #3498db;
+  background-color: var(--info-color);
   animation: pulse 1.5s infinite;
-}
-
-[data-theme="dark"] .segment-status.retrying .segment-indicator {
-  background-color: #5dade2;
 }

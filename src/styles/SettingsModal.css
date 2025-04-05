@@ -23,14 +23,11 @@
   flex-direction: column;
   box-shadow: 0 4px 20px var(--shadow-color);
   overflow: hidden;
-  animation: modal-appear 0.3s ease-out;
+  animation: modal-appear 0.3s ease-out; /* Using standardized animation */
   transition: background-color var(--transition-speed);
 }
 
-@keyframes modal-appear {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
+/* Using standardized animations from index.css */
 
 .settings-header {
   display: flex;
@@ -421,41 +418,25 @@
   font-size: 0.9rem;
 }
 
-/* Cache status message */
-.cache-status-message {
-  padding: 0.75rem 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  animation: fadeIn 0.3s ease;
-}
-
-.status-success {
-  background-color: var(--success-background);
-  color: var(--success-color);
-  border-left: 3px solid var(--success-color);
-}
-
-.status-error {
-  background-color: var(--error-background);
-  color: var(--error-color);
-  border-left: 3px solid var(--error-color);
-}
+/* Cache status message styles now come from global index.css */
 
 /* Cache details */
 .cache-details {
   background-color: var(--background-secondary);
-  border-radius: 6px;
-  padding: 1rem;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
   margin: 1rem 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   animation: fadeIn 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .cache-details-item {
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+  transition: border-color var(--transition-speed);
 }
 
 .cache-details-item:last-child {
@@ -465,14 +446,17 @@
 }
 
 .cache-details-item h4 {
-  margin: 0 0 0.25rem 0;
-  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
   color: var(--text-primary);
+  font-weight: 600;
+  transition: color var(--transition-speed);
 }
 
 .cache-details-item p {
   margin: 0;
   color: var(--text-secondary);
+  transition: color var(--transition-speed);
 }
 
 .clear-cache-btn {
@@ -480,22 +464,33 @@
   background-color: var(--error-color);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: all 0.3s ease;
   margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px var(--shadow-color);
 }
 
 .clear-cache-btn:hover {
-  background-color: var(--error-color);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px var(--shadow-color);
   opacity: 0.9;
-  transform: translateY(-2px);
+}
+
+.clear-cache-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .clear-cache-btn:disabled {
   opacity: 0.6;
   transform: none;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -510,35 +505,51 @@
 }
 
 .cancel-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   background-color: var(--background-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease, background-color var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .cancel-btn:hover {
   background-color: var(--background-secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px var(--shadow-color);
+}
+
+.cancel-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 .save-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   background-color: var(--primary-color);
   color: white;
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease, background-color var(--transition-speed);
+  box-shadow: 0 2px 6px var(--shadow-color);
 }
 
 .save-btn:hover {
   background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.save-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 /* Responsive adaptations */

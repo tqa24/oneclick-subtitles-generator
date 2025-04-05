@@ -102,7 +102,7 @@ input, select, textarea {
   transition: border-color var(--transition-speed), background-color var(--transition-speed);
 }
 
-/* Animations */
+/* Standardized Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -113,10 +113,31 @@ input, select, textarea {
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes slideInUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+@keyframes modal-appear {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Common utility classes */
@@ -144,54 +165,112 @@ input, select, textarea {
   margin-bottom: 2rem;
 }
 
+/* Animation utility classes */
 .fade-in {
-  animation: fadeIn 0.5s ease;
+  animation: fadeIn 0.3s ease;
 }
 
 .slide-in {
-  animation: slideIn 0.5s ease;
+  animation: slideIn 0.5s ease-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.3s ease-out;
 }
 
 .pulse {
   animation: pulse 1.5s ease infinite;
 }
 
-/* Status messages */
-.status-message {
-  padding: 1rem;
+.spin {
+  animation: spin 1.5s linear infinite;
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.modal-appear {
+  animation: modal-appear 0.3s ease-out;
+}
+
+/* Status messages - Unified styling for all status messages across the app */
+.status-message, .status, .cache-status-message {
+  padding: 1rem 1.25rem;
   margin: 1rem 0;
-  border-radius: 6px;
+  border-radius: 8px;
+  font-size: 0.95rem;
   font-weight: 500;
-  animation: fadeIn 0.3s ease;
-}
-
-.status-success {
-  background-color: var(--success-background);
-  color: var(--success-color);
-}
-
-.status-error {
-  background-color: var(--error-background);
-  color: var(--error-color);
-}
-
-.status-warning {
-  background-color: var(--warning-background);
-  color: var(--warning-color);
-}
-
-.status-info {
-  background-color: var(--info-background);
-  color: var(--info-color);
-}
-
-.status-loading {
-  background-color: var(--info-background);
-  color: var(--info-color);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  position: relative;
+  border-left: 4px solid transparent;
+}
+
+.status-message::before, .status::before, .cache-status-message::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+/* Success status */
+.status-success, .status.success {
+  background-color: var(--success-background);
+  color: var(--success-color);
+  border-left-color: var(--success-color);
+}
+
+.status-success::before, .status.success::before {
+  background-color: var(--success-color);
+}
+
+/* Error status */
+.status-error, .status.error {
+  background-color: var(--error-background);
+  color: var(--error-color);
+  border-left-color: var(--error-color);
+}
+
+.status-error::before, .status.error::before {
+  background-color: var(--error-color);
+}
+
+/* Warning status */
+.status-warning, .status.warning, .status.info {
+  background-color: var(--warning-background);
+  color: var(--warning-color);
+  border-left-color: var(--warning-color);
+}
+
+.status-warning::before, .status.warning::before, .status.info::before {
+  background-color: var(--warning-color);
+}
+
+/* Info/Loading status */
+.status-info, .status.loading {
+  background-color: var(--info-background);
+  color: var(--info-color);
+  border-left-color: var(--info-color);
+}
+
+.status-info::before, .status.loading::before {
+  background-color: var(--info-color);
+}
+
+/* Loading animation */
+.status-loading, .status.loading {
+  display: flex;
+  align-items: center;
+}
+
+.status-loading::before, .status.loading::before {
+  animation: pulse 1.5s infinite;
 }
 
 .status-loading::before {
