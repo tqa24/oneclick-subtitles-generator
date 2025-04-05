@@ -120,7 +120,7 @@ body.lyrics-dragging .time-control.dragging {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: 96%;
   height: 50%;
   padding-top: 2px;
 }
@@ -170,22 +170,9 @@ body.lyrics-dragging .time-control.dragging {
   border-radius: var(--md-shape-pill);
   position: relative;
   overflow: hidden;
-  margin-right: 8px;
+  width: 63px;
 }
 
-/* State layer for hover effect */
-.sticky-toggle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: transparent;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
-  pointer-events: none;
-  border-radius: var(--md-shape-pill);
-}
 
 .sticky-toggle:hover::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));

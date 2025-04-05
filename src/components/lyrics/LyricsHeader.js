@@ -110,18 +110,7 @@ const LyricsHeader = ({
 
       {/* Bottom row for zoom controls and sticky toggle */}
       <div className="controls-bottom-row">
-        {allowEditing && (
-          <label className="sticky-toggle">
-            <input
-              type="checkbox"
-              checked={isSticky}
-              onChange={(e) => setIsSticky(e.target.checked)}
-            />
-            <span>{t('lyrics.stickyTimingsToggle', 'Stick')}</span>
-          </label>
-        )}
-
-        <div className="zoom-controls">
+      <div className="zoom-controls">
           <div
             className="zoom-slider"
             title={t('timeline.dragToZoom', 'Drag to zoom')}
@@ -149,6 +138,18 @@ const LyricsHeader = ({
             <span>{Math.round(zoom * 100)}%</span>
           </div>
         </div>
+        {allowEditing && (
+          <label className="sticky-toggle">
+            <input
+              type="checkbox"
+              checked={isSticky}
+              onChange={(e) => setIsSticky(e.target.checked)}
+            />
+            <span>{t('lyrics.stickyTimingsToggle', 'Stick')}</span>
+          </label>
+        )}
+
+        
       </div>
     </div>
   );
