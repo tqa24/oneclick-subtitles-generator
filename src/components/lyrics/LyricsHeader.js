@@ -63,7 +63,7 @@ const LyricsHeader = ({
       const minZoom = calculateMinZoom(durationRef.current);
       setZoom(minZoom);
     }
-  }, []);
+  }, [setZoom]);
 
   return (
     <div className="combined-controls">

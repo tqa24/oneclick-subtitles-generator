@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [lyrics, setLyrics] = useState([]);
@@ -65,25 +65,32 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
   };
 
-  const handleRedo = () => {
-    if (redoStack.length > 0) {
-      // Get the current state and the last redo state
-      const currentState = JSON.parse(JSON.stringify(lyrics));
-      const redoState = redoStack[redoStack.length - 1];
+  // Wrap handleRedo in useCallback to prevent it from changing on every render
+  const handleRedo = useEffect(() => {
+    // Create a function that will be stable across renders
+    const redoAction = () => {
+      if (redoStack.length > 0) {
+        // Get the current state and the last redo state
+        const currentState = JSON.parse(JSON.stringify(lyrics));
+        const redoState = redoStack[redoStack.length - 1];
 
-      // Add current state to history
-      setHistory(prevHistory => [...prevHistory, currentState]);
+        // Add current state to history
+        setHistory(prevHistory => [...prevHistory, currentState]);
 
-      // Set lyrics to the redo state
-      setLyrics(redoState);
-      if (onUpdateLyrics) {
-        onUpdateLyrics(redoState);
+        // Set lyrics to the redo state
+        setLyrics(redoState);
+        if (onUpdateLyrics) {
+          onUpdateLyrics(redoState);
+        }
+
+        // Remove the last state from redo stack
+        setRedoStack(prevRedoStack => prevRedoStack.slice(0, -1));
       }
+    };
 
-      // Remove the last state from redo stack
-      setRedoStack(prevRedoStack => prevRedoStack.slice(0, -1));
-    }
-  };
+    // Store the stable function for use in event listeners
+    return redoAction;
+  }, [redoStack, lyrics, onUpdateLyrics]);
 
   const handleReset = () => {
     if (originalLyrics.length > 0) {

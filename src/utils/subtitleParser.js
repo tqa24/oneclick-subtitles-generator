@@ -120,7 +120,7 @@ const parseMillisecondsFormat = (text) => {
 
 const parseSingleTimestampFormat = (text) => {
     const subtitles = [];
-    const regexSingleTimestamp = /\[(\d+)m(\d+)s\]\s*([^\[\n]*?)(?=\n*\[|$)/gs;
+    const regexSingleTimestamp = /\[(\d+)m(\d+)s\]\s*([^[\n]*?)(?=\n*\[|$)/gs;
     const matches = [];
     let match;
 

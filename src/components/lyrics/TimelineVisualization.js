@@ -449,7 +449,7 @@ const TimelineVisualization = ({
       // Draw indicator line
       ctx.fillRect(currentX - 1, 0, 3, displayHeight);
     }
-  }, [lyrics, currentTime, duration, getVisibleTimeRange, panOffset, calculateVisibleTimeRange]);
+  }, [lyrics, currentTime, duration, getVisibleTimeRange, panOffset, calculateVisibleTimeRange, timeFormat]);
 
   // Simplified zoom animation function - just set zoom and let getVisibleTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {
@@ -483,9 +483,13 @@ const TimelineVisualization = ({
 
   // Clean up animation frame on unmount
   useEffect(() => {
+    // Store the ref value in a variable that won't change
+    const animationFrameRef2 = animationFrameRef;
+
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      const animationFrame = animationFrameRef2.current;
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
       }
     };
   }, []);
@@ -615,9 +619,13 @@ const TimelineVisualization = ({
       }, 50);
     }
 
+    // Store the ref value in a variable that won't change
+    const autoScrollRef2 = autoScrollRef;
+
     return () => {
-      if (autoScrollRef.current) {
-        cancelAnimationFrame(autoScrollRef.current);
+      const autoScroll = autoScrollRef2.current;
+      if (autoScroll) {
+        cancelAnimationFrame(autoScroll);
       }
     };
   }, [currentTime, duration, getVisibleTimeRange, panOffset, setPanOffset, calculateMinZoom]);

@@ -142,7 +142,7 @@ function App() {
 
       setStatus({ message, type: 'info' });
     }
-  }, []);
+  }, [setStatus]);
 
   // Initialize Gemini button effects
   useEffect(() => {

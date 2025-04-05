@@ -1,7 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  downloadYoutubeVideo,
   startYoutubeVideoDownload,
   checkDownloadStatus,
   extractYoutubeVideoId
@@ -21,7 +20,49 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [videoId, setVideoId] = useState(null);
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
+  // State to track if video is playing (used in event handlers)
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Process the video URL (download if it's YouTube)
+  const processVideoUrl = useCallback(async (url) => {
+    console.log('Processing video URL:', url);
+
+    // Reset states
+    setError('');
+    setIsLoaded(false);
+
+    // Check if it's a YouTube URL
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      try {
+        setIsDownloading(true);
+        setDownloadProgress(0);
+
+        // Store the URL for future use
+        localStorage.setItem('current_video_url', url);
+
+        // Extract video ID (used by the download process internally)
+        extractYoutubeVideoId(url);
+
+        // Start the download process but don't wait for it to complete
+        const id = startYoutubeVideoDownload(url);
+        setVideoId(id);
+
+        // Check initial status - it might already be complete if cached
+        const initialStatus = checkDownloadStatus(id);
+        if (initialStatus.status === 'completed') {
+          setVideoUrl(initialStatus.url);
+          setIsDownloading(false);
+        }
+      } catch (err) {
+        console.error('Error starting YouTube video download:', err);
+        setError(t('preview.videoError', `Error loading video: ${err.message}`));
+        setIsDownloading(false);
+      }
+    } else {
+      // Not a YouTube URL, use directly
+      setVideoUrl(url);
+    }
+  }, [t, setError, setIsLoaded, setIsDownloading, setDownloadProgress, setVideoId, setVideoUrl]);
 
   // Initialize video source
   useEffect(() => {
@@ -54,7 +95,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     };
 
     loadVideo();
-  }, [videoSource, t]);
+  }, [videoSource, t, processVideoUrl]);
 
   // Check download status at interval if we have a videoId
   useEffect(() => {
@@ -85,48 +126,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
 
     // Clean up on unmount
     return () => clearInterval(interval);
-  }, [videoId, t]);
+  }, [videoId, t, downloadCheckInterval]);
 
-  // Process the video URL (download if it's YouTube)
-  const processVideoUrl = async (url) => {
-    console.log('Processing video URL:', url);
-
-    // Reset states
-    setError('');
-    setIsLoaded(false);
-
-    // Check if it's a YouTube URL
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      try {
-        setIsDownloading(true);
-        setDownloadProgress(0);
-
-        // Store the URL for future use
-        localStorage.setItem('current_video_url', url);
-
-        // Extract video ID
-        const extractedVideoId = extractYoutubeVideoId(url);
-
-        // Start the download process but don't wait for it to complete
-        const id = startYoutubeVideoDownload(url);
-        setVideoId(id);
-
-        // Check initial status - it might already be complete if cached
-        const initialStatus = checkDownloadStatus(id);
-        if (initialStatus.status === 'completed') {
-          setVideoUrl(initialStatus.url);
-          setIsDownloading(false);
-        }
-      } catch (err) {
-        console.error('Error starting YouTube video download:', err);
-        setError(t('preview.videoError', `Error loading video: ${err.message}`));
-        setIsDownloading(false);
-      }
-    } else {
-      // Not a YouTube URL, use directly
-      setVideoUrl(url);
-    }
-  };
+  // processVideoUrl is now defined inside the useEffect above
 
   // Clean up interval on component unmount
   useEffect(() => {
@@ -253,7 +255,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       videoElement.removeEventListener('seeking', handleSeeking);
       videoElement.removeEventListener('seeked', handleSeeked);
     };
-  }, [videoUrl, setCurrentTime, setDuration, t]);
+  }, [videoUrl, setCurrentTime, setDuration, t, onSeek]);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {

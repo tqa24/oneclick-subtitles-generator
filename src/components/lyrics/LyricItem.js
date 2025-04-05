@@ -46,14 +46,14 @@ const ContinuousProgressIndicator = ({ lyric, isCurrentLyric, currentTime }) => 
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isCurrentLyric, lyric]); // Include the entire lyric object to handle any changes
+  }, [isCurrentLyric, lyric, updateProgress]); // Include the entire lyric object to handle any changes
 
   // Update when currentTime changes (for seeking)
   useEffect(() => {
     if (isCurrentLyric) {
       updateProgress();
     }
-  }, [currentTime, isCurrentLyric]); // Include isCurrentLyric in the dependency array
+  }, [currentTime, isCurrentLyric, updateProgress]); // Include isCurrentLyric in the dependency array
 
   // Only render if this is the current lyric
   if (!isCurrentLyric) return null;
