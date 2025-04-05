@@ -93,6 +93,8 @@
   background-color: var(--md-primary);
   opacity: 0.1;
   transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
+  pointer-events: none; /* Ensure it doesn't block clicks */
+  z-index: 1; /* Keep it below interactive elements */
 }
 
 .segment-status:hover::after {
@@ -124,6 +126,8 @@
   text-overflow: ellipsis;
   flex-grow: 1;
   color: var(--md-on-surface-variant);
+  margin-right: 8px; /* Add space for the retry button */
+  max-width: calc(100% - 60px); /* Ensure there's space for the retry button */
 }
 
 /* Status colors using CSS variables */
@@ -171,6 +175,8 @@
               transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
   overflow: hidden;
+  z-index: 20; /* Ensure it's above other elements */
+  pointer-events: auto !important; /* Force pointer events to be enabled */
 }
 
 /* State layer for hover effect */

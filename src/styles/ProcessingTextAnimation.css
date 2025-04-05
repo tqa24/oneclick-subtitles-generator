@@ -1,0 +1,63 @@
+/* ProcessingTextAnimation.css - Special animations for the "Processing" text */
+
+/* Container for the processing text */
+.processing-text-container {
+  display: inline-block;
+  position: relative;
+}
+
+/* Dots animation for the ellipsis */
+.processing-dots {
+  display: inline-block;
+  position: relative;
+  width: 24px;
+  height: 16px;
+  margin-left: 4px;
+}
+
+.processing-dots::after {
+  content: '...';
+  position: absolute;
+  left: 0;
+  top: -4px;
+  animation: dots-animation 1.5s infinite steps(4, end);
+  opacity: 0.9;
+}
+
+@keyframes dots-animation {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60% { content: '...'; }
+  80%, 100% { content: ''; }
+}
+
+/* Subtle pulse animation for the text */
+.processing-text {
+  display: inline-block;
+  animation: text-pulse 2s infinite ease-in-out;
+}
+
+@keyframes text-pulse {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+/* Small Gemini icon that appears next to the text */
+.processing-gemini-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: processing-icon-spin 3s infinite linear;
+}
+
+@keyframes processing-icon-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Ensure the animations work in disabled state too */
+button:disabled .processing-text-container {
+  opacity: 0.8;
+}
