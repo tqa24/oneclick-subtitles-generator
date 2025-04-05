@@ -209,10 +209,10 @@ input, select, textarea {
   animation: slideInUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
 }
 
-/* Status messages - Updated to Material Design 3 */
+/* Status messages - Updated to Material Design 3 with improved layout */
 .status-message, .status, .cache-status-message {
   padding: 16px;
-  margin: 16px 0;
+  margin: 0; /* No margin as spacing is handled by parent container */
   border-radius: var(--md-shape-medium);
   font-size: var(--md-body-medium-size);
   line-height: var(--md-body-medium-height);

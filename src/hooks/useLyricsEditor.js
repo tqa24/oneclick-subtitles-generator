@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [lyrics, setLyrics] = useState([]);
   const [history, setHistory] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
   const [originalLyrics, setOriginalLyrics] = useState([]);
   const [isAtOriginalState, setIsAtOriginalState] = useState(true);
   const [isSticky, setIsSticky] = useState(true);
@@ -48,38 +47,11 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const handleUndo = () => {
     if (history.length > 0) {
       const lastState = history[history.length - 1];
-      const currentState = JSON.parse(JSON.stringify(lyrics));
-
-      // Save current state to redo stack
-      setRedoStack(prevRedoStack => [...prevRedoStack, currentState]);
-
-      // Apply the previous state
       setLyrics(lastState);
       if (onUpdateLyrics) {
         onUpdateLyrics(lastState);
       }
-
-      // Remove the last state from history
       setHistory(prevHistory => prevHistory.slice(0, -1));
-    }
-  };
-
-  const handleRedo = () => {
-    if (redoStack.length > 0) {
-      const nextState = redoStack[redoStack.length - 1];
-      const currentState = JSON.parse(JSON.stringify(lyrics));
-
-      // Save current state to history
-      setHistory(prevHistory => [...prevHistory, currentState]);
-
-      // Apply the next state
-      setLyrics(nextState);
-      if (onUpdateLyrics) {
-        onUpdateLyrics(nextState);
-      }
-
-      // Remove the next state from redo stack
-      setRedoStack(prevRedoStack => prevRedoStack.slice(0, -1));
     }
   };
 
@@ -89,13 +61,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       const originalState = JSON.parse(JSON.stringify(originalLyrics));
 
       if (JSON.stringify(currentState) !== JSON.stringify(originalState)) {
-        // Save current state to history
         setHistory(prevHistory => [...prevHistory, currentState]);
-
-        // Clear redo stack when resetting
-        setRedoStack([]);
-
-        // Apply original state
         setLyrics(originalState);
         if (onUpdateLyrics) {
           onUpdateLyrics(originalState);
@@ -157,13 +123,6 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       }
     }
 
-    // Save current state to history before updating
-    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
-
-    // Clear redo stack when making new changes
-    setRedoStack([]);
-
-    // Update lyrics
     setLyrics(updatedLyrics);
     if (onUpdateLyrics) {
       onUpdateLyrics(updatedLyrics);
@@ -171,12 +130,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   };
 
   const startDrag = (index, field, startX, startValue) => {
-    // Save current state to history
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
-
-    // Clear redo stack when starting a new drag
-    setRedoStack([]);
-
     dragInfo.current = {
       dragging: true,
       index,
@@ -355,9 +309,6 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     // Save current state to history
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
 
-    // Clear redo stack when merging lyrics
-    setRedoStack([]);
-
     const currentLyric = lyrics[index];
     const nextLyric = lyrics[index + 1];
 
@@ -388,9 +339,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     setIsSticky,
     isAtOriginalState,
     canUndo: history.length > 0,
-    canRedo: redoStack.length > 0,
     handleUndo,
-    handleRedo,
     handleReset,
     startDrag,
     handleDrag,

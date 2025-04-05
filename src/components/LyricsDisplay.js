@@ -106,9 +106,7 @@ const LyricsDisplay = ({
     setIsSticky,
     isAtOriginalState,
     canUndo,
-    canRedo,
     handleUndo,
-    handleRedo,
     handleReset,
     startDrag,
     handleDrag,
@@ -191,33 +189,31 @@ const LyricsDisplay = ({
 
   return (
     <div className={`lyrics-display ${Object.keys(isDragging()).length > 0 ? 'dragging-active' : ''}`}>
-      <div className="timeline-controls-wrapper">
-        <LyricsHeader
-          allowEditing={allowEditing}
-          isSticky={isSticky}
-          setIsSticky={setIsSticky}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          isAtOriginalState={isAtOriginalState}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          onReset={handleReset}
-          zoom={zoom}
-          setZoom={setZoom}
-        />
+      <LyricsHeader
+        allowEditing={allowEditing}
+        isSticky={isSticky}
+        setIsSticky={setIsSticky}
+        canUndo={canUndo}
+        isAtOriginalState={isAtOriginalState}
+        onUndo={handleUndo}
+        onReset={handleReset}
+        zoom={zoom}
+        setZoom={setZoom}
+        panOffset={panOffset}
+        setPanOffset={setPanOffset}
+      />
 
-        <TimelineVisualization
-          lyrics={lyrics}
-          currentTime={currentTime}
-          duration={duration}
-          onTimelineClick={onLyricClick}
-          zoom={zoom}
-          panOffset={panOffset}
-          setPanOffset={setPanOffset}
-          centerOnTime={centerTimelineAt}
-          timeFormat={timeFormat}
-        />
-      </div>
+      <TimelineVisualization
+        lyrics={lyrics}
+        currentTime={currentTime}
+        duration={duration}
+        onTimelineClick={onLyricClick}
+        zoom={zoom}
+        panOffset={panOffset}
+        setPanOffset={setPanOffset}
+        centerOnTime={centerTimelineAt}
+        timeFormat={timeFormat}
+      />
 
       <div className="lyrics-container-wrapper">
         {lyrics.length > 0 && (
@@ -260,28 +256,8 @@ const LyricsDisplay = ({
       </div>
 
       {allowEditing && (
-        <div className="help-text-container">
-          <div className="help-text">
-            <p>{t('lyrics.timingInstructions')}</p>
-          </div>
-          <div className="download-buttons">
-            <button className="download-srt-btn" onClick={() => window.dispatchEvent(new CustomEvent('download-srt'))}>
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              {t('output.downloadSrt', 'Download SRT')}
-            </button>
-            <button className="download-json-btn" onClick={() => window.dispatchEvent(new CustomEvent('download-json'))}>
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              {t('output.downloadJson', 'Download JSON')}
-            </button>
-          </div>
+        <div className="help-text">
+          <p>{t('lyrics.timingInstructions')}</p>
         </div>
       )}
     </div>

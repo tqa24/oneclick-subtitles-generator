@@ -1,5 +1,7 @@
+/* Material Design 3 parallel processing container - improved layout */
 .parallel-processing-container {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0; /* No margin as spacing is handled by parent container */
+  margin-top: 0; /* No top margin */
   width: 100%;
 }
 

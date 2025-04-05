@@ -1,18 +1,19 @@
-/* OutputContainer.css - Styling for the output section */
+/* OutputContainer.css - Styling for the output section - improved layout */
 
 .output-container {
   background-color: var(--background-secondary);
   border-radius: 12px;
   box-shadow: 0 2px 8px var(--shadow-color);
   padding: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 0; /* No margin-top as spacing is handled by parent container */
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
   animation: slideIn 0.5s ease-out;
 }
 
-/* Status styles now come from global index.css */
+/* Status styles now come from global index.css - improved spacing */
 .status {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0; /* No margin as spacing is handled by parent container */
+  margin-top: 0; /* No top margin */
 }
 
 /* Additional styles specific to error status in output container */

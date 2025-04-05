@@ -1,5 +1,13 @@
 /* App.css - Main application styling */
 
+/* Material Design 3 content layout container - consistent spacing */
+.content-layout-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 24px; /* Consistent spacing between elements */
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
@@ -48,6 +56,14 @@
   align-items: center;
   gap: 15px;
   margin: 1.5rem 0;
+}
+
+/* Material Design 3 button container - improved layout */
+.buttons-container {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  /* Removed margin-bottom as spacing is handled by parent container */
 }
 
 /* Material Design 3 button styles */
