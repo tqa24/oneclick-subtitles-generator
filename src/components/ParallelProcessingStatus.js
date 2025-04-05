@@ -44,10 +44,13 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
               <span className="segment-message">{segment.shortMessage || segment.status}</span>
               {/* Show refresh button for completed segments that aren't currently being retried */}
               {segment.status === 'success' && !retryingSegments.includes(index) && (
+                /* Debug info to help troubleshoot */
+                console.log('Segment', index, 'status:', segment.status, 'shortMessage:', segment.shortMessage, 'retrying:', retryingSegments.includes(index)) ||
                 <button
                   className="segment-retry-btn"
                   onClick={(e) => {
                     e.stopPropagation();
+                    console.log('Retry button clicked for segment', index);
                     onRetrySegment && onRetrySegment(index);
                   }}
                   title={t('output.retrySegment', 'Retry this segment')}

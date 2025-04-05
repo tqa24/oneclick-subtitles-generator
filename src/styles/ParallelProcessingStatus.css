@@ -72,7 +72,7 @@
   color: var(--md-on-surface);
   border: 1px solid var(--md-outline-variant);
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to ensure buttons are clickable */
 }
 
 /* Material Design 3 hover state - enhanced styling */
@@ -160,9 +160,9 @@
 
 /* Material Design 3 icon button for refresh */
 .segment-retry-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
+  background: rgba(var(--md-primary-rgb), 0.1);
+  border: 1px solid var(--md-primary);
+  cursor: pointer !important; /* Force cursor to be pointer */
   color: var(--md-primary);
   padding: 8px;
   margin-left: 4px;
@@ -174,9 +174,10 @@
               color var(--md-duration-medium2) var(--md-easing-standard),
               transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
-  overflow: hidden;
-  z-index: 20; /* Ensure it's above other elements */
+  overflow: visible; /* Changed from hidden to ensure the button is clickable */
+  z-index: 100 !important; /* Ensure it's above ALL other elements */
   pointer-events: auto !important; /* Force pointer events to be enabled */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add shadow for emphasis */
 }
 
 /* State layer for hover effect */
@@ -198,7 +199,15 @@
 }
 
 .segment-retry-btn:hover {
-  transform: rotate(30deg);
+  transform: rotate(30deg) scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background-color: rgba(var(--md-primary-rgb), 0.2);
+}
+
+.segment-retry-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(var(--md-primary-rgb), 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Material Design 3 retrying indicator */

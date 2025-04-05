@@ -83,7 +83,10 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
             segments={segmentsStatus}
             overallStatus={status.message}
             statusType={status.type}
-            onRetrySegment={(segmentIndex) => onRetrySegment && onRetrySegment(segmentIndex, videoSegments)}
+            onRetrySegment={(segmentIndex) => {
+              console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
+              onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
+            }}
             retryingSegments={retryingSegments}
           />
         ) : (

@@ -6,22 +6,22 @@
  * Initialize Gemini button effects by adding event listeners and SVG elements
  */
 export const initGeminiButtonEffects = () => {
-  // Find all Gemini buttons
-  const generateButtons = document.querySelectorAll('.generate-btn');
-  const retryButtons = document.querySelectorAll('.retry-gemini-btn');
-  
+  // Find all Gemini buttons - use more specific selectors to avoid conflicts
+  const generateButtons = document.querySelectorAll('.buttons-container .generate-btn');
+  const retryButtons = document.querySelectorAll('.buttons-container .retry-gemini-btn');
+
   // Apply effects to all buttons
   [...generateButtons, ...retryButtons].forEach(button => {
     // Create container for Gemini icons
     const iconContainer = document.createElement('div');
     iconContainer.className = 'gemini-icon-container';
-    
+
     // Add mini Gemini icons with different sizes and positions
     for (let i = 1; i <= 6; i++) {
       const miniIcon = createGeminiIcon(`random-${i}`, getRandomSize());
       iconContainer.appendChild(miniIcon);
     }
-    
+
     // Add cursor-reactive icons
     for (let i = 1; i <= 4; i++) {
       const reactiveIcon = createGeminiIcon('cursor-reactive', getRandomSize());
@@ -29,19 +29,19 @@ export const initGeminiButtonEffects = () => {
       reactiveIcon.style.left = `${10 + Math.random() * 80}%`;
       iconContainer.appendChild(reactiveIcon);
     }
-    
+
     // Add cursor follower icon
     const cursorFollower = document.createElement('div');
     cursorFollower.className = 'gemini-cursor-follower';
     cursorFollower.innerHTML = createGeminiSVG();
     iconContainer.appendChild(cursorFollower);
-    
+
     // Add the container to the button
     button.appendChild(iconContainer);
-    
+
     // Add mouse move event listener for cursor tracking
     button.addEventListener('mousemove', handleMouseMove);
-    
+
     // Add processing class when button is clicked (for animation state)
     button.addEventListener('click', () => {
       if (!button.disabled) {
@@ -57,11 +57,11 @@ export const initGeminiButtonEffects = () => {
 const handleMouseMove = (event) => {
   const button = event.currentTarget;
   const rect = button.getBoundingClientRect();
-  
+
   // Calculate cursor position relative to button
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
-  
+
   // Update CSS variables for cursor position
   button.style.setProperty('--cursor-x', x);
   button.style.setProperty('--cursor-y', y);

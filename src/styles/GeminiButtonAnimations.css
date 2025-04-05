@@ -1,7 +1,8 @@
 /* GeminiButtonAnimations.css - Advanced animations for Gemini buttons */
 
-/* Base styles for Gemini icon container */
-.gemini-icon-container {
+/* Base styles for Gemini icon container - ONLY for generate-btn and retry-gemini-btn */
+.generate-btn .gemini-icon-container,
+.retry-gemini-btn .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -11,12 +12,6 @@
   overflow: hidden;
   border-radius: inherit;
   z-index: 0;
-}
-
-/* Ensure the container only affects its direct children */
-.generate-btn .gemini-icon-container,
-.retry-gemini-btn .gemini-icon-container {
-  pointer-events: none;
 }
 
 /* Gemini mini icons - these will be positioned around the button */
