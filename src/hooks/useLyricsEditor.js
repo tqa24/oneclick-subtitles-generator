@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [lyrics, setLyrics] = useState([]);
@@ -391,7 +391,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     return () => {
       window.removeEventListener('redo-action', handleRedoEvent);
     };
-  }, [redoStack, lyrics]);
+  }, [redoStack, lyrics, handleRedo]);
 
   return {
     lyrics,

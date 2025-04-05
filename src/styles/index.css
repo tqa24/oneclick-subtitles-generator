@@ -34,6 +34,12 @@
   --modal-border-radius: var(--md-shape-large);
   --standard-easing: var(--md-easing-standard);
   --emphasized-easing: var(--md-easing-emphasized);
+
+  /* Material Design 3 state layer opacities */
+  --md-state-hover-opacity: 8%;
+  --md-state-focus-opacity: 12%;
+  --md-state-pressed-opacity: 12%;
+  --md-state-dragged-opacity: 16%;
 }
 
 /* Dark theme variables are now handled by Material Design 3 tokens */

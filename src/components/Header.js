@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/Header.css';
+import LanguageSelector from './LanguageSelector';
 
 const Header = ({ onSettingsClick }) => {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
 
-  // Function to change the language
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-    localStorage.setItem('preferred_language', lng);
-  };
-  
+
   // Function to toggle between light and dark themes
   const toggleTheme = () => {
     let newTheme;
@@ -21,11 +17,11 @@ const Header = ({ onSettingsClick }) => {
     } else {
       newTheme = 'light';
     }
-    
+
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
-    
+
     // Force re-render by triggering a storage event
     window.dispatchEvent(new Event('storage'));
   };
@@ -37,10 +33,10 @@ const Header = ({ onSettingsClick }) => {
         document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
       }
     };
-    
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     mediaQuery.addEventListener('change', handleSystemThemeChange);
-    
+
     return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
   }, []);
 
@@ -90,21 +86,11 @@ const Header = ({ onSettingsClick }) => {
           {t('header.appTitle')}
         </h1>
       </div>
-      
+
       <div className="header-actions">
-        <div className="language-selector">
-          <select 
-            onChange={(e) => changeLanguage(e.target.value)} 
-            value={i18n.language}
-            aria-label={t('language.languageSelector')}
-          >
-            <option value="en">{t('language.en')}</option>
-            <option value="ko">{t('language.ko')}</option>
-            <option value="vi">{t('language.vi')}</option>
-          </select>
-        </div>
-        
-        <button 
+        <LanguageSelector />
+
+        <button
           className="theme-toggle"
           onClick={toggleTheme}
           aria-label={getThemeLabel()}
@@ -112,8 +98,8 @@ const Header = ({ onSettingsClick }) => {
         >
           {getThemeIcon()}
         </button>
-        
-        <button 
+
+        <button
           className="settings-button"
           onClick={onSettingsClick}
           aria-label={t('header.settingsAria')}
