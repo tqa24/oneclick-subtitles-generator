@@ -290,80 +290,33 @@ body.lyrics-dragging .time-control.dragging {
   height: 100%;
   position: relative;
   cursor: ew-resize;
-  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 90%);
+  border-radius: var(--md-shape-pill);
 }
 
 .zoom-slider:hover {
-  background-color: color-mix(in srgb, var(--md-primary-container), transparent 80%);
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 70%);
+  transform: scale(1.02);
 }
 
-/* Material Design 3 buttons for zoom controls - improved design */
-.zoom-controls button {
-  background-color: transparent;
-  border: none;
-  border-radius: 50%; /* Circular buttons */
-  padding: 4px;
-  cursor: pointer;
-  color: var(--md-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
-              color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
-  position: relative;
-  overflow: hidden;
-  width: 24px; /* Reduced width */
-  height: 24px; /* Reduced height */
-  min-width: 24px; /* Ensure minimum width */
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Plus and minus buttons - already styled in the main button style */
-
-/* State layer for hover effect */
-.zoom-controls button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: transparent;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.zoom-controls button:not(:disabled):hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
-}
-
-.zoom-controls button:not(:disabled):hover {
-  transform: scale(1.1);
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-}
-
-.zoom-controls button:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
+/* Zoom controls styles - simplified without buttons */
 
 /* Zoom percentage display */
 .zoom-slider span {
-  font-size: var(--md-label-small-size); /* Smaller font */
-  line-height: var(--md-label-small-height);
-  font-weight: 500;
-  color: var(--md-on-surface);
+  font-size: var(--md-label-medium-size); /* Larger font */
+  line-height: var(--md-label-medium-height);
+  font-weight: 600; /* Bolder text */
+  color: var(--md-on-primary-container);
   text-align: center;
   font-family: 'Roboto Mono', monospace; /* Monospace font for better readability */
   user-select: none; /* Prevent text selection */
+  padding: 4px 8px;
+  border-radius: var(--md-shape-small);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
 }
 
 /* More compact timeline container */
@@ -576,12 +529,13 @@ body.lyrics-dragging .time-control.dragging {
 
 /* Material Design 3 state layers for list items - enhanced styling */
 .lyric-item:hover:not(.dragging) {
-  background-color: color-mix(in srgb, var(--md-on-surface), transparent var(--md-state-hover-opacity));
+  background-color: color-mix(in srgb, var(--md-primary), transparent 95%);
   /* Removed the transform that pushed items to the right */
 }
 
 /* Disable all hover effects during dragging */
 .dragging-active .lyric-item:hover,
+.dragging-active .lyric-text:hover,
 .dragging-active .time-control:hover:not(.dragging),
 .dragging-active .edit-lyric-btn:hover,
 .dragging-active .delete-lyric-btn:hover,
@@ -598,7 +552,8 @@ body.lyrics-dragging .time-control.dragging {
 .dragging-active .edit-lyric-btn:hover svg,
 .dragging-active .delete-lyric-btn:hover svg,
 .dragging-active .insert-lyric-button:hover svg,
-.dragging-active .merge-lyrics-button:hover svg {
+.dragging-active .merge-lyrics-button:hover svg,
+.dragging-active .lyric-text:hover span {
   transform: none;
 }
 
@@ -619,7 +574,6 @@ body.lyrics-dragging .time-control.dragging {
   position: relative;
   width: 100%;
   flex-wrap: wrap; /* Allow wrapping for very long content */
-  min-height: 48px; /* Minimum height to prevent collapsing */
 }
 
 /* Allow lyric text to wrap to multiple lines - improved for very long text */
@@ -729,11 +683,21 @@ body.lyrics-dragging .time-control.dragging {
   margin-right: 1rem;
   cursor: pointer;
   user-select: none;
+  transition: color var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.lyric-text:hover {
+  color: var(--md-primary);
 }
 
 .lyric-text span {
   display: block;
   padding: 4px 0;
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
+.lyric-text:hover span {
+  transform: translateX(4px);
 }
 
 .lyric-text-input {

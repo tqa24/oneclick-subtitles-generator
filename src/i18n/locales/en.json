@@ -115,7 +115,7 @@
   },
   "lyrics": {
     "synchronizedLyrics": "Synchronized Subtitles",
-    "stickyTimingsToggle": "Sticky Timings",
+    "stickyTimingsToggle": "Stick",
     "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles.",
     "editTooltip": "Edit lyric text",
     "deleteTooltip": "Delete lyric",

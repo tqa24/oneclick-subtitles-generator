@@ -113,7 +113,7 @@
   },
   "lyrics": {
     "synchronizedLyrics": "동기화된 자막",
-    "stickyTimingsToggle": "고정 타이밍",
+    "stickyTimingsToggle": "고정",
     "timingInstructions": "타임스탬프를 드래그하여 각 자막의 타이밍을 조정하세요. 고정 모드는 그 이후의 모든 자막을 조정합니다.",
     "editTooltip": "자막 텍스트 편집",
     "deleteTooltip": "자막 삭제",

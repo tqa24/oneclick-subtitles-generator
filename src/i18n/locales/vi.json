@@ -114,7 +114,7 @@
   },
   "lyrics": {
     "synchronizedLyrics": "Phụ đề đồng bộ hóa",
-    "stickyTimingsToggle": "Thời gian cố định",
+    "stickyTimingsToggle": "Cố định",
     "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ cố định sẽ điều chỉnh tất cả phụ đề theo sau.",
     "editTooltip": "Chỉnh sửa văn bản phụ đề",
     "deleteTooltip": "Xóa phụ đề",

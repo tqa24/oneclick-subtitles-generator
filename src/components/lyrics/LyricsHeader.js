@@ -99,9 +99,9 @@ const LyricsHeader = ({
               disabled={isAtOriginalState}
               title={t('common.reset', 'Reset')}
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9s4.03-9 9-9h4.5"/>
-                <path d="M16 5l4 4-4 4"/>
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" preserveAspectRatio="xMidYMid meet">
+                <path d="M23 4v6h-6"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
               </svg>
             </button>
           </div>
@@ -122,17 +122,6 @@ const LyricsHeader = ({
         )}
 
         <div className="zoom-controls">
-          <button
-            onClick={() => {
-              const minZoom = calculateMinZoom(durationRef.current);
-              setZoom(Math.max(minZoom, zoom / 1.5));
-            }}
-            disabled={zoom <= calculateMinZoom(durationRef.current)}
-            title={t('timeline.zoomOut', 'Zoom out')}
-          >
-            -
-          </button>
-
           <div
             className="zoom-slider"
             title={t('timeline.dragToZoom', 'Drag to zoom')}
@@ -159,14 +148,6 @@ const LyricsHeader = ({
           >
             <span>{Math.round(zoom * 100)}%</span>
           </div>
-
-          <button
-            onClick={() => setZoom(Math.min(50, zoom * 1.5))}
-            disabled={zoom >= 50}
-            title={t('timeline.zoomIn', 'Zoom in')}
-          >
-            +
-          </button>
         </div>
       </div>
     </div>
