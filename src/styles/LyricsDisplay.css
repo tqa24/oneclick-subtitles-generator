@@ -184,21 +184,21 @@ body.lyrics-dragging .time-control.dragging {
   border-radius: 8px;
   overflow: hidden;
   background-color: var(--background-secondary);
-  transition: all var(--transition-speed) ease;
+  /* Removed transition to prevent shaking */
   box-shadow: inset 0 0 10px var(--shadow-color);
 }
 
 .subtitle-timeline {
   width: 100%;
   height: 100%;
-  cursor: grab;
+  cursor: pointer; /* Changed from grab to pointer */
   user-select: none;
-  transition: all var(--transition-speed) ease;
+  /* Removed transition to prevent shaking */
 }
 
 .subtitle-timeline:active {
-  cursor: grabbing;
-  box-shadow: inset 0 0 15px var(--shadow-color);
+  cursor: pointer;
+  /* Removed box-shadow change to prevent visual shifts */
 }
 
 .timeline-controls {

@@ -581,32 +581,15 @@ const TimelineVisualization = ({
         cancelAnimationFrame(autoScrollRef.current);
       }
 
-      const startPanOffset = panOffset;
-      const endPanOffset = targetOffset;
-      const startTime = performance.now();
-      const animDuration = 800; // Slower animation
+      // Set the pan offset directly without animation to avoid shaking
+      // This creates a clean jump to the new position without any transition
+      setPanOffset(targetOffset);
 
-      const animate = (time) => {
-        // We no longer need to check for panning since we've removed that functionality
-
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / animDuration, 1);
-
-        const easeOutProgress = 1 - Math.pow(1 - progress, 3);
-        const newOffset = startPanOffset + (endPanOffset - startPanOffset) * easeOutProgress;
-
-        setPanOffset(newOffset);
-
-        if (progress < 1) {
-          autoScrollRef.current = requestAnimationFrame(animate);
-        } else {
-          console.log('Auto-scroll completed');
-          isScrollingRef.current = false;
-          autoScrollRef.current = null;
-        }
-      };
-
-      autoScrollRef.current = requestAnimationFrame(animate);
+      // Release the scrolling lock immediately
+      setTimeout(() => {
+        isScrollingRef.current = false;
+        console.log('Auto-scroll completed');
+      }, 50);
     }
 
     return () => {
@@ -625,26 +608,22 @@ const TimelineVisualization = ({
 
     const rect = timelineRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const { start: visibleStart, end: visibleEnd, total: timelineEnd } = getVisibleTimeRange();
+    const { start: visibleStart, end: visibleEnd } = getVisibleTimeRange();
     const visibleDuration = visibleEnd - visibleStart;
 
+    // Calculate the new time based on click position
     const newTime = visibleStart + (clickX / rect.width) * visibleDuration;
 
     if (newTime >= 0 && newTime <= duration) {
-      // Ensure we respect the minimum zoom level
-      const minZoom = calculateMinZoom(timelineEnd);
-      const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
+      // Record this as a manual interaction to prevent auto-scrolling
+      lastManualPanTime.current = performance.now();
 
-      // Calculate new pan offset while maintaining current zoom level
-      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
-      const halfVisibleDuration = totalVisibleDuration / 2;
-      const newPanOffset = Math.max(0, Math.min(newTime - halfVisibleDuration, timelineEnd - totalVisibleDuration));
+      // Just seek to the new time without changing the view position
+      // This eliminates the shaking effect by avoiding multiple view transitions
+      onTimelineClick(Math.min(duration, newTime));
 
-      // Update pan offset first, then trigger the time change
-      setPanOffset(newPanOffset);
-      requestAnimationFrame(() => {
-        onTimelineClick(Math.min(duration, newTime));
-      });
+      // The view will be centered automatically when the currentTime prop updates
+      // This creates a single, smooth transition instead of multiple jerky ones
     }
   };
 
