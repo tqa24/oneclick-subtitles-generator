@@ -122,7 +122,8 @@ const LyricsHeader = ({
               const handleMouseMove = (moveEvent) => {
                 const deltaX = moveEvent.clientX - startX;
                 // Increased sensitivity for more responsive zooming
-                const newZoom = Math.max(minZoom, Math.min(50, startZoom + (deltaX * 0.05)));
+                // Increased maximum zoom level from 50 to 200 for more detailed view
+                const newZoom = Math.max(minZoom, Math.min(200, startZoom + (deltaX * 0.05)));
                 setZoom(newZoom);
               };
 
@@ -149,7 +150,7 @@ const LyricsHeader = ({
           </label>
         )}
 
-        
+
       </div>
     </div>
   );
