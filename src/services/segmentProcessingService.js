@@ -40,6 +40,15 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             retryCount++;
             console.error(`Error processing segment ${segmentIndex+1}, attempt ${retryCount}:`, error);
 
+            // Check for 503 error
+            if (error.message && (
+                (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
+                error.message.includes('The model is overloaded')
+            )) {
+                // If we hit a 503 error, throw it with segment information
+                throw new Error(`Segment ${segmentIndex+1}: ${t('errors.geminiOverloaded')}`);
+            }
+
             // Check for token limit error
             if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
                 // If we hit token limit, we need to use smaller segments

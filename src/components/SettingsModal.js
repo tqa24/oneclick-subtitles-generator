@@ -9,7 +9,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
-  const [segmentDuration, setSegmentDuration] = useState(20); // Default to 20 minutes
+  const [segmentDuration, setSegmentDuration] = useState(5); // Default to 20 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-pro-exp-03-25'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
@@ -19,7 +19,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   useEffect(() => {
     const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
-    const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '20');
+    const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
     const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-pro-exp-03-25';
     const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
 

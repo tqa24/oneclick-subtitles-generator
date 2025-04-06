@@ -98,7 +98,7 @@
     "minutes": "분",
     "geminiModel": "제미나이 모델",
     "geminiModelDescription": "자막 생성에 사용할 제미나이 모델을 선택하세요. 다른 모델은 정확도와 속도 사이의 트레이드오프를 제공합니다.",
-    "modelBestAccuracy": "제미나이 2.5 프로 (최고 정확도, 가장 느림)",
+    "modelBestAccuracy": "제미나이 2.5 프로 (최고 정확도, 가장 느림, 과부하 상태 쉬움, 짧은 비디오에 적합)",
     "modelThirdBest": "제미나이 2.0 플래시 (두 번째로 정확함, 적절한 정확도, 중간 속도)",
     "modelFastest": "제미나이 2.0 플래시 라이트 (가장 낮은 정확도, 가장 빠름 - 테스트용)",
     "cache": "캐시 관리",
@@ -127,7 +127,7 @@
     "apiKeyRequired": "먼저 설정에서 API 키를 설정하세요.",
     "invalidInput": "유효한 입력(YouTube URL, 검색 결과 또는 파일 업로드)을 제공하세요.",
     "invalidFile": "유효하지 않은 파일 형식 또는 크기입니다. 지원되는 형식을 확인하세요.",
-    "geminiOverloaded": "[503 서비스 사용 불가] 모델이 과부하 상태입니다. 잠시 후 다시 시도하거나, 새 Google Cloud 프로젝트를 만들고 새 API 키를 생성하세요.",
+    "geminiOverloaded": "강력한 모델은 과부하 상태가 되는 경향이 있습니다. 다른 모델을 사용하거나 세그먼트 지속 시간을 줄여보세요.",
     "tokenLimitExceeded": "비디오 세그먼트가 Gemini가 처리하기에 너무 큽니다. 더 짧은 비디오나 더 낮은 화질의 비디오를 사용해 보세요.",
     "fileSizeTooLarge": "파일 크기({{size}}MB)가 권장 최대치 {{maxSize}}MB를 초과합니다. 더 작은 파일이나 더 낮은 화질의 비디오를 사용해 주세요."
   },

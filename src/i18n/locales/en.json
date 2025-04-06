@@ -100,7 +100,7 @@
     "minutes": "minutes",
     "geminiModel": "Gemini Model",
     "geminiModelDescription": "Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.",
-    "modelBestAccuracy": "Gemini 2.5 Pro (Best accuracy, slowest)",
+    "modelBestAccuracy": "Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded, suitable for short videos)",
     "modelThirdBest": "Gemini 2.0 Flash (Second best, acceptable accuracy, medium speed)",
     "modelFastest": "Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)",
     "cache": "Cache Management",
@@ -129,7 +129,7 @@
     "apiKeyRequired": "Please set your API key in the settings first.",
     "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
     "invalidFile": "Invalid file format or size. Please check the supported formats.",
-    "geminiOverloaded": "[503 Service Unavailable] The model is overloaded. Please wait a few minutes and try again, or create a new Google Cloud project and generate a new API key.",
+    "geminiOverloaded": "Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration",
     "tokenLimitExceeded": "The video segment is too large for Gemini to process. Please try with a shorter video or lower video quality.",
     "fileSizeTooLarge": "File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video."
   },
