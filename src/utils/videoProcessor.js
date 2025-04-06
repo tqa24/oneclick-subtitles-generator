@@ -20,6 +20,10 @@ export { retrySegmentProcessing };
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
+    // Check if using Gemini 2.5 Pro model
+    const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.5-pro-exp-03-25';
+    const isUsingStrongModel = currentModel === 'gemini-2.5-pro-exp-03-25';
+
     // Create an array to track segment status
     const segmentStatusArray = [];
 
@@ -99,7 +103,25 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
         });
         window.dispatchEvent(segmentsEvent);
 
-        // Update status to show we're processing in parallel
+        // For strong model (Gemini 2.5 Pro), show warning and don't process automatically
+        if (isUsingStrongModel) {
+            onStatusUpdate({
+                message: t('output.strongModelWarning', 'You are choosing an easily overloaded model, please process each segment one by one'),
+                type: 'warning'
+            });
+
+            // Initialize all segments as pending but don't process them
+            segments.forEach((segment, i) => {
+                updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'));
+            });
+
+            // Create an empty array for subtitles that will be filled as segments are processed
+            // We return an empty array but segments will be processed one by one on demand
+            // and combined in the retrySegmentProcessing function
+            return [];
+        }
+
+        // For other models, process in parallel as usual
         onStatusUpdate({
             message: t('output.processingInParallel', 'Processing in parallel...'),
             type: 'loading'

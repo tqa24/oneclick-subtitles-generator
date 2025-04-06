@@ -52,8 +52,22 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // State to store video segments for retrying
+  // State to store video segments for retrying or generating
   const [videoSegments, setVideoSegments] = useState([]);
+
+  // Handler for generating a specific segment (for strong model)
+  const handleGenerateSegment = async (segmentIndex, segments) => {
+    if (!segments || !segments[segmentIndex]) {
+      console.error('No segment found at index', segmentIndex);
+      return;
+    }
+
+    console.log('Generating segment', segmentIndex, 'and combining with existing subtitles');
+
+    // Use the retrySegment function which will properly combine this segment's results
+    // with any previously processed segments
+    await retrySegment(segmentIndex, segments);
+  };
 
   // Listen for segment status updates
   useEffect(() => {
@@ -419,6 +433,7 @@ function App() {
             segmentsStatus={segmentsStatus}
             activeTab={activeTab}
             onRetrySegment={retrySegment}
+            onGenerateSegment={handleGenerateSegment}
             videoSegments={videoSegments}
             retryingSegments={retryingSegments}
             timeFormat={timeFormat}

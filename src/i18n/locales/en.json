@@ -59,7 +59,11 @@
     "done": "Done",
     "failed": "Failed",
     "cached": "Cached",
-    "pending": "Pending"
+    "pending": "Pending",
+    "generateSegment": "Generate",
+    "generateSegmentTooltip": "Process this segment",
+    "strongModelWarning": "You are choosing an easily overloaded model, please process each segment one by one",
+    "segmentGenerateSuccess": "Segment {{segmentNumber}} processed successfully and combined with existing subtitles"
   },
   "settings": {
     "title": "Settings",

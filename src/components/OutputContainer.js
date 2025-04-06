@@ -5,7 +5,7 @@ import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
+const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -86,6 +86,10 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
             onRetrySegment={(segmentIndex) => {
               console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
               onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
+            }}
+            onGenerateSegment={(segmentIndex) => {
+              console.log('OutputContainer: Generating segment', segmentIndex, 'with videoSegments:', videoSegments);
+              onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
             }}
             retryingSegments={retryingSegments}
           />

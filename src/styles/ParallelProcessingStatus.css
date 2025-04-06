@@ -158,6 +158,60 @@
 
 /* Using global pulse animation from material-tokens.css */
 
+/* Material Design 3 button for generate */
+.segment-generate-btn {
+  background: rgba(var(--md-tertiary-rgb), 0.1);
+  border: 1px solid var(--md-tertiary);
+  cursor: pointer !important; /* Force cursor to be pointer */
+  color: var(--md-tertiary);
+  padding: 6px 12px;
+  margin-left: 4px;
+  border-radius: 16px;
+  font-size: var(--md-label-small-size);
+  font-weight: var(--md-label-small-weight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  position: relative;
+  overflow: visible; /* Changed from hidden to ensure the button is clickable */
+  z-index: 100 !important; /* Ensure it's above ALL other elements */
+  pointer-events: auto !important; /* Force pointer events to be enabled */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add shadow for emphasis */
+}
+
+/* State layer for hover effect */
+.segment-generate-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 16px;
+}
+
+.segment-generate-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-tertiary), transparent var(--md-state-hover-opacity));
+}
+
+.segment-generate-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  background-color: rgba(var(--md-tertiary-rgb), 0.2);
+}
+
+.segment-generate-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(var(--md-tertiary-rgb), 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 /* Material Design 3 icon button for refresh */
 .segment-retry-btn {
   background: rgba(var(--md-primary-rgb), 0.1);

@@ -286,9 +286,9 @@ export const useSubtitles = (t) => {
 
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments) => {
-        if (!subtitlesData) {
-            return false;
-        }
+        // Initialize subtitlesData to empty array if it's null
+        // This happens when using the strong model where we process segments one by one
+        const currentSubtitles = subtitlesData || [];
 
         // Mark this segment as retrying
         setRetryingSegments(prev => [...prev, segmentIndex]);
@@ -308,7 +308,7 @@ export const useSubtitles = (t) => {
             const updatedSubtitles = await retrySegmentProcessing(
                 segmentIndex,
                 segments,
-                subtitlesData,
+                currentSubtitles,
                 (status) => {
                     // Only update the overall status if it's a success message
                     if (status.type === 'success') {
@@ -322,8 +322,12 @@ export const useSubtitles = (t) => {
             setSubtitlesData(updatedSubtitles);
 
             // Show a brief success message
+            // Check if we're generating a new segment or retrying an existing one
+            const isGenerating = !subtitlesData || subtitlesData.length === 0;
             setStatus({
-                message: t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }),
+                message: isGenerating
+                    ? t('output.segmentGenerateSuccess', 'Segment {{segmentNumber}} processed successfully and combined with existing subtitles', { segmentNumber: segmentIndex + 1 })
+                    : t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }),
                 type: 'success'
             });
             return true;

@@ -39,33 +39,32 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
         // Update status to show success
         updateSegmentStatus(segmentIndex, 'success', t('output.processingComplete', 'Processing complete'), t);
 
-        // If we have current subtitles, replace the ones from this segment
-        if (currentSubtitles && currentSubtitles.length > 0) {
-            // Remove subtitles from this segment's time range
-            const segmentStartTime = startTime;
-            const segmentEndTime = startTime + getMaxSegmentDurationSeconds();
+        // Always combine with existing subtitles (if any)
+        // Ensure currentSubtitles is at least an empty array
+        const existingSubtitles = currentSubtitles || [];
 
-            // Filter out subtitles in this segment's time range
-            const filteredSubtitles = currentSubtitles.filter(subtitle =>
-                subtitle.start < segmentStartTime || subtitle.start >= segmentEndTime
-            );
+        // Remove subtitles from this segment's time range
+        const segmentStartTime = startTime;
+        const segmentEndTime = startTime + getMaxSegmentDurationSeconds();
 
-            // Add the new subtitles
-            const updatedSubtitles = [...filteredSubtitles, ...newSegmentSubtitles];
+        // Filter out subtitles in this segment's time range
+        const filteredSubtitles = existingSubtitles.filter(subtitle =>
+            subtitle.start < segmentStartTime || subtitle.start >= segmentEndTime
+        );
 
-            // Sort by start time
-            updatedSubtitles.sort((a, b) => a.start - b.start);
+        // Add the new subtitles
+        const updatedSubtitles = [...filteredSubtitles, ...newSegmentSubtitles];
 
-            // Renumber IDs
-            updatedSubtitles.forEach((subtitle, index) => {
-                subtitle.id = index + 1;
-            });
+        // Sort by start time
+        updatedSubtitles.sort((a, b) => a.start - b.start);
 
-            return updatedSubtitles;
-        }
+        // Renumber IDs
+        updatedSubtitles.forEach((subtitle, index) => {
+            subtitle.id = index + 1;
+        });
 
-        // If we don't have current subtitles, just return the new ones
-        return newSegmentSubtitles;
+        console.log(`Combined ${filteredSubtitles.length} existing subtitles with ${newSegmentSubtitles.length} new subtitles from segment ${segmentIndex + 1}`);
+        return updatedSubtitles;
     } catch (error) {
         console.error(`Error retrying segment ${segmentIndex + 1}:`, error);
         updateSegmentStatus(segmentIndex, 'error', error.message || t('output.processingFailed', 'Processing failed'), t);

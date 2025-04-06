@@ -57,7 +57,11 @@
     "done": "완료",
     "failed": "실패",
     "cached": "캐시됨",
-    "pending": "대기 중"
+    "pending": "대기 중",
+    "generateSegment": "생성",
+    "generateSegmentTooltip": "이 세그먼트 처리",
+    "strongModelWarning": "쉽게 과부하되는 모델을 선택하셨습니다. 각 세그먼트를 하나씩 처리해 주세요",
+    "segmentGenerateSuccess": "세그먼트 {{segmentNumber}}가 성공적으로 처리되어 기존 자막과 결합되었습니다"
   },
   "settings": {
     "title": "설정",

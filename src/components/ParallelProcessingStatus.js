@@ -10,10 +10,11 @@ import { FiRefreshCw } from 'react-icons/fi';
  * @param {string} props.overallStatus - Overall processing status message
  * @param {string} props.statusType - Status type (loading, success, error, warning)
  * @param {Function} props.onRetrySegment - Function to retry processing a specific segment
+ * @param {Function} props.onGenerateSegment - Function to generate a specific segment (for strong model)
  * @param {Array} props.retryingSegments - Array of segment indices that are currently being retried
  * @returns {JSX.Element} - Rendered component
  */
-const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment, retryingSegments = [] }) => {
+const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment, onGenerateSegment, retryingSegments = [] }) => {
   const { t } = useTranslation();
 
   if (!segments || segments.length === 0) {
@@ -42,6 +43,21 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
               <span className="segment-number">{index + 1}</span>
               <span className="segment-indicator"></span>
               <span className="segment-message">{segment.shortMessage || segment.status}</span>
+              {/* Show generate button for pending segments */}
+              {segment.status === 'pending' && !retryingSegments.includes(index) && onGenerateSegment && (
+                <button
+                  className="segment-generate-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Generate button clicked for segment', index);
+                    onGenerateSegment(index);
+                  }}
+                  title={t('output.generateSegmentTooltip', 'Process this segment')}
+                >
+                  {t('output.generateSegment', 'Generate')}
+                </button>
+              )}
+
               {/* Show refresh button for completed segments that aren't currently being retried */}
               {segment.status === 'success' && !retryingSegments.includes(index) && (
                 /* Debug info to help troubleshoot */
@@ -52,6 +68,21 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                     e.stopPropagation();
                     console.log('Retry button clicked for segment', index);
                     onRetrySegment && onRetrySegment(index);
+                  }}
+                  title={t('output.retrySegment', 'Retry this segment')}
+                >
+                  <FiRefreshCw size={14} />
+                </button>
+              )}
+
+              {/* Show retry button for error segments */}
+              {segment.status === 'error' && !retryingSegments.includes(index) && onRetrySegment && (
+                <button
+                  className="segment-retry-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Retry button clicked for segment', index);
+                    onRetrySegment(index);
                   }}
                   title={t('output.retrySegment', 'Retry this segment')}
                 >
