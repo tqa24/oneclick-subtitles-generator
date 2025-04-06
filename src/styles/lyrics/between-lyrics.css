@@ -70,8 +70,8 @@
 
 /* Arrow buttons styling */
 .arrow-button {
-  width: 28px; /* Slightly larger than before */
-  height: 28px;
+  width: 32px; /* Increased size for better clickability */
+  height: 32px;
   border-radius: 50%;
   background-color: var(--md-primary-container);
   border: none;
@@ -87,13 +87,29 @@
   padding: 0;
   /* Add a subtle pulse animation to draw attention */
   animation: subtle-pulse 2s infinite alternate;
+  /* Add a larger hit area */
+  position: relative;
+}
+
+/* Create a larger hit area for the arrow buttons */
+.arrow-button::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  z-index: -1;
 }
 
 .arrow-button:hover {
-  transform: scale(1.15);
+  transform: scale(1.2); /* Increased scale for better visibility */
   box-shadow: var(--md-elevation-level4);
   background-color: var(--md-primary); /* Stronger color on hover */
   color: var(--md-on-primary);
+  /* Add a glow effect to make it more noticeable */
+  box-shadow: 0 0 8px var(--md-primary);
 }
 
 .arrow-button:active {
@@ -113,7 +129,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px; /* Increased gap for better separation */
-  z-index: 10;
+  z-index: 200; /* Increased z-index to ensure it's above other elements */
   top: 0;
   left: 0;
   width: 100%;
@@ -131,14 +147,19 @@
   left: 0;
   right: 0;
   margin: 0 auto; /* Center horizontally */
+  /* Add a small transparent area around the button to make it easier to click */
+  padding: 4px;
 }
 
 .arrow-button.down {
   position: absolute;
-  bottom: -32px; /* Positioned below the button */
+  bottom: -32px; /* Match the same distance as the top arrow for consistency */
   left: 0;
   right: 0;
   margin: 0 auto; /* Center horizontally */
+  z-index: 201; /* Even higher z-index for the down button */
+  /* Add a small transparent area around the button to make it easier to click */
+  padding: 4px;
 }
 
 /* Container styles */
@@ -149,7 +170,7 @@
   width: 32px;
   height: 32px;
   margin: 0 4px; /* Add spacing between buttons */
-  z-index: 5; /* Ensure proper stacking */
+  z-index: 150; /* Increased z-index to ensure proper stacking */
 }
 
 /* Create a continuous hover area */
@@ -166,6 +187,7 @@
   z-index: -1;
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none; /* Prevent the hover area from capturing mouse events */
 }
 
 /* Show the hover area background when hovered */

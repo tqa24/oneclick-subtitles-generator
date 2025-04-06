@@ -32,9 +32,14 @@
 }
 
 /* Material Design 3 state layers for list items - enhanced styling */
-.lyric-item:hover:not(.dragging) {
+.lyric-item:hover:not(.dragging):not(.arrow-hover) {
   background-color: color-mix(in srgb, var(--md-primary), transparent 95%);
   /* Removed the transform that pushed items to the right */
+}
+
+/* Prevent hover effect when arrow buttons are being interacted with */
+.lyric-item.arrow-hover {
+  background-color: transparent;
 }
 
 .lyric-item.current {

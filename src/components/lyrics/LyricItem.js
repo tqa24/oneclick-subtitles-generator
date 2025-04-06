@@ -111,7 +111,19 @@ const LyricItem = ({
   // Handle insert container mouse leave
   const handleInsertMouseLeave = () => {
     insertTimeoutRef.current = setTimeout(() => {
-      setShowInsertArrows(false);
+      // Check if the mouse is over any arrow button before hiding
+      const arrowButtons = document.querySelectorAll('.insert-lyric-button-container .arrow-button');
+      let isOverArrow = false;
+
+      arrowButtons.forEach(button => {
+        if (button.matches(':hover')) {
+          isOverArrow = true;
+        }
+      });
+
+      if (!isOverArrow) {
+        setShowInsertArrows(false);
+      }
     }, 300); // 300ms delay before hiding
   };
 
@@ -127,7 +139,19 @@ const LyricItem = ({
   // Handle merge container mouse leave
   const handleMergeMouseLeave = () => {
     mergeTimeoutRef.current = setTimeout(() => {
-      setShowMergeArrows(false);
+      // Check if the mouse is over any arrow button before hiding
+      const arrowButtons = document.querySelectorAll('.merge-lyrics-button-container .arrow-button');
+      let isOverArrow = false;
+
+      arrowButtons.forEach(button => {
+        if (button.matches(':hover')) {
+          isOverArrow = true;
+        }
+      });
+
+      if (!isOverArrow) {
+        setShowMergeArrows(false);
+      }
     }, 300); // 300ms delay before hiding
   };
 
@@ -169,18 +193,21 @@ const LyricItem = ({
   // Handle insert above
   const handleInsertAbove = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     onInsert(index - 1 >= 0 ? index - 1 : 0);
   };
 
   // Handle insert below
   const handleInsertBelow = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     onInsert(index);
   };
 
   // Handle merge with above
   const handleMergeAbove = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     if (index > 0) {
       onMerge(index - 1);
     }
@@ -189,6 +216,7 @@ const LyricItem = ({
   // Handle merge with below
   const handleMergeBelow = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     if (hasNextLyric) {
       onMerge(index);
     }
@@ -254,6 +282,12 @@ const LyricItem = ({
                           className="arrow-button up"
                           onClick={handleInsertAbove}
                           title={t('lyrics.insertAbove', 'Add above')}
+                          onMouseEnter={() => {
+                            if (insertTimeoutRef.current) {
+                              clearTimeout(insertTimeoutRef.current);
+                              insertTimeoutRef.current = null;
+                            }
+                          }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                             <polyline points="18 15 12 9 6 15"></polyline>
@@ -263,6 +297,12 @@ const LyricItem = ({
                           className="arrow-button down"
                           onClick={handleInsertBelow}
                           title={t('lyrics.insertBelow', 'Add below')}
+                          onMouseEnter={() => {
+                            if (insertTimeoutRef.current) {
+                              clearTimeout(insertTimeoutRef.current);
+                              insertTimeoutRef.current = null;
+                            }
+                          }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                             <polyline points="6 9 12 15 18 9"></polyline>
@@ -291,6 +331,12 @@ const LyricItem = ({
                           onClick={handleMergeAbove}
                           title={t('lyrics.mergeAbove', 'Merge with above')}
                           disabled={index <= 0}
+                          onMouseEnter={() => {
+                            if (mergeTimeoutRef.current) {
+                              clearTimeout(mergeTimeoutRef.current);
+                              mergeTimeoutRef.current = null;
+                            }
+                          }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                             <polyline points="18 15 12 9 6 15"></polyline>
@@ -301,6 +347,12 @@ const LyricItem = ({
                           onClick={handleMergeBelow}
                           title={t('lyrics.mergeBelow', 'Merge with below')}
                           disabled={!hasNextLyric}
+                          onMouseEnter={() => {
+                            if (mergeTimeoutRef.current) {
+                              clearTimeout(mergeTimeoutRef.current);
+                              mergeTimeoutRef.current = null;
+                            }
+                          }}
                         >
                           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                             <polyline points="6 9 12 15 18 9"></polyline>
