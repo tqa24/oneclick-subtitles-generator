@@ -37,11 +37,11 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
   (async () => {
     try {
       console.log('Starting YouTube video download for:', videoId);
-      
+
       // First check if the video already exists on the server
       const checkResponse = await fetch(`${SERVER_URL}/api/video-exists/${videoId}`);
       const checkData = await checkResponse.json();
-      
+
       if (checkData.exists) {
         // Video already exists, no need to download
         console.log('Video already exists on server:', videoId);
@@ -50,11 +50,11 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
         downloadQueue[videoId].url = `${SERVER_URL}${checkData.url}`;
         return;
       }
-      
+
       // If not, start the download
       downloadQueue[videoId].status = 'downloading';
       downloadQueue[videoId].progress = 10;
-      
+
       // Request server to download the video
       const downloadResponse = await fetch(`${SERVER_URL}/api/download-video`, {
         method: 'POST',
@@ -63,27 +63,27 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
         },
         body: JSON.stringify({ videoId }),
       });
-      
+
       if (!downloadResponse.ok) {
         const errorData = await downloadResponse.json();
         throw new Error(errorData.error || 'Failed to download video');
       }
-      
+
       const downloadData = await downloadResponse.json();
-      
+
       // Update queue entry with success
       downloadQueue[videoId].status = 'completed';
       downloadQueue[videoId].progress = 100;
       downloadQueue[videoId].url = `${SERVER_URL}${downloadData.url}`;
       console.log('Video downloaded successfully:', videoId);
-      
+
     } catch (error) {
       console.error('Error in background download process:', error);
       downloadQueue[videoId].status = 'error';
       downloadQueue[videoId].error = error.message;
     }
   })();
-  
+
   return videoId;
 };
 
@@ -102,7 +102,7 @@ export const checkDownloadStatus = (videoId) => {
       error: null
     };
   }
-  
+
   return downloadQueue[videoId];
 };
 
@@ -114,17 +114,65 @@ export const checkDownloadStatus = (videoId) => {
  */
 export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) => {
   const videoId = startYoutubeVideoDownload(youtubeUrl);
-  
+
+  // Store the original URL for potential redownload
+  const originalUrl = youtubeUrl;
+
   // Poll for completion
   return new Promise((resolve, reject) => {
     let attempts = 0;
     const maxAttempts = 300; // 150 seconds max wait time
-    
+    let simulatedProgress = 5;
+
     const checkInterval = setInterval(async () => {
       const status = checkDownloadStatus(videoId);
-      onProgress(status.progress);
-      
+
+      // If status is 'downloading', simulate progress
+      if (status.status === 'downloading' && status.progress < 95) {
+        // Increment progress by a small amount each time
+        simulatedProgress = Math.min(95, simulatedProgress + 5);
+        downloadQueue[videoId].progress = simulatedProgress;
+        onProgress(simulatedProgress);
+      } else {
+        onProgress(status.progress);
+      }
+
       if (status.status === 'completed') {
+        // Check if the video URL is valid by making a HEAD request
+        try {
+          const checkResponse = await fetch(status.url, { method: 'HEAD' });
+          if (!checkResponse.ok) {
+            // Video file doesn't exist anymore, restart the download silently
+            console.log('Video file not found on server, restarting download...');
+            clearInterval(checkInterval);
+
+            // Remove the video from the download queue
+            delete downloadQueue[videoId];
+
+            // Restart the download process
+            const newVideoId = startYoutubeVideoDownload(originalUrl);
+
+            // Set up a new interval to check the download status
+            const newCheckInterval = setInterval(async () => {
+              const newStatus = checkDownloadStatus(newVideoId);
+              onProgress(newStatus.progress);
+
+              if (newStatus.status === 'completed') {
+                clearInterval(newCheckInterval);
+                resolve(newStatus.url);
+              } else if (newStatus.status === 'error') {
+                clearInterval(newCheckInterval);
+                reject(new Error(newStatus.error || 'Unknown download error'));
+              }
+            }, 500);
+
+            return;
+          }
+        } catch (error) {
+          console.warn('Error checking video existence with HEAD request:', error);
+          // Continue with the resolve anyway, the App.js error handling will catch any issues
+        }
+
         clearInterval(checkInterval);
         resolve(status.url);
       } else if (status.status === 'error') {
@@ -135,7 +183,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) =>
         try {
           const checkResponse = await fetch(`${SERVER_URL}/api/video-exists/${videoId}`);
           const checkData = await checkResponse.json();
-          
+
           if (checkData.exists) {
             // Video exists, update status and resolve
             downloadQueue[videoId] = {
@@ -152,7 +200,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) =>
           console.warn('Error checking video existence:', error);
         }
       }
-      
+
       if (++attempts >= maxAttempts) {
         clearInterval(checkInterval);
         reject(new Error('Download timeout exceeded'));
@@ -168,7 +216,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) =>
  */
 export const extractYoutubeVideoId = (url) => {
   if (!url) return null;
-  
+
   // Handle both youtube.com and youtu.be formats
   const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
   const match = url.match(regExp);

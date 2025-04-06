@@ -77,8 +77,8 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   return (
     <div className="output-container">
       {status?.message && (
-        // Only show segments status for file upload method and when segments exist
-        activeTab === 'file-upload' && segmentsStatus.length > 0 ? (
+        // Show segments status only for file-upload tab and when segments exist
+        segmentsStatus.length > 0 && !activeTab.includes('youtube') ? (
           <ParallelProcessingStatus
             segments={segmentsStatus}
             overallStatus={status.message}

@@ -103,12 +103,16 @@ export const useSubtitles = (t) => {
             let subtitles;
 
             // Check if this is a long video that needs special processing
-            if (inputType === 'file-upload' && input.type.startsWith('video/')) {
+            if (input.type && input.type.startsWith('video/')) {
                 try {
                     const duration = await getVideoDuration(input);
                     const durationMinutes = Math.floor(duration / 60);
 
-                    if (durationMinutes > 30) {
+                    // Debug log to see the video duration
+                    console.log(`Video duration: ${duration} seconds, ${durationMinutes} minutes`);
+
+                    // For testing purposes, always use segmentation
+                    if (true) {
                         // Process long video by splitting it into segments
                         subtitles = await processLongVideo(input, setStatus, t);
                     } else {
@@ -214,7 +218,7 @@ export const useSubtitles = (t) => {
             let subtitles;
 
             // Check if this is a long video that needs special processing
-            if (inputType === 'file-upload' && input.type.startsWith('video/')) {
+            if (input.type && input.type.startsWith('video/')) {
                 try {
                     const duration = await getVideoDuration(input);
                     const durationMinutes = Math.floor(duration / 60);

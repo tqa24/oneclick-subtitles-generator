@@ -24,6 +24,8 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   const {
     subtitlesData,
@@ -257,42 +259,87 @@ function App() {
     // For YouTube tabs, download the video first and switch to upload tab
     if (activeTab.includes('youtube') && selectedVideo) {
       try {
+        // Set downloading state to true to disable the generate button
+        setIsDownloading(true);
+        setDownloadProgress(0);
         setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
         // Download the YouTube video
         const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
-          setStatus({
-            message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
-            type: 'loading'
-          });
+          setDownloadProgress(progress);
+          // Just update the download progress state, no need to set status
+          // as it will be shown in the Generate button
         });
 
-        // Create a fetch request to get the video as a blob
-        const response = await fetch(videoUrl);
-        const blob = await response.blob();
+        try {
+          // Create a fetch request to get the video as a blob
+          const response = await fetch(videoUrl);
 
-        // Create a File object from the blob
-        const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
-        const file = new File([blob], filename, { type: 'video/mp4' });
+          // Check if the response is ok
+          if (!response.ok) {
+            throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+          }
 
-        // Switch to the upload tab and set the file
-        handleTabChange('file-upload');
+          const blob = await response.blob();
 
-        // Process the file as if it was uploaded
-        // Create a new object URL for the file
-        const objectUrl = URL.createObjectURL(file);
-        localStorage.setItem('current_file_url', objectUrl);
+          // Check if the blob has content (not empty)
+          if (blob.size === 0) {
+            throw new Error('Downloaded video is empty. The file may have been deleted from the server.');
+          }
 
-        // Set the uploaded file
-        setUploadedFile(file);
+          // Create a File object from the blob
+          const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
+          const file = new File([blob], filename, { type: 'video/mp4' });
 
-        setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+          // Switch to the upload tab without resetting state
+          localStorage.setItem('lastActiveTab', 'file-upload');
+          setActiveTab('file-upload');
+          setSelectedVideo(null);
 
-        // Now process with the downloaded file
-        input = file;
-        inputType = 'file-upload';
+          // Process the file as if it was uploaded
+          // Create a new object URL for the file
+          const objectUrl = URL.createObjectURL(file);
+          localStorage.setItem('current_file_url', objectUrl);
+
+          // Set the uploaded file
+          setUploadedFile(file);
+
+          // Reset downloading state
+          setIsDownloading(false);
+          setDownloadProgress(100);
+
+          setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+
+          // Now process with the downloaded file
+          input = file;
+          inputType = 'file-upload';
+
+          // Simulate uploading the file to trigger segmentation
+          // Create a new FormData object to simulate a file upload
+          const formData = new FormData();
+          formData.append('file', file);
+
+          // Simulate the upload process
+          setStatus({ message: t('output.processingVideo', 'Processing. This may take a few minutes...'), type: 'loading' });
+
+          // Start generating subtitles with the downloaded file
+          await generateSubtitles(file, 'file-upload', apiKeysSet);
+        } catch (error) {
+          console.error('Error processing downloaded video:', error);
+          // Reset downloading state
+          setIsDownloading(false);
+          setDownloadProgress(0);
+          setStatus({
+            message: t('errors.videoProcessingFailed', 'Video processing failed: {{message}}', { message: error.message }),
+            type: 'error'
+          });
+          return;
+        }
       } catch (error) {
         console.error('Error downloading video:', error);
+        // Reset downloading state
+        setIsDownloading(false);
+        setDownloadProgress(0);
         setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
         return;
       }
@@ -318,42 +365,87 @@ function App() {
     // For YouTube tabs, download the video first and switch to upload tab
     if (activeTab.includes('youtube') && selectedVideo) {
       try {
+        // Set downloading state to true to disable the generate button
+        setIsDownloading(true);
+        setDownloadProgress(0);
         setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
         // Download the YouTube video
         const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
-          setStatus({
-            message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
-            type: 'loading'
-          });
+          setDownloadProgress(progress);
+          // Just update the download progress state, no need to set status
+          // as it will be shown in the Generate button
         });
 
-        // Create a fetch request to get the video as a blob
-        const response = await fetch(videoUrl);
-        const blob = await response.blob();
+        try {
+          // Create a fetch request to get the video as a blob
+          const response = await fetch(videoUrl);
 
-        // Create a File object from the blob
-        const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
-        const file = new File([blob], filename, { type: 'video/mp4' });
+          // Check if the response is ok
+          if (!response.ok) {
+            throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+          }
 
-        // Switch to the upload tab and set the file
-        handleTabChange('file-upload');
+          const blob = await response.blob();
 
-        // Process the file as if it was uploaded
-        // Create a new object URL for the file
-        const objectUrl = URL.createObjectURL(file);
-        localStorage.setItem('current_file_url', objectUrl);
+          // Check if the blob has content (not empty)
+          if (blob.size === 0) {
+            throw new Error('Downloaded video is empty. The file may have been deleted from the server.');
+          }
 
-        // Set the uploaded file
-        setUploadedFile(file);
+          // Create a File object from the blob
+          const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
+          const file = new File([blob], filename, { type: 'video/mp4' });
 
-        setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+          // Switch to the upload tab without resetting state
+          localStorage.setItem('lastActiveTab', 'file-upload');
+          setActiveTab('file-upload');
+          setSelectedVideo(null);
 
-        // Now process with the downloaded file
-        input = file;
-        inputType = 'file-upload';
+          // Process the file as if it was uploaded
+          // Create a new object URL for the file
+          const objectUrl = URL.createObjectURL(file);
+          localStorage.setItem('current_file_url', objectUrl);
+
+          // Set the uploaded file
+          setUploadedFile(file);
+
+          // Reset downloading state
+          setIsDownloading(false);
+          setDownloadProgress(100);
+
+          setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+
+          // Now process with the downloaded file
+          input = file;
+          inputType = 'file-upload';
+
+          // Simulate uploading the file to trigger segmentation
+          // Create a new FormData object to simulate a file upload
+          const formData = new FormData();
+          formData.append('file', file);
+
+          // Simulate the upload process
+          setStatus({ message: t('output.processingVideo', 'Processing. This may take a few minutes...'), type: 'loading' });
+
+          // Start generating subtitles with the downloaded file
+          await retryGeneration(file, 'file-upload', apiKeysSet);
+        } catch (error) {
+          console.error('Error processing downloaded video:', error);
+          // Reset downloading state
+          setIsDownloading(false);
+          setDownloadProgress(0);
+          setStatus({
+            message: t('errors.videoProcessingFailed', 'Video processing failed: {{message}}', { message: error.message }),
+            type: 'error'
+          });
+          return;
+        }
       } catch (error) {
         console.error('Error downloading video:', error);
+        // Reset downloading state
+        setIsDownloading(false);
+        setDownloadProgress(0);
         setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
         return;
       }
@@ -401,9 +493,9 @@ function App() {
           {validateInput() && (
             <div className="buttons-container">
               <button
-                className={`generate-btn ${isGenerating ? 'processing' : ''}`}
+                className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
                 onClick={handleGenerateSubtitles}
-                disabled={isGenerating}
+                disabled={isGenerating || isDownloading}
               >
                 {/* Static Gemini icons for fallback */}
                 <div className="gemini-icon-container">
@@ -418,24 +510,29 @@ function App() {
                     </svg>
                   </div>
                 </div>
-                {isGenerating ? (
+                {isGenerating || isDownloading ? (
                   <span className="processing-text-container">
                     <span className="processing-gemini-icon">
                       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
                       </svg>
                     </span>
-                    <span className="processing-text">{t('output.processingVideo').split('...')[0]}</span>
+                    <span className="processing-text">
+                      {isDownloading
+                        ? t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress: downloadProgress })
+                        : t('output.processingVideo').split('...')[0]
+                      }
+                    </span>
                     <span className="processing-dots"></span>
                   </span>
                 ) : t('header.tagline')}
               </button>
 
-              {(subtitlesData || status.type === 'error') && !isGenerating && (
+              {(subtitlesData || status.type === 'error') && !isGenerating && !isDownloading && (
                 <button
                   className={`retry-gemini-btn ${retryingSegments.length > 0 ? 'processing' : ''}`}
                   onClick={handleRetryGeneration}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isDownloading}
                   title={t('output.retryGeminiTooltip')}
                 >
                   {/* Static Gemini icons for fallback */}

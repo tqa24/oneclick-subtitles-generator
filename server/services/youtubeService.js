@@ -26,7 +26,7 @@ function downloadYouTubeVideo(videoId) {
     const ytDlpArgs = [
       '-m', 'yt_dlp',
       videoURL,
-      '--format', 'best[height<=480][ext=mp4]/best[ext=mp4]/best', // Select best mp4 format <= 480p for reliability
+      '--format', 'best[height<=360][ext=mp4]/best[ext=mp4]/best', // Target 360p or less for optimal size and quality
       '--output', outputPath,
       '--no-playlist',
       '--no-warnings',
