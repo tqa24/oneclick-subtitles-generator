@@ -10,7 +10,7 @@ Here are some screenshots showcasing the application:
 
 | ![Screenshot 3](readme_assets/Screenshot%202025-04-05%20001838.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-05%20001444.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Parallel Processing Status/Retry**                       | **Timings Adjust/Add/Remove/Edit, Merge Texts**                           |
+| **Parallel Processing Status/Retry**                       | **Timings Adjust/Add/Remove/Edit/Merge Texts**                           |
 
 | ![Screenshot 5](readme_assets/Screenshot%202025-04-03%20184934.png) | ![Screenshot 6](readme_assets/Screenshot%202025-04-03%20184944.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
