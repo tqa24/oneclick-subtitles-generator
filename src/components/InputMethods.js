@@ -5,7 +5,7 @@ import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
 import '../styles/InputMethods.css';
 
-const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, onDownloadVideoOnly }) => {
+const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab }) => {
   const { t } = useTranslation();
 
   const renderInputMethod = () => {
@@ -15,14 +15,12 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           onVideoSelect={onVideoSelect}
           selectedVideo={selectedVideo}
           setSelectedVideo={setSelectedVideo}
-          onDownloadVideoOnly={onDownloadVideoOnly}
         />;
       case 'youtube-search':
         return <YoutubeSearchInput
           apiKeysSet={apiKeysSet}
           selectedVideo={selectedVideo}
           setSelectedVideo={setSelectedVideo}
-          onDownloadVideoOnly={onDownloadVideoOnly}
         />;
       case 'file-upload':
         return <FileUploadInput

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, onDownloadVideoOnly }) => {
+const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
@@ -149,21 +149,6 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, onDownloadVideoOnly 
           <div className="video-info">
             <h3 className="video-title">{videoTitle}</h3>
             <p className="video-id">{t('youtubeUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
-
-            {onDownloadVideoOnly && (
-              <button
-                className="download-video-btn"
-                onClick={onDownloadVideoOnly}
-                title={t('youtube.downloadVideoOnly', 'Download video only')}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                {t('youtube.downloadVideoOnly', 'Download Video')}
-              </button>
-            )}
           </div>
         </div>
       )}

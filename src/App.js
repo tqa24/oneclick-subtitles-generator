@@ -253,9 +253,49 @@ function App() {
     }
 
     let input, inputType;
+
+    // For YouTube tabs, download the video first and switch to upload tab
     if (activeTab.includes('youtube') && selectedVideo) {
-      input = selectedVideo.url;
-      inputType = 'youtube';
+      try {
+        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+
+        // Download the YouTube video
+        const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
+          setStatus({
+            message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
+            type: 'loading'
+          });
+        });
+
+        // Create a fetch request to get the video as a blob
+        const response = await fetch(videoUrl);
+        const blob = await response.blob();
+
+        // Create a File object from the blob
+        const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
+        const file = new File([blob], filename, { type: 'video/mp4' });
+
+        // Switch to the upload tab and set the file
+        handleTabChange('file-upload');
+
+        // Process the file as if it was uploaded
+        // Create a new object URL for the file
+        const objectUrl = URL.createObjectURL(file);
+        localStorage.setItem('current_file_url', objectUrl);
+
+        // Set the uploaded file
+        setUploadedFile(file);
+
+        setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+
+        // Now process with the downloaded file
+        input = file;
+        inputType = 'file-upload';
+      } catch (error) {
+        console.error('Error downloading video:', error);
+        setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
+        return;
+      }
     } else if (activeTab === 'file-upload' && uploadedFile) {
       input = uploadedFile;
       inputType = 'file-upload';
@@ -274,9 +314,49 @@ function App() {
     }
 
     let input, inputType;
+
+    // For YouTube tabs, download the video first and switch to upload tab
     if (activeTab.includes('youtube') && selectedVideo) {
-      input = selectedVideo.url;
-      inputType = 'youtube';
+      try {
+        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+
+        // Download the YouTube video
+        const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
+          setStatus({
+            message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
+            type: 'loading'
+          });
+        });
+
+        // Create a fetch request to get the video as a blob
+        const response = await fetch(videoUrl);
+        const blob = await response.blob();
+
+        // Create a File object from the blob
+        const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
+        const file = new File([blob], filename, { type: 'video/mp4' });
+
+        // Switch to the upload tab and set the file
+        handleTabChange('file-upload');
+
+        // Process the file as if it was uploaded
+        // Create a new object URL for the file
+        const objectUrl = URL.createObjectURL(file);
+        localStorage.setItem('current_file_url', objectUrl);
+
+        // Set the uploaded file
+        setUploadedFile(file);
+
+        setStatus({ message: t('output.videoDownloadComplete', 'Video download complete! Processing...'), type: 'success' });
+
+        // Now process with the downloaded file
+        input = file;
+        inputType = 'file-upload';
+      } catch (error) {
+        console.error('Error downloading video:', error);
+        setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
+        return;
+      }
     } else if (activeTab === 'file-upload' && uploadedFile) {
       input = uploadedFile;
       inputType = 'file-upload';
@@ -286,33 +366,6 @@ function App() {
 
     // Reset button animation state when generation is complete
     resetGeminiButtonState();
-  };
-
-  const handleDownloadVideoOnly = async () => {
-    if (!selectedVideo) {
-      setStatus({ message: t('errors.invalidInput'), type: 'error' });
-      return;
-    }
-
-    setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
-
-    try {
-      // Use the existing downloadYoutubeVideo function
-      const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
-        setStatus({
-          message: t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress }),
-          type: 'loading'
-        });
-      });
-
-      // Open the video in a new tab
-      window.open(videoUrl, '_blank');
-
-      setStatus({ message: t('output.videoDownloadComplete', 'Video download complete!'), type: 'success' });
-    } catch (error) {
-      console.error('Error downloading video:', error);
-      setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
-    }
   };
 
   const handleTabChange = (tab) => {
@@ -341,7 +394,6 @@ function App() {
           uploadedFile={uploadedFile}
           setUploadedFile={setUploadedFile}
           apiKeysSet={apiKeysSet}
-          onDownloadVideoOnly={handleDownloadVideoOnly}
         />
 
         {/* Consistent layout container for buttons and output */}

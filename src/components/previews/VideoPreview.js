@@ -150,8 +150,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       return;
     }
 
-    console.log('Setting up video element with URL:', videoUrl);
-
     // Event handlers
     const handleMetadataLoaded = () => {
       console.log('Video metadata loaded successfully for:', videoUrl);

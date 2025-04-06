@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
@@ -7,14 +7,49 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   const [error, setError] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
-  
+
   // Maximum file size in MB (2GB = 2048MB)
   const MAX_FILE_SIZE_MB = 2048;
-  
-  // Supported file formats
-  const SUPPORTED_VIDEO_FORMATS = ["video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"];
-  const SUPPORTED_AUDIO_FORMATS = ["audio/wav", "audio/mp3", "audio/aiff", "audio/aac", "audio/ogg", "audio/flac", "audio/mpeg"];
-  
+
+  // Supported file formats - wrapped in useMemo to avoid dependency issues
+  const SUPPORTED_VIDEO_FORMATS = useMemo(() => [
+    "video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"
+  ], []);
+
+  const SUPPORTED_AUDIO_FORMATS = useMemo(() => [
+    "audio/wav", "audio/mp3", "audio/aiff", "audio/aac", "audio/ogg", "audio/flac", "audio/mpeg"
+  ], []);
+
+  // Check if file is a video - wrapped in useCallback to avoid dependency issues
+  const isVideoFile = useCallback((mimeType) => {
+    return SUPPORTED_VIDEO_FORMATS.includes(mimeType);
+  }, [SUPPORTED_VIDEO_FORMATS]);
+
+  // Check if file is an audio - wrapped in useCallback to avoid dependency issues
+  const isAudioFile = useCallback((mimeType) => {
+    return SUPPORTED_AUDIO_FORMATS.includes(mimeType);
+  }, [SUPPORTED_AUDIO_FORMATS]);
+
+  // Display file information - wrapped in useCallback to avoid dependency issues
+  const displayFileInfo = useCallback((file) => {
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    const mediaType = isVideoFile(file.type) ? 'Video' : 'Audio';
+
+    setFileInfo({
+      name: file.name,
+      type: file.type,
+      size: `${fileSizeMB} MB`,
+      mediaType
+    });
+  }, [isVideoFile]);
+
+  // Update fileInfo when uploadedFile changes (for auto-downloaded files)
+  useEffect(() => {
+    if (uploadedFile && !fileInfo) {
+      displayFileInfo(uploadedFile);
+    }
+  }, [uploadedFile, fileInfo, displayFileInfo]);
+
   // Validate file type and size
   const validateFile = (file) => {
     // Check file size
@@ -23,27 +58,17 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
       setError(t('fileUpload.sizeError', 'File size exceeds the maximum limit of {{size}} MB.', { size: MAX_FILE_SIZE_MB }));
       return false;
     }
-    
+
     // Check file type
     if (!isVideoFile(file.type) && !isAudioFile(file.type)) {
       setError(t('fileUpload.formatError', 'Unsupported file format. Please upload a supported video or audio file.'));
       return false;
     }
-    
+
     setError('');
     return true;
   };
-  
-  // Check if file is a video
-  const isVideoFile = (mimeType) => {
-    return SUPPORTED_VIDEO_FORMATS.includes(mimeType);
-  };
-  
-  // Check if file is an audio
-  const isAudioFile = (mimeType) => {
-    return SUPPORTED_AUDIO_FORMATS.includes(mimeType);
-  };
-  
+
   // Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -60,16 +85,16 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
           URL.revokeObjectURL(localStorage.getItem('current_file_url'));
           localStorage.removeItem('current_file_url');
         }
-        
+
         // Create a new object URL for the file
         const objectUrl = URL.createObjectURL(file);
         localStorage.setItem('current_file_url', objectUrl);
-        
+
         // Clear any selected YouTube video state via parent callback
         if (onVideoSelect) {
           onVideoSelect(null);
         }
-        
+
         setUploadedFile(file);
         displayFileInfo(file);
       } else {
@@ -81,19 +106,6 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
         }
       }
     }
-  };
-  
-  // Display file information
-  const displayFileInfo = (file) => {
-    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    const mediaType = isVideoFile(file.type) ? 'Video' : 'Audio';
-    
-    setFileInfo({
-      name: file.name,
-      type: file.type,
-      size: `${fileSizeMB} MB`,
-      mediaType
-    });
   };
 
   // Trigger file input click
@@ -115,15 +127,15 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
   };
-  
+
   return (
     <div className="file-upload-input">
-      <div 
+      <div
         className={`drag-drop-area ${isDragOver ? 'drag-over' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -137,7 +149,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
           accept=".mp4,.mov,.avi,.mp3,.wav,.aac,.ogg"
           style={{ display: 'none' }}
         />
-        
+
         {!uploadedFile ? (
           <>
             <div className="upload-icon">
@@ -160,7 +172,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
         ) : (
           <div className="file-info-card">
             <div className="file-preview">
-              {isVideoFile(fileInfo.type) ? (
+              {fileInfo && isVideoFile(fileInfo.type) ? (
                 <svg className="file-type-icon video" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
                   <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
                   <line x1="7" y1="2" x2="7" y2="22"></line>
@@ -179,16 +191,16 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
                 </svg>
               )}
             </div>
-            
+
             <div className="file-info-content">
               <div className="file-info-header">
-                <h4 className="file-name">{fileInfo.name}</h4>
-                <span className="file-badge">{fileInfo.mediaType}</span>
+                <h4 className="file-name">{fileInfo ? fileInfo.name : 'File'}</h4>
+                <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
               </div>
-              
+
               <div className="file-info-details">
-                <span className="file-info-size">{fileInfo.size}</span>
-                <button 
+                <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
+                <button
                   className="remove-file-btn"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -211,7 +223,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
           </div>
         )}
       </div>
-      
+
       {error && (
         <div className="error-message">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
