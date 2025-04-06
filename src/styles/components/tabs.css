@@ -1,0 +1,76 @@
+/* tabs.css - Styles for tab components */
+
+.input-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+}
+
+/* Material Design 3 pill-shaped tab buttons */
+.tab-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  margin-right: 8px;
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface);
+  color: var(--md-on-surface-variant);
+  font-weight: 500;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  border-radius: var(--md-shape-pill);
+  position: relative;
+  overflow: hidden;
+  height: 40px; /* Fixed height for consistency */
+}
+
+.tab-btn::after {
+  display: none;
+}
+
+/* Material Design 3 active state for tab buttons */
+.tab-btn.active {
+  color: var(--md-primary);
+  font-weight: 600;
+  border-color: var(--md-primary);
+  background: var(--md-primary-container);
+}
+
+/* State layer for hover effect */
+.tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.tab-btn:hover:not(.active)::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
+.tab-btn:hover:not(.active) {
+  border-color: var(--md-outline);
+  transform: translateY(-2px);
+}
+
+.tab-btn svg {
+  margin-right: 0.5rem;
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+
+.tab-btn:hover svg {
+  transform: translateY(-2px);
+}

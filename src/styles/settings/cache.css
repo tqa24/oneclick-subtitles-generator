@@ -1,0 +1,55 @@
+/* Cache section styles */
+
+/* Cache section */
+.cache-section {
+  margin-top: 1.5rem;
+}
+
+.cache-description {
+  margin: 0.5rem 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Material Design 3 card for cache details */
+.cache-details {
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.cache-details-item {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  transition: border-color var(--transition-speed);
+}
+
+.cache-details-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cache-details-item h4 {
+  margin: 0 0 8px 0;
+  font-size: var(--md-title-small-size);
+  line-height: var(--md-title-small-height);
+  font-weight: var(--md-title-small-weight);
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+}
+
+.cache-details-item p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
+  transition: color var(--transition-speed);
+}

@@ -1,0 +1,30 @@
+/* Base modal structure and overlay */
+
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+/* Material Design 3 modal */
+.settings-modal {
+  background-color: var(--background-primary);
+  border-radius: var(--modal-border-radius);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--md-elevation-level3);
+  overflow: hidden;
+  animation: modal-appear var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
+  transition: background-color var(--transition-speed);
+}

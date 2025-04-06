@@ -20,8 +20,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [videoId, setVideoId] = useState(null);
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
-  // State to track if video is playing (used in event handlers)
-  const [isPlaying, setIsPlaying] = useState(false);
+  // We track play state in lastPlayStateRef instead of using state to avoid unnecessary re-renders
 
   // Process the video URL (download if it's YouTube)
   const processVideoUrl = useCallback(async (url) => {
@@ -201,19 +200,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         }
       }
 
-      // Only update isPlaying if the state has actually changed
+      // Update play state in ref to avoid unnecessary re-renders
       const currentlyPlaying = !videoElement.paused;
       if (currentlyPlaying !== lastPlayStateRef.current) {
-        setIsPlaying(currentlyPlaying);
         lastPlayStateRef.current = currentlyPlaying;
       }
     };
 
     const handlePlayPauseEvent = () => {
-      // Only update isPlaying if the state has actually changed
+      // Update play state in ref to avoid unnecessary re-renders
       const currentlyPlaying = !videoElement.paused;
       if (currentlyPlaying !== lastPlayStateRef.current) {
-        setIsPlaying(currentlyPlaying);
         lastPlayStateRef.current = currentlyPlaying;
       }
     };

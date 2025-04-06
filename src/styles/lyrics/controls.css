@@ -1,0 +1,157 @@
+/* Controls styles for buttons and interactive elements */
+
+/* Material Design 3 editing controls */
+.editing-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+/* Material Design 3 sticky toggle */
+.sticky-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  font-weight: 500;
+  color: var(--md-primary);
+  transition: color var(--transition-speed), background-color var(--md-duration-medium2) var(--md-easing-standard);
+  padding: 4px 8px;
+  border-radius: var(--md-shape-pill);
+  position: relative;
+  overflow: hidden;
+  width: 63px;
+}
+
+.sticky-toggle:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
+.sticky-toggle input {
+  margin-right: 8px;
+  accent-color: var(--md-primary);
+  width: 18px;
+  height: 18px;
+}
+
+/* Material Design 3 pill-shaped buttons */
+.undo-btn, .redo-btn, .reset-btn {
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  padding: 4px;
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--md-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  position: relative;
+  overflow: hidden;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+}
+
+.undo-btn svg, .redo-btn svg, .reset-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+
+/* State layer for hover effect */
+.undo-btn::before, .redo-btn::before, .reset-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+}
+
+.undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before {
+  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
+}
+
+.undo-btn:hover, .redo-btn:hover, .reset-btn:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  transform: scale(1.1);
+}
+
+.undo-btn:hover svg {
+  transform: translateX(-2px);
+}
+
+.redo-btn:hover svg {
+  transform: translateX(2px);
+}
+
+.reset-btn:hover svg {
+  transform: rotate(45deg);
+}
+
+.undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Zoom controls inside combined pill */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  flex: 1; /* Take up remaining space */
+}
+
+/* Zoom slider for draggable zoom control */
+.zoom-slider {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 90%);
+  border-radius: var(--md-shape-pill);
+}
+
+.zoom-slider:hover {
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 70%);
+  transform: scale(1.02);
+}
+
+/* Zoom percentage display */
+.zoom-slider span {
+  font-size: var(--md-label-medium-size); /* Larger font */
+  line-height: var(--md-label-medium-height);
+  font-weight: 600; /* Bolder text */
+  color: var(--md-on-primary-container);
+  text-align: center;
+  font-family: 'Roboto Mono', monospace; /* Monospace font for better readability */
+  user-select: none; /* Prevent text selection */
+  padding: 4px 8px;
+  border-radius: var(--md-shape-small);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}

@@ -1,0 +1,293 @@
+/* Lyric items and related components */
+
+.lyric-item-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 40px; /* Ensure minimum height for better spacing */
+}
+
+/* Material Design 3 list item for lyrics - improved for multi-line text */
+.lyric-item {
+  position: relative;
+  padding: 12px 16px;
+  padding-right: 16px; /* Standard padding */
+  border-bottom: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  color: var(--md-on-surface);
+  font-size: var(--md-body-medium-size);
+  line-height: var(--md-body-medium-height);
+  z-index: 1;
+  min-height: 48px; /* Minimum height for consistency */
+  height: auto !important; /* Override fixed height from virtualized list */
+  overflow: visible; /* Ensure content is fully visible */
+}
+
+.lyric-item:last-child {
+  border-bottom: none;
+}
+
+/* Material Design 3 state layers for list items - enhanced styling */
+.lyric-item:hover:not(.dragging) {
+  background-color: color-mix(in srgb, var(--md-primary), transparent 95%);
+  /* Removed the transform that pushed items to the right */
+}
+
+.lyric-item.current {
+  background-color: color-mix(in srgb, var(--md-primary), transparent 85%);
+  border-left: 4px solid var(--md-primary);
+  /* Adjust padding to compensate for the border without pushing content right */
+  padding-left: calc(16px - 4px); /* Default 16px minus the 4px border */
+  font-weight: 500;
+  box-shadow: inset 0 0 8px color-mix(in srgb, var(--md-primary), transparent 80%);
+}
+
+/* Material Design 3 lyric content - improved for multi-line text */
+.lyric-content {
+  display: flex;
+  align-items: flex-start; /* Align to top for multi-line text */
+  gap: 12px;
+  position: relative;
+  width: 100%;
+  flex-wrap: wrap; /* Allow wrapping for very long content */
+}
+
+/* Allow lyric text to wrap to multiple lines - improved for very long text */
+.lyric-text {
+  flex: 1;
+  overflow: visible; /* Allow content to be fully visible */
+  white-space: normal; /* Allow text to wrap */
+  margin-right: 16px; /* Space between text and timing controls */
+  line-height: 1.5; /* Increased line height for better readability */
+  word-break: break-word; /* Break long words if needed */
+  padding: 4px 0; /* Add some vertical padding */
+  min-height: 24px; /* Minimum height to prevent collapsing */
+  display: block; /* Ensure block display for proper wrapping */
+  width: 100%; /* Use full width available */
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.lyric-text:hover {
+  color: var(--md-primary);
+}
+
+.lyric-text span {
+  display: block;
+  padding: 4px 0;
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
+.lyric-text:hover span {
+  transform: translateX(4px);
+}
+
+.lyric-text-input {
+  width: 100%;
+  padding: 4px 8px;
+  margin: -4px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: inherit;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.lyric-text-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+/* Material Design 3 controls container - positioned on the left */
+.lyric-controls {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  left: 0;
+  z-index: 10;
+  margin-right: 12px; /* Space between buttons and text */
+}
+
+.lyric-item:hover .lyric-controls {
+  opacity: 1;
+}
+
+/* Material Design 3 unified button styles for all lyric control buttons */
+.edit-lyric-btn,
+.delete-lyric-btn,
+.merge-lyric-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  cursor: pointer;
+  box-shadow: var(--md-elevation-level1);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+/* State layer for hover effect */
+.edit-lyric-btn::before,
+.delete-lyric-btn::before,
+.merge-lyric-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.edit-lyric-btn:hover::before,
+.delete-lyric-btn:hover::before,
+.merge-lyric-btn:hover::before {
+  background-color: rgba(0, 0, 0, var(--md-state-hover-opacity));
+}
+
+.edit-lyric-btn:hover,
+.delete-lyric-btn:hover,
+.merge-lyric-btn:hover {
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Specific colors for delete button */
+.delete-lyric-btn {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+/* SVG animations for button icons */
+.edit-lyric-btn svg,
+.delete-lyric-btn svg,
+.insert-lyric-button svg,
+.merge-lyrics-button svg {
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
+.edit-lyric-btn:hover svg {
+  transform: rotate(15deg);
+}
+
+.delete-lyric-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+.insert-lyric-button:hover svg {
+  transform: scale(1.2);
+}
+
+.merge-lyrics-button:hover svg {
+  transform: scale(1.2);
+}
+
+/* Material Design 3 timing controls - improved for multi-line text */
+.timing-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* Push to right side */
+  margin-right: 16px; /* Push slightly left from the edge */
+  font-size: var(--md-label-medium-size); /* Larger font size */
+  line-height: var(--md-label-medium-height);
+  color: var(--md-on-surface-variant);
+  transition: color var(--transition-speed);
+  white-space: nowrap; /* Prevent wrapping */
+  position: relative; /* For positioning */
+  min-width: 140px; /* Ensure minimum width for timing controls */
+  align-self: flex-start; /* Align to top of container for multi-line text */
+  margin-top: 4px; /* Small top margin for alignment */
+}
+
+/* Material Design 3 time control - larger and more visible */
+.time-control {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-small);
+  background-color: var(--md-surface-1);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-body-small-size); /* Larger font size */
+  font-weight: 500; /* Medium weight for better visibility */
+  cursor: grab;
+  user-select: none;
+  color: var(--md-on-surface);
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              border-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  min-width: 60px; /* Ensure minimum width for timing display */
+  text-align: center; /* Center the text */
+}
+
+/* Material Design 3 time control hover state */
+.time-control:hover:not(.dragging) {
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+  color: var(--md-on-primary-container);
+  transform: translateY(-2px);
+}
+
+/* Material Design 3 time control dragging state */
+.time-control.dragging {
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+  color: var(--md-on-primary-container);
+  cursor: grabbing;
+  transform: scale(1.05);
+  box-shadow: var(--md-elevation-level2);
+  z-index: 10;
+  /* Use hardware acceleration */
+  will-change: transform;
+}
+
+/* Material Design 3 time separator */
+.time-separator {
+  margin: 0 5px;
+  color: var(--md-on-surface-variant);
+  transition: color var(--transition-speed);
+  font-size: var(--md-label-small-size);
+}
+
+.progress-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background-color: var(--primary-color);
+  transform-origin: left center;
+  will-change: transform;
+  /* Remove transition for continuous animation */
+  transition: background-color var(--transition-speed);
+  /* Use hardware acceleration for smoother animation */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Add a subtle glow effect */
+  box-shadow: 0 0 4px rgba(67, 97, 238, 0.5);
+}

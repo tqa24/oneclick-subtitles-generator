@@ -1,0 +1,67 @@
+/* Timeline styles */
+
+/* More compact timeline container */
+.timeline-container {
+  flex: 1; /* Take up remaining space */
+  height: 50px; /* Reduced height */
+  position: relative;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-medium);
+  overflow: hidden;
+  background-color: var(--md-surface-1);
+  /* Removed transition to prevent shaking */
+  box-shadow: var(--md-elevation-level1);
+  min-width: 0; /* Allow container to shrink below content size */
+}
+
+.subtitle-timeline {
+  width: 100%;
+  height: 100%;
+  cursor: pointer; /* Changed from grab to pointer */
+  user-select: none;
+  /* Removed transition to prevent shaking */
+}
+
+.subtitle-timeline:active {
+  cursor: pointer;
+  /* Removed box-shadow change to prevent visual shifts */
+}
+
+.timeline-controls {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-controls button {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 24px;
+}
+
+.timeline-controls button:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.timeline-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.timeline-controls span {
+  font-size: 12px;
+  color: #666;
+  min-width: 48px;
+  text-align: center;
+}

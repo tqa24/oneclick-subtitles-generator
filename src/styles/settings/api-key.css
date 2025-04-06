@@ -1,0 +1,141 @@
+/* API key section styles */
+
+.api-key-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.api-key-input {
+  margin-bottom: 1.5rem;
+}
+
+.api-key-input label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.api-key-status {
+  margin-left: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+.api-key-status.set {
+  background-color: var(--success-background);
+  color: var(--success-color);
+}
+
+.api-key-status.not-set {
+  background-color: var(--warning-background);
+  color: var(--warning-color);
+}
+
+.input-with-toggle {
+  display: flex;
+  position: relative;
+}
+
+/* Material Design 3 pill-style input */
+.input-with-toggle input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-body-medium-size);
+  width: 100%;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Material Design 3 focus and hover states for input */
+.input-with-toggle input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.input-with-toggle input:hover {
+  border-color: var(--md-primary-container);
+  background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Material Design 3 pill-style toggle button */
+.toggle-visibility {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 0 var(--md-shape-pill) var(--md-shape-pill) 0;
+  cursor: pointer;
+  color: var(--md-on-surface-variant);
+  padding: 0 1rem;
+  font-size: var(--md-label-small-size);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-weight: 500;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Material Design 3 hover state for toggle button */
+.toggle-visibility:hover {
+  background-color: color-mix(in srgb, var(--md-surface-2), var(--md-primary) 10%);
+  color: var(--md-primary);
+}
+
+.api-key-help {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.api-key-help a {
+  color: var(--primary-color);
+  text-decoration: none;
+  margin-left: 5px;
+  transition: color var(--transition-speed);
+}
+
+.api-key-help a:hover {
+  text-decoration: underline;
+}
+
+.api-key-instructions {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  transition: background-color var(--transition-speed);
+}
+
+.api-key-instructions h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.api-key-instructions ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.api-key-instructions li {
+  margin-bottom: 0.3rem;
+  color: var(--text-secondary);
+}

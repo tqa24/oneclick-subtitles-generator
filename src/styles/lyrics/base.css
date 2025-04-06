@@ -1,0 +1,55 @@
+/* Base styles and dragging-related styles */
+
+/* Optimize performance during dragging */
+body.lyrics-dragging {
+  cursor: grabbing !important;
+}
+
+body.lyrics-dragging * {
+  /* Disable transitions during dragging for better performance */
+  transition: none !important;
+  /* Disable pointer events on all elements except the dragged element */
+  pointer-events: none;
+  /* Disable hover effects completely */
+  transform: none !important;
+}
+
+body.lyrics-dragging .time-control.dragging {
+  /* Re-enable pointer events on the dragged element */
+  pointer-events: auto !important;
+  /* Use hardware acceleration for the dragged element */
+  transform: scale(1.05) translateZ(0) !important; /* Override the transform:none */
+  will-change: transform;
+}
+
+/* Disable all hover effects during dragging */
+.dragging-active .lyric-item:hover,
+.dragging-active .lyric-text:hover,
+.dragging-active .time-control:hover:not(.dragging),
+.dragging-active .edit-lyric-btn:hover,
+.dragging-active .delete-lyric-btn:hover,
+.dragging-active .insert-lyric-button:hover,
+.dragging-active .merge-lyrics-button:hover {
+  background-color: transparent;
+  transform: none;
+  border-color: var(--md-outline-variant);
+  color: var(--md-on-surface);
+  box-shadow: none;
+}
+
+/* Disable SVG hover animations during dragging */
+.dragging-active .edit-lyric-btn:hover svg,
+.dragging-active .delete-lyric-btn:hover svg,
+.dragging-active .insert-lyric-button:hover svg,
+.dragging-active .merge-lyrics-button:hover svg,
+.dragging-active .lyric-text:hover span {
+  transform: none;
+}
+
+/* Disable hover effects on all time controls during dragging */
+body.lyrics-dragging .time-control:hover:not(.dragging) {
+  background-color: var(--md-surface-1);
+  border-color: var(--md-outline-variant);
+  color: var(--md-on-surface);
+  transform: none;
+}

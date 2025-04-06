@@ -1,0 +1,110 @@
+/* Download buttons and help text */
+
+/* Help text container with download buttons */
+.help-text-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  gap: 16px;
+  width: 100%;
+  background-color: var(--md-surface-1);
+  border-radius: var(--md-shape-medium);
+  padding: 8px 16px;
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* More compact help text */
+.help-text {
+  font-size: 0.85rem; /* Smaller font */
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+  transition: color var(--transition-speed);
+  line-height: 1.4;
+  padding-left: 8px; /* Left padding only */
+  border-left: 3px solid var(--md-primary);
+  flex: 1;
+}
+
+/* Download buttons container */
+.download-buttons {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Material Design 3 download buttons */
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  font-size: var(--md-label-medium-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+  height: 36px; /* Fixed height for consistency */
+}
+
+/* State layer for hover effect */
+.download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+  border-radius: var(--md-shape-pill);
+}
+
+.download-btn:hover::before {
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.download-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.download-btn:disabled {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.download-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.download-btn:hover svg {
+  transform: translateY(2px);
+}
