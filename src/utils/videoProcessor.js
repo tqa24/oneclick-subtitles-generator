@@ -20,9 +20,10 @@ export { retrySegmentProcessing };
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
-    // Check if using Gemini 2.5 Pro model
-    const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.5-pro-exp-03-25';
-    const isUsingStrongModel = currentModel === 'gemini-2.5-pro-exp-03-25';
+    // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
+    const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+    const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+    const isUsingStrongModel = strongModels.includes(currentModel);
 
     // Create an array to track segment status
     const segmentStatusArray = [];

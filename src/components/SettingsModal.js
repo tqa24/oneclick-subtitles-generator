@@ -9,8 +9,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
-  const [segmentDuration, setSegmentDuration] = useState(5); // Default to 20 minutes
-  const [geminiModel, setGeminiModel] = useState('gemini-2.5-pro-exp-03-25'); // Default model
+  const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
+  const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
@@ -20,7 +20,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
     const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
-    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-pro-exp-03-25';
+    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
     const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
 
     setGeminiApiKey(savedGeminiKey);
@@ -221,6 +221,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
                 className="segment-duration-select"
               >
+                <option value="3">3 {t('settings.minutes', 'minutes')}</option>
                 <option value="5">5 {t('settings.minutes', 'minutes')}</option>
                 <option value="10">10 {t('settings.minutes', 'minutes')}</option>
                 <option value="15">15 {t('settings.minutes', 'minutes')}</option>
@@ -244,7 +245,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 className="gemini-model-select"
               >
                 <option value="gemini-2.5-pro-exp-03-25">
-                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest)')}
+                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
+                </option>
+                <option value="gemini-2.0-flash-thinking-exp-01-21">
+                  {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
                 </option>
                 <option value="gemini-2.0-flash">
                   {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
