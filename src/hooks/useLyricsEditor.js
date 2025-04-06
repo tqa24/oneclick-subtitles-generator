@@ -291,9 +291,53 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const handleInsertLyric = (index) => {
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
 
+    // Handle special case: inserting at the beginning (before the first lyric)
+    if (index < 0 || (index === 0 && lyrics.length > 0)) {
+      const firstLyric = lyrics[0];
+      // Create a new lyric before the first one
+      const newStartTime = Math.max(0, firstLyric.start - 2.0); // 2 seconds before first lyric, but not negative
+      const newEndTime = firstLyric.start;
+
+      const newLyric = {
+        text: '',
+        start: newStartTime,
+        end: newEndTime
+      };
+
+      const updatedLyrics = [newLyric, ...lyrics];
+
+      setLyrics(updatedLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(updatedLyrics);
+      }
+      return;
+    }
+
     const prevLyric = lyrics[index];
     const nextLyric = lyrics[index + 1];
 
+    // Handle case when inserting after the last lyric
+    if (!nextLyric) {
+      // Create a new lyric after the last one
+      const newStartTime = prevLyric.end;
+      const newEndTime = prevLyric.end + 2.0; // Add 2 seconds for the new lyric
+
+      const newLyric = {
+        text: '',
+        start: newStartTime,
+        end: newEndTime
+      };
+
+      const updatedLyrics = [...lyrics, newLyric];
+
+      setLyrics(updatedLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(updatedLyrics);
+      }
+      return;
+    }
+
+    // For cases when there is a next lyric
     // Calculate the gap between the two lyrics
     const gap = nextLyric.start - prevLyric.end;
 

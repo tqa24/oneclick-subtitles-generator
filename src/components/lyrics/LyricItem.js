@@ -194,13 +194,17 @@ const LyricItem = ({
   const handleInsertAbove = (e) => {
     e.stopPropagation();
     e.preventDefault();
-    onInsert(index - 1 >= 0 ? index - 1 : 0);
+    // For first lyric, insert at position 0
+    // For other lyrics, insert at the position before the current lyric
+    onInsert(index > 0 ? index - 1 : 0);
   };
 
   // Handle insert below
   const handleInsertBelow = (e) => {
     e.stopPropagation();
     e.preventDefault();
+    // Always insert at the current position
+    // For last lyric, this will add a new lyric at the end
     onInsert(index);
   };
 
@@ -260,109 +264,106 @@ const LyricItem = ({
                   <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
               </button>
-              {hasNextLyric && (
-                <>
-                  <div
-                    className="insert-lyric-button-container"
-                    onMouseEnter={handleInsertMouseEnter}
-                    onMouseLeave={handleInsertMouseLeave}
-                  >
-                    <div
-                      className="insert-lyric-button"
-                      title={t('lyrics.insertTooltip', 'Add new line')}
+              {/* Always show insert and merge buttons for all lyrics */}
+              <div
+                className="insert-lyric-button-container"
+                onMouseEnter={handleInsertMouseEnter}
+                onMouseLeave={handleInsertMouseLeave}
+              >
+                <div
+                  className="insert-lyric-button"
+                  title={t('lyrics.insertTooltip', 'Add new line')}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </div>
+                {showInsertArrows && (
+                  <div className="arrow-buttons">
+                    <button
+                      className="arrow-button up"
+                      onClick={handleInsertAbove}
+                      title={t('lyrics.insertAbove', 'Add above')}
+                      onMouseEnter={() => {
+                        if (insertTimeoutRef.current) {
+                          clearTimeout(insertTimeoutRef.current);
+                          insertTimeoutRef.current = null;
+                        }
+                      }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="18 15 12 9 6 15"></polyline>
                       </svg>
-                    </div>
-                    {showInsertArrows && (
-                      <div className="arrow-buttons">
-                        <button
-                          className="arrow-button up"
-                          onClick={handleInsertAbove}
-                          title={t('lyrics.insertAbove', 'Add above')}
-                          onMouseEnter={() => {
-                            if (insertTimeoutRef.current) {
-                              clearTimeout(insertTimeoutRef.current);
-                              insertTimeoutRef.current = null;
-                            }
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                            <polyline points="18 15 12 9 6 15"></polyline>
-                          </svg>
-                        </button>
-                        <button
-                          className="arrow-button down"
-                          onClick={handleInsertBelow}
-                          title={t('lyrics.insertBelow', 'Add below')}
-                          onMouseEnter={() => {
-                            if (insertTimeoutRef.current) {
-                              clearTimeout(insertTimeoutRef.current);
-                              insertTimeoutRef.current = null;
-                            }
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div
-                    className="merge-lyrics-button-container"
-                    onMouseEnter={handleMergeMouseEnter}
-                    onMouseLeave={handleMergeMouseLeave}
-                  >
-                    <div
-                      className="merge-lyrics-button"
-                      title={t('lyrics.mergeTooltip', 'Merge lyrics')}
+                    </button>
+                    <button
+                      className="arrow-button down"
+                      onClick={handleInsertBelow}
+                      title={t('lyrics.insertBelow', 'Add below')}
+                      onMouseEnter={() => {
+                        if (insertTimeoutRef.current) {
+                          clearTimeout(insertTimeoutRef.current);
+                          insertTimeoutRef.current = null;
+                        }
+                      }}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                        <path d="M8 18h8M8 6h8M12 2v20"/>
+                        <polyline points="6 9 12 15 18 9"></polyline>
                       </svg>
-                    </div>
-                    {showMergeArrows && (
-                      <div className="arrow-buttons">
-                        <button
-                          className="arrow-button up"
-                          onClick={handleMergeAbove}
-                          title={t('lyrics.mergeAbove', 'Merge with above')}
-                          disabled={index <= 0}
-                          onMouseEnter={() => {
-                            if (mergeTimeoutRef.current) {
-                              clearTimeout(mergeTimeoutRef.current);
-                              mergeTimeoutRef.current = null;
-                            }
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                            <polyline points="18 15 12 9 6 15"></polyline>
-                          </svg>
-                        </button>
-                        <button
-                          className="arrow-button down"
-                          onClick={handleMergeBelow}
-                          title={t('lyrics.mergeBelow', 'Merge with below')}
-                          disabled={!hasNextLyric}
-                          onMouseEnter={() => {
-                            if (mergeTimeoutRef.current) {
-                              clearTimeout(mergeTimeoutRef.current);
-                              mergeTimeoutRef.current = null;
-                            }
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </button>
-                      </div>
-                    )}
+                    </button>
                   </div>
-                </>
-              )}
+                )}
+              </div>
+              <div
+                className="merge-lyrics-button-container"
+                onMouseEnter={handleMergeMouseEnter}
+                onMouseLeave={handleMergeMouseLeave}
+              >
+                <div
+                  className="merge-lyrics-button"
+                  title={t('lyrics.mergeTooltip', 'Merge lyrics')}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <path d="M8 18h8M8 6h8M12 2v20"/>
+                  </svg>
+                </div>
+                {showMergeArrows && (
+                  <div className="arrow-buttons">
+                    <button
+                      className="arrow-button up"
+                      onClick={handleMergeAbove}
+                      title={t('lyrics.mergeAbove', 'Merge with above')}
+                      disabled={index <= 0}
+                      onMouseEnter={() => {
+                        if (mergeTimeoutRef.current) {
+                          clearTimeout(mergeTimeoutRef.current);
+                          mergeTimeoutRef.current = null;
+                        }
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                      </svg>
+                    </button>
+                    <button
+                      className="arrow-button down"
+                      onClick={handleMergeBelow}
+                      title={t('lyrics.mergeBelow', 'Merge with below')}
+                      disabled={!hasNextLyric}
+                      onMouseEnter={() => {
+                        if (mergeTimeoutRef.current) {
+                          clearTimeout(mergeTimeoutRef.current);
+                          mergeTimeoutRef.current = null;
+                        }
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

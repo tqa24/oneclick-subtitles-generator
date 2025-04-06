@@ -169,7 +169,7 @@
   display: inline-block;
   width: 32px;
   height: 32px;
-  margin: 0 4px; /* Add spacing between buttons */
+  margin: 0; /* No margin needed as gap is handled by parent container */
   z-index: 150; /* Increased z-index to ensure proper stacking */
 }
 
