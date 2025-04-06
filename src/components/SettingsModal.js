@@ -10,7 +10,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(30); // Default to 30 minutes
-  const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash-lite'); // Default model
+  const [geminiModel, setGeminiModel] = useState('gemini-2.5-pro-exp-03-25'); // Default model
   const [timeFormat, setTimeFormat] = useState('seconds'); // Default to seconds format
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
@@ -20,7 +20,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
     const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
     const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '30');
-    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash-lite';
+    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-pro-exp-03-25';
     const savedTimeFormat = localStorage.getItem('time_format') || 'seconds';
 
     setGeminiApiKey(savedGeminiKey);

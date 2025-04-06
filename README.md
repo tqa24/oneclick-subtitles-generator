@@ -108,7 +108,7 @@ This will launch the application in your default web browser.
 Adjust settings via the gear icon in the top-right corner:
 - Change interface language (English, Korean, Vietnamese)
 - Manage API settings (Gemini and YouTube)
-- Select Gemini model (balance between accuracy and speed)
+- Select Gemini model (Gemini 2.5 Pro is the default for best accuracy)
 - Configure segment duration for long videos
 - Choose time display format (seconds or HH:MM:SS)
 - Clear caches and manage storage
