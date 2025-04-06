@@ -21,7 +21,7 @@ i18n
         translation: viTranslation
       }
     },
-    lng: localStorage.getItem('preferred_language') || 'en', // use stored preference or default to English
+    lng: localStorage.getItem('preferred_language') || 'vi', // use stored preference or default to Vietnamese
     fallbackLng: 'en', // fallback language
     interpolation: {
       escapeValue: false // react already safes from xss

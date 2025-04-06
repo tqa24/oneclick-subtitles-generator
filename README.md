@@ -34,7 +34,7 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - Customizable time display format (seconds or HH:MM:SS)
 - Optimized performance for long videos with many subtitles
 - Smooth, continuous progress indicator for current subtitle
-- Dark mode support for all UI components
+- Dark mode by default with support for light mode and system preference
 
 ## Prerequisites
 
@@ -106,7 +106,7 @@ This will launch the application in your default web browser.
 ## Configuration
 
 Adjust settings via the gear icon in the top-right corner:
-- Change interface language (English, Korean, Vietnamese)
+- Change interface language (Vietnamese is the default, also supports English and Korean)
 - Manage API settings (Gemini and YouTube)
 - Select Gemini model (Gemini 2.5 Pro is the default for best accuracy)
 - Configure segment duration for long videos

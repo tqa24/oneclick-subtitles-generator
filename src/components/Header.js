@@ -6,7 +6,7 @@ import GeminiHeaderAnimation from './GeminiHeaderAnimation';
 
 const Header = ({ onSettingsClick }) => {
   const { t } = useTranslation();
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
 
   // Function to toggle between light and dark themes
@@ -44,7 +44,7 @@ const Header = ({ onSettingsClick }) => {
   // Apply initial theme on component mount
   useEffect(() => {
     // Handle initial theme setup
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);

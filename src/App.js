@@ -21,7 +21,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(localStorage.getItem('lastActiveTab') || 'youtube-url');
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'seconds');
 
@@ -109,7 +109,7 @@ function App() {
   useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === 'theme' || !event.key) {
-        const newTheme = localStorage.getItem('theme') || 'light';
+        const newTheme = localStorage.getItem('theme') || 'dark';
         setTheme(newTheme);
       }
     };
