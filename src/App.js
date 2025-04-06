@@ -23,7 +23,7 @@ function App() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [segmentsStatus, setSegmentsStatus] = useState([]);
-  const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'seconds');
+  const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
 
   const {
     subtitlesData,
