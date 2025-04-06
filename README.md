@@ -14,7 +14,7 @@ Here are some screenshots showcasing the application:
 
 | ![Screenshot 5](readme_assets/Screenshot%202025-04-03%20184934.png) | ![Screenshot 6](readme_assets/Screenshot%202025-04-03%20184944.png) |
 |:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **API, Segmenting, Models, Format, Cache Settings**                               | **Download Options (SRT/JSON)**                                    |
+| **API Instructions**                               | **Segmenting, Models, Format, Cache Settings**                                    |
 
 A web application for generating timed subtitles for videos using Google's Gemini AI technology.
 
