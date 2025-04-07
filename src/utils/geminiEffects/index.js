@@ -33,8 +33,6 @@ export const initGeminiButtonEffects = () => {
   const generateButtons = document.querySelectorAll('.generate-btn');
   const retryButtons = document.querySelectorAll('.retry-gemini-btn');
 
-  console.log(`Found ${generateButtons.length} generate buttons and ${retryButtons.length} retry buttons`);
-
   // First, clean up any particles that are no longer in the DOM
   particles = cleanupParticles(particles);
 

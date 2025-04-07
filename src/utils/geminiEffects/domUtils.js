@@ -108,7 +108,6 @@ export const initializeButton = (button, initializedButtons, particles) => {
 
     // Clear the container
     iconContainer.innerHTML = '';
-    console.log(`Cleared existing particles for button ${buttonId}`);
   }
 
   // Create a collection of particles for this button - use a few particles for initial state
@@ -182,7 +181,6 @@ export const setupButtonEventListeners = (button, particles, cursorPosition, isH
         particle.vy = Math.sin(angle) * speed;
       });
 
-      console.log(`Activated ${currentParticles.length} particles for button ${buttonId} (${button.classList.contains('generate-btn') ? 'generate' : 'retry'})`);
     }
   });
 

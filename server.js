@@ -1,7 +1,6 @@
 /**
  * Local server for downloading YouTube videos
  * This server handles downloading YouTube videos to a local 'videos' directory
- * Now using yt-dlp (Python) for more reliable downloads
  * Also handles caching of subtitles to avoid repeated Gemini API calls
  */
 

@@ -72,15 +72,15 @@ router.post('/download-video', async (req, res) => {
   }
 
   try {
-    // Download the video using yt-dlp
-    await downloadYouTubeVideo(videoId);
+    // Download the video using JavaScript libraries
+    const result = await downloadYouTubeVideo(videoId);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
       console.log(`Video downloaded successfully: ${videoId}.mp4`);
       return res.json({
         success: true,
-        message: 'Video downloaded successfully with yt-dlp',
+        message: result.message || 'Video downloaded successfully',
         url: `/videos/${videoId}.mp4`
       });
     } else {

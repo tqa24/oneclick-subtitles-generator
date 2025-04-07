@@ -39,10 +39,9 @@ A web application for generating timed subtitles for videos using Google's Gemin
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (v14 or higher)
-- [uv](https://github.com/astral-sh/uv) (faster Python package installer)
 - [FFmpeg](https://ffmpeg.org/) (required for video processing)
 - Google Gemini API key
-- Google YouTube API key
+- Google YouTube API key (optional, for YouTube search functionality)
 
 ## Installation
 
@@ -53,14 +52,7 @@ A web application for generating timed subtitles for videos using Google's Gemin
 cd subtitles-generator
 ```
 
-3. Install Python dependencies using uv:
-```bash
-uv venv .venv
-.venv\Scripts\activate
-uv pip install yt-dlp
-```
-
-4. Install Node.js dependencies:
+3. Install Node.js dependencies:
 ```bash
 npm install
 ```
@@ -165,7 +157,7 @@ SOFTWARE.
 - Internationalization with [i18next](https://www.i18next.com/)
 - Video processing with [FFmpeg](https://ffmpeg.org/)
 - Timeline visualization using HTML5 Canvas
-- YouTube integration with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- YouTube integration with [@distube/ytdl-core](https://github.com/distubejs/ytdl-core) for serverless video downloading
 - SRT subtitle format parsing and generation
 - Icons from [Heroicons](https://heroicons.com/)
 - Virtualization with [react-window](https://github.com/bvaughn/react-window)

@@ -24,7 +24,7 @@
     "react-scripts": "5.0.1",
     "react-window": "^1.8.11",
     "web-vitals": "^3.5.0",
-    "ytdl-core": "^4.11.5"
+    "ytdl-core": "npm:@distube/ytdl-core@^4.16.8"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
