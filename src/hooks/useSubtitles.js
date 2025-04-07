@@ -102,30 +102,29 @@ export const useSubtitles = (t) => {
             // Generate new subtitles
             let subtitles;
 
-            // Check if this is a long video that needs special processing
-            if (input.type && input.type.startsWith('video/')) {
+            // Check if this is a long media file (video or audio) that needs special processing
+            if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
                     const durationMinutes = Math.floor(duration / 60);
 
-                    // Debug log to see the video duration
-                    console.log(`Video duration: ${duration} seconds, ${durationMinutes} minutes`);
+                    // Determine if this is a video or audio file
+                    const isAudio = input.type.startsWith('audio/');
+                    const mediaType = isAudio ? 'audio' : 'video';
 
-                    // For testing purposes, always use segmentation
-                    if (true) {
-                        // Process long video by splitting it into segments
-                        subtitles = await processLongVideo(input, setStatus, t);
-                    } else {
-                        // Process normally for shorter videos
-                        subtitles = await callGeminiApi(input, inputType);
-                    }
+                    // Debug log to see the media duration
+                    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${duration} seconds, ${durationMinutes} minutes`);
+
+                    // Always use segmentation for media files
+                    // Process long media file by splitting it into segments
+                    subtitles = await processLongVideo(input, setStatus, t);
                 } catch (error) {
-                    console.error('Error checking video duration:', error);
+                    console.error('Error checking media duration:', error);
                     // Fallback to normal processing
                     subtitles = await callGeminiApi(input, inputType);
                 }
             } else {
-                // Normal processing for non-video files or YouTube
+                // Normal processing for YouTube
                 subtitles = await callGeminiApi(input, inputType);
             }
 
@@ -227,25 +226,29 @@ export const useSubtitles = (t) => {
         try {
             let subtitles;
 
-            // Check if this is a long video that needs special processing
-            if (input.type && input.type.startsWith('video/')) {
+            // Check if this is a long media file (video or audio) that needs special processing
+            if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
                     const durationMinutes = Math.floor(duration / 60);
 
-                    // Debug log to see the video duration
-                    console.log(`Video duration: ${duration} seconds, ${durationMinutes} minutes`);
+                    // Determine if this is a video or audio file
+                    const isAudio = input.type.startsWith('audio/');
+                    const mediaType = isAudio ? 'audio' : 'video';
 
-                    // Always use segmentation for video files to match generateSubtitles behavior
-                    // Process long video by splitting it into segments
+                    // Debug log to see the media duration
+                    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${duration} seconds, ${durationMinutes} minutes`);
+
+                    // Always use segmentation for media files to match generateSubtitles behavior
+                    // Process long media file by splitting it into segments
                     subtitles = await processLongVideo(input, setStatus, t);
                 } catch (error) {
-                    console.error('Error checking video duration:', error);
+                    console.error('Error checking media duration:', error);
                     // Fallback to normal processing
                     subtitles = await callGeminiApi(input, inputType);
                 }
             } else {
-                // Normal processing for non-video files or YouTube
+                // Normal processing for YouTube
                 subtitles = await callGeminiApi(input, inputType);
             }
 
@@ -313,6 +316,14 @@ export const useSubtitles = (t) => {
         // This happens when using the strong model where we process segments one by one
         const currentSubtitles = subtitlesData || [];
 
+        // Determine if this is a video or audio file based on the segment name
+        // Segment names for audio files typically include 'audio' in the name
+        const isAudio = segments && segments[segmentIndex] &&
+            (segments[segmentIndex].name?.toLowerCase().includes('audio') ||
+             segments[segmentIndex].url?.toLowerCase().includes('audio'));
+        const mediaType = isAudio ? 'audio' : 'video';
+        console.log(`Retrying segment ${segmentIndex} with mediaType: ${mediaType}`);
+
         // Mark this segment as retrying
         setRetryingSegments(prev => [...prev, segmentIndex]);
 
@@ -338,7 +349,8 @@ export const useSubtitles = (t) => {
                         setStatus(status);
                     }
                 },
-                t
+                t,
+                mediaType
             );
 
             // Update the subtitles data with the new results

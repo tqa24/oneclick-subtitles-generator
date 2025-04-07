@@ -1,5 +1,5 @@
 /**
- * Utility functions for handling video durations
+ * Utility functions for handling media (video and audio) durations
  */
 
 /**
@@ -20,42 +20,77 @@ export const getSegmentDurationMinutes = () => {
 export const getMaxSegmentDurationSeconds = () => getSegmentDurationMinutes() * 60;
 
 /**
- * Get the duration of a video file
- * @param {File} videoFile - The video file
+ * Get the duration of a media file (video or audio)
+ * @param {File} mediaFile - The media file (video or audio)
  * @returns {Promise<number>} - The duration in seconds
  */
-export const getVideoDuration = (videoFile) => {
+export const getVideoDuration = (mediaFile) => {
     return new Promise((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
+        // Determine if this is a video or audio file based on MIME type
+        const isAudio = mediaFile.type.startsWith('audio/');
+        const isVideo = mediaFile.type.startsWith('video/');
 
-        video.onloadedmetadata = () => {
-            window.URL.revokeObjectURL(video.src);
-            resolve(video.duration);
-        };
+        if (isVideo) {
+            // Use video element for video files
+            const video = document.createElement('video');
+            video.preload = 'metadata';
 
-        video.onerror = () => {
-            window.URL.revokeObjectURL(video.src);
-            reject(new Error('Failed to load video metadata'));
-        };
+            video.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(video.src);
+                resolve(video.duration);
+            };
 
-        video.src = URL.createObjectURL(videoFile);
+            video.onerror = () => {
+                window.URL.revokeObjectURL(video.src);
+                reject(new Error('Failed to load video metadata'));
+            };
+
+            video.src = URL.createObjectURL(mediaFile);
+        } else if (isAudio) {
+            // Use audio element for audio files
+            const audio = document.createElement('audio');
+            audio.preload = 'metadata';
+
+            audio.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(audio.src);
+                resolve(audio.duration);
+            };
+
+            audio.onerror = () => {
+                window.URL.revokeObjectURL(audio.src);
+                reject(new Error('Failed to load audio metadata'));
+            };
+
+            audio.src = URL.createObjectURL(mediaFile);
+        } else {
+            reject(new Error('Unsupported file type. Expected video or audio.'));
+        }
     });
 };
 
 /**
- * Create a video segment from the original file
- * @param {File} originalFile - The original video file
+ * Alias for getVideoDuration to maintain backward compatibility
+ * @param {File} mediaFile - The media file (video or audio)
+ * @returns {Promise<number>} - The duration in seconds
+ */
+export const getMediaDuration = getVideoDuration;
+
+/**
+ * Create a media segment from the original file
+ * @param {File} originalFile - The original media file (video or audio)
  * @param {number} startTime - Start time in seconds
  * @param {number} endTime - End time in seconds
  * @param {number} segmentIndex - Index of the segment
  * @returns {File} - A new File object representing the segment
  */
 export const createVideoSegment = (originalFile, startTime, endTime, segmentIndex) => {
-    // Since we can't actually split the video in the browser,
+    // Since we can't actually split the media in the browser,
     // we'll create a reference to the original file with metadata
     // about the segment's time range
-    const segmentFile = new File([originalFile], `segment_${segmentIndex}.mp4`, {
+    const isAudio = originalFile.type.startsWith('audio/');
+    const extension = isAudio ? 'mp3' : 'mp4';
+
+    const segmentFile = new File([originalFile], `segment_${segmentIndex}.${extension}`, {
         type: originalFile.type,
         lastModified: originalFile.lastModified
     });

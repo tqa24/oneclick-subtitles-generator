@@ -1,40 +1,44 @@
 /**
- * Utility for splitting videos into segments using the server
+ * Utility for splitting media (videos and audio) into segments using the server
  */
 
 // Server URL for the local server
 const SERVER_URL = 'http://localhost:3004';
 
 /**
- * Upload a video to the server and split it into segments
- * @param {File} videoFile - The video file to split
+ * Upload a media file (video or audio) to the server and split it into segments
+ * @param {File} mediaFile - The media file (video or audio) to split
  * @param {number} segmentDuration - Duration of each segment in seconds (default: 600 seconds = 10 minutes)
  * @param {Function} onProgress - Progress callback function
  * @param {boolean} fastSplit - Whether to use fast splitting mode (uses stream copy instead of re-encoding)
  * @returns {Promise<Object>} - Object containing segment URLs and metadata
  */
-export const splitVideoOnServer = async (videoFile, segmentDuration = 600, onProgress = () => {}, fastSplit = false) => {
+export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onProgress = () => {}, fastSplit = false) => {
   try {
-    onProgress(10, 'Uploading video to server...');
+    // Determine if this is a video or audio file based on MIME type
+    const isAudio = mediaFile.type.startsWith('audio/');
+    const mediaType = isAudio ? 'audio' : 'video';
 
-    // Generate a unique ID for this video
-    const videoId = `video_${Date.now()}_${videoFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    onProgress(10, `Uploading ${mediaType} to server...`);
+
+    // Generate a unique ID for this media file
+    const mediaId = `${mediaType}_${Date.now()}_${mediaFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     // Create URL with query parameters
-    const url = `${SERVER_URL}/api/split-video?videoId=${videoId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}`;
+    const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}`;
 
-    // Upload the video file
+    // Upload the media file
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': videoFile.type,
+        'Content-Type': mediaFile.type,
       },
-      body: videoFile, // Send the raw file
+      body: mediaFile, // Send the raw file
     });
 
     if (!response.ok) {
       console.error('Upload failed with status:', response.status);
-      let errorMessage = `Failed to split video (Status: ${response.status})`;
+      let errorMessage = `Failed to split ${mediaType} (Status: ${response.status})`;
 
       try {
         const errorData = await response.json();
@@ -54,12 +58,12 @@ export const splitVideoOnServer = async (videoFile, segmentDuration = 600, onPro
       throw new Error(errorMessage);
     }
 
-    onProgress(80, 'Video split into segments, processing...');
+    onProgress(80, `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments, processing...`);
 
     const data = await response.json();
-    console.log('Video split into segments:', data);
+    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, data);
 
-    onProgress(100, 'Video segments ready');
+    onProgress(100, `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} segments ready`);
 
     // Log the actual segment durations for debugging
     if (data.segments && data.segments.length > 0) {
@@ -86,7 +90,7 @@ export const splitVideoOnServer = async (videoFile, segmentDuration = 600, onPro
           `  Difference:  startTime=${startTimeDiff.toFixed(2)}s, duration=${durationDiff.toFixed(2)}s`);
       });
 
-      console.log(`Total video duration:\n` +
+      console.log(`Total ${mediaType} duration:\n` +
         `  Actual: ${totalActualDuration.toFixed(2)}s\n` +
         `  Theoretical: ${totalTheoreticalDuration.toFixed(2)}s\n` +
         `  Difference: ${(totalActualDuration - totalTheoreticalDuration).toFixed(2)}s`);
@@ -94,24 +98,26 @@ export const splitVideoOnServer = async (videoFile, segmentDuration = 600, onPro
 
     return {
       success: true,
-      originalVideo: data.originalVideo,
-      videoId: data.videoId,
+      originalMedia: data.originalMedia || data.originalVideo, // Support both new and old response formats
+      mediaId: data.mediaId || data.videoId, // Support both new and old response formats
       segments: data.segments,
-      message: data.message
+      message: data.message,
+      mediaType: mediaType
     };
   } catch (error) {
-    console.error('Error splitting video:', error);
+    console.error(`Error splitting ${mediaFile.type.startsWith('audio/') ? 'audio' : 'video'}:`, error);
     throw error;
   }
 };
 
 /**
- * Fetch a video segment from the server
+ * Fetch a media segment from the server
  * @param {string} segmentUrl - URL of the segment
  * @param {number} segmentIndex - Index of the segment (optional)
+ * @param {string} mediaType - Type of media ('video' or 'audio')
  * @returns {Promise<File>} - File object representing the segment
  */
-export const fetchSegment = async (segmentUrl, segmentIndex) => {
+export const fetchSegment = async (segmentUrl, segmentIndex, mediaType = 'video') => {
   try {
     const response = await fetch(segmentUrl);
 
@@ -133,7 +139,8 @@ export const fetchSegment = async (segmentUrl, segmentIndex) => {
     }
 
     // Create file with segment metadata
-    const file = new File([blob], filename, { type: 'video/mp4' });
+    const mimeType = mediaType === 'audio' ? 'audio/mpeg' : 'video/mp4';
+    const file = new File([blob], filename, { type: mimeType });
 
     // Add segment metadata if we have an index
     if (index !== undefined) {

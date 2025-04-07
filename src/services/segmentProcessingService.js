@@ -1,5 +1,5 @@
 /**
- * Service for processing video segments
+ * Service for processing video and audio segments
  */
 
 import { callGeminiApi } from './geminiService';
@@ -7,16 +7,17 @@ import { fetchSegment } from '../utils/videoSplitter';
 import { parseRawTextManually } from '../utils/subtitleParser';
 
 /**
- * Process a single video segment
+ * Process a single media segment (video or audio)
  * @param {Object} segment - The segment object with URL
  * @param {number} segmentIndex - The index of the segment
  * @param {number} startTime - The start time offset for this segment
  * @param {string} segmentCacheId - The cache ID for this segment
  * @param {Function} onStatusUpdate - Callback for status updates
  * @param {Function} t - Translation function
+ * @param {string} mediaType - Type of media ('video' or 'audio')
  * @returns {Promise<Array>} - Array of subtitle objects with adjusted timestamps
  */
-export async function processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t) {
+export async function processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType = 'video') {
     let retryCount = 0;
     const maxRetries = 3;
     let success = false;
@@ -31,7 +32,14 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     while (!success && retryCount < maxRetries) {
         try {
             // Fetch the segment file from the server
-            const segmentFile = await fetchSegment(segment.url, segmentIndex);
+            const segmentFile = await fetchSegment(segment.url, segmentIndex, mediaType);
+
+            // Log the segment file details
+            console.log(`Processing ${mediaType} segment ${segmentIndex+1}:`, {
+                name: segmentFile.name,
+                type: segmentFile.type,
+                size: segmentFile.size
+            });
 
             // Process the segment with Gemini
             segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload');

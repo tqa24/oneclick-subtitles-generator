@@ -1,5 +1,5 @@
 /**
- * Main video processing module for handling long videos and segment processing
+ * Main media processing module for handling long videos/audio and segment processing
  */
 
 import { callGeminiApi } from '../services/geminiService';
@@ -13,13 +13,17 @@ export { getVideoDuration } from './durationUtils';
 export { retrySegmentProcessing };
 
 /**
- * Process a long video by splitting it into segments and processing each segment
- * @param {File} videoFile - The video file
+ * Process a long media file (video or audio) by splitting it into segments and processing each segment
+ * @param {File} mediaFile - The media file (video or audio)
  * @param {Function} onStatusUpdate - Callback for status updates
  * @param {Function} t - Translation function
  * @returns {Promise<Array>} - Array of subtitle objects
  */
-export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
+export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
+    // Determine if this is a video or audio file based on MIME type
+    const isAudio = mediaFile.type.startsWith('audio/');
+    const isVideo = mediaFile.type.startsWith('video/');
+    const mediaType = isAudio ? 'audio' : 'video';
     // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
     const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
     const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
@@ -50,40 +54,44 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
         window.dispatchEvent(event);
     };
     try {
-        // Get video duration
-        const duration = await getVideoDuration(videoFile);
-        console.log(`Video duration: ${duration} seconds`);
+        // Get media duration
+        const duration = await getVideoDuration(mediaFile);
+        console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${duration} seconds`);
 
-        // If video is shorter than the maximum segment duration, process it directly
+        // If media is shorter than the maximum segment duration, process it directly
         if (duration <= getMaxSegmentDurationSeconds()) {
-            return await callGeminiApi(videoFile, 'file-upload');
+            return await callGeminiApi(mediaFile, 'file-upload');
         }
 
         // Calculate number of segments
         const numSegments = Math.ceil(duration / getMaxSegmentDurationSeconds());
-        console.log(`Splitting video into ${numSegments} segments`);
+        console.log(`Splitting ${mediaType} into ${numSegments} segments`);
 
         // Initialize segment status array with pending status
         for (let i = 0; i < numSegments; i++) {
             updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'));
         }
 
-        // Notify user about long video processing
+        // Notify user about long media processing
         onStatusUpdate({
-            message: t('output.longVideoProcessing', 'Processing video longer than 30 minutes. This may take a while...'),
+            message: isAudio
+                ? t('output.longAudioProcessing', 'Processing audio longer than 30 minutes. This may take a while...')
+                : t('output.longVideoProcessing', 'Processing video longer than 30 minutes. This may take a while...'),
             type: 'loading'
         });
 
-        // Use server-side splitting to physically split the video into segments
-        console.log('Using server-side video splitting');
+        // Use server-side splitting to physically split the media into segments
+        console.log(`Using server-side ${mediaType} splitting`);
         onStatusUpdate({
-            message: t('output.serverSplitting', 'Uploading and splitting video on server...'),
+            message: isAudio
+                ? t('output.serverSplittingAudio', 'Uploading and splitting audio on server...')
+                : t('output.serverSplitting', 'Uploading and splitting video on server...'),
             type: 'loading'
         });
 
-        // Upload the video to the server and split it into segments
+        // Upload the media to the server and split it into segments
         const splitResult = await splitVideoOnServer(
-            videoFile,
+            mediaFile,
             getMaxSegmentDurationSeconds(),
             (progress, message) => {
                 onStatusUpdate({
@@ -94,7 +102,7 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
             true // Enable fast splitting by default
         );
 
-        console.log('Video split into segments:', splitResult);
+        console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, splitResult);
 
         // Process all segments in parallel
         const segments = splitResult.segments;
@@ -171,7 +179,10 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
 
                 // If not cached, process the segment
                 updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'));
-                const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t);
+                // Determine if this is a video or audio file
+                const isAudio = mediaFile.type.startsWith('audio/');
+                const mediaType = isAudio ? 'audio' : 'video';
+                const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType);
                 updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'));
                 return result;
             } catch (error) {
@@ -217,15 +228,24 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
 
         return allSubtitles;
     } catch (error) {
-        console.error('Error processing long video:', error);
+        console.error(`Error processing long ${mediaType}:`, error);
 
         // Provide more helpful error messages for common issues
         if (error.message && error.message.includes('timeout')) {
-            throw new Error('Video upload timed out. This may be due to the large file size. Please try a smaller or lower quality video.');
+            throw new Error(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} upload timed out. This may be due to the large file size. Please try a smaller or lower quality ${mediaType}.`);
         } else if (error.message && error.message.includes('ffmpeg')) {
-            throw new Error('Error splitting video: ' + error.message);
+            throw new Error(`Error splitting ${mediaType}: ` + error.message);
         } else {
             throw error;
         }
     }
 };
+
+/**
+ * Alias for processLongVideo to maintain backward compatibility
+ * @param {File} mediaFile - The media file (video or audio)
+ * @param {Function} onStatusUpdate - Callback for status updates
+ * @param {Function} t - Translation function
+ * @returns {Promise<Array>} - Array of subtitle objects
+ */
+export const processLongMedia = processLongVideo;

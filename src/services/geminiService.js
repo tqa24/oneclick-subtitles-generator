@@ -1,4 +1,5 @@
 import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
+import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
 
 // Default transcription prompts
 export const PROMPT_PRESETS = [
@@ -90,26 +91,88 @@ export const callGeminiApi = async (input, inputType) => {
             }
         ];
     } else if (inputType === 'video' || inputType === 'audio' || inputType === 'file-upload') {
-        const base64Data = await fileToBase64(input);
-        const contentType = input.type.startsWith('video/') ? 'video' : 'audio';
+        // Determine if this is a video or audio file
+        const isAudio = input.type.startsWith('audio/');
+        const contentType = isAudio ? 'audio' : 'video';
+
+        // For audio files, convert to a format supported by Gemini
+        let processedInput = input;
+        if (isAudio) {
+            console.log('Processing audio file:', input.name);
+            console.log('Audio file type:', input.type);
+            console.log('Audio file size:', input.size);
+
+            // Check if the audio format is supported by Gemini
+            if (!isAudioFormatSupportedByGemini(input)) {
+                console.warn('Audio format not directly supported by Gemini API, attempting conversion');
+            }
+
+            // Convert the audio file to a supported format
+            processedInput = await convertAudioForGemini(input);
+            console.log('Processed audio file type:', processedInput.type);
+        }
+
+        const base64Data = await fileToBase64(processedInput);
+
+        // Use the MIME type from the processed input
+        const mimeType = processedInput.type;
+
+        // Log detailed information about the processed file
+        console.log('Processed file details:', {
+            name: processedInput.name,
+            type: processedInput.type,
+            size: processedInput.size,
+            lastModified: new Date(processedInput.lastModified).toISOString()
+        });
+
+        // For audio files, we need to ensure the prompt is appropriate
+        const promptText = getTranscriptionPrompt(contentType);
+
+        // Log the prompt being used
+        console.log(`Using ${contentType} prompt: ${promptText.substring(0, 100)}...`);
 
         requestData.contents = [
             {
                 role: "user",
                 parts: [
-                    { text: getTranscriptionPrompt(contentType) },
+                    { text: promptText },
                     {
                         inlineData: {
-                            mimeType: input.type,
+                            mimeType: mimeType,
                             data: base64Data
                         }
                     }
                 ]
             }
         ];
+
+        // Log the MIME type being sent to the API
+        console.log('Using MIME type for Gemini API:', mimeType);
     }
 
     try {
+        // Log request data for debugging (without the actual base64 data to keep logs clean)
+        console.log('Gemini API request model:', MODEL);
+        console.log('Request MIME type:', inputType === 'file-upload' ? input.type : 'N/A');
+
+        // Create a deep copy of the request data for logging
+        const debugRequestData = JSON.parse(JSON.stringify(requestData));
+        if (debugRequestData.contents && debugRequestData.contents[0] && debugRequestData.contents[0].parts) {
+            for (let i = 0; i < debugRequestData.contents[0].parts.length; i++) {
+                const part = debugRequestData.contents[0].parts[i];
+                if (part.inlineData && part.inlineData.data) {
+                    debugRequestData.contents[0].parts[i] = {
+                        ...part,
+                        inlineData: {
+                            ...part.inlineData,
+                            data: '[BASE64_DATA]'
+                        }
+                    };
+                }
+            }
+        }
+        console.log('Gemini API request structure:', debugRequestData);
+
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
             {
@@ -122,8 +185,38 @@ export const callGeminiApi = async (input, inputType) => {
         );
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+            try {
+                // Clone the response before reading it to avoid the "body stream already read" error
+                const responseClone = response.clone();
+                try {
+                    const errorData = await response.json();
+                    console.error('Gemini API error details:', errorData);
+
+                    // Log more detailed information about the error
+                    if (errorData.error) {
+                        console.error('Error code:', errorData.error.code);
+                        console.error('Error message:', errorData.error.message);
+                        console.error('Error status:', errorData.error.status);
+
+                        // Check for specific error messages related to audio/video processing
+                        if (errorData.error.message.includes('invalid argument')) {
+                            console.error('This may be due to an unsupported file format or MIME type');
+                            console.error('Supported audio formats: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac');
+                            console.error('File type used:', input.type);
+                        }
+                    }
+
+                    throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+                } catch (jsonError) {
+                    console.error('Error parsing Gemini API error response as JSON:', jsonError);
+                    const errorText = await responseClone.text();
+                    console.error('Raw error response:', errorText);
+                    throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error handling Gemini API error response:', error);
+                throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+            }
         }
 
         const data = await response.json();
