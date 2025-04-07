@@ -193,6 +193,34 @@
     "downloadVideoOnly": "Download Video"
   },
 
+  "subtitleSettings": {
+    "title": "Subtitle Settings",
+    "toggleSettings": "Subtitle Settings",
+    "downloadWithSubtitles": "Download with Subtitles",
+    "downloadWithTranslatedSubtitles": "Download with Translated",
+    "font": "Font",
+    "fontSize": "Font Size",
+    "fontWeight": "Font Weight",
+    "normal": "Normal",
+    "bold": "Bold",
+    "position": "Y Position",
+    "bottom": "Bottom",
+    "top": "Top",
+    "middle": "Middle",
+    "boxWidth": "Box Width",
+    "backgroundColor": "Background Color",
+    "opacity": "Opacity",
+    "textColor": "Text Color",
+    "resetToDefault": "Reset to Default"
+  },
+
+  "videoPreview": {
+    "noSubtitlesToRender": "No subtitles to render",
+    "noTranslatedSubtitles": "No translated subtitles available",
+    "renderError": "Error rendering subtitles: {{error}}",
+    "rendering": "Rendering video with subtitles..."
+  },
+
   "translation": {
     "title": "Translate Subtitles",
     "description": "Translate your edited subtitles to another language while preserving timing information.",

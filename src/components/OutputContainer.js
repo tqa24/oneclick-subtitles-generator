@@ -11,6 +11,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [editedLyrics, setEditedLyrics] = useState(null);
+  const [translatedSubtitles, setTranslatedSubtitles] = useState(null);
   const [seekTime, setSeekTime] = useState(null); // Track when seeking happens
 
   const handleLyricClick = (time) => {
@@ -106,8 +107,6 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
       {subtitlesData && (
         <>
           <div className="preview-section">
-            <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
-
             <VideoPreview
               currentTime={currentTabIndex}
               setCurrentTime={setCurrentTabIndex}
@@ -116,6 +115,8 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               videoSource={videoSource}
               setDuration={setVideoDuration}
               onSeek={handleVideoSeek}
+              translatedSubtitles={translatedSubtitles}
+              subtitlesArray={editedLyrics || subtitlesData}
             />
 
             <LyricsDisplay
@@ -136,6 +137,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
           <TranslationSection
             subtitles={editedLyrics || subtitlesData}
             videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+            onTranslationComplete={setTranslatedSubtitles}
           />
         </>
       )}

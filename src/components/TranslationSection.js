@@ -4,7 +4,7 @@ import { translateSubtitles } from '../services/geminiService';
 import { downloadSRT, downloadJSON } from '../utils/fileUtils';
 import '../styles/TranslationSection.css';
 
-const TranslationSection = ({ subtitles, videoTitle }) => {
+const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) => {
   const { t } = useTranslation();
   const [targetLanguage, setTargetLanguage] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
@@ -28,6 +28,9 @@ const TranslationSection = ({ subtitles, videoTitle }) => {
     try {
       const result = await translateSubtitles(subtitles, targetLanguage);
       setTranslatedSubtitles(result);
+      if (onTranslationComplete) {
+        onTranslationComplete(result);
+      }
     } catch (err) {
       console.error('Translation error:', err);
       setError(t('translation.error', 'Error translating subtitles. Please try again.'));
@@ -53,6 +56,9 @@ const TranslationSection = ({ subtitles, videoTitle }) => {
   const handleReset = () => {
     setTranslatedSubtitles(null);
     setError('');
+    if (onTranslationComplete) {
+      onTranslationComplete(null);
+    }
   };
 
   return (

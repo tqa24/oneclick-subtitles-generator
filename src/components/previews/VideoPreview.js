@@ -5,9 +5,11 @@ import {
   checkDownloadStatus,
   extractYoutubeVideoId
 } from '../../utils/videoDownloader';
+import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
+import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
 
-const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -20,6 +22,18 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [videoId, setVideoId] = useState(null);
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
+  const [isRenderingVideo, setIsRenderingVideo] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [subtitleSettings, setSubtitleSettings] = useState({
+    fontFamily: 'Arial, sans-serif',
+    fontSize: '24',
+    fontWeight: '400',
+    position: '90', // Now a percentage value from 0 (top) to 100 (bottom)
+    boxWidth: '80',
+    backgroundColor: '#000000',
+    opacity: '0.7',
+    textColor: '#ffffff'
+  });
   // We track play state in lastPlayStateRef instead of using state to avoid unnecessary re-renders
 
   // Process the video URL (download if it's YouTube)
@@ -283,8 +297,91 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     }
   }, [currentTime, isLoaded]);
 
+  // Handle downloading video with subtitles
+  const handleDownloadWithSubtitles = async () => {
+    if (!videoUrl || !subtitlesArray || subtitlesArray.length === 0) {
+      setError(t('videoPreview.noSubtitlesToRender', 'No subtitles to render'));
+      return;
+    }
+
+    setIsRenderingVideo(true);
+    setRenderProgress(0);
+    setError('');
+
+    try {
+      const renderedVideoUrl = await renderSubtitlesToVideo(
+        videoUrl,
+        subtitlesArray,
+        subtitleSettings,
+        (progress) => setRenderProgress(progress)
+      );
+
+      // Get video title or use default
+      const videoTitle = videoSource?.title || 'video-with-subtitles';
+      downloadVideo(renderedVideoUrl, `${videoTitle}.webm`);
+    } catch (err) {
+      console.error('Error rendering subtitles:', err);
+      setError(t('videoPreview.renderError', 'Error rendering subtitles: {{error}}', { error: err.message }));
+    } finally {
+      setIsRenderingVideo(false);
+    }
+  };
+
+  // Handle downloading video with translated subtitles
+  const handleDownloadWithTranslatedSubtitles = async () => {
+    if (!videoUrl || !translatedSubtitles || translatedSubtitles.length === 0) {
+      setError(t('videoPreview.noTranslatedSubtitles', 'No translated subtitles available'));
+      return;
+    }
+
+    setIsRenderingVideo(true);
+    setRenderProgress(0);
+    setError('');
+
+    try {
+      // translatedSubtitles is already an array of subtitle objects
+      const renderedVideoUrl = await renderSubtitlesToVideo(
+        videoUrl,
+        translatedSubtitles,
+        subtitleSettings,
+        (progress) => setRenderProgress(progress)
+      );
+
+      // Get video title or use default
+      const videoTitle = videoSource?.title || 'video-with-translated-subtitles';
+      downloadVideo(renderedVideoUrl, `${videoTitle}.webm`);
+    } catch (err) {
+      console.error('Error rendering translated subtitles:', err);
+      setError(t('videoPreview.renderError', 'Error rendering subtitles: {{error}}', { error: err.message }));
+    } finally {
+      setIsRenderingVideo(false);
+    }
+  };
+
   return (
     <div className="video-preview">
+      <div className="video-preview-header">
+        <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
+        <SubtitleSettings
+          settings={subtitleSettings}
+          onSettingsChange={setSubtitleSettings}
+          onDownloadWithSubtitles={handleDownloadWithSubtitles}
+          onDownloadWithTranslatedSubtitles={handleDownloadWithTranslatedSubtitles}
+          hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
+        />
+      </div>
+
+      {isRenderingVideo && (
+        <div className="rendering-overlay">
+          <div className="rendering-progress">
+            <div className="progress-bar" style={{ width: `${renderProgress * 100}%` }}></div>
+          </div>
+          <div className="rendering-text">
+            {t('videoPreview.rendering', 'Rendering video with subtitles...')} ({Math.round(renderProgress * 100)}%)
+          </div>
+        </div>
+      )}
+
       <div className="video-container">
         {error && <div className="error">{error}</div>}
 
@@ -311,7 +408,20 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                 {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
               </video>
 
-              <div className="video-subtitle">
+              <div
+                className="video-subtitle"
+                style={{
+                  '--font-family': subtitleSettings.fontFamily,
+                  '--font-size': `${subtitleSettings.fontSize}px`,
+                  '--font-weight': subtitleSettings.fontWeight,
+                  '--box-width': `${subtitleSettings.boxWidth}%`,
+                  '--background-color': `rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity})`,
+                  '--text-color': subtitleSettings.textColor,
+                  bottom: 'auto',
+                  top: `${subtitleSettings.position}%`,
+                  transform: 'translateY(-100%)'
+                }}
+              >
                 {subtitle}
               </div>
             </div>
