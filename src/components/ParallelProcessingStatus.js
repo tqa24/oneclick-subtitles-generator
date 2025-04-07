@@ -25,8 +25,23 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
   const calculateDropdownPosition = (index) => {
     if (buttonRefs.current[index]) {
       const buttonRect = buttonRefs.current[index].getBoundingClientRect();
-      const top = buttonRect.bottom + 8;
+      const dropdownHeight = 232; // Approximate height of dropdown (4 model options + header)
+
+      // Check if there's enough space above the button
+      const spaceAbove = buttonRect.top;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+
+      let top;
+      if (spaceAbove >= dropdownHeight + 8 || spaceAbove > spaceBelow) {
+        // Position above if there's enough space or more space above than below
+        top = buttonRect.top - dropdownHeight - 8; // Position above with 8px gap
+      } else {
+        // Otherwise position below
+        top = buttonRect.bottom + 8;
+      }
+
       const left = Math.max(buttonRect.left - 240, 10); // Align to left of button, but keep on screen
+
       setDropdownPosition({ top, left });
     }
   };
@@ -43,7 +58,7 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside and handle scroll/resize
   React.useEffect(() => {
     const handleClickOutside = (event) => {
       // Check if the click is outside any dropdown
@@ -75,12 +90,22 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
       }
     };
 
+    // Handle window scroll
+    const handleScroll = () => {
+      if (openDropdownIndex !== null) {
+        // Recalculate dropdown position when scrolling
+        calculateDropdownPosition(openDropdownIndex);
+      }
+    };
+
     document.addEventListener('click', handleClickOutside);
     window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
 
     return () => {
       document.removeEventListener('click', handleClickOutside);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [openDropdownIndex]);
 

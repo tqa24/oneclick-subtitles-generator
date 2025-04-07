@@ -38,6 +38,8 @@
     "hideEditor": "Ẩn trình chỉnh sửa thời gian",
     "retryGemini": "Thử lại với Gemini",
     "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới",
+    "retryWithModel": "Thử lại với mô hình khác",
+    "selectModel": "Chọn mô hình để thử lại",
     "longVideoWarning": "Bạn đã tải lên video dài {{duration}} phút. Quá trình xử lý có thể lâu hơn bình thường do nhiều cuộc gọi Gemini.",
     "longVideoProcessing": "Đang xử lý video dài hơn 30 phút. Điều này có thể mất một lúc...",
     "processingDirectly": "Đang xử lý video trực tiếp...",
@@ -170,5 +172,16 @@
     "searchError": "Lỗi khi tìm kiếm YouTube. Vui lòng thử lại hoặc nhập URL trực tiếp.",
     "noApiKey": "Vui lòng thiết lập khóa API YouTube trong cài đặt trước.",
     "downloadVideoOnly": "Tải xuống video"
+  },
+
+  "models": {
+    "gemini25Pro": "Gemini 2.5 Pro",
+    "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",
+    "gemini20Flash": "Gemini 2.0 Flash",
+    "gemini20FlashLite": "Gemini 2.0 Flash Lite",
+    "bestAccuracy": "Độ chính xác cao nhất",
+    "highAccuracy": "Độ chính xác cao",
+    "balancedModel": "Cân bằng",
+    "fastestModel": "Nhanh nhất"
   }
 }

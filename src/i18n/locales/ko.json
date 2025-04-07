@@ -37,6 +37,8 @@
     "hideEditor": "타이밍 편집기 숨기기",
     "retryGemini": "Gemini로 다시 시도",
     "retryGeminiTooltip": "Gemini로 자막을 다시 생성해보세요",
+    "retryWithModel": "다른 모델로 다시 시도",
+    "selectModel": "다시 시도할 모델 선택",
     "longVideoWarning": "{{duration}}분 길이의 비디오를 업로드했습니다. 여러 Gemini 호출로 인해 처리 시간이 평소보다 길어질 수 있습니다.",
     "longVideoProcessing": "30분 이상의 비디오를 처리 중입니다. 시간이 다소 걸릴 수 있습니다...",
     "processingDirectly": "비디오를 직접 처리하는 중...",
@@ -169,5 +171,16 @@
     "searchError": "YouTube 검색 중 오류가 발생했습니다. 다시 시도하거나 URL을 직접 입력하세요.",
     "noApiKey": "먼저 설정에서 YouTube API 키를 설정하세요.",
     "downloadVideoOnly": "비디오 다운로드"
+  },
+
+  "models": {
+    "gemini25Pro": "Gemini 2.5 Pro",
+    "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",
+    "gemini20Flash": "Gemini 2.0 Flash",
+    "gemini20FlashLite": "Gemini 2.0 Flash Lite",
+    "bestAccuracy": "최고 정확도",
+    "highAccuracy": "높은 정확도",
+    "balancedModel": "균형 잡힌",
+    "fastestModel": "가장 빠름"
   }
 }
