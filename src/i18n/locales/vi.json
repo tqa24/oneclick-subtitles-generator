@@ -192,6 +192,22 @@
     "downloadVideoOnly": "Tải xuống video"
   },
 
+  "translation": {
+    "title": "Dịch phụ đề",
+    "description": "Dịch phụ đề đã chỉnh sửa sang ngôn ngữ khác trong khi vẫn giữ nguyên thông tin thời gian.",
+    "languagePlaceholder": "Nhập ngôn ngữ đích (ví dụ: Tiếng Anh, Tiếng Pháp, Tiếng Nhật)",
+    "languageRequired": "Vui lòng nhập ngôn ngữ đích",
+    "noSubtitles": "Không có phụ đề để dịch",
+    "error": "Lỗi khi dịch phụ đề. Vui lòng thử lại.",
+    "translate": "Dịch",
+    "translating": "Đang dịch...",
+    "downloadSRT": "Tải xuống SRT",
+    "downloadJSON": "Tải xuống JSON",
+    "newTranslation": "Bản dịch mới",
+    "preview": "Xem trước bản dịch",
+    "moreSubtitles": "... và {{count}} phụ đề khác"
+  },
+
   "models": {
     "gemini25Pro": "Gemini 2.5 Pro",
     "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",

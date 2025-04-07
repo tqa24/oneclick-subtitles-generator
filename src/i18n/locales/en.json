@@ -194,6 +194,22 @@
     "downloadVideoOnly": "Download Video"
   },
 
+  "translation": {
+    "title": "Translate Subtitles",
+    "description": "Translate your edited subtitles to another language while preserving timing information.",
+    "languagePlaceholder": "Enter target language (e.g., Spanish, French, Japanese)",
+    "languageRequired": "Please enter a target language",
+    "noSubtitles": "No subtitles to translate",
+    "error": "Error translating subtitles. Please try again.",
+    "translate": "Translate",
+    "translating": "Translating...",
+    "downloadSRT": "Download SRT",
+    "downloadJSON": "Download JSON",
+    "newTranslation": "New Translation",
+    "preview": "Translation Preview",
+    "moreSubtitles": "... and {{count}} more subtitles"
+  },
+
   "models": {
     "gemini25Pro": "Gemini 2.5 Pro",
     "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",

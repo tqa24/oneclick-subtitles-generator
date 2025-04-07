@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
+import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
 const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
@@ -130,6 +131,12 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
 
             {/* Download buttons moved to LyricsDisplay component */}
           </div>
+
+          {/* Translation Section */}
+          <TranslationSection
+            subtitles={editedLyrics || subtitlesData}
+            videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+          />
         </>
       )}
     </div>

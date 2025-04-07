@@ -191,6 +191,22 @@
     "downloadVideoOnly": "비디오 다운로드"
   },
 
+  "translation": {
+    "title": "자막 번역",
+    "description": "편집한 자막을 다른 언어로 번역하면서 시간 정보를 유지합니다.",
+    "languagePlaceholder": "대상 언어 입력 (예: 영어, 프랑스어, 일본어)",
+    "languageRequired": "대상 언어를 입력해 주세요",
+    "noSubtitles": "번역할 자막이 없습니다",
+    "error": "자막 번역 오류. 다시 시도해 주세요.",
+    "translate": "번역",
+    "translating": "번역 중...",
+    "downloadSRT": "SRT 다운로드",
+    "downloadJSON": "JSON 다운로드",
+    "newTranslation": "새 번역",
+    "preview": "번역 미리보기",
+    "moreSubtitles": "... 그리고 {{count}}개 더 있습니다"
+  },
+
   "models": {
     "gemini25Pro": "Gemini 2.5 Pro",
     "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",

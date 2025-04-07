@@ -374,3 +374,89 @@ const deduplicateAndSortSubtitles = (subtitles) => {
     console.log('Extracted subtitles:', uniqueSubtitles);
     return uniqueSubtitles;
 };
+
+/**
+ * Parse translated subtitles from Gemini response
+ * @param {string} text - The translated text from Gemini
+ * @returns {Array} - Array of subtitle objects
+ */
+export const parseTranslatedSubtitles = (text) => {
+    if (!text) return [];
+
+    const subtitles = [];
+    const lines = text.split('\n');
+    let currentSubtitle = {};
+    let index = 0;
+
+    while (index < lines.length) {
+        const line = lines[index].trim();
+
+        // Skip empty lines
+        if (!line) {
+            index++;
+            continue;
+        }
+
+        // Check if this is a subtitle number
+        if (/^\d+$/.test(line)) {
+            // If we have a complete subtitle, add it to the list
+            if (currentSubtitle.startTime && currentSubtitle.endTime && currentSubtitle.text) {
+                subtitles.push({
+                    id: subtitles.length + 1,
+                    startTime: currentSubtitle.startTime,
+                    endTime: currentSubtitle.endTime,
+                    text: currentSubtitle.text
+                });
+            }
+
+            // Start a new subtitle
+            currentSubtitle = { id: parseInt(line) };
+            index++;
+        }
+        // Check if this is a timestamp line
+        else if (line.includes('-->')) {
+            const times = line.split('-->');
+            if (times.length === 2) {
+                currentSubtitle.startTime = times[0].trim();
+                currentSubtitle.endTime = times[1].trim();
+            }
+            index++;
+        }
+        // This must be the subtitle text
+        else {
+            // Collect all text lines until we hit an empty line or a number
+            let textLines = [];
+            while (index < lines.length && lines[index].trim() && !/^\d+$/.test(lines[index].trim())) {
+                textLines.push(lines[index].trim());
+                index++;
+            }
+
+            currentSubtitle.text = textLines.join(' ');
+
+            // If we've reached the end or the next line is a number, add this subtitle
+            if (index >= lines.length || (index < lines.length && /^\d+$/.test(lines[index].trim()))) {
+                if (currentSubtitle.startTime && currentSubtitle.endTime && currentSubtitle.text) {
+                    subtitles.push({
+                        id: subtitles.length + 1,
+                        startTime: currentSubtitle.startTime,
+                        endTime: currentSubtitle.endTime,
+                        text: currentSubtitle.text
+                    });
+                }
+                currentSubtitle = {};
+            }
+        }
+    }
+
+    // Add the last subtitle if it exists
+    if (currentSubtitle.startTime && currentSubtitle.endTime && currentSubtitle.text) {
+        subtitles.push({
+            id: subtitles.length + 1,
+            startTime: currentSubtitle.startTime,
+            endTime: currentSubtitle.endTime,
+            text: currentSubtitle.text
+        });
+    }
+
+    return subtitles;
+};

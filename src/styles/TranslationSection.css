@@ -1,0 +1,232 @@
+.translation-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid var(--border-color);
+}
+
+.translation-header {
+  margin-bottom: 1.5rem;
+}
+
+.translation-header h3 {
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.translation-description {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.translation-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.language-input-container {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.language-input {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.language-input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+.language-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.translate-button,
+.download-translation-button,
+.reset-translation-button {
+  padding: 0 1.5rem;
+  height: 42px;
+  border-radius: 21px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.translate-button {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.translate-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+}
+
+.translate-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.translate-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.translation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.download-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.download-translation-button {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: none;
+}
+
+.download-translation-button:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.download-translation-button.json {
+  background-color: var(--md-tertiary-container, #e8def8);
+  color: var(--md-on-tertiary-container, #1d192b);
+}
+
+.download-translation-button.json:hover {
+  background-color: var(--md-tertiary, #6750a4);
+  color: var(--md-on-tertiary, #ffffff);
+}
+
+.reset-translation-button {
+  background-color: var(--md-surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.reset-translation-button:hover {
+  background-color: var(--md-surface-3);
+}
+
+.translation-error {
+  color: var(--error-color);
+  background-color: var(--error-background);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 3px solid var(--error-color);
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.translation-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.translation-preview h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.translation-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preview-subtitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preview-time {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.preview-text {
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.preview-more {
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .translation-section {
+    padding: 1rem;
+  }
+
+  .language-input-container {
+    flex-direction: column;
+  }
+
+  .language-input {
+    width: 100%;
+  }
+
+  .translation-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .download-translation-button,
+  .reset-translation-button {
+    flex: 1;
+  }
+}

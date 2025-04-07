@@ -1,4 +1,4 @@
-import { parseGeminiResponse } from '../utils/subtitleParser';
+import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
 
 // Default transcription prompts
 export const PROMPT_PRESETS = [
@@ -147,3 +147,109 @@ const fileToBase64 = (file) => {
         reader.onerror = error => reject(error);
     });
 };
+
+// Function to translate subtitles to a different language while preserving timing
+const translateSubtitles = async (subtitles, targetLanguage) => {
+    if (!subtitles || subtitles.length === 0) {
+        throw new Error('No subtitles to translate');
+    }
+
+    // Format subtitles as proper SRT text for Gemini
+    const subtitleText = subtitles.map((sub, index) => {
+        // Convert timestamps to SRT format if they're not already
+        let startTime = sub.startTime;
+        let endTime = sub.endTime;
+
+        // If we have numeric start/end instead of formatted strings
+        if (sub.start !== undefined && !startTime) {
+            const startHours = Math.floor(sub.start / 3600);
+            const startMinutes = Math.floor((sub.start % 3600) / 60);
+            const startSeconds = Math.floor(sub.start % 60);
+            const startMs = Math.floor((sub.start % 1) * 1000);
+            startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
+        }
+
+        if (sub.end !== undefined && !endTime) {
+            const endHours = Math.floor(sub.end / 3600);
+            const endMinutes = Math.floor((sub.end % 3600) / 60);
+            const endSeconds = Math.floor(sub.end % 60);
+            const endMs = Math.floor((sub.end % 1) * 1000);
+            endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
+        }
+
+        return `${index + 1}\n${startTime} --> ${endTime}\n${sub.text}`;
+    }).join('\n\n');
+
+    // Create the prompt for translation
+    const translationPrompt = `Translate the following subtitles to ${targetLanguage}.
+
+IMPORTANT: You MUST preserve the exact SRT format with numbers and timestamps.
+DO NOT modify the timestamps or subtitle numbers.
+ONLY translate the text content between timestamps and blank lines.
+
+Format must be exactly:
+1
+00:01:23,456 --> 00:01:26,789
+Translated text here
+
+2
+00:01:27,123 --> 00:01:30,456
+Next translated text here
+
+Here are the subtitles to translate:\n\n${subtitleText}`;
+
+    try {
+        // Get API key from localStorage
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            throw new Error('Gemini API key not found');
+        }
+
+        // Get selected model from localStorage or use default
+        const model = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: translationPrompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 32,
+                    topP: 0.95,
+                    maxOutputTokens: 8192,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const translatedText = data.candidates[0]?.content?.parts[0]?.text;
+
+        if (!translatedText) {
+            throw new Error('No translation returned from Gemini');
+        }
+
+        // Parse the translated subtitles
+        return parseTranslatedSubtitles(translatedText);
+    } catch (error) {
+        console.error('Translation error:', error);
+        throw error;
+    }
+};
+
+export { callGeminiApi as transcribeVideo, callGeminiApi as transcribeAudio, callGeminiApi as transcribeYouTubeVideo, translateSubtitles };
