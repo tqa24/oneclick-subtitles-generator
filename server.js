@@ -9,7 +9,7 @@ const cors = require('cors');
 const path = require('path');
 
 // Import configuration
-const { PORT, CORS_ORIGIN, VIDEOS_DIR, SEGMENTS_DIR, SUBTITLES_DIR, ensureDirectories } = require('./server/config');
+const { PORT, CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, ensureDirectories } = require('./server/config');
 
 // Import routes
 const videoRoutes = require('./server/routes/videoRoutes');
@@ -34,7 +34,6 @@ app.use(express.json({ limit: '500mb' }));
 
 // Serve static directories
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
-app.use('/segments', express.static(path.join(__dirname, 'segments')));
 app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 
 // Test endpoint to verify server is working
@@ -51,6 +50,5 @@ app.use('/api', cacheRoutes);
 app.listen(PORT, () => {
   console.log(`YouTube download server running on port ${PORT}`);
   console.log(`Videos directory: ${VIDEOS_DIR}`);
-  console.log(`Segments directory: ${SEGMENTS_DIR}`);
   console.log(`Subtitles directory: ${SUBTITLES_DIR}`);
 });

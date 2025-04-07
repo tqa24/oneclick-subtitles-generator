@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo }) => {
+const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo, className }) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -94,11 +94,8 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
   };
 
   return (
-    <div className="youtube-search-input">
+    <div className={`youtube-search-input ${className || ''}`}>
       <div className="search-field-container">
-        <label htmlFor="youtube-search-input" className="search-label">
-          {t('youtube.searchLabel', 'Search YouTube Video:')}
-        </label>
         <div className="search-input-wrapper">
           <svg className="search-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
             <circle cx="11" cy="11" r="8"></circle>

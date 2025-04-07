@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
+const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
@@ -75,35 +75,33 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
   };
 
   return (
-    <div className="youtube-url-input">
-      <div className="full-width-url-input">
-        <div className="url-input-wrapper">
-          <svg className="youtube-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
-            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
-          </svg>
-          <input
-            type="text"
-            value={url}
-            onChange={handleUrlChange}
-            placeholder={t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., youtube.com/watch?v=...)')}
-            className={`youtube-url-field ${error ? 'error-input' : ''}`}
-          />
-          {url && (
-            <button
-              type="button"
-              className="clear-url-btn"
-              onClick={() => {
-                setUrl('');
-                setSelectedVideo(null);
-                setError('');
-              }}
-              aria-label="Clear input"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+    <div className={`youtube-url-input ${className || ''}`}>
+      <div className="url-input-wrapper">
+        <svg className="youtube-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+          <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+          <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+        </svg>
+        <input
+          type="text"
+          value={url}
+          onChange={handleUrlChange}
+          placeholder={t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., youtube.com/watch?v=...)')}
+          className={`youtube-url-field ${error ? 'error-input' : ''}`}
+        />
+        {url && (
+          <button
+            type="button"
+            className="clear-url-btn"
+            onClick={() => {
+              setUrl('');
+              setSelectedVideo(null);
+              setError('');
+            }}
+            aria-label="Clear input"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {error && (
@@ -126,26 +124,22 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo }) => {
             <li>{t('youtubeUrlInput.instructionsStep3', 'Paste the URL above')}</li>
           </ol>
 
-          <div className="url-examples">
-            <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
-            <ul>
-              <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
-              <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
-              <li>{t('youtubeUrlInput.example3', 'youtube.com/watch?v=dQw4w9WgXcQ')}</li>
-            </ul>
-          </div>
+          <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
+          <ul className="url-examples">
+            <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+            <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
+            <li>{t('youtubeUrlInput.example3', 'youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+          </ul>
         </div>
       )}
 
       {selectedVideo && selectedVideo.id && (
         <div className="selected-video-preview">
-          <div className="thumbnail-container">
-            <img
-              src={`https://img.youtube.com/vi/${selectedVideo.id}/0.jpg`}
-              alt={videoTitle}
-              className="thumbnail"
-            />
-          </div>
+          <img
+            src={`https://img.youtube.com/vi/${selectedVideo.id}/0.jpg`}
+            alt={videoTitle}
+            className="thumbnail"
+          />
           <div className="video-info">
             <h3 className="video-title">{videoTitle}</h3>
             <p className="video-id">{t('youtubeUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>

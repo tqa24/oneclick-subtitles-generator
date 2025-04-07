@@ -2,12 +2,7 @@
 
 .youtube-url-input {
   width: 100%;
-}
-
-.youtube-url-input .full-width-url-input {
-  display: flex;
-  width: 100%;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
 }
 
 .url-input-wrapper {
@@ -15,6 +10,7 @@
   display: flex;
   align-items: center;
   width: 100%;
+  margin-bottom: 1rem;
 }
 
 .youtube-icon {
@@ -52,7 +48,7 @@
   margin-top: 1.5rem;
   padding: 1.5rem;
   background-color: var(--background-primary);
-  border-radius: 8px;
+  border-radius: 36px;
   box-shadow: 0 2px 8px var(--shadow-color);
   transition: background-color var(--transition-speed);
   animation: fade-in 0.5s ease-out;
@@ -77,25 +73,22 @@
   transition: color var(--transition-speed);
 }
 
-.url-examples {
-  background-color: var(--background-secondary);
-  padding: 1rem;
-  border-radius: 6px;
-  transition: background-color var(--transition-speed);
-}
-
-.url-examples h4 {
-  margin-top: 0;
+.youtube-instructions h4 {
+  margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   font-size: 0.95rem;
   color: var(--text-primary);
   transition: color var(--transition-speed);
 }
 
-.url-examples ul {
+.url-examples {
   margin: 0;
   padding-left: 1.5rem;
   list-style-type: disc;
+  background-color: var(--background-secondary);
+  padding: 1rem 1rem 1rem 2.5rem;
+  border-radius: 6px;
+  transition: background-color var(--transition-speed);
 }
 
 .url-examples li {

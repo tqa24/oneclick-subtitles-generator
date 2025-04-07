@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
+const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className }) => {
   const { t } = useTranslation();
   const [fileInfo, setFileInfo] = useState(null);
   const [error, setError] = useState('');
@@ -134,95 +134,80 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect }) => {
   };
 
   return (
-    <div className="file-upload-input">
-      <div
-        className={`drag-drop-area ${isDragOver ? 'drag-over' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleBrowseClick}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept=".mp4,.mov,.avi,.mp3,.wav,.aac,.ogg"
-          style={{ display: 'none' }}
-        />
+    <div
+      className={`file-upload-input ${isDragOver ? 'drag-over' : ''} ${className || ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={handleBrowseClick}
+    >
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".mp4,.mov,.avi,.mp3,.wav,.aac,.ogg"
+        className="hidden-file-input"
+      />
 
-        {!uploadedFile ? (
-          <>
-            <div className="upload-icon">
-              <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="1" fill="none">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
+      {!uploadedFile ? (
+        <div className="upload-content">
+          <svg className="upload-icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="1" fill="none">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <h3>{t('inputMethods.dragDropText')}</h3>
+          <p>{t('inputMethods.orText')}</p>
+          <p className="browse-text">{t('inputMethods.browse')}</p>
+          <p className="upload-help-text">{t('inputMethods.supportedFormats')}</p>
+          <p className="upload-help-text">{t('inputMethods.maxFileSize')}</p>
+        </div>
+      ) : (
+        <div className="file-info-card">
+          {fileInfo && isVideoFile(fileInfo.type) ? (
+            <svg className="file-type-icon video" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+              <line x1="7" y1="2" x2="7" y2="22"></line>
+              <line x1="17" y1="2" x2="17" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <line x1="2" y1="7" x2="7" y2="7"></line>
+              <line x1="2" y1="17" x2="7" y2="17"></line>
+              <line x1="17" y1="17" x2="22" y2="17"></line>
+              <line x1="17" y1="7" x2="22" y2="7"></line>
+            </svg>
+          ) : (
+            <svg className="file-type-icon audio" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
+              <path d="M9 18V5l12-2v13"></path>
+              <circle cx="6" cy="18" r="3"></circle>
+              <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+          )}
+
+          <div className="file-info-content">
+            <h4 className="file-name">{fileInfo ? fileInfo.name : 'File'}</h4>
+            <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
+            <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
+            <button
+              className="remove-file-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFileInfo(null);
+                setUploadedFile(null);
+                if (localStorage.getItem('current_file_url')) {
+                  URL.revokeObjectURL(localStorage.getItem('current_file_url'));
+                  localStorage.removeItem('current_file_url');
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-            </div>
-            <div className="upload-text">
-              <h3>{t('inputMethods.dragDropText')}</h3>
-              <p>{t('inputMethods.orText')}</p>
-              <p className="browse-text">{t('inputMethods.browse')}</p>
-            </div>
-            <div className="upload-instructions">
-              <p className="upload-help-text">{t('inputMethods.supportedFormats')}</p>
-              <p className="upload-help-text">{t('inputMethods.maxFileSize')}</p>
-            </div>
-          </>
-        ) : (
-          <div className="file-info-card">
-            <div className="file-preview">
-              {fileInfo && isVideoFile(fileInfo.type) ? (
-                <svg className="file-type-icon video" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
-                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                  <line x1="7" y1="2" x2="7" y2="22"></line>
-                  <line x1="17" y1="2" x2="17" y2="22"></line>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <line x1="2" y1="7" x2="7" y2="7"></line>
-                  <line x1="2" y1="17" x2="7" y2="17"></line>
-                  <line x1="17" y1="17" x2="22" y2="17"></line>
-                  <line x1="17" y1="7" x2="22" y2="7"></line>
-                </svg>
-              ) : (
-                <svg className="file-type-icon audio" viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
-                  <path d="M9 18V5l12-2v13"></path>
-                  <circle cx="6" cy="18" r="3"></circle>
-                  <circle cx="18" cy="16" r="3"></circle>
-                </svg>
-              )}
-            </div>
-
-            <div className="file-info-content">
-              <div className="file-info-header">
-                <h4 className="file-name">{fileInfo ? fileInfo.name : 'File'}</h4>
-                <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
-              </div>
-
-              <div className="file-info-details">
-                <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
-                <button
-                  className="remove-file-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setFileInfo(null);
-                    setUploadedFile(null);
-                    if (localStorage.getItem('current_file_url')) {
-                      URL.revokeObjectURL(localStorage.getItem('current_file_url'));
-                      localStorage.removeItem('current_file_url');
-                    }
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                  {t('fileUpload.remove', 'Remove')}
-                </button>
-              </div>
-            </div>
+              {t('fileUpload.remove', 'Remove')}
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {error && (
         <div className="error-message">

@@ -23,12 +23,6 @@ const ensureDirectories = () => {
     console.log(`Created videos directory at ${VIDEOS_DIR}`);
   }
 
-  // Ensure segments directory exists
-  if (!fs.existsSync(SEGMENTS_DIR)) {
-    fs.mkdirSync(SEGMENTS_DIR, { recursive: true });
-    console.log(`Created segments directory at ${SEGMENTS_DIR}`);
-  }
-
   // Ensure subtitles directory exists
   if (!fs.existsSync(SUBTITLES_DIR)) {
     fs.mkdirSync(SUBTITLES_DIR, { recursive: true });

@@ -27,6 +27,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           onVideoSelect={onVideoSelect}
           uploadedFile={uploadedFile}
           setUploadedFile={setUploadedFile}
+          className="tab-content"
         />;
       default:
         return null;
@@ -77,9 +78,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         </div>
       </div>
 
-      <div className="input-content">
-        {renderInputMethod()}
-      </div>
+      {renderInputMethod()}
     </div>
   );
 };

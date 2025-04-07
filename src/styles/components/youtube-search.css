@@ -2,14 +2,13 @@
 
 .youtube-search-input {
   width: 100%;
-  margin-bottom: 1rem;
 }
 
 .search-field-container {
   display: flex;
   flex-direction: column;
   width: 100%;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
 }
 
 .search-label {
@@ -64,7 +63,7 @@
 }
 
 .search-results {
-  margin-top: 1rem;
+  margin: 2rem;
   max-height: 340px;
   overflow-y: auto;
   border-radius: 8px;
@@ -203,7 +202,7 @@
 }
 
 .thumbnail {
-  width: 100%;
+  border-radius: 32px;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;

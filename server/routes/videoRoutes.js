@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { VIDEOS_DIR, SEGMENTS_DIR, SERVER_URL } = require('../config');
+const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtubeService');
 const { splitVideoIntoSegments } = require('../services/videoProcessingService');
 
@@ -35,13 +35,13 @@ router.get('/video-exists/:videoId', (req, res) => {
  */
 router.get('/segment-exists/:segmentId', (req, res) => {
   const { segmentId } = req.params;
-  const segmentPath = path.join(SEGMENTS_DIR, `${segmentId}.mp4`);
+  const segmentPath = path.join(VIDEOS_DIR, `${segmentId}.mp4`);
 
   if (fs.existsSync(segmentPath)) {
     const stats = fs.statSync(segmentPath);
     res.json({
       exists: true,
-      url: `/segments/${segmentId}.mp4`,
+      url: `/videos/${segmentId}.mp4`,
       size: stats.size,
       createdAt: stats.birthtime
     });
@@ -127,7 +127,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: 'video/
     const result = await splitVideoIntoSegments(
       videoPath,
       segmentDuration,
-      SEGMENTS_DIR,
+      VIDEOS_DIR, // Save segments in the videos directory
       `segment_${timestamp}`
     );
 
@@ -136,7 +136,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: 'video/
       success: true,
       originalVideo: `/videos/${filename}`,
       batchId: result.batchId,
-      segments: result.segments.map(segment => `/segments/${path.basename(segment)}`),
+      segments: result.segments.map(segment => `/videos/${path.basename(segment)}`),
       message: 'Video uploaded and split successfully'
     });
   } catch (error) {

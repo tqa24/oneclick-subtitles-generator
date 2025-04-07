@@ -44,7 +44,7 @@
 
   /* Shape tokens - using pill shapes for buttons */
   --md-shape-small: 12px;
-  --md-shape-medium: 16px;
+  --md-shape-medium: 32px;
   --md-shape-large: 24px;
   --md-shape-extra-large: 32px;
   --md-shape-pill: 9999px; /* For pill-shaped buttons */
