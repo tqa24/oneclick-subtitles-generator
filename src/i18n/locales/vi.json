@@ -61,8 +61,8 @@
     "pending": "Đang chờ",
     "generateSegment": "Tạo",
     "generateSegmentTooltip": "Xử lý phần này",
-    "strongModelWarning": "Bạn đang chọn một mô hình dễ bị quá tải, vui lòng xử lý từng phần một",
-    "strongModelSuccess": "Vì bạn đang chọn mô hình dễ bị quá tải, vui lòng nhấn nút tạo thủ công",
+    "strongModelWarning": "Bạn đang chọn một mô hình dễ bị quá tải, vui lòng xử lý từng phần một. Nếu bị quá tải, hãy tạo Google Cloud Project mới và lấy API Key.",
+    "strongModelSuccess": "Vì bạn đang chọn mô hình dễ bị quá tải, vui lòng nhấn nút tạo thủ công. Nếu bị quá tải, hãy tạo Google Cloud Project mới và lấy API Key.",
     "segmentGenerateSuccess": "Phần {{segmentNumber}} đã được xử lý thành công và kết hợp với phụ đề hiện có"
   },
   "settings": {
@@ -134,7 +134,7 @@
     "apiKeyRequired": "Vui lòng cài đặt khóa API trong phần cài đặt trước.",
     "invalidInput": "Vui lòng cung cấp đầu vào hợp lệ (URL YouTube, kết quả tìm kiếm, hoặc tập tin tải lên).",
     "invalidFile": "Định dạng hoặc kích thước tập tin không hợp lệ. Kiểm tra các định dạng được hỗ trợ.",
-    "geminiOverloaded": "Mô hình mạnh có xu hướng bị quá tải, vui lòng cân nhắc sử dụng mô hình khác và thử lại, hoặc thử giảm thời lượng phân đoạn.",
+    "geminiOverloaded": "Mô hình mạnh có xu hướng bị quá tải, vui lòng cân nhắc sử dụng mô hình khác và thử lại, hoặc thử giảm thời lượng phân đoạn. Cách khác: tạo Google Cloud Project mới và lấy API Key.",
     "tokenLimitExceeded": "Phần video quá lớn để Gemini xử lý. Vui lòng thử với video ngắn hơn hoặc chất lượng video thấp hơn.",
     "fileSizeTooLarge": "Kích thước tập tin ({{size}}MB) vượt quá giới hạn đề nghị {{maxSize}}MB. Vui lòng sử dụng tập tin nhỏ hơn hoặc video chất lượng thấp hơn."
   },

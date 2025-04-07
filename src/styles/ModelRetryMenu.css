@@ -1,0 +1,176 @@
+/* Model retry menu container */
+.model-retry-menu-container {
+  position: static; /* Changed from relative to avoid positioning issues */
+  display: inline-block;
+}
+
+/* Modified retry button with dropdown indicator */
+.model-retry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 8px 10px 8px 8px !important;
+  border-radius: 16px !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Dropdown icon styling */
+.dropdown-icon {
+  margin-left: 2px;
+  transition: transform 0.2s var(--md-easing-standard);
+}
+
+.model-retry-btn:hover .dropdown-icon {
+  transform: translateY(2px);
+}
+
+/* Model options dropdown */
+.model-options-dropdown {
+  position: fixed;
+  z-index: 99999; /* Very high z-index to ensure it's above everything */
+  width: 240px;
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-shape-medium);
+  box-shadow: var(--md-elevation-level3);
+  border: 1px solid var(--md-outline-variant);
+  overflow: hidden;
+  transform-origin: top left;
+  /* No animation to avoid blinking */
+  /* Ensure the dropdown is visible and clickable */
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  /* Prevent any transitions that might cause blinking */
+  transition: none !important;
+}
+
+/* Header for the dropdown */
+.model-options-header {
+  padding: 12px 16px;
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-3);
+}
+
+/* List of model options */
+.model-options-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Individual model option button */
+.model-option-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  color: var(--md-on-surface);
+  /* Remove transitions to prevent blinking */
+  transition: none !important;
+}
+
+/* Hover effect for model options - simplified to prevent blinking */
+.model-option-btn:hover {
+  background-color: var(--model-bg-color, rgba(var(--md-primary-rgb), 0.1));
+}
+
+/* Active effect for model options - simplified to prevent blinking */
+.model-option-btn:active {
+  background-color: var(--model-bg-color, rgba(var(--md-primary-rgb), 0.2));
+}
+
+/* Model icon container */
+.model-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--model-bg-color, rgba(var(--md-primary-rgb), 0.1));
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* Model icon styling */
+.model-icon {
+  color: var(--model-color, var(--md-primary));
+  font-size: 18px;
+}
+
+/* Special styling for each icon type */
+.star-icon {
+  color: var(--md-tertiary);
+}
+
+.award-icon {
+  color: var(--md-secondary);
+}
+
+.zap-icon {
+  color: var(--md-primary);
+}
+
+.cpu-icon {
+  color: var(--success-color);
+}
+
+/* Model text container */
+.model-option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Model name styling */
+.model-option-name {
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  margin-bottom: 2px;
+}
+
+/* Model description styling */
+.model-option-description {
+  font-size: var(--md-body-small-size);
+  color: var(--md-on-surface-variant);
+}
+
+/* No animations to prevent blinking */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .model-options-dropdown {
+    width: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .model-options-dropdown {
+    width: 200px;
+    right: -40px;
+  }
+
+  .model-options-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 48px;
+    width: 16px;
+    height: 16px;
+    background-color: var(--md-surface-2);
+    transform: rotate(45deg);
+    border-top: 1px solid var(--md-outline-variant);
+    border-left: 1px solid var(--md-outline-variant);
+    z-index: -1;
+  }
+}

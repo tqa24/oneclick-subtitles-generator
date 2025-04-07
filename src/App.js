@@ -71,6 +71,34 @@ function App() {
     await retrySegment(segmentIndex, segments);
   };
 
+  // Handler for retrying a segment with a specific model
+  const handleRetryWithModel = async (segmentIndex, modelId, segments) => {
+    if (!segments || !segments[segmentIndex]) {
+      console.error('No segment found at index', segmentIndex);
+      return;
+    }
+
+    console.log('Retrying segment', segmentIndex, 'with model', modelId);
+
+    // Save the current model
+    const currentModel = localStorage.getItem('gemini_model');
+
+    // Temporarily set the selected model
+    localStorage.setItem('gemini_model', modelId);
+
+    try {
+      // Use the retrySegment function with the temporarily set model
+      await retrySegment(segmentIndex, segments);
+    } finally {
+      // Restore the original model
+      if (currentModel) {
+        localStorage.setItem('gemini_model', currentModel);
+      } else {
+        localStorage.removeItem('gemini_model');
+      }
+    }
+  };
+
   // Listen for segment status updates
   useEffect(() => {
     // Set up event listener for segment status updates
@@ -582,6 +610,7 @@ function App() {
             segmentsStatus={segmentsStatus}
             activeTab={activeTab}
             onRetrySegment={retrySegment}
+            onRetryWithModel={handleRetryWithModel}
             onGenerateSegment={handleGenerateSegment}
             videoSegments={videoSegments}
             retryingSegments={retryingSegments}

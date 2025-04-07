@@ -65,19 +65,20 @@
   border-radius: var(--md-shape-medium);
   background-color: var(--md-surface);
   box-shadow: var(--md-elevation-level1);
-  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized),
-              box-shadow var(--md-duration-medium2) var(--md-easing-standard),
-              background-color var(--transition-speed),
-              color var(--transition-speed);
+  /* Remove transitions to prevent layout shifts */
+  transition: none !important;
   color: var(--md-on-surface);
   border: 1px solid var(--md-outline-variant);
   position: relative;
   overflow: visible; /* Changed from hidden to ensure buttons are clickable */
+  /* Fixed height to prevent layout shifts */
+  height: 60px;
 }
 
 /* Material Design 3 hover state - enhanced styling */
 .segment-status:hover {
-  transform: translateY(-4px);
+  /* Remove transform to prevent layout shifts */
+  transform: none !important;
   box-shadow: var(--md-elevation-level3);
   background-color: color-mix(in srgb, var(--md-surface), rgba(0, 0, 0, var(--md-state-hover-opacity)));
 }
@@ -89,16 +90,16 @@
   top: 0;
   left: 0;
   width: 100%;
-  height: 0;
+  height: 100%; /* Always full height to prevent layout shifts */
   background-color: var(--md-primary);
-  opacity: 0.1;
-  transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
+  opacity: 0;
+  transition: none !important; /* Remove transition to prevent layout shifts */
   pointer-events: none; /* Ensure it doesn't block clicks */
   z-index: 1; /* Keep it below interactive elements */
 }
 
 .segment-status:hover::after {
-  height: 100%;
+  opacity: 0.1; /* Change opacity instead of height */
 }
 
 /* Material Design 3 typography for segment items */
@@ -212,56 +213,146 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Material Design 3 icon button for refresh */
-.segment-retry-btn {
-  background: rgba(var(--md-primary-rgb), 0.1);
-  border: 1px solid var(--md-primary);
-  cursor: pointer !important; /* Force cursor to be pointer */
-  color: var(--md-primary);
-  padding: 8px;
+/* Container for model retry dropdown */
+.model-retry-dropdown-container {
+  position: relative;
   margin-left: 4px;
+}
+
+/* Dropdown icon */
+.dropdown-icon {
+  margin-left: 2px;
+  font-size: 10px;
+}
+
+/* Model dropdown menu */
+.model-dropdown {
+  position: fixed;
+  width: 280px;
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-shape-medium);
+  box-shadow: var(--md-elevation-level3);
+  border: 1px solid var(--md-outline-variant);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Dropdown header */
+.model-dropdown-header {
+  padding: 12px 16px;
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-3);
+}
+
+/* Base styles for segment retry button */
+.segment-retry-btn {
+  cursor: pointer !important;
+  padding: 6px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
-              color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
   position: relative;
-  overflow: visible; /* Changed from hidden to ensure the button is clickable */
-  z-index: 100 !important; /* Ensure it's above ALL other elements */
-  pointer-events: auto !important; /* Force pointer events to be enabled */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add shadow for emphasis */
+  overflow: visible;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--md-primary);
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  /* Fixed dimensions to prevent layout shifts */
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  /* Prevent any transitions that might cause layout shifts */
+  transition: none !important;
 }
 
-/* State layer for hover effect */
-.segment-retry-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+/* Model option button */
+.model-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
   background-color: transparent;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
-  pointer-events: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.model-option:hover {
+  background-color: var(--md-surface-3);
+}
+
+/* Model option icon */
+.model-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  margin-right: 12px;
+  flex-shrink: 0;
 }
 
-.segment-retry-btn:hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+/* Model option text */
+.model-option-text {
+  display: flex;
+  flex-direction: column;
 }
 
-.segment-retry-btn:hover {
-  transform: rotate(30deg) scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  background-color: rgba(var(--md-primary-rgb), 0.2);
+.model-option-name {
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  margin-bottom: 2px;
 }
 
+.model-option-desc {
+  font-size: var(--md-body-small-size);
+  color: var(--md-on-surface-variant);
+}
+
+/* Gemini 2.5 Pro styles */
+.model-pro {
+  background-color: rgba(var(--md-tertiary-rgb), 0.1);
+  color: var(--md-tertiary);
+  border: 1px solid var(--md-tertiary);
+}
+
+/* Gemini 2.0 Flash Thinking styles */
+.model-thinking {
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
+  border: 1px solid var(--md-secondary);
+}
+
+/* Gemini 2.0 Flash styles */
+.model-flash {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border: 1px solid var(--md-primary);
+}
+
+/* Gemini 2.0 Flash Lite styles */
+.model-lite {
+  background-color: rgba(0, 180, 0, 0.1);
+  color: rgb(0, 160, 0);
+  border: 1px solid rgb(0, 160, 0);
+}
+
+/* Active state for segment retry button */
 .segment-retry-btn:active {
-  transform: scale(0.95);
-  background-color: rgba(var(--md-primary-rgb), 0.3);
+  /* No transform to prevent layout shifts */
+  transform: none !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* Slightly darker background for feedback */
+  opacity: 0.9;
 }
 
 /* Material Design 3 retrying indicator */

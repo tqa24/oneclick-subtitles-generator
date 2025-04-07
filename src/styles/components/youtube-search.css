@@ -27,7 +27,7 @@
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 20px;
   color: var(--text-secondary);
   transition: color 0.2s ease;
   z-index: 1;
@@ -35,9 +35,9 @@
 
 .youtube-search-field {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 40px;
+  padding: 0.75rem 1rem 0.75rem 60px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 30px;
   font-size: 1rem;
   background-color: var(--background-primary);
   color: var(--text-primary);

@@ -39,6 +39,9 @@
     "hideEditor": "Hide Timing Editor",
     "retryGemini": "Retry with Gemini",
     "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request",
+    "retryWithModel": "Retry with different model",
+    "selectModel": "Select model for retry",
+    "retrySegment": "Retry this segment",
     "longVideoWarning": "You uploaded a {{duration}} minute video. Processing can be longer than usual due to multiple Gemini calls.",
     "longVideoProcessing": "Processing video longer than 30 minutes. This may take a while...",
     "processingDirectly": "Processing video directly...",
@@ -62,8 +65,8 @@
     "pending": "Pending",
     "generateSegment": "Generate",
     "generateSegmentTooltip": "Process this segment",
-    "strongModelWarning": "You are choosing an easily overloaded model, please process each segment one by one",
-    "strongModelSuccess": "Since you are choosing easily overloaded model, please press generate manually",
+    "strongModelWarning": "You are choosing an easily overloaded model, please process each segment one by one. In case of overloading, create a new Google Cloud Project and get an API Key.",
+    "strongModelSuccess": "Since you are choosing easily overloaded model, please press generate manually. In case of overloading, create a new Google Cloud Project and get an API Key.",
     "segmentGenerateSuccess": "Segment {{segmentNumber}} processed successfully and combined with existing subtitles"
   },
   "settings": {
@@ -135,7 +138,7 @@
     "apiKeyRequired": "Please set your API key in the settings first.",
     "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
     "invalidFile": "Invalid file format or size. Please check the supported formats.",
-    "geminiOverloaded": "Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration",
+    "geminiOverloaded": "Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration. Or create a new Google Cloud Project and get an API Key.",
     "tokenLimitExceeded": "The video segment is too large for Gemini to process. Please try with a shorter video or lower video quality.",
     "fileSizeTooLarge": "File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video."
   },
@@ -171,5 +174,16 @@
     "searchError": "Error searching YouTube. Please try again or enter a URL directly.",
     "noApiKey": "Please set your YouTube API key in the settings first.",
     "downloadVideoOnly": "Download Video"
+  },
+
+  "models": {
+    "gemini25Pro": "Gemini 2.5 Pro",
+    "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",
+    "gemini20Flash": "Gemini 2.0 Flash",
+    "gemini20FlashLite": "Gemini 2.0 Flash Lite",
+    "bestAccuracy": "Best accuracy",
+    "highAccuracy": "High accuracy",
+    "balancedModel": "Balanced",
+    "fastestModel": "Fastest"
   }
 }
