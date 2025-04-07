@@ -1,9 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/SettingsModal.css';
+import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../services/geminiService';
+
+// Tab icons
+const ApiKeyIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+  </svg>
+);
+
+const ProcessingIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 10h-4V6"/>
+    <path d="M22 10V6a2 2 0 0 0-2-2h-4"/>
+    <rect x="2" y="2" width="8" height="8" rx="2"/>
+    <rect x="2" y="14" width="8" height="8" rx="2"/>
+    <path d="M14 22a8 8 0 0 0 0-16"/>
+  </svg>
+);
+
+const CacheIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6A2 2 0 0 0 18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6Z"/>
+    <path d="M8 4v4"/>
+    <path d="M16 4v4"/>
+    <path d="M4 10h16"/>
+    <path d="M9 16l2 2 4-4"/>
+  </svg>
+);
+
+const PromptIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <path d="M9 9h6"/>
+    <path d="M9 13h6"/>
+  </svg>
+);
 
 const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('api-keys'); // Default active tab
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
@@ -15,6 +52,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
+  const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
+  const [userPromptPresets, setUserPromptPresets] = useState([]); // User-created prompt presets
+  const [showAddPresetForm, setShowAddPresetForm] = useState(false); // Toggle for add preset form
+  const [newPresetTitle, setNewPresetTitle] = useState(''); // Title for new preset
+  const [viewingPreset, setViewingPreset] = useState(null); // Currently viewing preset
+  const textareaRef = useRef(null);
+  const floatingCardRef = useRef(null);
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -24,6 +68,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
     const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
     const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
+    const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+    const savedUserPresets = getUserPromptPresets();
 
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
@@ -31,7 +77,151 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     setGeminiModel(savedGeminiModel);
     setTimeFormat(savedTimeFormat);
     setSegmentOffsetCorrection(savedOffsetCorrection);
+    setTranscriptionPrompt(savedTranscriptionPrompt);
+    setUserPromptPresets(savedUserPresets);
   }, []);
+
+  // Handle selecting a preset
+  const handleSelectPreset = (prompt) => {
+    setTranscriptionPrompt(prompt);
+  };
+
+  // Handle adding a new preset
+  const handleAddPreset = () => {
+    if (!newPresetTitle.trim()) {
+      return; // Don't add empty title presets
+    }
+
+    const newPreset = {
+      id: `user-${Date.now()}`,
+      title: newPresetTitle,
+      prompt: transcriptionPrompt
+    };
+
+    const updatedPresets = [...userPromptPresets, newPreset];
+    setUserPromptPresets(updatedPresets);
+    saveUserPromptPresets(updatedPresets);
+
+    // Reset form
+    setNewPresetTitle('');
+    setShowAddPresetForm(false);
+  };
+
+  // Handle deleting a preset
+  const handleDeletePreset = (presetId) => {
+    const updatedPresets = userPromptPresets.filter(preset => preset.id !== presetId);
+    setUserPromptPresets(updatedPresets);
+    saveUserPromptPresets(updatedPresets);
+  };
+
+  // Effect to handle the floating content type card positioning and text hiding
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    const floatingCard = floatingCardRef.current;
+
+    if (!textarea || !floatingCard) return;
+
+    // Create a hidden overlay to hide the {contentType} text
+    const createOverlay = () => {
+      // Remove any existing overlay
+      const existingOverlay = document.getElementById('content-type-overlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+
+      // Find the position of {contentType} in the text
+      const contentTypePos = transcriptionPrompt.indexOf('{contentType}');
+
+      if (contentTypePos !== -1) {
+        // Calculate the position in the textarea
+        const textBeforeCursor = transcriptionPrompt.substring(0, contentTypePos);
+
+        // Create a temporary element to measure text width
+        const tempSpan = document.createElement('span');
+        tempSpan.style.font = window.getComputedStyle(textarea).font;
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.whiteSpace = 'pre-wrap';
+        tempSpan.style.overflowWrap = 'break-word'; // Modern alternative to wordWrap
+        tempSpan.style.width = (textarea.clientWidth - 24) + 'px'; // Account for padding
+        tempSpan.textContent = textBeforeCursor;
+        document.body.appendChild(tempSpan);
+
+        // Get the line and character position
+        const lines = tempSpan.textContent.split('\n');
+        const lastLine = lines[lines.length - 1];
+
+        // Calculate position
+        const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight);
+        const paddingLeft = parseFloat(window.getComputedStyle(textarea).paddingLeft);
+        const paddingTop = parseFloat(window.getComputedStyle(textarea).paddingTop);
+
+        // Create an overlay to hide the {contentType} text
+        const overlay = document.createElement('div');
+        overlay.id = 'content-type-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.left = (paddingLeft + lastLine.length * 8) + 'px';
+        overlay.style.top = (paddingTop + (lines.length - 1) * lineHeight - textarea.scrollTop) + 'px';
+        // Match the background color of the textarea
+        const computedStyle = window.getComputedStyle(textarea);
+        overlay.style.backgroundColor = computedStyle.backgroundColor;
+        // Add a small transition to handle theme changes
+        overlay.style.transition = 'background-color 0.3s ease';
+        overlay.style.width = '{contentType}'.length * 8 + 'px'; // Approximate width
+        overlay.style.height = lineHeight + 'px';
+        overlay.style.zIndex = '5';
+        overlay.style.pointerEvents = 'none';
+
+        // Position the card
+        floatingCard.style.left = (paddingLeft + lastLine.length * 8) + 'px';
+        floatingCard.style.top = (paddingTop + (lines.length - 1) * lineHeight - textarea.scrollTop) + 'px';
+
+        // Add the overlay to the container
+        const container = textarea.parentElement;
+        container.style.position = 'relative';
+        container.appendChild(overlay);
+
+        // Clean up
+        document.body.removeChild(tempSpan);
+      }
+    };
+
+    // Update position initially and on text changes
+    createOverlay();
+
+    // Add event listeners
+    textarea.addEventListener('click', createOverlay);
+    textarea.addEventListener('keyup', createOverlay);
+    textarea.addEventListener('scroll', createOverlay);
+    textarea.addEventListener('input', createOverlay);
+
+    // Listen for theme changes
+    window.addEventListener('storage', createOverlay);
+    // MutationObserver to detect theme attribute changes on document element
+    const observer = new MutationObserver(createOverlay);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Clean up event listeners
+    return () => {
+      textarea.removeEventListener('click', createOverlay);
+      textarea.removeEventListener('keyup', createOverlay);
+      textarea.removeEventListener('scroll', createOverlay);
+      textarea.removeEventListener('input', createOverlay);
+      window.removeEventListener('storage', createOverlay);
+
+      // Disconnect the observer
+      observer.disconnect();
+
+      // Remove overlay on unmount
+      const existingOverlay = document.getElementById('content-type-overlay');
+      if (existingOverlay) {
+        existingOverlay.remove();
+      }
+    };
+  }, [transcriptionPrompt]);
 
   // Handle clear cache
   const handleClearCache = async () => {
@@ -91,6 +281,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     localStorage.setItem('gemini_model', geminiModel);
     localStorage.setItem('time_format', timeFormat);
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
+    localStorage.setItem('transcription_prompt', transcriptionPrompt);
 
     // Notify parent component about API keys, segment duration, model, and time format
     onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);
@@ -100,239 +291,617 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   return (
     <div className="settings-modal-overlay">
       <div className="settings-modal">
+        {/* Preset Viewing Modal */}
+        {viewingPreset && (
+          <div className="preset-view-modal">
+            <div className="preset-view-content">
+              <div className="preset-view-header">
+                <h3>
+                  {viewingPreset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
+                   viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
+                   viewingPreset.id === 'focus-speech' && t('settings.presetFocusSpeech', 'Focus on speech') ||
+                   viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
+                   viewingPreset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                   viewingPreset.title}
+                </h3>
+                <button
+                  className="close-preset-view-btn"
+                  onClick={() => setViewingPreset(null)}
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="preset-view-body">
+                <pre className="preset-full-text">{viewingPreset.prompt}</pre>
+              </div>
+              <div className="preset-view-footer">
+                <button
+                  className="use-preset-btn"
+                  onClick={() => {
+                    handleSelectPreset(viewingPreset.prompt);
+                    setViewingPreset(null);
+                  }}
+                >
+                  {t('settings.usePreset', 'Use')}
+                </button>
+                <button
+                  className="close-btn-secondary"
+                  onClick={() => setViewingPreset(null)}
+                >
+                  {t('common.close', 'Close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="settings-header">
           <h2>{t('settings.title', 'Settings')}</h2>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="settings-tabs">
+          <button
+            className={`settings-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
+            onClick={() => setActiveTab('api-keys')}
+          >
+            <ApiKeyIcon />
+            {t('settings.apiKeys', 'API Keys')}
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'video-processing' ? 'active' : ''}`}
+            onClick={() => setActiveTab('video-processing')}
+          >
+            <ProcessingIcon />
+            {t('settings.videoProcessing', 'Video Processing')}
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'prompts' ? 'active' : ''}`}
+            onClick={() => setActiveTab('prompts')}
+          >
+            <PromptIcon />
+            {t('settings.prompts', 'Prompts')}
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'cache' ? 'active' : ''}`}
+            onClick={() => setActiveTab('cache')}
+          >
+            <CacheIcon />
+            {t('settings.cache', 'Cache')}
+          </button>
+        </div>
+
         <div className="settings-content">
-          <div className="settings-section api-key-section">
-            <h3>{t('settings.apiKeys', 'API Keys')}</h3>
+          {/* API Keys Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'api-keys' ? 'active' : ''}`}>
+            <div className="settings-section api-key-section">
+              <h3>{t('settings.apiKeys', 'API Keys')}</h3>
 
-            <div className="api-key-input">
-              <label htmlFor="gemini-api-key">
-                {t('settings.geminiApiKey', 'Gemini API Key')}
-                <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
-                  {apiKeysSet.gemini
-                    ? t('settings.keySet', 'Set')
-                    : t('settings.keyNotSet', 'Not Set')}
-                </span>
-              </label>
+              <div className="api-key-input">
+                <label htmlFor="gemini-api-key">
+                  {t('settings.geminiApiKey', 'Gemini API Key')}
+                  <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
+                    {apiKeysSet.gemini
+                      ? t('settings.keySet', 'Set')
+                      : t('settings.keyNotSet', 'Not Set')}
+                  </span>
+                </label>
 
-              <div className="input-with-toggle">
-                <input
-                  type={showGeminiKey ? "text" : "password"}
-                  id="gemini-api-key"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                  placeholder={t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
-                />
-                <button
-                  type="button"
-                  className="toggle-visibility"
-                  onClick={() => setShowGeminiKey(!showGeminiKey)}
-                  aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
-                >
-                  {showGeminiKey ? t('settings.hide') : t('settings.show')}
-                </button>
-              </div>
+                <div className="input-with-toggle">
+                  <input
+                    type={showGeminiKey ? "text" : "password"}
+                    id="gemini-api-key"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    placeholder={t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
+                  />
+                  <button
+                    type="button"
+                    className="toggle-visibility"
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
+                  >
+                    {showGeminiKey ? t('settings.hide') : t('settings.show')}
+                  </button>
+                </div>
 
-              <p className="api-key-help">
-                {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')}
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Google AI Studio
-                </a>
-              </p>
-              <div className="api-key-instructions">
-                <h4>{t('settings.getApiKey', 'Get Gemini API Key')}</h4>
-                <ol>
-                  <li>{t('settings.geminiStep1', 'Login to Google AI Studio')}</li>
-                  <li>{t('settings.geminiStep2', 'Click \'Get API Key\'')}</li>
-                  <li>{t('settings.geminiStep3', 'Create a new key or select existing')}</li>
-                  <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
-                  <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
-                </ol>
-              </div>
+                <p className="api-key-help">
+                  {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')}
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Google AI Studio
+                  </a>
+                </p>
+                <div className="api-key-instructions">
+                  <h4>{t('settings.getApiKey', 'Get Gemini API Key')}</h4>
+                  <ol>
+                    <li>{t('settings.geminiStep1', 'Login to Google AI Studio')}</li>
+                    <li>{t('settings.geminiStep2', 'Click \'Get API Key\'')}</li>
+                    <li>{t('settings.geminiStep3', 'Create a new key or select existing')}</li>
+                    <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
+                    <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
+                  </ol>
+                </div>
             </div>
 
-            <div className="api-key-input">
-              <label htmlFor="youtube-api-key">
-                {t('settings.youtubeApiKey', 'YouTube API Key')}
-                <span className={`api-key-status ${apiKeysSet.youtube ? 'set' : 'not-set'}`}>
-                  {apiKeysSet.youtube
-                    ? t('settings.keySet', 'Set')
-                    : t('settings.keyNotSet', 'Not Set')}
-                </span>
-              </label>
+              <div className="api-key-input">
+                <label htmlFor="youtube-api-key">
+                  {t('settings.youtubeApiKey', 'YouTube API Key')}
+                  <span className={`api-key-status ${apiKeysSet.youtube ? 'set' : 'not-set'}`}>
+                    {apiKeysSet.youtube
+                      ? t('settings.keySet', 'Set')
+                      : t('settings.keyNotSet', 'Not Set')}
+                  </span>
+                </label>
 
-              <div className="input-with-toggle">
-                <input
-                  type={showYoutubeKey ? "text" : "password"}
-                  id="youtube-api-key"
-                  value={youtubeApiKey}
-                  onChange={(e) => setYoutubeApiKey(e.target.value)}
-                  placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
-                />
-                <button
-                  type="button"
-                  className="toggle-visibility"
-                  onClick={() => setShowYoutubeKey(!showYoutubeKey)}
-                  aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
+                <div className="input-with-toggle">
+                  <input
+                    type={showYoutubeKey ? "text" : "password"}
+                    id="youtube-api-key"
+                    value={youtubeApiKey}
+                    onChange={(e) => setYoutubeApiKey(e.target.value)}
+                    placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
+                  />
+                  <button
+                    type="button"
+                    className="toggle-visibility"
+                    onClick={() => setShowYoutubeKey(!showYoutubeKey)}
+                    aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
+                  >
+                    {showYoutubeKey ? t('settings.hide') : t('settings.show')}
+                  </button>
+                </div>
+
+                <p className="api-key-help">
+                  {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')}
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Google Cloud Console
+                  </a>
+                </p>
+                <div className="api-key-instructions">
+                  <h4>{t('settings.getYoutubeApiKey', 'Get YouTube API Key')}</h4>
+                  <ol>
+                    <li>{t('settings.youtubeStep1', 'Go to Google Cloud Console')}</li>
+                    <li>{t('settings.youtubeStep2', 'Create or select a project')}</li>
+                    <li>{t('settings.youtubeStep3', 'Enable \'YouTube Data API v3\'')}</li>
+                    <li>{t('settings.youtubeStep4', 'Go to credentials')}</li>
+                    <li>{t('settings.youtubeStep5', 'Generate API key')}</li>
+                  </ol>
+                </div>
+              </div>
+          </div>
+          </div>
+
+          {/* Video Processing Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'video-processing' ? 'active' : ''}`}>
+            <div className="settings-section video-processing-section">
+              <h3>{t('settings.videoProcessing', 'Video Processing')}</h3>
+              <div className="segment-duration-setting">
+                <label htmlFor="segment-duration">
+                  {t('settings.segmentDuration', 'Segment Duration (minutes)')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
+                </p>
+                <select
+                  id="segment-duration"
+                  value={segmentDuration}
+                  onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
+                  className="segment-duration-select"
                 >
-                  {showYoutubeKey ? t('settings.hide') : t('settings.show')}
-                </button>
+                  <option value="3">3 {t('settings.minutes', 'minutes')}</option>
+                  <option value="5">5 {t('settings.minutes', 'minutes')}</option>
+                  <option value="10">10 {t('settings.minutes', 'minutes')}</option>
+                  <option value="15">15 {t('settings.minutes', 'minutes')}</option>
+                  <option value="20">20 {t('settings.minutes', 'minutes')}</option>
+                  <option value="30">30 {t('settings.minutes', 'minutes')}</option>
+                  <option value="45">45 {t('settings.minutes', 'minutes')}</option>
+                </select>
               </div>
 
-              <p className="api-key-help">
-                {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')}
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noopener noreferrer"
+              <div className="gemini-model-setting">
+                <label htmlFor="gemini-model">
+                  {t('settings.geminiModel', 'Gemini Model')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
+                </p>
+                <select
+                  id="gemini-model"
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                  className="gemini-model-select"
                 >
-                  Google Cloud Console
-                </a>
-              </p>
-              <div className="api-key-instructions">
-                <h4>{t('settings.getYoutubeApiKey', 'Get YouTube API Key')}</h4>
-                <ol>
-                  <li>{t('settings.youtubeStep1', 'Go to Google Cloud Console')}</li>
-                  <li>{t('settings.youtubeStep2', 'Create or select a project')}</li>
-                  <li>{t('settings.youtubeStep3', 'Enable \'YouTube Data API v3\'')}</li>
-                  <li>{t('settings.youtubeStep4', 'Go to credentials')}</li>
-                  <li>{t('settings.youtubeStep5', 'Generate API key')}</li>
-                </ol>
+                  <option value="gemini-2.5-pro-exp-03-25">
+                    {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
+                  </option>
+                  <option value="gemini-2.0-flash-thinking-exp-01-21">
+                    {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
+                  </option>
+                  <option value="gemini-2.0-flash">
+                    {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
+                  </option>
+                  <option value="gemini-2.0-flash-lite">
+                    {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
+                  </option>
+                </select>
+              </div>
+
+              <div className="time-format-setting">
+                <label htmlFor="time-format">
+                  {t('settings.timeFormat', 'Time Format')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
+                </p>
+                <select
+                  id="time-format"
+                  value={timeFormat}
+                  onChange={(e) => setTimeFormat(e.target.value)}
+                  className="time-format-select"
+                >
+                  <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
+                  <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
+                </select>
               </div>
             </div>
           </div>
 
-          <div className="settings-section video-processing-section">
-            <h3>{t('settings.videoProcessing', 'Video Processing')}</h3>
-            <div className="segment-duration-setting">
-              <label htmlFor="segment-duration">
-                {t('settings.segmentDuration', 'Segment Duration (minutes)')}
-              </label>
-              <p className="setting-description">
-                {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
-              </p>
-              <select
-                id="segment-duration"
-                value={segmentDuration}
-                onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
-                className="segment-duration-select"
-              >
-                <option value="3">3 {t('settings.minutes', 'minutes')}</option>
-                <option value="5">5 {t('settings.minutes', 'minutes')}</option>
-                <option value="10">10 {t('settings.minutes', 'minutes')}</option>
-                <option value="15">15 {t('settings.minutes', 'minutes')}</option>
-                <option value="20">20 {t('settings.minutes', 'minutes')}</option>
-                <option value="30">30 {t('settings.minutes', 'minutes')}</option>
-                <option value="45">45 {t('settings.minutes', 'minutes')}</option>
-              </select>
-            </div>
+          {/* Prompts Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'prompts' ? 'active' : ''}`}>
+            <div className="settings-section prompts-section">
+              <h3>{t('settings.prompts', 'Prompts')}</h3>
 
-            <div className="gemini-model-setting">
-              <label htmlFor="gemini-model">
-                {t('settings.geminiModel', 'Gemini Model')}
-              </label>
-              <p className="setting-description">
-                {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
-              </p>
-              <select
-                id="gemini-model"
-                value={geminiModel}
-                onChange={(e) => setGeminiModel(e.target.value)}
-                className="gemini-model-select"
-              >
-                <option value="gemini-2.5-pro-exp-03-25">
-                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
-                </option>
-                <option value="gemini-2.0-flash-thinking-exp-01-21">
-                  {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
-                </option>
-                <option value="gemini-2.0-flash">
-                  {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
-                </option>
-                <option value="gemini-2.0-flash-lite">
-                  {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
-                </option>
-              </select>
-            </div>
+              {/* Prompt Presets */}
+              <div className="prompt-presets-section">
+                <h4>{t('settings.promptPresets', 'Prompt Presets')}</h4>
+                <p className="setting-description">
+                  {t('settings.promptPresetsDescription', 'Select a preset to quickly use common prompt types. You can also create your own presets.')}
+                </p>
 
-            <div className="time-format-setting">
-              <label htmlFor="time-format">
-                {t('settings.timeFormat', 'Time Format')}
-              </label>
-              <p className="setting-description">
-                {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
-              </p>
-              <select
-                id="time-format"
-                value={timeFormat}
-                onChange={(e) => setTimeFormat(e.target.value)}
-                className="time-format-select"
-              >
-                <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
-                <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
-              </select>
+                <div className="prompt-presets-container">
+                  {/* Built-in presets */}
+                  {PROMPT_PRESETS.map(preset => (
+                    <div className="prompt-preset-card" key={preset.id}>
+                      <div className="preset-card-content">
+                        <h5 className="preset-title">
+                          {preset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
+                           preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
+                           preset.id === 'focus-speech' && t('settings.presetFocusSpeech', 'Focus on speech') ||
+                           preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
+                           preset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                           preset.title}
+                        </h5>
+                        <p className="preset-preview">{preset.prompt.substring(0, 60)}...</p>
+                      </div>
+                      <div className="preset-card-actions">
+                        <button
+                          className="view-preset-btn"
+                          onClick={() => setViewingPreset(preset)}
+                        >
+                          {t('settings.viewPreset', 'View')}
+                        </button>
+                        <button
+                          className="use-preset-btn"
+                          onClick={() => handleSelectPreset(preset.prompt)}
+                        >
+                          {t('settings.usePreset', 'Use')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* User presets */}
+                  {userPromptPresets.map(preset => (
+                    <div className="prompt-preset-card user-preset" key={preset.id}>
+                      <div className="preset-card-content">
+                        <h5 className="preset-title">{preset.title}</h5>
+                        <p className="preset-preview">{preset.prompt.substring(0, 60)}...</p>
+                      </div>
+                      <div className="preset-card-actions">
+                        <button
+                          className="view-preset-btn"
+                          onClick={() => setViewingPreset(preset)}
+                        >
+                          {t('settings.viewPreset', 'View')}
+                        </button>
+                        <button
+                          className="use-preset-btn"
+                          onClick={() => handleSelectPreset(preset.prompt)}
+                        >
+                          {t('settings.usePreset', 'Use')}
+                        </button>
+                        <button
+                          className="delete-preset-btn"
+                          onClick={() => handleDeletePreset(preset.id)}
+                        >
+                          {t('settings.deletePreset', 'Delete')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Add new preset card */}
+                  {!showAddPresetForm ? (
+                    <div
+                      className="add-preset-card"
+                      onClick={() => setShowAddPresetForm(true)}
+                    >
+                      <div className="add-preset-icon">+</div>
+                      <p>{t('settings.addPreset', 'Add New Preset')}</p>
+                    </div>
+                  ) : (
+                    <div className="new-preset-form">
+                      <input
+                        type="text"
+                        value={newPresetTitle}
+                        onChange={(e) => setNewPresetTitle(e.target.value)}
+                        placeholder={t('settings.presetTitlePlaceholder', 'Preset title')}
+                        className="preset-title-input"
+                      />
+                      <div className="new-preset-actions">
+                        <button
+                          className="cancel-preset-btn"
+                          onClick={() => {
+                            setShowAddPresetForm(false);
+                            setNewPresetTitle('');
+                          }}
+                        >
+                          {t('common.cancel', 'Cancel')}
+                        </button>
+                        <button
+                          className="save-preset-btn"
+                          onClick={handleAddPreset}
+                          disabled={!newPresetTitle.trim()}
+                        >
+                          {t('common.save', 'Save')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Current Prompt Editor */}
+              <div className="transcription-prompt-setting">
+                <label htmlFor="transcription-prompt">
+                  {t('settings.transcriptionPrompt', 'Transcription Prompt')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder (shown as a floating icon) will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
+                </p>
+                <div className="prompt-editor-container">
+                  <textarea
+                    id="transcription-prompt"
+                    ref={textareaRef}
+                    value={transcriptionPrompt}
+                    onKeyDown={(e) => {
+                      // Prevent deletion of {contentType} with Delete or Backspace keys
+                      const contentTypePos = transcriptionPrompt.indexOf('{contentType}');
+                      if (contentTypePos !== -1) {
+                        const cursorPos = e.target.selectionStart;
+                        const selectionEnd = e.target.selectionEnd;
+                        const hasSelection = cursorPos !== selectionEnd;
+
+                        // Check if selection includes the placeholder
+                        const selectionIncludesPlaceholder =
+                          hasSelection &&
+                          cursorPos <= contentTypePos + '{contentType}'.length &&
+                          selectionEnd >= contentTypePos;
+
+                        // Check if cursor is at the start or end of placeholder
+                        const cursorAtPlaceholderStart = cursorPos === contentTypePos && e.key === 'Delete';
+                        const cursorAtPlaceholderEnd = cursorPos === contentTypePos + '{contentType}'.length && e.key === 'Backspace';
+
+                        // Check if cursor is inside placeholder
+                        const cursorInsidePlaceholder =
+                          cursorPos > contentTypePos &&
+                          cursorPos < contentTypePos + '{contentType}'.length &&
+                          (e.key === 'Delete' || e.key === 'Backspace');
+
+                        // Prevent cut/delete operations on the placeholder
+                        if ((selectionIncludesPlaceholder || cursorAtPlaceholderStart || cursorAtPlaceholderEnd || cursorInsidePlaceholder) &&
+                            (e.key === 'Delete' || e.key === 'Backspace' || (e.key === 'x' && e.ctrlKey) || (e.key === 'X' && e.ctrlKey))) {
+                          e.preventDefault();
+                        }
+                      }
+                    }}
+                    onCut={(e) => {
+                      // Prevent cutting the placeholder
+                      const contentTypePos = transcriptionPrompt.indexOf('{contentType}');
+                      if (contentTypePos !== -1) {
+                        const cursorPos = e.target.selectionStart;
+                        const selectionEnd = e.target.selectionEnd;
+
+                        // Check if selection includes the placeholder
+                        if (cursorPos <= contentTypePos + '{contentType}'.length && selectionEnd >= contentTypePos) {
+                          e.preventDefault();
+                        }
+                      }
+                    }}
+                    onPaste={(e) => {
+                      // Handle paste to ensure placeholder is preserved
+                      const contentTypePos = transcriptionPrompt.indexOf('{contentType}');
+                      if (contentTypePos !== -1) {
+                        const cursorPos = e.target.selectionStart;
+                        const selectionEnd = e.target.selectionEnd;
+
+                        // Check if selection includes the placeholder
+                        if (cursorPos <= contentTypePos + '{contentType}'.length && selectionEnd >= contentTypePos) {
+                          e.preventDefault();
+
+                          // Get pasted text
+                          const pastedText = e.clipboardData.getData('text');
+
+                          // Create new text with placeholder preserved
+                          const newText =
+                            transcriptionPrompt.substring(0, cursorPos) +
+                            pastedText +
+                            transcriptionPrompt.substring(selectionEnd);
+
+                          // If the new text doesn't include the placeholder, add it back
+                          if (!newText.includes('{contentType}')) {
+                            // Add placeholder at cursor position after paste
+                            const updatedText =
+                              transcriptionPrompt.substring(0, cursorPos) +
+                              pastedText +
+                              '{contentType}' +
+                              transcriptionPrompt.substring(selectionEnd);
+
+                            setTranscriptionPrompt(updatedText);
+
+                            // Set cursor position after the pasted text
+                            setTimeout(() => {
+                              const newPos = cursorPos + pastedText.length + '{contentType}'.length;
+                              e.target.selectionStart = newPos;
+                              e.target.selectionEnd = newPos;
+                            }, 0);
+                          } else {
+                            // Placeholder is still in the text, just update normally
+                            setTranscriptionPrompt(newText);
+
+                            // Set cursor position after the pasted text
+                            setTimeout(() => {
+                              const newPos = cursorPos + pastedText.length;
+                              e.target.selectionStart = newPos;
+                              e.target.selectionEnd = newPos;
+                            }, 0);
+                          }
+                        }
+                      }
+                    }}
+                    onChange={(e) => {
+                      // Get current and new values
+                      const currentValue = transcriptionPrompt;
+                      const newValue = e.target.value;
+                      const cursorPos = e.target.selectionStart;
+
+                      // Check if {contentType} was removed
+                      if (!newValue.includes('{contentType}')) {
+                        // Find where {contentType} was in the original text
+                        const contentTypePos = currentValue.indexOf('{contentType}');
+
+                        if (contentTypePos !== -1) {
+                          // Determine if user is trying to delete the placeholder
+                          const isDeleteAttempt =
+                            // Check if cursor is at or near the placeholder position
+                            (cursorPos >= contentTypePos && cursorPos <= contentTypePos + '{contentType}'.length) ||
+                            // Or if text before and after the placeholder matches the new value
+                            (currentValue.substring(0, contentTypePos) +
+                             currentValue.substring(contentTypePos + '{contentType}'.length) === newValue);
+
+                          if (isDeleteAttempt) {
+                            // Prevent deletion by keeping the original value
+                            e.target.value = currentValue;
+                            // Restore cursor position
+                            setTimeout(() => {
+                              e.target.selectionStart = cursorPos;
+                              e.target.selectionEnd = cursorPos;
+                            }, 0);
+                            return; // Exit without updating state
+                          } else {
+                            // If it wasn't a direct deletion attempt, add it back at cursor position
+                            const restoredValue = newValue.substring(0, cursorPos) +
+                                                '{contentType}' +
+                                                newValue.substring(cursorPos);
+                            setTranscriptionPrompt(restoredValue);
+                            // Position cursor after the placeholder
+                            setTimeout(() => {
+                              const newPos = cursorPos + '{contentType}'.length;
+                              e.target.selectionStart = newPos;
+                              e.target.selectionEnd = newPos;
+                            }, 0);
+                            return;
+                          }
+                        }
+                      }
+
+                      // If we get here, the placeholder is still in the text or was handled above
+                      setTranscriptionPrompt(newValue);
+                    }}
+                    // No placeholder needed since we're pre-filling with the default prompt
+                    rows={8}
+                    className="transcription-prompt-textarea"
+                  />
+                  <div className="content-type-floating-card" ref={floatingCardRef}>
+                    <span className="content-type-icon video-icon">🎬</span>
+                    <span className="content-type-separator">/</span>
+                    <span className="content-type-icon audio-icon">🎵</span>
+                  </div>
+                </div>
+                <div className="prompt-actions">
+                  <button
+                    className="reset-prompt-btn"
+                    onClick={() => setTranscriptionPrompt(DEFAULT_TRANSCRIPTION_PROMPT)}
+                  >
+                    {t('settings.resetPrompt', 'Reset to Default')}
+                  </button>
+                  {!showAddPresetForm && (
+                    <button
+                      className="save-as-preset-btn"
+                      onClick={() => setShowAddPresetForm(true)}
+                    >
+                      {t('settings.saveAsPreset', 'Save as Preset')}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="settings-section cache-section">
-            <h3>{t('settings.cache', 'Cache Management')}</h3>
-            <p className="cache-description">
-              {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
-            </p>
+          {/* Cache Management Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'cache' ? 'active' : ''}`}>
+            <div className="settings-section cache-section">
+              <h3>{t('settings.cache', 'Cache Management')}</h3>
+              <p className="cache-description">
+                {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
+              </p>
 
-            {/* Cache status message */}
-            {cacheStatus.message && (
-              <div className={`cache-status-message status-${cacheStatus.type}`}>
-                {cacheStatus.message}
-              </div>
-            )}
-
-            {/* Cache details */}
-            {cacheDetails && (
-              <div className="cache-details">
-                <div className="cache-details-item">
-                  <h4>{t('settings.videosCleared', 'Videos')}:</h4>
-                  <p>
-                    {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
-                    ({cacheDetails.videos?.formattedSize || '0 Bytes'})
-                  </p>
+              {/* Cache status message */}
+              {cacheStatus.message && (
+                <div className={`cache-status-message status-${cacheStatus.type}`}>
+                  {cacheStatus.message}
                 </div>
+              )}
 
-                <div className="cache-details-item">
-                  <h4>{t('settings.segmentsCleared', 'Segments')}:</h4>
-                  <p>
-                    {cacheDetails.segments?.count || 0} {t('settings.files', 'files')}
-                    ({cacheDetails.segments?.formattedSize || '0 Bytes'})
-                  </p>
+              {/* Cache details */}
+              {cacheDetails && (
+                <div className="cache-details">
+                  <div className="cache-details-item">
+                    <h4>{t('settings.videosCleared', 'Videos')}:</h4>
+                    <p>
+                      {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
+                      ({cacheDetails.videos?.formattedSize || '0 Bytes'})
+                    </p>
+                  </div>
+
+                  <div className="cache-details-item">
+                    <h4>{t('settings.subtitlesCleared', 'Subtitles')}:</h4>
+                    <p>
+                      {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
+                      ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
+                    </p>
+                  </div>
                 </div>
+              )}
 
-                <div className="cache-details-item">
-                  <h4>{t('settings.subtitlesCleared', 'Subtitles')}:</h4>
-                  <p>
-                    {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
-                    ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <button
-              className="clear-cache-btn"
-              onClick={handleClearCache}
-              disabled={clearingCache}
-            >
-              {clearingCache
-                ? t('settings.clearingCache', 'Clearing Cache...')
-                : t('settings.clearCache', 'Clear Cache')}
-            </button>
+              <button
+                className="clear-cache-btn"
+                onClick={handleClearCache}
+                disabled={clearingCache}
+              >
+                {clearingCache
+                  ? t('settings.clearingCache', 'Clearing Cache...')
+                  : t('settings.clearCache', 'Clear Cache')}
+              </button>
+            </div>
           </div>
         </div>
 

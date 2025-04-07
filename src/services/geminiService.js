@@ -1,8 +1,73 @@
 import { parseGeminiResponse } from '../utils/subtitleParser';
 
+// Default transcription prompts
+export const PROMPT_PRESETS = [
+    {
+        id: 'general',
+        title: 'General purpose',
+        prompt: `Transcribe this ${'{contentType}'}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+    },
+    {
+        id: 'extract-text',
+        title: 'Extract text',
+        prompt: `Only extract the text/or hardcoded subtitles shown on screen, ignore audio for this ${'{contentType}'}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+    },
+    {
+        id: 'focus-speech',
+        title: 'Focus on speech',
+        prompt: `Transcribe the spoken speech/lyrics in the this ${'{contentType}'}, focus on the sound only. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+    },
+    {
+        id: 'describe-video',
+        title: 'Describe video',
+        prompt: `Describe anything happen in this ${'{contentType}'} in sequential fashion. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+    },
+    {
+        id: 'translate-vietnamese',
+        title: 'Translate directly',
+        prompt: `Whatever language is spoken in this ${'{contentType}'}, translate them directly in Vietnamese. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+    }
+];
+
+// Default transcription prompt that will be used if no custom prompt is set
+export const DEFAULT_TRANSCRIPTION_PROMPT = PROMPT_PRESETS[0].prompt;
+
+// Helper function to get saved user presets
+export const getUserPromptPresets = () => {
+    try {
+        const savedPresets = localStorage.getItem('user_prompt_presets');
+        return savedPresets ? JSON.parse(savedPresets) : [];
+    } catch (error) {
+        console.error('Error loading user prompt presets:', error);
+        return [];
+    }
+};
+
+// Helper function to save user presets
+export const saveUserPromptPresets = (presets) => {
+    try {
+        localStorage.setItem('user_prompt_presets', JSON.stringify(presets));
+    } catch (error) {
+        console.error('Error saving user prompt presets:', error);
+    }
+};
+
+// Get the active prompt (either from localStorage or default)
+const getTranscriptionPrompt = (contentType) => {
+    // Get custom prompt from localStorage or use default
+    const customPrompt = localStorage.getItem('transcription_prompt');
+
+    // If custom prompt exists and is not empty, replace {contentType} with the actual content type
+    if (customPrompt && customPrompt.trim() !== '') {
+        return customPrompt.replace('{contentType}', contentType);
+    }
+
+    // Otherwise use the default prompt
+    return PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+};
+
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
-    // Get the model from localStorage or use default
     const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
 
     let requestData = {
@@ -15,7 +80,7 @@ export const callGeminiApi = async (input, inputType) => {
             {
                 role: "user",
                 parts: [
-                    { text: "Transcribe this video. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text." },
+                    { text: getTranscriptionPrompt('video') },
                     {
                         fileData: {
                             fileUri: input
@@ -25,47 +90,14 @@ export const callGeminiApi = async (input, inputType) => {
             }
         ];
     } else if (inputType === 'video' || inputType === 'audio' || inputType === 'file-upload') {
-        // For file-upload, treat it the same as video/audio files
         const base64Data = await fileToBase64(input);
-
-        // Determine content type based on file MIME type
         const contentType = input.type.startsWith('video/') ? 'video' : 'audio';
-
-        // Check if this is a video segment with time range metadata
-        let transcriptionPrompt = `Transcribe this ${contentType}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`;
-
-        // Check if this is a segment with an index
-        if (input.segmentIndex !== undefined) {
-            // Get segment duration from localStorage
-            const segmentDuration = parseInt(localStorage.getItem('segment_duration') || '5') * 60; // Convert minutes to seconds
-
-            // Calculate segment start and end times
-            const segmentStartTime = input.segmentIndex * segmentDuration;
-            const startMinutes = Math.floor(segmentStartTime / 60);
-            const startSeconds = Math.floor(segmentStartTime % 60);
-
-            // For second segment and beyond, add special instructions
-            if (input.segmentIndex > 0) {
-                console.log(`Processing segment ${input.segmentIndex} with special instructions`);
-                transcriptionPrompt = `Transcribe this ${contentType}. IMPORTANT: This is segment ${input.segmentIndex+1} of a longer video, starting at ${startMinutes}:${startSeconds.toString().padStart(2, '0')} in the original video. Your timestamps should start at 0 for the beginning of THIS segment. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`;
-            }
-        }
-
-        // Legacy support for segmentStartTime/segmentEndTime
-        if (input.segmentStartTime !== undefined && input.segmentEndTime !== undefined) {
-            const startMinutes = Math.floor(input.segmentStartTime / 60);
-            const startSeconds = Math.floor(input.segmentStartTime % 60);
-            const endMinutes = Math.floor(input.segmentEndTime / 60);
-            const endSeconds = Math.floor(input.segmentEndTime % 60);
-
-            transcriptionPrompt = `Transcribe this ${contentType} segment from ${startMinutes}:${startSeconds.toString().padStart(2, '0')} to ${endMinutes}:${endSeconds.toString().padStart(2, '0')}. IMPORTANT: Only focus on this specific time range. Ignore any content outside this range. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text."`;
-        }
 
         requestData.contents = [
             {
                 role: "user",
                 parts: [
-                    { text: transcriptionPrompt },
+                    { text: getTranscriptionPrompt(contentType) },
                     {
                         inlineData: {
                             mimeType: input.type,

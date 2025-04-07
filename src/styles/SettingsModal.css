@@ -9,5 +9,9 @@
 @import './settings/api-key.css';
 @import './settings/video-processing.css';
 @import './settings/cache.css';
+@import './settings/prompts.css';
+@import './settings/prompt-presets.css';
+@import './settings/preset-view-modal.css';
 @import './settings/buttons.css';
+@import './settings/tabs.css';
 @import './settings/responsive.css';

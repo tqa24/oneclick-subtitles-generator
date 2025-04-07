@@ -1,7 +1,7 @@
 /* Content area and scrollbar styles */
 
 .settings-content {
-  padding: 1.5rem;
+  padding: 0; /* Remove padding as tabs now handle their own padding */
   overflow-y: auto;
   flex: 1;
   /* Firefox */
