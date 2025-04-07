@@ -47,10 +47,16 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
         const segmentStartTime = startTime;
         const segmentEndTime = startTime + getMaxSegmentDurationSeconds();
 
-        // Filter out subtitles in this segment's time range
-        const filteredSubtitles = existingSubtitles.filter(subtitle =>
-            subtitle.start < segmentStartTime || subtitle.start >= segmentEndTime
-        );
+        // Filter out subtitles that belong to this segment's time range
+        // Keep subtitles that are completely outside this segment's time range
+        const filteredSubtitles = existingSubtitles.filter(subtitle => {
+            // Keep subtitles that end before this segment starts
+            if (subtitle.end <= segmentStartTime) return true;
+            // Keep subtitles that start after this segment ends
+            if (subtitle.start >= segmentEndTime) return true;
+            // Filter out subtitles that overlap with this segment's time range
+            return false;
+        });
 
         // Add the new subtitles
         const updatedSubtitles = [...filteredSubtitles, ...newSegmentSubtitles];
@@ -63,7 +69,9 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
             subtitle.id = index + 1;
         });
 
+        console.log(`Segment ${segmentIndex + 1} time range: ${segmentStartTime}s to ${segmentEndTime}s`);
         console.log(`Combined ${filteredSubtitles.length} existing subtitles with ${newSegmentSubtitles.length} new subtitles from segment ${segmentIndex + 1}`);
+        console.log(`Total subtitles after combining: ${updatedSubtitles.length}`);
         return updatedSubtitles;
     } catch (error) {
         console.error(`Error retrying segment ${segmentIndex + 1}:`, error);

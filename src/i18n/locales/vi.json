@@ -62,6 +62,7 @@
     "generateSegment": "Tạo",
     "generateSegmentTooltip": "Xử lý phần này",
     "strongModelWarning": "Bạn đang chọn một mô hình dễ bị quá tải, vui lòng xử lý từng phần một",
+    "strongModelSuccess": "Vì bạn đang chọn mô hình dễ bị quá tải, vui lòng nhấn nút tạo thủ công",
     "segmentGenerateSuccess": "Phần {{segmentNumber}} đã được xử lý thành công và kết hợp với phụ đề hiện có"
   },
   "settings": {

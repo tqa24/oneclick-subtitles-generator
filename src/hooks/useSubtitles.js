@@ -136,7 +136,17 @@ export const useSubtitles = (t) => {
                 await saveSubtitlesToCache(cacheId, subtitles);
             }
 
-            setStatus({ message: t('output.generationSuccess'), type: 'success' });
+            // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
+            const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const isUsingStrongModel = strongModels.includes(currentModel);
+
+            // Show different success message based on model
+            if (isUsingStrongModel && (!subtitles || subtitles.length === 0)) {
+                setStatus({ message: t('output.strongModelSuccess'), type: 'warning' });
+            } else {
+                setStatus({ message: t('output.generationSuccess'), type: 'success' });
+            }
             return true;
         } catch (error) {
             console.error('Error generating subtitles:', error);
@@ -250,7 +260,17 @@ export const useSubtitles = (t) => {
                 }
             }
 
-            setStatus({ message: t('output.generationSuccess'), type: 'success' });
+            // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
+            const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const isUsingStrongModel = strongModels.includes(currentModel);
+
+            // Show different success message based on model
+            if (isUsingStrongModel && (!subtitles || subtitles.length === 0)) {
+                setStatus({ message: t('output.strongModelSuccess'), type: 'warning' });
+            } else {
+                setStatus({ message: t('output.generationSuccess'), type: 'success' });
+            }
             return true;
         } catch (error) {
             console.error('Error regenerating subtitles:', error);

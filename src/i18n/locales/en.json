@@ -63,6 +63,7 @@
     "generateSegment": "Generate",
     "generateSegmentTooltip": "Process this segment",
     "strongModelWarning": "You are choosing an easily overloaded model, please process each segment one by one",
+    "strongModelSuccess": "Since you are choosing easily overloaded model, please press generate manually",
     "segmentGenerateSuccess": "Segment {{segmentNumber}} processed successfully and combined with existing subtitles"
   },
   "settings": {
