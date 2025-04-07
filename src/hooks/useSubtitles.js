@@ -233,13 +233,12 @@ export const useSubtitles = (t) => {
                     const duration = await getVideoDuration(input);
                     const durationMinutes = Math.floor(duration / 60);
 
-                    if (durationMinutes > 30) {
-                        // Process long video by splitting it into segments
-                        subtitles = await processLongVideo(input, setStatus, t);
-                    } else {
-                        // Process normally for shorter videos
-                        subtitles = await callGeminiApi(input, inputType);
-                    }
+                    // Debug log to see the video duration
+                    console.log(`Video duration: ${duration} seconds, ${durationMinutes} minutes`);
+
+                    // Always use segmentation for video files to match generateSubtitles behavior
+                    // Process long video by splitting it into segments
+                    subtitles = await processLongVideo(input, setStatus, t);
                 } catch (error) {
                     console.error('Error checking video duration:', error);
                     // Fallback to normal processing
