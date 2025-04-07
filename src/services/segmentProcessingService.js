@@ -31,7 +31,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     while (!success && retryCount < maxRetries) {
         try {
             // Fetch the segment file from the server
-            const segmentFile = await fetchSegment(segment.url);
+            const segmentFile = await fetchSegment(segment.url, segmentIndex);
 
             // Process the segment with Gemini
             segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload');
@@ -115,12 +115,40 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
         throw new Error(`Failed to process segment ${segmentIndex+1}`);
     }
 
-    // Adjust timestamps for this segment and return
-    return segmentSubtitles.map(subtitle => ({
-        ...subtitle,
-        start: subtitle.start + startTime,
-        end: subtitle.end + startTime
-    }));
+    // Get the actual segment duration and start time if available
+    const segmentDuration = segment.duration !== undefined ? segment.duration : null;
+
+    // Log detailed information about this segment
+    console.log(`Adjusting timestamps for segment ${segmentIndex+1}:`);
+    console.log(`  Start time: ${startTime.toFixed(2)}s`);
+    if (segmentDuration) {
+        console.log(`  Duration: ${segmentDuration.toFixed(2)}s`);
+        console.log(`  End time: ${(startTime + segmentDuration).toFixed(2)}s`);
+    }
+
+    // Log the original timestamps for debugging
+    console.log(`  Original timestamps (first 3 subtitles):`,
+        segmentSubtitles.slice(0, 3).map(s => `${s.start.toFixed(2)}-${s.end.toFixed(2)}: ${s.text.substring(0, 20)}...`));
+
+    // Adjust timestamps based on segment start time
+    const adjustedSubtitles = segmentSubtitles.map(subtitle => {
+        // Apply the offset based on actual segment start time
+        const adjustedStart = subtitle.start + startTime;
+        const adjustedEnd = subtitle.end + startTime;
+
+        return {
+            ...subtitle,
+            start: adjustedStart,
+            end: adjustedEnd
+        };
+    });
+
+    // Log the adjusted timestamps for debugging
+    console.log(`  Adjusted timestamps (first 3 subtitles):`,
+        adjustedSubtitles.slice(0, 3).map(s => `${s.start.toFixed(2)}-${s.end.toFixed(2)}: ${s.text.substring(0, 20)}...`));
+    console.log(`  Total subtitles in segment: ${adjustedSubtitles.length}`);
+
+    return adjustedSubtitles;
 }
 
 /**

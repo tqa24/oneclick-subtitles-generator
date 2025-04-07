@@ -90,7 +90,8 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
                     message: `${message} (${progress}%)`,
                     type: 'loading'
                 });
-            }
+            },
+            true // Enable fast splitting by default
         );
 
         console.log('Video split into segments:', splitResult);
@@ -131,7 +132,21 @@ export const processLongVideo = async (videoFile, onStatusUpdate, t) => {
         // Create an array to hold the processing promises for each segment
         const segmentPromises = segments.map(async (segment, i) => {
             const segmentIndex = i;
-            const startTime = segmentIndex * getMaxSegmentDurationSeconds();
+
+            // ALWAYS use the actual start time from the segment if available
+            // This is critical for correct subtitle stitching with stream-copy segments
+            const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
+            const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+
+            // Log detailed information about this segment's timing
+            console.log(`Processing segment ${segmentIndex + 1}:`);
+            console.log(`  Using startTime=${startTime.toFixed(2)}s, duration=${segmentDuration.toFixed(2)}s, endTime=${(startTime + segmentDuration).toFixed(2)}s`);
+
+            if (segment.startTime !== undefined) {
+                const theoreticalStart = segmentIndex * getMaxSegmentDurationSeconds();
+                console.log(`  Actual start time differs from theoretical by ${(startTime - theoreticalStart).toFixed(2)}s`);
+                console.log(`  This ensures correct subtitle timing when segments have variable durations`);
+            }
 
             // Generate cache ID for this segment
             const segmentCacheId = `segment_${segment.name}`;

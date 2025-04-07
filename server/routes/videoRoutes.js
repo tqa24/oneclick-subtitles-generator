@@ -122,13 +122,15 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: 'video/
 
     // Get segment duration from query params or use default (10 minutes)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
+    const fastSplit = req.query.fastSplit === 'true';
 
     // Split the video into segments
     const result = await splitVideoIntoSegments(
       videoPath,
       segmentDuration,
-      VIDEOS_DIR, // Save segments in the videos directory
-      `segment_${timestamp}`
+      VIDEOS_DIR,
+      `segment_${timestamp}`,
+      { fastSplit }
     );
 
     // Return the list of segment files
@@ -136,7 +138,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: 'video/
       success: true,
       originalVideo: `/videos/${filename}`,
       batchId: result.batchId,
-      segments: result.segments.map(segment => `/videos/${path.basename(segment)}`),
+      segments: result.segments.map(segment => `/videos/${path.basename(segment.path)}`),
       message: 'Video uploaded and split successfully'
     });
   } catch (error) {
@@ -165,28 +167,34 @@ router.post('/split-video', express.raw({ limit: '2gb', type: 'video/*' }), asyn
 
     // Get segment duration from query params or use default (10 minutes = 600 seconds)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
+    const fastSplit = req.query.fastSplit === 'true';
 
     // Split the video into segments
     const result = await splitVideoIntoSegments(
       videoPath,
       segmentDuration,
-      VIDEOS_DIR, // Save segments in the videos directory
-      `${videoId}_part`
+      VIDEOS_DIR,
+      `${videoId}_part`,
+      { fastSplit }
     );
 
-    // Return the list of segment files
+    // Return the list of segment files with actual durations
     res.json({
       success: true,
       originalVideo: `/videos/${filename}`,
       videoId: videoId,
-      segments: result.segments.map(segment => {
-        const segmentName = path.basename(segment);
-        return {
-          path: `/videos/${segmentName}`,
-          url: `${SERVER_URL}/videos/${segmentName}`,
-          name: segmentName
-        };
-      }),
+      segments: result.segments.map(segment => ({
+        path: `/videos/${path.basename(segment.path)}`,
+        // Include actual duration and start time in the URL as query parameters
+        url: `${SERVER_URL}/videos/${path.basename(segment.path)}?startTime=${segment.startTime}&duration=${segment.duration}`,
+        name: path.basename(segment.path),
+        // Include actual duration and start time in the segment object
+        startTime: segment.startTime,
+        duration: segment.duration,
+        // Include theoretical values for reference
+        theoreticalStartTime: segment.theoreticalStartTime,
+        theoreticalDuration: segment.theoreticalDuration
+      })),
       message: 'Video split successfully'
     });
   } catch (error) {

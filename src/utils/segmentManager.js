@@ -20,7 +20,9 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
     }
 
     const segment = segments[segmentIndex];
-    const startTime = segmentIndex * getMaxSegmentDurationSeconds();
+
+    // Use the actual start time from the segment if available, otherwise fall back to theoretical calculation
+    const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
     const segmentCacheId = `segment_${segment.name}`;
 
     // Update status to show we're retrying this segment
@@ -34,6 +36,7 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
 
     try {
         // Process the segment
+        console.log(`Retrying segment ${segmentIndex + 1} with startTime=${startTime}`);
         const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t);
 
         // Update status to show success
@@ -45,7 +48,12 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
 
         // Remove subtitles from this segment's time range
         const segmentStartTime = startTime;
-        const segmentEndTime = startTime + getMaxSegmentDurationSeconds();
+        // Use the actual duration from the segment if available, otherwise fall back to theoretical calculation
+        const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+        const segmentEndTime = startTime + segmentDuration;
+
+        console.log(`Using actual segment duration: ${segmentDuration}s for segment ${segmentIndex + 1}`);
+        console.log(`Segment ${segmentIndex + 1} actual time range: ${segmentStartTime}s to ${segmentEndTime}s`);
 
         // Filter out subtitles that belong to this segment's time range
         // Keep subtitles that are completely outside this segment's time range

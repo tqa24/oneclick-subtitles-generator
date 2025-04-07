@@ -12,6 +12,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
+  const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
 
@@ -22,12 +23,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
     const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
     const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
+    const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
 
     setGeminiApiKey(savedGeminiKey);
     setYoutubeApiKey(savedYoutubeKey);
     setSegmentDuration(savedSegmentDuration);
     setGeminiModel(savedGeminiModel);
     setTimeFormat(savedTimeFormat);
+    setSegmentOffsetCorrection(savedOffsetCorrection);
   }, []);
 
   // Handle clear cache
@@ -87,6 +90,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     localStorage.setItem('segment_duration', segmentDuration.toString());
     localStorage.setItem('gemini_model', geminiModel);
     localStorage.setItem('time_format', timeFormat);
+    localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
 
     // Notify parent component about API keys, segment duration, model, and time format
     onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);

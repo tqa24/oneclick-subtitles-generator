@@ -34,6 +34,24 @@ export const callGeminiApi = async (input, inputType) => {
         // Check if this is a video segment with time range metadata
         let transcriptionPrompt = `Transcribe this ${contentType}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`;
 
+        // Check if this is a segment with an index
+        if (input.segmentIndex !== undefined) {
+            // Get segment duration from localStorage
+            const segmentDuration = parseInt(localStorage.getItem('segment_duration') || '5') * 60; // Convert minutes to seconds
+
+            // Calculate segment start and end times
+            const segmentStartTime = input.segmentIndex * segmentDuration;
+            const startMinutes = Math.floor(segmentStartTime / 60);
+            const startSeconds = Math.floor(segmentStartTime % 60);
+
+            // For second segment and beyond, add special instructions
+            if (input.segmentIndex > 0) {
+                console.log(`Processing segment ${input.segmentIndex} with special instructions`);
+                transcriptionPrompt = `Transcribe this ${contentType}. IMPORTANT: This is segment ${input.segmentIndex+1} of a longer video, starting at ${startMinutes}:${startSeconds.toString().padStart(2, '0')} in the original video. Your timestamps should start at 0 for the beginning of THIS segment. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`;
+            }
+        }
+
+        // Legacy support for segmentStartTime/segmentEndTime
         if (input.segmentStartTime !== undefined && input.segmentEndTime !== undefined) {
             const startMinutes = Math.floor(input.segmentStartTime / 60);
             const startSeconds = Math.floor(input.segmentStartTime % 60);
