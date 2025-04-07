@@ -20,12 +20,11 @@
     "fileUpload": "Upload File",
     "enterYoutubeUrl": "Enter YouTube URL",
     "searchForVideos": "Search for videos",
-    "dragDropFiles": "Drag & drop files here, or click to select",
     "dragDropText": "Drag & Drop your Video or Audio here",
     "orText": "or",
     "browse": "Click to browse files",
     "supportedFormats": "Supported formats: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
-    "maxFileSize": "Maximum size: 2 GB"
+    "maxFileSize": "(Video length is not important, but video too high in resolution or framerate will easily get the model overloaded)"
   },
 
   "output": {

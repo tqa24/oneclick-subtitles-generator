@@ -20,12 +20,11 @@
     "fileUpload": "Tải lên tập tin",
     "enterYoutubeUrl": "Nhập URL YouTube",
     "searchForVideos": "Tìm kiếm video",
-    "dragDropFiles": "Kéo và thả tập tin vào đây hoặc nhấp để chọn",
     "dragDropText": "Kéo & Thả Video hoặc Audio vào đây",
     "orText": "hoặc",
     "browse": "Nhấp để chọn tập tin",
     "supportedFormats": "Định dạng hỗ trợ: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
-    "maxFileSize": "Kích thước tối đa: 2 GB"
+    "maxFileSize": "(Thời lượng không quan trọng, nhưng video quá nét độ phân giải hoặc tốc độ khung hình cao sẽ dễ làm quá tải mô hình)"
   },
   "output": {
     "processingVideo": "Đang xử lý. Có thể mất vài phút...",
