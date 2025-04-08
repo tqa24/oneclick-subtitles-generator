@@ -101,14 +101,24 @@ const LyricsHeader = ({
           </div>
         </div>
         {allowEditing && (
-          <label className="sticky-toggle">
-            <input
-              type="checkbox"
-              checked={isSticky}
-              onChange={(e) => setIsSticky(e.target.checked)}
-            />
+          <div
+            className={`sticky-toggle ${isSticky ? 'active' : ''}`}
+            onClick={() => setIsSticky(!isSticky)}
+            title={t('lyrics.stickyTimingsToggle', isSticky ? 'Disable sticky timings' : 'Enable sticky timings')}
+          >
+            {isSticky ? (
+              <svg className="sticky-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            ) : (
+              <svg className="sticky-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none">
+                <path d="M6 8a4 4 0 0 1 0 8 4 4 0 0 1 0-8"/>
+                <path d="M18 8a4 4 0 0 0 0 8 4 4 0 0 0 0-8"/>
+              </svg>
+            )}
             <span>{t('lyrics.stickyTimingsToggle', 'Stick')}</span>
-          </label>
+          </div>
         )}
       </div>
 

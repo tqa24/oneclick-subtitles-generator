@@ -16,33 +16,64 @@
   height: 100%;
 }
 
-/* Material Design 3 sticky toggle */
+/* Material Design 3 sticky toggle - pill-shaped switch */
 .sticky-toggle {
   display: flex;
   align-items: center;
+  justify-content: center;
   cursor: pointer;
   user-select: none;
   font-size: var(--md-label-small-size);
   line-height: var(--md-label-small-height);
   font-weight: 500;
-  color: var(--md-primary);
-  transition: color var(--transition-speed), background-color var(--md-duration-medium2) var(--md-easing-standard);
-  padding: 4px 8px;
+  color: var(--md-on-surface-variant);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  padding: 4px 10px;
   border-radius: var(--md-shape-pill);
   position: relative;
   overflow: hidden;
-  width: 63px;
+  min-width: 50px;
+  border: 1px solid transparent;
+  margin-left: auto; /* Push to the right side */
 }
 
-.sticky-toggle:hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+/* Active state styling */
+.sticky-toggle.active {
+  color: var(--md-on-primary-container);
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
 }
 
-.sticky-toggle input {
-  margin-right: 8px;
-  accent-color: var(--md-primary);
-  width: 18px;
-  height: 18px;
+/* Sticky icon styling */
+.sticky-icon {
+  margin-right: 6px;
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+
+.sticky-toggle:hover .sticky-icon {
+  transform: rotate(15deg);
+}
+
+/* Specific animations for chain icons */
+.sticky-toggle.active .sticky-icon {
+  transform: scale(1.1);
+}
+
+.sticky-toggle:not(.active) .sticky-icon {
+  transform: scale(1.05);
+}
+
+/* Hover effects */
+.sticky-toggle:hover {
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+/* Pressed effect */
+.sticky-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Button containers for middle and bottom rows */
