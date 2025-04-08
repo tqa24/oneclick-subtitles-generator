@@ -37,8 +37,8 @@
 }
 
 .language-input {
-  flex: 1;
-  min-width: 250px;
+  flex: 0 1 200px; /* Reduced flex-basis to 200px */
+  max-width: 200px; /* Added max-width to ensure it doesn't grow too much */
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 24px;
@@ -62,10 +62,10 @@
 .translate-button,
 .download-translation-button,
 .reset-translation-button {
-  padding: 0 1.5rem;
+  padding: 0 1rem; /* Reduced horizontal padding */
   height: 42px;
   border-radius: 21px;
-  font-size: 0.95rem;
+  font-size: 0.9rem; /* Slightly smaller font */
   font-weight: 500;
   cursor: pointer;
   display: flex;
@@ -97,8 +97,10 @@
 
 .translation-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row; /* Changed from column to row */
   gap: 0.75rem;
+  flex-wrap: nowrap; /* Ensure no wrapping */
+  align-items: center;
 }
 
 .download-buttons {
@@ -212,21 +214,24 @@
     padding: 1rem;
   }
 
-  .language-input-container {
-    flex-direction: column;
-  }
-
   .language-input {
-    width: 100%;
+    flex: 0 1 150px;
+    max-width: 150px;
   }
 
-  .translation-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
+  .translate-button,
   .download-translation-button,
   .reset-translation-button {
-    flex: 1;
+    padding: 0 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Keep buttons on one line */
+  .translation-actions {
+    gap: 0.5rem;
+  }
+
+  .download-buttons {
+    gap: 0.5rem;
   }
 }

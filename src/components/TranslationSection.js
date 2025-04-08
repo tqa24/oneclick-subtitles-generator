@@ -76,7 +76,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             type="text"
             value={targetLanguage}
             onChange={(e) => setTargetLanguage(e.target.value)}
-            placeholder={t('translation.languagePlaceholder', 'Enter target language (e.g., Spanish, French, Japanese)')}
+            placeholder={t('translation.languagePlaceholder', 'Target language')}
             disabled={isTranslating || translatedSubtitles !== null}
             className="language-input"
           />
