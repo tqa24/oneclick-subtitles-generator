@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/SubtitleSettings.css';
 
@@ -10,13 +10,28 @@ const SubtitleSettings = ({
   hasTranslation
 }) => {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    // Load isOpen state from localStorage
+    const savedIsOpen = localStorage.getItem('subtitle_settings_panel_open');
+    return savedIsOpen === 'true';
+  });
+
+  // Save isOpen state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('subtitle_settings_panel_open', isOpen.toString());
+  }, [isOpen]);
 
   const handleSettingChange = (setting, value) => {
-    onSettingsChange({
+    const updatedSettings = {
       ...settings,
       [setting]: value
-    });
+    };
+
+    // Save to localStorage
+    localStorage.setItem('subtitle_settings', JSON.stringify(updatedSettings));
+
+    // Update state via parent component
+    onSettingsChange(updatedSettings);
   };
 
   const fontOptions = [
@@ -206,16 +221,24 @@ const SubtitleSettings = ({
 
             <button
               className="reset-settings-btn"
-              onClick={() => onSettingsChange({
-                fontFamily: 'Arial, sans-serif',
-                fontSize: '24',
-                fontWeight: '400',
-                position: '90',
-                boxWidth: '80',
-                backgroundColor: '#000000',
-                opacity: '0.7',
-                textColor: '#ffffff'
-              })}
+              onClick={() => {
+                const defaultSettings = {
+                  fontFamily: 'Arial, sans-serif',
+                  fontSize: '24',
+                  fontWeight: '400',
+                  position: '90',
+                  boxWidth: '80',
+                  backgroundColor: '#000000',
+                  opacity: '0.7',
+                  textColor: '#ffffff'
+                };
+
+                // Save default settings to localStorage
+                localStorage.setItem('subtitle_settings', JSON.stringify(defaultSettings));
+
+                // Update state via parent component
+                onSettingsChange(defaultSettings);
+              }}
             >
               {t('subtitleSettings.resetToDefault', 'Reset to Default')}
             </button>

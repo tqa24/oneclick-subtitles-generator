@@ -40,7 +40,10 @@ const PromptIcon = () => (
 
 const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('api-keys'); // Default active tab
+  const [activeTab, setActiveTab] = useState(() => {
+    // Load last active tab from localStorage or default to 'api-keys'
+    return localStorage.getItem('settings_last_active_tab') || 'api-keys';
+  });
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
@@ -59,6 +62,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [viewingPreset, setViewingPreset] = useState(null); // Currently viewing preset
   const textareaRef = useRef(null);
   const floatingCardRef = useRef(null);
+
+  // Save active tab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('settings_last_active_tab', activeTab);
+  }, [activeTab]);
 
   // Load saved settings on component mount
   useEffect(() => {

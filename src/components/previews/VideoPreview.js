@@ -24,15 +24,28 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
   const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
-  const [subtitleSettings, setSubtitleSettings] = useState({
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '24',
-    fontWeight: '400',
-    position: '90', // Now a percentage value from 0 (top) to 100 (bottom)
-    boxWidth: '80',
-    backgroundColor: '#000000',
-    opacity: '0.7',
-    textColor: '#ffffff'
+  const [subtitleSettings, setSubtitleSettings] = useState(() => {
+    // Try to load settings from localStorage
+    const savedSettings = localStorage.getItem('subtitle_settings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch (e) {
+        console.error('Error parsing saved subtitle settings:', e);
+      }
+    }
+
+    // Default settings if nothing is saved
+    return {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '24',
+      fontWeight: '400',
+      position: '90', // Now a percentage value from 0 (top) to 100 (bottom)
+      boxWidth: '80',
+      backgroundColor: '#000000',
+      opacity: '0.7',
+      textColor: '#ffffff'
+    };
   });
   // We track play state in lastPlayStateRef instead of using state to avoid unnecessary re-renders
 
