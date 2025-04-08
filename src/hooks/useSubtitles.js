@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { callGeminiApi } from '../services/geminiService';
+import { callGeminiApi, setProcessingForceStopped } from '../services/geminiService';
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
@@ -76,6 +76,9 @@ export const useSubtitles = (t) => {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
             return false;
         }
+
+        // Reset the force stop flag when starting a new generation
+        setProcessingForceStopped(false);
 
         setIsGenerating(true);
         setStatus({ message: t('output.processingVideo'), type: 'loading' });
@@ -244,6 +247,9 @@ export const useSubtitles = (t) => {
             return false;
         }
 
+        // Reset the force stop flag when retrying generation
+        setProcessingForceStopped(false);
+
         setIsGenerating(true);
         setStatus({ message: 'Retrying request to Gemini. This may take a few minutes...', type: 'loading' });
 
@@ -346,6 +352,9 @@ export const useSubtitles = (t) => {
         // Initialize subtitlesData to empty array if it's null
         // This happens when using the strong model where we process segments one by one
         const currentSubtitles = subtitlesData || [];
+
+        // Reset the force stop flag when retrying a segment
+        setProcessingForceStopped(false);
 
         // Determine if this is a video or audio file based on the segment name
         // Segment names for audio files typically include 'audio' in the name

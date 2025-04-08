@@ -2,7 +2,7 @@
  * Service for processing video and audio segments
  */
 
-import { callGeminiApi } from './geminiService';
+import { callGeminiApi, getProcessingForceStopped } from './geminiService';
 import { fetchSegment } from '../utils/videoSplitter';
 import { parseRawTextManually } from '../utils/subtitleParser';
 
@@ -30,6 +30,11 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     });
 
     while (!success && retryCount < maxRetries) {
+        // Check if processing has been force stopped
+        if (getProcessingForceStopped()) {
+            console.log(`Segment ${segmentIndex+1} processing was force stopped, aborting retries`);
+            throw new Error('Processing was force stopped');
+        }
         try {
             // Fetch the segment file from the server
             const segmentFile = await fetchSegment(segment.url, segmentIndex, mediaType);

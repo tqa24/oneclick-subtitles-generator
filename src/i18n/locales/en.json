@@ -269,8 +269,8 @@
   "subtitleSettings": {
     "title": "Subtitle Settings",
     "toggleSettings": "Subtitle Settings",
-    "downloadWithSubtitles": "Download with Subtitles",
-    "downloadWithTranslatedSubtitles": "Download with Translated",
+    "downloadWithSubtitles": "Render with Subtitles",
+    "downloadWithTranslatedSubtitles": "Render with Translated",
     "downloadWithSubtitlesTooltip": "Download video with original subtitles",
     "downloadWithTranslatedTooltip": "Download video with translated subtitles",
     "noTranslationTooltip": "Please generate a translation first in the Translation section below",

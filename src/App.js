@@ -687,12 +687,7 @@ function App() {
                       }, 1000);
                       // Abort all ongoing Gemini API requests
                       abortAllRequests();
-                      // Reset the retrying segments
-                      setRetryingSegments([]);
-                      // Reset the generating state
-                      setIsGenerating(false);
-                      // Show a message to the user
-                      setStatus({ message: t('output.requestsAborted', 'All Gemini requests have been aborted'), type: 'info' });
+                      // The state will be updated by the event listener in useSubtitles hook
                     }}
                     title={t('output.forceStopTooltip', 'Force stop all Gemini requests')}
                   >

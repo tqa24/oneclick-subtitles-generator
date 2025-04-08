@@ -267,8 +267,8 @@
   "subtitleSettings": {
     "title": "Cài đặt phụ đề",
     "toggleSettings": "Cài đặt phụ đề",
-    "downloadWithSubtitles": "Tải với phụ đề",
-    "downloadWithTranslatedSubtitles": "Tải với phụ đề đã dịch",
+    "downloadWithSubtitles": "Render với phụ đề",
+    "downloadWithTranslatedSubtitles": "Render với phụ đề đã dịch",
     "downloadWithSubtitlesTooltip": "Tải xuống video với phụ đề gốc",
     "downloadWithTranslatedTooltip": "Tải xuống video với phụ đề đã dịch",
     "noTranslationTooltip": "Vui lòng tạo bản dịch trước trong phần Dịch phụ đề bên dưới",

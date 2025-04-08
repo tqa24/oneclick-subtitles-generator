@@ -1,8 +1,18 @@
 import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
 
-// Global AbortController to cancel ongoing requests
-let activeAbortController = null;
+// Map to store multiple AbortControllers for parallel requests
+const activeAbortControllers = new Map();
+
+// Global flag to indicate when processing should be completely stopped
+let _processingForceStopped = false;
+
+// Getter and setter functions for the processing force stopped flag
+export const getProcessingForceStopped = () => _processingForceStopped;
+export const setProcessingForceStopped = (value) => {
+    _processingForceStopped = value;
+    console.log(`Force stop flag set to ${value}`);
+};
 
 // Default transcription prompts
 export const PROMPT_PRESETS = [
@@ -58,10 +68,20 @@ export const saveUserPromptPresets = (presets) => {
 
 // Function to abort all ongoing Gemini API requests
 export const abortAllRequests = () => {
-    if (activeAbortController) {
-        console.log('Aborting all ongoing Gemini API requests');
-        activeAbortController.abort();
-        activeAbortController = null;
+    if (activeAbortControllers.size > 0) {
+        console.log(`Aborting all ongoing Gemini API requests (${activeAbortControllers.size} active)`);
+
+        // Set the global flag to indicate processing should be completely stopped
+        setProcessingForceStopped(true);
+
+        // Abort all controllers in the map
+        for (const [id, controller] of activeAbortControllers.entries()) {
+            console.log(`Aborting request ID: ${id}`);
+            controller.abort();
+        }
+
+        // Clear the map
+        activeAbortControllers.clear();
 
         // Dispatch an event to notify components that requests have been aborted
         window.dispatchEvent(new CustomEvent('gemini-requests-aborted'));
@@ -168,6 +188,9 @@ export const callGeminiApi = async (input, inputType) => {
         console.log('Using MIME type for Gemini API:', mimeType);
     }
 
+    // Create a unique ID for this request
+    const requestId = `request_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
         // Log request data for debugging (without the actual base64 data to keep logs clean)
         console.log('Gemini API request model:', MODEL);
@@ -192,12 +215,9 @@ export const callGeminiApi = async (input, inputType) => {
         console.log('Gemini API request structure:', debugRequestData);
 
         // Create a new AbortController for this request
-        if (activeAbortController) {
-            // If there's an existing controller, abort it first
-            activeAbortController.abort();
-        }
-        activeAbortController = new AbortController();
-        const signal = activeAbortController.signal;
+        const controller = new AbortController();
+        activeAbortControllers.set(requestId, controller);
+        const signal = controller.signal;
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
@@ -249,8 +269,8 @@ export const callGeminiApi = async (input, inputType) => {
         const data = await response.json();
         console.log('Gemini API response:', data);
 
-        // Clear the AbortController after successful response
-        activeAbortController = null;
+        // Remove this controller from the map after successful response
+        activeAbortControllers.delete(requestId);
         return parseGeminiResponse(data);
     } catch (error) {
         // Check if this is an AbortError
@@ -259,8 +279,10 @@ export const callGeminiApi = async (input, inputType) => {
             throw new Error('Request was aborted');
         } else {
             console.error('Error calling Gemini API:', error);
-            // Clear the AbortController on error
-            activeAbortController = null;
+            // Remove this controller from the map on error
+            if (requestId) {
+                activeAbortControllers.delete(requestId);
+            }
             throw error;
         }
     }
@@ -345,6 +367,9 @@ Next translated text here
 
 Here are the subtitles to translate:\n\n${subtitleText}`;
 
+    // Create a unique ID for this request
+    const requestId = `translation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
         // Get API key from localStorage
         const apiKey = localStorage.getItem('gemini_api_key');
@@ -357,12 +382,9 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         // Create a new AbortController for this request
-        if (activeAbortController) {
-            // If there's an existing controller, abort it first
-            activeAbortController.abort();
-        }
-        activeAbortController = new AbortController();
-        const signal = activeAbortController.signal;
+        const controller = new AbortController();
+        activeAbortControllers.set(requestId, controller);
+        const signal = controller.signal;
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -400,8 +422,8 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
             throw new Error('No translation returned from Gemini');
         }
 
-        // Clear the AbortController after successful response
-        activeAbortController = null;
+        // Remove this controller from the map after successful response
+        activeAbortControllers.delete(requestId);
 
         // Parse the translated subtitles
         return parseTranslatedSubtitles(translatedText);
@@ -412,8 +434,10 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
             throw new Error('Translation request was aborted');
         } else {
             console.error('Translation error:', error);
-            // Clear the AbortController on error
-            activeAbortController = null;
+            // Remove this controller from the map on error
+            if (requestId) {
+                activeAbortControllers.delete(requestId);
+            }
             throw error;
         }
     }
