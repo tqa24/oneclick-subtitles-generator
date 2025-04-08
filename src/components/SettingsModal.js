@@ -64,6 +64,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
+  const [isUpdating, setIsUpdating] = useState(false); // State for update process
+  const [updateStatus, setUpdateStatus] = useState({ message: '', type: '' }); // Status message for update process
+  const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [userPromptPresets, setUserPromptPresets] = useState([]); // User-created prompt presets
   const [showAddPresetForm, setShowAddPresetForm] = useState(false); // Toggle for add preset form
@@ -441,6 +444,75 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     if (window.confirm('Are you sure you want to clear your YouTube OAuth credentials? You will need to authenticate again to use YouTube search.')) {
       clearOAuthData();
       setIsAuthenticated(false);
+    }
+  };
+
+  // Handle app update (git pull)
+  const handleUpdate = async () => {
+    if (window.confirm(t('settings.confirmUpdate', 'Are you sure you want to update the application? This will pull the latest changes from the repository.'))) {
+      setIsUpdating(true);
+      setUpdateStatus({ message: t('settings.updating', 'Updating application...'), type: 'info' });
+
+      try {
+        const response = await fetch('http://localhost:3004/api/update', {
+          method: 'POST'
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setUpdateStatus({
+            message: t('settings.updateSuccess', 'Application updated successfully! Please refresh the page to see the changes.'),
+            type: 'success'
+          });
+        } else {
+          throw new Error(data.error || 'Failed to update application');
+        }
+      } catch (error) {
+        console.error('Error updating application:', error);
+        setUpdateStatus({
+          message: t('settings.updateError', 'Error updating application: {{errorMessage}}', { errorMessage: error.message }),
+          type: 'error'
+        });
+      } finally {
+        setIsUpdating(false);
+      }
+    }
+  };
+
+  // Handle factory reset
+  const handleFactoryReset = async () => {
+    if (window.confirm(t('settings.confirmFactoryReset', 'Are you sure you want to perform a factory reset? This will clear all cache files and browser data. This cannot be undone.'))) {
+      setIsFactoryResetting(true);
+
+      try {
+        // 1. Clear server-side cache
+        const cacheResponse = await fetch('http://localhost:3004/api/clear-cache', {
+          method: 'DELETE'
+        });
+
+        if (!cacheResponse.ok) {
+          throw new Error('Failed to clear server cache');
+        }
+
+        // 2. Clear all localStorage items
+        localStorage.clear();
+
+        // 3. Clear IndexedDB if used
+        const databases = await window.indexedDB.databases();
+        databases.forEach(db => {
+          window.indexedDB.deleteDatabase(db.name);
+        });
+
+        // 4. Show success message
+        alert(t('settings.factoryResetSuccess', 'Factory reset completed successfully. The application will now reload.'));
+
+        // 5. Reload the page to apply changes
+        window.location.reload();
+      } catch (error) {
+        console.error('Error during factory reset:', error);
+        alert(t('settings.factoryResetError', 'Error during factory reset: {{errorMessage}}', { errorMessage: error.message }));
+        setIsFactoryResetting(false);
+      }
     }
   };
 
@@ -1346,17 +1418,51 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         </div>
 
         <div className="settings-footer">
-          <button className="cancel-btn" onClick={onClose}>
-            {t('common.cancel', 'Cancel')}
-          </button>
-          <button
-            className="save-btn"
-            onClick={handleSave}
-            disabled={!hasChanges}
-            title={!hasChanges ? t('settings.noChanges', 'No changes to save') : t('settings.saveChanges', 'Save changes')}
-          >
-            {t('common.save', 'Save')}
-          </button>
+          <div className="settings-footer-left">
+            <button
+              className="update-btn"
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              title={t('settings.updateTooltip', 'Update application with latest changes')}
+            >
+              {isUpdating ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  {t('settings.updating', 'Updating...')}
+                </>
+              ) : (
+                t('settings.update', 'Update App')
+              )}
+            </button>
+            <button
+              className="factory-reset-btn"
+              onClick={handleFactoryReset}
+              disabled={isFactoryResetting}
+              title={t('settings.factoryResetTooltip', 'Reset application to factory settings')}
+            >
+              {isFactoryResetting ? (
+                <>
+                  <span className="loading-spinner"></span>
+                  {t('settings.resetting', 'Resetting...')}
+                </>
+              ) : (
+                t('settings.factoryReset', 'Factory Reset')
+              )}
+            </button>
+          </div>
+          <div className="settings-footer-right">
+            <button className="cancel-btn" onClick={onClose}>
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button
+              className="save-btn"
+              onClick={handleSave}
+              disabled={!hasChanges}
+              title={!hasChanges ? t('settings.noChanges', 'No changes to save') : t('settings.saveChanges', 'Save changes')}
+            >
+              {t('common.save', 'Save')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -76,7 +76,8 @@ const LyricsDisplay = ({
   allowEditing = false,
   seekTime = null,
   timeFormat = 'seconds',
-  onSaveSubtitles = null // New callback for when subtitles are saved
+  onSaveSubtitles = null, // New callback for when subtitles are saved
+  videoSource = null // Video source URL for audio analysis
 }) => {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
@@ -332,6 +333,7 @@ const LyricsDisplay = ({
           setPanOffset={setPanOffset}
           centerOnTime={centerTimelineAt}
           timeFormat={timeFormat}
+          videoSource={videoSource}
         />
       </div>
 

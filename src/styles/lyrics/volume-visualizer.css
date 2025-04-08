@@ -1,0 +1,59 @@
+/* Volume Visualizer Styles */
+
+.volume-visualizer {
+  width: 100%;
+  position: relative;
+  margin: 2px 0;
+  border-radius: 4px;
+  overflow: hidden;
+  /* Transparent background */
+  background-color: transparent;
+  /* Add a subtle border that works in both light and dark mode */
+  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.2);
+}
+
+/* No special dark mode background needed */
+
+.volume-visualizer canvas {
+  display: block;
+  background-color: transparent;
+}
+
+.volume-visualizer-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(var(--md-surface-rgb), 0.7);
+  color: var(--md-on-surface);
+  font-size: 12px;
+  font-weight: 500;
+  /* Add a subtle text shadow for better readability in both themes */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode specific styles for loading message */
+[data-theme="dark"] .volume-visualizer-loading {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+  /* Brighter text shadow for dark mode */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Update timeline container to accommodate the volume visualizer */
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+/* Ensure the subtitle timeline has proper spacing */
+.subtitle-timeline {
+  margin-bottom: 2px;
+}

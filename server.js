@@ -15,6 +15,7 @@ const { PORT, CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, ensureDirectories } = requ
 const videoRoutes = require('./server/routes/videoRoutes');
 const subtitleRoutes = require('./server/routes/subtitleRoutes');
 const cacheRoutes = require('./server/routes/cacheRoutes');
+const updateRoutes = require('./server/routes/updateRoutes');
 
 // Initialize Express app
 const app = express();
@@ -45,6 +46,7 @@ app.get('/api/test', (req, res) => {
 app.use('/api', videoRoutes);
 app.use('/api', subtitleRoutes);
 app.use('/api', cacheRoutes);
+app.use('/api', updateRoutes);
 
 // Start the server
 app.listen(PORT, () => {

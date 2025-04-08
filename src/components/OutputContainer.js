@@ -60,6 +60,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
 
   // Set video source when a video is selected or file is uploaded
   const [videoSource, setVideoSource] = useState('');
+  const [actualVideoUrl, setActualVideoUrl] = useState('');
   useEffect(() => {
     // First check for uploaded file
     const uploadedFileUrl = localStorage.getItem('current_file_url');
@@ -131,6 +132,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               onSeek={handleVideoSeek}
               translatedSubtitles={translatedSubtitles}
               subtitlesArray={editedLyrics || subtitlesData}
+              onVideoUrlReady={setActualVideoUrl}
             />
 
             <LyricsDisplay
@@ -143,6 +145,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               duration={videoDuration}
               seekTime={seekTime}
               timeFormat={timeFormat}
+              videoSource={actualVideoUrl}
             />
 
             {/* Download buttons moved to LyricsDisplay component */}

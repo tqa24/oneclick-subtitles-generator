@@ -1,9 +1,12 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 
 // Import utility modules
 import { calculateMinZoom, getVisibleTimeRange, calculateVisibleTimeRange } from './utils/TimelineCalculations';
 import { drawTimeline } from './utils/TimelineDrawing';
 import { centerTimelineOnTime as centerTimeOnTime, handleTimelineClick as handleClick, animateZoom as animateZoomTo } from './utils/TimelineInteractions';
+
+// Import volume visualizer
+import VolumeVisualizer from './VolumeVisualizer';
 
 const TimelineVisualization = ({
   lyrics,
@@ -14,7 +17,8 @@ const TimelineVisualization = ({
   panOffset,
   setPanOffset,
   centerOnTime, // Prop to center the view on a specific time
-  timeFormat = 'seconds' // Prop to control time display format
+  timeFormat = 'seconds', // Prop to control time display format
+  videoSource // Video source URL for audio analysis
 }) => {
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
@@ -332,6 +336,14 @@ const TimelineVisualization = ({
         className="subtitle-timeline"
         style={{ cursor: 'pointer' }}
       />
+      {videoSource && (
+        <VolumeVisualizer
+          audioSource={videoSource}
+          duration={duration}
+          visibleTimeRange={getTimeRange()}
+          height={30}
+        />
+      )}
     </div>
   );
 };

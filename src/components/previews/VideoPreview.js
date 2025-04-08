@@ -10,7 +10,7 @@ import { subtitlesToVtt, createVttBlobUrl, revokeVttBlobUrl, convertTimeStringTo
 import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
 
-const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -126,6 +126,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
 
     loadVideo();
   }, [videoSource, t, processVideoUrl]);
+
+  // Notify parent component when videoUrl changes
+  useEffect(() => {
+    if (videoUrl && onVideoUrlReady) {
+      onVideoUrlReady(videoUrl);
+    }
+  }, [videoUrl, onVideoUrlReady]);
 
   // Check download status at interval if we have a videoId
   useEffect(() => {
