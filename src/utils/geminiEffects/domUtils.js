@@ -40,7 +40,6 @@ export const setupButtonObserver = (initCallback, observerInitialized) => {
     });
 
     if (shouldReinitialize) {
-      console.log('Detected new buttons, reinitializing Gemini button effects');
       initCallback();
     }
   });

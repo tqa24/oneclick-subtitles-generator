@@ -20,11 +20,19 @@
   border-radius: var(--modal-border-radius);
   max-width: 900px; /* Increased from 600px to 900px */
   width: 90%;
+  height: 700px; /* Fixed height to prevent fluctuations */
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--md-elevation-level3);
-  overflow: hidden;
+  overflow: hidden; /* Hide any content that overflows the container */
   animation: modal-appear var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
   transition: background-color var(--transition-speed);
+  /* Ensure child elements respect the border radius */
+  position: relative;
+  /* Fix for scrollbar appearing outside border radius */
+  transform: translateZ(0);
+  will-change: transform;
+  /* Create a containing block for absolute positioning */
+  contain: layout;
 }

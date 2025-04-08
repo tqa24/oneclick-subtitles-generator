@@ -1,28 +1,56 @@
 /* Content area and scrollbar styles */
 
-.settings-content {
-  padding: 20px; /* Remove padding as tabs now handle their own padding */
-  overflow-y: auto;
+/* Add a wrapper for the content to ensure scrollbar is contained */
+.settings-content-wrapper {
   flex: 1;
+  overflow: hidden; /* Hide overflow to ensure scrollbar is contained */
+  position: relative;
+  /* Add padding at the bottom to create space between content and footer */
+  padding-bottom: 4px;
+}
+
+.settings-content {
+  padding: 20px; /* Base padding */
+  padding-right: 24px; /* Extra padding on the right for the scrollbar */
+  overflow-y: auto;
+  height: 500px; /* Fixed height to prevent modal size fluctuations */
+  min-height: 500px; /* Ensure minimum height is maintained */
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) var(--background-secondary);
+  /* Clip content to ensure it respects the parent's border radius */
+  overflow-x: hidden;
+  /* Create a new stacking context */
+  position: relative;
+  z-index: 0;
+  /* Ensure the content area respects the parent's border radius */
+  border-radius: calc(var(--modal-border-radius) - 4px);
 }
 
 /* Webkit (Chrome, Safari, Edge) scrollbar styles */
 .settings-content::-webkit-scrollbar {
   width: 8px;
+  /* Add right margin to prevent scrollbar from touching the edge */
+  margin-right: 2px;
 }
 
 .settings-content::-webkit-scrollbar-track {
   background: var(--background-secondary);
   border-radius: 4px;
+  /* Add margin to keep track away from the edge */
+  margin-right: 2px;
+  /* Add margin at the bottom to prevent track from touching the bottom edge */
+  margin-bottom: 4px;
 }
 
 .settings-content::-webkit-scrollbar-thumb {
   background-color: var(--border-color);
   border-radius: 4px;
   border: 2px solid var(--background-secondary);
+  /* Ensure the thumb doesn't touch the edge */
+  margin-right: 2px;
+  /* Ensure the thumb doesn't touch the bottom edge */
+  margin-bottom: 4px;
 }
 
 .settings-content::-webkit-scrollbar-thumb:hover {

@@ -3,6 +3,28 @@
  */
 
 /**
+ * Helper function to draw a rounded rectangle on canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} width - Rectangle width
+ * @param {number} height - Rectangle height
+ * @param {number} radius - Corner radius
+ */
+function roundRect(ctx, x, y, width, height, radius) {
+  if (width < 2 * radius) radius = width / 2;
+  if (height < 2 * radius) radius = height / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
+/**
  * Renders subtitles onto a video and returns a downloadable URL
  * @param {string} videoSrc - Source URL of the video
  * @param {Array} subtitles - Array of subtitle objects
@@ -60,7 +82,14 @@ export const renderSubtitlesToVideo = async (videoSrc, subtitles, subtitleSettin
           boxWidth = '80',
           backgroundColor = '#000000',
           opacity = '0.7',
-          textColor = '#ffffff'
+          textColor = '#ffffff',
+          textAlign = 'center',
+          textTransform = 'none',
+          lineSpacing = '1.4',
+          letterSpacing = '0',
+          backgroundRadius = '4',
+          backgroundPadding = '10',
+          textShadow = false
         } = subtitleSettings;
 
         // Calculate position based on percentage value
@@ -108,20 +137,69 @@ export const renderSubtitlesToVideo = async (videoSrc, subtitles, subtitleSettin
             lines.push(currentLine);
 
             // Calculate background height based on number of lines
-            const lineHeight = parseInt(fontSize) * 1.2;
-            const totalHeight = lineHeight * lines.length + 20; // Add padding
+            const lineHeight = parseInt(fontSize) * parseFloat(lineSpacing);
+            const paddingValue = parseInt(backgroundPadding);
+            const totalHeight = lineHeight * lines.length + (paddingValue * 2); // Add padding
 
-            // Draw background
+            // Draw background with rounded corners if specified
             const bgX = (canvas.width - boxWidthPx) / 2;
             const bgY = position === 'top' ? subtitleY : subtitleY - totalHeight;
 
-            ctx.fillRect(bgX, bgY, boxWidthPx, totalHeight);
+            const radius = parseInt(backgroundRadius);
+            if (radius > 0) {
+              // Draw rounded rectangle for background
+              roundRect(ctx, bgX, bgY, boxWidthPx, totalHeight, radius);
+              ctx.fill();
+            } else {
+              // Draw regular rectangle
+              ctx.fillRect(bgX, bgY, boxWidthPx, totalHeight);
+            }
+
+            // Apply text transform if needed
+            let processedLines = lines;
+            if (textTransform !== 'none') {
+              processedLines = lines.map(line => {
+                if (textTransform === 'uppercase') return line.toUpperCase();
+                if (textTransform === 'lowercase') return line.toLowerCase();
+                if (textTransform === 'capitalize') return line.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                return line;
+              });
+            }
+
+            // Set text alignment
+            let textX = canvas.width / 2; // Default center alignment
+            if (textAlign === 'left') {
+              ctx.textAlign = 'left';
+              textX = bgX + paddingValue;
+            } else if (textAlign === 'right') {
+              ctx.textAlign = 'right';
+              textX = bgX + boxWidthPx - paddingValue;
+            } else {
+              ctx.textAlign = 'center';
+            }
+
+            // Apply letter spacing if needed
+            ctx.letterSpacing = `${letterSpacing}px`;
 
             // Draw text
             ctx.fillStyle = textColor;
-            lines.forEach((line, index) => {
-              const y = bgY + 15 + (index * lineHeight);
-              ctx.fillText(line, canvas.width / 2, y);
+
+            // Apply text shadow if enabled
+            if (textShadow === true || textShadow === 'true') {
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+              ctx.shadowBlur = 2;
+              ctx.shadowOffsetX = 1;
+              ctx.shadowOffsetY = 1;
+            } else {
+              ctx.shadowColor = 'transparent';
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetX = 0;
+              ctx.shadowOffsetY = 0;
+            }
+
+            processedLines.forEach((line, index) => {
+              const y = bgY + paddingValue + (index * lineHeight) + parseInt(fontSize) * 0.7; // Adjust for better vertical centering
+              ctx.fillText(line, textX, y);
             });
           }
         };

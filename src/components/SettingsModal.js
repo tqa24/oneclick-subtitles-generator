@@ -49,11 +49,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
+  const [loadingCacheInfo, setLoadingCacheInfo] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
-  const [cacheDetails, setCacheDetails] = useState(null); // Store cache deletion details
+  const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [userPromptPresets, setUserPromptPresets] = useState([]); // User-created prompt presets
@@ -87,7 +88,44 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     setSegmentOffsetCorrection(savedOffsetCorrection);
     setTranscriptionPrompt(savedTranscriptionPrompt);
     setUserPromptPresets(savedUserPresets);
+
+    // Fetch cache information when component mounts
+    fetchCacheInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Function to fetch cache information
+  const fetchCacheInfo = async () => {
+    setLoadingCacheInfo(true);
+    setCacheStatus({ message: '', type: '' }); // Reset status message
+
+    try {
+      const response = await fetch('http://localhost:3004/api/cache-info');
+      const data = await response.json();
+
+      if (data.success) {
+        setCacheDetails(data.details);
+
+        // If cache is empty, show a message
+        if (data.details.totalCount === 0) {
+          setCacheStatus({
+            message: t('settings.cacheEmpty', 'Cache is empty. No files to clear.'),
+            type: 'info'
+          });
+        }
+      } else {
+        throw new Error(data.error || 'Failed to fetch cache information');
+      }
+    } catch (error) {
+      console.error('Error fetching cache info:', error);
+      setCacheStatus({
+        message: t('settings.cacheInfoError', 'Error fetching cache information: {{errorMessage}}', { errorMessage: error.message }),
+        type: 'error'
+      });
+    } finally {
+      setLoadingCacheInfo(false);
+    }
+  };
 
   // Handle selecting a preset
   const handleSelectPreset = (prompt) => {
@@ -267,6 +305,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
             message: t('settings.cacheClearedSuccess', 'Cache cleared successfully!'),
             type: 'success'
           });
+
+          // Fetch updated cache info if details weren't returned
+          fetchCacheInfo();
         }
       } else {
         throw new Error(data.error || 'Failed to clear cache');
@@ -277,6 +318,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
         message: t('settings.cacheClearError', 'Error clearing cache: {{errorMessage}}', { errorMessage: error.message }),
         type: 'error'
       });
+
+      // Fetch updated cache info even if there was an error
+      fetchCacheInfo();
     } finally {
       setClearingCache(false);
     }
@@ -344,39 +388,40 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
         )}
         <div className="settings-header">
           <h2>{t('settings.title', 'Settings')}</h2>
-          <button className="close-btn" onClick={onClose}>&times;</button>
-        </div>
 
-        {/* Tab Navigation */}
-        <div className="settings-tabs">
-          <button
-            className={`settings-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
-            onClick={() => setActiveTab('api-keys')}
-          >
-            <ApiKeyIcon />
-            {t('settings.apiKeys', 'API Keys')}
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'video-processing' ? 'active' : ''}`}
-            onClick={() => setActiveTab('video-processing')}
-          >
-            <ProcessingIcon />
-            {t('settings.videoProcessing', 'Video Processing')}
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'prompts' ? 'active' : ''}`}
-            onClick={() => setActiveTab('prompts')}
-          >
-            <PromptIcon />
-            {t('settings.prompts', 'Prompts')}
-          </button>
-          <button
-            className={`settings-tab ${activeTab === 'cache' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cache')}
-          >
-            <CacheIcon />
-            {t('settings.cache', 'Cache')}
-          </button>
+          {/* Tab Navigation */}
+          <div className="settings-tabs">
+            <button
+              className={`settings-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
+              onClick={() => setActiveTab('api-keys')}
+            >
+              <ApiKeyIcon />
+              {t('settings.apiKeys', 'API Keys')}
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'video-processing' ? 'active' : ''}`}
+              onClick={() => setActiveTab('video-processing')}
+            >
+              <ProcessingIcon />
+              {t('settings.videoProcessing', 'Video Processing')}
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'prompts' ? 'active' : ''}`}
+              onClick={() => setActiveTab('prompts')}
+            >
+              <PromptIcon />
+              {t('settings.prompts', 'Prompts')}
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'cache' ? 'active' : ''}`}
+              onClick={() => setActiveTab('cache')}
+            >
+              <CacheIcon />
+              {t('settings.cache', 'Cache')}
+            </button>
+          </div>
+
+          <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
         <div className="settings-content">
@@ -867,48 +912,96 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
           {/* Cache Management Tab Content */}
           <div className={`settings-tab-content ${activeTab === 'cache' ? 'active' : ''}`}>
             <div className="settings-section cache-section">
-              <h3>{t('settings.cache', 'Cache Management')}</h3>
-              <p className="cache-description">
-                {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
-              </p>
-
-              {/* Cache status message */}
-              {cacheStatus.message && (
-                <div className={`cache-status-message status-${cacheStatus.type}`}>
-                  {cacheStatus.message}
+              <div className="cache-content">
+                <div className="cache-section-header">
+                  <h3>{t('settings.cache', 'Cache Management')}</h3>
+                  <button
+                    className="refresh-cache-btn"
+                    onClick={fetchCacheInfo}
+                    disabled={loadingCacheInfo}
+                    title={t('settings.refreshCacheTooltip', 'Refresh cache information')}
+                  >
+                    <span className="refresh-icon">↻</span>
+                    {t('settings.refresh', 'Refresh')}
+                  </button>
                 </div>
-              )}
+                <p className="cache-description">
+                  {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
+                </p>
 
-              {/* Cache details */}
-              {cacheDetails && (
-                <div className="cache-details">
-                  <div className="cache-details-item">
-                    <h4>{t('settings.videosCleared', 'Videos')}:</h4>
-                    <p>
-                      {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
-                      ({cacheDetails.videos?.formattedSize || '0 Bytes'})
-                    </p>
+                {/* Cache status message */}
+                {cacheStatus.message && (
+                  <div className={`cache-status-message status-${cacheStatus.type}`}>
+                    {cacheStatus.message}
                   </div>
+                )}
 
-                  <div className="cache-details-item">
-                    <h4>{t('settings.subtitlesCleared', 'Subtitles')}:</h4>
-                    <p>
-                      {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
-                      ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
-                    </p>
+                {/* Cache details */}
+                {cacheDetails && !loadingCacheInfo && (
+                  <div className="cache-details">
+                    <div className="cache-details-header">
+                      <h4>{t('settings.cacheInfo', 'Cache Information')}</h4>
+                    </div>
+
+                    <div className="cache-details-summary">
+                      <p className="cache-total">
+                        <strong>{t('settings.totalCache', 'Total Cache')}:</strong> {cacheDetails.totalCount} {t('settings.files', 'files')} ({cacheDetails.formattedTotalSize})
+                      </p>
+                    </div>
+
+                    <div className="cache-details-item">
+                      <h4>{t('settings.videos', 'Videos')}:</h4>
+                      <p>
+                        {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
+                        ({cacheDetails.videos?.formattedSize || '0 Bytes'})
+                      </p>
+                    </div>
+
+                    <div className="cache-details-item">
+                      <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
+                      <p>
+                        {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
+                        ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
+                      </p>
+                    </div>
+
+
                   </div>
-                </div>
-              )}
+                )}
 
-              <button
-                className="clear-cache-btn"
-                onClick={handleClearCache}
-                disabled={clearingCache}
-              >
-                {clearingCache
-                  ? t('settings.clearingCache', 'Clearing Cache...')
-                  : t('settings.clearCache', 'Clear Cache')}
-              </button>
+                {/* Loading indicator */}
+                {loadingCacheInfo && (
+                  <div className="cache-loading">
+                    <p>{t('settings.loadingCache', 'Loading cache information...')}</p>
+                  </div>
+                )}
+
+                {/* Empty cache info when no details are shown */}
+                {!cacheDetails && !cacheStatus.message && !loadingCacheInfo && (
+                  <div className="empty-cache-info">
+                    <p>{t('settings.cacheEmpty', 'No cache information available.')}</p>
+                    <button
+                      className="refresh-cache-btn"
+                      onClick={fetchCacheInfo}
+                      disabled={loadingCacheInfo}
+                    >
+                      {t('settings.refreshCache', 'Refresh Cache Info')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="cache-actions">
+                <button
+                  className="clear-cache-btn"
+                  onClick={handleClearCache}
+                  disabled={clearingCache}
+                >
+                  {clearingCache
+                    ? t('settings.clearingCache', 'Clearing Cache...')
+                    : t('settings.clearCache', 'Clear Cache')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

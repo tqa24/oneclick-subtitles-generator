@@ -1,4 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans:wght@400;500;700&family=Noto+Serif:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap');
+/* Vietnamese fonts */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lexend:wght@400;500;600&family=Montserrat+Alternates:wght@400;500;600&family=Sarabun:wght@400;500;600&family=Josefin+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Vietnamese:wght@400;500;600&display=swap');
 @import url('./material-tokens.css');
 
 /* index.css - Global styles for the application */
@@ -41,10 +46,12 @@
   --md-state-pressed-opacity: 12%;
   --md-state-dragged-opacity: 16%;
 
-  /* RGB values for shadow effects */
+  /* RGB values for shadow effects and transparency */
   --md-primary-rgb: 103, 80, 164; /* Purple 600 */
   --md-tertiary-rgb: 0, 110, 144; /* Teal 700 */
   --md-surface-rgb: 255, 251, 254; /* Light mode surface */
+  --md-surface-1-rgb: 248, 242, 249; /* Light mode surface 1 */
+  --md-outline-variant-rgb: 121, 116, 126; /* Light mode outline variant */
 }
 
 /* Dark theme variables are now handled by Material Design 3 tokens */
@@ -60,6 +67,8 @@
 
   /* Dark mode RGB values */
   --md-surface-rgb: 28, 27, 31; /* Dark mode surface */
+  --md-surface-1-rgb: 36, 35, 39; /* Dark mode surface 1 */
+  --md-outline-variant-rgb: 73, 69, 79; /* Dark mode outline variant */
 }
 
 /* Material Design 3 typography */

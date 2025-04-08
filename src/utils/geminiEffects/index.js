@@ -87,7 +87,6 @@ export const resetAllGeminiButtonEffects = () => {
   // Clear the initialized buttons set
   initializedButtons.clear();
 
-  console.log('Reset all Gemini button effects');
 
   // Re-initialize the effects
   initGeminiButtonEffects();

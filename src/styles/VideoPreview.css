@@ -12,6 +12,7 @@
   align-items: center;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border-color);
+  position: relative; /* Ensure proper positioning context for the subtitle settings panel */
 }
 
 .video-preview-header h3 {
@@ -161,17 +162,21 @@
   right: 0;
   background-color: var(--background-color, rgba(0, 0, 0, 0.7));
   color: var(--text-color, white);
-  text-align: center;
-  padding: 12px;
+  text-align: var(--text-align, center);
+  padding: var(--background-padding, 12px);
   margin: 0 auto;
   max-width: var(--box-width, 90%);
   z-index: 2;
-  border-radius: 4px;
+  border-radius: var(--background-radius, 4px);
   font-size: var(--font-size, 16px);
   font-family: var(--font-family, Arial, sans-serif);
   font-weight: var(--font-weight, 400);
-  line-height: 1.4;
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  line-height: var(--line-spacing, 1.4);
+  letter-spacing: var(--letter-spacing, 0px);
+  text-transform: var(--text-transform, none);
+  text-shadow: var(--text-shadow, 1px 1px 1px rgba(0, 0, 0, 0.5));
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .player-notice {

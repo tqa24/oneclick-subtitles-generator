@@ -430,6 +430,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                   '--box-width': `${subtitleSettings.boxWidth}%`,
                   '--background-color': `rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity})`,
                   '--text-color': subtitleSettings.textColor,
+                  '--text-align': subtitleSettings.textAlign || 'center',
+                  '--text-transform': subtitleSettings.textTransform || 'none',
+                  '--line-spacing': subtitleSettings.lineSpacing || '1.4',
+                  '--letter-spacing': `${subtitleSettings.letterSpacing || '0'}px`,
+                  '--background-radius': `${subtitleSettings.backgroundRadius || '4'}px`,
+                  '--background-padding': `${subtitleSettings.backgroundPadding || '10'}px`,
+                  '--text-shadow': subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none',
                   bottom: 'auto',
                   top: `${subtitleSettings.position}%`,
                   transform: 'translateY(-100%)'

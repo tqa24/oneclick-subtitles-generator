@@ -1,0 +1,72 @@
+/* Scrollbar fix to ensure it's contained within the rounded container */
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.settings-content::-webkit-scrollbar {
+  width: 8px;
+  /* Hide the scrollbar at the bottom */
+  height: calc(100% - 16px);
+}
+
+.settings-content::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 4px;
+  margin: 4px;
+  /* Hide the track at the bottom */
+  margin-bottom: 16px;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+  border: 2px solid var(--background-secondary);
+  /* Hide the thumb at the bottom */
+  max-height: calc(100% - 16px);
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
+/* Ensure the content respects the border radius */
+.settings-content {
+  border-radius: 0;
+  margin-bottom: 4px;
+  padding-bottom: 20px; /* Increased padding at the bottom */
+  /* Clip the content to the padding box */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Add a mask to clip the scrollbar at the bottom */
+  mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 20px), transparent 100%);
+}
+
+/* Fix for Firefox */
+@supports (scrollbar-width: thin) {
+  .settings-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--background-secondary);
+  }
+}
+
+/* Fix for the modal container */
+.settings-modal {
+  overflow: hidden;
+  /* Create a containing block for absolute positioning */
+  position: relative;
+  /* Fix for scrollbar appearing outside border radius */
+  transform: translateZ(0);
+  will-change: transform;
+  /* Ensure the modal has proper border radius */
+  border-radius: var(--modal-border-radius) !important;
+  /* Add a clip path to ensure content doesn't overflow the border radius */
+  clip-path: inset(0 0 0 0 round var(--modal-border-radius));
+}
+
+/* Fix for the footer to ensure it has proper border radius */
+.settings-footer {
+  position: relative;
+  z-index: 1;
+  border-bottom-left-radius: var(--modal-border-radius);
+  border-bottom-right-radius: var(--modal-border-radius);
+  background-color: var(--background-primary);
+}

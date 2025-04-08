@@ -159,7 +159,6 @@ const LyricsDisplay = ({
       // Center the timeline on the seek time
       setCenterTimelineAt(seekTime);
 
-      console.log(`Centering timeline on video seek: ${seekTime}s`);
     }
   }, [seekTime]);
 

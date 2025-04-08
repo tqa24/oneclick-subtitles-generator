@@ -32,7 +32,6 @@
 .gemini-model-select,
 .time-format-select {
   width: 100%;
-  max-width: 400px;
   padding: 0.75rem 1rem;
   border-radius: var(--md-shape-pill);
   border: 1px solid var(--md-outline-variant);

@@ -12,7 +12,6 @@ const CORS_ORIGIN = 'http://localhost:3005';
 
 // Directory paths
 const VIDEOS_DIR = path.join(__dirname, '..', 'videos');
-const SEGMENTS_DIR = path.join(__dirname, '..', 'segments');
 const SUBTITLES_DIR = path.join(__dirname, '..', 'subtitles');
 
 // Ensure directories exist
@@ -35,7 +34,6 @@ module.exports = {
   SERVER_URL,
   CORS_ORIGIN,
   VIDEOS_DIR,
-  SEGMENTS_DIR,
   SUBTITLES_DIR,
   ensureDirectories
 };

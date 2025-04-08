@@ -3,6 +3,88 @@
 /* Cache section */
 .cache-section {
   margin-top: 1.5rem;
+  min-height: 400px; /* Ensure the cache section has a minimum height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Push content to top and actions to bottom */
+  height: 100%; /* Take full height of parent */
+}
+
+.cache-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cache-section-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.cache-content {
+  flex: 1; /* Take available space */
+}
+
+.cache-actions {
+  margin-top: auto; /* Push to bottom */
+  padding-top: 20px; /* Add some space above the button */
+}
+
+.empty-cache-info {
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-cache-info p {
+  margin: 0 0 8px 0;
+}
+
+/* Loading indicator */
+.cache-loading {
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  padding: 16px 20px;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  text-align: center;
+  position: relative;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cache-loading p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cache-loading p::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--md-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .cache-description {
@@ -22,6 +104,93 @@
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.cache-details-header {
+  margin-bottom: 16px;
+}
+
+.cache-details-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.cache-details-summary {
+  background-color: var(--md-surface-2);
+  border-radius: var(--card-border-radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.cache-total {
+  margin: 0;
+  font-size: var(--md-body-medium-size);
+  color: var(--text-primary);
+}
+
+.refresh-cache-btn {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--md-shape-pill);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.refresh-cache-btn:hover {
+  background-color: var(--md-surface-2);
+}
+
+.refresh-cache-btn:active {
+  transform: scale(0.98);
+}
+
+.refresh-cache-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refresh-icon {
+  font-size: 1rem;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.refresh-cache-btn:hover .refresh-icon {
+  transform: rotate(180deg);
+}
+
+/* Cache status message */
+.cache-status-message {
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: var(--card-border-radius);
+  font-size: var(--md-body-medium-size);
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.cache-status-message.status-success {
+  background-color: var(--success-background);
+  color: var(--success-color);
+  border-left: 4px solid var(--success-color);
+}
+
+.cache-status-message.status-error {
+  background-color: var(--error-background);
+  color: var(--error-color);
+  border-left: 4px solid var(--error-color);
+}
+
+.cache-status-message.status-info {
+  background-color: var(--info-background, rgba(33, 150, 243, 0.1));
+  color: var(--info-color, #2196f3);
+  border-left: 4px solid var(--info-color, #2196f3);
 }
 
 .cache-details-item {

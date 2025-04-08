@@ -48,7 +48,6 @@ export const centerTimelineOnTime = (
     lastManualPanTime.current = performance.now();
   }
 
-  console.log(`Centered timeline on time: ${time}s, new offset: ${newPanOffset}`);
 };
 
 /**
