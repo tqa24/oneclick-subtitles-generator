@@ -76,6 +76,30 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - Google Gemini API key
 - Google YouTube API key (optional, for YouTube search functionality)
 
+### Easy Windows Installation (using winget)
+
+#### Install FFmpeg:
+```powershell
+winget install --id Gyan.FFmpeg -e --source winget --accept-package-agreements --accept-source-agreements
+```
+
+Verify installation: Open a NEW PowerShell or Command Prompt window and run:
+```powershell
+ffmpeg -version
+```
+
+#### Install Node.js:
+```powershell
+winget install --id OpenJS.NodeJS -e --source winget --accept-package-agreements --accept-source-agreements
+```
+
+IMPORTANT: Close the current PowerShell window.
+Open a NEW PowerShell or Command Prompt window and verify installation:
+```powershell
+node -v
+npm -v
+```
+
 ## Installation
 
 1. Clone this repository or download the source code
