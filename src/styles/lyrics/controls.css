@@ -38,7 +38,7 @@
 }
 
 /* Material Design 3 pill-shaped buttons */
-.undo-btn, .redo-btn, .reset-btn {
+.lyrics-save-btn, .undo-btn, .redo-btn, .reset-btn {
   background-color: transparent;
   border: none;
   border-radius: 50%;
@@ -61,7 +61,7 @@
   min-width: 24px;
 }
 
-.undo-btn svg, .redo-btn svg, .reset-btn svg {
+.lyrics-save-btn svg, .undo-btn svg, .redo-btn svg, .reset-btn svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
@@ -69,7 +69,7 @@
 }
 
 /* State layer for hover effect */
-.undo-btn::before, .redo-btn::before, .reset-btn::before {
+.lyrics-save-btn::before, .undo-btn::before, .redo-btn::before, .reset-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -82,15 +82,15 @@
   border-radius: 50%;
 }
 
-.undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before {
+.lyrics-save-btn:hover::before, .undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
-.undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before {
+.lyrics-save-btn:active::before, .undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
-.undo-btn:hover, .redo-btn:hover, .reset-btn:hover {
+.lyrics-save-btn:hover, .undo-btn:hover, .redo-btn:hover, .reset-btn:hover {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   transform: scale(1.1);
@@ -108,7 +108,11 @@
   transform: rotate(45deg);
 }
 
-.undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled {
+.lyrics-save-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.lyrics-save-btn:disabled, .undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;

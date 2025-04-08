@@ -22,7 +22,6 @@ export { retrySegmentProcessing };
 export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
     // Determine if this is a video or audio file based on MIME type
     const isAudio = mediaFile.type.startsWith('audio/');
-    const isVideo = mediaFile.type.startsWith('video/');
     const mediaType = isAudio ? 'audio' : 'video';
     // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
     const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
@@ -33,12 +32,13 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
     const segmentStatusArray = [];
 
     // Function to update segment status
-    const updateSegmentStatus = (index, status, message) => {
+    const updateSegmentStatus = (index, status, message, timeRange = null) => {
         // Update the status array
         segmentStatusArray[index] = {
             index,
             status,
             message,
+            timeRange,
             // Use simple status indicators without segment numbers
             shortMessage: status === 'loading' ? t('output.processing') :
                          status === 'success' ? t('output.done') :
@@ -69,7 +69,19 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
 
         // Initialize segment status array with pending status
         for (let i = 0; i < numSegments; i++) {
-            updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'));
+            // Calculate theoretical time range for initial display
+            const startTime = i * getMaxSegmentDurationSeconds();
+            const endTime = Math.min((i + 1) * getMaxSegmentDurationSeconds(), duration);
+
+            // Format time range for display
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+
+            updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
         }
 
         // Notify user about long media processing
@@ -122,7 +134,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
 
             // Initialize all segments as pending but don't process them
             segments.forEach((segment, i) => {
-                updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'));
+                // Calculate time range for this segment
+                const startTime = segment.startTime !== undefined ? segment.startTime : i * getMaxSegmentDurationSeconds();
+                const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+                const endTime = startTime + segmentDuration;
+
+                // Format time range for display
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = Math.floor(seconds % 60);
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+                const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+
+                updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
             });
 
             // Create an empty array for subtitles that will be filled as segments are processed
@@ -145,16 +170,28 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             // This is critical for correct subtitle stitching with stream-copy segments
             const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
             const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+            const endTime = startTime + segmentDuration;
+
+            // Format time range for display
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
             // Log detailed information about this segment's timing
             console.log(`Processing segment ${segmentIndex + 1}:`);
-            console.log(`  Using startTime=${startTime.toFixed(2)}s, duration=${segmentDuration.toFixed(2)}s, endTime=${(startTime + segmentDuration).toFixed(2)}s`);
+            console.log(`  Using startTime=${startTime.toFixed(2)}s, duration=${segmentDuration.toFixed(2)}s, endTime=${endTime.toFixed(2)}s`);
 
             if (segment.startTime !== undefined) {
                 const theoreticalStart = segmentIndex * getMaxSegmentDurationSeconds();
                 console.log(`  Actual start time differs from theoretical by ${(startTime - theoreticalStart).toFixed(2)}s`);
                 console.log(`  This ensures correct subtitle timing when segments have variable durations`);
             }
+
+            // Update the segment status with time range
+            updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
 
             // Generate cache ID for this segment
             const segmentCacheId = `segment_${segment.name}`;
@@ -178,16 +215,16 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 }
 
                 // If not cached, process the segment
-                updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'));
+                updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'), timeRange);
                 // Determine if this is a video or audio file
                 const isAudio = mediaFile.type.startsWith('audio/');
                 const mediaType = isAudio ? 'audio' : 'video';
                 const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType);
-                updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'));
+                updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'), timeRange);
                 return result;
             } catch (error) {
                 console.error(`Error processing segment ${i+1}:`, error);
-                updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'));
+                updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'), timeRange);
                 throw error; // Re-throw to be caught by Promise.allSettled
             }
         });

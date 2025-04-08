@@ -71,8 +71,8 @@
   border: 1px solid var(--md-outline-variant);
   position: relative;
   overflow: visible; /* Changed from hidden to ensure buttons are clickable */
-  /* Fixed height to prevent layout shifts */
-  height: 60px;
+  /* Fixed height to prevent layout shifts, increased to accommodate time range */
+  height: 70px;
 }
 
 /* Material Design 3 hover state - enhanced styling */
@@ -119,16 +119,33 @@
   margin-right: 12px;
 }
 
+.segment-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+  margin-right: 8px; /* Add space for the retry button */
+  max-width: calc(100% - 60px); /* Ensure there's space for the retry button */
+}
+
 .segment-message {
   font-size: var(--md-body-small-size);
   line-height: var(--md-body-small-height);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-grow: 1;
   color: var(--md-on-surface-variant);
-  margin-right: 8px; /* Add space for the retry button */
-  max-width: calc(100% - 60px); /* Ensure there's space for the retry button */
+}
+
+.segment-time-range {
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--md-on-surface-variant);
+  opacity: 0.8;
+  margin-top: 2px;
 }
 
 /* Status colors using CSS variables */
@@ -221,6 +238,11 @@
   z-index: 100;
 }
 
+/* When dropdown is open, ensure container has higher z-index */
+.model-dropdown-open .model-retry-dropdown-container {
+  z-index: 99999; /* Match the dropdown z-index */
+}
+
 /* Dropdown icon */
 .dropdown-icon {
   margin-left: 2px;
@@ -235,7 +257,7 @@
   border-radius: var(--md-shape-medium);
   box-shadow: var(--md-elevation-level3);
   border: 1px solid var(--md-outline-variant);
-  z-index: 9999;
+  z-index: 99999; /* Very high z-index to ensure it's above everything */
   overflow: hidden;
   /* Add animation for smooth appearance */
   animation: dropdown-appear 0.2s var(--md-easing-emphasized) forwards;
@@ -368,6 +390,16 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   /* Slightly darker background for feedback */
   opacity: 0.9;
+}
+
+/* When a dropdown is open, ensure other retry buttons don't overlap */
+.model-dropdown-open .segment-retry-btn:not(:focus):not(:hover) {
+  z-index: 50 !important; /* Lower z-index when dropdown is open */
+}
+
+/* Keep the active dropdown button above others */
+.active-dropdown-btn {
+  z-index: 100000 !important; /* Higher than the dropdown */
 }
 
 /* Material Design 3 retrying indicator */

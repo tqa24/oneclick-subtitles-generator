@@ -6,7 +6,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
+const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -32,6 +32,17 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
     setEditedLyrics(updatedLyrics);
   };
 
+  // Handle saving subtitles
+  const handleSaveSubtitles = (savedLyrics) => {
+    // Update the edited lyrics state with the saved lyrics
+    setEditedLyrics(savedLyrics);
+    // Also update the subtitlesData in the parent component
+    // This ensures that if the page is reloaded, the saved subtitles will be used
+    if (setSubtitlesData) {
+      setSubtitlesData(savedLyrics);
+    }
+  };
+
   const formatSubtitlesForLyricsDisplay = (subtitles) => {
     // If we have edited lyrics, use those instead of the original subtitles
     const sourceData = editedLyrics || subtitles;
@@ -41,6 +52,9 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
       endTime: sub.end
     })) || [];
   };
+
+  // When subtitles are loaded from cache, they should be considered as the source of truth
+  // This ensures that saved edits are properly loaded when the page is reloaded
 
   // Download functionality moved to LyricsDisplay component
 
@@ -124,6 +138,7 @@ const OutputContainer = ({ status, subtitlesData, selectedVideo, uploadedFile, i
               currentTime={currentTabIndex}
               onLyricClick={handleLyricClick}
               onUpdateLyrics={handleUpdateLyrics}
+              onSaveSubtitles={handleSaveSubtitles}
               allowEditing={true}
               duration={videoDuration}
               seekTime={seekTime}

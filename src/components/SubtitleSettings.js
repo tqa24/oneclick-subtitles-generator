@@ -7,7 +7,9 @@ const SubtitleSettings = ({
   onSettingsChange,
   onDownloadWithSubtitles,
   onDownloadWithTranslatedSubtitles,
-  hasTranslation
+  hasTranslation,
+  translatedSubtitles,
+  targetLanguage
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(() => {
@@ -15,6 +17,19 @@ const SubtitleSettings = ({
     const savedIsOpen = localStorage.getItem('subtitle_settings_panel_open');
     return savedIsOpen === 'true';
   });
+
+  const [subtitleLanguage, setSubtitleLanguage] = useState(() => {
+    // Load subtitle language from localStorage
+    const savedLanguage = localStorage.getItem('subtitle_language');
+    return savedLanguage || 'original';
+  });
+
+  // Update subtitle language when translation becomes available
+  useEffect(() => {
+    if (hasTranslation && settings.showTranslatedSubtitles) {
+      setSubtitleLanguage('translated');
+    }
+  }, [hasTranslation, settings.showTranslatedSubtitles]);
 
   // State for transparent background toggle
   const [isTransparent, setIsTransparent] = useState(() => {
@@ -44,6 +59,18 @@ const SubtitleSettings = ({
 
     // Update state via parent component
     onSettingsChange(updatedSettings);
+  };
+
+  const handleSubtitleLanguageChange = (e) => {
+    const value = e.target.value;
+    setSubtitleLanguage(value);
+
+    // Update the showTranslatedSubtitles setting
+    const showTranslated = value === 'translated';
+    handleSettingChange('showTranslatedSubtitles', showTranslated);
+
+    // Save the selected language to localStorage
+    localStorage.setItem('subtitle_language', value);
   };
 
   const fontOptions = [
@@ -203,6 +230,28 @@ const SubtitleSettings = ({
           </div>
 
           <div className="settings-content">
+            {/* Subtitle Language Selector - Always shown at the top */}
+            <div className="setting-group subtitle-language-group">
+              <label htmlFor="subtitle-language">{t('subtitleSettings.subtitleLanguage', 'Subtitle Language')}</label>
+              <select
+                id="subtitle-language"
+                value={subtitleLanguage}
+                onChange={handleSubtitleLanguageChange}
+                className="subtitle-language-select"
+                disabled={!hasTranslation}
+              >
+                <option value="original">{t('subtitleSettings.original', 'Original')}</option>
+                {hasTranslation && (
+                  <option value="translated">
+                    {t('subtitleSettings.translated', 'Translated')}
+                    {targetLanguage ? ` (${targetLanguage})` : ''}
+                  </option>
+                )}
+              </select>
+            </div>
+
+            <hr className="settings-divider" />
+
             {/* Column Headers - Only shown in transparent mode */}
             {isTransparent && (
               <>
@@ -487,7 +536,8 @@ const SubtitleSettings = ({
                   letterSpacing: '0',
                   backgroundRadius: '4',
                   backgroundPadding: '10',
-                  textShadow: false
+                  textShadow: false,
+                  showTranslatedSubtitles: false
                 };
 
                 // Save default settings to localStorage

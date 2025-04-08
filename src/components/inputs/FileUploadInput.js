@@ -81,6 +81,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
       if (validateFile(file)) {
         // Clear ALL video-related storage first
         localStorage.removeItem('current_video_url');
+        localStorage.removeItem('current_file_cache_id');
         if (localStorage.getItem('current_file_url')) {
           URL.revokeObjectURL(localStorage.getItem('current_file_url'));
           localStorage.removeItem('current_file_url');

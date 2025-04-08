@@ -5,7 +5,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
   const [originalLyrics, setOriginalLyrics] = useState([]);
+  const [savedLyrics, setSavedLyrics] = useState([]);
   const [isAtOriginalState, setIsAtOriginalState] = useState(true);
+  const [isAtSavedState, setIsAtSavedState] = useState(true);
   const [isSticky, setIsSticky] = useState(true);
 
   const dragInfo = useRef({
@@ -24,9 +26,13 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (originalLyrics.length === 0) {
         setOriginalLyrics(JSON.parse(JSON.stringify(initialLyrics)));
       }
+      if (savedLyrics.length === 0) {
+        setSavedLyrics(JSON.parse(JSON.stringify(initialLyrics)));
+      }
       setIsAtOriginalState(JSON.stringify(initialLyrics) === JSON.stringify(originalLyrics));
+      setIsAtSavedState(JSON.stringify(initialLyrics) === JSON.stringify(savedLyrics));
     }
-  }, [initialLyrics, originalLyrics]);
+  }, [initialLyrics, originalLyrics, savedLyrics]);
 
   // Track whether current lyrics match original lyrics
   useEffect(() => {
@@ -44,6 +50,23 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       setIsAtOriginalState(areEqual);
     }
   }, [lyrics, originalLyrics]);
+
+  // Track whether current lyrics match saved lyrics
+  useEffect(() => {
+    if (savedLyrics.length > 0) {
+      const areEqual = lyrics.length === savedLyrics.length &&
+        lyrics.every((lyric, index) => {
+          const savedLyric = savedLyrics[index];
+          return (
+            lyric.text === savedLyric.text &&
+            Math.abs(lyric.start - savedLyric.start) < 0.001 &&
+            Math.abs(lyric.end - savedLyric.end) < 0.001
+          );
+        });
+
+      setIsAtSavedState(areEqual);
+    }
+  }, [lyrics, savedLyrics]);
 
   const handleUndo = () => {
     if (history.length > 0) {
@@ -93,21 +116,21 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   }, [redoStack, lyrics, onUpdateLyrics]);
 
   const handleReset = () => {
-    if (originalLyrics.length > 0) {
+    if (savedLyrics.length > 0) {
       const currentState = JSON.parse(JSON.stringify(lyrics));
-      const originalState = JSON.parse(JSON.stringify(originalLyrics));
+      const savedState = JSON.parse(JSON.stringify(savedLyrics));
 
-      if (JSON.stringify(currentState) !== JSON.stringify(originalState)) {
+      if (JSON.stringify(currentState) !== JSON.stringify(savedState)) {
         // Add current state to history
         setHistory(prevHistory => [...prevHistory, currentState]);
 
         // Clear redo stack when resetting
         setRedoStack([]);
 
-        // Set lyrics to original state
-        setLyrics(originalState);
+        // Set lyrics to saved state instead of original state
+        setLyrics(savedState);
         if (onUpdateLyrics) {
-          onUpdateLyrics(originalState);
+          onUpdateLyrics(savedState);
         }
       }
     }
@@ -268,6 +291,22 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
 
   const getLastDragEnd = () => dragInfo.current.lastDragEnd;
 
+  // Helper function to show translation warning
+  const showTranslationWarning = (message) => {
+    try {
+      const hasTranslation = localStorage.getItem('translation_target_language');
+      if (hasTranslation) {
+        // Show a warning toast that translations may be outdated
+        const warningEvent = new CustomEvent('translation-warning', {
+          detail: { message }
+        });
+        window.dispatchEvent(warningEvent);
+      }
+    } catch (error) {
+      console.error('Error checking for translations:', error);
+    }
+  };
+
   const handleDeleteLyric = (index) => {
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
     const updatedLyrics = lyrics.filter((_, i) => i !== index);
@@ -275,6 +314,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     if (onUpdateLyrics) {
       onUpdateLyrics(updatedLyrics);
     }
+
+    // Show warning about translations
+    showTranslationWarning('You have deleted a subtitle. Translations may be outdated. Please translate again.');
   };
 
   const handleTextEdit = (index, newText) => {
@@ -286,6 +328,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     if (onUpdateLyrics) {
       onUpdateLyrics(updatedLyrics);
     }
+
+    // Show warning about translations
+    showTranslationWarning('You have edited the text of original subtitles. Translations may be outdated. Please translate again.');
   };
 
   const handleInsertLyric = (index) => {
@@ -310,6 +355,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (onUpdateLyrics) {
         onUpdateLyrics(updatedLyrics);
       }
+
+      // Show warning about translations
+      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
       return;
     }
 
@@ -334,6 +382,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (onUpdateLyrics) {
         onUpdateLyrics(updatedLyrics);
       }
+
+      // Show warning about translations
+      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
       return;
     }
 
@@ -377,6 +428,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (onUpdateLyrics) {
         onUpdateLyrics(finalLyrics);
       }
+
+      // Show warning about translations
+      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
     } else {
       // If gap is large enough, insert in the middle
       const midPoint = prevLyric.end + gap / 2;
@@ -396,6 +450,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       if (onUpdateLyrics) {
         onUpdateLyrics(updatedLyrics);
       }
+
+      // Show warning about translations
+      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
     }
   };
 
@@ -429,6 +486,9 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     if (onUpdateLyrics) {
       onUpdateLyrics(updatedLyrics);
     }
+
+    // Show warning about translations
+    showTranslationWarning('You have merged subtitles. Translations may be outdated. Please translate again.');
   };
 
   // Add event listener for redo action
@@ -444,11 +504,19 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     };
   }, [redoStack, lyrics, handleRedo]);
 
+  // Function to update the saved lyrics state when the user saves the subtitles
+  const updateSavedLyrics = () => {
+    const currentState = JSON.parse(JSON.stringify(lyrics));
+    setSavedLyrics(currentState);
+    setIsAtSavedState(true);
+  };
+
   return {
     lyrics,
     isSticky,
     setIsSticky,
     isAtOriginalState,
+    isAtSavedState,
     canUndo: history.length > 0,
     canRedo: redoStack.length > 0,
     handleUndo,
@@ -462,6 +530,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleDeleteLyric,
     handleTextEdit,
     handleInsertLyric,
-    handleMergeLyrics
+    handleMergeLyrics,
+    updateSavedLyrics
   };
 };

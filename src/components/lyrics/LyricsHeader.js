@@ -8,9 +8,11 @@ const LyricsHeader = ({
   canUndo,
   canRedo,
   isAtOriginalState,
+  isAtSavedState,
   onUndo,
   onRedo,
   onReset,
+  onSave,
   zoom,
   setZoom,
   panOffset,
@@ -72,6 +74,18 @@ const LyricsHeader = ({
         {allowEditing && (
           <div className="editing-controls">
             <button
+              className="lyrics-save-btn"
+              onClick={onSave}
+              title={t('common.save', 'Save progress')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+            </button>
+
+            <button
               className="undo-btn"
               onClick={onUndo}
               disabled={!canUndo}
@@ -96,8 +110,8 @@ const LyricsHeader = ({
             <button
               className="reset-btn"
               onClick={onReset}
-              disabled={isAtOriginalState}
-              title={t('common.reset', 'Reset')}
+              disabled={isAtSavedState}
+              title={t('common.reset', 'Reset to saved state')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" preserveAspectRatio="xMidYMid meet">
                 <path d="M23 4v6h-6"/>

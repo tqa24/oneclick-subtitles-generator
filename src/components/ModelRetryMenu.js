@@ -134,9 +134,9 @@ const ModelRetryMenu = ({ segmentIndex, onRetryWithModel }) => {
   }, [onRetryWithModel, segmentIndex]);
 
   return (
-    <div className="model-retry-menu-container">
+    <div className={`model-retry-menu-container ${isOpen ? 'model-dropdown-open' : ''}`}>
       <button
-        className="segment-retry-btn model-retry-btn"
+        className={`segment-retry-btn model-retry-btn ${isOpen ? 'active-dropdown-btn' : ''}`}
         onClick={handleButtonClick}
         title={t('output.retryWithModel', 'Retry with different model')}
         ref={buttonRef}

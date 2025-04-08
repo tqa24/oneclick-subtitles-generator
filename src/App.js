@@ -7,6 +7,7 @@ import Header from './components/Header';
 import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
+import TranslationWarningToast from './components/TranslationWarningToast';
 import { useSubtitles } from './hooks/useSubtitles';
 import { downloadYoutubeVideo } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
@@ -567,6 +568,7 @@ function App() {
     setSubtitlesData(null); // Reset subtitles data
     localStorage.removeItem('current_video_url');
     localStorage.removeItem('current_file_url');
+    localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
   };
 
   return (
@@ -674,6 +676,7 @@ function App() {
           <OutputContainer
             status={status}
             subtitlesData={subtitlesData}
+            setSubtitlesData={setSubtitlesData} // Pass the setter function
             selectedVideo={selectedVideo}
             uploadedFile={uploadedFile}
             isGenerating={isGenerating}
@@ -697,6 +700,9 @@ function App() {
           setApiKeysSet={setApiKeysSet}
         />
       )}
+
+      {/* Toast for translation warnings */}
+      <TranslationWarningToast />
     </>
   );
 }

@@ -165,13 +165,15 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
  * @param {string} status - Status type
  * @param {string} message - Status message
  * @param {Function} t - Translation function
+ * @param {string} timeRange - Time range for the segment (optional)
  */
-export const updateSegmentStatus = (index, status, message, t) => {
+export const updateSegmentStatus = (index, status, message, t, timeRange = null) => {
     // Create the status object
     const segmentStatus = {
         index,
         status,
         message,
+        timeRange,
         shortMessage: status === 'loading' ? t('output.processing') :
                      status === 'success' ? t('output.done') :
                      status === 'error' ? t('output.failed') :

@@ -815,6 +815,46 @@ button {
   background-color: var(--md-surface);
 }
 
+/* Subtitle Language Selector Styles */
+.subtitle-language-group {
+  margin-bottom: 1.5rem;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  padding: 1rem;
+  border-radius: var(--md-shape-medium);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.subtitle-language-group label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  color: var(--md-on-primary-container);
+}
+
+.subtitle-language-select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: var(--md-shape-small);
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-1);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.subtitle-language-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-divider {
+  border: none;
+  border-top: 1px solid var(--md-outline-variant);
+  margin: 0.5rem 0 1.5rem;
+}
+
 /* Webkit (Chrome, Safari, Edge) scrollbar styles */
 .settings-content::-webkit-scrollbar {
   width: 6px;

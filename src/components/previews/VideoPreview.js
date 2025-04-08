@@ -9,6 +9,21 @@ import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
 import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
 
+// Helper function to convert SRT time format (00:00:00,000) to seconds
+const convertTimeStringToSeconds = (timeString) => {
+  if (!timeString) return 0;
+
+  const match = timeString.match(/^(\d+):(\d+):(\d+),(\d+)$/);
+  if (!match) return 0;
+
+  const hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const seconds = parseInt(match[3]);
+  const milliseconds = parseInt(match[4]);
+
+  return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+};
+
 const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
@@ -44,7 +59,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       boxWidth: '80',
       backgroundColor: '#000000',
       opacity: '0.7',
-      textColor: '#ffffff'
+      textColor: '#ffffff',
+      showTranslatedSubtitles: false
     };
   });
   // We track play state in lastPlayStateRef instead of using state to avoid unnecessary re-renders
@@ -352,10 +368,40 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     setError('');
 
     try {
-      // translatedSubtitles is already an array of subtitle objects
+      // Convert translatedSubtitles to the format expected by renderSubtitlesToVideo
+      // Use original subtitle timings when available
+      const formattedSubtitles = translatedSubtitles.map(sub => {
+        // If this subtitle has an originalId, find the corresponding original subtitle
+        if (sub.originalId && subtitlesArray) {
+          const originalSub = subtitlesArray.find(s => s.id === sub.originalId);
+          if (originalSub) {
+            // Use the original subtitle's timing
+            return {
+              id: sub.id,
+              start: originalSub.start,
+              end: originalSub.end,
+              text: sub.text
+            };
+          }
+        }
+
+        // If the subtitle already has start/end properties, use them
+        if (sub.start !== undefined && sub.end !== undefined) {
+          return sub;
+        }
+
+        // Otherwise, convert from startTime/endTime format
+        return {
+          id: sub.id,
+          start: convertTimeStringToSeconds(sub.startTime),
+          end: convertTimeStringToSeconds(sub.endTime),
+          text: sub.text
+        };
+      });
+
       const renderedVideoUrl = await renderSubtitlesToVideo(
         videoUrl,
-        translatedSubtitles,
+        formattedSubtitles,
         subtitleSettings,
         (progress) => setRenderProgress(progress)
       );
@@ -381,6 +427,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
           onDownloadWithSubtitles={handleDownloadWithSubtitles}
           onDownloadWithTranslatedSubtitles={handleDownloadWithTranslatedSubtitles}
           hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
+          translatedSubtitles={translatedSubtitles}
+          targetLanguage={translatedSubtitles && translatedSubtitles.length > 0 && translatedSubtitles[0].language}
         />
       </div>
 
@@ -442,7 +490,35 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                   transform: 'translateY(-100%)'
                 }}
               >
-                {subtitle}
+                {subtitleSettings.showTranslatedSubtitles && translatedSubtitles && translatedSubtitles.length > 0
+                  ? (() => {
+                      // First try to find a subtitle by matching with original subtitles
+                      const currentOriginalSubtitle = subtitlesArray?.find(s =>
+                        currentTime >= s.start && currentTime <= s.end
+                      );
+
+                      if (currentOriginalSubtitle) {
+                        // Find the translated subtitle that corresponds to this original subtitle
+                        const matchedTranslation = translatedSubtitles.find(t =>
+                          t.originalId === currentOriginalSubtitle.id
+                        );
+
+                        if (matchedTranslation) {
+                          return matchedTranslation.text;
+                        }
+                      }
+
+                      // Fallback to the old method if we can't find a match by ID
+                      const fallbackTranslation = translatedSubtitles.find(s => {
+                        // Handle both formats: start/end and startTime/endTime
+                        const start = s.start !== undefined ? s.start : convertTimeStringToSeconds(s.startTime);
+                        const end = s.end !== undefined ? s.end : convertTimeStringToSeconds(s.endTime);
+                        return currentTime >= start && currentTime <= end;
+                      });
+
+                      return fallbackTranslation?.text || '';
+                    })()
+                  : subtitle}
               </div>
             </div>
           ) : (

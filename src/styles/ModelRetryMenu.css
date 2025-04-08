@@ -4,6 +4,12 @@
   display: inline-block;
 }
 
+/* When dropdown is open, ensure container has higher z-index */
+.model-retry-menu-container.model-dropdown-open {
+  position: relative;
+  z-index: 99999; /* Match the dropdown z-index */
+}
+
 /* Modified retry button with dropdown indicator */
 .model-retry-btn {
   display: flex;

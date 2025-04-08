@@ -24,7 +24,17 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
 
     // Use the actual start time from the segment if available, otherwise fall back to theoretical calculation
     const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
+    const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+    const endTime = startTime + segmentDuration;
     const segmentCacheId = `segment_${segment.name}`;
+
+    // Format time range for display
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+    const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
     // Update status to show we're retrying this segment
     onStatusUpdate({
@@ -33,7 +43,7 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
     });
 
     // Update just this segment's status
-    updateSegmentStatus(segmentIndex, 'retrying', t('output.retryingSegment', 'Retrying segment...'), t);
+    updateSegmentStatus(segmentIndex, 'retrying', t('output.retryingSegment', 'Retrying segment...'), t, timeRange);
 
     try {
         // Process the segment
@@ -41,7 +51,7 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
         const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType);
 
         // Update status to show success
-        updateSegmentStatus(segmentIndex, 'success', t('output.processingComplete', 'Processing complete'), t);
+        updateSegmentStatus(segmentIndex, 'success', t('output.processingComplete', 'Processing complete'), t, timeRange);
 
         // Always combine with existing subtitles (if any)
         // Ensure currentSubtitles is at least an empty array

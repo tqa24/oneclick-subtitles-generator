@@ -118,7 +118,7 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
   }
 
   return (
-    <div className="parallel-processing-container">
+    <div className={`parallel-processing-container ${openDropdownIndex !== null ? 'model-dropdown-open' : ''}`}>
       <div className={`status ${statusType}`}>
         {overallStatus}
       </div>
@@ -134,7 +134,12 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
             >
               <span className="segment-number">{index + 1}</span>
               <span className="segment-indicator"></span>
-              <span className="segment-message">{segment.shortMessage || segment.status}</span>
+              <div className="segment-info">
+                <span className="segment-message">{segment.shortMessage || segment.status}</span>
+                {segment.timeRange && (
+                  <span className="segment-time-range">{segment.timeRange}</span>
+                )}
+              </div>
               {/* Show generate button for pending segments */}
               {segment.status === 'pending' && !retryingSegments.includes(index) && onGenerateSegment && (
                 <button
@@ -155,7 +160,7 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                 <div className="model-retry-dropdown-container">
                   {/* Retry button */}
                   <button
-                    className="segment-retry-btn"
+                    className={`segment-retry-btn ${openDropdownIndex === index ? 'active-dropdown-btn' : ''}`}
                     onClick={(e) => toggleDropdown(e, index)}
                     title={t('output.retryWithModel', 'Retry with different model')}
                     ref={el => buttonRefs.current[index] = el}

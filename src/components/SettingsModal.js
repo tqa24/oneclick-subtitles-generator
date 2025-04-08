@@ -356,6 +356,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         // Clear localStorage video/subtitle related items
         localStorage.removeItem('current_video_url');
         localStorage.removeItem('current_file_url');
+        localStorage.removeItem('current_file_cache_id');
 
         // Check if details exist in the response
         if (data.details) {

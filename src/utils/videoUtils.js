@@ -262,9 +262,9 @@ const parseTimeString = (timeString) => {
 
   // Handle custom format (00m00s000ms)
   if (timeString.includes('m') && timeString.includes('s')) {
-    const minutesMatch = timeString.match(/(\\d+)m/);
-    const secondsMatch = timeString.match(/(\\d+)s/);
-    const msMatch = timeString.match(/(\\d+)ms/);
+    const minutesMatch = timeString.match(/(\d+)m/);
+    const secondsMatch = timeString.match(/(\d+)s/);
+    const msMatch = timeString.match(/(\d+)ms/);
 
     const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
     const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;

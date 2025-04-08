@@ -7,6 +7,7 @@ import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
 import { VariableSizeList as List } from 'react-window';
 import { convertToSRT } from '../utils/subtitleConverter';
+import { extractYoutubeVideoId } from '../utils/videoDownloader';
 
 // Helper function to download files
 const downloadFile = (content, filename, type = 'text/plain') => {
@@ -74,7 +75,8 @@ const LyricsDisplay = ({
   onUpdateLyrics,
   allowEditing = false,
   seekTime = null,
-  timeFormat = 'seconds'
+  timeFormat = 'seconds',
+  onSaveSubtitles = null // New callback for when subtitles are saved
 }) => {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
@@ -119,6 +121,7 @@ const LyricsDisplay = ({
     isSticky,
     setIsSticky,
     isAtOriginalState,
+    isAtSavedState,
     canUndo,
     canRedo,
     handleUndo,
@@ -132,7 +135,8 @@ const LyricsDisplay = ({
     handleDeleteLyric,
     handleTextEdit,
     handleInsertLyric,
-    handleMergeLyrics
+    handleMergeLyrics,
+    updateSavedLyrics
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -188,6 +192,75 @@ const LyricsDisplay = ({
     };
   }, [lyrics]);
 
+  // Function to save current subtitles to cache
+  const handleSave = async () => {
+    try {
+      // Get the current video source
+      const currentVideoUrl = localStorage.getItem('current_youtube_url');
+      const currentFileUrl = localStorage.getItem('current_file_url');
+      let cacheId = null;
+
+      if (currentVideoUrl) {
+        // For YouTube videos
+        cacheId = extractYoutubeVideoId(currentVideoUrl);
+      } else if (currentFileUrl) {
+        // For uploaded files, the cacheId is already stored
+        cacheId = localStorage.getItem('current_file_cache_id');
+      }
+
+      if (!cacheId) {
+        console.error('No cache ID found for current media');
+        console.log('Debug info - localStorage values:', {
+          currentVideoUrl,
+          currentFileUrl,
+          currentFileCacheId: localStorage.getItem('current_file_cache_id')
+        });
+        return;
+      }
+
+      // Save to cache
+      const response = await fetch('http://localhost:3004/api/save-subtitles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cacheId,
+          subtitles: lyrics
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        console.log('Subtitles saved successfully');
+        // Show a temporary success message
+        const saveMessage = document.createElement('div');
+        saveMessage.className = 'save-success-message';
+        saveMessage.textContent = t('output.subtitlesSaved', 'Progress saved successfully');
+        document.body.appendChild(saveMessage);
+
+        // Remove the message after 3 seconds
+        setTimeout(() => {
+          if (document.body.contains(saveMessage)) {
+            document.body.removeChild(saveMessage);
+          }
+        }, 3000);
+
+        // Update the saved lyrics state in the editor
+        updateSavedLyrics();
+
+        // Call the callback if provided to update parent component state
+        if (onSaveSubtitles) {
+          onSaveSubtitles(lyrics);
+        }
+      } else {
+        console.error('Failed to save subtitles:', result.error);
+      }
+    } catch (error) {
+      console.error('Error saving subtitles:', error);
+    }
+  };
+
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
     e.preventDefault();
@@ -238,9 +311,11 @@ const LyricsDisplay = ({
           canUndo={canUndo}
           canRedo={canRedo}
           isAtOriginalState={isAtOriginalState}
+          isAtSavedState={isAtSavedState}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onReset={handleReset}
+          onSave={handleSave}
           zoom={zoom}
           setZoom={setZoom}
           panOffset={panOffset}

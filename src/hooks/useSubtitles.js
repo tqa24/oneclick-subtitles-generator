@@ -69,6 +69,9 @@ export const useSubtitles = (t) => {
             } else if (inputType === 'file-upload') {
                 cacheId = await generateFileCacheId(input);
 
+                // Store the cache ID in localStorage for later use (e.g., saving edited subtitles)
+                localStorage.setItem('current_file_cache_id', cacheId);
+
                 // Check if this is a video file and get its duration
                 if (input.type.startsWith('video/')) {
                     try {
@@ -257,6 +260,14 @@ export const useSubtitles = (t) => {
             // Cache the new results
             if (inputType === 'youtube') {
                 const cacheId = extractYoutubeVideoId(input);
+                if (cacheId && subtitles && subtitles.length > 0) {
+                    await saveSubtitlesToCache(cacheId, subtitles);
+                }
+            } else if (inputType === 'file-upload') {
+                // For file uploads, generate and store the cache ID
+                const cacheId = await generateFileCacheId(input);
+                localStorage.setItem('current_file_cache_id', cacheId);
+
                 if (cacheId && subtitles && subtitles.length > 0) {
                     await saveSubtitlesToCache(cacheId, subtitles);
                 }

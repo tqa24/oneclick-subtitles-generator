@@ -243,9 +243,22 @@ const fileToBase64 = (file) => {
 
 // Function to translate subtitles to a different language while preserving timing
 const translateSubtitles = async (subtitles, targetLanguage) => {
+    // Store the target language for reference
+    localStorage.setItem('translation_target_language', targetLanguage);
     if (!subtitles || subtitles.length === 0) {
         throw new Error('No subtitles to translate');
     }
+
+    // Create a map of original subtitles with their IDs for reference
+    const originalSubtitlesMap = {};
+    subtitles.forEach(sub => {
+        // Ensure each subtitle has a unique ID
+        const id = sub.id || subtitles.indexOf(sub) + 1;
+        originalSubtitlesMap[id] = sub;
+    });
+
+    // Store the original subtitles map in localStorage for reference
+    localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
 
     // Format subtitles as proper SRT text for Gemini
     const subtitleText = subtitles.map((sub, index) => {
@@ -270,7 +283,11 @@ const translateSubtitles = async (subtitles, targetLanguage) => {
             endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
         }
 
-        return `${index + 1}\n${startTime} --> ${endTime}\n${sub.text}`;
+        // Use the subtitle's ID or create one based on index
+        const id = sub.id || index + 1;
+
+        // Include a special comment with the original subtitle ID that won't affect translation
+        return `${index + 1}\n${startTime} --> ${endTime}\n${sub.text}\n<!-- original_id: ${id} -->`;
     }).join('\n\n');
 
     // Create the prompt for translation
