@@ -6,23 +6,9 @@ import {
   extractYoutubeVideoId
 } from '../../utils/videoDownloader';
 import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
+import { subtitlesToVtt, createVttBlobUrl, revokeVttBlobUrl, convertTimeStringToSeconds } from '../../utils/vttUtils';
 import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
-
-// Helper function to convert SRT time format (00:00:00,000) to seconds
-const convertTimeStringToSeconds = (timeString) => {
-  if (!timeString) return 0;
-
-  const match = timeString.match(/^(\d+):(\d+):(\d+),(\d+)$/);
-  if (!match) return 0;
-
-  const hours = parseInt(match[1]);
-  const minutes = parseInt(match[2]);
-  const seconds = parseInt(match[3]);
-  const milliseconds = parseInt(match[4]);
-
-  return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
-};
 
 const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray }) => {
   const { t } = useTranslation();
@@ -39,6 +25,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
   const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+  const [originalVttUrl, setOriginalVttUrl] = useState('');
+  const [translatedVttUrl, setTranslatedVttUrl] = useState('');
   const [subtitleSettings, setSubtitleSettings] = useState(() => {
     // Try to load settings from localStorage
     const savedSettings = localStorage.getItem('subtitle_settings');
@@ -295,6 +283,87 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
     };
   }, [videoUrl, setCurrentTime, setDuration, t, onSeek]);
 
+  // Update VTT subtitles when subtitles change
+  useEffect(() => {
+    // Clean up previous blob URLs
+    if (originalVttUrl) revokeVttBlobUrl(originalVttUrl);
+
+    // Create new VTT for original subtitles
+    if (subtitlesArray && subtitlesArray.length > 0) {
+      const vttContent = subtitlesToVtt(subtitlesArray);
+      const blobUrl = createVttBlobUrl(vttContent);
+      setOriginalVttUrl(blobUrl);
+    } else {
+      setOriginalVttUrl('');
+    }
+
+    return () => {
+      if (originalVttUrl) revokeVttBlobUrl(originalVttUrl);
+    };
+  }, [subtitlesArray]);
+
+  // Update VTT subtitles for translations when they change
+  useEffect(() => {
+    // Clean up previous blob URLs
+    if (translatedVttUrl) revokeVttBlobUrl(translatedVttUrl);
+
+    // Create new VTT for translated subtitles
+    if (translatedSubtitles && translatedSubtitles.length > 0 && subtitlesArray) {
+      const vttContent = subtitlesToVtt(translatedSubtitles, true, subtitlesArray);
+      const blobUrl = createVttBlobUrl(vttContent);
+      setTranslatedVttUrl(blobUrl);
+    } else {
+      setTranslatedVttUrl('');
+    }
+
+    return () => {
+      if (translatedVttUrl) revokeVttBlobUrl(translatedVttUrl);
+    };
+  }, [translatedSubtitles, subtitlesArray]);
+
+  // Update active track when subtitle settings change
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    // Wait for tracks to be loaded
+    const handleTracksLoaded = () => {
+      if (videoElement.textTracks.length > 0) {
+        // Disable all tracks first
+        for (let i = 0; i < videoElement.textTracks.length; i++) {
+          videoElement.textTracks[i].mode = 'hidden';
+        }
+
+        // Enable the appropriate track
+        if (subtitleSettings.showTranslatedSubtitles && translatedVttUrl) {
+          // Find the translated track
+          for (let i = 0; i < videoElement.textTracks.length; i++) {
+            if (videoElement.textTracks[i].language === 'translated') {
+              videoElement.textTracks[i].mode = 'showing';
+              break;
+            }
+          }
+        } else if (originalVttUrl) {
+          // Find the original track
+          for (let i = 0; i < videoElement.textTracks.length; i++) {
+            if (videoElement.textTracks[i].language === 'original') {
+              videoElement.textTracks[i].mode = 'showing';
+              break;
+            }
+          }
+        }
+      }
+    };
+
+    // Call immediately and also set up a listener for loadedmetadata
+    handleTracksLoaded();
+    videoElement.addEventListener('loadedmetadata', handleTracksLoaded);
+
+    return () => {
+      videoElement.removeEventListener('loadedmetadata', handleTracksLoaded);
+    };
+  }, [subtitleSettings.showTranslatedSubtitles, originalVttUrl, translatedVttUrl]);
+
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
     if (!isLoaded) return;
@@ -464,62 +533,53 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                 className="video-player"
                 playsInline
                 src={videoUrl}
+                crossOrigin="anonymous"
               >
                 <source src={videoUrl} type="video/mp4" />
+
+                {/* Original subtitles track */}
+                {originalVttUrl && (
+                  <track
+                    kind="subtitles"
+                    src={originalVttUrl}
+                    srcLang="original"
+                    label="Original"
+                    default={!subtitleSettings.showTranslatedSubtitles}
+                  />
+                )}
+
+                {/* Translated subtitles track */}
+                {translatedVttUrl && subtitleSettings.showTranslatedSubtitles && (
+                  <track
+                    kind="subtitles"
+                    src={translatedVttUrl}
+                    srcLang="translated"
+                    label="Translated"
+                    default={subtitleSettings.showTranslatedSubtitles}
+                  />
+                )}
+
                 {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
               </video>
 
-              <div
-                className="video-subtitle"
-                style={{
-                  '--font-family': subtitleSettings.fontFamily,
-                  '--font-size': `${subtitleSettings.fontSize}px`,
-                  '--font-weight': subtitleSettings.fontWeight,
-                  '--box-width': `${subtitleSettings.boxWidth}%`,
-                  '--background-color': `rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity})`,
-                  '--text-color': subtitleSettings.textColor,
-                  '--text-align': subtitleSettings.textAlign || 'center',
-                  '--text-transform': subtitleSettings.textTransform || 'none',
-                  '--line-spacing': subtitleSettings.lineSpacing || '1.4',
-                  '--letter-spacing': `${subtitleSettings.letterSpacing || '0'}px`,
-                  '--background-radius': `${subtitleSettings.backgroundRadius || '4'}px`,
-                  '--background-padding': `${subtitleSettings.backgroundPadding || '10'}px`,
-                  '--text-shadow': subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none',
-                  bottom: 'auto',
-                  top: `${subtitleSettings.position}%`,
-                  transform: 'translateY(-100%)'
-                }}
-              >
-                {subtitleSettings.showTranslatedSubtitles && translatedSubtitles && translatedSubtitles.length > 0
-                  ? (() => {
-                      // First try to find a subtitle by matching with original subtitles
-                      const currentOriginalSubtitle = subtitlesArray?.find(s =>
-                        currentTime >= s.start && currentTime <= s.end
-                      );
-
-                      if (currentOriginalSubtitle) {
-                        // Find the translated subtitle that corresponds to this original subtitle
-                        const matchedTranslation = translatedSubtitles.find(t =>
-                          t.originalId === currentOriginalSubtitle.id
-                        );
-
-                        if (matchedTranslation) {
-                          return matchedTranslation.text;
-                        }
-                      }
-
-                      // Fallback to the old method if we can't find a match by ID
-                      const fallbackTranslation = translatedSubtitles.find(s => {
-                        // Handle both formats: start/end and startTime/endTime
-                        const start = s.start !== undefined ? s.start : convertTimeStringToSeconds(s.startTime);
-                        const end = s.end !== undefined ? s.end : convertTimeStringToSeconds(s.endTime);
-                        return currentTime >= start && currentTime <= end;
-                      });
-
-                      return fallbackTranslation?.text || '';
-                    })()
-                  : subtitle}
-              </div>
+              {/* Apply subtitle styling to the video element */}
+              <style>
+                {`
+                  ::cue {
+                    background-color: rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity});
+                    color: ${subtitleSettings.textColor};
+                    font-family: ${subtitleSettings.fontFamily};
+                    font-size: ${subtitleSettings.fontSize}px;
+                    font-weight: ${subtitleSettings.fontWeight};
+                    line-height: ${subtitleSettings.lineSpacing || '1.4'};
+                    text-align: ${subtitleSettings.textAlign || 'center'};
+                    text-transform: ${subtitleSettings.textTransform || 'none'};
+                    letter-spacing: ${subtitleSettings.letterSpacing || '0'}px;
+                    text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
+                    white-space: pre-line;
+                  }
+                `}
+              </style>
             </div>
           ) : (
             <div className="no-video-message">

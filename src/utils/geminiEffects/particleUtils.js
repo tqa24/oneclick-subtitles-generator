@@ -44,8 +44,9 @@ export const createParticle = (x, y, sizeClass, isFilled = false) => {
 export const createParticles = (buttonElement, container, limit) => {
   const buttonParticles = [];
 
-  // Determine if this is the generate button or retry button to create different effects
+  // Determine button type to create different effects
   const isGenerateButton = buttonElement.classList.contains('generate-btn');
+  const isForceStopButton = buttonElement.classList.contains('force-stop-btn');
 
   // Set particle count based on button type and limit parameter
   let particleCount;
@@ -54,9 +55,13 @@ export const createParticles = (buttonElement, container, limit) => {
     particleCount = limit;
   } else {
     // Default counts for initial state
-    particleCount = isGenerateButton ?
-      (15 + Math.floor(Math.random() * 10)) : // 15-25 particles for generate button
-      (10 + Math.floor(Math.random() * 5));  // 10-15 particles for retry button
+    if (isGenerateButton) {
+      particleCount = 15 + Math.floor(Math.random() * 10); // 15-25 particles for generate button
+    } else if (isForceStopButton) {
+      particleCount = 12 + Math.floor(Math.random() * 8); // 12-20 particles for force stop button
+    } else {
+      particleCount = 10 + Math.floor(Math.random() * 5); // 10-15 particles for retry button
+    }
   }
 
   // Clear any existing static icons

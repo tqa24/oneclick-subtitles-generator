@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { callGeminiApi } from '../services/geminiService';
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
@@ -9,6 +9,27 @@ export const useSubtitles = (t) => {
     const [subtitlesData, setSubtitlesData] = useState(null);
     const [status, setStatus] = useState({ message: '', type: '' });
     const [isGenerating, setIsGenerating] = useState(false);
+    const [retryingSegments, setRetryingSegments] = useState([]);
+
+    // Listen for abort events
+    useEffect(() => {
+        const handleAbort = () => {
+            // Reset generating state
+            setIsGenerating(false);
+            // Reset retrying segments
+            setRetryingSegments([]);
+            // Update status
+            setStatus({ message: t('output.requestsAborted', 'All Gemini requests have been aborted'), type: 'info' });
+        };
+
+        // Add event listener
+        window.addEventListener('gemini-requests-aborted', handleAbort);
+
+        // Clean up
+        return () => {
+            window.removeEventListener('gemini-requests-aborted', handleAbort);
+        };
+    }, [t]);
 
     // Function to update segment status and dispatch event
     const updateSegmentsStatus = useCallback((segments) => {
@@ -318,8 +339,7 @@ export const useSubtitles = (t) => {
         }
     }, [t]);
 
-    // State to track which segments are currently being retried
-    const [retryingSegments, setRetryingSegments] = useState([]);
+    // State to track which segments are currently being retried is defined at the top of the hook
 
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments) => {

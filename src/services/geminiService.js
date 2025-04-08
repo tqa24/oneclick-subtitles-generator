@@ -1,6 +1,9 @@
 import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
 
+// Global AbortController to cancel ongoing requests
+let activeAbortController = null;
+
 // Default transcription prompts
 export const PROMPT_PRESETS = [
     {
@@ -51,6 +54,21 @@ export const saveUserPromptPresets = (presets) => {
     } catch (error) {
         console.error('Error saving user prompt presets:', error);
     }
+};
+
+// Function to abort all ongoing Gemini API requests
+export const abortAllRequests = () => {
+    if (activeAbortController) {
+        console.log('Aborting all ongoing Gemini API requests');
+        activeAbortController.abort();
+        activeAbortController = null;
+
+        // Dispatch an event to notify components that requests have been aborted
+        window.dispatchEvent(new CustomEvent('gemini-requests-aborted'));
+
+        return true;
+    }
+    return false;
 };
 
 // Get the active prompt (either from localStorage or default)
@@ -173,6 +191,14 @@ export const callGeminiApi = async (input, inputType) => {
         }
         console.log('Gemini API request structure:', debugRequestData);
 
+        // Create a new AbortController for this request
+        if (activeAbortController) {
+            // If there's an existing controller, abort it first
+            activeAbortController.abort();
+        }
+        activeAbortController = new AbortController();
+        const signal = activeAbortController.signal;
+
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
             {
@@ -180,7 +206,8 @@ export const callGeminiApi = async (input, inputType) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify(requestData),
+                signal: signal // Add the AbortController signal
             }
         );
 
@@ -222,10 +249,20 @@ export const callGeminiApi = async (input, inputType) => {
         const data = await response.json();
         console.log('Gemini API response:', data);
 
+        // Clear the AbortController after successful response
+        activeAbortController = null;
         return parseGeminiResponse(data);
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
-        throw error;
+        // Check if this is an AbortError
+        if (error.name === 'AbortError') {
+            console.log('Gemini API request was aborted');
+            throw new Error('Request was aborted');
+        } else {
+            console.error('Error calling Gemini API:', error);
+            // Clear the AbortController on error
+            activeAbortController = null;
+            throw error;
+        }
     }
 };
 
@@ -319,6 +356,14 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
         const model = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+        // Create a new AbortController for this request
+        if (activeAbortController) {
+            // If there's an existing controller, abort it first
+            activeAbortController.abort();
+        }
+        activeAbortController = new AbortController();
+        const signal = activeAbortController.signal;
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -340,6 +385,7 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
                     maxOutputTokens: 8192,
                 },
             }),
+            signal: signal // Add the AbortController signal
         });
 
         if (!response.ok) {
@@ -354,11 +400,22 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
             throw new Error('No translation returned from Gemini');
         }
 
+        // Clear the AbortController after successful response
+        activeAbortController = null;
+
         // Parse the translated subtitles
         return parseTranslatedSubtitles(translatedText);
     } catch (error) {
-        console.error('Translation error:', error);
-        throw error;
+        // Check if this is an AbortError
+        if (error.name === 'AbortError') {
+            console.log('Translation request was aborted');
+            throw new Error('Translation request was aborted');
+        } else {
+            console.error('Translation error:', error);
+            // Clear the AbortController on error
+            activeAbortController = null;
+            throw error;
+        }
     }
 };
 

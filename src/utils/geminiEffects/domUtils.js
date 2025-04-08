@@ -24,13 +24,13 @@ export const setupButtonObserver = (initCallback, observerInitialized) => {
             // Check if the node itself is a button with the relevant classes
             if (
               (node.classList &&
-               (node.classList.contains('generate-btn') || node.classList.contains('retry-gemini-btn')))
+               (node.classList.contains('generate-btn') || node.classList.contains('retry-gemini-btn') || node.classList.contains('force-stop-btn')))
             ) {
               shouldReinitialize = true;
             }
 
             // Check if the node contains buttons with the relevant classes
-            const buttons = node.querySelectorAll('.generate-btn, .retry-gemini-btn');
+            const buttons = node.querySelectorAll('.generate-btn, .retry-gemini-btn, .force-stop-btn');
             if (buttons.length > 0) {
               shouldReinitialize = true;
             }
@@ -112,7 +112,7 @@ export const initializeButton = (button, initializedButtons, particles) => {
   // Create a collection of particles for this button - use a few particles for initial state
   const initialCount = button.classList.contains('generate-btn') ? 10 : 4;
   const buttonParticles = createParticles(button, iconContainer, initialCount);
-  
+
   // Make sure they're initially inactive/invisible
   buttonParticles.forEach(particle => {
     particle.isActive = false;
@@ -135,13 +135,13 @@ export const setupButtonEventListeners = (button, particles, cursorPosition, isH
   // Add mouse move event listener for cursor tracking
   button.addEventListener('mousemove', (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    
+
     // Calculate cursor position as percentage of button dimensions
     cursorPosition.x = ((e.clientX - rect.left) / rect.width) * 100;
     cursorPosition.y = ((e.clientY - rect.top) / rect.height) * 100;
-    
+
     isHovering.value = true;
-    
+
     // Reset hovering state after mouse stops moving
     clearTimeout(window.cursorTimeout);
     window.cursorTimeout = setTimeout(() => {

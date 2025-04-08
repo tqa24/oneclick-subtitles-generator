@@ -1,8 +1,9 @@
 /* GeminiButtonAnimations.css - Advanced animations for Gemini buttons */
 
-/* Base styles for Gemini icon container - ONLY for generate-btn and retry-gemini-btn */
+/* Base styles for Gemini icon container - for all Gemini buttons */
 .generate-btn .gemini-icon-container,
-.retry-gemini-btn .gemini-icon-container {
+.retry-gemini-btn .gemini-icon-container,
+.force-stop-btn .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -253,14 +254,16 @@
 
 /* Add glow effect to buttons when processing */
 .generate-btn.processing,
-.retry-gemini-btn.processing {
+.retry-gemini-btn.processing,
+.force-stop-btn.processing {
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
 }
 
 .generate-btn.processing::after,
-.retry-gemini-btn.processing::after {
+.retry-gemini-btn.processing::after,
+.force-stop-btn.processing::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -346,21 +349,24 @@
 
 /* Add gradient effects to the icons */
 .generate-btn .gemini-mini-icon svg path,
-.retry-gemini-btn .gemini-mini-icon svg path {
+.retry-gemini-btn .gemini-mini-icon svg path,
+.force-stop-btn .gemini-mini-icon svg path {
   stroke-dasharray: 120;
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 1s var(--md-easing-emphasized);
 }
 
 .generate-btn:hover .gemini-mini-icon svg path,
-.retry-gemini-btn:hover .gemini-mini-icon svg path {
+.retry-gemini-btn:hover .gemini-mini-icon svg path,
+.force-stop-btn:hover .gemini-mini-icon svg path {
   stroke-dashoffset: 120;
   transition: stroke-dashoffset 2s var(--md-easing-emphasized);
 }
 
 /* Processing state special effects */
 .generate-btn.processing .gemini-mini-icon svg path,
-.retry-gemini-btn.processing .gemini-mini-icon svg path {
+.retry-gemini-btn.processing .gemini-mini-icon svg path,
+.force-stop-btn.processing .gemini-mini-icon svg path {
   animation: dash-animation 2s var(--md-easing-emphasized) infinite;
 }
 

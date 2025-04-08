@@ -116,9 +116,37 @@
   height: 52px; /* Fixed height for consistency */
 }
 
+.buttons-container .force-stop-btn {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+  /* Pill-shaped button for Material Design 3 look */
+  padding: 16px 24px;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.5px;
+  box-shadow: var(--md-elevation-level2);
+  border-radius: var(--md-shape-pill);
+  height: 52px; /* Fixed height for consistency */
+  margin-left: 10px; /* Add spacing between buttons */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  z-index: 1;
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
 /* State layer for hover effect */
 .buttons-container .generate-btn::before,
-.buttons-container .retry-gemini-btn::before {
+.buttons-container .retry-gemini-btn::before,
+.buttons-container .force-stop-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -131,29 +159,34 @@
 }
 
 .buttons-container .generate-btn:hover::before,
-.buttons-container .retry-gemini-btn:hover::before {
+.buttons-container .retry-gemini-btn:hover::before,
+.buttons-container .force-stop-btn:hover::before {
   background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
 }
 
 .buttons-container .generate-btn:active::before,
-.buttons-container .retry-gemini-btn:active::before {
+.buttons-container .retry-gemini-btn:active::before,
+.buttons-container .force-stop-btn:active::before {
   background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
 }
 
 .buttons-container .generate-btn:hover,
-.buttons-container .retry-gemini-btn:hover {
+.buttons-container .retry-gemini-btn:hover,
+.buttons-container .force-stop-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level3);
 }
 
 .buttons-container .generate-btn:active,
-.buttons-container .retry-gemini-btn:active {
+.buttons-container .retry-gemini-btn:active,
+.buttons-container .force-stop-btn:active {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
 }
 
 .buttons-container .generate-btn:disabled,
-.buttons-container .retry-gemini-btn:disabled {
+.buttons-container .retry-gemini-btn:disabled,
+.buttons-container .force-stop-btn:disabled {
   opacity: 0.38;
   cursor: not-allowed;
   transform: none;
@@ -202,7 +235,13 @@
   }
 
   .buttons-container .generate-btn,
-  .buttons-container .retry-gemini-btn {
+  .buttons-container .retry-gemini-btn,
+  .buttons-container .force-stop-btn {
     width: 100%;
+  }
+
+  .buttons-container .force-stop-btn {
+    margin-left: 0;
+    margin-top: 10px;
   }
 }
