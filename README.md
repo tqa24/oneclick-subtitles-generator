@@ -4,17 +4,50 @@
 
 Here are some screenshots showcasing the application:
 
-| ![Screenshot 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Screenshot 2](readme_assets/Screenshot%202025-04-05%20001543.png) |
-|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **KR/EN/VI Light/Dark Theme Support**                                         | **Can be use to just Download Video**                              |
-
-| ![Screenshot 3](readme_assets/Screenshot%202025-04-05%20001838.png) | ![Screenshot 4](readme_assets/Screenshot%202025-04-05%20001444.png) |
-|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Parallel Processing Status/Retry**                       | **Timings Adjust/Add/Remove/Edit/Merge Texts**                           |
-
-| ![Screenshot 5](readme_assets/Screenshot%202025-04-03%20184934.png) | ![Screenshot 6](readme_assets/Screenshot%202025-04-03%20184944.png) |
-|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **API Instructions**                               | **Segmenting, Models, Format, Cache Settings**                                    |
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195440.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195622.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195917.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Light/dark theme with EN, VI, KO interface</strong></td>
+      <td align="center"><strong>Upload long video, audio, or YouTube source</strong></td>
+      <td align="center"><strong>Parallel processing with model selection for retries</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200056.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200132.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200147.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Editing interface with timing controls, text editing, and visualization</strong></td>
+      <td align="center"><strong>Customize subtitle style and render video with subtitles</strong></td>
+      <td align="center"><strong>Subtitle settings with transparency mode and fullscreen support</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200309.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200333.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200340.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Translate subtitles to any language while preserving timings</strong></td>
+      <td align="center"><strong>API setup, OAuth integration, update app, and factory reset</strong></td>
+      <td align="center"><strong>Configure segment duration, model selection, and time format</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200351.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200358.png" width="100%"></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Prompt presets and customization options</strong></td>
+      <td align="center"><strong>Cache management and storage information</strong></td>
+      <td></td>
+    </tr>
+  </table>
+</div>
 
 A web application for generating timed subtitles for videos using Google's Gemini AI technology.
 

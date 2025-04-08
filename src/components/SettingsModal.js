@@ -58,7 +58,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [loadingCacheInfo, setLoadingCacheInfo] = useState(false);
-  const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
+  const [segmentDuration, setSegmentDuration] = useState(3); // Default to 3 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
@@ -84,7 +84,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [originalSettings, setOriginalSettings] = useState({
     geminiApiKey: '',
     youtubeApiKey: '',
-    segmentDuration: 5,
+    segmentDuration: 3,
     geminiModel: 'gemini-2.0-flash',
     timeFormat: 'hms',
     segmentOffsetCorrection: -3.0,
@@ -99,7 +99,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     const loadSettings = () => {
       const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
-      const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
+      const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '3');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
@@ -962,6 +962,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
                   className="segment-duration-select"
                 >
+                  <option value="1">1 {t('settings.minutes', 'minutes')}</option>
+                  <option value="2">2 {t('settings.minutes', 'minutes')}</option>
                   <option value="3">3 {t('settings.minutes', 'minutes')}</option>
                   <option value="5">5 {t('settings.minutes', 'minutes')}</option>
                   <option value="10">10 {t('settings.minutes', 'minutes')}</option>

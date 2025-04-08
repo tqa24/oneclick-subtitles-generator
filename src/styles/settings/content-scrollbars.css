@@ -7,13 +7,15 @@
   position: relative;
   /* Add padding at the bottom to create space between content and footer */
   padding-bottom: 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-content {
   padding: 20px; /* Base padding */
   overflow-y: auto;
-  height: 500px; /* Fixed height to prevent modal size fluctuations */
-  min-height: 550px; /* Ensure minimum height is maintained */
+  flex: 1; /* Use flex instead of fixed height */
+  min-height: 300px; /* Reduced minimum height */
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) var(--background-secondary);

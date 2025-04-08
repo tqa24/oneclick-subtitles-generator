@@ -20,8 +20,7 @@
   border-radius: var(--modal-border-radius);
   max-width: 900px; /* Increased from 600px to 900px */
   width: 90%;
-  height: 700px; /* Fixed height to prevent fluctuations */
-  max-height: 90vh;
+  max-height: 90vh; /* Use max-height instead of fixed height */
   display: flex;
   flex-direction: column;
   box-shadow: var(--md-elevation-level3);

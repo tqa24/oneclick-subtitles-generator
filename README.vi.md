@@ -4,22 +4,68 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video b
 
 ## Ảnh Minh Họa
 
-| ![Ảnh 1](readme_assets/Screenshot%202025-04-03%20184013.png) | ![Ảnh 2](readme_assets/Screenshot%202025-04-05%20001543.png) |
-|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Hỗ trợ nhiều ngôn ngữ và giao diện sáng/tối**                     | **Có thể dùng để tải video từ YouTube**                             |
-
-| ![Ảnh 3](readme_assets/Screenshot%202025-04-05%20001838.png) | ![Ảnh 4](readme_assets/Screenshot%202025-04-05%20001444.png) |
-|:-------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| **Xử lý song song và khả năng thử lại**                             | **Điều chỉnh, thêm, xóa, sửa và gộp phụ đề**                        |
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195440.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195622.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20195917.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Giao diện sáng/tối với hỗ trợ tiếng Việt, Anh, Hàn</strong></td>
+      <td align="center"><strong>Tải lên video dài, âm thanh, hoặc từ YouTube</strong></td>
+      <td align="center"><strong>Xử lý song song với lựa chọn mô hình khi thử lại</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200056.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200132.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200147.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Giao diện chỉnh sửa với điều khiển thời gian và hiển thị trực quan</strong></td>
+      <td align="center"><strong>Tùy chỉnh kiểu phụ đề và xuất video với phụ đề</strong></td>
+      <td align="center"><strong>Cài đặt phụ đề với chế độ trong suốt và hỗ trợ toàn màn hình</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200309.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200333.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200340.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Dịch phụ đề sang bất kỳ ngôn ngữ nào với thời gian giữ nguyên</strong></td>
+      <td align="center"><strong>Thiết lập API, tích hợp OAuth, cập nhật ứng dụng và khôi phục cài đặt gốc</strong></td>
+      <td align="center"><strong>Cấu hình thời lượng đoạn, lựa chọn mô hình và định dạng thời gian</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200351.png" width="100%"></td>
+      <td><img src="readme_assets/Screenshot%202025-04-08%20200358.png" width="100%"></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Mẫu lời nhắc và tùy chọn tùy chỉnh</strong></td>
+      <td align="center"><strong>Quản lý bộ nhớ đệm và thông tin lưu trữ</strong></td>
+      <td></td>
+    </tr>
+  </table>
+</div>
 
 ## Tính Năng Chính
 
 - Tải lên video hoặc nhập đường link YouTube
 - Tạo phụ đề chính xác bằng AI Gemini
 - Chỉnh sửa thời gian phụ đề với giao diện trực quan
-- Xem trước phụ đề trên video
-- Hỗ trợ nhiều ngôn ngữ (Tiếng Việt, Anh, Hàn)
+- Hiển thị trực quan dòng thời gian để điều chỉnh chính xác
 - Tải xuống phụ đề dạng SRT hoặc JSON
+- Xem trước phụ đề trên video theo thời gian thực
+- Hỗ trợ nhiều ngôn ngữ (Tiếng Việt, Anh, Hàn)
+- Điều chỉnh thời gian dính (Sticky) cho các thay đổi hàng loạt
+- Chức năng Hoàn tác/Đặt lại cho việc chỉnh sửa
+- Xử lý song song cho video dài
+- Gộp các dòng phụ đề liền kề chỉ với một cú nhấp chuột
+- Tùy chỉnh định dạng hiển thị thời gian (giây hoặc HH:MM:SS)
+- Hiệu suất tối ưu cho video dài với nhiều phụ đề
+- Chỉ báo tiến trình mượt mà và liên tục cho phụ đề hiện tại
+- Chế độ tối mặc định với hỗ trợ chế độ sáng và tùy chọn theo hệ thống
 
 ## Hướng Dẫn Cài Đặt Chi Tiết
 
@@ -115,12 +161,15 @@ npm run dev
 ```
 - Ứng dụng sẽ tự động mở trong trình duyệt web của bạn
 
-### 2. Thiết Lập Ban Đầu
+### 2. Cấu Hình Ứng Dụng
 
-- Nhấn vào biểu tượng bánh răng ở góc trên bên phải
-- Chọn tab "API"
-- Nhập API key Gemini vào ô tương ứng
-- Nhấn "Lưu"
+Điều chỉnh cài đặt thông qua biểu tượng bánh răng ở góc trên bên phải:
+- Thay đổi ngôn ngữ giao diện (Tiếng Việt là mặc định, cũng hỗ trợ Tiếng Anh và Hàn)
+- Quản lý cài đặt API (Gemini và YouTube)
+- Chọn mô hình Gemini (Gemini 2.5 Pro là mặc định để có độ chính xác cao nhất)
+- Cấu hình thời lượng đoạn cho video dài (20 phút là mặc định)
+- Chọn định dạng hiển thị thời gian (HH:MM:SS là mặc định, hoặc giây)
+- Xóa bộ nhớ đệm và quản lý lưu trữ
 
 ### 3. Tạo Phụ Đề
 
@@ -173,6 +222,24 @@ npm run dev
 - Kiểm tra kết nối internet
 - Đảm bảo video không bị giới hạn độ tuổi hoặc riêng tư
 - Thử lại sau vài phút
+
+## Tính Năng Nâng Cao
+
+### Cập Nhật Ứng Dụng
+
+Ứng dụng có tính năng cập nhật tự động thông qua Git:
+- Vào phần Cài đặt (biểu tượng bánh răng)
+- Ở cuối trang cài đặt, nhấn nút "Cập nhật"
+- Ứng dụng sẽ tự động kéo các thay đổi mới nhất từ kho lưu trữ
+- Làm mới trang để áp dụng các thay đổi
+
+### Khôi Phục Cài Đặt Gốc
+
+Nếu bạn muốn xóa tất cả dữ liệu và cài đặt:
+- Vào phần Cài đặt (biểu tượng bánh răng)
+- Ở cuối trang cài đặt, nhấn nút "Khôi phục cài đặt gốc"
+- Xác nhận hành động khi được nhắc
+- Ứng dụng sẽ xóa tất cả bộ nhớ đệm và dữ liệu trình duyệt, sau đó tự động tải lại
 
 ## Thông Tin Thêm
 

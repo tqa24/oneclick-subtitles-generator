@@ -66,6 +66,8 @@
     "strongModelWarning": "Bạn đang chọn một mô hình dễ bị quá tải, vui lòng xử lý từng phần một. Nếu bị quá tải, hãy tạo Google Cloud Project mới và lấy API Key.",
     "strongModelSuccess": "Vì bạn đang chọn mô hình dễ bị quá tải, vui lòng nhấn nút tạo thủ công. Nếu bị quá tải, hãy tạo Google Cloud Project mới và lấy API Key.",
     "segmentGenerateSuccess": "Phần {{segmentNumber}} đã được xử lý thành công và kết hợp với phụ đề hiện có",
+    "segmentRetrySuccess": "Phần {{segmentNumber}} đã được xử lý lại thành công",
+    "subtitlesSaved": "Tiến trình đã được lưu thành công",
     "forceStop": "Dừng Ngay",
     "forceStopTooltip": "Dừng tất cả các yêu cầu Gemini",
     "requestsAborted": "Tất cả các yêu cầu Gemini đã bị hủy"

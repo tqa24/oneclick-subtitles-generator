@@ -68,6 +68,8 @@
     "strongModelWarning": "You are choosing an easily overloaded model, please process each segment one by one. In case of overloading, create a new Google Cloud Project and get an API Key.",
     "strongModelSuccess": "Since you are choosing easily overloaded model, please press generate manually. In case of overloading, create a new Google Cloud Project and get an API Key.",
     "segmentGenerateSuccess": "Segment {{segmentNumber}} processed successfully and combined with existing subtitles",
+    "segmentRetrySuccess": "Segment {{segmentNumber}} reprocessed successfully",
+    "subtitlesSaved": "Progress saved successfully",
     "forceStop": "Force Stop",
     "forceStopTooltip": "Force stop all Gemini requests",
     "requestsAborted": "All Gemini requests have been aborted"

@@ -294,7 +294,7 @@ function App() {
     }
   }, [status]);
 
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration, geminiModel, timeFormat) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);

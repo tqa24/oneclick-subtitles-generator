@@ -78,6 +78,8 @@
   display: none;
   padding: 1rem 1.5rem 0;
   clear: both; /* Ensure content doesn't overlap with tabs */
+  /* Add padding at the bottom to ensure content doesn't get hidden behind the footer */
+  padding-bottom: 4rem;
 }
 
 .settings-tab-content.active {
