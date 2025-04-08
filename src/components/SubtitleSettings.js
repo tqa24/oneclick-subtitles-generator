@@ -129,6 +129,7 @@ const SubtitleSettings = ({
         <button
           className="action-button download-with-subtitles-btn md-filled-tonal-button"
           onClick={onDownloadWithSubtitles}
+          title={t('subtitleSettings.downloadWithSubtitlesTooltip', 'Download video with original subtitles')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -142,12 +143,14 @@ const SubtitleSettings = ({
           className="action-button download-with-translated-subtitles-btn md-filled-tonal-button"
           onClick={onDownloadWithTranslatedSubtitles}
           disabled={!hasTranslation}
+          title={!hasTranslation ? t('subtitleSettings.noTranslationTooltip', 'Please generate a translation first in the Translation section below') : t('subtitleSettings.downloadWithTranslatedTooltip', 'Download video with translated subtitles')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-            <path d="M3 9h18"></path>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
           </svg>
           <span>{t('subtitleSettings.downloadWithTranslatedSubtitles', 'Download with Translated')}</span>
         </button>
@@ -155,6 +158,7 @@ const SubtitleSettings = ({
         <button
           className="action-button subtitle-settings-toggle md-filled-tonal-button"
           onClick={() => setIsOpen(!isOpen)}
+          title={t('subtitleSettings.settingsTooltip', 'Customize subtitle appearance')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -199,11 +203,15 @@ const SubtitleSettings = ({
           </div>
 
           <div className="settings-content">
-            {/* Column Headers */}
-            <div className="column-header font-column-header">{t('subtitleSettings.fontSettings', 'Font Settings')}</div>
-            <div className="column-header text-column-header">{t('subtitleSettings.textFormatting', 'Text Formatting')}</div>
-            <div className="column-header position-column-header">{t('subtitleSettings.positionSettings', 'Position Settings')}</div>
-            <div className="column-header background-column-header">{t('subtitleSettings.backgroundSettings', 'Background Settings')}</div>
+            {/* Column Headers - Only shown in transparent mode */}
+            {isTransparent && (
+              <>
+                <div className="column-header font-column-header">{t('subtitleSettings.fontSettings', 'Font Settings')}</div>
+                <div className="column-header text-column-header">{t('subtitleSettings.textFormatting', 'Text Formatting')}</div>
+                <div className="column-header position-column-header">{t('subtitleSettings.positionSettings', 'Position Settings')}</div>
+                <div className="column-header background-column-header">{t('subtitleSettings.backgroundSettings', 'Background Settings')}</div>
+              </>
+            )}
 
             <div className="setting-group">
               <label htmlFor="font-family">{t('subtitleSettings.font', 'Font')}</label>

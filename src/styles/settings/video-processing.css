@@ -1,10 +1,5 @@
 /* Video processing section styles */
 
-/* Video Processing section */
-.video-processing-section {
-  margin-top: 1.5rem;
-}
-
 .segment-duration-setting,
 .gemini-model-setting,
 .time-format-setting {

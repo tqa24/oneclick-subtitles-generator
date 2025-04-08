@@ -2,7 +2,6 @@
 
 /* Cache section */
 .cache-section {
-  margin-top: 1.5rem;
   min-height: 400px; /* Ensure the cache section has a minimum height */
   display: flex;
   flex-direction: column;

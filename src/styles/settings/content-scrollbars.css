@@ -11,10 +11,9 @@
 
 .settings-content {
   padding: 20px; /* Base padding */
-  padding-right: 24px; /* Extra padding on the right for the scrollbar */
   overflow-y: auto;
   height: 500px; /* Fixed height to prevent modal size fluctuations */
-  min-height: 500px; /* Ensure minimum height is maintained */
+  min-height: 550px; /* Ensure minimum height is maintained */
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) var(--background-secondary);

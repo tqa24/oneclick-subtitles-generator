@@ -134,20 +134,29 @@
   pointer-events: none;
 }
 
-.save-btn:hover::before {
+.save-btn:hover:not(:disabled)::before {
   background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
 }
 
-.save-btn:active::before {
+.save-btn:active:not(:disabled)::before {
   background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
 }
 
-.save-btn:hover {
+.save-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level2);
 }
 
-.save-btn:active {
+.save-btn:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
+}
+
+.save-btn:disabled {
+  opacity: 0.38; /* Material Design disabled state opacity */
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
 }

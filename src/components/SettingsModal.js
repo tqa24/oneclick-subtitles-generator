@@ -13,11 +13,11 @@ const ApiKeyIcon = () => (
 
 const ProcessingIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 10h-4V6"/>
-    <path d="M22 10V6a2 2 0 0 0-2-2h-4"/>
     <rect x="2" y="2" width="8" height="8" rx="2"/>
     <rect x="2" y="14" width="8" height="8" rx="2"/>
-    <path d="M14 22a8 8 0 0 0 0-16"/>
+    <path d="M14 6a8 8 0 1 0 0 16 8 8 0 0 0 0-16z"/>
+    <path d="M14 10v4"/>
+    <path d="M12 12h4"/>
   </svg>
 );
 
@@ -45,6 +45,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     // Load last active tab from localStorage or default to 'api-keys'
     return localStorage.getItem('settings_last_active_tab') || 'api-keys';
   });
+  const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
@@ -76,6 +77,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     localStorage.setItem('settings_last_active_tab', activeTab);
   }, [activeTab]);
 
+  // Store original settings for comparison
+  const [originalSettings, setOriginalSettings] = useState({
+    geminiApiKey: '',
+    youtubeApiKey: '',
+    segmentDuration: 5,
+    geminiModel: 'gemini-2.0-flash',
+    timeFormat: 'hms',
+    segmentOffsetCorrection: -3.0,
+    transcriptionPrompt: DEFAULT_TRANSCRIPTION_PROMPT,
+    useOAuth: false,
+    youtubeClientId: '',
+    youtubeClientSecret: ''
+  });
+
   // Load saved settings on component mount
   useEffect(() => {
     const loadSettings = () => {
@@ -91,6 +106,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
       const { clientId, clientSecret } = getClientCredentials();
       const authenticated = hasValidTokens();
 
+      // Store original settings for comparison
+      setOriginalSettings({
+        geminiApiKey: savedGeminiKey,
+        youtubeApiKey: savedYoutubeKey,
+        segmentDuration: savedSegmentDuration,
+        geminiModel: savedGeminiModel,
+        timeFormat: savedTimeFormat,
+        segmentOffsetCorrection: savedOffsetCorrection,
+        transcriptionPrompt: savedTranscriptionPrompt,
+        useOAuth: savedUseOAuth,
+        youtubeClientId: clientId,
+        youtubeClientSecret: clientSecret
+      });
+
       setGeminiApiKey(savedGeminiKey);
       setYoutubeApiKey(savedYoutubeKey);
       setSegmentDuration(savedSegmentDuration);
@@ -103,6 +132,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
       setYoutubeClientId(clientId);
       setYoutubeClientSecret(clientSecret);
       setIsAuthenticated(authenticated);
+      setHasChanges(false); // Reset changes flag when loading settings
     };
 
     // Load settings initially
@@ -413,6 +443,26 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     }
   };
 
+  // Effect to check for changes in settings
+  useEffect(() => {
+    // Compare current settings with original settings
+    const settingsChanged =
+      geminiApiKey !== originalSettings.geminiApiKey ||
+      youtubeApiKey !== originalSettings.youtubeApiKey ||
+      segmentDuration !== originalSettings.segmentDuration ||
+      geminiModel !== originalSettings.geminiModel ||
+      timeFormat !== originalSettings.timeFormat ||
+      segmentOffsetCorrection !== originalSettings.segmentOffsetCorrection ||
+      transcriptionPrompt !== originalSettings.transcriptionPrompt ||
+      useOAuth !== originalSettings.useOAuth ||
+      youtubeClientId !== originalSettings.youtubeClientId ||
+      youtubeClientSecret !== originalSettings.youtubeClientSecret;
+
+    setHasChanges(settingsChanged);
+  }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat,
+      segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
+      youtubeClientSecret, originalSettings]);
+
   // Handle save button click
   const handleSave = () => {
     // Save settings to localStorage
@@ -430,6 +480,24 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
 
     // Notify parent component about API keys, segment duration, model, and time format
     onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);
+
+    // Update original settings to match current settings
+    setOriginalSettings({
+      geminiApiKey,
+      youtubeApiKey,
+      segmentDuration,
+      geminiModel,
+      timeFormat,
+      segmentOffsetCorrection,
+      transcriptionPrompt,
+      useOAuth,
+      youtubeClientId,
+      youtubeClientSecret
+    });
+
+    // Reset changes flag
+    setHasChanges(false);
+
     onClose();
   };
 
@@ -709,7 +777,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                         onClick={handleOAuthAuthentication}
                         disabled={!youtubeClientId || !youtubeClientSecret}
                       >
-                        {t('settings.authenticate', 'Authenticate with YouTube')}
+                        {t('settings.authenticateWithYouTube', 'Authenticate with YouTube')}
                       </button>
                       {isAuthenticated && (
                         <button
@@ -722,7 +790,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                     </div>
 
                     <p className="api-key-help">
-                      {t('settings.oauthHelp', 'OAuth 2.0 provides more reliable access to YouTube API. Get credentials at')}
+                      {t('settings.oauthDescription', 'OAuth 2.0 provides more reliable access to YouTube API. Get credentials at')}
                       <a
                         href="https://console.cloud.google.com/apis/credentials"
                         target="_blank"
@@ -734,55 +802,55 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                     <div className="api-key-instructions">
                       <h4>{t('settings.getOAuthCredentials', 'Get OAuth Credentials')}</h4>
                       <ol>
-                        <li>{t('settings.oauthStep1', 'Create a project in Google Cloud Console')}</li>
-                        <li>{t('settings.oauthStep2', 'Enable the YouTube Data API v3')}</li>
-                        <li>{t('settings.oauthStep3', 'Create OAuth 2.0 Client ID (Web application)')}</li>
-                        <li>{t('settings.oauthStep4a', 'Add Authorized JavaScript origins: ') + window.location.origin}</li>
-                        <li>{t('settings.oauthStep4b', 'Add Authorized redirect URI: ') + window.location.origin + '/oauth2callback.html'}</li>
-                        <li>{t('settings.oauthStep5', 'Copy your Client ID and Client Secret')}</li>
-                        <li>{t('settings.oauthStep6', 'Paste them into the fields above and click Authenticate')}</li>
+                        <li>{t('settings.createProject', 'Create a project in Google Cloud Console')}</li>
+                        <li>{t('settings.enableYouTubeAPI', 'Enable the YouTube Data API v3')}</li>
+                        <li>{t('settings.createOAuthClientId', 'Create OAuth 2.0 Client ID (Web application)')}</li>
+                        <li>{t('settings.addAuthorizedOrigins', 'Add Authorized JavaScript origins: ') + window.location.origin}</li>
+                        <li>{t('settings.addAuthorizedRedirect', 'Add Authorized redirect URI: ') + window.location.origin + '/oauth2callback.html'}</li>
+                        <li>{t('settings.copyClientCredentials', 'Copy your Client ID and Client Secret')}</li>
+                        <li>{t('settings.pasteAndAuthenticate', 'Paste them into the fields above and click Authenticate')}</li>
                       </ol>
 
-                      <h4>{t('settings.oauthTroubleshooting', 'Troubleshooting OAuth Issues')}</h4>
+                      <h4>{t('settings.troubleshootingOAuth', 'Troubleshooting OAuth Issues')}</h4>
 
-                      <h5>{t('settings.redirectUriMismatch', 'Error: redirect_uri_mismatch')}</h5>
-                      <p>{t('settings.redirectUriMismatchHelp', 'This error occurs when the redirect URI in your application doesn\'t match what\'s registered in Google Cloud Console:')}</p>
+                      <h5>{t('settings.errorRedirectMismatch', 'Error: redirect_uri_mismatch')}</h5>
+                      <p>{t('settings.redirectMismatchDescription', 'This error occurs when the redirect URI in your application doesn\'t match what\'s registered in Google Cloud Console:')}</p>
                       <ol>
-                        <li>{t('settings.redirectUriStep1', 'Go to Google Cloud Console > APIs & Services > Credentials')}</li>
-                        <li>{t('settings.redirectUriStep2', 'Find your OAuth 2.0 Client ID and click to edit')}</li>
-                        <li>{t('settings.redirectUriStep3a', 'In "Authorized JavaScript origins", add exactly:')}<br/>
+                        <li>{t('settings.goToCredentials', 'Go to Google Cloud Console > APIs & Services > Credentials')}</li>
+                        <li>{t('settings.findOAuthClient', 'Find your OAuth 2.0 Client ID and click to edit')}</li>
+                        <li>{t('settings.inAuthorizedOrigins', 'In "Authorized JavaScript origins", add exactly:')}<br/>
                           <code>{window.location.origin}</code>
                         </li>
-                        <li>{t('settings.redirectUriStep3b', 'In "Authorized redirect URIs", add exactly:')}<br/>
+                        <li>{t('settings.inAuthorizedRedirect', 'In "Authorized redirect URIs", add exactly:')}<br/>
                           <code>{window.location.origin + '/oauth2callback.html'}</code>
                         </li>
-                        <li>{t('settings.redirectUriStep4', 'Click Save')}</li>
+                        <li>{t('settings.clickSave', 'Click Save')}</li>
                       </ol>
 
-                      <h5>{t('settings.accessDenied', 'Error: access_denied')}</h5>
-                      <p>{t('settings.accessDeniedHelp', 'This error can occur for several reasons:')}</p>
+                      <h5>{t('settings.errorAccessDenied', 'Error: access_denied')}</h5>
+                      <p>{t('settings.accessDeniedDescription', 'This error can occur for several reasons:')}</p>
                       <ul>
-                        <li>{t('settings.accessDeniedReason1', 'You denied permission during the OAuth flow')}</li>
-                        <li>{t('settings.accessDeniedReason2', 'The YouTube Data API is not enabled for your project')}</li>
-                        <li>{t('settings.accessDeniedReason3', 'There are API restrictions on your OAuth client')}</li>
+                        <li>{t('settings.deniedPermission', 'You denied permission during the OAuth flow')}</li>
+                        <li>{t('settings.apiNotEnabled', 'The YouTube Data API is not enabled for your project')}</li>
+                        <li>{t('settings.apiRestrictions', 'There are API restrictions on your OAuth client')}</li>
                       </ul>
-                      <p>{t('settings.accessDeniedFix', 'To fix:')}</p>
+                      <p>{t('settings.toFix', 'To fix:')}</p>
                       <ol>
-                        <li>{t('settings.accessDeniedStep1', 'Go to Google Cloud Console > APIs & Services > Library')}</li>
-                        <li>{t('settings.accessDeniedStep2', 'Search for "YouTube Data API v3" and make sure it\'s enabled')}</li>
-                        <li>{t('settings.accessDeniedStep3', 'Check your OAuth client for any API restrictions')}</li>
+                        <li>{t('settings.goToLibrary', 'Go to Google Cloud Console > APIs & Services > Library')}</li>
+                        <li>{t('settings.searchYouTubeAPI', 'Search for "YouTube Data API v3" and make sure it\'s enabled')}</li>
+                        <li>{t('settings.checkRestrictions', 'Check your OAuth client for any API restrictions')}</li>
                       </ol>
 
-                      <h5>{t('settings.notVerified', 'Error: App not verified')}</h5>
-                      <p>{t('settings.notVerifiedHelp', 'New OAuth applications start in "Testing" mode and can only be used by test users:')}</p>
+                      <h5>{t('settings.errorAppNotVerified', 'Error: App not verified')}</h5>
+                      <p>{t('settings.appNotVerifiedDescription', 'New OAuth applications start in "Testing" mode and can only be used by test users:')}</p>
                       <ol>
-                        <li>{t('settings.notVerifiedStep1', 'Go to Google Cloud Console > APIs & Services > OAuth consent screen')}</li>
-                        <li>{t('settings.notVerifiedStep2', 'Scroll down to "Test users" section')}</li>
-                        <li>{t('settings.notVerifiedStep3', 'Click "Add users"')}</li>
-                        <li>{t('settings.notVerifiedStep4', 'Add your Google email address as a test user')}</li>
-                        <li>{t('settings.notVerifiedStep5', 'Save changes and try again')}</li>
+                        <li>{t('settings.goToConsentScreen', 'Go to Google Cloud Console > APIs & Services > OAuth consent screen')}</li>
+                        <li>{t('settings.scrollToTestUsers', 'Scroll down to "Test users" section')}</li>
+                        <li>{t('settings.clickAddUsers', 'Click "Add users"')}</li>
+                        <li>{t('settings.addYourEmail', 'Add your Google email address as a test user')}</li>
+                        <li>{t('settings.saveChanges', 'Save changes and try again')}</li>
                       </ol>
-                      <p className="note">{t('settings.notVerifiedNote', 'Note: You don\'t need to wait for verification if you add yourself as a test user. Verification is only required if you want to make your app available to all users.')}</p>
+                      <p className="note">{t('settings.verificationNote', 'Note: You don\'t need to wait for verification if you add yourself as a test user. Verification is only required if you want to make your app available to all users.')}</p>
                     </div>
                   </>
                 )}
@@ -1198,28 +1266,26 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                 {cacheDetails && !loadingCacheInfo && (
                   <div className="cache-details">
                     <div className="cache-details-header">
-                      <h4>{t('settings.cacheInfo', 'Cache Information')}</h4>
+                      <h4>{t('settings.cacheInformation', 'Cache Information')}</h4>
                     </div>
 
                     <div className="cache-details-summary">
                       <p className="cache-total">
-                        <strong>{t('settings.totalCache', 'Total Cache')}:</strong> {cacheDetails.totalCount} {t('settings.files', 'files')} ({cacheDetails.formattedTotalSize})
+                        <strong>{t('settings.totalCache', 'Total Cache: {{count}} files ({{size}})', { count: cacheDetails.totalCount, size: cacheDetails.formattedTotalSize })}</strong>
                       </p>
                     </div>
 
                     <div className="cache-details-item">
                       <h4>{t('settings.videos', 'Videos')}:</h4>
                       <p>
-                        {cacheDetails.videos?.count || 0} {t('settings.files', 'files')}
-                        ({cacheDetails.videos?.formattedSize || '0 Bytes'})
+                        {t('settings.videosCount', '{{count}} files ({{size}})', { count: cacheDetails.videos?.count || 0, size: cacheDetails.videos?.formattedSize || '0 Bytes' })}
                       </p>
                     </div>
 
                     <div className="cache-details-item">
                       <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
                       <p>
-                        {cacheDetails.subtitles?.count || 0} {t('settings.files', 'files')}
-                        ({cacheDetails.subtitles?.formattedSize || '0 Bytes'})
+                        {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
                       </p>
                     </div>
 
@@ -1268,7 +1334,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
           <button className="cancel-btn" onClick={onClose}>
             {t('common.cancel', 'Cancel')}
           </button>
-          <button className="save-btn" onClick={handleSave}>
+          <button
+            className="save-btn"
+            onClick={handleSave}
+            disabled={!hasChanges}
+            title={!hasChanges ? t('settings.noChanges', 'No changes to save') : t('settings.saveChanges', 'Save changes')}
+          >
             {t('common.save', 'Save')}
           </button>
         </div>

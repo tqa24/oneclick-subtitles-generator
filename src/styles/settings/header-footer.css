@@ -4,7 +4,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem 0 1.5rem;
+  padding: 1rem 2.5rem 0 2.5rem;
   border-bottom: 1px solid var(--border-color);
   transition: border-color var(--transition-speed);
   padding-bottom: 0;

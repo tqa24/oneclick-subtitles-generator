@@ -177,18 +177,17 @@ function App() {
 
     // Check API keys status and show message if needed
     if (!geminiApiKey || (!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens)) {
-      let message = 'Please set your ';
+      let message;
 
       if (!geminiApiKey && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
-        message += 'Gemini API key and configure YouTube authentication';
+        message = t('errors.bothKeysRequired', 'Please set your Gemini API key and configure YouTube authentication in the settings to use this application.');
       } else if (!geminiApiKey) {
-        message += 'Gemini API key';
+        message = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
       } else if (useOAuth && !hasOAuthTokens) {
-        message += 'YouTube OAuth authentication';
+        message = t('errors.youtubeAuthRequired', 'YouTube authentication required. Please set up OAuth in settings.');
       } else {
-        message += 'YouTube API key';
+        message = t('errors.youtubeApiKeyRequired', 'Please set your YouTube API key in the settings to use this application.');
       }
-      message += ' in the settings to use this application.';
 
       setStatus({ message, type: 'info' });
     }
