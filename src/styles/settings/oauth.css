@@ -1,0 +1,135 @@
+/* OAuth settings styles */
+
+.auth-method-toggle {
+  margin-bottom: 20px;
+}
+
+.auth-method-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.auth-toggle-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-toggle-btn {
+  padding: 8px 16px;
+  border-radius: var(--button-border-radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-toggle-btn.active {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  border-color: var(--primary-color);
+}
+
+.oauth-status-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.oauth-status-container label {
+  margin-right: 10px;
+}
+
+.oauth-client-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.oauth-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.oauth-input-group label {
+  margin-bottom: 5px;
+}
+
+.oauth-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.oauth-authenticate-btn {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  border: none;
+  border-radius: var(--button-border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oauth-authenticate-btn:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.oauth-clear-btn {
+  padding: 8px 16px;
+  background-color: var(--error-color);
+  color: var(--text-on-error);
+  border: none;
+  border-radius: var(--button-border-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oauth-authenticate-btn:hover:not(:disabled),
+.oauth-clear-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* OAuth Troubleshooting Styles */
+.api-key-instructions h5 {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.api-key-instructions code {
+  display: inline-block;
+  background-color: var(--background-tertiary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  margin: 5px 0;
+  word-break: break-all;
+  color: var(--primary-color);
+}
+
+.api-key-instructions ul {
+  margin-left: 20px;
+  margin-bottom: 15px;
+  list-style-type: disc;
+}
+
+.api-key-instructions .note {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: var(--background-tertiary);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.api-key-instructions h4 {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}

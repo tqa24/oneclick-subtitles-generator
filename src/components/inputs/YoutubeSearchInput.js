@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { searchYouTubeVideos, isOAuthEnabled, hasValidTokens } from '../../services/youtubeApiService';
 
 const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo, className }) => {
   const { t } = useTranslation();
@@ -25,40 +26,36 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
     return debouncedValue;
   };
 
+
+
   // Search YouTube API - using useCallback to allow it in the dependency array
   const searchYouTube = useCallback(async (query) => {
     setIsSearching(true);
     setError('');
 
     try {
-      const youtubeApiKey = localStorage.getItem('youtube_api_key');
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=${encodeURIComponent(query)}&type=video&key=${youtubeApiKey}`
-      );
+      let results = [];
 
-      if (!response.ok) {
-        throw new Error('YouTube API request failed');
-      }
+      // Use the YouTube API service
+      results = await searchYouTubeVideos(query);
 
-      const data = await response.json();
-
-      if (data.items && data.items.length > 0) {
-        const formattedResults = data.items.map(item => ({
-          id: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: item.snippet.thumbnails.default.url,
-          channel: item.snippet.channelTitle,
-          url: `https://www.youtube.com/watch?v=${item.id.videoId}`
-        }));
-
-        setSearchResults(formattedResults);
+      if (results.length > 0) {
+        setSearchResults(results);
       } else {
         setSearchResults([]);
         setError(t('youtube.noResults', 'No results found.'));
       }
     } catch (error) {
       console.error('Error searching YouTube:', error);
-      setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
+
+      // Provide more specific error messages
+      if (error.message.includes('OAuth') || error.message.includes('authentication')) {
+        setError(t('youtube.authError', 'YouTube authentication required. Please set up OAuth in settings.'));
+      } else if (error.message.includes('quota exceeded')) {
+        setError(error.message);
+      } else {
+        setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
+      }
     } finally {
       setIsSearching(false);
     }
@@ -73,7 +70,13 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
       return;
     }
 
-    if (!apiKeysSet.youtube) {
+    // Check authentication method and status
+    if (isOAuthEnabled()) {
+      if (!hasValidTokens()) {
+        setError(t('youtube.noOAuth', 'Please authenticate with YouTube in the settings first.'));
+        return;
+      }
+    } else if (!apiKeysSet.youtube) {
       setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
       return;
     }

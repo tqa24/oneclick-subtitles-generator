@@ -16,3 +16,4 @@
 @import './settings/tabs.css';
 @import './settings/responsive.css';
 @import './settings/scrollbar-fix.css'; /* Import the scrollbar fix */
+@import './settings/oauth.css'; /* Import OAuth styles */

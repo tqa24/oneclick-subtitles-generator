@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal';
 import { useSubtitles } from './hooks/useSubtitles';
 import { downloadYoutubeVideo } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
+import { hasValidTokens } from './services/youtubeApiService';
 
 function App() {
   const { t } = useTranslation();
@@ -162,23 +163,28 @@ function App() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Initialize API keys from localStorage
+  // Initialize API keys and OAuth status from localStorage
   useEffect(() => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const youtubeApiKey = localStorage.getItem('youtube_api_key');
+    const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
+    const hasOAuthTokens = hasValidTokens();
 
     setApiKeysSet({
       gemini: !!geminiApiKey,
-      youtube: !!youtubeApiKey
+      youtube: useOAuth ? hasOAuthTokens : !!youtubeApiKey
     });
 
     // Check API keys status and show message if needed
-    if (!geminiApiKey || !youtubeApiKey) {
+    if (!geminiApiKey || (!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens)) {
       let message = 'Please set your ';
-      if (!geminiApiKey && !youtubeApiKey) {
-        message += 'Gemini and YouTube API keys';
+
+      if (!geminiApiKey && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
+        message += 'Gemini API key and configure YouTube authentication';
       } else if (!geminiApiKey) {
         message += 'Gemini API key';
+      } else if (useOAuth && !hasOAuthTokens) {
+        message += 'YouTube OAuth authentication';
       } else {
         message += 'YouTube API key';
       }
@@ -186,6 +192,71 @@ function App() {
 
       setStatus({ message, type: 'info' });
     }
+  }, [setStatus]);
+
+  // Check for OAuth authentication success
+  useEffect(() => {
+    const checkOAuthSuccess = () => {
+      const oauthSuccess = localStorage.getItem('oauth_auth_success') === 'true';
+      if (oauthSuccess) {
+        // Clear the flag
+        localStorage.removeItem('oauth_auth_success');
+
+        // Update API keys status
+        const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
+        const hasOAuthTokens = hasValidTokens();
+
+        if (useOAuth && hasOAuthTokens) {
+          setApiKeysSet(prevState => ({
+            ...prevState,
+            youtube: true
+          }));
+
+          // Show success message
+          setStatus({
+            message: 'YouTube authentication successful!',
+            type: 'success'
+          });
+
+          // Clear any previous error messages
+          setTimeout(() => {
+            setStatus({});
+          }, 5000);
+        }
+      }
+    };
+
+    // Check immediately
+    checkOAuthSuccess();
+
+    // Set up interval to check periodically
+    const intervalId = setInterval(checkOAuthSuccess, 1000);
+
+    // Set up message listener for OAuth success
+    const handleMessage = (event) => {
+      if (event.origin === window.location.origin &&
+          event.data && event.data.type === 'OAUTH_SUCCESS') {
+        checkOAuthSuccess();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Set up storage event listener
+    const handleStorageChange = (event) => {
+      if (event.key === 'youtube_oauth_token' || event.key === 'oauth_auth_success') {
+        checkOAuthSuccess();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Clean up
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [setStatus]);
 
   // Initialize Gemini button effects

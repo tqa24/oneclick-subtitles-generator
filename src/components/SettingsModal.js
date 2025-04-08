@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/SettingsModal.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../services/geminiService';
+import { getAuthUrl, storeClientCredentials, getClientCredentials, hasValidTokens, clearOAuthData } from '../services/youtubeApiService';
 
 // Tab icons
 const ApiKeyIcon = () => (
@@ -48,6 +49,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
+  const [useOAuth, setUseOAuth] = useState(false);
+  const [youtubeClientId, setYoutubeClientId] = useState('');
+  const [youtubeClientSecret, setYoutubeClientSecret] = useState('');
+  const [showClientId, setShowClientId] = useState(false);
+  const [showClientSecret, setShowClientSecret] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [loadingCacheInfo, setLoadingCacheInfo] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
@@ -71,26 +78,59 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
 
   // Load saved settings on component mount
   useEffect(() => {
-    const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
-    const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
-    const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
-    const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-    const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
-    const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
-    const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
-    const savedUserPresets = getUserPromptPresets();
+    const loadSettings = () => {
+      const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
+      const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
+      const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
+      const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+      const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
+      const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
+      const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+      const savedUserPresets = getUserPromptPresets();
+      const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
+      const { clientId, clientSecret } = getClientCredentials();
+      const authenticated = hasValidTokens();
 
-    setGeminiApiKey(savedGeminiKey);
-    setYoutubeApiKey(savedYoutubeKey);
-    setSegmentDuration(savedSegmentDuration);
-    setGeminiModel(savedGeminiModel);
-    setTimeFormat(savedTimeFormat);
-    setSegmentOffsetCorrection(savedOffsetCorrection);
-    setTranscriptionPrompt(savedTranscriptionPrompt);
-    setUserPromptPresets(savedUserPresets);
+      setGeminiApiKey(savedGeminiKey);
+      setYoutubeApiKey(savedYoutubeKey);
+      setSegmentDuration(savedSegmentDuration);
+      setGeminiModel(savedGeminiModel);
+      setTimeFormat(savedTimeFormat);
+      setSegmentOffsetCorrection(savedOffsetCorrection);
+      setTranscriptionPrompt(savedTranscriptionPrompt);
+      setUserPromptPresets(savedUserPresets);
+      setUseOAuth(savedUseOAuth);
+      setYoutubeClientId(clientId);
+      setYoutubeClientSecret(clientSecret);
+      setIsAuthenticated(authenticated);
+    };
+
+    // Load settings initially
+    loadSettings();
+
+    // Check for OAuth success flag
+    const oauthSuccess = localStorage.getItem('oauth_auth_success') === 'true';
+    if (oauthSuccess) {
+      // Refresh authentication status
+      setIsAuthenticated(hasValidTokens());
+    }
+
+    // Set up event listener for storage changes
+    const handleStorageChange = (event) => {
+      if (event.key === 'youtube_oauth_token' || event.key === 'oauth_auth_success') {
+        setIsAuthenticated(hasValidTokens());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     // Fetch cache information when component mounts
     fetchCacheInfo();
+
+    // Clean up
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -326,6 +366,53 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     }
   };
 
+  // Handle YouTube OAuth authentication
+  const handleOAuthAuthentication = () => {
+    if (youtubeClientId && youtubeClientSecret) {
+      // Store client credentials
+      storeClientCredentials(youtubeClientId, youtubeClientSecret);
+
+      // Get authorization URL
+      const authUrl = getAuthUrl();
+      if (authUrl) {
+        // Set up message listener for OAuth success
+        const messageListener = (event) => {
+          if (event.origin === window.location.origin &&
+              event.data && event.data.type === 'OAUTH_SUCCESS') {
+            // Update authentication status
+            setIsAuthenticated(hasValidTokens());
+            // Remove the listener
+            window.removeEventListener('message', messageListener);
+          }
+        };
+
+        // Add the listener
+        window.addEventListener('message', messageListener);
+
+        // Open the authorization URL in a new window
+        const authWindow = window.open(authUrl, 'youtube-oauth', 'width=800,height=600');
+
+        // Check if popup was blocked
+        if (!authWindow || authWindow.closed || typeof authWindow.closed === 'undefined') {
+          alert('Popup blocked! Please allow popups for this site and try again.');
+          window.removeEventListener('message', messageListener);
+        }
+      } else {
+        alert('Failed to generate authorization URL. Please check your client credentials.');
+      }
+    } else {
+      alert('Please enter both Client ID and Client Secret.');
+    }
+  };
+
+  // Handle clearing OAuth data
+  const handleClearOAuth = () => {
+    if (window.confirm('Are you sure you want to clear your YouTube OAuth credentials? You will need to authenticate again to use YouTube search.')) {
+      clearOAuthData();
+      setIsAuthenticated(false);
+    }
+  };
+
   // Handle save button click
   const handleSave = () => {
     // Save settings to localStorage
@@ -334,6 +421,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
     localStorage.setItem('time_format', timeFormat);
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
+    localStorage.setItem('use_youtube_oauth', useOAuth.toString());
+
+    // Store OAuth client credentials if they exist
+    if (youtubeClientId && youtubeClientSecret) {
+      storeClientCredentials(youtubeClientId, youtubeClientSecret);
+    }
 
     // Notify parent component about API keys, segment duration, model, and time format
     onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);
@@ -481,53 +574,218 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
             </div>
 
               <div className="api-key-input">
-                <label htmlFor="youtube-api-key">
-                  {t('settings.youtubeApiKey', 'YouTube API Key')}
-                  <span className={`api-key-status ${apiKeysSet.youtube ? 'set' : 'not-set'}`}>
-                    {apiKeysSet.youtube
-                      ? t('settings.keySet', 'Set')
-                      : t('settings.keyNotSet', 'Not Set')}
-                  </span>
-                </label>
-
-                <div className="input-with-toggle">
-                  <input
-                    type={showYoutubeKey ? "text" : "password"}
-                    id="youtube-api-key"
-                    value={youtubeApiKey}
-                    onChange={(e) => setYoutubeApiKey(e.target.value)}
-                    placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
-                  />
-                  <button
-                    type="button"
-                    className="toggle-visibility"
-                    onClick={() => setShowYoutubeKey(!showYoutubeKey)}
-                    aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
-                  >
-                    {showYoutubeKey ? t('settings.hide') : t('settings.show')}
-                  </button>
+                <div className="auth-method-toggle">
+                  <label className="auth-method-label">{t('settings.youtubeAuthMethod', 'YouTube Authentication Method')}</label>
+                  <div className="auth-toggle-buttons">
+                    <button
+                      className={`auth-toggle-btn ${!useOAuth ? 'active' : ''}`}
+                      onClick={() => {
+                        setUseOAuth(false);
+                        localStorage.setItem('use_youtube_oauth', 'false');
+                        console.log('Set OAuth to false');
+                      }}
+                    >
+                      {t('settings.apiKeyMethod', 'API Key')}
+                    </button>
+                    <button
+                      className={`auth-toggle-btn ${useOAuth ? 'active' : ''}`}
+                      onClick={() => {
+                        setUseOAuth(true);
+                        localStorage.setItem('use_youtube_oauth', 'true');
+                        console.log('Set OAuth to true');
+                      }}
+                    >
+                      {t('settings.oauthMethod', 'OAuth 2.0')}
+                    </button>
+                  </div>
                 </div>
 
-                <p className="api-key-help">
-                  {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')}
-                  <a
-                    href="https://console.cloud.google.com/apis/credentials"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Google Cloud Console
-                  </a>
-                </p>
-                <div className="api-key-instructions">
-                  <h4>{t('settings.getYoutubeApiKey', 'Get YouTube API Key')}</h4>
-                  <ol>
-                    <li>{t('settings.youtubeStep1', 'Go to Google Cloud Console')}</li>
-                    <li>{t('settings.youtubeStep2', 'Create or select a project')}</li>
-                    <li>{t('settings.youtubeStep3', 'Enable \'YouTube Data API v3\'')}</li>
-                    <li>{t('settings.youtubeStep4', 'Go to credentials')}</li>
-                    <li>{t('settings.youtubeStep5', 'Generate API key')}</li>
-                  </ol>
-                </div>
+                {!useOAuth ? (
+                  <>
+                    <label htmlFor="youtube-api-key">
+                      {t('settings.youtubeApiKey', 'YouTube API Key')}
+                      <span className={`api-key-status ${apiKeysSet.youtube ? 'set' : 'not-set'}`}>
+                        {apiKeysSet.youtube
+                          ? t('settings.keySet', 'Set')
+                          : t('settings.keyNotSet', 'Not Set')}
+                      </span>
+                    </label>
+                    <div className="input-with-toggle">
+                      <input
+                        type={showYoutubeKey ? "text" : "password"}
+                        id="youtube-api-key"
+                        value={youtubeApiKey}
+                        onChange={(e) => setYoutubeApiKey(e.target.value)}
+                        placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
+                      />
+                      <button
+                        type="button"
+                        className="toggle-visibility"
+                        onClick={() => setShowYoutubeKey(!showYoutubeKey)}
+                        aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
+                      >
+                        {showYoutubeKey ? t('settings.hide') : t('settings.show')}
+                      </button>
+                    </div>
+                    <p className="api-key-help">
+                      {t('settings.youtubeApiKeyHelp', 'Required for YouTube search. Get one at')}
+                      <a
+                        href="https://console.cloud.google.com/apis/credentials"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Google Cloud Console
+                      </a>
+                    </p>
+                    <div className="api-key-instructions">
+                      <h4>{t('settings.getYoutubeApiKey', 'Get YouTube API Key')}</h4>
+                      <ol>
+                        <li>{t('settings.youtubeStep1', 'Go to Google Cloud Console')}</li>
+                        <li>{t('settings.youtubeStep2', 'Create or select a project')}</li>
+                        <li>{t('settings.youtubeStep3', 'Enable \'YouTube Data API v3\'')}</li>
+                        <li>{t('settings.youtubeStep4', 'Go to credentials')}</li>
+                        <li>{t('settings.youtubeStep5', 'Generate API key')}</li>
+                      </ol>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="oauth-status-container">
+                      <label>{t('settings.youtubeOAuth', 'YouTube OAuth 2.0')}</label>
+                      <span className={`api-key-status ${isAuthenticated ? 'set' : 'not-set'}`}>
+                        {isAuthenticated
+                          ? t('settings.authenticated', 'Authenticated')
+                          : t('settings.notAuthenticated', 'Not Authenticated')}
+                      </span>
+                    </div>
+
+                    <div className="oauth-client-inputs">
+                      <div className="oauth-input-group">
+                        <label htmlFor="youtube-client-id">{t('settings.clientId', 'Client ID')}</label>
+                        <div className="input-with-toggle">
+                          <input
+                            type={showClientId ? "text" : "password"}
+                            id="youtube-client-id"
+                            value={youtubeClientId}
+                            onChange={(e) => setYoutubeClientId(e.target.value)}
+                            placeholder={t('settings.clientIdPlaceholder', 'Enter your OAuth Client ID')}
+                          />
+                          <button
+                            type="button"
+                            className="toggle-visibility"
+                            onClick={() => setShowClientId(!showClientId)}
+                            aria-label={showClientId ? t('settings.hide') : t('settings.show')}
+                          >
+                            {showClientId ? t('settings.hide') : t('settings.show')}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="oauth-input-group">
+                        <label htmlFor="youtube-client-secret">{t('settings.clientSecret', 'Client Secret')}</label>
+                        <div className="input-with-toggle">
+                          <input
+                            type={showClientSecret ? "text" : "password"}
+                            id="youtube-client-secret"
+                            value={youtubeClientSecret}
+                            onChange={(e) => setYoutubeClientSecret(e.target.value)}
+                            placeholder={t('settings.clientSecretPlaceholder', 'Enter your OAuth Client Secret')}
+                          />
+                          <button
+                            type="button"
+                            className="toggle-visibility"
+                            onClick={() => setShowClientSecret(!showClientSecret)}
+                            aria-label={showClientSecret ? t('settings.hide') : t('settings.show')}
+                          >
+                            {showClientSecret ? t('settings.hide') : t('settings.show')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="oauth-actions">
+                      <button
+                        className="oauth-authenticate-btn"
+                        onClick={handleOAuthAuthentication}
+                        disabled={!youtubeClientId || !youtubeClientSecret}
+                      >
+                        {t('settings.authenticate', 'Authenticate with YouTube')}
+                      </button>
+                      {isAuthenticated && (
+                        <button
+                          className="oauth-clear-btn"
+                          onClick={handleClearOAuth}
+                        >
+                          {t('settings.clearAuth', 'Clear Authentication')}
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="api-key-help">
+                      {t('settings.oauthHelp', 'OAuth 2.0 provides more reliable access to YouTube API. Get credentials at')}
+                      <a
+                        href="https://console.cloud.google.com/apis/credentials"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Google Cloud Console
+                      </a>
+                    </p>
+                    <div className="api-key-instructions">
+                      <h4>{t('settings.getOAuthCredentials', 'Get OAuth Credentials')}</h4>
+                      <ol>
+                        <li>{t('settings.oauthStep1', 'Create a project in Google Cloud Console')}</li>
+                        <li>{t('settings.oauthStep2', 'Enable the YouTube Data API v3')}</li>
+                        <li>{t('settings.oauthStep3', 'Create OAuth 2.0 Client ID (Web application)')}</li>
+                        <li>{t('settings.oauthStep4a', 'Add Authorized JavaScript origins: ') + window.location.origin}</li>
+                        <li>{t('settings.oauthStep4b', 'Add Authorized redirect URI: ') + window.location.origin + '/oauth2callback.html'}</li>
+                        <li>{t('settings.oauthStep5', 'Copy your Client ID and Client Secret')}</li>
+                        <li>{t('settings.oauthStep6', 'Paste them into the fields above and click Authenticate')}</li>
+                      </ol>
+
+                      <h4>{t('settings.oauthTroubleshooting', 'Troubleshooting OAuth Issues')}</h4>
+
+                      <h5>{t('settings.redirectUriMismatch', 'Error: redirect_uri_mismatch')}</h5>
+                      <p>{t('settings.redirectUriMismatchHelp', 'This error occurs when the redirect URI in your application doesn\'t match what\'s registered in Google Cloud Console:')}</p>
+                      <ol>
+                        <li>{t('settings.redirectUriStep1', 'Go to Google Cloud Console > APIs & Services > Credentials')}</li>
+                        <li>{t('settings.redirectUriStep2', 'Find your OAuth 2.0 Client ID and click to edit')}</li>
+                        <li>{t('settings.redirectUriStep3a', 'In "Authorized JavaScript origins", add exactly:')}<br/>
+                          <code>{window.location.origin}</code>
+                        </li>
+                        <li>{t('settings.redirectUriStep3b', 'In "Authorized redirect URIs", add exactly:')}<br/>
+                          <code>{window.location.origin + '/oauth2callback.html'}</code>
+                        </li>
+                        <li>{t('settings.redirectUriStep4', 'Click Save')}</li>
+                      </ol>
+
+                      <h5>{t('settings.accessDenied', 'Error: access_denied')}</h5>
+                      <p>{t('settings.accessDeniedHelp', 'This error can occur for several reasons:')}</p>
+                      <ul>
+                        <li>{t('settings.accessDeniedReason1', 'You denied permission during the OAuth flow')}</li>
+                        <li>{t('settings.accessDeniedReason2', 'The YouTube Data API is not enabled for your project')}</li>
+                        <li>{t('settings.accessDeniedReason3', 'There are API restrictions on your OAuth client')}</li>
+                      </ul>
+                      <p>{t('settings.accessDeniedFix', 'To fix:')}</p>
+                      <ol>
+                        <li>{t('settings.accessDeniedStep1', 'Go to Google Cloud Console > APIs & Services > Library')}</li>
+                        <li>{t('settings.accessDeniedStep2', 'Search for "YouTube Data API v3" and make sure it\'s enabled')}</li>
+                        <li>{t('settings.accessDeniedStep3', 'Check your OAuth client for any API restrictions')}</li>
+                      </ol>
+
+                      <h5>{t('settings.notVerified', 'Error: App not verified')}</h5>
+                      <p>{t('settings.notVerifiedHelp', 'New OAuth applications start in "Testing" mode and can only be used by test users:')}</p>
+                      <ol>
+                        <li>{t('settings.notVerifiedStep1', 'Go to Google Cloud Console > APIs & Services > OAuth consent screen')}</li>
+                        <li>{t('settings.notVerifiedStep2', 'Scroll down to "Test users" section')}</li>
+                        <li>{t('settings.notVerifiedStep3', 'Click "Add users"')}</li>
+                        <li>{t('settings.notVerifiedStep4', 'Add your Google email address as a test user')}</li>
+                        <li>{t('settings.notVerifiedStep5', 'Save changes and try again')}</li>
+                      </ol>
+                      <p className="note">{t('settings.notVerifiedNote', 'Note: You don\'t need to wait for verification if you add yourself as a test user. Verification is only required if you want to make your app available to all users.')}</p>
+                    </div>
+                  </>
+                )}
               </div>
           </div>
           </div>

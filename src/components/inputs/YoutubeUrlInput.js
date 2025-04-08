@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getVideoDetails } from '../../services/youtubeApiService';
 
 const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   const { t } = useTranslation();
@@ -26,27 +27,17 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
 
   const fetchVideoTitle = async (videoId) => {
     try {
-      const youtubeApiKey = localStorage.getItem('youtube_api_key');
-      if (!youtubeApiKey) {
-        console.warn('YouTube API key not found');
-        return null;
-      }
-
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${youtubeApiKey}`
-      );
-
-      if (!response.ok) {
-        throw new Error('YouTube API request failed');
-      }
-
-      const data = await response.json();
-      if (data.items && data.items.length > 0) {
-        return data.items[0].snippet.title;
-      }
-      return null;
+      // Use the YouTube API service to get video details
+      const videoDetails = await getVideoDetails(videoId);
+      return videoDetails ? videoDetails.title : null;
     } catch (error) {
       console.error('Error fetching video title:', error);
+
+      // Check for quota exceeded error
+      if (error.message.includes('quota exceeded')) {
+        setError(error.message);
+      }
+
       return null;
     }
   };
