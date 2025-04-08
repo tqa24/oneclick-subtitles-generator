@@ -25,10 +25,14 @@
   transition: all 0.2s ease;
 }
 
+.auth-toggle-btn:hover:not(.active) {
+  background-color: color-mix(in srgb, var(--background-secondary), var(--text-primary) 5%);
+}
+
 .auth-toggle-btn.active {
-  background-color: var(--primary-color);
-  color: var(--text-on-primary);
-  border-color: var(--primary-color);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary-container);
 }
 
 .oauth-status-container {
@@ -65,8 +69,8 @@
 
 .oauth-authenticate-btn {
   padding: 8px 16px;
-  background-color: var(--primary-color);
-  color: var(--text-on-primary);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
   border: none;
   border-radius: var(--button-border-radius);
   cursor: pointer;
@@ -74,23 +78,27 @@
 }
 
 .oauth-authenticate-btn:disabled {
-  background-color: var(--disabled-color);
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 60%);
+  color: color-mix(in srgb, var(--md-on-primary-container), transparent 40%);
   cursor: not-allowed;
 }
 
 .oauth-clear-btn {
   padding: 8px 16px;
-  background-color: var(--error-color);
-  color: var(--text-on-error);
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
   border: none;
   border-radius: var(--button-border-radius);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.oauth-authenticate-btn:hover:not(:disabled),
+.oauth-authenticate-btn:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-primary-container), var(--md-on-primary-container) 10%);
+}
+
 .oauth-clear-btn:hover {
-  filter: brightness(1.1);
+  background-color: color-mix(in srgb, var(--md-error-container), var(--md-on-error-container) 10%);
 }
 
 /* OAuth Troubleshooting Styles */

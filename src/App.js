@@ -322,10 +322,13 @@ function App() {
       localStorage.setItem('gemini_model', geminiModel);
     }
 
-    // Update state
+    // Update state based on the selected authentication method
+    const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
+    const hasOAuthTokens = hasValidTokens();
+
     setApiKeysSet({
       gemini: !!geminiKey,
-      youtube: !!youtubeKey
+      youtube: useOAuth ? hasOAuthTokens : !!youtubeKey
     });
 
     // Show success notification
@@ -691,6 +694,7 @@ function App() {
           onClose={() => setShowSettings(false)}
           onSave={saveApiKeys}
           apiKeysSet={apiKeysSet}
+          setApiKeysSet={setApiKeysSet}
         />
       )}
     </>

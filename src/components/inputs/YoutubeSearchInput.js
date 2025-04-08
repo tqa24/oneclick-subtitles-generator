@@ -49,12 +49,24 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
       console.error('Error searching YouTube:', error);
 
       // Provide more specific error messages
-      if (error.message.includes('OAuth') || error.message.includes('authentication')) {
-        setError(t('youtube.authError', 'YouTube authentication required. Please set up OAuth in settings.'));
-      } else if (error.message.includes('quota exceeded')) {
-        setError(error.message);
+      if (isOAuthEnabled()) {
+        // Only show OAuth-specific errors if OAuth is enabled
+        if (error.message.includes('OAuth') || error.message.includes('Not authenticated')) {
+          setError(t('youtube.authError', 'YouTube authentication required. Please set up OAuth in settings.'));
+        } else if (error.message.includes('quota exceeded')) {
+          setError(t('errors.quotaExceeded', 'Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.'));
+        } else {
+          setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
+        }
       } else {
-        setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
+        // API key method is selected
+        if (error.message.includes('API key not found') || error.message.includes('API key')) {
+          setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
+        } else if (error.message.includes('quota exceeded')) {
+          setError(t('errors.quotaExceeded', 'Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.'));
+        } else {
+          setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
+        }
       }
     } finally {
       setIsSearching(false);

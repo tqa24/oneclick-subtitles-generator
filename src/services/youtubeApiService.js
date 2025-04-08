@@ -259,7 +259,7 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
 
         // Check for quota exceeded error
         if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('YouTube API quota exceeded. Please wait until tomorrow, or create a new Google Cloud project and update API key or OAuth credentials.');
+          throw new Error('quota exceeded');
         } else {
           throw new Error('YouTube API request failed');
         }
@@ -301,7 +301,7 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
 
         // Check for quota exceeded error
         if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('YouTube API quota exceeded. Please wait until tomorrow, or create a new Google Cloud project and update API key or OAuth credentials.');
+          throw new Error('quota exceeded');
         } else {
           throw new Error('YouTube API request failed');
         }
@@ -362,7 +362,7 @@ export const getVideoDetails = async (videoId) => {
 
         // Check for quota exceeded error
         if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('YouTube API quota exceeded. Please wait until tomorrow, or create a new Google Cloud project and update API key or OAuth credentials.');
+          throw new Error('quota exceeded');
         } else {
           throw new Error('YouTube API request failed');
         }
@@ -399,7 +399,7 @@ export const getVideoDetails = async (videoId) => {
 
         // Check for quota exceeded error
         if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('YouTube API quota exceeded. Please wait until tomorrow, or create a new Google Cloud project and update API key or OAuth credentials.');
+          throw new Error('quota exceeded');
         } else {
           throw new Error('YouTube API request failed');
         }

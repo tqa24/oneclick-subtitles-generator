@@ -39,7 +39,7 @@ const PromptIcon = () => (
   </svg>
 );
 
-const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
+const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(() => {
     // Load last active tab from localStorage or default to 'api-keys'
@@ -651,6 +651,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                         setUseOAuth(false);
                         localStorage.setItem('use_youtube_oauth', 'false');
                         console.log('Set OAuth to false');
+                        // Update apiKeysSet to reflect the API key method
+                        setApiKeysSet(prevState => ({
+                          ...prevState,
+                          youtube: !!youtubeApiKey
+                        }));
                       }}
                     >
                       {t('settings.apiKeyMethod', 'API Key')}
@@ -661,6 +666,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                         setUseOAuth(true);
                         localStorage.setItem('use_youtube_oauth', 'true');
                         console.log('Set OAuth to true');
+                        // Update apiKeysSet to reflect the OAuth method
+                        setApiKeysSet(prevState => ({
+                          ...prevState,
+                          youtube: isAuthenticated
+                        }));
                       }}
                     >
                       {t('settings.oauthMethod', 'OAuth 2.0')}
@@ -805,8 +815,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet }) => {
                         <li>{t('settings.createProject', 'Create a project in Google Cloud Console')}</li>
                         <li>{t('settings.enableYouTubeAPI', 'Enable the YouTube Data API v3')}</li>
                         <li>{t('settings.createOAuthClientId', 'Create OAuth 2.0 Client ID (Web application)')}</li>
-                        <li>{t('settings.addAuthorizedOrigins', 'Add Authorized JavaScript origins: ') + window.location.origin}</li>
-                        <li>{t('settings.addAuthorizedRedirect', 'Add Authorized redirect URI: ') + window.location.origin + '/oauth2callback.html'}</li>
+                        <li>{t('settings.addAuthorizedOrigins', 'Add Authorized JavaScript origins:')}<br/>
+                          <code>{window.location.origin}</code>
+                        </li>
+                        <li>{t('settings.addAuthorizedRedirect', 'Add Authorized redirect URI:')}<br/>
+                          <code>{window.location.origin + '/oauth2callback.html'}</code>
+                        </li>
                         <li>{t('settings.copyClientCredentials', 'Copy your Client ID and Client Secret')}</li>
                         <li>{t('settings.pasteAndAuthenticate', 'Paste them into the fields above and click Authenticate')}</li>
                       </ol>
