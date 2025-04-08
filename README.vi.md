@@ -164,11 +164,10 @@ ffmpeg -version
 - Giải nén file ZIP vào thư mục bạn muốn (ví dụ: C:\subtitles-generator)
 
 **Bước 2:** Cài đặt các gói phụ thuộc:
-- Mở Command Prompt
-- Di chuyển đến thư mục ứng dụng:
-```
-cd đường\dẫn\đến\thư\mục\subtitles-generator
-```
+- Mở thư mục ứng dụng - Chuột phải vào khoảng trống (như hình) - chọn Open in Terminal
+
+![Mở Terminal](readme_assets/213123213.png)
+
 - Cài đặt các gói phụ thuộc:
 ```
 npm install
@@ -180,11 +179,10 @@ npm install
 
 ### 1. Khởi Động Ứng Dụng
 
-- Mở Command Prompt
-- Di chuyển đến thư mục ứng dụng:
-```
-cd đường\dẫn\đến\thư\mục\subtitles-generator
-```
+- Mở thư mục ứng dụng - Chuột phải vào khoảng trống (như hình) - chọn Open in Terminal
+
+![Mở Terminal](readme_assets/213123213.png)
+
 - Chạy lệnh:
 ```
 npm run dev
