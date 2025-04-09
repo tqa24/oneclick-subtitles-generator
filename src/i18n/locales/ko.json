@@ -363,7 +363,16 @@
     "modelSelection": "모델",
     "promptSettings": "프롬프트",
     "previewLabel": "미리보기",
-    "selectModel": "번역을 위한 모델 선택"
+    "selectModel": "번역을 위한 모델 선택",
+    "splitDuration": "분할 시간",
+    "splitDurationTooltip": "토큰 제한을 피하기 위해 자막을 청크로 분할",
+    "splitDurationHelp": "자막을 작은 청크로 분할하면 토큰 제한으로 인해 번역이 잘리는 것을 방지할 수 있습니다. 긴 비디오의 경우 더 작은 청크를 사용하세요.",
+    "noSplit": "분할 없음",
+    "minutes": "분",
+    "splittingSubtitles": "{{count}}개의 자막을 {{duration}}분 청크로 분할 중",
+    "splitComplete": "{{count}}개의 자막을 {{chunks}}개의 청크로 분할 완료",
+    "translatingChunk": "청크 {{current}}/{{total}} ({{count}}개의 자막) 번역 중",
+    "translationComplete": "모든 {{count}}개의 청크 번역 완료"
   },
 
   "models": {

@@ -1,5 +1,7 @@
 import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
+import { getLanguageCode } from '../utils/languageUtils';
+import i18n from '../i18n/i18n';
 
 // Map to store multiple AbortControllers for parallel requests
 const activeAbortControllers = new Map();
@@ -387,6 +389,14 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
     // If splitDuration is specified and not 0, split subtitles into chunks based on duration
     if (splitDuration > 0) {
         console.log(`Splitting translation into chunks of ${splitDuration} minutes`);
+        // Dispatch event to update UI with status
+        const message = i18n.t('translation.splittingSubtitles', 'Splitting {{count}} subtitles into chunks of {{duration}} minutes', {
+            count: subtitles.length,
+            duration: splitDuration
+        });
+        window.dispatchEvent(new CustomEvent('translation-status', {
+            detail: { message }
+        }));
         return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration);
     }
 
@@ -733,11 +743,30 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
     console.log(`Split ${subtitles.length} subtitles into ${chunks.length} chunks`);
 
+    // Dispatch event to update UI with status
+    const splitMessage = i18n.t('translation.splitComplete', 'Split {{count}} subtitles into {{chunks}} chunks', {
+        count: subtitles.length,
+        chunks: chunks.length
+    });
+    window.dispatchEvent(new CustomEvent('translation-status', {
+        detail: { message: splitMessage }
+    }));
+
     // Translate each chunk
     const translatedChunks = [];
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
         console.log(`Translating chunk ${i + 1}/${chunks.length} with ${chunk.length} subtitles`);
+
+        // Dispatch event to update UI with status
+        const chunkMessage = i18n.t('translation.translatingChunk', 'Translating chunk {{current}}/{{total}} with {{count}} subtitles', {
+            current: i + 1,
+            total: chunks.length,
+            count: chunk.length
+        });
+        window.dispatchEvent(new CustomEvent('translation-status', {
+            detail: { message: chunkMessage }
+        }));
 
         try {
             // Call translateSubtitles with the current chunk, but with splitDuration=0 to avoid infinite recursion
@@ -753,6 +782,14 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
             })));
         }
     }
+
+    // Dispatch event to update UI with completion status
+    const completionMessage = i18n.t('translation.translationComplete', 'Translation completed for all {{count}} chunks', {
+        count: chunks.length
+    });
+    window.dispatchEvent(new CustomEvent('translation-status', {
+        detail: { message: completionMessage }
+    }));
 
     // Flatten the array of translated chunks
     return translatedChunks.flat();

@@ -375,7 +375,16 @@
     "modelSelection": "Mô hình",
     "promptSettings": "Lệnh",
     "previewLabel": "Xem trước",
-    "selectModel": "Chọn mô hình để dịch"
+    "selectModel": "Chọn mô hình để dịch",
+    "splitDuration": "Thời gian chia",
+    "splitDurationTooltip": "Chia phụ đề thành các phần để tránh giới hạn token",
+    "splitDurationHelp": "Chia phụ đề thành các phần nhỏ hơn giúp ngăn chặn việc dịch bị cắt ngắn do giới hạn token. Đối với video dài hơn, hãy sử dụng các phần nhỏ hơn.",
+    "noSplit": "Không chia",
+    "minutes": "phút",
+    "splittingSubtitles": "Đang chia {{count}} phụ đề thành các phần {{duration}} phút",
+    "splitComplete": "Đã chia {{count}} phụ đề thành {{chunks}} phần",
+    "translatingChunk": "Đang dịch phần {{current}}/{{total}} với {{count}} phụ đề",
+    "translationComplete": "Đã hoàn thành dịch tất cả {{count}} phần"
   },
 
   "models": {

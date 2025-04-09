@@ -69,7 +69,9 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video b
 
 ## Hướng Dẫn Cài Đặt Chi Tiết
 
-### 1. Cài Đặt Node.js
+### Cài Đặt Trên Windows
+
+#### 1. Cài Đặt Node.js
 
 Node.js là môi trường chạy JavaScript cần thiết cho ứng dụng này.
 
@@ -109,7 +111,7 @@ node --version
 ```
 - Nếu hiển thị phiên bản (ví dụ: v18.16.0), bạn đã cài đặt thành công
 
-### 2. Cài Đặt FFmpeg
+#### 2. Cài Đặt FFmpeg
 
 FFmpeg là công cụ xử lý video cần thiết cho ứng dụng.
 
@@ -153,19 +155,92 @@ ffmpeg -version
 ```
 - Nếu hiển thị thông tin phiên bản, bạn đã cài đặt thành công
 
+### Cài Đặt Trên macOS
+
+#### 1. Cài Đặt Node.js và FFmpeg bằng Homebrew (Khuyến nghị)
+
+Homebrew là trình quản lý gói cho macOS giúp việc cài đặt phần mềm trở nên dễ dàng.
+
+**Bước 1:** Cài đặt Homebrew (nếu chưa có):
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+**Bước 2:** Cài đặt Node.js:
+```bash
+brew install node
+```
+
+Kiểm tra cài đặt:
+```bash
+node -v
+npm -v
+```
+
+**Bước 3:** Cài đặt FFmpeg:
+```bash
+brew install ffmpeg
+```
+
+Kiểm tra cài đặt:
+```bash
+ffmpeg -version
+```
+
+#### 2. Cài Đặt Thủ Công
+
+**Cài đặt Node.js:**
+
+**Bước 1:** Tải bộ cài đặt cho macOS từ [trang web Node.js](https://nodejs.org/)
+
+**Bước 2:** Chọn phiên bản LTS (Long Term Support) - đây là phiên bản ổn định nhất
+
+**Bước 3:** Chạy bộ cài đặt và làm theo hướng dẫn
+
+**Bước 4:** Kiểm tra cài đặt bằng cách mở Terminal và chạy:
+```bash
+node -v
+npm -v
+```
+
+**Cài đặt FFmpeg:**
+
+**Bước 1:** Tải FFmpeg từ [trang web FFmpeg](https://ffmpeg.org/download.html)
+
+**Bước 2:** Giải nén file đã tải về
+
+**Bước 3:** Di chuyển FFmpeg vào thư mục trong PATH, ví dụ:
+```bash
+sudo mv ffmpeg /usr/local/bin/
+```
+
+**Bước 4:** Kiểm tra cài đặt:
+```bash
+ffmpeg -version
+```
+
 ### 3. Cài Đặt Ứng Dụng
 
 **Bước 1:** Tải mã nguồn:
 - Tải file ZIP từ GitHub hoặc sử dụng lệnh git clone (nếu bạn đã cài Git)
-- Giải nén file ZIP vào thư mục bạn muốn (ví dụ: C:\subtitles-generator)
+- Giải nén file ZIP vào thư mục bạn muốn (ví dụ: C:\subtitles-generator trên Windows hoặc ~/subtitles-generator trên macOS)
 
 **Bước 2:** Cài đặt các gói phụ thuộc:
+
+**Trên Windows:**
 - Mở thư mục ứng dụng - Chuột phải vào khoảng trống (như hình) - chọn Open in Terminal
 
 ![Mở Terminal](readme_assets/213123213.png)
 
-- Cài đặt các gói phụ thuộc:
+**Trên macOS:**
+- Mở Terminal
+- Di chuyển đến thư mục ứng dụng bằng lệnh `cd`, ví dụ:
+```bash
+cd ~/subtitles-generator
 ```
+
+**Cài đặt các gói phụ thuộc (cả Windows và macOS):**
+```bash
 npm install
 ```
 - Quá trình này có thể mất vài phút tùy thuộc vào tốc độ mạng
@@ -175,12 +250,20 @@ npm install
 
 ### 1. Khởi Động Ứng Dụng
 
+**Trên Windows:**
 - Mở thư mục ứng dụng - Chuột phải vào khoảng trống (như hình) - chọn Open in Terminal
 
 ![Mở Terminal](readme_assets/213123213.png)
 
-- Chạy lệnh:
+**Trên macOS:**
+- Mở Terminal
+- Di chuyển đến thư mục ứng dụng bằng lệnh `cd`, ví dụ:
+```bash
+cd ~/subtitles-generator
 ```
+
+**Chạy ứng dụng (cả Windows và macOS):**
+```bash
 npm run dev
 ```
 - Ứng dụng sẽ tự động mở trong trình duyệt web của bạn
@@ -224,18 +307,38 @@ npm run dev
 ## Xử Lý Sự Cố Thường Gặp
 
 ### Không Thể Cài Đặt Node.js
+
+**Trên Windows:**
 - Đảm bảo bạn có quyền quản trị viên trên máy tính
 - Tắt tạm thời phần mềm diệt virus
 - Thử tải lại file cài đặt từ trang chính thức
 
+**Trên macOS:**
+- Đảm bảo bạn có quyền quản trị (sudo)
+- Nếu sử dụng Homebrew, hãy chạy `brew doctor` để kiểm tra vấn đề
+- Thử cài đặt lại Homebrew bằng cách chạy lệnh cài đặt Homebrew
+
 ### Không Thể Cài Đặt FFmpeg
+
+**Trên Windows:**
 - Nếu cài đặt thủ công gặp khó khăn, hãy sử dụng tính năng cài đặt tự động của ứng dụng
 - Kiểm tra xem bạn đã thêm đúng đường dẫn vào biến môi trường Path chưa
 
+**Trên macOS:**
+- Nếu sử dụng Homebrew, hãy thử chạy `brew update` và sau đó `brew install ffmpeg` lại
+- Kiểm tra xem có lỗi nào trong Terminal khi cài đặt không
+- Thử cài đặt phiên bản cụ thể: `brew install ffmpeg@4.4`
+
 ### Ứng Dụng Không Khởi Động
+
+**Vấn đề chung (cả Windows và macOS):**
 - Kiểm tra xem bạn đã cài đặt Node.js chưa
 - Đảm bảo bạn đã chạy lệnh `npm install` để cài đặt các gói phụ thuộc
-- Kiểm tra lỗi trong Command Prompt khi chạy `npm run dev`
+- Kiểm tra lỗi trong Terminal/Command Prompt khi chạy `npm run dev`
+
+**Trên macOS:**
+- Kiểm tra quyền truy cập thư mục: `chmod -R 755 ./node_modules`
+- Thử xóa thư mục node_modules và cài đặt lại: `rm -rf node_modules && npm install`
 
 ### Không Thể Tạo Phụ Đề
 - Kiểm tra xem bạn đã nhập đúng API key Gemini chưa

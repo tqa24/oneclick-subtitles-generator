@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateSubtitles, completeDocument, summarizeDocument, getDefaultTranslationPrompt } from '../services/geminiService';
 import { downloadSRT, downloadJSON, downloadTXT } from '../utils/fileUtils';
@@ -29,6 +29,10 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('translation_split_duration') || '0');
   });
+  const [translationStatus, setTranslationStatus] = useState('');
+
+  // Reference to the status message element for scrolling
+  const statusRef = useRef(null);
 
   // Update selectedModel when localStorage changes
   useEffect(() => {
@@ -42,6 +46,21 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [selectedModel]);
+
+  // Listen for translation status updates
+  useEffect(() => {
+    const handleTranslationStatus = (event) => {
+      setTranslationStatus(event.detail.message);
+
+      // Scroll to the status message if it exists
+      if (statusRef.current) {
+        statusRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('translation-status', handleTranslationStatus);
+    return () => window.removeEventListener('translation-status', handleTranslationStatus);
+  }, []);
 
   const handleTranslate = async () => {
     if (!targetLanguage.trim()) {
@@ -250,6 +269,16 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   <option value="10">10 {t('translation.minutes', 'minutes')}</option>
                   <option value="20">20 {t('translation.minutes', 'minutes')}</option>
                 </select>
+                <div
+                  className="help-icon-container"
+                  title={t('translation.splitDurationHelp', 'Splitting subtitles into smaller chunks helps prevent translations from being cut off due to token limits. For longer videos, use smaller chunks.')}
+                >
+                  <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </div>
               </div>
             </div>
 
@@ -291,6 +320,17 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 </button>
               </div>
             </div>
+
+            {/* Translation status message */}
+            {isTranslating && translationStatus && (
+              <div className="translation-row status-row">
+                <div className="row-content">
+                  <div className="translation-status" ref={statusRef}>
+                    {translationStatus}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <PromptEditor
               isOpen={isPromptEditorOpen}
