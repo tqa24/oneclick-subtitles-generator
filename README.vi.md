@@ -126,11 +126,7 @@ ffmpeg -version
 ```
 Nếu hiển thị thông tin phiên bản, bạn đã cài đặt thành công.
 
-**Cách 2: Cài đặt tự động (Thông qua ứng dụng)**
-
-Ứng dụng này có thể tự động cài đặt FFmpeg cho bạn. Sau khi cài đặt và chạy ứng dụng, nếu phát hiện thiếu FFmpeg, ứng dụng sẽ hỏi bạn có muốn cài đặt tự động không. Chọn "Có" để tiến hành.
-
-**Cách 3: Cài đặt thủ công**
+**Cách 2: Cài đặt thủ công**
 
 **Bước 1:** Tải FFmpeg từ trang chính thức:
 - Truy cập [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
