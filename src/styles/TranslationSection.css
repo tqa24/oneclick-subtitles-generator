@@ -98,7 +98,8 @@
 
 .translate-button,
 .download-translation-button,
-.reset-translation-button {
+.reset-translation-button,
+.download-process-button {
   padding: 0 1rem; /* Reduced horizontal padding */
   height: 42px;
   border-radius: 21px;
@@ -239,6 +240,18 @@
 
 .reset-translation-button:hover {
   background-color: var(--md-surface-3);
+}
+
+.download-process-button {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.download-process-button:hover {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .translation-error {

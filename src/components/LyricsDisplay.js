@@ -80,7 +80,9 @@ const LyricsDisplay = ({
   seekTime = null,
   timeFormat = 'seconds',
   onSaveSubtitles = null, // New callback for when subtitles are saved
-  videoSource = null // Video source URL for audio analysis
+  videoSource = null, // Video source URL for audio analysis
+  translatedSubtitles = null, // Translated subtitles
+  videoTitle = 'subtitles' // Video title for download filenames
 }) => {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
@@ -195,76 +197,76 @@ const LyricsDisplay = ({
 
   // Handle download request from modal
   const handleDownload = (source, format) => {
-    if (lyrics && lyrics.length > 0) {
-      // Only original subtitles are available in LyricsDisplay
-      if (source === 'original') {
-        switch (format) {
-          case 'srt':
-            downloadSRT(lyrics, 'subtitles.srt');
-            break;
-          case 'json':
-            downloadJSON(lyrics, 'subtitles.json');
-            break;
-          case 'txt':
-            const content = downloadTXT(lyrics, 'subtitles.txt');
-            setTxtContent(content);
-            break;
-          default:
-            break;
-        }
+    const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
+
+    if (subtitlesToUse && subtitlesToUse.length > 0) {
+      const langSuffix = source === 'translated' ? '_translated' : '';
+      const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
+
+      switch (format) {
+        case 'srt':
+          downloadSRT(subtitlesToUse, `${baseFilename}.srt`);
+          break;
+        case 'json':
+          downloadJSON(subtitlesToUse, `${baseFilename}.json`);
+          break;
+        case 'txt':
+          const content = downloadTXT(subtitlesToUse, `${baseFilename}.txt`);
+          setTxtContent(content);
+          break;
+        default:
+          break;
       }
     }
   };
 
   // Handle process request from modal
   const handleProcess = async (source, processType, model) => {
-    if (!lyrics || lyrics.length === 0) return;
+    const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
 
-    // Only original subtitles are available in LyricsDisplay
-    if (source === 'original') {
-      // First, get the text content if we don't have it yet
-      let textContent = txtContent;
-      if (!textContent) {
-        textContent = lyrics.map(subtitle => subtitle.text).join('\n\n');
-        setTxtContent(textContent);
+    if (!subtitlesToUse || subtitlesToUse.length === 0) return;
+
+    // First, get the text content if we don't have it yet
+    let textContent = txtContent;
+    if (!textContent) {
+      textContent = subtitlesToUse.map(subtitle => subtitle.text).join('\n\n');
+      setTxtContent(textContent);
+    }
+
+    setIsProcessing(true);
+    try {
+      let result;
+      if (processType === 'consolidate') {
+        result = await completeDocument(textContent, model);
+      } else if (processType === 'summarize') {
+        result = await summarizeDocument(textContent, model);
       }
 
-      setIsProcessing(true);
-      try {
-        let result;
-        if (processType === 'consolidate') {
-          result = await completeDocument(textContent, model);
-        } else if (processType === 'summarize') {
-          result = await summarizeDocument(textContent, model);
+      setProcessedDocument(result);
+
+      // Show a temporary success message
+      const successMessage = document.createElement('div');
+      successMessage.className = 'save-success-message';
+      successMessage.textContent = processType === 'consolidate'
+        ? t('output.documentCompleted', 'Document completed successfully')
+        : t('output.summaryCompleted', 'Summary completed successfully');
+      document.body.appendChild(successMessage);
+
+      // Remove the message after 3 seconds
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
         }
+      }, 3000);
 
-        setProcessedDocument(result);
-
-        // Show a temporary success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'save-success-message';
-        successMessage.textContent = processType === 'consolidate'
-          ? t('output.documentCompleted', 'Document completed successfully')
-          : t('output.summaryCompleted', 'Summary completed successfully');
-        document.body.appendChild(successMessage);
-
-        // Remove the message after 3 seconds
-        setTimeout(() => {
-          if (document.body.contains(successMessage)) {
-            document.body.removeChild(successMessage);
-          }
-        }, 3000);
-
-        // Download the processed document
-        const filename = processType === 'consolidate'
-          ? 'completed_document.txt'
-          : 'summary.txt';
-        downloadFile(result, filename);
-      } catch (error) {
-        console.error(`Error ${processType === 'consolidate' ? 'completing' : 'summarizing'} document:`, error);
-      } finally {
-        setIsProcessing(false);
-      }
+      // Download the processed document
+      const langSuffix = source === 'translated' ? '_translated' : '';
+      const filename = `${videoTitle || 'subtitles'}_${processType === 'consolidate' ? 'completed' : 'summary'}${langSuffix}.txt`;
+      downloadFile(result, filename);
+    } catch (error) {
+      console.error(`Error ${processType === 'consolidate' ? 'completing' : 'summarizing'} document:`, error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -480,7 +482,7 @@ const LyricsDisplay = ({
             onClose={() => setIsModalOpen(false)}
             onDownload={handleDownload}
             onProcess={handleProcess}
-            hasTranslation={false} // LyricsDisplay only has original subtitles
+            hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
             hasOriginal={lyrics && lyrics.length > 0}
           />
         </div>

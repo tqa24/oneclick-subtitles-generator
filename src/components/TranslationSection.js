@@ -301,7 +301,7 @@ Here are the subtitles to translate:\n\n{subtitlesText}`}
                 {t('translation.newTranslation', 'New Translation')}
               </button>
 
-              {/* Keep the modal for functionality but don't show a button for it */}
+              
               <DownloadOptionsModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
