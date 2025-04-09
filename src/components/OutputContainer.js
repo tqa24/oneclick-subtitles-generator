@@ -147,6 +147,8 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               timeFormat={timeFormat}
               videoSource={actualVideoUrl}
               showWaveform={showWaveform}
+              translatedSubtitles={translatedSubtitles}
+              videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
             />
 
             {/* Download buttons moved to LyricsDisplay component */}
