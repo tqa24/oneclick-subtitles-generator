@@ -25,6 +25,10 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   const [customTranslationPrompt, setCustomTranslationPrompt] = useState(
     localStorage.getItem('custom_prompt_translation') || null
   );
+  const [splitDuration, setSplitDuration] = useState(() => {
+    // Get the split duration from localStorage or use default (0 = no split)
+    return parseInt(localStorage.getItem('translation_split_duration') || '0');
+  });
 
   // Update selectedModel when localStorage changes
   useEffect(() => {
@@ -54,12 +58,15 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     setIsTranslating(true);
 
     try {
-      // Pass the selected model and custom prompt to the translation function
-      const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt);
+      // Pass the selected model, custom prompt, and split duration to the translation function
+      const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt, splitDuration);
       setTranslatedSubtitles(result);
       if (onTranslationComplete) {
         onTranslationComplete(result);
       }
+
+      // Save the split duration setting to localStorage
+      localStorage.setItem('translation_split_duration', splitDuration.toString());
     } catch (err) {
       console.error('Translation error:', err);
       setError(t('translation.error', 'Error translating subtitles. Please try again.'));
@@ -226,7 +233,27 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
               </div>
             </div>
 
-            {/* Third row: Prompt editing */}
+            {/* Third row: Split duration selection */}
+            <div className="translation-row split-duration-row">
+              <div className="row-label">
+                <label>{t('translation.splitDuration', 'Split Duration')}:</label>
+              </div>
+              <div className="row-content">
+                <select
+                  value={splitDuration}
+                  onChange={(e) => setSplitDuration(parseInt(e.target.value))}
+                  className="split-duration-select"
+                  title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
+                >
+                  <option value="0">{t('translation.noSplit', 'No Split')}</option>
+                  <option value="5">5 {t('translation.minutes', 'minutes')}</option>
+                  <option value="10">10 {t('translation.minutes', 'minutes')}</option>
+                  <option value="20">20 {t('translation.minutes', 'minutes')}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Fourth row: Prompt editing */}
             <div className="translation-row prompt-row">
               <div className="row-label">
                 <label>{t('translation.promptSettings', 'Prompt')}:</label>
@@ -245,7 +272,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
               </div>
             </div>
 
-            {/* Fourth row: Action buttons */}
+            {/* Fifth row: Action buttons */}
             <div className="translation-row action-row">
               <div className="row-content action-content">
                 <button
@@ -301,7 +328,7 @@ Here are the subtitles to translate:\n\n{subtitlesText}`}
                 {t('translation.newTranslation', 'New Translation')}
               </button>
 
-              
+
               <DownloadOptionsModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
