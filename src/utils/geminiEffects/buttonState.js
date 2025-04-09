@@ -6,7 +6,7 @@
  * Reset processing state when generation is complete
  */
 export const resetGeminiButtonState = () => {
-  const buttons = document.querySelectorAll('.generate-btn, .retry-gemini-btn');
+  const buttons = document.querySelectorAll('.generate-btn, .retry-gemini-btn, .srt-upload-button');
   buttons.forEach(button => {
     button.classList.remove('processing');
   });

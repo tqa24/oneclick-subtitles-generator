@@ -1,10 +1,12 @@
 {
   "common": {
+    "cancel": "취소",
     "undo": "실행 취소",
     "reset": "초기화",
     "save": "저장",
-    "cancel": "취소",
-    "close": "닫기"
+    "close": "닫기",
+    "on": "켜기",
+    "off": "끄기"
   },
   "header": {
     "appTitle": "원클릭 자막 생성기",
@@ -27,6 +29,9 @@
     "maxFileSize": "(비디오의 길이는 중요하지 않지만, 화질이 높거나 프레임 속도가 높은 비디오는 모델을 쉽게 과부하시킬 수 있습니다)"
   },
   "output": {
+    "downloadingVideo": "비디오 다운로드 중...",
+    "audioStitchingWarning": "비디오 다운로드 중... 참고: 360p가 아닌 해상도의 경우 오디오 스티칭이 필요하며, 특히 1시간 이상의 비디오에서는 오랫동안 소요될 수 있습니다.",
+    "videoDownloadComplete": "비디오 다운로드 완료! 처리 중...",
     "processingVideo": "처리 중입니다. 몇 분 정도 소요될 수 있습니다...",
     "generationSuccess": "자막이 성공적으로 생성되었습니다!",
     "subtitlesLoadedFromCache": "캐시에서 자막을 불러왔습니다!",
@@ -34,6 +39,16 @@
     "subtitlesPreview": "자막 미리보기",
     "downloadSrt": "SRT 다운로드",
     "downloadJson": "JSON 다운로드",
+    "downloadTxt": "TXT 다운로드",
+    "completeDocument": "문서 완성 (TXT)",
+    "completingDocument": "문서 완성 중...",
+    "documentCompleted": "문서가 성공적으로 완성되었습니다",
+    "selectModelForDocument": "문서 완성을 위한 모델 선택",
+    "summarize": "요약하기",
+    "summarizing": "요약 중...",
+    "summaryCompleted": "요약이 성공적으로 완료되었습니다",
+    "downloadOptions": "다운로드 & 처리",
+    "processOptions": "처리 옵션",
     "editTimings": "타이밍 편집",
     "hideEditor": "타이밍 편집기 숨기기",
     "retryGemini": "Gemini로 다시 시도",
@@ -136,6 +151,8 @@
     "saveChanges": "변경사항을 저장하고 다시 시도",
     "verificationNote": "참고: 자신을 테스트 사용자로 추가하면 확인을 기다릴 필요가 없습니다. 확인은 앱을 모든 사용자에게 제공하려는 경우에만 필요합니다.",
     "timeFormat": "시간 형식",
+    "showWaveform": "오디오 파형 표시",
+    "showWaveformDescription": "타임라인에 오디오 파형을 표시합니다. 이를 통해 조용한 부분과 음성 패턴을 식별할 수 있습니다.",
     "timeFormatDescription": "타임라인과 가사에서 시간이 표시되는 방식을 선택하세요.",
     "timeFormatSeconds": "초 (예: 75.40s)",
     "timeFormatHMS": "시:분:초 (예: 1:15.40)",
@@ -173,9 +190,12 @@
     "saveAsPreset": "프리셋으로 저장",
     "presetGeneralPurpose": "일반 목적",
     "presetExtractText": "텍스트 추출",
-    "presetFocusSpeech": "음성에 집중",
+    "presetFocusSpokenWords": "대화에 집중",
+    "presetFocusLyrics": "노래 가사에 집중",
     "presetDescribeVideo": "비디오 설명",
     "presetTranslateDirectly": "직접 번역",
+    "presetChaptering": "장 분리",
+    "presetIdentifySpeakers": "발화자 식별",
     "cache": "캐시 관리",
     "cacheDescription": "공간을 확보하기 위해 모든 캐시된 자막과 다운로드된 비디오를 지웁니다.",
     "clearCache": "캐시 지우기",
@@ -191,7 +211,11 @@
     "videos": "비디오:",
     "videosCount": "{{count}}개 파일 ({{size}})",
     "subtitles": "자막:",
-    "subtitlesCount": "{{count}}개 파일 ({{size}})"
+    "subtitlesCount": "{{count}}개 파일 ({{size}})",
+    "about": "정보",
+    "version": "버전",
+    "creator": "제작자",
+    "appDescription": "원클릭 자막 생성기는 한 번의 클릭으로 비디오에 대한 자막을 생성, 편집 및 번역할 수 있는 도구입니다."
   },
   "lyrics": {
     "synchronizedLyrics": "동기화된 자막",
@@ -303,10 +327,28 @@
     "rendering": "자막이 포함된 비디오 렌더링 중..."
   },
 
+  "download": {
+    "options": "다운로드 & 처리 옵션",
+    "subtitleSource": "자막 소스",
+    "original": "원본",
+    "translated": "번역된 자막",
+    "fileFormat": "파일 형식",
+    "downloadFiles": "파일 다운로드",
+    "processText": "텍스트 처리",
+    "processType": "처리 유형",
+    "selectModel": "모델 선택",
+    "selectModelForProcessing": "처리를 위한 모델 선택",
+    "download": "다운로드",
+    "process": "처리",
+    "summarize": "요약하기 (TXT)",
+    "txtNoTimings": "TXT (시간 정보 없음)",
+    "consolidateExplanation": "자막을 일관된 문서로 변환하여 원래 의미를 유지하면서 흐름과 가독성을 향상시킵니다.",
+    "summarizeExplanation": "주요 요점과 핵심 정보를 간결하게 요약하여 원본 텍스트 길이의 약 1/3로 만듭니다."
+  },
   "translation": {
     "title": "자막 번역",
     "description": "편집한 자막을 다른 언어로 번역하면서 시간 정보를 유지합니다.",
-    "languagePlaceholder": "대상 언어 입력 (예: 영어, 프랑스어, 일본어)",
+    "languagePlaceholder": "대상 언어 입력 (예: English, French, Japanese)",
     "languageRequired": "대상 언어를 입력해 주세요",
     "noSubtitles": "번역할 자막이 없습니다",
     "error": "자막 번역 오류. 다시 시도해 주세요.",
@@ -316,7 +358,12 @@
     "downloadJSON": "JSON 다운로드",
     "newTranslation": "새 번역",
     "preview": "번역 미리보기",
-    "moreSubtitles": "... 그리고 {{count}}개 더 있습니다"
+    "moreSubtitles": "... 그리고 {{count}}개 더 있습니다",
+    "targetLanguage": "대상 언어",
+    "modelSelection": "모델",
+    "promptSettings": "프롬프트",
+    "previewLabel": "미리보기",
+    "selectModel": "번역을 위한 모델 선택"
   },
 
   "models": {
@@ -328,5 +375,51 @@
     "highAccuracy": "높은 정확도",
     "balancedModel": "균형 잡힌",
     "fastestModel": "가장 빠름"
+  },
+
+  "promptEditor": {
+    "editPrompt": "프롬프트 편집",
+    "editPromptTooltip": "Gemini 프롬프트 편집",
+    "enterPrompt": "여기에 사용자 정의 프롬프트를 입력하세요...",
+    "availableVariables": "사용 가능한 변수:",
+    "variablesInstruction": "다음 변수들은 텍스트 영역에서 아이콘으로 표시됩니다:",
+    "subtitlesTextDesc": "자막 텍스트 내용",
+    "targetLanguageDesc": "대상 언어 (번역용)",
+    "reset": "기본값으로 초기화",
+    "editConsolidatePrompt": "통합 프롬프트 편집",
+    "editSummarizePrompt": "요약 프롬프트 편집",
+    "editTranslationPrompt": "번역 프롬프트 편집",
+    "customizePromptDesc": "Gemini가 콘텐츠를 처리하는 방법을 사용자 정의하세요.",
+    "customizeTranslationDesc": "Gemini가 자막을 번역하는 방법을 사용자 정의하세요."
+  },
+
+  "onboarding": {
+    "title": "자막 생성기에 오신 것을 환영합니다",
+    "promptSelectionSubtitle": "먼저, 트랜스크립션을 위한 프롬프트 프리셋을 선택해보세요",
+    "modelSelectionSubtitle": "이제, 트랜스크립션을 위한 Gemini 모델을 선택해보세요",
+    "promptSelectionInstruction": "당신의 요구에 가장 적합한 프리셋을 선택하세요. 나중에 설정에서 언제든지 변경할 수 있습니다.",
+    "modelSelectionInstruction": "Gemini 모델을 선택하세요. 더 정확한 모델은 더 느릴 수 있습니다. 나중에 설정에서 언제든지 변경할 수 있습니다.",
+    "selectLanguage": "언어 선택:",
+    "back": "뒤로",
+    "next": "다음",
+    "finish": "완료",
+    "completed": "설정이 완료되었습니다! 언제든지 이 설정을 변경할 수 있습니다."
+  },
+
+  "qualitySelector": {
+    "videoQuality": "동영상 품질",
+    "lowestQuality": "최저 품질 (1시간 이상 동영상에 권장)",
+    "lowQuality": "저 품질",
+    "mediumQuality": "중간 품질 (기본값)",
+    "highQuality": "고 품질",
+    "hdQuality": "HD 품질 (긴 동영상에서 문제 발생 가능)",
+    "longVideoWarning": "1시간 이상의 동영상에는 앱 충돌을 피하기 위해 144p를 사용하세요"
+  },
+
+  "timeline": {
+    "zoomIn": "확대",
+    "zoomOut": "축소",
+    "resetZoom": "확대/축소 초기화",
+    "waveformDisabled": "성능 향상을 위해 30분 이상의 동영상에서는 오디오 파형 시각화가 자동으로 비활성화되었습니다."
   }
 }

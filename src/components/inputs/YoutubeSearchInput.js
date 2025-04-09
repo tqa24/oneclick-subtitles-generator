@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FiClock, FiSearch, FiX } from 'react-icons/fi';
 import { searchYouTubeVideos, isOAuthEnabled, hasValidTokens } from '../../services/youtubeApiService';
+import { addSearchQueryToHistory, getSearchQueryHistory, clearSearchQueryHistory, formatTimestamp } from '../../utils/historyUtils';
+import QualitySelector from './QualitySelector';
 
 const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo, className }) => {
   const { t } = useTranslation();
@@ -8,6 +11,10 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState([]);
+  const historyDropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Debounce function for search
   const useDebounce = (value, delay) => {
@@ -75,6 +82,29 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
+  // Load history on component mount
+  useEffect(() => {
+    setHistory(getSearchQueryHistory());
+  }, []);
+
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        historyDropdownRef.current &&
+        !historyDropdownRef.current.contains(event.target) &&
+        !event.target.closest('.history-button')
+      ) {
+        setShowHistory(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Search YouTube when query changes
   useEffect(() => {
     if (debouncedSearchQuery.length < 3) {
@@ -93,6 +123,13 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
       return;
     }
 
+    // Add to search history if query is valid
+    if (debouncedSearchQuery.trim().length >= 3) {
+      addSearchQueryToHistory(debouncedSearchQuery);
+      // Refresh history list
+      setHistory(getSearchQueryHistory());
+    }
+
     searchYouTube(debouncedSearchQuery);
   }, [debouncedSearchQuery, apiKeysSet.youtube, t, searchYouTube]);
 
@@ -105,17 +142,44 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
   const handleVideoSelect = (video) => {
     // Clear any existing file URLs when selecting a YouTube video
     localStorage.removeItem('current_file_url');
-    setSelectedVideo(video);
+
+    // Get the default quality from localStorage
+    const quality = localStorage.getItem('youtube_download_quality') || '360p';
+
+    // Add quality to the video object
+    setSelectedVideo({
+      ...video,
+      quality
+    });
+  };
+
+  // Toggle history dropdown
+  const toggleHistory = () => {
+    setShowHistory(prev => !prev);
+  };
+
+  // Handle selecting a query from history
+  const handleSelectFromHistory = (query) => {
+    setSearchQuery(query);
+    setShowHistory(false);
+    // Focus the input field
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  // Clear history
+  const handleClearHistory = (e) => {
+    e.stopPropagation();
+    clearSearchQueryHistory();
+    setHistory([]);
   };
 
   return (
     <div className={`youtube-search-input ${className || ''}`}>
       <div className="search-field-container">
         <div className="search-input-wrapper">
-          <svg className="search-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+          <FiSearch className="search-icon" size={18} />
           <input
             type="text"
             id="youtube-search-input"
@@ -123,18 +187,58 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
             placeholder={t('youtube.searchPlaceholder', 'Enter video title...')}
             value={searchQuery}
             onChange={handleSearchChange}
+            ref={inputRef}
           />
+
+          {/* History button */}
+          {history.length > 0 && (
+            <button
+              type="button"
+              className="history-button"
+              onClick={toggleHistory}
+              aria-label={t('common.history', 'History')}
+              title={t('common.history', 'History')}
+            >
+              <FiClock size={18} />
+            </button>
+          )}
+
           {searchQuery && (
             <button
               className="clear-search-btn"
               onClick={() => setSearchQuery('')}
               aria-label="Clear search"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <FiX size={18} />
             </button>
+          )}
+
+          {/* History dropdown */}
+          {showHistory && history.length > 0 && (
+            <div className="history-dropdown" ref={historyDropdownRef}>
+              <div className="history-header">
+                <h4 className="history-title">{t('youtube.recentSearches', 'Recent Searches')}</h4>
+                <button
+                  className="clear-history-btn"
+                  onClick={handleClearHistory}
+                >
+                  {t('common.clearAll', 'Clear All')}
+                </button>
+              </div>
+              <div className="history-list">
+                {history.map((item, index) => (
+                  <div
+                    key={`${item.query}-${index}`}
+                    className="history-query-item"
+                    onClick={() => handleSelectFromHistory(item.query)}
+                  >
+                    <FiSearch className="history-query-icon" size={16} />
+                    <span className="history-query-text">{item.query}</span>
+                    <span className="history-query-time">{formatTimestamp(item.timestamp)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -171,6 +275,19 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
                   <div className="search-result-channel">{video.channel}</div>
                 </div>
               </div>
+
+              {/* Show quality selector for selected video */}
+              {selectedVideo?.id === video.id && (
+                <QualitySelector
+                  onChange={(quality) => {
+                    // Update the selected video with the quality
+                    setSelectedVideo(prev => ({
+                      ...prev,
+                      quality
+                    }));
+                  }}
+                />
+              )}
             </div>
           ))
         )}

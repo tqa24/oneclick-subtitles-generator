@@ -66,6 +66,16 @@
   /* Removed margin-bottom as spacing is handled by parent container */
 }
 
+/* Adjust SRT upload button in buttons container */
+.buttons-container .srt-upload-button-container {
+  display: flex;
+  align-items: center;
+}
+
+.buttons-container .srt-upload-button {
+  height: 52px; /* Match the height of other buttons */
+}
+
 /* Material Design 3 button styles */
 .buttons-container .generate-btn,
 .buttons-container .retry-gemini-btn {

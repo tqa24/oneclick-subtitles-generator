@@ -3,16 +3,20 @@ import { useTranslation } from 'react-i18next';
 import './styles/App.css';
 import './styles/GeminiButtonAnimations.css';
 import './styles/ProcessingTextAnimation.css';
+import './styles/SrtUploadButton.css';
 import Header from './components/Header';
 import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
+import OnboardingModal from './components/OnboardingModal';
 import TranslationWarningToast from './components/TranslationWarningToast';
+import SrtUploadButton from './components/SrtUploadButton';
 import { useSubtitles } from './hooks/useSubtitles';
 import { downloadYoutubeVideo } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
-import { abortAllRequests } from './services/geminiService';
+import { abortAllRequests, PROMPT_PRESETS } from './services/geminiService';
+import { parseSrtContent } from './utils/srtParser';
 
 function App() {
   const { t } = useTranslation();
@@ -27,8 +31,11 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
+  const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('onboarding_completed') !== 'true');
+  const [isAppReady, setIsAppReady] = useState(!showOnboarding);
 
   const {
     subtitlesData,
@@ -152,12 +159,22 @@ function App() {
     };
   }, []);
 
-  // Listen for theme changes from other components
+  // Listen for theme and settings changes from other components
   useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === 'theme' || !event.key) {
         const newTheme = localStorage.getItem('theme') || 'dark';
         setTheme(newTheme);
+      }
+
+      if (event.key === 'show_waveform' || !event.key) {
+        const newShowWaveform = localStorage.getItem('show_waveform') !== 'false';
+        setShowWaveform(newShowWaveform);
+      }
+
+      if (event.key === 'time_format' || !event.key) {
+        const newTimeFormat = localStorage.getItem('time_format') || 'hms';
+        setTimeFormat(newTimeFormat);
       }
     };
 
@@ -178,22 +195,24 @@ function App() {
     });
 
     // Check API keys status and show message if needed
-    if (!geminiApiKey || (!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens)) {
+    if (!geminiApiKey || (activeTab === 'youtube-search' && (!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
       let message;
 
-      if (!geminiApiKey && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
+      if (!geminiApiKey && activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
         message = t('errors.bothKeysRequired', 'Please set your Gemini API key and configure YouTube authentication in the settings to use this application.');
       } else if (!geminiApiKey) {
         message = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
-      } else if (useOAuth && !hasOAuthTokens) {
+      } else if (useOAuth && !hasOAuthTokens && activeTab === 'youtube-search') {
         message = t('errors.youtubeAuthRequired', 'YouTube authentication required. Please set up OAuth in settings.');
-      } else {
+      } else if (activeTab === 'youtube-search') {
         message = t('errors.youtubeApiKeyRequired', 'Please set your YouTube API key in the settings to use this application.');
       }
 
-      setStatus({ message, type: 'info' });
+      if (message) {
+        setStatus({ message, type: 'info' });
+      }
     }
-  }, [setStatus]);
+  }, [setStatus, activeTab, t]);
 
   // Check for OAuth authentication success
   useEffect(() => {
@@ -294,7 +313,7 @@ function App() {
     }
   }, [status]);
 
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -317,6 +336,12 @@ function App() {
     if (timeFormat) {
       localStorage.setItem('time_format', timeFormat);
       setTimeFormat(timeFormat);
+    }
+
+    // Save waveform setting
+    if (showWaveformSetting !== undefined) {
+      localStorage.setItem('show_waveform', showWaveformSetting.toString());
+      setShowWaveform(showWaveformSetting);
     }
 
     // Save Gemini model
@@ -348,6 +373,106 @@ function App() {
     return false;
   };
 
+  // Handle SRT file upload
+  const handleSrtUpload = async (srtContent, fileName) => {
+    try {
+      // Parse the SRT content
+      const parsedSubtitles = parseSrtContent(srtContent);
+
+      if (parsedSubtitles.length === 0) {
+        setStatus({ message: t('errors.invalidSrtFormat', 'Invalid SRT format or empty file'), type: 'error' });
+        return;
+      }
+
+      // If we're in YouTube tabs, we need to download the video first
+      if (activeTab.includes('youtube') && selectedVideo) {
+        try {
+          // Set downloading state to true to disable the generate button
+          setIsDownloading(true);
+          setDownloadProgress(0);
+          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+
+          // Download the YouTube video with the selected quality
+          const videoUrl = await downloadYoutubeVideo(
+            selectedVideo.url,
+            (progress) => {
+              setDownloadProgress(progress);
+            },
+            selectedVideo.quality || '360p' // Use the selected quality or default to 360p
+          );
+
+          try {
+            // Create a fetch request to get the video as a blob
+            const response = await fetch(videoUrl);
+
+            // Check if the response is ok
+            if (!response.ok) {
+              throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+
+            // Check if the blob has content (not empty)
+            if (blob.size === 0) {
+              throw new Error('Downloaded video is empty. The file may have been deleted from the server.');
+            }
+
+            // Create a File object from the blob
+            const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
+            const file = new File([blob], filename, { type: 'video/mp4' });
+
+            // Switch to the upload tab without resetting state
+            localStorage.setItem('lastActiveTab', 'file-upload');
+            setActiveTab('file-upload');
+            setSelectedVideo(null);
+
+            // Process the file as if it was uploaded
+            const objectUrl = URL.createObjectURL(file);
+            localStorage.setItem('current_file_url', objectUrl);
+
+            // Set the uploaded file
+            setUploadedFile(file);
+
+            // Reset downloading state
+            setIsDownloading(false);
+            setDownloadProgress(100);
+
+            // Set the subtitles data directly (bypass Gemini)
+            setSubtitlesData(parsedSubtitles);
+            setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+
+          } catch (error) {
+            console.error('Error processing downloaded video:', error);
+            // Reset downloading state
+            setIsDownloading(false);
+            setDownloadProgress(0);
+            setStatus({
+              message: t('errors.videoProcessingFailed', 'Video processing failed: {{message}}', { message: error.message }),
+              type: 'error'
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Error downloading video:', error);
+          // Reset downloading state
+          setIsDownloading(false);
+          setDownloadProgress(0);
+          setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
+          return;
+        }
+      } else if (activeTab === 'file-upload' && uploadedFile) {
+        // For file upload tab, just set the subtitles data directly
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+      } else {
+        setStatus({ message: t('errors.noMediaSelected', 'Please select a video or audio file first'), type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error parsing SRT file:', error);
+      setStatus({ message: t('errors.srtParsingFailed', 'Failed to parse SRT file: {{message}}', { message: error.message }), type: 'error' });
+    }
+  };
+
   const handleGenerateSubtitles = async () => {
     if (!validateInput()) {
       setStatus({ message: t('errors.invalidInput'), type: 'error' });
@@ -362,14 +487,28 @@ function App() {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
         setDownloadProgress(0);
-        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
-        // Download the YouTube video
-        const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
-          setDownloadProgress(progress);
-          // Just update the download progress state, no need to set status
-          // as it will be shown in the Generate button
-        });
+        // Check if quality is not 360p to show a warning about audio stitching
+        const selectedQuality = selectedVideo.quality || '360p';
+        if (selectedQuality !== '360p') {
+          setStatus({
+            message: t('output.audioStitchingWarning', 'Downloading video... Note: For qualities other than 360p, audio stitching is required which may take a long time, especially for videos over 1 hour.'),
+            type: 'warning'
+          });
+        } else {
+          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+        }
+
+        // Download the YouTube video with the selected quality
+        const videoUrl = await downloadYoutubeVideo(
+          selectedVideo.url,
+          (progress) => {
+            setDownloadProgress(progress);
+            // Just update the download progress state, no need to set status
+            // as it will be shown in the Generate button
+          },
+          selectedVideo.quality || '360p' // Use the selected quality or default to 360p
+        );
 
         try {
           // Create a fetch request to get the video as a blob
@@ -468,14 +607,28 @@ function App() {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
         setDownloadProgress(0);
-        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
-        // Download the YouTube video
-        const videoUrl = await downloadYoutubeVideo(selectedVideo.url, (progress) => {
-          setDownloadProgress(progress);
-          // Just update the download progress state, no need to set status
-          // as it will be shown in the Generate button
-        });
+        // Check if quality is not 360p to show a warning about audio stitching
+        const selectedQuality = selectedVideo.quality || '360p';
+        if (selectedQuality !== '360p') {
+          setStatus({
+            message: t('output.audioStitchingWarning', 'Downloading video... Note: For qualities other than 360p, audio stitching is required which may take a long time, especially for videos over 1 hour.'),
+            type: 'warning'
+          });
+        } else {
+          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+        }
+
+        // Download the YouTube video with the selected quality
+        const videoUrl = await downloadYoutubeVideo(
+          selectedVideo.url,
+          (progress) => {
+            setDownloadProgress(progress);
+            // Just update the download progress state, no need to set status
+            // as it will be shown in the Generate button
+          },
+          selectedVideo.quality || '360p' // Use the selected quality or default to 360p
+        );
 
         try {
           // Create a fetch request to get the video as a blob
@@ -578,21 +731,26 @@ function App() {
         onSettingsClick={() => setShowSettings(true)}
       />
 
-      <main className="app-main">
-        <InputMethods
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-          uploadedFile={uploadedFile}
-          setUploadedFile={setUploadedFile}
-          apiKeysSet={apiKeysSet}
-        />
+      {isAppReady && (
+        <main className="app-main">
+          <InputMethods
+            activeTab={activeTab}
+            setActiveTab={handleTabChange}
+            selectedVideo={selectedVideo}
+            setSelectedVideo={setSelectedVideo}
+            uploadedFile={uploadedFile}
+            setUploadedFile={setUploadedFile}
+            apiKeysSet={apiKeysSet}
+          />
 
-        {/* Consistent layout container for buttons and output */}
-        <div className="content-layout-container">
+          {/* Consistent layout container for buttons and output */}
+          <div className="content-layout-container">
           {validateInput() && (
             <div className="buttons-container">
+              <SrtUploadButton
+                onSrtUpload={handleSrtUpload}
+                disabled={isGenerating || isDownloading}
+              />
               <button
                 className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
                 onClick={handleGenerateSubtitles}
@@ -740,9 +898,11 @@ function App() {
             videoSegments={videoSegments}
             retryingSegments={retryingSegments}
             timeFormat={timeFormat}
+            showWaveform={showWaveform}
           />
-        </div>
-      </main>
+          </div>
+        </main>
+      )}
 
       {showSettings && (
         <SettingsModal
@@ -750,6 +910,40 @@ function App() {
           onSave={saveApiKeys}
           apiKeysSet={apiKeysSet}
           setApiKeysSet={setApiKeysSet}
+        />
+      )}
+
+      {showOnboarding && (
+        <OnboardingModal
+          onComplete={(selections) => {
+            // Save the selected preset to transcription prompt
+            const selectedPreset = PROMPT_PRESETS.find(preset => preset.id === selections.presetId);
+            if (selectedPreset) {
+              let promptText = selectedPreset.prompt;
+
+              // If it's the translation preset and a target language is provided, replace the placeholder
+              if (selections.presetId === 'translate-vietnamese' && selections.targetLanguage) {
+                promptText = promptText.replace(/TARGET_LANGUAGE/g, selections.targetLanguage);
+              }
+
+              localStorage.setItem('transcription_prompt', promptText);
+            }
+
+            // Mark onboarding as complete
+            setShowOnboarding(false);
+            setIsAppReady(true);
+
+            // Show a success message
+            setStatus({
+              message: t('onboarding.completed', 'Setup complete! You can change these settings anytime.'),
+              type: 'success'
+            });
+
+            // Clear the message after 5 seconds
+            setTimeout(() => {
+              setStatus({});
+            }, 5000);
+          }}
         />
       )}
 

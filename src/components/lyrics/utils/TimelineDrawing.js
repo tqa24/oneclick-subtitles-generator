@@ -4,6 +4,7 @@
 
 import { getLyricColor, getRandomHeight } from './ColorUtils';
 import { timeToX } from './TimelineCalculations';
+import { optimizeSegments, clearUnusedSegments } from '../../../utils/colorfulSegmentsOptimizer';
 import { formatTime } from '../../../utils/timeFormatter';
 
 /**
@@ -177,18 +178,34 @@ const drawLyricSegments = (
   // Increase minimum segment width during panning for better performance
   const minSegmentWidth = isActivePanning ? 4 : 2;
 
+  // Estimate the total duration based on the last lyric's end time
+  const duration = lyrics.length > 0 ? Math.max(...lyrics.map(lyric => lyric.end)) * 1.05 : 0;
+
+  // Use our optimized segments handler for long videos
+  const isLongVideo = duration > 1800; // 30 minutes
+
   // Filter visible lyrics - use a more efficient approach with segment limiting
   const visibleLyrics = [];
-  const maxSegmentsToRender = 300; // Limit the number of segments to render for performance
+  const maxSegmentsToRender = isLongVideo ? 200 : 300; // Reduce for long videos
+
+  // For long videos, use the optimizeSegments utility
+  let optimizedLyrics = lyrics;
+  if (isLongVideo) {
+    // Use the optimizeSegments utility to filter and limit segments
+    optimizedLyrics = optimizeSegments(lyrics, duration, { start: visibleStart, end: visibleEnd });
+
+    // Clean up memory for segments that are no longer needed
+    clearUnusedSegments(visibleStart + ((visibleEnd - visibleStart) / 2), duration);
+  }
 
   // Binary search to find the approximate starting index
   let startIdx = 0;
-  let endIdx = lyrics.length - 1;
+  let endIdx = optimizedLyrics.length - 1;
 
   // Find the first lyric that might be visible
   while (startIdx <= endIdx) {
     const midIdx = Math.floor((startIdx + endIdx) / 2);
-    const midLyric = lyrics[midIdx];
+    const midLyric = optimizedLyrics[midIdx];
 
     if (midLyric.end < visibleStart) {
       startIdx = midIdx + 1;
@@ -199,8 +216,8 @@ const drawLyricSegments = (
 
   // Collect visible lyrics starting from the found index
   let segmentCount = 0;
-  for (let i = startIdx; i < lyrics.length && segmentCount < maxSegmentsToRender; i++) {
-    const lyric = lyrics[i];
+  for (let i = startIdx; i < optimizedLyrics.length && segmentCount < maxSegmentsToRender; i++) {
+    const lyric = optimizedLyrics[i];
 
     // Stop once we're past the visible area
     if (lyric.start > visibleEnd) break;
@@ -220,8 +237,8 @@ const drawLyricSegments = (
   }
 
   // If we hit the segment limit, add an indicator
-  if (segmentCount >= maxSegmentsToRender && lyrics.length > maxSegmentsToRender) {
-    console.log(`Timeline rendering limited to ${maxSegmentsToRender} segments out of ${lyrics.length} total`);
+  if (segmentCount >= maxSegmentsToRender && optimizedLyrics.length > maxSegmentsToRender) {
+    console.log(`Timeline rendering limited to ${maxSegmentsToRender} segments out of ${optimizedLyrics.length} total`);
   }
 
   // Batch render all segments with same fill color
@@ -233,10 +250,31 @@ const drawLyricSegments = (
     const timeMarkerSpace = 25;
     const availableHeight = displayHeight - timeMarkerSpace;
 
+    // For long videos, use a more efficient rendering approach
+    const isLongVideo = duration > 1800; // 30 minutes
+    const isVeryLongVideo = duration > 7200; // 2 hours
+
+    // For very long videos, skip random heights and use fixed heights for better performance
+    const useFixedHeights = isVeryLongVideo && isActivePanning;
+    const fixedHeightPercentage = 0.6; // 60% of available height
+
     for (const { lyric, startX, width } of visibleLyrics) {
-      const { fillStyle, strokeStyle } = getLyricColor(lyric.text, isDark);
-      // Calculate a random height for this segment
-      const heightPercentage = getRandomHeight(lyric.text);
+      // For very long videos during panning, use a simplified color scheme
+      let fillStyle, strokeStyle;
+
+      if (isVeryLongVideo && isActivePanning) {
+        // Use a simplified color scheme for better performance
+        fillStyle = isDark ? 'rgba(80, 200, 255, 0.6)' : 'rgba(93, 95, 239, 0.6)';
+        strokeStyle = isDark ? 'rgba(100, 220, 255, 0.8)' : 'rgba(113, 115, 255, 0.8)';
+      } else {
+        // Use normal color scheme
+        const colors = getLyricColor(lyric.text, isDark);
+        fillStyle = colors.fillStyle;
+        strokeStyle = colors.strokeStyle;
+      }
+
+      // Calculate height - either fixed or random
+      const heightPercentage = useFixedHeights ? fixedHeightPercentage : getRandomHeight(lyric.text);
 
       if (!colorGroups.has(fillStyle)) {
         colorGroups.set(fillStyle, {
@@ -261,16 +299,33 @@ const drawLyricSegments = (
     colorGroups.forEach(group => {
       ctx.fillStyle = group.fill;
 
-      // Draw all fills for this color at once
-      for (const segment of group.segments) {
-        ctx.fillRect(segment.x, segment.y, segment.width, segment.actualHeight);
-      }
-
-      // Only draw strokes if not actively panning (for better performance)
-      if (!isActivePanning) {
-        ctx.strokeStyle = group.stroke;
+      // For very long videos, use a more efficient drawing approach
+      if (isVeryLongVideo) {
+        // Draw all fills for this color at once using a single path
+        ctx.beginPath();
         for (const segment of group.segments) {
-          ctx.strokeRect(segment.x, segment.y, segment.width, segment.actualHeight);
+          ctx.rect(segment.x, segment.y, segment.width, segment.actualHeight);
+        }
+        ctx.fill();
+
+        // Only draw strokes if not actively panning (for better performance)
+        if (!isActivePanning) {
+          ctx.strokeStyle = group.stroke;
+          ctx.stroke();
+        }
+      } else {
+        // Standard drawing for normal videos
+        // Draw all fills for this color at once
+        for (const segment of group.segments) {
+          ctx.fillRect(segment.x, segment.y, segment.width, segment.actualHeight);
+        }
+
+        // Only draw strokes if not actively panning (for better performance)
+        if (!isActivePanning) {
+          ctx.strokeStyle = group.stroke;
+          for (const segment of group.segments) {
+            ctx.strokeRect(segment.x, segment.y, segment.width, segment.actualHeight);
+          }
         }
       }
     });

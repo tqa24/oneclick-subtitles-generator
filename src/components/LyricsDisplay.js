@@ -8,6 +8,9 @@ import { useLyricsEditor } from '../hooks/useLyricsEditor';
 import { VariableSizeList as List } from 'react-window';
 import { convertToSRT } from '../utils/subtitleConverter';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
+import { downloadTXT, downloadSRT, downloadJSON } from '../utils/fileUtils';
+import { completeDocument, summarizeDocument } from '../services/geminiService';
+import DownloadOptionsModal from './DownloadOptionsModal';
 
 // Helper function to download files
 const downloadFile = (content, filename, type = 'text/plain') => {
@@ -84,6 +87,14 @@ const LyricsDisplay = ({
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const rowHeights = useRef({});
+  const [txtContent, setTxtContent] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedDocument, setProcessedDocument] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showWaveform, setShowWaveform] = useState(() => {
+    // Load from localStorage, default to true if not set
+    return localStorage.getItem('show_waveform') !== 'false';
+  });
 
   // Function to calculate row height based on text content
   const getRowHeight = index => {
@@ -116,6 +127,21 @@ const LyricsDisplay = ({
       listRef.current.resetAfterIndex(0);
     }
   }, [matchedLyrics]);
+
+  // Listen for changes to the show_waveform setting in localStorage
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'show_waveform') {
+        setShowWaveform(event.newValue !== 'false');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const {
     lyrics,
@@ -167,31 +193,80 @@ const LyricsDisplay = ({
     }
   }, [seekTime]);
 
-  // Add event listeners for download buttons in LyricsDisplay
-  useEffect(() => {
-    // Add event listeners for download buttons in LyricsDisplay
-    const handleSRTDownload = () => {
-      if (lyrics && lyrics.length > 0) {
-        const srtContent = convertToSRT(lyrics).join('\n\n');
-        downloadFile(srtContent, 'subtitles.srt');
+  // Handle download request from modal
+  const handleDownload = (source, format) => {
+    if (lyrics && lyrics.length > 0) {
+      // Only original subtitles are available in LyricsDisplay
+      if (source === 'original') {
+        switch (format) {
+          case 'srt':
+            downloadSRT(lyrics, 'subtitles.srt');
+            break;
+          case 'json':
+            downloadJSON(lyrics, 'subtitles.json');
+            break;
+          case 'txt':
+            const content = downloadTXT(lyrics, 'subtitles.txt');
+            setTxtContent(content);
+            break;
+          default:
+            break;
+        }
       }
-    };
+    }
+  };
 
-    const handleJSONDownload = () => {
-      if (lyrics && lyrics.length > 0) {
-        const jsonContent = JSON.stringify(lyrics, null, 2);
-        downloadFile(jsonContent, 'subtitles.json', 'application/json');
+  // Handle process request from modal
+  const handleProcess = async (source, processType, model) => {
+    if (!lyrics || lyrics.length === 0) return;
+
+    // Only original subtitles are available in LyricsDisplay
+    if (source === 'original') {
+      // First, get the text content if we don't have it yet
+      let textContent = txtContent;
+      if (!textContent) {
+        textContent = lyrics.map(subtitle => subtitle.text).join('\n\n');
+        setTxtContent(textContent);
       }
-    };
 
-    window.addEventListener('download-srt', handleSRTDownload);
-    window.addEventListener('download-json', handleJSONDownload);
+      setIsProcessing(true);
+      try {
+        let result;
+        if (processType === 'consolidate') {
+          result = await completeDocument(textContent, model);
+        } else if (processType === 'summarize') {
+          result = await summarizeDocument(textContent, model);
+        }
 
-    return () => {
-      window.removeEventListener('download-srt', handleSRTDownload);
-      window.removeEventListener('download-json', handleJSONDownload);
-    };
-  }, [lyrics]);
+        setProcessedDocument(result);
+
+        // Show a temporary success message
+        const successMessage = document.createElement('div');
+        successMessage.className = 'save-success-message';
+        successMessage.textContent = processType === 'consolidate'
+          ? t('output.documentCompleted', 'Document completed successfully')
+          : t('output.summaryCompleted', 'Summary completed successfully');
+        document.body.appendChild(successMessage);
+
+        // Remove the message after 3 seconds
+        setTimeout(() => {
+          if (document.body.contains(successMessage)) {
+            document.body.removeChild(successMessage);
+          }
+        }, 3000);
+
+        // Download the processed document
+        const filename = processType === 'consolidate'
+          ? 'completed_document.txt'
+          : 'summary.txt';
+        downloadFile(result, filename);
+      } catch (error) {
+        console.error(`Error ${processType === 'consolidate' ? 'completing' : 'summarizing'} document:`, error);
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
 
   // Function to save current subtitles to cache
   const handleSave = async () => {
@@ -334,6 +409,7 @@ const LyricsDisplay = ({
           centerOnTime={centerTimelineAt}
           timeFormat={timeFormat}
           videoSource={videoSource}
+          showWaveform={showWaveform}
         />
       </div>
 
@@ -387,28 +463,26 @@ const LyricsDisplay = ({
         <div className="download-buttons">
           <button
             className="download-btn"
-            onClick={() => window.dispatchEvent(new Event('download-srt'))}
+            onClick={() => setIsModalOpen(true)}
             disabled={!lyrics.length}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            {t('output.downloadSrt', 'Download SRT')}
+            <span>{t('download.downloadOptions', 'Download & Process')}</span>
           </button>
-          <button
-            className="download-btn"
-            onClick={() => window.dispatchEvent(new Event('download-json'))}
-            disabled={!lyrics.length}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            {t('output.downloadJson', 'Download JSON')}
-          </button>
+
+          {/* Download Options Modal */}
+          <DownloadOptionsModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onDownload={handleDownload}
+            onProcess={handleProcess}
+            hasTranslation={false} // LyricsDisplay only has original subtitles
+            hasOriginal={lyrics && lyrics.length > 0}
+          />
         </div>
       </div>
     </div>

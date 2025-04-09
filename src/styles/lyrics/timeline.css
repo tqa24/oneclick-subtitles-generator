@@ -67,3 +67,29 @@
   min-width: 48px;
   text-align: center;
 }
+
+/* Waveform disabled notice */
+.waveform-disabled-notice {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 12px;
+  background-color: var(--md-warning-container);
+  color: var(--md-on-warning-container);
+  font-size: 12px;
+  text-align: center;
+  border-radius: 0 0 var(--md-shape-medium) var(--md-shape-medium);
+  animation: fadeIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 9.5s forwards;
+  z-index: 10;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(100%); }
+}

@@ -3,7 +3,8 @@
 /* Base styles for Gemini icon container - for all Gemini buttons */
 .generate-btn .gemini-icon-container,
 .retry-gemini-btn .gemini-icon-container,
-.force-stop-btn .gemini-icon-container {
+.force-stop-btn .gemini-icon-container,
+.srt-upload-button .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -197,7 +198,8 @@
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
+.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
   animation-name: pulse-fade;
   animation-duration: 4s;
   animation-delay: 0.5s;
@@ -211,7 +213,8 @@
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
+.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
   animation-name: rotate-fade;
   animation-duration: 6s;
   animation-delay: 1s;
@@ -255,7 +258,8 @@
 /* Add glow effect to buttons when processing */
 .generate-btn.processing,
 .retry-gemini-btn.processing,
-.force-stop-btn.processing {
+.force-stop-btn.processing,
+.srt-upload-button.processing {
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
@@ -263,7 +267,8 @@
 
 .generate-btn.processing::after,
 .retry-gemini-btn.processing::after,
-.force-stop-btn.processing::after {
+.force-stop-btn.processing::after,
+.srt-upload-button.processing::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -284,7 +289,8 @@
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-1 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
+.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-1 {
   animation-name: float-up;
   animation-duration: 1.5s;
   animation-delay: 0.1s;
@@ -298,7 +304,8 @@
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-3 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
+.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-3 {
   animation-name: float-diagonal;
   animation-duration: 1.8s;
   animation-delay: 0.5s;
@@ -327,7 +334,8 @@
 
 /* Hover state enhancements */
 .generate-btn:hover .gemini-icon-container,
-.retry-gemini-btn:hover .gemini-icon-container {
+.retry-gemini-btn:hover .gemini-icon-container,
+.srt-upload-button:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
 }
@@ -347,10 +355,15 @@
   stroke: var(--md-on-tertiary);
 }
 
+.srt-upload-button .gemini-mini-icon {
+  stroke: var(--md-on-secondary);
+}
+
 /* Add gradient effects to the icons */
 .generate-btn .gemini-mini-icon svg path,
 .retry-gemini-btn .gemini-mini-icon svg path,
-.force-stop-btn .gemini-mini-icon svg path {
+.force-stop-btn .gemini-mini-icon svg path,
+.srt-upload-button .gemini-mini-icon svg path {
   stroke-dasharray: 120;
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 1s var(--md-easing-emphasized);

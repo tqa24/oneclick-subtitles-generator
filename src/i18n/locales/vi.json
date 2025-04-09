@@ -1,10 +1,12 @@
 {
   "common": {
+    "cancel": "Hủy",
     "undo": "Hoàn tác",
     "reset": "Đặt lại",
     "save": "Lưu",
-    "cancel": "Hủy bỏ",
-    "close": "Đóng"
+    "close": "Đóng",
+    "on": "Bật",
+    "off": "Tắt"
   },
   "header": {
     "appTitle": "Trình Tạo Phụ Đề Một-Nhấp",
@@ -27,6 +29,9 @@
     "maxFileSize": "(Thời lượng không quan trọng, nhưng video quá nét độ phân giải hoặc tốc độ khung hình cao sẽ dễ làm quá tải mô hình)"
   },
   "output": {
+    "downloadingVideo": "Đang tải video...",
+    "audioStitchingWarning": "Đang tải video... Lưu ý: Đối với chất lượng khác 360p, cần ghép âm thanh, quá trình này có thể mất nhiều thời gian, đặc biệt là với video dài hơn 1 giờ.",
+    "videoDownloadComplete": "Tải video hoàn tất! Đang xử lý...",
     "processingVideo": "Đang xử lý. Có thể mất vài phút...",
     "generationSuccess": "Phụ đề đã được tạo thành công!",
     "subtitlesLoadedFromCache": "Đã tải phụ đề từ bộ nhớ đệm!",
@@ -34,6 +39,16 @@
     "subtitlesPreview": "Xem trước phụ đề",
     "downloadSrt": "Tải xuống SRT",
     "downloadJson": "Tải xuống JSON",
+    "downloadTxt": "Tải xuống TXT",
+    "completeDocument": "Soạn thành văn (TXT)",
+    "completingDocument": "Đang soạn thành văn...",
+    "documentCompleted": "Văn bản đã được soạn thành công",
+    "selectModelForDocument": "Chọn mô hình để soạn thành văn bản",
+    "summarize": "Tóm tắt",
+    "summarizing": "Đang tóm tắt...",
+    "summaryCompleted": "Tóm tắt đã hoàn thành thành công",
+    "downloadOptions": "Tải xuống & Xử lý",
+    "processOptions": "Tùy chọn xử lý",
     "editTimings": "Chỉnh sửa thời gian",
     "hideEditor": "Ẩn trình chỉnh sửa thời gian",
     "retryGemini": "Thử lại với Gemini",
@@ -136,6 +151,8 @@
     "saveChanges": "Lưu thay đổi và thử lại",
     "verificationNote": "Lưu ý: Bạn không cần chờ xác minh nếu bạn thêm chính mình làm người dùng thử nghiệm. Xác minh chỉ cần thiết nếu bạn muốn cung cấp ứng dụng của mình cho tất cả người dùng.",
     "timeFormat": "Định dạng thời gian",
+    "showWaveform": "Hiển thị dạng sóng âm thanh",
+    "showWaveformDescription": "Hiển thị trực quan dạng sóng âm thanh trên dòng thời gian. Điều này giúp xác định các phần im lặng và mẫu giọng nói.",
     "timeFormatDescription": "Chọn cách hiển thị thời gian trong dòng thời gian và lời bài hát.",
     "timeFormatSeconds": "Giây (ví dụ: 75.40s)",
     "timeFormatHMS": "GIỜ:PHÚT:GIÂY (ví dụ: 1:15.40)",
@@ -173,9 +190,12 @@
     "saveAsPreset": "Lưu thành mẫu",
     "presetGeneralPurpose": "Mục đích chung",
     "presetExtractText": "Trích xuất văn bản",
-    "presetFocusSpeech": "Tập trung vào lời nói",
+    "presetFocusSpokenWords": "Tập trung vào lời nói",
+    "presetFocusLyrics": "Tập trung vào lời bài hát",
     "presetDescribeVideo": "Mô tả video",
     "presetTranslateDirectly": "Dịch trực tiếp",
+    "presetChaptering": "Phân chương",
+    "presetIdentifySpeakers": "Nhận diện người nói",
     "cache": "Quản lý bộ nhớ đệm",
     "cacheDescription": "Xóa tất cả phụ đề và video đã tải xuống để giải phóng dung lượng.",
     "clearCache": "Xóa bộ nhớ đệm",
@@ -203,12 +223,16 @@
     "videos": "Video:",
     "videosCount": "{{count}} tập tin ({{size}})",
     "subtitles": "Phụ đề:",
-    "subtitlesCount": "{{count}} tập tin ({{size}})"
+    "subtitlesCount": "{{count}} tập tin ({{size}})",
+    "about": "Giới thiệu",
+    "version": "Phiên bản",
+    "creator": "Tác giả",
+    "appDescription": "Trình Tạo Phụ Đề Một-Nhấp là công cụ giúp bạn tạo, chỉnh sửa và dịch phụ đề cho video của bạn chỉ với một cú nhấp chuột."
   },
   "lyrics": {
     "synchronizedLyrics": "Phụ đề đồng bộ hóa",
     "stickyTimingsToggle": "Stick",
-    "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ cố định sẽ điều chỉnh tất cả phụ đề theo sau.",
+    "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Stick\" sẽ điều chỉnh tất cả phụ đề theo sau.",
     "editTooltip": "Chỉnh sửa văn bản phụ đề",
     "deleteTooltip": "Xóa phụ đề",
     "insertTooltip": "Thêm dòng mới",
@@ -315,10 +339,28 @@
     "rendering": "Đang xử lý video với phụ đề..."
   },
 
+  "download": {
+    "options": "Tùy chọn tải xuống & xử lý",
+    "subtitleSource": "Nguồn phụ đề",
+    "original": "Gốc",
+    "translated": "Đã dịch",
+    "fileFormat": "Định dạng tập tin",
+    "downloadFiles": "Tải xuống tập tin",
+    "processText": "Xử lý văn bản",
+    "processType": "Loại xử lý",
+    "selectModel": "Chọn mô hình",
+    "selectModelForProcessing": "Chọn mô hình để xử lý",
+    "download": "Tải xuống",
+    "process": "Xử lý",
+    "summarize": "Tóm tắt (TXT)",
+    "txtNoTimings": "TXT (không có thời gian)",
+    "consolidateExplanation": "Chuyển đổi phụ đề thành một tài liệu mạch lạc, cải thiện lưu chảy và khả năng đọc trong khi vẫn giữ nguyên ý nghĩa ban đầu.",
+    "summarizeExplanation": "Tạo bản tóm tắt ngắn gọn về các điểm chính và thông tin quan trọng, với độ dài khoảng 1/3 so với văn bản gốc."
+  },
   "translation": {
     "title": "Dịch phụ đề",
     "description": "Dịch phụ đề đã chỉnh sửa sang ngôn ngữ khác trong khi vẫn giữ nguyên thông tin thời gian.",
-    "languagePlaceholder": "Nhập ngôn ngữ đích (ví dụ: Tiếng Anh, Tiếng Pháp, Tiếng Nhật)",
+    "languagePlaceholder": "Nhập ngôn ngữ đích (ví dụ: English, French, Japanese)",
     "languageRequired": "Vui lòng nhập ngôn ngữ đích",
     "noSubtitles": "Không có phụ đề để dịch",
     "error": "Lỗi khi dịch phụ đề. Vui lòng thử lại.",
@@ -328,7 +370,12 @@
     "downloadJSON": "Tải xuống JSON",
     "newTranslation": "Bản dịch mới",
     "preview": "Xem trước bản dịch",
-    "moreSubtitles": "... và {{count}} phụ đề khác"
+    "moreSubtitles": "... và {{count}} phụ đề khác",
+    "targetLanguage": "Ngôn ngữ đích",
+    "modelSelection": "Mô hình",
+    "promptSettings": "Lệnh",
+    "previewLabel": "Xem trước",
+    "selectModel": "Chọn mô hình để dịch"
   },
 
   "models": {
@@ -340,5 +387,51 @@
     "highAccuracy": "Độ chính xác cao",
     "balancedModel": "Cân bằng",
     "fastestModel": "Nhanh nhất"
+  },
+
+  "promptEditor": {
+    "editPrompt": "Chỉnh sửa lệnh",
+    "editPromptTooltip": "Chỉnh sửa lệnh Gemini",
+    "enterPrompt": "Nhập lệnh tùy chỉnh của bạn tại đây...",
+    "availableVariables": "Biến khả dụng:",
+    "variablesInstruction": "Các biến sau được biểu thị bằng các biểu tượng trong vùng văn bản:",
+    "subtitlesTextDesc": "Nội dung văn bản phụ đề",
+    "targetLanguageDesc": "Ngôn ngữ đích (cho bản dịch)",
+    "reset": "Khôi phục mặc định",
+    "editConsolidatePrompt": "Chỉnh sửa lệnh hợp nhất",
+    "editSummarizePrompt": "Chỉnh sửa lệnh tóm tắt",
+    "editTranslationPrompt": "Chỉnh sửa lệnh dịch",
+    "customizePromptDesc": "Tùy chỉnh cách Gemini xử lý nội dung của bạn.",
+    "customizeTranslationDesc": "Tùy chỉnh cách Gemini dịch phụ đề của bạn."
+  },
+
+  "onboarding": {
+    "title": "Chào mừng đến với Trình tạo phụ đề",
+    "promptSelectionSubtitle": "Đầu tiên, hãy chọn một mẫu lệnh cho phiên dịch của bạn",
+    "modelSelectionSubtitle": "Bây giờ, hãy chọn một mô hình Gemini cho phiên dịch của bạn",
+    "promptSelectionInstruction": "Chọn một mẫu phù hợp nhất với nhu cầu của bạn. Bạn luôn có thể thay đổi điều này sau trong phần cài đặt.",
+    "modelSelectionInstruction": "Chọn một mô hình Gemini. Các mô hình chính xác hơn có thể chậm hơn. Bạn luôn có thể thay đổi điều này sau trong phần cài đặt.",
+    "selectLanguage": "Chọn ngôn ngữ của bạn:",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "finish": "Hoàn thành",
+    "completed": "Thiết lập hoàn tất! Bạn có thể thay đổi các cài đặt này bất cứ lúc nào."
+  },
+
+  "qualitySelector": {
+    "videoQuality": "Chất lượng video",
+    "lowestQuality": "Chất lượng thấp nhất (khuyến nghị cho video > 1 giờ)",
+    "lowQuality": "Chất lượng thấp",
+    "mediumQuality": "Chất lượng trung bình (mặc định)",
+    "highQuality": "Chất lượng cao",
+    "hdQuality": "Chất lượng HD (có thể gây lỗi với video dài)",
+    "longVideoWarning": "Đối với video dài hơn 1 giờ, hãy sử dụng 144p để tránh ứng dụng bị treo"
+  },
+
+  "timeline": {
+    "zoomIn": "Phóng to",
+    "zoomOut": "Thu nhỏ",
+    "resetZoom": "Đặt lại thu phóng",
+    "waveformDisabled": "Hiển thị dạng sóng âm thanh đã tự động bị tắt đối với video dài hơn 30 phút để cải thiện hiệu suất."
   }
 }

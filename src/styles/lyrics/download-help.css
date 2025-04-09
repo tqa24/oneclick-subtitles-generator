@@ -33,18 +33,35 @@
   gap: 12px;
   flex-shrink: 0;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-/* Material Design 3 download buttons */
-.download-btn {
+/* Document completion container */
+.document-completion-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* Document model dropdown */
+.document-model-dropdown {
+  height: 36px;
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+/* consolidate document button */
+.complete-document-btn {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
   border: none;
   border-radius: var(--md-shape-pill);
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
   font-size: var(--md-label-medium-size);
   font-weight: 500;
   cursor: pointer;
@@ -54,7 +71,53 @@
   box-shadow: var(--md-elevation-level1);
   position: relative;
   overflow: hidden;
-  height: 36px; /* Fixed height for consistency */
+  height: 36px;
+  flex-grow: 1;
+}
+
+.complete-document-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+  background-color: var(--md-tertiary-hover);
+}
+
+.complete-document-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.complete-document-btn:disabled {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Material Design 3 download buttons */
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+  height: 44px; /* Increased height for better visibility */
+  min-width: 180px; /* Ensure button has enough width for text */
 }
 
 /* State layer for hover effect */
@@ -82,6 +145,7 @@
 .download-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level2);
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
 }
 
 .download-btn:active {

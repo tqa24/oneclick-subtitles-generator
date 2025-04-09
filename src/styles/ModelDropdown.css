@@ -1,0 +1,197 @@
+/* Model dropdown container */
+.model-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* When dropdown is open, ensure container has higher z-index */
+.model-dropdown-container.dropdown-open {
+  z-index: 99999; /* High z-index to ensure it appears above other elements */
+}
+
+/* Model dropdown button */
+.model-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 21px;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.model-dropdown-btn:hover {
+  background-color: var(--md-surface-3);
+}
+
+.model-dropdown-btn.active-dropdown-btn {
+  background-color: var(--md-surface-3);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Selected model display */
+.model-dropdown-selected {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Model name in button */
+.model-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dropdown icon */
+.dropdown-icon {
+  margin-left: 2px;
+  transition: transform 0.2s var(--md-easing-standard);
+}
+
+.active-dropdown-btn .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+/* Model options dropdown */
+.model-options-dropdown {
+  position: fixed; /* Fixed position to avoid layout issues */
+  width: 240px;
+  background-color: var(--md-surface-1);
+  border-radius: 12px;
+  box-shadow: var(--md-elevation-level3);
+  border: 1px solid var(--border-color);
+  z-index: 99999; /* Very high z-index to ensure it appears above other elements */
+  overflow: hidden;
+}
+
+/* Header for the dropdown */
+.model-options-header {
+  padding: 12px 16px;
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-3);
+}
+
+/* List of model options */
+.model-options-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Individual model option button */
+.model-option-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  color: var(--md-on-surface);
+  transition: background-color 0.2s;
+}
+
+.model-option-btn:hover {
+  background-color: var(--md-surface-2);
+}
+
+.model-option-btn.selected {
+  background-color: var(--model-bg-color, rgba(var(--md-primary-rgb), 0.1));
+}
+
+.model-option-btn.selected::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--model-color, var(--md-primary));
+}
+
+/* Model icon container */
+.model-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--model-bg-color, rgba(var(--md-primary-rgb), 0.1));
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* Model icon styling */
+.model-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--model-color, var(--md-primary));
+}
+
+/* Special styling for each icon type */
+.star-icon {
+  color: var(--md-tertiary);
+}
+
+.award-icon {
+  color: var(--md-secondary);
+}
+
+.zap-icon {
+  color: var(--md-primary);
+}
+
+.cpu-icon {
+  color: var(--success-color);
+}
+
+/* Model text container */
+.model-option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Model name styling */
+.model-option-name {
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  margin-bottom: 2px;
+}
+
+/* Model description styling */
+.model-option-description {
+  font-size: var(--md-body-small-size);
+  color: var(--md-on-surface-variant);
+}
+
+/* Optional label styling */
+.model-dropdown-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .model-options-dropdown {
+    width: 220px;
+  }
+  
+  .model-name {
+    max-width: 80px;
+  }
+}

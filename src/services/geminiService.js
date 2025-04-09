@@ -19,27 +19,52 @@ export const PROMPT_PRESETS = [
     {
         id: 'general',
         title: 'General purpose',
-        prompt: `Transcribe this ${'{contentType}'}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+        prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] This is the transcribed speech. Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.`
     },
     {
         id: 'extract-text',
         title: 'Extract text',
-        prompt: `Only extract the text/or hardcoded subtitles shown on screen, ignore audio for this ${'{contentType}'}. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+        prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text (1-2 lines/sentences max). For example: [0m30s000ms - 0m35s500ms] This text appeared on screen. Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.`
+    },
+    // --- Replaced 'focus-speech' with two specific presets ---
+    {
+        id: 'focus-spoken-words', // New ID
+        title: 'Focus on Spoken Words', // New Title
+        // Prompt modified to EXCLUDE lyrics
+        prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] This is the spoken dialogue. Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.`
     },
     {
-        id: 'focus-speech',
-        title: 'Focus on speech',
-        prompt: `Transcribe the spoken speech/lyrics in the this ${'{contentType}'}, focus on the sound only. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+        id: 'focus-lyrics', // New ID
+        title: 'Focus on Lyrics', // New Title
+        // Prompt created to INCLUDE ONLY lyrics
+        prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics (1-2 lines/sentences max). For example: [0m45s100ms - 0m50s250ms] These are the lyrics being sung. Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.`
     },
+    // --- End of replaced presets ---
     {
         id: 'describe-video',
         title: 'Describe video',
-        prompt: `Describe anything happen in this ${'{contentType}'} in sequential fashion. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+        prompt: `Describe the significant visual events, actions, and scene changes occurring in this ${'{contentType}'} in chronological order. Focus solely on what is visually happening on screen. Format the output as a descriptive log. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Visual description (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] A person walks across the screen. Return ONLY the formatted descriptions with their timestamps. Do not include any audio transcription, headers, or other commentary.`
     },
     {
         id: 'translate-vietnamese',
         title: 'Translate directly',
-        prompt: `Whatever language is spoken in this ${'{contentType}'}, translate them directly in Vietnamese. Format the output as a transcript with BOTH start AND end timestamps for each line in the format [START_TIME - END_TIME] where times are in the format MMmSSsNNNms (minutes, seconds, milliseconds). For example: [0m30s000ms - 0m35s500ms] or [1m45s200ms - 1m50s000ms]. Each subtitle entry should be 1-2 sentences maximum. Return ONLY the transcript and no other text.`
+        prompt: `Identify the spoken language(s) in this ${'{contentType}'} and translate the speech directly into TARGET_LANGUAGE. If multiple languages are spoken, translate all spoken segments into TARGET_LANGUAGE. Format the output as a sequential transcript of the translation. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] translated text (1-2 translated sentences max). Return ONLY the formatted translation lines with timestamps. Do not include the original language transcription, headers, or any other text.`
+    },
+    {
+        id: 'chaptering',
+        title: 'Chaptering',
+        prompt: `You are an expert content analyst. Your task is to analyze this ${'{contentType}'} and identify distinct chapters or thematic segments based on major topic shifts or significant changes in activity/scene. Format the output as a sequential list, with each chapter on a new line. Each line MUST strictly follow the format: [HH:MM:SS] Chapter Title (5-7 words max) :: Chapter Summary (1-2 sentences). Use the specific timestamp format [HH:MM:SS] (hours, minutes, seconds) representing the chapter's start time. Use ' :: ' (space, two colons, space) as the separator between the title and the summary.
+
+Example of two chapter lines:
+[00:05:15] Introduction to Topic :: This chapter introduces the main subject discussed and sets the stage for later details.
+[00:15:30] Exploring Detail A :: The speaker dives into the first major detail, providing supporting examples.
+
+Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences). Focus on major segmentation points. Return ONLY the formatted chapter lines following this exact single-line structure. Do not include any introductory text, concluding remarks, blank lines, lists, or any other text or formatting.`
+    },
+    {
+        id: 'diarize-speakers',
+        title: 'Identify Speakers',
+        prompt: `You are an expert transcriber capable of speaker identification (diarization). Your task is to transcribe the spoken content in this ${'{contentType}'} AND identify who is speaking for each segment. Assign generic labels like 'Speaker 1', 'Speaker 2', etc., consistently throughout the transcript if specific names are not clearly identifiable or mentioned. Format the output as a sequential transcript. Each line MUST strictly follow the format: Speaker Label [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. Example: Speaker 1 [0m5s123ms - 0m10s456ms] This is what the first speaker said. Each entry must represent a continuous segment from a single speaker. Return ONLY the formatted speaker transcript lines following this exact structure. Do not include headers, speaker inventories, introductions, summaries, or any other text or formatting.`
     }
 ];
 
@@ -300,8 +325,48 @@ const fileToBase64 = (file) => {
     });
 };
 
+// Default prompts for different operations
+export const getDefaultTranslationPrompt = (subtitleText, targetLanguage) => {
+    return `Translate the following subtitles to ${targetLanguage}.
+
+IMPORTANT: You MUST preserve the exact SRT format with numbers and timestamps.
+DO NOT modify the timestamps or subtitle numbers.
+ONLY translate the text content between timestamps and blank lines.
+DO NOT include any explanations, comments, or additional text in your response.
+
+Format must be exactly:
+1
+00:01:23,456 --> 00:01:26,789
+Translated text here
+
+2
+00:01:27,123 --> 00:01:30,456
+Next translated text here
+
+Here are the subtitles to translate:\n\n${subtitleText}`;
+};
+
+export const getDefaultConsolidatePrompt = (subtitlesText) => {
+    return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
+
+IMPORTANT: Your response should ONLY contain the consolidated document text.
+DO NOT include any explanations, comments, headers, or additional text in your response.
+
+Here are the subtitles:\n\n${subtitlesText}`;
+};
+
+export const getDefaultSummarizePrompt = (subtitlesText) => {
+    return `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
+
+IMPORTANT: Your response should ONLY contain the summary text.
+DO NOT include any explanations, comments, headers, or additional text in your response.
+DO NOT include phrases like "Here's a summary" or "In summary" at the beginning.
+
+Here are the subtitles:\n\n${subtitlesText}`;
+};
+
 // Function to translate subtitles to a different language while preserving timing
-const translateSubtitles = async (subtitles, targetLanguage) => {
+const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null) => {
     // Store the target language for reference
     localStorage.setItem('translation_target_language', targetLanguage);
     if (!subtitles || subtitles.length === 0) {
@@ -350,22 +415,15 @@ const translateSubtitles = async (subtitles, targetLanguage) => {
     }).join('\n\n');
 
     // Create the prompt for translation
-    const translationPrompt = `Translate the following subtitles to ${targetLanguage}.
-
-IMPORTANT: You MUST preserve the exact SRT format with numbers and timestamps.
-DO NOT modify the timestamps or subtitle numbers.
-ONLY translate the text content between timestamps and blank lines.
-
-Format must be exactly:
-1
-00:01:23,456 --> 00:01:26,789
-Translated text here
-
-2
-00:01:27,123 --> 00:01:30,456
-Next translated text here
-
-Here are the subtitles to translate:\n\n${subtitleText}`;
+    let translationPrompt;
+    if (customPrompt) {
+        // Replace variables in the custom prompt
+        translationPrompt = customPrompt
+            .replace('{subtitlesText}', subtitleText)
+            .replace('{targetLanguage}', targetLanguage);
+    } else {
+        translationPrompt = getDefaultTranslationPrompt(subtitleText, targetLanguage);
+    }
 
     // Create a unique ID for this request
     const requestId = `translation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -377,8 +435,8 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
             throw new Error('Gemini API key not found');
         }
 
-        // Get selected model from localStorage or use default
-        const model = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+        // Use the model parameter passed to the function
+        // This allows for model selection specific to translation
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         // Create a new AbortController for this request
@@ -434,6 +492,194 @@ Here are the subtitles to translate:\n\n${subtitleText}`;
             throw new Error('Translation request was aborted');
         } else {
             console.error('Translation error:', error);
+            // Remove this controller from the map on error
+            if (requestId) {
+                activeAbortControllers.delete(requestId);
+            }
+            throw error;
+        }
+    }
+};
+
+/**
+ * consolidate document from subtitles text
+ * @param {string} subtitlesText - Plain text content from subtitles
+ * @param {string} model - Gemini model to use
+ * @param {string} customPrompt - Optional custom prompt to use
+ * @returns {Promise<string>} - Completed document text
+ */
+export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
+    if (!subtitlesText || subtitlesText.trim() === '') {
+        throw new Error('No text to process');
+    }
+
+    // Create a unique ID for this request
+    const requestId = `document_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    try {
+        // Get API key from localStorage
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            throw new Error('Gemini API key not found');
+        }
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        // Create a new AbortController for this request
+        const controller = new AbortController();
+        activeAbortControllers.set(requestId, controller);
+        const signal = controller.signal;
+
+        // Create the prompt for document completion
+        let documentPrompt;
+        if (customPrompt) {
+            // Replace variables in the custom prompt
+            documentPrompt = customPrompt.replace('{subtitlesText}', subtitlesText);
+        } else {
+            documentPrompt = getDefaultConsolidatePrompt(subtitlesText);
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: documentPrompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 32,
+                    topP: 0.95,
+                    maxOutputTokens: 8192,
+                },
+            }),
+            signal: signal // Add the AbortController signal
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const completedText = data.candidates[0]?.content?.parts[0]?.text;
+
+        if (!completedText) {
+            throw new Error('No completed document returned from Gemini');
+        }
+
+        // Remove this controller from the map after successful response
+        activeAbortControllers.delete(requestId);
+
+        return completedText;
+    } catch (error) {
+        // Check if this is an AbortError
+        if (error.name === 'AbortError') {
+            console.log('Document completion request was aborted');
+            throw new Error('Document completion request was aborted');
+        } else {
+            console.error('Document completion error:', error);
+            // Remove this controller from the map on error
+            if (requestId) {
+                activeAbortControllers.delete(requestId);
+            }
+            throw error;
+        }
+    }
+};
+
+/**
+ * Summarize document from subtitles text
+ * @param {string} subtitlesText - Plain text content from subtitles
+ * @param {string} model - Gemini model to use
+ * @param {string} customPrompt - Optional custom prompt to use
+ * @returns {Promise<string>} - Summarized document text
+ */
+export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
+    if (!subtitlesText || subtitlesText.trim() === '') {
+        throw new Error('No text to process');
+    }
+
+    // Create a unique ID for this request
+    const requestId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    try {
+        // Get API key from localStorage
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) {
+            throw new Error('Gemini API key not found');
+        }
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        // Create a new AbortController for this request
+        const controller = new AbortController();
+        activeAbortControllers.set(requestId, controller);
+        const signal = controller.signal;
+
+        // Create the prompt for document summarization
+        let summaryPrompt;
+        if (customPrompt) {
+            // Replace variables in the custom prompt
+            summaryPrompt = customPrompt.replace('{subtitlesText}', subtitlesText);
+        } else {
+            summaryPrompt = getDefaultSummarizePrompt(subtitlesText);
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: summaryPrompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 32,
+                    topP: 0.95,
+                    maxOutputTokens: 8192,
+                },
+            }),
+            signal: signal // Add the AbortController signal
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const summarizedText = data.candidates[0]?.content?.parts[0]?.text;
+
+        if (!summarizedText) {
+            throw new Error('No summary returned from Gemini');
+        }
+
+        // Remove this controller from the map after successful response
+        activeAbortControllers.delete(requestId);
+
+        return summarizedText;
+    } catch (error) {
+        // Check if this is an AbortError
+        if (error.name === 'AbortError') {
+            console.log('Summary request was aborted');
+            throw new Error('Summary request was aborted');
+        } else {
+            console.error('Summary error:', error);
             // Remove this controller from the map on error
             if (requestId) {
                 activeAbortControllers.delete(requestId);

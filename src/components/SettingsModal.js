@@ -39,6 +39,14 @@ const PromptIcon = () => (
   </svg>
 );
 
+const AboutIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 16v-4"/>
+    <path d="M12 8h.01"/>
+  </svg>
+);
+
 const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(() => {
@@ -61,6 +69,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentDuration, setSegmentDuration] = useState(3); // Default to 3 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
+  const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
@@ -72,6 +81,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showAddPresetForm, setShowAddPresetForm] = useState(false); // Toggle for add preset form
   const [newPresetTitle, setNewPresetTitle] = useState(''); // Title for new preset
   const [viewingPreset, setViewingPreset] = useState(null); // Currently viewing preset
+  const [targetLanguage, setTargetLanguage] = useState(''); // Target language for translation preset
   const textareaRef = useRef(null);
   const floatingCardRef = useRef(null);
 
@@ -87,6 +97,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     segmentDuration: 3,
     geminiModel: 'gemini-2.0-flash',
     timeFormat: 'hms',
+    showWaveform: true,
     segmentOffsetCorrection: -3.0,
     transcriptionPrompt: DEFAULT_TRANSCRIPTION_PROMPT,
     useOAuth: false,
@@ -102,6 +113,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '3');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
+      const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUserPresets = getUserPromptPresets();
@@ -116,6 +128,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         segmentDuration: savedSegmentDuration,
         geminiModel: savedGeminiModel,
         timeFormat: savedTimeFormat,
+        showWaveform: savedShowWaveform,
         segmentOffsetCorrection: savedOffsetCorrection,
         transcriptionPrompt: savedTranscriptionPrompt,
         useOAuth: savedUseOAuth,
@@ -128,6 +141,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setSegmentDuration(savedSegmentDuration);
       setGeminiModel(savedGeminiModel);
       setTimeFormat(savedTimeFormat);
+      setShowWaveform(savedShowWaveform);
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUserPromptPresets(savedUserPresets);
@@ -201,8 +215,15 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   };
 
   // Handle selecting a preset
-  const handleSelectPreset = (prompt) => {
-    setTranscriptionPrompt(prompt);
+  const handleSelectPreset = (preset, customLanguage = '') => {
+    // If it's the translation preset, replace the target language placeholder
+    if (preset.id === 'translate-vietnamese' && customLanguage) {
+      // Replace 'TARGET_LANGUAGE' with the custom language in the prompt
+      const updatedPrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage);
+      setTranscriptionPrompt(updatedPrompt);
+    } else {
+      setTranscriptionPrompt(preset.prompt);
+    }
   };
 
   // Handle adding a new preset
@@ -525,6 +546,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration !== originalSettings.segmentDuration ||
       geminiModel !== originalSettings.geminiModel ||
       timeFormat !== originalSettings.timeFormat ||
+      showWaveform !== originalSettings.showWaveform ||
       segmentOffsetCorrection !== originalSettings.segmentOffsetCorrection ||
       transcriptionPrompt !== originalSettings.transcriptionPrompt ||
       useOAuth !== originalSettings.useOAuth ||
@@ -532,7 +554,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientSecret !== originalSettings.youtubeClientSecret;
 
     setHasChanges(settingsChanged);
-  }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat,
+  }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, originalSettings]);
 
@@ -542,6 +564,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('segment_duration', segmentDuration.toString());
     localStorage.setItem('gemini_model', geminiModel);
     localStorage.setItem('time_format', timeFormat);
+    localStorage.setItem('show_waveform', showWaveform.toString());
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
@@ -561,6 +584,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration,
       geminiModel,
       timeFormat,
+      showWaveform,
       segmentOffsetCorrection,
       transcriptionPrompt,
       useOAuth,
@@ -585,9 +609,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 <h3>
                   {viewingPreset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
                    viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                   viewingPreset.id === 'focus-speech' && t('settings.presetFocusSpeech', 'Focus on speech') ||
+                   viewingPreset.id === 'focus-spoken-words' && t('settings.presetFocusSpokenWords', 'Focus on Spoken Words') ||
+                   viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                    viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
                    viewingPreset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                   viewingPreset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
+                   viewingPreset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                    viewingPreset.title}
                 </h3>
                 <button
@@ -598,18 +625,45 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 </button>
               </div>
               <div className="preset-view-body">
-                <pre className="preset-full-text">{viewingPreset.prompt}</pre>
+                <pre className="preset-full-text">
+                  {viewingPreset.id === 'translate-vietnamese' && targetLanguage.trim()
+                    ? viewingPreset.prompt.replace(/TARGET_LANGUAGE/g, targetLanguage)
+                    : viewingPreset.prompt}
+                </pre>
               </div>
               <div className="preset-view-footer">
-                <button
-                  className="use-preset-btn"
-                  onClick={() => {
-                    handleSelectPreset(viewingPreset.prompt);
-                    setViewingPreset(null);
-                  }}
-                >
-                  {t('settings.usePreset', 'Use')}
-                </button>
+                {viewingPreset.id === 'translate-vietnamese' ? (
+                  <div className="translation-language-input-modal">
+                    <input
+                      type="text"
+                      placeholder={t('translation.languagePlaceholder', 'Enter target language')}
+                      value={targetLanguage}
+                      onChange={(e) => setTargetLanguage(e.target.value)}
+                      className="target-language-input"
+                    />
+                    <button
+                      className="use-preset-btn"
+                      onClick={() => {
+                        handleSelectPreset(viewingPreset, targetLanguage);
+                        setViewingPreset(null);
+                      }}
+                      disabled={!targetLanguage.trim()}
+                      title={!targetLanguage.trim() ? t('translation.languageRequired', 'Please enter a target language') : ''}
+                    >
+                      {t('settings.usePreset', 'Use')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="use-preset-btn"
+                    onClick={() => {
+                      handleSelectPreset(viewingPreset);
+                      setViewingPreset(null);
+                    }}
+                  >
+                    {t('settings.usePreset', 'Use')}
+                  </button>
+                )}
                 <button
                   className="close-btn-secondary"
                   onClick={() => setViewingPreset(null)}
@@ -652,6 +706,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             >
               <CacheIcon />
               {t('settings.cache', 'Cache')}
+            </button>
+            <button
+              className={`settings-tab ${activeTab === 'about' ? 'active' : ''}`}
+              onClick={() => setActiveTab('about')}
+            >
+              <AboutIcon />
+              {t('settings.about', 'About')}
             </button>
           </div>
 
@@ -1019,6 +1080,27 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
                 </select>
               </div>
+
+              <div className="waveform-setting">
+                <label htmlFor="show-waveform">
+                  {t('settings.showWaveform', 'Show Audio Waveform')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+                </p>
+                <div className="toggle-switch-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      id="show-waveform"
+                      checked={showWaveform}
+                      onChange={(e) => setShowWaveform(e.target.checked)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">{showWaveform ? t('common.on', 'On') : t('common.off', 'Off')}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1042,12 +1124,34 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                         <h5 className="preset-title">
                           {preset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
                            preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                           preset.id === 'focus-speech' && t('settings.presetFocusSpeech', 'Focus on speech') ||
+                           preset.id === 'focus-spoken-words' && t('settings.presetFocusSpokenWords', 'Focus on Spoken Words') ||
+                           preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                            preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
                            preset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                           preset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
+                           preset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                            preset.title}
                         </h5>
-                        <p className="preset-preview">{preset.prompt.substring(0, 60)}...</p>
+                        {preset.id === 'translate-vietnamese' ? (
+                          <>
+                            <div className="translation-language-input">
+                              <input
+                                type="text"
+                                placeholder={t('translation.languagePlaceholder', 'Enter target language')}
+                                value={targetLanguage}
+                                onChange={(e) => setTargetLanguage(e.target.value)}
+                                className="target-language-input"
+                              />
+                            </div>
+                            {targetLanguage.trim() && (
+                              <p className="preset-preview">
+                                {preset.prompt.replace(/TARGET_LANGUAGE/g, targetLanguage).substring(0, 60)}...
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p className="preset-preview">{preset.prompt.substring(0, 60)}...</p>
+                        )}
                       </div>
                       <div className="preset-card-actions">
                         <button
@@ -1056,12 +1160,23 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                         >
                           {t('settings.viewPreset', 'View')}
                         </button>
-                        <button
-                          className="use-preset-btn"
-                          onClick={() => handleSelectPreset(preset.prompt)}
-                        >
-                          {t('settings.usePreset', 'Use')}
-                        </button>
+                        {preset.id === 'translate-vietnamese' ? (
+                          <button
+                            className="use-preset-btn"
+                            onClick={() => handleSelectPreset(preset, targetLanguage)}
+                            disabled={!targetLanguage.trim()}
+                            title={!targetLanguage.trim() ? t('translation.languageRequired', 'Please enter a target language') : ''}
+                          >
+                            {t('settings.usePreset', 'Use')}
+                          </button>
+                        ) : (
+                          <button
+                            className="use-preset-btn"
+                            onClick={() => handleSelectPreset(preset)}
+                          >
+                            {t('settings.usePreset', 'Use')}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1414,6 +1529,43 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     ? t('settings.clearingCache', 'Clearing Cache...')
                     : t('settings.clearCache', 'Clear Cache')}
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* About Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'about' ? 'active' : ''}`}>
+            <div className="settings-section about-section">
+              <h3>{t('settings.about', 'About')}</h3>
+              <div className="about-content">
+                <h2 className="app-title">One-click Subtitles Generator</h2>
+                <p className="version-info">
+                  <strong>{t('settings.version', 'Version')}:</strong> {new Date().toISOString().slice(0, 10).replace(/-/g, '')}
+                </p>
+                <div className="creator-info">
+                  <p><strong>{t('settings.creator', 'Creator')}:</strong> nganlinh4</p>
+                  <p>
+                    <strong>GitHub:</strong>
+                    <a href="https://github.com/nganlinh4" target="_blank" rel="noopener noreferrer">
+                      https://github.com/nganlinh4
+                    </a>
+                  </p>
+                  <p>
+                    <strong>Google Scholar:</strong>
+                    <a href="https://scholar.google.com/citations?user=kWFVuFwAAAAJ&hl=en" target="_blank" rel="noopener noreferrer">
+                      https://scholar.google.com/citations?user=kWFVuFwAAAAJ&hl=en
+                    </a>
+                  </p>
+                  <p>
+                    <strong>Email:</strong>
+                    <a href="mailto:nganlinh4@gmail.com">
+                      nganlinh4@gmail.com
+                    </a>
+                  </p>
+                </div>
+                <div className="app-description">
+                  <p>{t('settings.appDescription', 'One-click Subtitles Generator is a tool that helps you generate, edit, and translate subtitles for your videos with just one click.')}</p>
+                </div>
               </div>
             </div>
           </div>

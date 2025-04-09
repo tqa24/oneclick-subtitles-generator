@@ -22,6 +22,8 @@
   padding: 1rem 1rem;
   border: none;
   background: transparent;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
   color: var(--text-secondary);
   font-size: var(--md-label-large-size);
   font-weight: 500;

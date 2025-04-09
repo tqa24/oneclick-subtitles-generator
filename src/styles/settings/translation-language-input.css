@@ -1,0 +1,57 @@
+/* Styles for the translation language input in preset cards */
+
+.translation-language-input {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+}
+
+.target-language-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--md-shape-pill);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.target-language-input:hover {
+  background-color: var(--md-surface-2);
+  border-color: var(--md-outline-variant);
+}
+
+.target-language-input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+  background-color: var(--md-surface-1);
+}
+
+.target-language-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Styles for the translation language input in the modal */
+.translation-language-input-modal {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  align-items: center;
+}
+
+.translation-language-input-modal .target-language-input {
+  flex: 1;
+  height: 40px;
+  font-size: 1rem;
+}
+
+/* Disabled button styles */
+.use-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--md-surface-3);
+}

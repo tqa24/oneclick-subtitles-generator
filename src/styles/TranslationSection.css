@@ -24,21 +24,50 @@
   line-height: 1.5;
 }
 
+/* Translation controls container */
 .translation-controls {
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Row layout for consistent alignment */
+.translation-row {
+  display: flex;
+  align-items: flex-start;
   gap: 1rem;
 }
 
-.language-input-container {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+/* Label column */
+.row-label {
+  flex: 0 0 100px;
+  text-align: right;
+  padding-top: 8px;
 }
 
+.row-label label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+/* Content column */
+.row-content {
+  flex: 1;
+  min-width: 0; /* Prevent flex items from overflowing */
+}
+
+/* Action content alignment */
+.action-content {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+}
+
+/* Language input styling */
 .language-input {
-  flex: 0 1 200px; /* Reduced flex-basis to 200px */
-  max-width: 200px; /* Added max-width to ensure it doesn't grow too much */
+  width: 100%;
+  max-width: 400px;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
   border-radius: 24px;
@@ -46,6 +75,14 @@
   color: var(--text-primary);
   font-size: 0.95rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Style for the model dropdown in translation section */
+.translate-model-dropdown {
+  background-color: var(--md-surface-3);
+  border-color: var(--md-outline-variant);
+  width: 100%;
+  max-width: 400px;
 }
 
 .language-input:focus {
@@ -97,10 +134,11 @@
 
 .translation-actions {
   display: flex;
-  flex-direction: row; /* Changed from column to row */
+  flex-direction: row;
   gap: 0.75rem;
-  flex-wrap: nowrap; /* Ensure no wrapping */
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: flex-end; /* Align the New Translation button to the right */
 }
 
 .download-buttons {
@@ -124,6 +162,70 @@
   color: var(--md-on-tertiary-container, #1d192b);
 }
 
+.download-translation-button.txt {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* Document completion container in translation section */
+.translation-section .document-completion-container {
+  margin-top: 12px;
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Document model dropdown in translation section */
+.translation-section .document-model-dropdown {
+  height: 36px;
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+/* consolidate document button in translation section */
+.translation-section .complete-document-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+  font-size: var(--md-label-medium-size);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
+  height: 36px;
+  flex-grow: 1;
+}
+
+.translation-section .complete-document-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+  background-color: var(--md-tertiary-hover);
+}
+
+.translation-section .complete-document-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.translation-section .complete-document-btn:disabled {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .download-translation-button.json:hover {
   background-color: var(--md-tertiary, #6750a4);
   color: var(--md-on-tertiary, #ffffff);
@@ -140,6 +242,7 @@
 }
 
 .translation-error {
+  width: 100%;
   color: var(--error-color);
   background-color: var(--error-background);
   padding: 0.75rem 1rem;
@@ -165,7 +268,7 @@
 }
 
 .translation-preview {
-  margin-top: 1rem;
+  width: 100%;
   padding: 1rem;
   background-color: var(--background-secondary);
   border-radius: 8px;

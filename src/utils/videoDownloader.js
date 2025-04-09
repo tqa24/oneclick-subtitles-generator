@@ -55,14 +55,21 @@ export const startYoutubeVideoDownload = (youtubeUrl) => {
       downloadQueue[videoId].status = 'downloading';
       downloadQueue[videoId].progress = 10;
 
-      // Request server to download the video
+      // Get the quality from the queue if available
+      const quality = downloadQueue[videoId].quality || '360p';
+
+      console.log(`[QUALITY DEBUG] Sending download request with quality: ${quality}`);
+
+      // Request server to download the video with the specified quality
       const downloadResponse = await fetch(`${SERVER_URL}/api/download-video`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ videoId }),
+        body: JSON.stringify({ videoId, quality }),
       });
+
+      console.log(`[QUALITY DEBUG] Server response status: ${downloadResponse.status}`);
 
       if (!downloadResponse.ok) {
         const errorData = await downloadResponse.json();
@@ -110,18 +117,26 @@ export const checkDownloadStatus = (videoId) => {
  * Downloads a YouTube video and waits for completion
  * @param {string} youtubeUrl - The YouTube video URL
  * @param {Function} onProgress - Progress callback (0-100)
+ * @param {string} quality - The desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<string>} - A promise that resolves to a video URL
  */
-export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) => {
+export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, quality = '360p') => {
   const videoId = startYoutubeVideoDownload(youtubeUrl);
 
   // Store the original URL for potential redownload
   const originalUrl = youtubeUrl;
 
+  // Store the quality in the download queue
+  if (downloadQueue[videoId]) {
+    downloadQueue[videoId].quality = quality;
+  }
+
+  console.log(`[QUALITY DEBUG] Starting download for video ${videoId} with quality: ${quality}`);
+
   // Poll for completion
   return new Promise((resolve, reject) => {
     let attempts = 0;
-    const maxAttempts = 300; // 150 seconds max wait time
+    // No maximum attempts - we'll wait indefinitely
     let simulatedProgress = 5;
 
     const checkInterval = setInterval(async () => {
@@ -201,9 +216,12 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}) =>
         }
       }
 
-      if (++attempts >= maxAttempts) {
-        clearInterval(checkInterval);
-        reject(new Error('Download timeout exceeded'));
+      // Increment attempts counter (for logging purposes)
+      ++attempts;
+
+      // Log every 30 seconds to show we're still waiting
+      if (attempts % 60 === 0) {
+        console.log(`[QUALITY DEBUG] Still waiting for download to complete. Attempts: ${attempts}`);
       }
     }, 500);
   });

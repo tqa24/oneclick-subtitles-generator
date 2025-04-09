@@ -6,7 +6,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds' }) => {
+const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -146,6 +146,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               seekTime={seekTime}
               timeFormat={timeFormat}
               videoSource={actualVideoUrl}
+              showWaveform={showWaveform}
             />
 
             {/* Download buttons moved to LyricsDisplay component */}

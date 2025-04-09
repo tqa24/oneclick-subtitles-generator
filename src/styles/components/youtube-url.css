@@ -44,6 +44,25 @@
   box-shadow: 0 0 0 1px var(--error-color-light);
 }
 
+.clear-url-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+
+.clear-url-btn:hover {
+  color: var(--md-primary);
+}
+
 .youtube-instructions {
   margin-top: 1.5rem;
   padding: 1.5rem;
