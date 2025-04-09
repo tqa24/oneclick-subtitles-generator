@@ -214,7 +214,7 @@ export const callGeminiApi = async (input, inputType) => {
     }
 
     // Create a unique ID for this request
-    const requestId = `request_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `request_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     try {
         // Log request data for debugging (without the actual base64 data to keep logs clean)
@@ -366,7 +366,7 @@ Here are the subtitles:\n\n${subtitlesText}`;
 };
 
 // Function to translate subtitles to a different language while preserving timing
-const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null) => {
+const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0) => {
     // Store the target language for reference
     localStorage.setItem('translation_target_language', targetLanguage);
     if (!subtitles || subtitles.length === 0) {
@@ -383,6 +383,12 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
     // Store the original subtitles map in localStorage for reference
     localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
+
+    // If splitDuration is specified and not 0, split subtitles into chunks based on duration
+    if (splitDuration > 0) {
+        console.log(`Splitting translation into chunks of ${splitDuration} minutes`);
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration);
+    }
 
     // Format subtitles as proper SRT text for Gemini
     const subtitleText = subtitles.map((sub, index) => {
@@ -426,7 +432,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
     }
 
     // Create a unique ID for this request
-    const requestId = `translation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `translation_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     try {
         // Get API key from localStorage
@@ -462,7 +468,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                     temperature: 0.2,
                     topK: 32,
                     topP: 0.95,
-                    maxOutputTokens: 8192,
+                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
                 },
             }),
             signal: signal // Add the AbortController signal
@@ -514,7 +520,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
     }
 
     // Create a unique ID for this request
-    const requestId = `document_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `document_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     try {
         // Get API key from localStorage
@@ -557,7 +563,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
                     temperature: 0.2,
                     topK: 32,
                     topP: 0.95,
-                    maxOutputTokens: 8192,
+                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
                 },
             }),
             signal: signal // Add the AbortController signal
@@ -608,7 +614,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
     }
 
     // Create a unique ID for this request
-    const requestId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `summary_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
     try {
         // Get API key from localStorage
@@ -651,7 +657,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
                     temperature: 0.2,
                     topK: 32,
                     topP: 0.95,
-                    maxOutputTokens: 8192,
+                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
                 },
             }),
             signal: signal // Add the AbortController signal
@@ -687,6 +693,69 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             throw error;
         }
     }
+};
+
+/**
+ * Split subtitles into chunks based on duration and translate each chunk
+ * @param {Array} subtitles - Subtitles to translate
+ * @param {string} targetLanguage - Target language
+ * @param {string} model - Gemini model to use
+ * @param {string} customPrompt - Custom prompt for translation
+ * @param {number} splitDuration - Duration in minutes for each chunk
+ * @returns {Promise<Array>} - Array of translated subtitles
+ */
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration) => {
+    // Convert splitDuration from minutes to seconds
+    const splitDurationSeconds = splitDuration * 60;
+
+    // Group subtitles into chunks based on their timestamps
+    const chunks = [];
+    let currentChunk = [];
+    let chunkStartTime = subtitles[0]?.start || 0;
+
+    subtitles.forEach(subtitle => {
+        // If this subtitle would exceed the chunk duration, start a new chunk
+        if (subtitle.start - chunkStartTime > splitDurationSeconds) {
+            if (currentChunk.length > 0) {
+                chunks.push([...currentChunk]);
+                currentChunk = [];
+                chunkStartTime = subtitle.start;
+            }
+        }
+
+        currentChunk.push(subtitle);
+    });
+
+    // Add the last chunk if it's not empty
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+    }
+
+    console.log(`Split ${subtitles.length} subtitles into ${chunks.length} chunks`);
+
+    // Translate each chunk
+    const translatedChunks = [];
+    for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        console.log(`Translating chunk ${i + 1}/${chunks.length} with ${chunk.length} subtitles`);
+
+        try {
+            // Call translateSubtitles with the current chunk, but with splitDuration=0 to avoid infinite recursion
+            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0);
+            translatedChunks.push(translatedChunk);
+        } catch (error) {
+            console.error(`Error translating chunk ${i + 1}:`, error);
+            // If a chunk fails, add the original subtitles to maintain the structure
+            translatedChunks.push(chunk.map(sub => ({
+                ...sub,
+                text: `[Translation failed] ${sub.text}`,
+                language: getLanguageCode(targetLanguage)
+            })));
+        }
+    }
+
+    // Flatten the array of translated chunks
+    return translatedChunks.flat();
 };
 
 export { callGeminiApi as transcribeVideo, callGeminiApi as transcribeAudio, callGeminiApi as transcribeYouTubeVideo, translateSubtitles };

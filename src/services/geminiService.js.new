@@ -207,7 +207,7 @@ export const processMediaWithGemini = async (options) => {
                     onSegmentComplete(result);
                 } catch (error) {
                     console.error(`[Gemini] Error processing segment ${i}:`, error);
-                    
+
                     // Create an error result for this segment
                     const errorResult = {
                         id: segment.id,
@@ -218,10 +218,10 @@ export const processMediaWithGemini = async (options) => {
                         subtitles: [],
                         rawResponse: null
                     };
-                    
+
                     results.push(errorResult);
                     onSegmentComplete(errorResult);
-                    
+
                     // Show notification for segment error
                     showNotification(
                         'error',
@@ -367,17 +367,38 @@ export const translateSubtitlesWithGemini = async (options) => {
         const response = await simulateGeminiTextCall(subtitlesText, formattedPrompt, model, apiKey, onProgress);
 
         // Parse the response to extract translated subtitles
-        const translatedLines = response.split('\n').filter(line => line.trim());
-        
-        // Map the translated lines to the original subtitles
-        const translatedSubtitles = subtitles.map((sub, index) => {
-            const translatedText = index < translatedLines.length ? translatedLines[index] : sub.text;
-            return {
+        // Import the parseTranslatedSubtitles function from subtitleParser
+        const { parseTranslatedSubtitles } = await import('../utils/subtitleParser');
+
+        // Log the full response for debugging
+        console.log(`[Gemini] Translation response length: ${response.length} characters`);
+
+        // Use the proper parsing function to handle the translated subtitles
+        // This will correctly parse the SRT format and maintain all subtitle information
+        let translatedSubtitles = await parseTranslatedSubtitles(response);
+
+        // If parsing failed or returned empty results, fall back to a simpler approach
+        if (!translatedSubtitles || translatedSubtitles.length === 0) {
+            console.log('[Gemini] Falling back to simple line-by-line translation parsing');
+            const translatedLines = response.split('\n').filter(line => line.trim());
+
+            translatedSubtitles = subtitles.map((sub, index) => {
+                // If we have a translated line for this subtitle, use it
+                // Otherwise keep the original text
+                const translatedText = index < translatedLines.length ? translatedLines[index] : sub.text;
+                return {
+                    ...sub,
+                    text: translatedText,
+                    language: getLanguageCode(targetLanguage)
+                };
+            });
+        } else {
+            // Add language code to all translated subtitles
+            translatedSubtitles = translatedSubtitles.map(sub => ({
                 ...sub,
-                text: translatedText,
                 language: getLanguageCode(targetLanguage)
-            };
-        });
+            }));
+        }
 
         // Complete the translation
         onComplete(translatedSubtitles);
@@ -547,13 +568,13 @@ export const consolidateSubtitlesWithGemini = async (options) => {
 const simulateGeminiApiCall = async (mediaSource, prompt, model, apiKey, onProgress) => {
     // This is a placeholder for the actual API call
     // In a real implementation, this would call the Gemini API with the media file
-    
+
     // Simulate progress
     for (let i = 0; i <= 100; i += 10) {
         onProgress(i);
         await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     // Return a simulated response
     return `[0m00s000ms - 0m05s000ms] This is a simulated subtitle response.
 [0m05s000ms - 0m10s000ms] It would be replaced with actual Gemini API results.
@@ -561,35 +582,90 @@ const simulateGeminiApiCall = async (mediaSource, prompt, model, apiKey, onProgr
 [0m15s000ms - 0m20s000ms] And return properly formatted subtitles.`;
 };
 
-// Placeholder for the actual Gemini text API call implementation
+// Implementation of the Gemini text API call
 const simulateGeminiTextCall = async (text, prompt, model, apiKey, onProgress) => {
-    // This is a placeholder for the actual API call
-    // In a real implementation, this would call the Gemini API with the text
-    
-    // Simulate progress
-    for (let i = 0; i <= 100; i += 20) {
-        onProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+        // Create a unique request ID
+        const requestId = `text_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+        // Log the request details
+        console.log(`[Gemini] Text API request ${requestId}`);
+        console.log(`[Gemini] Model: ${model}`);
+        console.log(`[Gemini] Text length: ${text.length} characters`);
+        console.log(`[Gemini] Prompt length: ${prompt.length} characters`);
+
+        // Report initial progress
+        onProgress(10);
+
+        // Make the actual API call to Gemini
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        // Report progress before fetch
+        onProgress(30);
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: prompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    topK: 32,
+                    topP: 0.95,
+                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
+                },
+            })
+        });
+
+        // Report progress after fetch
+        onProgress(70);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const resultText = data.candidates[0]?.content?.parts[0]?.text;
+
+        if (!resultText) {
+            throw new Error('No text returned from Gemini API');
+        }
+
+        // Report completion
+        onProgress(100);
+
+        // Log success
+        console.log(`[Gemini] Text API request ${requestId} completed successfully`);
+        console.log(`[Gemini] Response length: ${resultText.length} characters`);
+
+        return resultText;
+    } catch (error) {
+        console.error('[Gemini] Error in text API call:', error);
+        throw error;
     }
-    
-    // Return a simulated response
-    return `This is a simulated text response.
-It would be replaced with actual Gemini API results.
-The real implementation would process the text input.
-And return properly formatted output based on the prompt.`;
 };
 
 // Helper function to parse subtitles from Gemini response
 const parseSubtitlesFromResponse = (response, startTimeOffset = 0) => {
     if (!response) return [];
-    
+
     const lines = response.split('\n').filter(line => line.trim());
     const subtitles = [];
-    
+
     for (const line of lines) {
         // Match timestamp pattern [MMmSSsNNNms - MMmSSsNNNms]
         const timestampMatch = line.match(/\[(\d+)m(\d+)s(\d+)ms - (\d+)m(\d+)s(\d+)ms\]/);
-        
+
         if (timestampMatch) {
             // Extract start and end times
             const startMin = parseInt(timestampMatch[1]);
@@ -598,14 +674,14 @@ const parseSubtitlesFromResponse = (response, startTimeOffset = 0) => {
             const endMin = parseInt(timestampMatch[4]);
             const endSec = parseInt(timestampMatch[5]);
             const endMs = parseInt(timestampMatch[6]);
-            
+
             // Convert to seconds
             const startTime = startMin * 60 + startSec + startMs / 1000 + startTimeOffset;
             const endTime = endMin * 60 + endSec + endMs / 1000 + startTimeOffset;
-            
+
             // Extract the text content (everything after the timestamp)
             const text = line.substring(line.indexOf(']') + 1).trim();
-            
+
             // Add to subtitles array
             subtitles.push({
                 id: `subtitle_${subtitles.length + 1}`,
@@ -617,7 +693,7 @@ const parseSubtitlesFromResponse = (response, startTimeOffset = 0) => {
             });
         }
     }
-    
+
     return subtitles;
 };
 
@@ -627,6 +703,6 @@ const formatTimeString = (timeInSeconds) => {
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     const milliseconds = Math.floor((timeInSeconds % 1) * 1000);
-    
+
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 };
