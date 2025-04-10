@@ -265,8 +265,12 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
                 >
                   <option value="0">{t('translation.noSplit', 'No Split')}</option>
+                  <option value="1">1 {t('translation.minutes', 'minutes')}</option>
+                  <option value="3">3 {t('translation.minutes', 'minutes')}</option>
                   <option value="5">5 {t('translation.minutes', 'minutes')}</option>
+                  <option value="7">7 {t('translation.minutes', 'minutes')}</option>
                   <option value="10">10 {t('translation.minutes', 'minutes')}</option>
+                  <option value="15">15 {t('translation.minutes', 'minutes')}</option>
                   <option value="20">20 {t('translation.minutes', 'minutes')}</option>
                 </select>
                 <div
