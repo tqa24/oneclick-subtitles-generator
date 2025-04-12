@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoAnalysisModal.css';
 import { PROMPT_PRESETS } from '../services/geminiService';
@@ -13,6 +13,91 @@ const VideoAnalysisModal = ({
 }) => {
   const { t } = useTranslation();
   const [showRules, setShowRules] = useState(false);
+
+  // Clean up localStorage on unmount to prevent stale data
+  useEffect(() => {
+    // Check if this is a page refresh
+    const pageWasReloaded = window.performance &&
+      (window.performance.getEntriesByType('navigation')[0]?.type === 'reload' ||
+       document.referrer === document.location.href);
+
+    if (pageWasReloaded) {
+      // Clear analysis data on page refresh
+      localStorage.removeItem('show_video_analysis');
+      localStorage.removeItem('video_analysis_timestamp');
+      localStorage.removeItem('video_analysis_result');
+      console.log('VideoAnalysisModal: Cleared localStorage on page refresh');
+    }
+
+    // Clean up on unmount
+    return () => {
+      // We don't want to clear localStorage when the modal is closed normally
+      // as that's handled by the parent component
+    };
+  }, []);
+
+  // Set up timeout for auto-selection of recommended preset
+  const [timeoutId, setTimeoutId] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const [userInteracted, setUserInteracted] = useState(false);
+
+  useEffect(() => {
+    // Get timeout setting from localStorage
+    const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
+
+    // Clear any existing timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      setTimeoutId(null);
+    }
+
+    // If timeout is set to a number of seconds, set a new timeout
+    // Only set timeout if user hasn't interacted yet
+    if (timeoutSetting !== 'none' && analysisResult?.recommendedPreset?.id && !userInteracted) {
+      const seconds = parseInt(timeoutSetting, 10);
+      if (!isNaN(seconds) && seconds > 0) {
+        console.log(`Setting timeout for ${seconds} seconds to auto-select recommended preset`);
+
+        // Set initial countdown value
+        setCountdown(seconds);
+
+        // Create an interval to update the countdown every second
+        const countdownInterval = setInterval(() => {
+          setCountdown(prevCountdown => {
+            if (prevCountdown <= 1) {
+              clearInterval(countdownInterval);
+              return 0;
+            }
+            return prevCountdown - 1;
+          });
+        }, 1000);
+
+        // Set the timeout to auto-select the recommended preset
+        const id = setTimeout(() => {
+          console.log('Timeout reached, auto-selecting recommended preset');
+          clearInterval(countdownInterval);
+          onUsePreset(analysisResult.recommendedPreset.id);
+        }, seconds * 1000);
+
+        setTimeoutId(id);
+
+        // Clean up function to clear the interval
+        return () => {
+          clearInterval(countdownInterval);
+        };
+      }
+    } else {
+      // If no timeout is set, make sure countdown is null
+      setCountdown(null);
+    }
+
+    // Clean up timeout on unmount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [analysisResult, onUsePreset, timeoutId, userInteracted]);
 
   // Get preset title based on ID
   const getPresetTitle = (presetId) => {
@@ -71,6 +156,23 @@ const VideoAnalysisModal = ({
     onUsePreset(analysisResult.recommendedPreset.id);
   };
 
+  // Handle user interaction to cancel auto-selection
+  const handleUserInteraction = () => {
+    if (!userInteracted && countdown !== null) {
+      console.log('User interaction detected, cancelling auto-selection');
+      setUserInteracted(true);
+
+      // Clear the timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        setTimeoutId(null);
+      }
+
+      // Reset countdown
+      setCountdown(null);
+    }
+  };
+
   console.log('VideoAnalysisModal render - isOpen:', isOpen, 'analysisResult:', analysisResult);
 
   // Always show the modal when it's rendered
@@ -116,8 +218,8 @@ const VideoAnalysisModal = ({
   }
 
   return (
-    <div className="video-analysis-modal-overlay">
-      <div className="video-analysis-modal">
+    <div className="video-analysis-modal-overlay" onClick={handleUserInteraction}>
+      <div className="video-analysis-modal" onClick={(e) => e.stopPropagation()}>
         {!showRules ? (
           <>
             <div className="modal-header">
@@ -125,6 +227,11 @@ const VideoAnalysisModal = ({
             </div>
             <div className="modal-content">
               <div className="analysis-result">
+                {countdown !== null && (
+                  <div className="timer-section">
+                    <p>{t('videoAnalysis.autoSelectCountdown', 'Auto-selecting recommended preset in')} <span className="timer">{countdown}</span> {t('videoAnalysis.seconds', 'seconds')}</p>
+                  </div>
+                )}
                 <div className="recommended-preset">
                   <h3>{t('videoAnalysis.recommendedPreset', 'Recommended Preset')}</h3>
                   <div className="preset-card">
@@ -138,7 +245,10 @@ const VideoAnalysisModal = ({
                   <p>{t('videoAnalysis.rulesDescription', 'A set of rules has been generated to ensure consistent transcription of this video.')}</p>
                   <button
                     className="preview-rules-button"
-                    onClick={handlePreviewRules}
+                    onClick={(e) => {
+                      handleUserInteraction();
+                      handlePreviewRules();
+                    }}
                   >
                     {t('videoAnalysis.previewRules', 'Preview & Edit Rules')}
                   </button>
@@ -150,7 +260,10 @@ const VideoAnalysisModal = ({
             <div className="modal-footer">
               <button
                 className="use-default-button"
-                onClick={handleUseDefaultPreset}
+                onClick={(e) => {
+                  handleUserInteraction();
+                  handleUseDefaultPreset();
+                }}
               >
                 {t('videoAnalysis.useDefaultPreset', 'Use My Default Preset')}
               </button>
@@ -158,6 +271,7 @@ const VideoAnalysisModal = ({
                 className="use-recommended-button"
                 onClick={() => {
                   console.log('VideoAnalysisModal: Use Recommended button clicked');
+                  handleUserInteraction();
                   onUsePreset(analysisResult.recommendedPreset.id);
                 }}
               >
@@ -251,19 +365,28 @@ const VideoAnalysisModal = ({
             <div className="modal-footer">
               <button
                 className="back-button"
-                onClick={() => setShowRules(false)}
+                onClick={() => {
+                  handleUserInteraction();
+                  setShowRules(false);
+                }}
               >
                 {t('videoAnalysis.back', 'Back')}
               </button>
               <button
                 className="edit-rules-button"
-                onClick={handleEditRules}
+                onClick={(e) => {
+                  handleUserInteraction();
+                  handleEditRules();
+                }}
               >
                 {t('videoAnalysis.editRules', 'Edit Rules')}
               </button>
               <button
                 className="continue-button"
-                onClick={handleContinueWithRules}
+                onClick={(e) => {
+                  handleUserInteraction();
+                  handleContinueWithRules();
+                }}
               >
                 {t('videoAnalysis.continueWithRules', 'Continue with These Rules')}
               </button>

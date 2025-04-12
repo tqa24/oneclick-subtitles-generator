@@ -59,6 +59,8 @@
 
 /* Fix for video analysis section */
 .video-analysis-section .use-video-analysis-setting .checkbox-label,
+.video-analysis-section .video-analysis-model-setting .checkbox-label,
+.video-analysis-section .video-analysis-timeout-setting .checkbox-label,
 .video-optimization-section .optimize-videos-setting .checkbox-label,
 .video-optimization-section .use-optimized-preview-setting .checkbox-label,
 .structured-output-setting .checkbox-label,
@@ -69,6 +71,8 @@
 
 /* Fix for checkbox containers */
 .use-video-analysis-setting,
+.video-analysis-model-setting,
+.video-analysis-timeout-setting,
 .optimize-videos-setting,
 .use-optimized-preview-setting,
 .structured-output-setting,
