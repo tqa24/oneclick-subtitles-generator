@@ -158,16 +158,23 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
               {/* Show retry button with dropdown for completed segments that aren't currently being retried */}
               {(segment.status === 'success' || segment.status === 'error') && !retryingSegments.includes(index) && onRetryWithModel && (
                 <div className="model-retry-dropdown-container">
-                  {/* Retry button */}
-                  <button
+                  {/* Retry button - changed to div with role="button" */}
+                  <div
                     className={`segment-retry-btn ${openDropdownIndex === index ? 'active-dropdown-btn' : ''}`}
                     onClick={(e) => toggleDropdown(e, index)}
                     title={t('output.retryWithModel', 'Retry with different model')}
                     ref={el => buttonRefs.current[index] = el}
+                    role="button"
+                    tabIndex="0"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        toggleDropdown(e, index);
+                      }
+                    }}
                   >
                     <FiRefreshCw size={14} />
                     <FiChevronDown size={10} className="dropdown-icon" />
-                  </button>
+                  </div>
 
                   {/* Model dropdown */}
                   {openDropdownIndex === index && (
@@ -183,13 +190,21 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                       </div>
 
                       {/* Gemini 2.5 Pro */}
-                      <button
+                      <div
                         className="model-option"
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Retry with Gemini 2.5 Pro for segment', index);
                           onRetryWithModel(index, 'gemini-2.5-pro-exp-03-25');
                           setOpenDropdownIndex(null);
+                        }}
+                        role="button"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onRetryWithModel(index, 'gemini-2.5-pro-exp-03-25');
+                            setOpenDropdownIndex(null);
+                          }
                         }}
                       >
                         <div className="model-option-icon model-pro">
@@ -199,16 +214,24 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                           <div className="model-option-name">{t('models.gemini25Pro', 'Gemini 2.5 Pro')}</div>
                           <div className="model-option-desc">{t('models.bestAccuracy', 'Best accuracy')}</div>
                         </div>
-                      </button>
+                      </div>
 
                       {/* Gemini 2.0 Flash Thinking */}
-                      <button
+                      <div
                         className="model-option"
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Retry with Gemini 2.0 Flash Thinking for segment', index);
                           onRetryWithModel(index, 'gemini-2.0-flash-thinking-exp-01-21');
                           setOpenDropdownIndex(null);
+                        }}
+                        role="button"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onRetryWithModel(index, 'gemini-2.0-flash-thinking-exp-01-21');
+                            setOpenDropdownIndex(null);
+                          }
                         }}
                       >
                         <div className="model-option-icon model-thinking">
@@ -218,16 +241,24 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                           <div className="model-option-name">{t('models.gemini20FlashThinking', 'Gemini 2.0 Flash Thinking')}</div>
                           <div className="model-option-desc">{t('models.highAccuracy', 'High accuracy')}</div>
                         </div>
-                      </button>
+                      </div>
 
                       {/* Gemini 2.0 Flash */}
-                      <button
+                      <div
                         className="model-option"
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Retry with Gemini 2.0 Flash for segment', index);
                           onRetryWithModel(index, 'gemini-2.0-flash');
                           setOpenDropdownIndex(null);
+                        }}
+                        role="button"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onRetryWithModel(index, 'gemini-2.0-flash');
+                            setOpenDropdownIndex(null);
+                          }
                         }}
                       >
                         <div className="model-option-icon model-flash">
@@ -237,16 +268,24 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                           <div className="model-option-name">{t('models.gemini20Flash', 'Gemini 2.0 Flash')}</div>
                           <div className="model-option-desc">{t('models.balancedModel', 'Balanced')}</div>
                         </div>
-                      </button>
+                      </div>
 
                       {/* Gemini 2.0 Flash Lite */}
-                      <button
+                      <div
                         className="model-option"
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Retry with Gemini 2.0 Flash Lite for segment', index);
                           onRetryWithModel(index, 'gemini-2.0-flash-lite');
                           setOpenDropdownIndex(null);
+                        }}
+                        role="button"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            onRetryWithModel(index, 'gemini-2.0-flash-lite');
+                            setOpenDropdownIndex(null);
+                          }
                         }}
                       >
                         <div className="model-option-icon model-lite">
@@ -256,7 +295,7 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
                           <div className="model-option-name">{t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite')}</div>
                           <div className="model-option-desc">{t('models.fastestModel', 'Fastest')}</div>
                         </div>
-                      </button>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -6,7 +6,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true, useOptimizedPreview = false }) => {
+const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true, useOptimizedPreview = false, isSrtOnlyMode = false }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -81,6 +81,19 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
 
+  // Calculate virtual duration for SRT-only mode
+  useEffect(() => {
+    if (isSrtOnlyMode && subtitlesData && subtitlesData.length > 0) {
+      // Find the last subtitle's end time to use as virtual duration
+      const lastSubtitle = [...subtitlesData].sort((a, b) => b.end - a.end)[0];
+      if (lastSubtitle && lastSubtitle.end) {
+        // Add a small buffer to the end (10 seconds)
+        setVideoDuration(lastSubtitle.end + 10);
+        console.log('Set virtual duration for SRT-only mode:', lastSubtitle.end + 10);
+      }
+    }
+  }, [isSrtOnlyMode, subtitlesData]);
+
   // Reset edited lyrics when subtitlesData changes (new video/generation)
   useEffect(() => {
     setEditedLyrics(null);
@@ -144,20 +157,35 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
       {subtitlesData && (
         <>
           <div className="preview-section">
-            <VideoPreview
-              currentTime={currentTabIndex}
-              setCurrentTime={setCurrentTabIndex}
-              subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text ||
-                       subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
-              videoSource={videoSource}
-              setDuration={setVideoDuration}
-              onSeek={handleVideoSeek}
-              translatedSubtitles={translatedSubtitles}
-              subtitlesArray={editedLyrics || subtitlesData}
-              onVideoUrlReady={setActualVideoUrl}
-              useOptimizedPreview={useOptimizedPreview}
-            />
+            {!isSrtOnlyMode && (
+              <VideoPreview
+                currentTime={currentTabIndex}
+                setCurrentTime={setCurrentTabIndex}
+                subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text ||
+                         subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
+                videoSource={videoSource}
+                setDuration={setVideoDuration}
+                onSeek={handleVideoSeek}
+                translatedSubtitles={translatedSubtitles}
+                subtitlesArray={editedLyrics || subtitlesData}
+                onVideoUrlReady={setActualVideoUrl}
+                useOptimizedPreview={useOptimizedPreview}
+              />
+            )}
 
+            {isSrtOnlyMode && (
+              <div className="srt-only-message">
+                <div className="info-icon">
+                  <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </div>
+                <p>{t('output.srtOnlyModeInfo', 'Working with SRT file only. No video source available.')}</p>
+                <p>{t('output.srtOnlyModeHint', 'You can still edit, translate, and download the subtitles.')}</p>
+              </div>
+            )}
             <LyricsDisplay
               matchedLyrics={formatSubtitlesForLyricsDisplay(subtitlesData)}
               currentTime={currentTabIndex}
@@ -168,7 +196,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               duration={videoDuration}
               seekTime={seekTime}
               timeFormat={timeFormat}
-              videoSource={actualVideoUrl}
+              videoSource={isSrtOnlyMode ? null : actualVideoUrl}
               showWaveform={showWaveform}
               translatedSubtitles={translatedSubtitles}
               videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}

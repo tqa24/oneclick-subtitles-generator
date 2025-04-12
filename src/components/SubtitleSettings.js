@@ -153,34 +153,7 @@ const SubtitleSettings = ({
   return (
     <div className="subtitle-settings-container">
       <div className="action-buttons">
-        <button
-          className="action-button download-with-subtitles-btn md-filled-tonal-button"
-          onClick={onDownloadWithSubtitles}
-          title={t('subtitleSettings.downloadWithSubtitlesTooltip', 'Download video with original subtitles')}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <span>{t('subtitleSettings.downloadWithSubtitles', 'Download with Subtitles')}</span>
-        </button>
-
-        <button
-          className="action-button download-with-translated-subtitles-btn md-filled-tonal-button"
-          onClick={onDownloadWithTranslatedSubtitles}
-          disabled={!hasTranslation}
-          title={!hasTranslation ? t('subtitleSettings.noTranslationTooltip', 'Please generate a translation first in the Translation section below') : t('subtitleSettings.downloadWithTranslatedTooltip', 'Download video with translated subtitles')}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <span>{t('subtitleSettings.downloadWithTranslatedSubtitles', 'Download with Translated')}</span>
-        </button>
+        {/* Render with Subtitles and Render with Translated buttons hidden for now */}
 
         <button
           className="action-button subtitle-settings-toggle md-filled-tonal-button"

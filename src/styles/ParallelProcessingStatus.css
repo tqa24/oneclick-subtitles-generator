@@ -284,7 +284,7 @@
   background-color: var(--md-surface-3);
 }
 
-/* Base styles for segment retry button */
+/* Base styles for segment retry button - works for both button and div with role="button" */
 .segment-retry-btn {
   cursor: pointer !important;
   padding: 6px;
@@ -306,9 +306,11 @@
   flex-shrink: 0;
   /* Prevent any transitions that might cause layout shifts */
   transition: none !important;
+  /* Ensure divs with role="button" don't show focus outline by default */
+  outline: none;
 }
 
-/* Model option button */
+/* Model option button - works for both button and div with role="button" */
 .model-option {
   display: flex;
   align-items: center;
@@ -319,10 +321,24 @@
   cursor: pointer;
   text-align: left;
   transition: background-color 0.2s ease;
+  /* Ensure divs with role="button" don't show focus outline by default */
+  outline: none;
 }
 
 .model-option:hover {
   background-color: var(--md-surface-3);
+}
+
+/* Focus styles for keyboard navigation */
+.model-option:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: -2px;
+  background-color: var(--md-surface-3);
+}
+
+.segment-retry-btn:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
 }
 
 /* Model option icon */
