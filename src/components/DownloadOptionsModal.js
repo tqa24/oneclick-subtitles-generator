@@ -152,7 +152,7 @@ const DownloadOptionsModal = ({
           {/* Action tabs */}
           <div className="tabs">
             <div
-              className={`tab ${fileFormat ? 'active' : ''}`}
+              className={`tab active`}
               onClick={() => {
                 setFileFormat('srt');
                 setProcessType(null);
@@ -160,6 +160,8 @@ const DownloadOptionsModal = ({
             >
               {t('download.downloadFiles', 'Download Files')}
             </div>
+            {/* Process Text tab hidden for future development */}
+            {/*
             <div
               className={`tab ${processType ? 'active' : ''}`}
               onClick={() => {
@@ -169,6 +171,7 @@ const DownloadOptionsModal = ({
             >
               {t('download.processText', 'Process Text')}
             </div>
+            */}
           </div>
 
           {/* File format options */}
@@ -210,7 +213,8 @@ const DownloadOptionsModal = ({
             </div>
           )}
 
-          {/* Process options */}
+          {/* Process options - Hidden for future development */}
+          {/*
           {processType && (
             <>
               <div className="option-group">
@@ -314,6 +318,7 @@ Here are the subtitles:\n\n{subtitlesText}`)
               />
             </>
           )}
+          */}
         </div>
 
         <div className="modal-footer">
@@ -330,6 +335,8 @@ Here are the subtitles:\n\n{subtitlesText}`)
               {t('download.download', 'Download')}
             </button>
           )}
+          {/* Process button hidden for future development */}
+          {/*
           {processType && (
             <button className="action-button process-button" onClick={handleProcess}>
               <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
@@ -338,6 +345,7 @@ Here are the subtitles:\n\n{subtitlesText}`)
               {t('download.process', 'Process')}
             </button>
           )}
+          */}
         </div>
       </div>
     </div>
