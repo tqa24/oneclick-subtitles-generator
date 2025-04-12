@@ -109,12 +109,62 @@ export const parseRawTextManually = (rawText, startTime = 0) => {
 };
 
 export const parseGeminiResponse = (response) => {
+    console.log('Parsing Gemini response:', response ? 'Response received' : 'No response');
+
+    // Check if this is a structured JSON response
+    if (response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
+        console.log('Detected structured JSON response');
+        try {
+            return parseStructuredJsonResponse(response);
+        } catch (error) {
+            console.error('Error parsing structured JSON response:', error);
+            // Continue to try other parsing methods
+        }
+    }
+
+    // Fall back to text parsing if not structured JSON
     if (!response?.candidates?.[0]?.content?.parts?.[0]?.text) {
         throw new Error('Invalid response format from Gemini API');
     }
 
     const text = response.candidates[0].content.parts[0].text;
-    console.log('Raw text from Gemini:', text);
+    console.log('Raw text from Gemini:', text ? text.substring(0, 200) + '...' : 'Empty text');
+
+    // Check if the text is a JSON string
+    if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+        try {
+            console.log('Detected potential JSON array in text response');
+            const jsonData = JSON.parse(text);
+
+            if (Array.isArray(jsonData)) {
+                console.log('Successfully parsed JSON array with', jsonData.length, 'items');
+
+                // Check if it's a subtitle array
+                if (jsonData.length > 0) {
+                    const firstItem = jsonData[0];
+                    console.log('First item in JSON array:', JSON.stringify(firstItem));
+
+                    if (firstItem.startTime && firstItem.endTime && firstItem.text) {
+                        console.log('Detected subtitle format JSON array, parsing as structured data');
+                        // Create a mock structured response
+                        const mockResponse = {
+                            candidates: [{
+                                content: {
+                                    parts: [{
+                                        structuredJson: jsonData
+                                    }]
+                                }
+                            }]
+                        };
+                        return parseStructuredJsonResponse(mockResponse);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse text as JSON:', e);
+            console.log('JSON parse error. Text starts with:', text.substring(0, 100));
+        }
+    }
 
     const subtitles = [];
     let hasTimestamps = false;
@@ -165,6 +215,34 @@ export const parseGeminiResponse = (response) => {
     }
 
     if (!hasTimestamps && subtitles.length === 0) {
+        // Check if this is a JSON array with all empty subtitles
+        if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+            try {
+                const jsonData = JSON.parse(text);
+                if (Array.isArray(jsonData)) {
+                    let emptyCount = 0;
+                    for (const item of jsonData) {
+                        if (item.startTime === '00m00s000ms' &&
+                            item.endTime === '00m00s000ms' &&
+                            (!item.text || item.text.trim() === '')) {
+                            emptyCount++;
+                        }
+                    }
+
+                    if (emptyCount > 0 && emptyCount / jsonData.length > 0.9) {
+                        throw new Error(JSON.stringify({
+                            type: 'empty_subtitles',
+                            message: `Found ${emptyCount} empty subtitles out of ${jsonData.length}. The audio may not contain any speech or the model failed to transcribe it.`,
+                            rawText: text
+                        }));
+                    }
+                }
+            } catch (e) {
+                // If JSON parsing fails, continue with the default error
+                console.error('Error parsing JSON in empty subtitle check:', e);
+            }
+        }
+
         throw new Error(JSON.stringify({
             type: 'unrecognized_format',
             message: 'Unrecognized subtitle format. Please add handling for this new format and try again.',
@@ -360,27 +438,410 @@ const parseBracketSpaceFormat = (text) => {
 };
 
 const deduplicateAndSortSubtitles = (subtitles) => {
+    // Filter out invalid subtitles
+    const validSubtitles = subtitles.filter(sub => {
+        // Skip subtitles with identical start and end times
+        if (sub.start === sub.end) {
+            console.log(`Skipping subtitle with identical start and end time: ${sub.start}s, text: "${sub.text}"`);
+            return false;
+        }
+
+        // Adjust subtitles with very short duration (less than 0.3 seconds)
+        if (sub.end - sub.start < 0.3) {
+            console.log(`Adjusting very short subtitle: ${sub.start}s - ${sub.end}s (${(sub.end - sub.start).toFixed(3)}s), text: "${sub.text}"`);
+            sub.end = sub.start + 0.5; // Set minimum duration to 0.5 seconds
+        }
+
+        // Skip subtitles with empty text
+        if (!sub.text || sub.text.trim() === '') {
+            console.log(`Skipping subtitle with empty text at time: ${sub.start}s - ${sub.end}s`);
+            return false;
+        }
+
+        return true;
+    });
+
     const uniqueSubtitles = [];
     const seen = new Set();
 
-    subtitles.sort((a, b) => a.start - b.start).forEach(sub => {
-        const key = `${sub.start}-${sub.end}-${sub.text}`;
-        if (!seen.has(key)) {
-            seen.add(key);
-            uniqueSubtitles.push(sub);
-        }
-    });
+    // Sort by start time
+    validSubtitles.sort((a, b) => a.start - b.start);
 
-    console.log('Extracted subtitles:', uniqueSubtitles);
+    // First pass: Handle overlapping subtitles and small gaps
+    for (let i = 0; i < validSubtitles.length - 1; i++) {
+        const current = validSubtitles[i];
+        const next = validSubtitles[i + 1];
+
+        // Handle overlapping subtitles
+        if (next.start < current.end) {
+            console.log(`Fixing overlapping subtitles: "${current.text}" (${current.start}s-${current.end}s) and "${next.text}" (${next.start}s-${next.end}s)`);
+
+            // If they have the same text, merge them
+            if (next.text === current.text) {
+                current.end = Math.max(current.end, next.end);
+                next.start = current.end;
+                next.end = Math.max(next.end, next.start + 0.5); // Ensure minimum duration
+            } else {
+                // Otherwise, adjust the boundary
+                const midpoint = (current.end + next.start) / 2;
+                current.end = midpoint;
+                next.start = midpoint;
+            }
+        }
+        // If there's a very small gap between subtitles (less than 0.1 seconds)
+        else if (next.start - current.end > 0 && next.start - current.end < 0.1) {
+            console.log(`Adjusting small gap between subtitles: ${current.end}s to ${next.start}s (${(next.start - current.end).toFixed(3)}s)`);
+            // Either extend the current subtitle or move the next one back
+            if (next.text === current.text) {
+                // If they have the same text, extend the current one
+                current.end = next.start;
+            } else {
+                // Otherwise, just close the gap by moving the next one back
+                next.start = current.end;
+            }
+        }
+    }
+
+    // Second pass: Merge consecutive subtitles with the same text if they're close together
+    for (let i = 0; i < validSubtitles.length; i++) {
+        const current = validSubtitles[i];
+        const key = `${current.start}-${current.end}-${current.text}`;
+
+        // Skip if we've already seen this exact subtitle
+        if (seen.has(key)) {
+            continue;
+        }
+
+        seen.add(key);
+
+        // Look ahead to see if there are consecutive identical texts
+        let j = i + 1;
+        while (j < validSubtitles.length &&
+               validSubtitles[j].text === current.text &&
+               validSubtitles[j].start - current.end < 0.3) {
+
+            // Merge this subtitle with the current one
+            console.log(`Merging consecutive identical subtitles: "${current.text}" at ${current.start}s-${current.end}s with ${validSubtitles[j].start}s-${validSubtitles[j].end}s`);
+            current.end = validSubtitles[j].end;
+
+            // Mark this key as seen
+            seen.add(`${validSubtitles[j].start}-${validSubtitles[j].end}-${validSubtitles[j].text}`);
+
+            j++;
+        }
+
+        // Skip all the merged subtitles
+        i = j - 1;
+
+        uniqueSubtitles.push(current);
+    }
+
+    console.log(`Extracted ${uniqueSubtitles.length} unique subtitles from ${subtitles.length} total`);
     return uniqueSubtitles;
 };
 
 /**
- * Parse translated subtitles from Gemini response
- * @param {string} text - The translated text from Gemini
+ * Parse structured JSON response from Gemini
+ * @param {Object} response - The response from Gemini API
  * @returns {Array} - Array of subtitle objects
  */
-export const parseTranslatedSubtitles = (text) => {
+const parseStructuredJsonResponse = (response) => {
+    try {
+        const structuredJson = response.candidates[0].content.parts[0].structuredJson;
+        console.log('Structured JSON response:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+
+        // If it's an array, assume it's a subtitle array
+        if (Array.isArray(structuredJson)) {
+            // Log the first item to help with debugging
+            if (structuredJson.length > 0) {
+                console.log('First item in structured JSON array:', JSON.stringify(structuredJson[0]));
+                console.log('Time format example:', structuredJson[0].startTime);
+                console.log('Total items in array:', structuredJson.length);
+            }
+
+            const subtitles = [];
+
+            // Check if all subtitles are empty with 00m00s000ms timestamps
+            let allEmpty = true;
+            let emptyCount = 0;
+
+            for (let i = 0; i < structuredJson.length; i++) {
+                const item = structuredJson[i];
+                if (item.startTime === '00m00s000ms' &&
+                    item.endTime === '00m00s000ms' &&
+                    (!item.text || item.text.trim() === '')) {
+                    emptyCount++;
+                } else {
+                    allEmpty = false;
+                    break;
+                }
+            }
+
+            // If all subtitles are empty or more than 90% are empty, this is likely an error
+            if (allEmpty || (emptyCount > 0 && emptyCount / structuredJson.length > 0.9)) {
+                console.log(`Found ${emptyCount} empty subtitles out of ${structuredJson.length} total`);
+                if (allEmpty) {
+                    console.error('All subtitles are empty with 00m00s000ms timestamps. This is likely an error.');
+                    throw new Error('No valid subtitles found in the response. All subtitles have empty text and 00m00s000ms timestamps.');
+                } else {
+                    console.warn(`${emptyCount} out of ${structuredJson.length} subtitles are empty with 00m00s000ms timestamps.`);
+                }
+            }
+
+            // Skip empty subtitles at 00m00s000ms
+            let startIndex = 0;
+            while (startIndex < structuredJson.length &&
+                   structuredJson[startIndex].startTime === '00m00s000ms' &&
+                   structuredJson[startIndex].endTime === '00m00s000ms' &&
+                   (!structuredJson[startIndex].text || structuredJson[startIndex].text.trim() === '')) {
+                console.log(`Skipping empty subtitle at index ${startIndex}`);
+                startIndex++;
+            }
+
+            for (let i = startIndex; i < structuredJson.length; i++) {
+                const item = structuredJson[i];
+
+                // Handle subtitle format
+                if (item.startTime && item.endTime) {
+                    try {
+                        // Convert time format from MMmSSsNNNms to seconds
+                        const start = convertTimeStringToSeconds(item.startTime);
+                        const end = convertTimeStringToSeconds(item.endTime);
+
+                        console.log(`Converted time for item ${i + 1}: ${item.startTime} -> ${start}, ${item.endTime} -> ${end}`);
+
+                        // Skip empty subtitles at the beginning of the video
+                        if (start === 0 && end === 0 && (!item.text || item.text.trim() === '')) {
+                            console.log(`Skipping empty subtitle at position ${i + 1}`);
+                            continue;
+                        }
+
+                        subtitles.push({
+                            id: i + 1,
+                            start,
+                            end,
+                            text: item.text || ''
+                        });
+                    } catch (error) {
+                        console.error(`Error processing item ${i + 1}:`, error);
+                    }
+                }
+
+                // Handle translation format
+                else if (item.id && item.text) {
+                    // Try to get original subtitle from localStorage
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                            const originalSub = originalSubtitlesMap[item.id];
+
+                            if (originalSub) {
+                                subtitles.push({
+                                    id: parseInt(item.id),
+                                    start: originalSub.start,
+                                    end: originalSub.end,
+                                    text: item.text,
+                                    originalId: parseInt(item.id)
+                                });
+                                continue;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading original subtitles map:', error);
+                    }
+
+                    // Fallback if original subtitle not found
+                    subtitles.push({
+                        id: parseInt(item.id) || (i + 1),
+                        start: 0, // Default start time
+                        end: 0,   // Default end time
+                        text: item.text,
+                        originalId: parseInt(item.id) || (i + 1)
+                    });
+                }
+
+                // Default case
+                else {
+                    console.warn(`Item ${i + 1} doesn't have required fields:`, JSON.stringify(item));
+                }
+            }
+
+            console.log(`Processed ${subtitles.length} out of ${structuredJson.length} items`);
+            return subtitles;
+        }
+
+        // Handle consolidation or summarization response
+        if (structuredJson.title && structuredJson.content) {
+            // This is a consolidated document
+            return structuredJson;
+        }
+
+        if (structuredJson.summary && structuredJson.keyPoints) {
+            // This is a summary
+            return structuredJson;
+        }
+
+        // Unknown structure, return as is
+        return structuredJson;
+    } catch (error) {
+        console.error('Error parsing structured JSON response:', error);
+        console.error('Response was:', JSON.stringify(response).substring(0, 500) + '...');
+
+        // Try to extract the text content as a fallback
+        if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            const text = response.candidates[0].content.parts[0].text;
+            console.log('Falling back to text parsing. Text starts with:', text.substring(0, 100));
+
+            // Check if the text is a JSON string
+            if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+                try {
+                    const jsonData = JSON.parse(text);
+                    if (Array.isArray(jsonData) && jsonData.length > 0) {
+                        console.log('Successfully parsed JSON from text content');
+                        const mockResponse = {
+                            candidates: [{
+                                content: {
+                                    parts: [{
+                                        structuredJson: jsonData
+                                    }]
+                                }
+                            }]
+                        };
+                        return parseStructuredJsonResponse(mockResponse);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse text as JSON in fallback:', e);
+                }
+            }
+
+            // Create a mock response with just the text
+            const mockResponse = {
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: text
+                        }]
+                    }
+                }]
+            };
+
+            // Parse the text directly to avoid infinite recursion
+            const subtitles = [];
+            let hasTimestamps = false;
+
+            // Try all the text parsing methods
+            subtitles.push(...parseOriginalFormat(text));
+            subtitles.push(...parseMillisecondsFormat(text));
+            subtitles.push(...parseSingleTimestampFormat(text));
+            subtitles.push(...parseBracketSpaceFormat(text));
+
+            if (subtitles.length > 0) {
+                return deduplicateAndSortSubtitles(subtitles);
+            }
+        }
+
+        throw new Error('Failed to parse structured JSON response: ' + error.message);
+    }
+};
+
+/**
+ * Convert time string in format MMmSSsNNNms or HH:MM:SS.mmm to seconds
+ * @param {string} timeString - Time string in format MMmSSsNNNms or HH:MM:SS.mmm
+ * @returns {number} - Time in seconds
+ */
+const convertTimeStringToSeconds = (timeString) => {
+    console.log('Converting time string:', timeString);
+
+    // Handle empty or invalid time strings
+    if (!timeString || typeof timeString !== 'string') {
+        console.warn('Empty or invalid time string:', timeString);
+        return 0;
+    }
+
+    // Handle 00m00s000ms as a special case (start of video)
+    if (timeString === '00m00s000ms') {
+        return 0;
+    }
+
+    // First, try to match the exact format MMmSSsNNNms (e.g., 00m30s500ms)
+    const exactFormatMatch = timeString.match(/^(\d+)m(\d+)s(\d+)ms$/);
+    if (exactFormatMatch && exactFormatMatch[1] !== undefined && exactFormatMatch[2] !== undefined && exactFormatMatch[3] !== undefined) {
+        const minutes = parseInt(exactFormatMatch[1]);
+        const seconds = parseInt(exactFormatMatch[2]);
+        const milliseconds = parseInt(exactFormatMatch[3]) / 1000;
+
+        const result = minutes * 60 + seconds + milliseconds;
+        console.log(`Parsed ${timeString} as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+        return result;
+    }
+
+    // Try a more flexible pattern if the exact format doesn't match
+    const flexibleFormatMatch = timeString.match(/(\d+)m(\d+)s(\d+)ms/);
+    if (flexibleFormatMatch) {
+        const minutes = parseInt(flexibleFormatMatch[1]);
+        const seconds = parseInt(flexibleFormatMatch[2]);
+        const milliseconds = parseInt(flexibleFormatMatch[3]) / 1000;
+
+        const result = minutes * 60 + seconds + milliseconds;
+        console.log(`Parsed ${timeString} with flexible pattern as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+        return result;
+    }
+
+    // Try an even more flexible pattern that extracts any numbers
+    const looseFormatMatch = timeString.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
+    if (looseFormatMatch) {
+        // Assume the format is minutes, seconds, milliseconds in that order
+        const minutes = parseInt(looseFormatMatch[1]);
+        const seconds = parseInt(looseFormatMatch[2]);
+        const milliseconds = parseInt(looseFormatMatch[3]) / 1000;
+
+        const result = minutes * 60 + seconds + milliseconds;
+        console.log(`Parsed ${timeString} with loose pattern as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+        return result;
+    }
+
+    // Try to match HH:MM:SS.mmm format
+    const timeMatch = timeString.match(/(\d+):(\d+):(\d+)(?:\.(\d+))?/);
+    if (timeMatch) {
+        const hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        const seconds = parseInt(timeMatch[3]);
+        const milliseconds = timeMatch[4] ? parseInt(timeMatch[4]) / 1000 : 0;
+
+        return hours * 3600 + minutes * 60 + seconds + milliseconds;
+    }
+
+    // Try to match MM:SS.mmm format
+    const shortTimeMatch = timeString.match(/(\d+):(\d+)(?:\.(\d+))?/);
+    if (shortTimeMatch) {
+        const minutes = parseInt(shortTimeMatch[1]);
+        const seconds = parseInt(shortTimeMatch[2]);
+        const milliseconds = shortTimeMatch[3] ? parseInt(shortTimeMatch[3]) / 1000 : 0;
+
+        return minutes * 60 + seconds + milliseconds;
+    }
+
+    console.warn('Could not parse time string:', timeString);
+    return 0;
+};
+
+/**
+ * Parse translated subtitles from Gemini response
+ * @param {string|Object} response - The response from Gemini (text or structured JSON)
+ * @returns {Array} - Array of subtitle objects
+ */
+export const parseTranslatedSubtitles = (response) => {
+    // Check if this is a structured JSON response
+    if (typeof response === 'object' && response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
+        return parseStructuredJsonResponse(response);
+    }
+
+    // Handle text response
+    const text = typeof response === 'object' ?
+        response.candidates[0].content.parts[0].text :
+        response;
+
     if (!text) return [];
 
     const subtitles = [];

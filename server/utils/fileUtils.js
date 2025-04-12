@@ -12,6 +12,13 @@ const fs = require('fs');
 const getFileSize = (filePath) => {
   try {
     const stats = fs.statSync(filePath);
+
+    // Skip directories
+    if (stats.isDirectory()) {
+      console.log(`Skipping directory in getFileSize: ${filePath}`);
+      return 0;
+    }
+
     return stats.size;
   } catch (error) {
     console.error(`Error getting file size for ${filePath}:`, error);

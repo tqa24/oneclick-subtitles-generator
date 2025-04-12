@@ -17,6 +17,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
   const [videoUrl, setVideoUrl] = useState('');
+  const [optimizedVideoUrl, setOptimizedVideoUrl] = useState('');
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -27,6 +28,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [renderProgress, setRenderProgress] = useState(0);
   const [originalVttUrl, setOriginalVttUrl] = useState('');
   const [translatedVttUrl, setTranslatedVttUrl] = useState('');
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
+    return localStorage.getItem('use_optimized_preview') === 'true';
+  });
 
   // Use refs to track previous values to prevent unnecessary updates
   const prevSubtitlesArrayRef = useRef(null);
@@ -105,6 +109,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       // Reset video state when source changes
       setIsLoaded(false);
       setVideoUrl('');
+      setOptimizedVideoUrl('');
       setError('');
 
       if (!videoSource) {
@@ -116,6 +121,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       if (videoSource.startsWith('blob:')) {
         console.log('Loading file URL:', videoSource);
         setVideoUrl(videoSource);
+
+        // Check if we have an optimized version in localStorage
+        const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
+        if (splitResult.optimized && splitResult.optimized.video) {
+          console.log('Found optimized video:', splitResult.optimized.video);
+          setOptimizedVideoUrl(`http://localhost:3004${splitResult.optimized.video}`);
+        }
         return;
       }
 
@@ -134,10 +146,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
 
   // Notify parent component when videoUrl changes
   useEffect(() => {
-    if (videoUrl && onVideoUrlReady) {
-      onVideoUrlReady(videoUrl);
+    // Determine which URL to use based on the useOptimizedPreview setting
+    const urlToUse = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
+
+    if (urlToUse && onVideoUrlReady) {
+      onVideoUrlReady(urlToUse);
     }
-  }, [videoUrl, onVideoUrlReady]);
+  }, [videoUrl, optimizedVideoUrl, useOptimizedPreview, onVideoUrlReady]);
 
   // Check download status at interval if we have a videoId
   useEffect(() => {
@@ -565,15 +580,60 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         ) : (
           videoUrl ? (
             <div className="native-video-container">
+              {/* Video quality toggle if optimized version is available */}
+              {optimizedVideoUrl && (
+                <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={useOptimizedPreview}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+                        setUseOptimizedPreview(newValue);
+                        localStorage.setItem('use_optimized_preview', newValue.toString());
+                      }}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
+                  </span>
+                  {useOptimizedPreview && (
+                    <span className="quality-info">
+                      {optimizedVideoUrl && optimizedVideoUrl.includes('360p') ? '360p' : '240p'}, 15fps
+                    </span>
+                  )}
+                </div>
+              )}
               <video
                 ref={videoRef}
                 controls
                 className="video-player"
                 playsInline
-                src={videoUrl}
+                src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
                 crossOrigin="anonymous"
+                onError={(e) => {
+                  console.error('Video error:', e);
+                  // If optimized video fails to load, fall back to original video
+                  if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
+                    console.log('Optimized video failed to load, falling back to original video');
+                    e.target.src = videoUrl;
+                    e.target.load();
+                  }
+                }}
               >
-                <source src={videoUrl} type="video/mp4" />
+                <source
+                  src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
+                  type="video/mp4"
+                  onError={(e) => {
+                    console.error('Source error:', e);
+                    // If optimized video fails to load, fall back to original video
+                    if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
+                      console.log('Optimized video source failed to load, falling back to original video');
+                      e.target.src = videoUrl;
+                    }
+                  }}
+                />
 
                 {/* Original subtitles track */}
                 {originalVttUrl && (

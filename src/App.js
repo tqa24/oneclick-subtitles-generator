@@ -32,10 +32,14 @@ function App() {
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
   const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
+  const [optimizeVideos, setOptimizeVideos] = useState(localStorage.getItem('optimize_videos') !== 'false');
+  const [optimizedResolution, setOptimizedResolution] = useState(localStorage.getItem('optimized_resolution') || '360p');
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') === 'true');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('onboarding_completed') !== 'true');
   const [isAppReady, setIsAppReady] = useState(!showOnboarding);
+  const [isRetrying, setIsRetrying] = useState(false); // Track when retry is in progress
 
   const {
     subtitlesData,
@@ -176,6 +180,21 @@ function App() {
         const newTimeFormat = localStorage.getItem('time_format') || 'hms';
         setTimeFormat(newTimeFormat);
       }
+
+      if (event.key === 'optimize_videos' || !event.key) {
+        const newOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false';
+        setOptimizeVideos(newOptimizeVideos);
+      }
+
+      if (event.key === 'optimized_resolution' || !event.key) {
+        const newOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
+        setOptimizedResolution(newOptimizedResolution);
+      }
+
+      if (event.key === 'use_optimized_preview' || !event.key) {
+        const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true';
+        setUseOptimizedPreview(newUseOptimizedPreview);
+      }
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -313,7 +332,7 @@ function App() {
     }
   }, [status]);
 
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting) => {
+  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -349,6 +368,22 @@ function App() {
       localStorage.setItem('gemini_model', geminiModel);
     }
 
+    // Save video optimization settings
+    if (optimizeVideosSetting !== undefined) {
+      localStorage.setItem('optimize_videos', optimizeVideosSetting.toString());
+      setOptimizeVideos(optimizeVideosSetting);
+    }
+
+    if (optimizedResolutionSetting) {
+      localStorage.setItem('optimized_resolution', optimizedResolutionSetting);
+      setOptimizedResolution(optimizedResolutionSetting);
+    }
+
+    if (useOptimizedPreviewSetting !== undefined) {
+      localStorage.setItem('use_optimized_preview', useOptimizedPreviewSetting.toString());
+      setUseOptimizedPreview(useOptimizedPreviewSetting);
+    }
+
     // Update state based on the selected authentication method
     const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
     const hasOAuthTokens = hasValidTokens();
@@ -374,7 +409,7 @@ function App() {
   };
 
   // Handle SRT file upload
-  const handleSrtUpload = async (srtContent, fileName) => {
+  const handleSrtUpload = async (srtContent) => {
     try {
       // Parse the SRT content
       const parsedSubtitles = parseSrtContent(srtContent);
@@ -420,6 +455,47 @@ function App() {
             // Create a File object from the blob
             const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
             const file = new File([blob], filename, { type: 'video/mp4' });
+
+            // Check if video optimization is enabled
+            if (optimizeVideos) {
+              try {
+                setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
+
+                // Call the optimize-video endpoint
+                const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+                  method: 'POST',
+                  body: file,
+                  headers: {
+                    'Content-Type': file.type
+                  }
+                });
+
+                if (!response.ok) {
+                  throw new Error(`Failed to optimize video: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('Video optimization result:', result);
+
+                // Store the optimization result in localStorage
+                localStorage.setItem('split_result', JSON.stringify({
+                  originalMedia: result.originalVideo,
+                  optimized: {
+                    video: result.optimizedVideo,
+                    resolution: result.resolution,
+                    fps: result.fps,
+                    width: result.width,
+                    height: result.height
+                  }
+                }));
+              } catch (error) {
+                console.error('Error optimizing video:', error);
+                setStatus({
+                  message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
+                  type: 'warning'
+                });
+              }
+            }
 
             // Switch to the upload tab without resetting state
             localStorage.setItem('lastActiveTab', 'file-upload');
@@ -530,6 +606,47 @@ function App() {
           const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
           const file = new File([blob], filename, { type: 'video/mp4' });
 
+          // Check if video optimization is enabled
+          if (optimizeVideos) {
+            try {
+              setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
+
+              // Call the optimize-video endpoint
+              const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+                method: 'POST',
+                body: file,
+                headers: {
+                  'Content-Type': file.type
+                }
+              });
+
+              if (!response.ok) {
+                throw new Error(`Failed to optimize video: ${response.status} ${response.statusText}`);
+              }
+
+              const result = await response.json();
+              console.log('Video optimization result:', result);
+
+              // Store the optimization result in localStorage
+              localStorage.setItem('split_result', JSON.stringify({
+                originalMedia: result.originalVideo,
+                optimized: {
+                  video: result.optimizedVideo,
+                  resolution: result.resolution,
+                  fps: result.fps,
+                  width: result.width,
+                  height: result.height
+                }
+              }));
+            } catch (error) {
+              console.error('Error optimizing video:', error);
+              setStatus({
+                message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
+                type: 'warning'
+              });
+            }
+          }
+
           // Switch to the upload tab without resetting state
           localStorage.setItem('lastActiveTab', 'file-upload');
           setActiveTab('file-upload');
@@ -599,6 +716,9 @@ function App() {
       return;
     }
 
+    // Set retrying state to true immediately
+    setIsRetrying(true);
+
     let input, inputType;
 
     // For YouTube tabs, download the video first and switch to upload tab
@@ -650,6 +770,47 @@ function App() {
           const filename = `${selectedVideo.title || 'youtube_video'}.mp4`;
           const file = new File([blob], filename, { type: 'video/mp4' });
 
+          // Check if video optimization is enabled
+          if (optimizeVideos) {
+            try {
+              setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
+
+              // Call the optimize-video endpoint
+              const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+                method: 'POST',
+                body: file,
+                headers: {
+                  'Content-Type': file.type
+                }
+              });
+
+              if (!response.ok) {
+                throw new Error(`Failed to optimize video: ${response.status} ${response.statusText}`);
+              }
+
+              const result = await response.json();
+              console.log('Video optimization result:', result);
+
+              // Store the optimization result in localStorage
+              localStorage.setItem('split_result', JSON.stringify({
+                originalMedia: result.originalVideo,
+                optimized: {
+                  video: result.optimizedVideo,
+                  resolution: result.resolution,
+                  fps: result.fps,
+                  width: result.width,
+                  height: result.height
+                }
+              }));
+            } catch (error) {
+              console.error('Error optimizing video:', error);
+              setStatus({
+                message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
+                type: 'warning'
+              });
+            }
+          }
+
           // Switch to the upload tab without resetting state
           localStorage.setItem('lastActiveTab', 'file-upload');
           setActiveTab('file-upload');
@@ -688,6 +849,8 @@ function App() {
           // Reset downloading state
           setIsDownloading(false);
           setDownloadProgress(0);
+          // Reset retrying state
+          setIsRetrying(false);
           setStatus({
             message: t('errors.videoProcessingFailed', 'Video processing failed: {{message}}', { message: error.message }),
             type: 'error'
@@ -699,6 +862,8 @@ function App() {
         // Reset downloading state
         setIsDownloading(false);
         setDownloadProgress(0);
+        // Reset retrying state
+        setIsRetrying(false);
         setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
         return;
       }
@@ -707,10 +872,14 @@ function App() {
       inputType = 'file-upload';
     }
 
-    await retryGeneration(input, inputType, apiKeysSet);
-
-    // Reset button animation state when generation is complete
-    resetGeminiButtonState();
+    try {
+      await retryGeneration(input, inputType, apiKeysSet);
+    } finally {
+      // Reset retrying state regardless of success or failure
+      setIsRetrying(false);
+      // Reset button animation state when generation is complete
+      resetGeminiButtonState();
+    }
   };
 
   const handleTabChange = (tab) => {
@@ -751,11 +920,13 @@ function App() {
                 onSrtUpload={handleSrtUpload}
                 disabled={isGenerating || isDownloading}
               />
-              <button
-                className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
-                onClick={handleGenerateSubtitles}
-                disabled={isGenerating || isDownloading}
-              >
+              {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
+              {retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+                <button
+                  className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
+                  onClick={handleGenerateSubtitles}
+                  disabled={isGenerating || isDownloading}
+                >
                 {/* Static Gemini icons for fallback */}
                 <div className="gemini-icon-container">
                   <div className="gemini-mini-icon random-1 size-sm">
@@ -786,9 +957,9 @@ function App() {
                   </span>
                 ) : t('header.tagline')}
               </button>
+              )}
 
               {(subtitlesData || status.type === 'error') && !isGenerating && !isDownloading && (
-                <>
                 <button
                   className={`retry-gemini-btn ${retryingSegments.length > 0 ? 'processing' : ''}`}
                   onClick={handleRetryGeneration}
@@ -830,8 +1001,10 @@ function App() {
                   )}
                 </button>
 
-                {(isGenerating || retryingSegments.length > 0) && (
-                  <button
+              )}
+
+              {(isGenerating || retryingSegments.length > 0 || isRetrying) && (
+                <button
                     className="force-stop-btn"
                     onClick={(e) => {
                       // Add processing class for animation
@@ -845,6 +1018,8 @@ function App() {
                       }, 1000);
                       // Abort all ongoing Gemini API requests
                       abortAllRequests();
+                      // Reset retrying state immediately
+                      setIsRetrying(false);
                       // The state will be updated by the event listener in useSubtitles hook
                     }}
                     title={t('output.forceStopTooltip', 'Force stop all Gemini requests')}
@@ -878,8 +1053,6 @@ function App() {
                     {t('output.forceStop', 'Force Stop')}
                   </button>
                 )}
-                </>
-              )}
             </div>
           )}
 
@@ -899,6 +1072,7 @@ function App() {
             retryingSegments={retryingSegments}
             timeFormat={timeFormat}
             showWaveform={showWaveform}
+            useOptimizedPreview={useOptimizedPreview}
           />
           </div>
         </main>
@@ -910,6 +1084,9 @@ function App() {
           onSave={saveApiKeys}
           apiKeysSet={apiKeysSet}
           setApiKeysSet={setApiKeysSet}
+          optimizeVideos={optimizeVideos}
+          optimizedResolution={optimizedResolution}
+          useOptimizedPreview={useOptimizedPreview}
         />
       )}
 

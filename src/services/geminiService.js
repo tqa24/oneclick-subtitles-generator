@@ -2,6 +2,13 @@ import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitle
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
 import { getLanguageCode } from '../utils/languageUtils';
 import i18n from '../i18n/i18n';
+import {
+    createSubtitleSchema,
+    createTranslationSchema,
+    createConsolidationSchema,
+    createSummarizationSchema,
+    addResponseSchema
+} from '../utils/schemaUtils';
 
 // Map to store multiple AbortControllers for parallel requests
 const activeAbortControllers = new Map();
@@ -21,36 +28,48 @@ export const PROMPT_PRESETS = [
     {
         id: 'general',
         title: 'General purpose',
-        prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] This is the transcribed speech. Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.`
+        prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text (1-2 sentences max). For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.
+
+IMPORTANT: If there is no speech or spoken content in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     {
         id: 'extract-text',
         title: 'Extract text',
-        prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text (1-2 lines/sentences max). For example: [0m30s000ms - 0m35s500ms] This text appeared on screen. Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.`
+        prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text (1-2 lines/sentences max). For example: [00m30s000ms - 00m35s500ms] This text appeared on screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.
+
+IMPORTANT: If there is no visible text in the video, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     // --- Replaced 'focus-speech' with two specific presets ---
     {
         id: 'focus-spoken-words', // New ID
         title: 'Focus on Spoken Words', // New Title
         // Prompt modified to EXCLUDE lyrics
-        prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] This is the spoken dialogue. Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.`
+        prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words (1-2 sentences max). For example: [00m30s000ms - 00m35s500ms] This is the spoken dialogue. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.
+
+IMPORTANT: If there is no spoken dialogue in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     {
         id: 'focus-lyrics', // New ID
         title: 'Focus on Lyrics', // New Title
         // Prompt created to INCLUDE ONLY lyrics
-        prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics (1-2 lines/sentences max). For example: [0m45s100ms - 0m50s250ms] These are the lyrics being sung. Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.`
+        prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics (1-2 lines/sentences max). For example: [00m45s100ms - 00m50s250ms] These are the lyrics being sung. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.
+
+IMPORTANT: If there are no sung lyrics in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     // --- End of replaced presets ---
     {
         id: 'describe-video',
         title: 'Describe video',
-        prompt: `Describe the significant visual events, actions, and scene changes occurring in this ${'{contentType}'} in chronological order. Focus solely on what is visually happening on screen. Format the output as a descriptive log. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Visual description (1-2 sentences max). For example: [0m30s000ms - 0m35s500ms] A person walks across the screen. Return ONLY the formatted descriptions with their timestamps. Do not include any audio transcription, headers, or other commentary.`
+        prompt: `Describe the significant visual events, actions, and scene changes occurring in this ${'{contentType}'} in chronological order. Focus solely on what is visually happening on screen. Format the output as a descriptive log. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Visual description (1-2 sentences max). For example: [00m30s000ms - 00m35s500ms] A person walks across the screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted descriptions with their timestamps. Do not include any audio transcription, headers, or other commentary.
+
+IMPORTANT: If the video is blank or has no significant visual content, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     {
         id: 'translate-vietnamese',
         title: 'Translate directly',
-        prompt: `Identify the spoken language(s) in this ${'{contentType}'} and translate the speech directly into TARGET_LANGUAGE. If multiple languages are spoken, translate all spoken segments into TARGET_LANGUAGE. Format the output as a sequential transcript of the translation. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] translated text (1-2 translated sentences max). Return ONLY the formatted translation lines with timestamps. Do not include the original language transcription, headers, or any other text.`
+        prompt: `Identify the spoken language(s) in this ${'{contentType}'} and translate the speech directly into TARGET_LANGUAGE. If multiple languages are spoken, translate all spoken segments into TARGET_LANGUAGE. Format the output as a sequential transcript of the translation. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] translated text (1-2 translated sentences max). For example: [00m30s000ms - 00m35s500ms] This is the translated text. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted translation lines with timestamps. Do not include the original language transcription, headers, or any other text.
+
+IMPORTANT: If there is no speech in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     {
         id: 'chaptering',
@@ -135,11 +154,18 @@ const getTranscriptionPrompt = (contentType) => {
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
+    const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
 
     let requestData = {
         model: MODEL,
         contents: []
     };
+
+    // Add response schema for structured output
+    if (useStructuredOutput) {
+        requestData = addResponseSchema(requestData, createSubtitleSchema());
+        console.log('Using structured output with schema:', JSON.stringify(requestData));
+    }
 
     if (inputType === 'youtube') {
         requestData.contents = [
@@ -295,6 +321,29 @@ export const callGeminiApi = async (input, inputType) => {
 
         const data = await response.json();
         console.log('Gemini API response:', data);
+
+        // Check if the response contains empty subtitles
+        if (data?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
+            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+            if (Array.isArray(structuredJson)) {
+                let emptyCount = 0;
+                for (const item of structuredJson) {
+                    if (item.startTime === '00m00s000ms' &&
+                        item.endTime === '00m00s000ms' &&
+                        (!item.text || item.text.trim() === '')) {
+                        emptyCount++;
+                    }
+                }
+
+                if (emptyCount > 0 && emptyCount / structuredJson.length > 0.9) {
+                    console.warn(`Found ${emptyCount} empty subtitles out of ${structuredJson.length}. The audio may not contain any speech or the model failed to transcribe it.`);
+
+                    if (emptyCount === structuredJson.length) {
+                        throw new Error('No speech detected in the audio. The model returned empty subtitles.');
+                    }
+                }
+            }
+        }
 
         // Remove this controller from the map after successful response
         activeAbortControllers.delete(requestId);
@@ -460,27 +509,39 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         activeAbortControllers.set(requestId, controller);
         const signal = controller.signal;
 
+        // Determine if we should use structured output
+        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
+
+        // Create request data
+        let requestData = {
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: translationPrompt }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                topK: 32,
+                topP: 0.95,
+                maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
+            },
+        };
+
+        // Add response schema for structured output
+        if (useStructuredOutput) {
+            requestData = addResponseSchema(requestData, createTranslationSchema());
+            console.log('Using structured output for translation with schema:', JSON.stringify(requestData));
+        }
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: translationPrompt }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.2,
-                    topK: 32,
-                    topP: 0.95,
-                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
-                },
-            }),
+            body: JSON.stringify(requestData),
             signal: signal // Add the AbortController signal
         });
 
@@ -490,6 +551,15 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         }
 
         const data = await response.json();
+
+        // Check if this is a structured JSON response
+        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
+            console.log('Received structured JSON translation response');
+            // Return the full response for parsing
+            return parseTranslatedSubtitles(data);
+        }
+
+        // Handle text response
         const translatedText = data.candidates[0]?.content?.parts[0]?.text;
 
         if (!translatedText) {
@@ -555,27 +625,39 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             documentPrompt = getDefaultConsolidatePrompt(subtitlesText);
         }
 
+        // Determine if we should use structured output
+        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
+
+        // Create request data
+        let requestData = {
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: documentPrompt }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                topK: 32,
+                topP: 0.95,
+                maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
+            },
+        };
+
+        // Add response schema for structured output
+        if (useStructuredOutput) {
+            requestData = addResponseSchema(requestData, createConsolidationSchema());
+            console.log('Using structured output for consolidation with schema:', JSON.stringify(requestData));
+        }
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: documentPrompt }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.2,
-                    topK: 32,
-                    topP: 0.95,
-                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
-                },
-            }),
+            body: JSON.stringify(requestData),
             signal: signal // Add the AbortController signal
         });
 
@@ -585,6 +667,15 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         }
 
         const data = await response.json();
+
+        // Check if this is a structured JSON response
+        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
+            console.log('Received structured JSON document response');
+            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+            return structuredJson;
+        }
+
+        // Handle text response
         const completedText = data.candidates[0]?.content?.parts[0]?.text;
 
         if (!completedText) {
@@ -649,27 +740,39 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             summaryPrompt = getDefaultSummarizePrompt(subtitlesText);
         }
 
+        // Determine if we should use structured output
+        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
+
+        // Create request data
+        let requestData = {
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: summaryPrompt }
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                topK: 32,
+                topP: 0.95,
+                maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
+            },
+        };
+
+        // Add response schema for structured output
+        if (useStructuredOutput) {
+            requestData = addResponseSchema(requestData, createSummarizationSchema());
+            console.log('Using structured output for summarization with schema:', JSON.stringify(requestData));
+        }
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: summaryPrompt }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.2,
-                    topK: 32,
-                    topP: 0.95,
-                    maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
-                },
-            }),
+            body: JSON.stringify(requestData),
             signal: signal // Add the AbortController signal
         });
 
@@ -679,6 +782,15 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         }
 
         const data = await response.json();
+
+        // Check if this is a structured JSON response
+        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
+            console.log('Received structured JSON summary response');
+            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+            return structuredJson;
+        }
+
+        // Handle text response
         const summarizedText = data.candidates[0]?.content?.parts[0]?.text;
 
         if (!summarizedText) {

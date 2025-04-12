@@ -60,7 +60,80 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
 
         // If media is shorter than the maximum segment duration, process it directly
         if (duration <= getMaxSegmentDurationSeconds()) {
-            return await callGeminiApi(mediaFile, 'file-upload');
+            // Get video optimization settings from localStorage
+            const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+            const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
+
+            // For videos that don't need splitting, still optimize if enabled
+            if (!isAudio && optimizeVideos) {
+                onStatusUpdate({
+                    message: t('output.optimizingVideo', 'Optimizing video for processing...'),
+                    type: 'loading'
+                });
+
+                try {
+                    // Create FormData for the video file
+                    const formData = new FormData();
+                    formData.append('video', mediaFile);
+
+                    // Call the optimize-video endpoint
+                    const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+                        method: 'POST',
+                        body: mediaFile,
+                        headers: {
+                            'Content-Type': mediaFile.type
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to optimize video: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Video optimization result:', result);
+
+                    // Store the optimization result in localStorage
+                    localStorage.setItem('split_result', JSON.stringify({
+                        originalMedia: result.originalVideo,
+                        optimized: {
+                            video: result.optimizedVideo,
+                            resolution: result.resolution,
+                            fps: result.fps,
+                            width: result.width,
+                            height: result.height
+                        }
+                    }));
+
+                    // Create a blob URL for the optimized video
+                    const optimizedVideoUrl = `http://localhost:3004${result.optimizedVideo}`;
+
+                    // Fetch the optimized video as a blob
+                    const videoResponse = await fetch(optimizedVideoUrl);
+                    const videoBlob = await videoResponse.blob();
+
+                    // Create a File object from the blob
+                    const optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
+
+                    // Use the optimized file for processing
+                    onStatusUpdate({
+                        message: t('output.processingOptimizedVideo', 'Processing optimized video...'),
+                        type: 'loading'
+                    });
+
+                    return await callGeminiApi(optimizedFile, 'file-upload');
+                } catch (error) {
+                    console.error('Error optimizing video:', error);
+                    onStatusUpdate({
+                        message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
+                        type: 'warning'
+                    });
+                    // Fall back to using the original file
+                    return await callGeminiApi(mediaFile, 'file-upload');
+                }
+            } else {
+                // For audio or when optimization is disabled, process directly
+                return await callGeminiApi(mediaFile, 'file-upload');
+            }
         }
 
         // Calculate number of segments
@@ -101,6 +174,10 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             type: 'loading'
         });
 
+        // Get video optimization settings from localStorage
+        const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+        const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
+
         // Upload the media to the server and split it into segments
         const splitResult = await splitVideoOnServer(
             mediaFile,
@@ -111,10 +188,17 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     type: 'loading'
                 });
             },
-            true // Enable fast splitting by default
+            true, // Enable fast splitting by default
+            {
+                optimizeVideos,
+                optimizedResolution
+            }
         );
 
         console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, splitResult);
+
+        // Store the split result in localStorage for later use
+        localStorage.setItem('split_result', JSON.stringify(splitResult));
 
         // Process all segments in parallel
         const segments = splitResult.segments;

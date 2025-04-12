@@ -95,7 +95,7 @@
   font-family: 'Roboto', 'Segoe UI', sans-serif;
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
-  margin-top: 16px;
+  margin-top: 0;
   display: flex;
   align-items: center;
   justify-content: center;

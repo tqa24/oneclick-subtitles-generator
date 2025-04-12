@@ -278,9 +278,94 @@ const splitVideoIntoSegments = (videoPath, segmentDuration, outputDir, filePrefi
 // For backward compatibility
 const getVideoDuration = getMediaDuration;
 
+/**
+ * Optimize a video by scaling it to a lower resolution and reducing the frame rate
+ * @param {string} videoPath - Path to the input video file
+ * @param {string} outputPath - Path to save the optimized video
+ * @param {Object} options - Optimization options
+ * @param {string} options.resolution - Target resolution (e.g., '360p', '240p')
+ * @param {number} options.fps - Target frame rate (default: 15)
+ * @returns {Promise<Object>} - Result object with optimized video path and metadata
+ */
+function optimizeVideo(videoPath, outputPath, options = {}) {
+  return new Promise((resolve, reject) => {
+    // Set default options
+    const resolution = options.resolution || '360p';
+    const fps = options.fps || 15;
+
+    // Map resolution string to actual dimensions
+    let width, height;
+    switch (resolution) {
+      case '240p':
+        width = 426;
+        height = 240;
+        break;
+      case '360p':
+      default:
+        width = 640;
+        height = 360;
+        break;
+    }
+
+    console.log(`Optimizing video to ${resolution} (${width}x${height}) at ${fps}fps`);
+
+    // Construct ffmpeg command for optimization
+    const ffmpegArgs = [
+      '-i', videoPath,
+      '-vf', `scale=${width}:${height}`,
+      '-r', fps.toString(),
+      '-c:v', 'libx264',
+      '-preset', 'faster',
+      '-crf', '23',  // Reasonable quality (lower is better)
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-movflags', '+faststart',
+      '-y',  // Overwrite output file if it exists
+      outputPath
+    ];
+
+    const optimizeCmd = spawn('ffmpeg', ffmpegArgs);
+
+    optimizeCmd.stderr.on('data', (data) => {
+      const output = data.toString();
+      if (output.includes('frame=')) {
+        process.stdout.write('.');
+      }
+      console.log('ffmpeg stderr:', output);
+    });
+
+    optimizeCmd.on('close', async (code) => {
+      if (code !== 0) {
+        return reject(new Error('Failed to optimize video'));
+      }
+
+      try {
+        // Get the duration of the optimized video
+        const duration = await getMediaDuration(outputPath);
+
+        resolve({
+          path: outputPath,
+          duration,
+          resolution,
+          fps,
+          width,
+          height
+        });
+      } catch (error) {
+        reject(new Error(`Failed to get optimized video duration: ${error.message}`));
+      }
+    });
+
+    optimizeCmd.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
 module.exports = {
   splitVideoIntoSegments,
   splitMediaIntoSegments,
   getVideoDuration,
-  getMediaDuration
+  getMediaDuration,
+  optimizeVideo
 };
