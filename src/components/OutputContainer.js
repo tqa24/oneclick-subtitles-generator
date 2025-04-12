@@ -93,13 +93,13 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
 
   return (
     <div className="output-container">
+      {/* Show status message or segments status */}
       {status?.message && (
-        // Show segments status only for file-upload tab and when segments exist
-        segmentsStatus.length > 0 && !activeTab.includes('youtube') ? (
+        segmentsStatus.length > 0 && (!activeTab.includes('youtube') || subtitlesData) ? (
           <ParallelProcessingStatus
             segments={segmentsStatus}
-            overallStatus={status.message}
-            statusType={status.type}
+            overallStatus={status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')}
+            statusType={status?.type || 'success'}
             onRetrySegment={(segmentIndex) => {
               console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
               onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
@@ -117,6 +117,28 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
         ) : (
           <div className={`status ${status.type}`}>{status.message}</div>
         )
+      )}
+
+      {/* Show segments status when we have segments and subtitles but no status message */}
+      {!status?.message && segmentsStatus.length > 0 && subtitlesData && (
+        <ParallelProcessingStatus
+          segments={segmentsStatus}
+          overallStatus={t('output.segmentsReady', 'Video segments are ready for processing!')}
+          statusType="success"
+          onRetrySegment={(segmentIndex) => {
+            console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
+            onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
+          }}
+          onRetryWithModel={(segmentIndex, modelId) => {
+            console.log('OutputContainer: Retrying segment', segmentIndex, 'with model', modelId, 'and videoSegments:', videoSegments);
+            onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);
+          }}
+          onGenerateSegment={(segmentIndex) => {
+            console.log('OutputContainer: Generating segment', segmentIndex, 'with videoSegments:', videoSegments);
+            onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
+          }}
+          retryingSegments={retryingSegments}
+        />
       )}
 
       {subtitlesData && (
