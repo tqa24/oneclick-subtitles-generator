@@ -460,10 +460,10 @@ IMPORTANT INSTRUCTIONS:
 9. If a line is empty after the [n] marker, keep it empty in your response.
 
 Format your response exactly like this:
-[1] Translated text for first subtitle
-[2] Translated text for second subtitle
+Translated text for first subtitle
+Translated text for second subtitle
 ...
-[${subtitleCount}] Translated text for last subtitle
+Translated text for last subtitle
 
 Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
 };
@@ -1045,6 +1045,21 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             throw new Error('No completed document returned from Gemini');
         }
 
+        // Check if the response is a JSON array
+        if (completedText.trim().startsWith('[') && completedText.trim().endsWith(']')) {
+            try {
+                // Try to parse as JSON
+                const jsonArray = JSON.parse(completedText);
+                if (Array.isArray(jsonArray)) {
+                    console.log('Detected JSON array format with', jsonArray.length, 'items');
+                    // Join the array items into a single text
+                    return jsonArray.join('\n\n');
+                }
+            } catch (e) {
+                console.log('Failed to parse as JSON array, continuing with text processing');
+            }
+        }
+
         // Check if the response contains structured output and extract plain text if needed
         if (completedText.includes('```json') ||
             (completedText.includes('```') && completedText.includes('```') && completedText.trim().startsWith('```')) ||
@@ -1440,6 +1455,21 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         } else {
             // Handle plain text response
             summarizedText = data.candidates[0]?.content?.parts[0]?.text;
+
+            // Check if the response is a JSON array
+            if (summarizedText.trim().startsWith('[') && summarizedText.trim().endsWith(']')) {
+                try {
+                    // Try to parse as JSON
+                    const jsonArray = JSON.parse(summarizedText);
+                    if (Array.isArray(jsonArray)) {
+                        console.log('Detected JSON array format with', jsonArray.length, 'items');
+                        // Join the array items into a single text
+                        summarizedText = jsonArray.join('\n\n');
+                    }
+                } catch (e) {
+                    console.log('Failed to parse as JSON array, continuing with text processing');
+                }
+            }
         }
 
         if (!summarizedText) {
