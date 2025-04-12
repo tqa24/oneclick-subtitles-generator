@@ -93,6 +93,11 @@ const LyricsDisplay = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedDocument, setProcessedDocument] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [splitDuration, setSplitDuration] = useState(() => {
+    // Get the split duration from localStorage or use default (0 = no split)
+    return parseInt(localStorage.getItem('consolidation_split_duration') || '0');
+  });
+  const [consolidationStatus, setConsolidationStatus] = useState('');
   const [showWaveform, setShowWaveform] = useState(() => {
     // Load from localStorage, default to true if not set
     return localStorage.getItem('show_waveform') !== 'false';
@@ -142,6 +147,21 @@ const LyricsDisplay = ({
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Listen for consolidation status updates
+  useEffect(() => {
+    const handleConsolidationStatus = (event) => {
+      if (event.detail && event.detail.message) {
+        setConsolidationStatus(event.detail.message);
+      }
+    };
+
+    window.addEventListener('consolidation-status', handleConsolidationStatus);
+
+    return () => {
+      window.removeEventListener('consolidation-status', handleConsolidationStatus);
     };
   }, []);
 
@@ -221,7 +241,7 @@ const LyricsDisplay = ({
   };
 
   // Handle process request from modal
-  const handleProcess = async (source, processType, model) => {
+  const handleProcess = async (source, processType, model, splitDurationParam, customPrompt) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
 
     if (!subtitlesToUse || subtitlesToUse.length === 0) return;
@@ -233,13 +253,25 @@ const LyricsDisplay = ({
       setTxtContent(textContent);
     }
 
+    // Use the provided split duration or the state value
+    const splitDurationToUse = splitDurationParam !== undefined ? splitDurationParam : splitDuration;
+
+    // Save the split duration setting to localStorage
+    localStorage.setItem('consolidation_split_duration', splitDurationToUse.toString());
+
+    // Update the state
+    setSplitDuration(splitDurationToUse);
+
     setIsProcessing(true);
+    // Clear any previous status
+    setConsolidationStatus('');
+
     try {
       let result;
       if (processType === 'consolidate') {
-        result = await completeDocument(textContent, model);
+        result = await completeDocument(textContent, model, customPrompt, splitDurationToUse);
       } else if (processType === 'summarize') {
-        result = await summarizeDocument(textContent, model);
+        result = await summarizeDocument(textContent, model, customPrompt);
       }
 
       setProcessedDocument(result);
@@ -265,6 +297,9 @@ const LyricsDisplay = ({
       downloadFile(result, filename);
     } catch (error) {
       console.error(`Error ${processType === 'consolidate' ? 'completing' : 'summarizing'} document:`, error);
+
+      // Show error status
+      setConsolidationStatus(t('consolidation.error', 'Error processing document: {{message}}', { message: error.message }));
     } finally {
       setIsProcessing(false);
     }
@@ -475,6 +510,14 @@ const LyricsDisplay = ({
             </svg>
             <span>{t('download.downloadOptions', 'Download')}</span>
           </button>
+
+          {/* Show consolidation status if available */}
+          {consolidationStatus && (
+            <div className="consolidation-status">
+              <div className="status-spinner"></div>
+              <span>{consolidationStatus}</span>
+            </div>
+          )}
 
           {/* Download Options Modal */}
           <DownloadOptionsModal

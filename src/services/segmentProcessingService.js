@@ -5,6 +5,7 @@
 import { callGeminiApi, getProcessingForceStopped } from './geminiService';
 import { fetchSegment } from '../utils/videoSplitter';
 import { parseRawTextManually } from '../utils/subtitleParser';
+import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
 
 /**
  * Process a single media segment (video or audio)
@@ -45,6 +46,14 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 type: segmentFile.type,
                 size: segmentFile.size
             });
+
+            // Get transcription rules from localStorage
+            const transcriptionRules = getTranscriptionRules();
+            if (transcriptionRules) {
+                console.log(`Using transcription rules for segment ${segmentIndex+1}:`, transcriptionRules);
+            } else {
+                console.log(`No transcription rules found for segment ${segmentIndex+1}`);
+            }
 
             // Process the segment with Gemini
             segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload');

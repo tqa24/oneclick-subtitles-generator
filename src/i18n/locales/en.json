@@ -408,6 +408,7 @@
     "selectModelForProcessing": "Select model for processing",
     "download": "Download",
     "process": "Process",
+    "consolidate": "Complete Document (TXT)",
     "summarize": "Summarize (TXT)",
     "txtNoTimings": "TXT (no timings)",
     "consolidateExplanation": "Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.",

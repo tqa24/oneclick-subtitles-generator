@@ -279,3 +279,41 @@
     justify-content: center;
   }
 }
+
+/* Option group */
+.option-group {
+  margin-bottom: 24px;
+}
+
+/* Split duration select */
+.split-duration-select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--md-shape-small);
+  border: 1px solid var(--md-outline);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: var(--md-body-medium-size);
+  margin-top: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.split-duration-select:hover {
+  border-color: var(--md-primary);
+}
+
+.split-duration-select:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px var(--md-primary-container);
+}
+
+/* Setting description */
+.setting-description {
+  font-size: var(--md-label-small-size);
+  color: var(--md-on-surface-variant);
+  margin-top: 4px;
+  line-height: 1.4;
+}

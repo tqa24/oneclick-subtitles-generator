@@ -7,6 +7,18 @@ import DownloadOptionsModal from './DownloadOptionsModal';
 import PromptEditor from './PromptEditor';
 import '../styles/TranslationSection.css';
 
+// Helper function to format time in HH:MM:SS.mmm format
+const formatTimeString = (timeInSeconds) => {
+  if (timeInSeconds === undefined || timeInSeconds === null) return '00:00:00.000';
+
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = Math.floor(timeInSeconds % 60);
+  const milliseconds = Math.floor((timeInSeconds % 1) * 1000);
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+};
+
 const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) => {
   const { t } = useTranslation();
   const [targetLanguage, setTargetLanguage] = useState('');
@@ -79,9 +91,43 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     try {
       // Pass the selected model, custom prompt, and split duration to the translation function
       const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt, splitDuration);
-      setTranslatedSubtitles(result);
+      console.log('Translation result received:', result ? result.length : 0, 'subtitles');
+
+      // Check if result is valid
+      if (!result || result.length === 0) {
+        console.error('Translation returned empty result');
+        setError(t('translation.emptyResult', 'Translation returned no results. Please try again or check the console for errors.'));
+        return;
+      }
+
+      if (result.length > 0) {
+        console.log('First translated subtitle:', JSON.stringify(result[0]));
+        console.log('Last translated subtitle:', JSON.stringify(result[result.length - 1]));
+      }
+
+      // Make sure the result has the necessary properties for display
+      const processedResult = result.map((sub, index) => {
+        // Ensure each subtitle has start and end times
+        if (!sub.start && !sub.startTime && sub.originalId) {
+          // Try to find the original subtitle to get timing information
+          const originalSub = subtitles.find(s => s.id === sub.originalId);
+          if (originalSub) {
+            return {
+              ...sub,
+              start: originalSub.start,
+              end: originalSub.end,
+              startTime: sub.startTime || formatTimeString(originalSub.start),
+              endTime: sub.endTime || formatTimeString(originalSub.end)
+            };
+          }
+        }
+        return sub;
+      });
+
+      console.log('Processed translation result:', processedResult.length, 'subtitles');
+      setTranslatedSubtitles(processedResult);
       if (onTranslationComplete) {
-        onTranslationComplete(result);
+        onTranslationComplete(processedResult);
       }
 
       // Save the split duration setting to localStorage
@@ -395,7 +441,7 @@ Here are the subtitles to translate:\n\n{subtitlesText}`}
         )}
 
         {/* Translation Preview Section */}
-        {translatedSubtitles && (
+        {translatedSubtitles && translatedSubtitles.length > 0 && (
           <div className="translation-row preview-row">
             <div className="row-label">
               <label>{t('translation.previewLabel', 'Preview')}:</label>
@@ -404,12 +450,29 @@ Here are the subtitles to translate:\n\n{subtitlesText}`}
               <div className="translation-preview">
                 <h4>{t('translation.preview', 'Translation Preview')} ({targetLanguage})</h4>
                 <div className="translation-preview-content">
-                  {translatedSubtitles.slice(0, 5).map((subtitle, index) => (
-                    <div key={index} className="preview-subtitle">
-                      <span className="preview-time">{subtitle.startTime} → {subtitle.endTime}</span>
-                      <span className="preview-text">{subtitle.text}</span>
-                    </div>
-                  ))}
+                  {translatedSubtitles.slice(0, 5).map((subtitle, index) => {
+                    // Determine the time display format
+                    let startTimeDisplay = subtitle.startTime;
+                    let endTimeDisplay = subtitle.endTime;
+
+                    // If we have start/end in seconds but no formatted time strings
+                    if (!startTimeDisplay && subtitle.start !== undefined) {
+                      startTimeDisplay = formatTimeString(subtitle.start);
+                    }
+
+                    if (!endTimeDisplay && subtitle.end !== undefined) {
+                      endTimeDisplay = formatTimeString(subtitle.end);
+                    }
+
+                    return (
+                      <div key={index} className="preview-subtitle">
+                        <span className="preview-time">
+                          {startTimeDisplay || '00:00:00.000'} → {endTimeDisplay || '00:00:05.000'}
+                        </span>
+                        <span className="preview-text">{subtitle.text}</span>
+                      </div>
+                    );
+                  })}
                   {translatedSubtitles.length > 5 && (
                     <div className="preview-more">
                       {t('translation.moreSubtitles', '... and {{count}} more subtitles', { count: translatedSubtitles.length - 5 })}

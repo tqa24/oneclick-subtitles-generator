@@ -8,12 +8,12 @@ import { getVideoDuration, getMaxSegmentDurationSeconds } from './durationUtils'
 import { processSegment } from '../services/segmentProcessingService';
 import { retrySegmentProcessing } from './segmentManager';
 import { analyzeVideoWithGemini } from '../services/videoAnalysisService';
-import { setTranscriptionRules } from './transcriptionRulesStore';
+import { setTranscriptionRules, clearTranscriptionRules } from './transcriptionRulesStore';
 
 // Re-export functions from other modules
 export { getVideoDuration } from './durationUtils';
 export { retrySegmentProcessing };
-export { setTranscriptionRules } from './transcriptionRulesStore';
+export { setTranscriptionRules, clearTranscriptionRules } from './transcriptionRulesStore';
 
 /**
  * Process a long media file (video or audio) by splitting it into segments and processing each segment
