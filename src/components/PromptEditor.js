@@ -533,13 +533,36 @@ const PromptEditor = ({
 
           <div className="prompt-editor-examples">
             <h4>Examples of Custom Instructions:</h4>
-            <ul>
-              <li>Maintain a formal/informal tone</li>
-              <li>Use specific terminology or vocabulary</li>
-              <li>Adapt cultural references</li>
-              <li>Preserve humor or wordplay when possible</li>
-            </ul>
-            <p className="prompt-editor-note"><strong>Note:</strong> The system will automatically handle the formatting and structure of the translations. You only need to add your custom instructions.</p>
+            {title && title.includes('Translation') ? (
+              <ul>
+                <li>Maintain a formal/informal tone</li>
+                <li>Use specific terminology or vocabulary</li>
+                <li>Adapt cultural references</li>
+                <li>Preserve humor or wordplay when possible</li>
+              </ul>
+            ) : title && title.includes('Consolidation') ? (
+              <ul>
+                <li>Organize content by topics or themes</li>
+                <li>Maintain chronological order of events</li>
+                <li>Preserve technical terminology</li>
+                <li>Improve readability while maintaining original meaning</li>
+              </ul>
+            ) : title && title.includes('Summarization') ? (
+              <ul>
+                <li>Focus on key points and main ideas</li>
+                <li>Highlight important facts and statistics</li>
+                <li>Maintain the original tone (formal/informal)</li>
+                <li>Include all critical information</li>
+              </ul>
+            ) : (
+              <ul>
+                <li>Maintain a formal/informal tone</li>
+                <li>Use specific terminology or vocabulary</li>
+                <li>Adapt content for your specific needs</li>
+                <li>Preserve important details</li>
+              </ul>
+            )}
+            <p className="prompt-editor-note"><strong>Note:</strong> The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions.</p>
           </div>
 
           <div className="prompt-editor-actions">
