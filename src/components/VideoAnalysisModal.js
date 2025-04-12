@@ -66,6 +66,7 @@ const VideoAnalysisModal = ({
 
   // Handle continue with rules
   const handleContinueWithRules = () => {
+    console.log('VideoAnalysisModal: handleContinueWithRules called, using recommended preset');
     setShowRules(false);
     onUsePreset(analysisResult.recommendedPreset.id);
   };
@@ -85,12 +86,33 @@ const VideoAnalysisModal = ({
         analysisResult = storedResult;
       } else {
         console.log('No analysis result in localStorage');
+        // Clear localStorage flags to ensure modal doesn't show again
+        localStorage.removeItem('show_video_analysis');
+        localStorage.removeItem('video_analysis_timestamp');
+        localStorage.removeItem('video_analysis_result');
+        if (onClose) onClose();
         return null;
       }
     } catch (error) {
       console.error('Error parsing analysis result from localStorage:', error);
+      // Clear localStorage flags to ensure modal doesn't show again
+      localStorage.removeItem('show_video_analysis');
+      localStorage.removeItem('video_analysis_timestamp');
+      localStorage.removeItem('video_analysis_result');
+      if (onClose) onClose();
       return null;
     }
+  }
+
+  // Additional check to ensure we have valid data
+  if (!analysisResult || !analysisResult.recommendedPreset || !analysisResult.transcriptionRules) {
+    console.error('Invalid analysis result structure:', analysisResult);
+    // Clear localStorage flags to ensure modal doesn't show again
+    localStorage.removeItem('show_video_analysis');
+    localStorage.removeItem('video_analysis_timestamp');
+    localStorage.removeItem('video_analysis_result');
+    if (onClose) onClose();
+    return null;
   }
 
   return (
@@ -134,7 +156,10 @@ const VideoAnalysisModal = ({
               </button>
               <button
                 className="use-recommended-button"
-                onClick={() => onUsePreset(analysisResult.recommendedPreset.id)}
+                onClick={() => {
+                  console.log('VideoAnalysisModal: Use Recommended button clicked');
+                  onUsePreset(analysisResult.recommendedPreset.id);
+                }}
               >
                 {t('videoAnalysis.useRecommended', 'Use Recommended')}
               </button>

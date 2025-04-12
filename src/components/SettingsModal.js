@@ -85,10 +85,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
-  const [isUpdating, setIsUpdating] = useState(false); // State for update process
-  const [updateStatus, setUpdateStatus] = useState({ message: '', type: '' }); // Status message for update process
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
+  // Update state variables removed as update functionality is no longer needed
   const [userPromptPresets, setUserPromptPresets] = useState([]); // User-created prompt presets
   const [showAddPresetForm, setShowAddPresetForm] = useState(false); // Toggle for add preset form
   const [newPresetTitle, setNewPresetTitle] = useState(''); // Title for new preset
@@ -517,37 +516,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     }
   };
 
-  // Handle app update (git pull)
-  const handleUpdate = async () => {
-    if (window.confirm(t('settings.confirmUpdate', 'Are you sure you want to update the application? This will pull the latest changes from the repository.'))) {
-      setIsUpdating(true);
-      setUpdateStatus({ message: t('settings.updating', 'Updating application...'), type: 'info' });
-
-      try {
-        const response = await fetch('http://localhost:3004/api/update', {
-          method: 'POST'
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          setUpdateStatus({
-            message: t('settings.updateSuccess', 'Application updated successfully! Please refresh the page to see the changes.'),
-            type: 'success'
-          });
-        } else {
-          throw new Error(data.error || 'Failed to update application');
-        }
-      } catch (error) {
-        console.error('Error updating application:', error);
-        setUpdateStatus({
-          message: t('settings.updateError', 'Error updating application: {{errorMessage}}', { errorMessage: error.message }),
-          type: 'error'
-        });
-      } finally {
-        setIsUpdating(false);
-      }
-    }
-  };
+  // Update functionality removed as most users can't use git pull
 
   // Handle factory reset
   const handleFactoryReset = async () => {
@@ -1739,21 +1708,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
         <div className="settings-footer">
           <div className="settings-footer-left">
-            <button
-              className="update-btn"
-              onClick={handleUpdate}
-              disabled={isUpdating}
-              title={t('settings.updateTooltip', 'Update application with latest changes')}
-            >
-              {isUpdating ? (
-                <>
-                  <span className="loading-spinner"></span>
-                  {t('settings.updating', 'Updating...')}
-                </>
-              ) : (
-                t('settings.update', 'Update App')
-              )}
-            </button>
+            {/* Update button removed as most users can't use git pull */}
             <button
               className="factory-reset-btn"
               onClick={handleFactoryReset}

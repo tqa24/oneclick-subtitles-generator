@@ -64,7 +64,21 @@ function App() {
   // Check localStorage for video analysis data on mount
   useEffect(() => {
     const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
-    if (showAnalysis) {
+    const timestamp = localStorage.getItem('video_analysis_timestamp');
+
+    // Check if the analysis is stale (older than 5 minutes)
+    const isStale = timestamp && (Date.now() - parseInt(timestamp, 10) > 5 * 60 * 1000);
+
+    if (isStale) {
+      // Clear stale analysis data
+      console.log('Clearing stale video analysis data');
+      localStorage.removeItem('show_video_analysis');
+      localStorage.removeItem('video_analysis_timestamp');
+      localStorage.removeItem('video_analysis_result');
+      return;
+    }
+
+    if (showAnalysis && !isStale) {
       console.log('Found show_video_analysis=true in localStorage on mount');
       setShowVideoAnalysis(true);
 
@@ -76,6 +90,10 @@ function App() {
         }
       } catch (error) {
         console.error('Error parsing video analysis result from localStorage on mount:', error);
+        // Clear invalid data
+        localStorage.removeItem('show_video_analysis');
+        localStorage.removeItem('video_analysis_timestamp');
+        localStorage.removeItem('video_analysis_result');
       }
     }
   }, []);
@@ -212,16 +230,26 @@ function App() {
     // Handle video analysis started
     const handleVideoAnalysisStarted = () => {
       console.log('Received videoAnalysisStarted event');
-      setShowVideoAnalysis(true);
-      console.log('showVideoAnalysis set to true');
+      // Only show the modal if the flag is set in localStorage
+      if (localStorage.getItem('show_video_analysis') === 'true') {
+        setShowVideoAnalysis(true);
+        console.log('showVideoAnalysis set to true');
+      } else {
+        console.log('Not showing video analysis modal because show_video_analysis is not true');
+      }
     };
 
     // Handle video analysis complete
     const handleVideoAnalysisComplete = (event) => {
       console.log('Received videoAnalysisComplete event with detail:', event.detail);
-      if (event.detail) {
+      // Only update the result if the flag is set in localStorage
+      if (event.detail && localStorage.getItem('show_video_analysis') === 'true') {
         setVideoAnalysisResult(event.detail);
-        console.log('videoAnalysisResult state updated');
+        // Store current timestamp to allow for stale data detection
+        localStorage.setItem('video_analysis_timestamp', Date.now().toString());
+        console.log('videoAnalysisResult state updated with timestamp:', Date.now());
+      } else {
+        console.log('Not updating videoAnalysisResult because show_video_analysis is not true');
       }
     };
 
@@ -273,7 +301,30 @@ function App() {
       // Check for video analysis changes
       if (event.key === 'show_video_analysis' || event.key === 'video_analysis_timestamp' || !event.key) {
         const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
-        if (showAnalysis) {
+        const timestamp = localStorage.getItem('video_analysis_timestamp');
+        const isProcessing = localStorage.getItem('video_processing_in_progress') === 'true';
+
+        // Check if the analysis is stale (older than 5 minutes)
+        const isStale = timestamp && (Date.now() - parseInt(timestamp, 10) > 5 * 60 * 1000);
+
+        if (isStale) {
+          // Clear stale analysis data
+          console.log('Clearing stale video analysis data from storage event');
+          localStorage.removeItem('show_video_analysis');
+          localStorage.removeItem('video_analysis_timestamp');
+          localStorage.removeItem('video_analysis_result');
+          setShowVideoAnalysis(false);
+          setVideoAnalysisResult(null);
+          return;
+        }
+
+        // If we're already processing (after user made a choice), don't show the modal again
+        if (isProcessing) {
+          console.log('Not showing video analysis modal because processing is in progress');
+          return;
+        }
+
+        if (showAnalysis && !isStale && !isProcessing) {
           console.log('Setting showVideoAnalysis to true from localStorage');
           setShowVideoAnalysis(true);
 
@@ -286,6 +337,12 @@ function App() {
             }
           } catch (error) {
             console.error('Error parsing video analysis result from localStorage:', error);
+            // Clear invalid data
+            localStorage.removeItem('show_video_analysis');
+            localStorage.removeItem('video_analysis_timestamp');
+            localStorage.removeItem('video_analysis_result');
+            setShowVideoAnalysis(false);
+            setVideoAnalysisResult(null);
           }
         }
       }
@@ -1298,12 +1355,19 @@ function App() {
     if (preset) {
       // Save the preset to localStorage
       localStorage.setItem('transcription_prompt', preset.prompt);
+      localStorage.setItem('selected_preset', presetId);
 
       // Save the transcription rules
       if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
         setTranscriptionRules(videoAnalysisResult.transcriptionRules);
         setTranscriptionRulesState(videoAnalysisResult.transcriptionRules);
       }
+
+      // Update status to indicate we're moving forward
+      setStatus({
+        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+        type: 'loading'
+      });
 
       // Dispatch event to notify videoProcessor that user has made a choice
       const userChoiceEvent = new CustomEvent('videoAnalysisUserChoice', {
@@ -1313,14 +1377,18 @@ function App() {
         }
       });
       window.dispatchEvent(userChoiceEvent);
+      console.log('Dispatched videoAnalysisUserChoice event with presetId:', presetId);
 
-      // Clear the localStorage flag
+      // Clear the localStorage flags and set processing flag
       localStorage.removeItem('show_video_analysis');
       localStorage.removeItem('video_analysis_timestamp');
-      console.log('Removed show_video_analysis from localStorage');
+      localStorage.removeItem('video_analysis_result'); // Also clear the result
+      localStorage.setItem('video_processing_in_progress', 'true'); // Set processing flag
+      console.log('Removed video analysis data from localStorage and set processing flag');
 
       // Close the modal
       setShowVideoAnalysis(false);
+      setVideoAnalysisResult(null); // Clear the result to prevent re-showing
       console.log('Modal closed after using recommended preset');
     }
   };
@@ -1328,6 +1396,13 @@ function App() {
   // Handle using the default preset from settings
   const handleUseDefaultPreset = () => {
     console.log('handleUseDefaultPreset called');
+
+    // Update status to indicate we're moving forward
+    setStatus({
+      message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+      type: 'loading'
+    });
+
     // Dispatch event to notify videoProcessor that user has made a choice
     const userChoiceEvent = new CustomEvent('videoAnalysisUserChoice', {
       detail: {
@@ -1336,6 +1411,7 @@ function App() {
       }
     });
     window.dispatchEvent(userChoiceEvent);
+    console.log('Dispatched videoAnalysisUserChoice event with default preset');
 
     // Save the transcription rules
     if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
@@ -1343,13 +1419,16 @@ function App() {
       setTranscriptionRulesState(videoAnalysisResult.transcriptionRules);
     }
 
-    // Clear the localStorage flag
+    // Clear the localStorage flags and set processing flag
     localStorage.removeItem('show_video_analysis');
     localStorage.removeItem('video_analysis_timestamp');
-    console.log('Removed show_video_analysis from localStorage');
+    localStorage.removeItem('video_analysis_result'); // Also clear the result
+    localStorage.setItem('video_processing_in_progress', 'true'); // Set processing flag
+    console.log('Removed video analysis data from localStorage and set processing flag');
 
     // Close the modal
     setShowVideoAnalysis(false);
+    setVideoAnalysisResult(null); // Clear the result to prevent re-showing
     console.log('Modal closed after using default preset');
   };
 
@@ -1639,13 +1718,22 @@ function App() {
 
       {/* Video Analysis Modal */}
       {console.log('Render - showVideoAnalysis:', showVideoAnalysis, 'videoAnalysisResult:', videoAnalysisResult)}
-      {/* Force modal to show for debugging */}
       {/* Check if we should show the modal */}
       {((showVideoAnalysis || localStorage.getItem('show_video_analysis') === 'true') &&
         (videoAnalysisResult || localStorage.getItem('video_analysis_result'))) && (
         <VideoAnalysisModal
-          isOpen={true} /* Force modal to be open */
-          onClose={null} /* Disabled close button */
+          isOpen={true}
+          onClose={() => {
+            // Clear localStorage flags
+            localStorage.removeItem('show_video_analysis');
+            localStorage.removeItem('video_analysis_timestamp');
+            localStorage.removeItem('video_analysis_result');
+            setShowVideoAnalysis(false);
+            setVideoAnalysisResult(null);
+            console.log('Video analysis modal closed by user');
+            // Use default preset if user closes the modal
+            handleUseDefaultPreset();
+          }}
           analysisResult={videoAnalysisResult}
           onUsePreset={handleUseRecommendedPreset}
           onUseDefaultPreset={handleUseDefaultPreset}
