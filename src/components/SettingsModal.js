@@ -78,7 +78,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
-  const [useStructuredOutput, setUseStructuredOutput] = useState(true); // Default to using structured output
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
   const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash-lite'); // Default to Flash Lite
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
@@ -133,7 +132,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     useOAuth: false,
     youtubeClientId: '',
     youtubeClientSecret: '',
-    useStructuredOutput: true,
     useVideoAnalysis: true,
     videoAnalysisModel: 'gemini-2.0-flash-lite',
     videoAnalysisTimeout: '20',
@@ -152,7 +150,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
-      const savedUseStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true if not set
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
       const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash-lite'; // Default to Flash Lite
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
@@ -178,7 +175,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         useOAuth: savedUseOAuth,
         youtubeClientId: clientId,
         youtubeClientSecret: clientSecret,
-        useStructuredOutput: savedUseStructuredOutput,
         useVideoAnalysis: savedUseVideoAnalysis,
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
@@ -192,7 +188,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setTimeFormat(savedTimeFormat);
       setShowWaveform(savedShowWaveform);
       setSegmentOffsetCorrection(savedOffsetCorrection);
-      setUseStructuredOutput(savedUseStructuredOutput);
       setUseVideoAnalysis(savedUseVideoAnalysis);
       setVideoAnalysisModel(savedVideoAnalysisModel);
       setVideoAnalysisTimeout(savedVideoAnalysisTimeout);
@@ -578,7 +573,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useOAuth !== originalSettings.useOAuth ||
       youtubeClientId !== originalSettings.youtubeClientId ||
       youtubeClientSecret !== originalSettings.youtubeClientSecret ||
-      useStructuredOutput !== originalSettings.useStructuredOutput ||
       useVideoAnalysis !== originalSettings.useVideoAnalysis ||
       videoAnalysisModel !== originalSettings.videoAnalysisModel ||
       videoAnalysisTimeout !== originalSettings.videoAnalysisTimeout ||
@@ -589,7 +583,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(settingsChanged);
   }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useStructuredOutput, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
+      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
       optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
 
   // Handle save button click
@@ -602,7 +596,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
-    localStorage.setItem('use_structured_output', useStructuredOutput.toString());
     localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
@@ -631,7 +624,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useOAuth,
       youtubeClientId,
       youtubeClientSecret,
-      useStructuredOutput,
       useVideoAnalysis,
       videoAnalysisModel,
       videoAnalysisTimeout,
@@ -1071,218 +1063,279 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           <div className={`settings-tab-content ${activeTab === 'video-processing' ? 'active' : ''}`}>
             <div className="settings-section video-processing-section">
               <h3>{t('settings.videoProcessing', 'Video Processing')}</h3>
-              <div className="segment-duration-setting">
-                <label htmlFor="segment-duration">
-                  {t('settings.segmentDuration', 'Segment Duration (minutes)')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
-                </p>
-                <select
-                  id="segment-duration"
-                  value={segmentDuration}
-                  onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
-                  className="segment-duration-select"
-                >
-                  <option value="1">1 {t('settings.minutes', 'minutes')}</option>
-                  <option value="2">2 {t('settings.minutes', 'minutes')}</option>
-                  <option value="3">3 {t('settings.minutes', 'minutes')}</option>
-                  <option value="5">5 {t('settings.minutes', 'minutes')}</option>
-                  <option value="10">10 {t('settings.minutes', 'minutes')}</option>
-                  <option value="15">15 {t('settings.minutes', 'minutes')}</option>
-                  <option value="20">20 {t('settings.minutes', 'minutes')}</option>
-                  <option value="30">30 {t('settings.minutes', 'minutes')}</option>
-                  <option value="45">45 {t('settings.minutes', 'minutes')}</option>
-                </select>
-              </div>
 
-              <div className="gemini-model-setting">
-                <label htmlFor="gemini-model">
-                  {t('settings.geminiModel', 'Gemini Model')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
-                </p>
-                <select
-                  id="gemini-model"
-                  value={geminiModel}
-                  onChange={(e) => setGeminiModel(e.target.value)}
-                  className="gemini-model-select"
-                >
-                  <option value="gemini-2.5-pro-exp-03-25">
-                    {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
-                  </option>
-                  <option value="gemini-2.0-flash-thinking-exp-01-21">
-                    {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
-                  </option>
-                  <option value="gemini-2.0-flash">
-                    {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
-                  </option>
-                  <option value="gemini-2.0-flash-lite">
-                    {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
-                  </option>
-                </select>
-              </div>
+              {/* Grid layout for settings cards */}
+              <div className="video-processing-grid">
+                {/* Segments Card */}
+                <div className="settings-card segments-card">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                      </svg>
+                    </div>
+                    <h4>{t('settings.segmentSettings', 'Segment Settings')}</h4>
+                  </div>
+                  <div className="settings-card-content">
+                    <div className="compact-setting">
+                      <label htmlFor="segment-duration">
+                        {t('settings.segmentDuration', 'Segment Duration (minutes)')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
+                      </p>
+                      <select
+                        id="segment-duration"
+                        value={segmentDuration}
+                        onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
+                        className="enhanced-select"
+                      >
+                        <option value="1">1 {t('settings.minutes', 'minutes')}</option>
+                        <option value="2">2 {t('settings.minutes', 'minutes')}</option>
+                        <option value="3">3 {t('settings.minutes', 'minutes')}</option>
+                        <option value="5">5 {t('settings.minutes', 'minutes')}</option>
+                        <option value="10">10 {t('settings.minutes', 'minutes')}</option>
+                        <option value="15">15 {t('settings.minutes', 'minutes')}</option>
+                        <option value="20">20 {t('settings.minutes', 'minutes')}</option>
+                        <option value="30">30 {t('settings.minutes', 'minutes')}</option>
+                        <option value="45">45 {t('settings.minutes', 'minutes')}</option>
+                      </select>
+                    </div>
 
-              <div className="structured-output-setting">
-                <h4>{t('settings.structuredOutputSetting', 'Structured Output')}</h4>
-                <label htmlFor="structured-output" className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    id="structured-output"
-                    checked={useStructuredOutput}
-                    onChange={(e) => setUseStructuredOutput(e.target.checked)}
-                  />
-                  {t('settings.useStructuredOutput', 'Use Structured Output')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.structuredOutputDescription', 'Enable structured JSON output from Gemini API for more reliable parsing. This improves accuracy but may increase token usage.')}
-                </p>
-              </div>
 
-              <div className="video-analysis-section">
-                <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
-
-                <div className="use-video-analysis-setting">
-                  <label htmlFor="use-video-analysis" className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      id="use-video-analysis"
-                      checked={useVideoAnalysis}
-                      onChange={(e) => setUseVideoAnalysis(e.target.checked)}
-                    />
-                    {t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
-                  </p>
+                  </div>
                 </div>
 
-                <div className="video-analysis-model-setting">
-                  <label htmlFor="video-analysis-model">
-                    {t('settings.videoAnalysisModel', 'Analysis Model')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.videoAnalysisModelDescription', 'Select the Gemini model to use for video analysis. Flash Lite is faster but less detailed, while Flash is more thorough but slower.')}
-                  </p>
-                  <select
-                    id="video-analysis-model"
-                    value={videoAnalysisModel}
-                    onChange={(e) => setVideoAnalysisModel(e.target.value)}
-                    className="video-analysis-model-select"
-                    disabled={!useVideoAnalysis}
-                  >
-                    <option value="gemini-2.0-flash-lite">{t('settings.modelFlashLite', 'Gemini 2.0 Flash Lite (Faster)')}</option>
-                    <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
-                  </select>
+                {/* Model Card */}
+                <div className="settings-card model-card">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a10 10 0 1 0 10 10 4 4 0 1 1-4-4"></path>
+                        <path d="M18 6a4 4 0 1 0 0 8"></path>
+                      </svg>
+                    </div>
+                    <h4>{t('settings.modelSettings', 'AI Model')}</h4>
+                  </div>
+                  <div className="settings-card-content">
+                    <div className="compact-setting">
+                      <label htmlFor="gemini-model">
+                        {t('settings.geminiModel', 'Gemini Model')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
+                      </p>
+                      <select
+                        id="gemini-model"
+                        value={geminiModel}
+                        onChange={(e) => setGeminiModel(e.target.value)}
+                        className="enhanced-select"
+                      >
+                        <option value="gemini-2.5-pro-exp-03-25">
+                          {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
+                        </option>
+                        <option value="gemini-2.0-flash-thinking-exp-01-21">
+                          {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
+                        </option>
+                        <option value="gemini-2.0-flash">
+                          {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
+                        </option>
+                        <option value="gemini-2.0-flash-lite">
+                          {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="video-analysis-timeout-setting">
-                  <label htmlFor="video-analysis-timeout">
-                    {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.videoAnalysisTimeoutDescription', 'Set how long to wait for user input before automatically proceeding with the recommended preset.')}
-                  </p>
-                  <select
-                    id="video-analysis-timeout"
-                    value={videoAnalysisTimeout}
-                    onChange={(e) => setVideoAnalysisTimeout(e.target.value)}
-                    className="video-analysis-timeout-select"
-                    disabled={!useVideoAnalysis}
-                  >
-                    <option value="none">{t('settings.timeoutNone', 'No Timeout')}</option>
-                    <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
-                    <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
-                  </select>
+                {/* Video Analysis Card */}
+                <div className="settings-card analysis-card">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2 12h5"></path>
+                        <path d="M17 12h5"></path>
+                        <path d="M9 4v16"></path>
+                        <path d="M15 4v16"></path>
+                        <path d="M12 18v4"></path>
+                        <path d="M12 2v4"></path>
+                        <circle cx="12" cy="12" r="2"></circle>
+                      </svg>
+                    </div>
+                    <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
+                  </div>
+                  <div className="settings-card-content">
+                    <div className="compact-setting">
+                      <label className="enhanced-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={useVideoAnalysis}
+                          onChange={(e) => setUseVideoAnalysis(e.target.checked)}
+                        />
+                        <div className="enhanced-checkbox-label">
+                          <span>{t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}</span>
+                          <small>{t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}</small>
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="compact-setting">
+                      <label htmlFor="video-analysis-model">
+                        {t('settings.videoAnalysisModel', 'Analysis Model')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.videoAnalysisModelDescription', 'Select the Gemini model to use for video analysis. Flash Lite is faster but less detailed, while Flash is more thorough but slower.')}
+                      </p>
+                      <select
+                        id="video-analysis-model"
+                        value={videoAnalysisModel}
+                        onChange={(e) => setVideoAnalysisModel(e.target.value)}
+                        className="enhanced-select"
+                        disabled={!useVideoAnalysis}
+                      >
+                        <option value="gemini-2.0-flash-lite">{t('settings.modelFlashLite', 'Gemini 2.0 Flash Lite (Faster)')}</option>
+                        <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
+                      </select>
+                    </div>
+
+                    <div className="compact-setting">
+                      <label htmlFor="video-analysis-timeout">
+                        {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.videoAnalysisTimeoutDescription', 'Set how long to wait for user input before automatically proceeding with the recommended preset.')}
+                      </p>
+                      <select
+                        id="video-analysis-timeout"
+                        value={videoAnalysisTimeout}
+                        onChange={(e) => setVideoAnalysisTimeout(e.target.value)}
+                        className="enhanced-select"
+                        disabled={!useVideoAnalysis}
+                      >
+                        <option value="none">{t('settings.timeoutNone', 'No Timeout')}</option>
+                        <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
+                        <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="video-optimization-section">
-                <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
+                {/* Video Optimization Card */}
+                <div className="settings-card optimization-card">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v4"></path>
+                        <path d="M12 18v4"></path>
+                        <path d="m4.93 10.93 2.83-2.83"></path>
+                        <path d="m16.24 16.24 2.83-2.83"></path>
+                        <path d="M2 12h4"></path>
+                        <path d="M18 12h4"></path>
+                        <path d="m10.93 4.93-2.83-2.83"></path>
+                        <path d="m16.24 7.76 2.83-2.83"></path>
+                      </svg>
+                    </div>
+                    <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
+                  </div>
+                  <div className="settings-card-content">
+                    <div className="compact-setting">
+                      <label className="enhanced-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={optimizeVideos}
+                          onChange={(e) => setOptimizeVideos(e.target.checked)}
+                        />
+                        <div className="enhanced-checkbox-label">
+                          <span>{t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}</span>
+                          <small>{t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}</small>
+                        </div>
+                      </label>
+                    </div>
 
-                <div className="optimize-videos-setting">
-                  <label htmlFor="optimize-videos" className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      id="optimize-videos"
-                      checked={optimizeVideos}
-                      onChange={(e) => setOptimizeVideos(e.target.checked)}
-                    />
-                    {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}
-                  </p>
+                    <div className="compact-setting">
+                      <label htmlFor="optimized-resolution">
+                        {t('settings.optimizedResolution', 'Optimized Resolution')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.optimizedResolutionDescription', 'Select the resolution to use for optimized videos. Lower resolutions process faster but may reduce accuracy.')}
+                      </p>
+                      <select
+                        id="optimized-resolution"
+                        value={optimizedResolution}
+                        onChange={(e) => setOptimizedResolution(e.target.value)}
+                        className="enhanced-select"
+                        disabled={!optimizeVideos}
+                      >
+                        <option value="240p">240p</option>
+                        <option value="360p">360p</option>
+                      </select>
+                    </div>
+
+                    <div className="compact-setting">
+                      <label className="enhanced-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={useOptimizedPreview}
+                          onChange={(e) => setUseOptimizedPreview(e.target.checked)}
+                          disabled={!optimizeVideos}
+                        />
+                        <div className="enhanced-checkbox-label">
+                          <span>{t('settings.useOptimizedPreview', 'Use optimized video for preview')}</span>
+                          <small>{t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="optimized-resolution-setting">
-                  <label htmlFor="optimized-resolution">
-                    {t('settings.optimizedResolution', 'Optimized Resolution')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.optimizedResolutionDescription', 'Select the resolution to use for optimized videos. Lower resolutions process faster but may reduce accuracy.')}
-                  </p>
-                  <select
-                    id="optimized-resolution"
-                    value={optimizedResolution}
-                    onChange={(e) => setOptimizedResolution(e.target.value)}
-                    className="optimized-resolution-select"
-                    disabled={!optimizeVideos}
-                  >
-                    <option value="240p">240p</option>
-                    <option value="360p">360p</option>
-                  </select>
+                {/* Display Settings Card */}
+                <div className="settings-card display-card">
+                  <div className="settings-card-header">
+                    <div className="settings-card-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                      </svg>
+                    </div>
+                    <h4>{t('settings.displaySettings', 'Display Settings')}</h4>
+                  </div>
+                  <div className="settings-card-content">
+                    <div className="compact-setting">
+                      <label htmlFor="time-format">
+                        {t('settings.timeFormat', 'Time Format')}
+                      </label>
+                      <p className="setting-description">
+                        {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
+                      </p>
+                      <select
+                        id="time-format"
+                        value={timeFormat}
+                        onChange={(e) => setTimeFormat(e.target.value)}
+                        className="enhanced-select"
+                      >
+                        <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
+                        <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
+                      </select>
+                    </div>
+
+                    <div className="compact-setting">
+                      <label className="enhanced-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={showWaveform}
+                          onChange={(e) => setShowWaveform(e.target.checked)}
+                        />
+                        <div className="enhanced-checkbox-label">
+                          <span>{t('settings.showWaveform', 'Show Audio Waveform')}</span>
+                          <small>{t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}</small>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="use-optimized-preview-setting">
-                  <label htmlFor="use-optimized-preview" className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      id="use-optimized-preview"
-                      checked={useOptimizedPreview}
-                      onChange={(e) => setUseOptimizedPreview(e.target.checked)}
-                      disabled={!optimizeVideos}
-                    />
-                    {t('settings.useOptimizedPreview', 'Use optimized video for preview')}
-                  </label>
-                  <p className="setting-description">
-                    {t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="time-format-setting">
-                <label htmlFor="time-format">
-                  {t('settings.timeFormat', 'Time Format')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
-                </p>
-                <select
-                  id="time-format"
-                  value={timeFormat}
-                  onChange={(e) => setTimeFormat(e.target.value)}
-                  className="time-format-select"
-                >
-                  <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
-                  <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
-                </select>
-              </div>
-
-              <div className="waveform-setting">
-                <label htmlFor="show-waveform" className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    id="show-waveform"
-                    checked={showWaveform}
-                    onChange={(e) => setShowWaveform(e.target.checked)}
-                  />
-                  {t('settings.showWaveform', 'Show Audio Waveform')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
-                </p>
               </div>
             </div>
           </div>

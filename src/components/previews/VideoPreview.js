@@ -10,7 +10,7 @@ import { subtitlesToVtt, createVttBlobUrl, revokeVttBlobUrl, convertTimeStringTo
 import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
 
-const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -32,6 +32,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') !== 'false';
   });
+
+  // State for custom subtitle display
+  const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
   // Use refs to track previous values to prevent unnecessary updates
   const prevSubtitlesArrayRef = useRef(null);
@@ -260,8 +263,26 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         // Only update if more than 100ms has passed since the last update
         const now = performance.now();
         if (now - lastTimeUpdateRef.current > 100) {
-          setCurrentTime(videoElement.currentTime);
+          const currentVideoTime = videoElement.currentTime;
+          setCurrentTime(currentVideoTime);
           lastTimeUpdateRef.current = now;
+
+          // Find the current subtitle based on the video's current time
+          if (subtitlesArray && subtitlesArray.length > 0) {
+            const currentSub = subtitlesArray.find(sub => {
+              // Handle both numeric and string time formats
+              const startTime = typeof sub.start === 'number' ? sub.start : convertTimeStringToSeconds(sub.start);
+              const endTime = typeof sub.end === 'number' ? sub.end : convertTimeStringToSeconds(sub.end);
+              return currentVideoTime >= startTime && currentVideoTime <= endTime;
+            });
+
+            // Update the current subtitle text
+            if (currentSub) {
+              setCurrentSubtitleText(currentSub.text);
+            } else {
+              setCurrentSubtitleText('');
+            }
+          }
         }
       }
 
@@ -317,7 +338,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
       videoElement.removeEventListener('seeking', handleSeeking);
       videoElement.removeEventListener('seeked', handleSeeked);
     };
-  }, [videoUrl, setCurrentTime, setDuration, t, onSeek]);
+  }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray]);
 
   // Update VTT subtitles when subtitles change - with deep comparison to prevent infinite loops
   useEffect(() => {
@@ -524,8 +545,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         // Otherwise, convert from startTime/endTime format
         return {
           id: sub.id,
-          start: convertTimeStringToSeconds(sub.startTime),
-          end: convertTimeStringToSeconds(sub.endTime),
+          start: typeof sub.startTime === 'string' ? convertTimeStringToSeconds(sub.startTime) : 0,
+          end: typeof sub.endTime === 'string' ? convertTimeStringToSeconds(sub.endTime) : 0,
           text: sub.text
         };
       });
@@ -589,31 +610,33 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         ) : (
           videoUrl ? (
             <div className="native-video-container">
-              {/* Video quality toggle if optimized version is available */}
-              {optimizedVideoUrl && (
-                <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={useOptimizedPreview}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-                        setUseOptimizedPreview(newValue);
-                        localStorage.setItem('use_optimized_preview', newValue.toString());
-                      }}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                  <span className="toggle-label">
-                    {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
-                  </span>
-                  {useOptimizedPreview && optimizedVideoInfo && (
-                    <span className="quality-info">
-                      {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
-                    </span>
+              {/* Video quality toggle - always show when video is available */}
+              <div className="video-quality-toggle" title={!optimizedVideoUrl ? t('preview.noOptimizedVersion', 'No optimized version available. Process the video with optimization enabled to create one.') : t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={useOptimizedPreview}
+                    onChange={(e) => {
+                      const newValue = e.target.checked;
+                      setUseOptimizedPreview(newValue);
+                      localStorage.setItem('use_optimized_preview', newValue.toString());
+                    }}
+                    disabled={!optimizedVideoUrl}
+                  />
+                  <span className={`toggle-slider ${!optimizedVideoUrl ? 'disabled' : ''}`}></span>
+                </label>
+                <span className="toggle-label">
+                  {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
+                  {!optimizedVideoUrl && (
+                    <span className="toggle-unavailable"> ({t('preview.unavailable', 'unavailable')})</span>
                   )}
-                </div>
-              )}
+                </span>
+                {useOptimizedPreview && optimizedVideoInfo && (
+                  <span className="quality-info">
+                    {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
+                  </span>
+                )}
+              </div>
               <video
                 ref={videoRef}
                 controls
@@ -672,6 +695,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
               {/* Apply subtitle styling to the video element */}
               <style>
                 {`
+                  /* Set CSS variables for custom subtitle styling */
+                  :root {
+                    --subtitle-position: ${subtitleSettings.position || '90'}%;
+                    --subtitle-box-width: ${subtitleSettings.boxWidth || '80'}%;
+                    --subtitle-background-radius: ${subtitleSettings.backgroundRadius || '4'}px;
+                    --subtitle-background-padding: ${subtitleSettings.backgroundPadding || '10'}px;
+                    --subtitle-text-transform: ${subtitleSettings.textTransform || 'none'};
+                    --subtitle-letter-spacing: ${subtitleSettings.letterSpacing || '0'}px;
+                  }
+
+                  /* Basic styling for WebVTT cues */
                   ::cue {
                     background-color: rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity});
                     color: ${subtitleSettings.textColor};
@@ -680,13 +714,53 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                     font-weight: ${subtitleSettings.fontWeight};
                     line-height: ${subtitleSettings.lineSpacing || '1.4'};
                     text-align: ${subtitleSettings.textAlign || 'center'};
-                    text-transform: ${subtitleSettings.textTransform || 'none'};
-                    letter-spacing: ${subtitleSettings.letterSpacing || '0'}px;
-                    text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
                     white-space: pre-line;
+                    text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
+                  }
+
+                  /* Custom subtitle styling for the video container */
+                  .native-video-container {
+                    position: relative;
+                  }
+
+                  /* Style for custom subtitle display */
+                  .custom-subtitle-container {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    width: var(--subtitle-box-width);
+                    margin: 0 auto;
+                    text-align: center;
+                    z-index: 5;
+                    /* Calculate top position based on percentage (0% = top, 100% = bottom) */
+                    bottom: calc(100% - var(--subtitle-position));
+                    transform: translateY(50%);
+                  }
+
+                  .custom-subtitle {
+                    display: inline-block;
+                    background-color: rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity});
+                    color: ${subtitleSettings.textColor};
+                    font-family: ${subtitleSettings.fontFamily};
+                    font-size: ${subtitleSettings.fontSize}px;
+                    font-weight: ${subtitleSettings.fontWeight};
+                    line-height: ${subtitleSettings.lineSpacing || '1.4'};
+                    text-align: ${subtitleSettings.textAlign || 'center'};
+                    text-transform: var(--subtitle-text-transform);
+                    letter-spacing: var(--subtitle-letter-spacing);
+                    padding: var(--subtitle-background-padding);
+                    border-radius: var(--subtitle-background-radius);
+                    text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
+                    max-width: 100%;
+                    word-wrap: break-word;
                   }
                 `}
               </style>
+
+              {/* Custom subtitle display */}
+              <div className="custom-subtitle-container">
+                {currentSubtitleText && <div className="custom-subtitle">{currentSubtitleText}</div>}
+              </div>
             </div>
           ) : (
             <div className="no-video-message">

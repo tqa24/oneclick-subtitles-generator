@@ -8,6 +8,7 @@
 @import './settings/appearance.css';
 @import './settings/api-key.css';
 @import './settings/video-processing.css';
+@import './settings/video-processing-redesign.css'; /* Import redesigned video processing styles */
 @import './settings/cache.css';
 @import './settings/prompts.css';
 @import './settings/prompt-presets.css';

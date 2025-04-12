@@ -51,20 +51,21 @@
 }
 
 /* Dark mode specific scrollbar styling for rules-editor-modal */
-html[data-theme="dark"] .rules-editor-modal {
+[data-theme="dark"] .rules-editor-modal {
   scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
+  background-color: var(--md-surface);
 }
 
-html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-track {
+[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-track {
   background: var(--md-surface-container-highest) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb {
+[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb {
   background-color: var(--md-outline) !important;
   border: 2px solid var(--md-surface-container-highest) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb:hover {
   background-color: var(--md-primary) !important;
 }
 
@@ -102,21 +103,21 @@ html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb:hover {
 }
 
 /* Dark mode specific scrollbar styling */
-html[data-theme="dark"] .rules-editor-modal .modal-content {
+[data-theme="dark"] .rules-editor-modal .modal-content {
   scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
   background-color: var(--md-surface-container-highest);
 }
 
-html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-track {
+[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-track {
   background: var(--md-surface-container-highest) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb {
+[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb {
   background-color: var(--md-outline) !important;
   border: 2px solid var(--md-surface-container-highest) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb:hover {
   background-color: var(--md-primary) !important;
 }
 
@@ -185,21 +186,21 @@ textarea::-webkit-scrollbar-thumb:hover {
 }
 
 /* Dark mode specific scrollbar styling for textarea */
-html[data-theme="dark"] .rules-editor-modal textarea {
+[data-theme="dark"] .rules-editor-modal textarea {
   scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
   background-color: var(--md-surface-container-high);
 }
 
-html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-track {
+[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-track {
   background: var(--md-surface-container-high) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb {
+[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb {
   background-color: var(--md-outline) !important;
   border: 2px solid var(--md-surface-container-high) !important;
 }
 
-html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb:hover {
   background-color: var(--md-primary) !important;
 }
 
