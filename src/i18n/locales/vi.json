@@ -59,6 +59,7 @@
     "optimizingVideo": "Đang tối ưu hóa video để xử lý...",
     "analyzingVideo": "Đang phân tích nội dung video...",
     "preparingVideoAnalysis": "Đang chuẩn bị video để phân tích...",
+    "preparingAnalysisVideo": "Đang chuẩn bị video phân tích với 500 khung hình...",
     "analysisError": "Phân tích video thất bại, tiếp tục với cài đặt mặc định.",
     "srtOnlyMode": "Làm việc chỉ với SRT",
     "documentCompleted": "Tài liệu đã hoàn thành thành công",
