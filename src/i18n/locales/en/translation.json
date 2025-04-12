@@ -25,5 +25,8 @@
   "splittingSubtitles": "Splitting {{count}} subtitles into {{duration}} minute chunks",
   "splitComplete": "Split {{count}} subtitles into {{chunks}} chunks complete",
   "translatingChunk": "Translating chunk {{current}}/{{total}} ({{count}} subtitles)",
-  "translationComplete": "All {{count}} chunks translated successfully"
+  "translationComplete": "All {{count}} chunks translated successfully",
+  "cancel": "Cancel",
+  "cancelTooltip": "Cancel translation process",
+  "cancelled": "Translation cancelled by user"
 }
