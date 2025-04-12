@@ -6,7 +6,7 @@ import {
   extractYoutubeVideoId
 } from '../../utils/videoDownloader';
 import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
-import { subtitlesToVtt, createVttBlobUrl, revokeVttBlobUrl, convertTimeStringToSeconds } from '../../utils/vttUtils';
+import { convertTimeStringToSeconds } from '../../utils/vttUtils';
 import SubtitleSettings from '../SubtitleSettings';
 import '../../styles/VideoPreview.css';
 
@@ -27,8 +27,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
   const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
-  const [originalVttUrl, setOriginalVttUrl] = useState('');
-  const [translatedVttUrl, setTranslatedVttUrl] = useState('');
+  // Native track subtitles disabled - using only custom subtitle display
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') !== 'false';
   });
@@ -36,9 +35,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   // State for custom subtitle display
   const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
-  // Use refs to track previous values to prevent unnecessary updates
-  const prevSubtitlesArrayRef = useRef(null);
-  const prevTranslatedSubtitlesRef = useRef(null);
+  // Native track subtitles disabled - using only custom subtitle display
 
   const [subtitleSettings, setSubtitleSettings] = useState(() => {
     // Try to load settings from localStorage
@@ -340,112 +337,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray]);
 
-  // Update VTT subtitles when subtitles change - with deep comparison to prevent infinite loops
-  useEffect(() => {
-    // Skip if subtitlesArray is the same as before (deep comparison)
-    if (
-      prevSubtitlesArrayRef.current &&
-      subtitlesArray &&
-      prevSubtitlesArrayRef.current.length === subtitlesArray.length &&
-      JSON.stringify(prevSubtitlesArrayRef.current) === JSON.stringify(subtitlesArray)
-    ) {
-      return;
-    }
-
-    // Clean up previous blob URLs
-    if (originalVttUrl) revokeVttBlobUrl(originalVttUrl);
-
-    // Create new VTT for original subtitles
-    if (subtitlesArray && subtitlesArray.length > 0) {
-      const vttContent = subtitlesToVtt(subtitlesArray);
-      const blobUrl = createVttBlobUrl(vttContent);
-      setOriginalVttUrl(blobUrl);
-    } else {
-      setOriginalVttUrl('');
-    }
-
-    // Update the ref with the current value
-    prevSubtitlesArrayRef.current = subtitlesArray;
-
-    return () => {
-      if (originalVttUrl) revokeVttBlobUrl(originalVttUrl);
-    };
-  }, [subtitlesArray]);
-
-  // Update VTT subtitles for translations when they change - with deep comparison
-  useEffect(() => {
-    // Skip if translatedSubtitles is the same as before (deep comparison)
-    if (
-      prevTranslatedSubtitlesRef.current &&
-      translatedSubtitles &&
-      prevTranslatedSubtitlesRef.current.length === translatedSubtitles.length &&
-      JSON.stringify(prevTranslatedSubtitlesRef.current) === JSON.stringify(translatedSubtitles)
-    ) {
-      return;
-    }
-
-    // Clean up previous blob URLs
-    if (translatedVttUrl) revokeVttBlobUrl(translatedVttUrl);
-
-    // Create new VTT for translated subtitles
-    if (translatedSubtitles && translatedSubtitles.length > 0 && subtitlesArray) {
-      const vttContent = subtitlesToVtt(translatedSubtitles, true, subtitlesArray);
-      const blobUrl = createVttBlobUrl(vttContent);
-      setTranslatedVttUrl(blobUrl);
-    } else {
-      setTranslatedVttUrl('');
-    }
-
-    // Update the ref with the current value
-    prevTranslatedSubtitlesRef.current = translatedSubtitles;
-
-    return () => {
-      if (translatedVttUrl) revokeVttBlobUrl(translatedVttUrl);
-    };
-  }, [translatedSubtitles, subtitlesArray]);
-
-  // Update active track when subtitle settings change
-  useEffect(() => {
-    const videoElement = videoRef.current;
-    if (!videoElement) return;
-
-    // Wait for tracks to be loaded
-    const handleTracksLoaded = () => {
-      if (videoElement.textTracks.length > 0) {
-        // Disable all tracks first
-        for (let i = 0; i < videoElement.textTracks.length; i++) {
-          videoElement.textTracks[i].mode = 'hidden';
-        }
-
-        // Enable the appropriate track
-        if (subtitleSettings.showTranslatedSubtitles && translatedVttUrl) {
-          // Find the translated track
-          for (let i = 0; i < videoElement.textTracks.length; i++) {
-            if (videoElement.textTracks[i].language === 'translated') {
-              videoElement.textTracks[i].mode = 'showing';
-              break;
-            }
-          }
-        } else if (originalVttUrl) {
-          // Find the original track
-          for (let i = 0; i < videoElement.textTracks.length; i++) {
-            if (videoElement.textTracks[i].language === 'original') {
-              videoElement.textTracks[i].mode = 'showing';
-              break;
-            }
-          }
-        }
-      }
-    };
-
-    // Call immediately and also set up a listener for loadedmetadata
-    handleTracksLoaded();
-    videoElement.addEventListener('loadedmetadata', handleTracksLoaded);
-
-    return () => {
-      videoElement.removeEventListener('loadedmetadata', handleTracksLoaded);
-    };
-  }, [subtitleSettings.showTranslatedSubtitles, originalVttUrl, translatedVttUrl]);
+  // Native track subtitles disabled - using only custom subtitle display
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
@@ -667,27 +559,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   }}
                 />
 
-                {/* Original subtitles track */}
-                {originalVttUrl && (
-                  <track
-                    kind="subtitles"
-                    src={originalVttUrl}
-                    srcLang="original"
-                    label="Original"
-                    default={!subtitleSettings.showTranslatedSubtitles}
-                  />
-                )}
-
-                {/* Translated subtitles track */}
-                {translatedVttUrl && subtitleSettings.showTranslatedSubtitles && (
-                  <track
-                    kind="subtitles"
-                    src={translatedVttUrl}
-                    srcLang="translated"
-                    label="Translated"
-                    default={subtitleSettings.showTranslatedSubtitles}
-                  />
-                )}
+                {/* Native track subtitles disabled - using only custom subtitle display */}
 
                 {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
               </video>
@@ -705,20 +577,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     --subtitle-letter-spacing: ${subtitleSettings.letterSpacing || '0'}px;
                   }
 
-                  /* Basic styling for WebVTT cues */
-                  ::cue {
-                    background-color: rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)}, ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)}, ${subtitleSettings.opacity});
-                    color: ${subtitleSettings.textColor};
-                    font-family: ${subtitleSettings.fontFamily};
-                    font-size: ${subtitleSettings.fontSize}px;
-                    font-weight: ${subtitleSettings.fontWeight};
-                    line-height: ${subtitleSettings.lineSpacing || '1.4'};
-                    text-align: ${subtitleSettings.textAlign || 'center'};
-                    white-space: pre-line;
-                    text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
-                  }
+                  /* Native track subtitles disabled - using only custom subtitle display */
 
-                  /* Custom subtitle styling for the video container */
+                  /* Video container positioning */
                   .native-video-container {
                     position: relative;
                   }
@@ -748,8 +609,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     text-align: ${subtitleSettings.textAlign || 'center'};
                     text-transform: var(--subtitle-text-transform);
                     letter-spacing: var(--subtitle-letter-spacing);
-                    padding: var(--subtitle-background-padding);
-                    border-radius: var(--subtitle-background-radius);
+                    padding: 8px 12px;
+                    border-radius: 4px;
                     text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
                     max-width: 100%;
                     word-wrap: break-word;
