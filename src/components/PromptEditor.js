@@ -531,6 +531,17 @@ const PromptEditor = ({
             </ul>
           </div>
 
+          <div className="prompt-editor-examples">
+            <h4>Examples of Custom Instructions:</h4>
+            <ul>
+              <li>Maintain a formal/informal tone</li>
+              <li>Use specific terminology or vocabulary</li>
+              <li>Adapt cultural references</li>
+              <li>Preserve humor or wordplay when possible</li>
+            </ul>
+            <p className="prompt-editor-note"><strong>Note:</strong> The system will automatically handle the formatting and structure of the translations. You only need to add your custom instructions.</p>
+          </div>
+
           <div className="prompt-editor-actions">
             <button className="secondary-button" onClick={handleReset}>
               {t('promptEditor.reset', 'Reset')}
