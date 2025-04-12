@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateSubtitles, completeDocument, summarizeDocument } from '../services/geminiService';
+import { translateSubtitles, completeDocument, summarizeDocument, abortAllRequests } from '../services/geminiService';
 import { downloadSRT, downloadJSON, downloadTXT } from '../utils/fileUtils';
 import ModelDropdown from './ModelDropdown';
 import DownloadOptionsModal from './DownloadOptionsModal';
@@ -334,6 +334,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     }
   };
 
+  // Handle cancellation of translation
+  const handleCancelTranslation = () => {
+    console.log('Cancelling translation process...');
+    abortAllRequests();
+    setIsTranslating(false);
+    setError(t('translation.cancelled', 'Translation cancelled by user'));
+  };
+
   // Handle model selection
   const handleModelSelect = (modelId) => {
     setSelectedModel(modelId);
@@ -448,20 +456,36 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             {/* Fifth row: Action buttons */}
             <div className="translation-row action-row">
               <div className="row-content action-content">
-                <button
-                  className="translate-button"
-                  onClick={handleTranslate}
-                  disabled={isTranslating || !targetLanguage.trim()}
-                >
-                  {isTranslating ? (
-                    <>
+                {isTranslating ? (
+                  <>
+                    <button
+                      className="translate-button"
+                      disabled={true}
+                    >
                       <span className="loading-spinner"></span>
                       {t('translation.translating', 'Translating...')}
-                    </>
-                  ) : (
-                    t('translation.translate', 'Translate')
-                  )}
-                </button>
+                    </button>
+                    <button
+                      className="cancel-translation-button"
+                      onClick={handleCancelTranslation}
+                      title={t('translation.cancelTooltip', 'Cancel translation process')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                      {t('translation.cancel', 'Cancel')}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="translate-button"
+                    onClick={handleTranslate}
+                    disabled={!targetLanguage.trim()}
+                  >
+                    {t('translation.translate', 'Translate')}
+                  </button>
+                )}
               </div>
             </div>
 

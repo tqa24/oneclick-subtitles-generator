@@ -146,7 +146,8 @@
 .translate-button,
 .download-translation-button,
 .reset-translation-button,
-.download-process-button {
+.download-process-button,
+.cancel-translation-button {
   padding: 0 1rem; /* Reduced horizontal padding */
   height: 42px;
   border-radius: 21px;
@@ -289,6 +290,21 @@
   background-color: var(--md-surface-3);
 }
 
+.cancel-translation-button {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+  border: none;
+  margin-left: 0.75rem;
+}
+
+.cancel-translation-button:hover {
+  background-color: color-mix(in srgb, var(--md-error), black 10%);
+}
+
+.cancel-translation-button:active {
+  transform: scale(0.98);
+}
+
 .download-process-button {
   background-color: var(--md-primary);
   color: var(--md-on-primary);
@@ -425,7 +441,8 @@
 
   .translate-button,
   .download-translation-button,
-  .reset-translation-button {
+  .reset-translation-button,
+  .cancel-translation-button {
     padding: 0 0.75rem;
     font-size: 0.85rem;
   }
