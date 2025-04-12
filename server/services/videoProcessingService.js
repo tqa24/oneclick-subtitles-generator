@@ -362,10 +362,145 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
   });
 }
 
+/**
+ * Get the total frame count of a video file
+ * @param {string} videoPath - Path to the video file
+ * @returns {Promise<number>} - Total frame count
+ */
+function getVideoFrameCount(videoPath) {
+  return new Promise((resolve, reject) => {
+    const frameCountProbe = spawn('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-count_packets',
+      '-show_entries', 'stream=nb_read_packets',
+      '-of', 'csv=p=0',
+      videoPath
+    ]);
+
+    let frameCountOutput = '';
+
+    frameCountProbe.stdout.on('data', (data) => {
+      frameCountOutput += data.toString();
+    });
+
+    frameCountProbe.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(`Failed to get frame count for ${videoPath}`));
+      }
+
+      const frameCount = parseInt(frameCountOutput.trim());
+      console.log(`Video frame count: ${frameCount}`);
+      resolve(frameCount);
+    });
+
+    frameCountProbe.stderr.on('data', (data) => {
+      console.error(`ffprobe stderr: ${data}`);
+    });
+
+    frameCountProbe.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+/**
+ * Create a smaller video for analysis by extracting 500 frames from the optimized video
+ * @param {string} videoPath - Path to the optimized video file
+ * @param {string} outputPath - Path to save the analysis video
+ * @returns {Promise<Object>} - Result object with analysis video path and metadata
+ */
+function createAnalysisVideo(videoPath, outputPath) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Get the total frame count and duration of the optimized video
+      const frameCount = await getVideoFrameCount(videoPath);
+      const duration = await getMediaDuration(videoPath);
+
+      // Only create analysis video if the frame count is greater than 500
+      if (frameCount <= 500) {
+        console.log('[ANALYSIS-VIDEO] Video has 500 or fewer frames, using optimized video for analysis');
+        console.log(`[ANALYSIS-VIDEO] Frame count: ${frameCount}, path: ${videoPath}`);
+        resolve({
+          path: videoPath,
+          duration,
+          frameCount,
+          isOriginal: true
+        });
+        return;
+      }
+
+      // Calculate the frame selection interval to get exactly 500 frames
+      const frameInterval = frameCount / 500;
+      console.log(`[ANALYSIS-VIDEO] Creating analysis video with 500 frames from ${frameCount} frames (interval: ${frameInterval.toFixed(2)})`);
+      console.log(`[ANALYSIS-VIDEO] Input path: ${videoPath}`);
+      console.log(`[ANALYSIS-VIDEO] Output path: ${outputPath}`);
+
+      // Construct ffmpeg command to select frames and maintain audio
+      const ffmpegArgs = [
+        '-i', videoPath,
+        '-vf', `select='not(mod(n,${Math.round(frameInterval)}))',setpts=N/TB`,
+        '-af', 'asetpts=N/SR/TB',  // Keep audio at original speed
+        '-c:v', 'libx264',
+        '-preset', 'faster',
+        '-crf', '28',  // Lower quality is fine for analysis
+        '-c:a', 'aac',
+        '-b:a', '96k',  // Lower audio quality
+        '-y',  // Overwrite output file if it exists
+        outputPath
+      ];
+
+      const analysisCmd = spawn('ffmpeg', ffmpegArgs);
+
+      analysisCmd.stderr.on('data', (data) => {
+        const output = data.toString();
+        if (output.includes('frame=')) {
+          process.stdout.write('.');
+        }
+        console.log('ffmpeg stderr:', output);
+      });
+
+      analysisCmd.on('close', async (code) => {
+        if (code !== 0) {
+          return reject(new Error('Failed to create analysis video'));
+        }
+
+        try {
+          // Get the duration of the analysis video
+          const analysisDuration = await getMediaDuration(outputPath);
+          const analysisFrameCount = await getVideoFrameCount(outputPath);
+
+          console.log(`[ANALYSIS-VIDEO] Successfully created analysis video with ${analysisFrameCount} frames`);
+          console.log(`[ANALYSIS-VIDEO] Analysis video duration: ${analysisDuration.toFixed(2)}s`);
+          console.log(`[ANALYSIS-VIDEO] Analysis video path: ${outputPath}`);
+
+          resolve({
+            path: outputPath,
+            duration: analysisDuration,
+            frameCount: analysisFrameCount,
+            originalFrameCount: frameCount,
+            frameInterval
+          });
+        } catch (error) {
+          reject(new Error(`Failed to get analysis video metadata: ${error.message}`));
+        }
+      });
+
+      analysisCmd.on('error', (err) => {
+        reject(err);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 module.exports = {
   splitVideoIntoSegments,
   splitMediaIntoSegments,
   getVideoDuration,
   getMediaDuration,
-  optimizeVideo
+  optimizeVideo,
+  createAnalysisVideo,
+  getVideoFrameCount
 };

@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtubeService');
-const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo } = require('../services/videoProcessingService');
+const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo } = require('../services/videoProcessingService');
 
 /**
  * GET /api/video-exists/:videoId - Check if a video exists
@@ -213,12 +213,16 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 
     // Save the uploaded media file
     fs.writeFileSync(mediaPath, req.body);
-    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} saved to ${mediaPath}`);
+    console.log(`[SPLIT-VIDEO] ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} saved to ${mediaPath}`);
+    console.log(`[SPLIT-VIDEO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
 
     // Get segment duration from query params or use default (10 minutes = 600 seconds)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
     const fastSplit = req.query.fastSplit === 'true';
+    // Parse optimizeVideos parameter - default to false to avoid duplication
+    // Check explicitly for 'true' string to ensure we don't optimize unless explicitly requested
     const optimizeVideos = req.query.optimizeVideos === 'true';
+    console.log(`[SPLIT-VIDEO] optimizeVideos parameter: ${req.query.optimizeVideos}, parsed as: ${optimizeVideos}`);
     const optimizedResolution = req.query.optimizedResolution || '360p';
 
     let processPath = mediaPath;
@@ -227,9 +231,11 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     // Optimize video if requested and it's a video (not audio)
     if (optimizeVideos && !isAudio) {
       try {
-        console.log(`Optimizing video to ${optimizedResolution} before splitting`);
+        console.log(`[SPLIT-VIDEO] Optimizing video to ${optimizedResolution} before splitting`);
+        console.log(`[SPLIT-VIDEO] optimizeVideos=${optimizeVideos} (should be false if already optimized)`);
         const optimizedFilename = `optimized_${mediaId}.${fileExtension}`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+        console.log(`[SPLIT-VIDEO] Creating optimized video at: ${optimizedPath}`);
 
         optimizedResult = await optimizeVideo(mediaPath, optimizedPath, {
           resolution: optimizedResolution,
@@ -238,10 +244,10 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 
         // Use the optimized video for splitting
         processPath = optimizedPath;
-        console.log(`Using optimized video for splitting: ${optimizedPath}`);
+        console.log(`[SPLIT-VIDEO] Using optimized video for splitting: ${optimizedPath}`);
       } catch (error) {
-        console.error('Error optimizing video:', error);
-        console.log('Falling back to original video for splitting');
+        console.error('[SPLIT-VIDEO] Error optimizing video:', error);
+        console.log('[SPLIT-VIDEO] Falling back to original video for splitting');
       }
     }
 
@@ -286,7 +292,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
       } : null
     });
   } catch (error) {
-    console.error(`Error splitting ${mediaType}:`, error);
+    console.error(`[SPLIT-VIDEO] Error splitting ${mediaType}:`, error);
     res.status(500).json({
       success: false,
       error: error.message || `Failed to split ${mediaType}`
@@ -296,6 +302,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 
 /**
  * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate
+ * Also creates an analysis video with 1000 frames for Gemini analysis
  */
 router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), async (req, res) => {
   try {
@@ -309,20 +316,37 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), a
     const fileExtension = contentType.split('/')[1] || 'mp4';
     const originalFilename = `original_${timestamp}.${fileExtension}`;
     const optimizedFilename = `optimized_${timestamp}.${fileExtension}`;
+    const analysisFilename = `analysis_500frames_${timestamp}.${fileExtension}`;
     const originalPath = path.join(VIDEOS_DIR, originalFilename);
     const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+    const analysisPath = path.join(VIDEOS_DIR, analysisFilename);
 
     // Save the uploaded video file
     fs.writeFileSync(originalPath, req.body);
-    console.log(`Original video saved to ${originalPath}`);
+    console.log(`[OPTIMIZE-VIDEO] Original video saved to ${originalPath}`);
+    console.log(`[OPTIMIZE-VIDEO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
 
     // Optimize the video
+    console.log(`[OPTIMIZE-VIDEO] Optimizing video to ${resolution} at ${fps}fps`);
+    console.log(`[OPTIMIZE-VIDEO] Optimized video will be saved to: ${optimizedPath}`);
     const result = await optimizeVideo(originalPath, optimizedPath, {
       resolution,
       fps
     });
 
-    // Return the optimized video information
+    // Create an analysis video with 500 frames
+    console.log('[OPTIMIZE-VIDEO] Creating analysis video with 500 frames for Gemini analysis');
+    console.log(`[OPTIMIZE-VIDEO] Analysis video will be saved to: ${analysisPath}`);
+    const analysisResult = await createAnalysisVideo(optimizedPath, analysisPath);
+
+    if (analysisResult.isOriginal) {
+      console.log(`[OPTIMIZE-VIDEO] Video has only ${analysisResult.frameCount} frames, using optimized video for analysis`);
+    } else {
+      console.log(`[OPTIMIZE-VIDEO] Successfully created analysis video with 500 frames from ${analysisResult.originalFrameCount} original frames`);
+      console.log(`[OPTIMIZE-VIDEO] Analysis video saved to: ${analysisResult.path}`);
+    }
+
+    // Return the optimized and analysis video information
     res.json({
       success: true,
       originalVideo: `/videos/${originalFilename}`,
@@ -332,10 +356,23 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), a
       width: result.width,
       height: result.height,
       duration: result.duration,
-      message: `Video optimized successfully to ${result.resolution} at ${result.fps}fps`
+      message: `Video optimized successfully to ${result.resolution} at ${result.fps}fps`,
+      // Include analysis video information
+      analysis: analysisResult.isOriginal ? {
+        // If the video has fewer than 500 frames, we use the optimized video
+        video: `/videos/${optimizedFilename}`,
+        frameCount: analysisResult.frameCount,
+        message: 'Using optimized video for analysis (fewer than 500 frames)'
+      } : {
+        video: `/videos/${analysisFilename}`,
+        frameCount: analysisResult.frameCount,
+        originalFrameCount: analysisResult.originalFrameCount,
+        frameInterval: analysisResult.frameInterval,
+        message: `Created 500-frame analysis video from ${analysisResult.originalFrameCount} original frames`
+      }
     });
   } catch (error) {
-    console.error('Error optimizing video:', error);
+    console.error('[OPTIMIZE-VIDEO] Error optimizing video:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to optimize video'

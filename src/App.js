@@ -136,6 +136,7 @@ function App() {
         setVideoAnalysisResult(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [showRulesEditor, setShowRulesEditor] = useState(false); // Show rules editor modal
   // Initialize transcription rules from localStorage if available
@@ -413,9 +414,11 @@ function App() {
     });
 
     // Check API keys status and show message if needed
-    if (!geminiApiKey || (activeTab === 'youtube-search' && (!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
+    // eslint-disable-next-line no-mixed-operators
+    if (!geminiApiKey || (activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens)))) {
       let message;
 
+      // eslint-disable-next-line no-mixed-operators
       if (!geminiApiKey && activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
         message = t('errors.bothKeysRequired', 'Please set your Gemini API key and configure YouTube authentication in the settings to use this application.');
       } else if (!geminiApiKey) {
@@ -1160,7 +1163,8 @@ function App() {
       setDownloadProgress(0);
       setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
     }
-  }, [selectedVideo, t, setIsDownloading, setDownloadProgress, setStatus, setActiveTab, setUploadedFile, prepareVideoForSegments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVideo, t, setIsDownloading, setDownloadProgress, setStatus, setActiveTab, setUploadedFile, prepareVideoForSegments, isSrtOnlyMode]);
 
   // Effect to detect when subtitles are loaded from cache and prepare video for segments
   useEffect(() => {
@@ -1191,6 +1195,7 @@ function App() {
         handleDownloadAndPrepareYouTubeVideo();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, subtitlesData, uploadedFile, t, prepareVideoForSegments, activeTab, selectedVideo, handleDownloadAndPrepareYouTubeVideo]);
 
   const handleRetryGeneration = async () => {
@@ -1505,9 +1510,8 @@ function App() {
     setShowRulesEditor(true);
     // Close the video analysis modal when opening the rules editor
     setShowVideoAnalysis(false);
-    // Clear localStorage flags to ensure modal stays closed
-    localStorage.removeItem('show_video_analysis');
-    localStorage.removeItem('video_analysis_timestamp');
+    // Save the current analysis result to state but don't clear localStorage flags
+    // This allows us to reopen the modal when the rules editor is closed
     console.log('VideoAnalysisModal should now be closed, showVideoAnalysis:', false);
   };
 
@@ -1793,7 +1797,20 @@ function App() {
       {showRulesEditor && transcriptionRules && (
         <TranscriptionRulesEditor
           isOpen={showRulesEditor}
-          onClose={() => setShowRulesEditor(false)}
+          onClose={(action) => {
+            setShowRulesEditor(false);
+            // Reopen the video analysis modal
+            if (action === 'cancel' || action === 'save') {
+              setShowVideoAnalysis(true);
+              // Set localStorage flag to ensure modal stays open
+              localStorage.setItem('show_video_analysis', 'true');
+              // If we have a video analysis result, make sure it's available
+              if (videoAnalysisResult) {
+                localStorage.setItem('video_analysis_result', JSON.stringify(videoAnalysisResult));
+                localStorage.setItem('video_analysis_timestamp', Date.now().toString());
+              }
+            }
+          }}
           initialRules={transcriptionRules}
           onSave={handleSaveRules}
         />

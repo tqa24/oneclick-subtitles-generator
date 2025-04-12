@@ -282,6 +282,43 @@ const LyricsDisplay = ({
         result = await summarizeDocument(textContent, model, customPrompt);
       }
 
+      // Check if the result is JSON and extract plain text
+      if (result && typeof result === 'string' && (result.trim().startsWith('{') || result.trim().startsWith('['))) {
+        try {
+          const jsonResult = JSON.parse(result);
+          console.log('Detected JSON response:', jsonResult);
+
+          // For summarize feature
+          if (jsonResult.summary) {
+            let plainText = jsonResult.summary;
+
+            // Add key points if available
+            if (jsonResult.keyPoints && Array.isArray(jsonResult.keyPoints) && jsonResult.keyPoints.length > 0) {
+              plainText += '\n\nKey Points:\n';
+              jsonResult.keyPoints.forEach((point, index) => {
+                plainText += `\n${index + 1}. ${point}`;
+              });
+            }
+
+            result = plainText;
+            console.log('Extracted plain text from summary JSON');
+          }
+          // For consolidate feature
+          else if (jsonResult.content) {
+            result = jsonResult.content;
+            console.log('Extracted plain text from content JSON');
+          }
+          // For any other JSON structure
+          else if (jsonResult.text) {
+            result = jsonResult.text;
+            console.log('Extracted plain text from text JSON');
+          }
+        } catch (e) {
+          console.log('Result looks like JSON but failed to parse:', e);
+          // Keep the original result if parsing fails
+        }
+      }
+
       setProcessedDocument(result);
 
       // Show a temporary success message

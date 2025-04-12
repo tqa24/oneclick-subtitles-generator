@@ -28,11 +28,17 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const mediaId = `${mediaType}_${Date.now()}_${mediaFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
     // Get video optimization settings from options
-    const optimizeVideos = options.optimizeVideos !== undefined ? options.optimizeVideos : true; // Default to true
+    // IMPORTANT: Set optimizeVideos to false by default since we're already optimizing in the optimize-video endpoint
+    const optimizeVideos = options.optimizeVideos !== undefined ? options.optimizeVideos : false; // Default to false to avoid duplication
     const optimizedResolution = options.optimizedResolution || '360p'; // Default to 360p
 
     // Create URL with query parameters
-    const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}&optimizeVideos=${optimizeVideos}&optimizedResolution=${optimizedResolution}`;
+    // IMPORTANT: Convert boolean to string 'false' explicitly to ensure server parses it correctly
+    const optimizeVideosStr = optimizeVideos ? 'true' : 'false';
+    const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}&optimizeVideos=${optimizeVideosStr}&optimizedResolution=${optimizedResolution}`;
+
+    console.log(`Calling split-video endpoint with optimizeVideos=${optimizeVideosStr} (should be 'false' to avoid duplication)`);
+    console.log(`File being sent: ${mediaFile.name}, size: ${mediaFile.size} bytes, type: ${mediaFile.type}`);
 
     // Upload the media file
     const response = await fetch(url, {

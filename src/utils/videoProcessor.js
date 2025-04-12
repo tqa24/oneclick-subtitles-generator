@@ -8,12 +8,12 @@ import { getVideoDuration, getMaxSegmentDurationSeconds } from './durationUtils'
 import { processSegment } from '../services/segmentProcessingService';
 import { retrySegmentProcessing } from './segmentManager';
 import { analyzeVideoWithGemini } from '../services/videoAnalysisService';
-import { setTranscriptionRules, clearTranscriptionRules } from './transcriptionRulesStore';
+import { setTranscriptionRules } from './transcriptionRulesStore';
 
 // Re-export functions from other modules
 export { getVideoDuration } from './durationUtils';
 export { retrySegmentProcessing };
-export { setTranscriptionRules, clearTranscriptionRules } from './transcriptionRulesStore';
+export { setTranscriptionRules } from './transcriptionRulesStore';
 
 /**
  * Process a long media file (video or audio) by splitting it into segments and processing each segment
@@ -113,6 +113,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     // Create a blob URL for the optimized video
                     const optimizedVideoUrl = `http://localhost:3004${result.optimizedVideo}`;
 
+                    // Check if we have an analysis video available
+                    const useAnalysisVideo = result.analysis && result.analysis.video;
+                    const videoToFetch = useAnalysisVideo ?
+                        `http://localhost:3004${result.analysis.video}` :
+                        optimizedVideoUrl;
+
+                    // Log which video we're using for analysis
+                    if (useAnalysisVideo) {
+                        console.log(`Using analysis video with 500 frames for Gemini analysis`);
+                        console.log(result.analysis.message);
+                    } else {
+                        console.log('No analysis video available, using optimized video for analysis');
+                    }
+
                     // Fetch the optimized video as a blob
                     const videoResponse = await fetch(optimizedVideoUrl);
                     const videoBlob = await videoResponse.blob();
@@ -120,7 +134,15 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     // Create a File object from the blob
                     const optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
 
-                    // Analyze the optimized video with Gemini before processing
+                    // Fetch the analysis video if available
+                    let analysisFile = optimizedFile;
+                    if (useAnalysisVideo) {
+                        const analysisResponse = await fetch(videoToFetch);
+                        const analysisBlob = await analysisResponse.blob();
+                        analysisFile = new File([analysisBlob], `analysis_${mediaFile.name}`, { type: mediaFile.type });
+                    }
+
+                    // Analyze the video with Gemini before processing
                     onStatusUpdate({
                         message: t('output.analyzingVideo', 'Analyzing video content...'),
                         type: 'loading'
@@ -133,8 +155,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     console.log('videoAnalysisStarted event dispatched');
 
                     try {
-                        // Analyze the optimized video
-                        const analysisResult = await analyzeVideoWithGemini(optimizedFile, onStatusUpdate);
+                        // Analyze the video (using analysis video if available)
+                        const analysisResult = await analyzeVideoWithGemini(analysisFile, onStatusUpdate);
                         console.log('Video analysis result:', analysisResult);
 
                         // Store the analysis result for the App component to use
@@ -275,6 +297,9 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 });
 
                 // Call the optimize-video endpoint
+                console.log(`Calling optimize-video endpoint with resolution=${optimizedResolution}, fps=15`);
+                console.log(`Original file: ${mediaFile.name}, size: ${mediaFile.size} bytes, type: ${mediaFile.type}`);
+
                 const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
                     method: 'POST',
                     body: mediaFile,
@@ -293,6 +318,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 // Create a blob URL for the optimized video
                 const optimizedVideoUrl = `http://localhost:3004${result.optimizedVideo}`;
 
+                // Check if we have an analysis video available
+                const useAnalysisVideo = result.analysis && result.analysis.video;
+                const videoToFetch = useAnalysisVideo ?
+                    `http://localhost:3004${result.analysis.video}` :
+                    optimizedVideoUrl;
+
+                // Log which video we're using for analysis
+                if (useAnalysisVideo) {
+                    console.log(`Using analysis video with 500 frames for Gemini analysis`);
+                    console.log(result.analysis.message);
+                } else {
+                    console.log('No analysis video available, using optimized video for analysis');
+                }
+
                 // Fetch the optimized video as a blob
                 const videoResponse = await fetch(optimizedVideoUrl);
                 const videoBlob = await videoResponse.blob();
@@ -300,11 +339,19 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 // Create a File object from the blob
                 optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
 
+                // Fetch the analysis video if available
+                let analysisFile = optimizedFile;
+                if (useAnalysisVideo) {
+                    const analysisResponse = await fetch(videoToFetch);
+                    const analysisBlob = await analysisResponse.blob();
+                    analysisFile = new File([analysisBlob], `analysis_${mediaFile.name}`, { type: mediaFile.type });
+                }
+
                 // Check if video analysis is enabled in settings
                 const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
 
                 if (useVideoAnalysis) {
-                    // Now analyze the optimized video with Gemini before processing
+                    // Now analyze the video with Gemini before processing
                     onStatusUpdate({
                         message: t('output.analyzingVideo', 'Analyzing video content...'),
                         type: 'loading'
@@ -316,8 +363,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     window.dispatchEvent(analysisEvent);
                     console.log('videoAnalysisStarted event dispatched');
 
-                    // Analyze the optimized video
-                    analysisResult = await analyzeVideoWithGemini(optimizedFile, onStatusUpdate);
+                    // Analyze the video (using analysis video if available)
+                    analysisResult = await analyzeVideoWithGemini(analysisFile, onStatusUpdate);
                     console.log('Video analysis result:', analysisResult);
 
                     // Store the analysis result for the App component to use
@@ -402,7 +449,7 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             },
             true, // Enable fast splitting by default
             {
-                optimizeVideos: false, // We've already optimized the video
+                optimizeVideos: false, // IMPORTANT: We've already optimized the video in the optimize-video endpoint
                 optimizedResolution
             }
         );

@@ -484,6 +484,12 @@ Here are the subtitles:\n\n${subtitlesText}`;
 export const getDefaultSummarizePrompt = (subtitlesText) => {
     return `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
 
+IMPORTANT: Your response should ONLY contain the summary text as plain text.
+DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
+DO NOT structure your response as JSON with title and content fields.
+DO NOT use markdown formatting.
+Just return the plain text of the summary.
+
 IMPORTANT: Your response should ONLY contain the summary text.
 DO NOT include any explanations, comments, headers, or additional text in your response.
 DO NOT include phrases like "Here's a summary" or "In summary" at the beginning.
@@ -1356,8 +1362,35 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             return structuredJson;
         }
 
-        // Handle text response
-        const summarizedText = data.candidates[0]?.content?.parts[0]?.text;
+        // Handle response - could be structured JSON or plain text
+        let summarizedText;
+
+        // Check if we have structured JSON response
+        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
+            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+            console.log('Received structured JSON summary:', structuredJson);
+
+            // Extract the summary text from the structured JSON
+            if (structuredJson.summary) {
+                // Just return the summary text as plain text
+                summarizedText = structuredJson.summary;
+
+                // Optionally add key points if available
+                if (structuredJson.keyPoints && Array.isArray(structuredJson.keyPoints) && structuredJson.keyPoints.length > 0) {
+                    summarizedText += '\n\nKey Points:\n';
+                    structuredJson.keyPoints.forEach((point, index) => {
+                        summarizedText += `\n${index + 1}. ${point}`;
+                    });
+                }
+            } else {
+                // Fallback to stringifying the JSON if no summary field
+                console.warn('Structured JSON response missing summary field');
+                summarizedText = JSON.stringify(structuredJson, null, 2);
+            }
+        } else {
+            // Handle plain text response
+            summarizedText = data.candidates[0]?.content?.parts[0]?.text;
+        }
 
         if (!summarizedText) {
             throw new Error('No summary returned from Gemini');

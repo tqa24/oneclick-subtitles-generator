@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/TranscriptionRulesEditor.css';
 
-const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => {
+const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCancel }) => {
   const { t } = useTranslation();
   const [rules, setRules] = useState(initialRules || {
     atmosphere: '',
@@ -25,7 +25,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
   // Handle array item change
   const handleArrayItemChange = (category, index, field, value) => {
     const updatedArray = [...rules[category]];
-    
+
     if (field) {
       // For objects in arrays (terminology, speakerIdentification)
       updatedArray[index] = {
@@ -36,7 +36,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
       // For simple string arrays
       updatedArray[index] = value;
     }
-    
+
     setRules({
       ...rules,
       [category]: updatedArray
@@ -55,7 +55,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
   const removeArrayItem = (category, index) => {
     const updatedArray = [...rules[category]];
     updatedArray.splice(index, 1);
-    
+
     setRules({
       ...rules,
       [category]: updatedArray
@@ -65,7 +65,15 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
   // Handle save
   const handleSave = () => {
     onSave(rules);
-    onClose();
+    onClose('save');
+  };
+
+  // Handle cancel
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+    onClose('cancel');
   };
 
   if (!isOpen) return null;
@@ -75,9 +83,9 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
       <div className="rules-editor-modal">
         <div className="modal-header">
           <h2>{t('rulesEditor.title', 'Edit Transcription Rules')}</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={handleCancel}>×</button>
         </div>
-        
+
         <div className="modal-content">
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.atmosphere', 'Atmosphere')}</h3>
@@ -88,11 +96,11 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
               rows={3}
             />
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.terminology', 'Terminology & Proper Nouns')}</h3>
             <p className="section-description">{t('rulesEditor.terminologyDescription', 'Add specialized terms, proper nouns, and their definitions')}</p>
-            
+
             {(rules.terminology || []).map((term, index) => (
               <div key={index} className="array-item-row">
                 <div className="term-inputs">
@@ -108,7 +116,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                     className="definition-input"
                   />
                 </div>
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('terminology', index)}
                 >
@@ -116,19 +124,19 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('terminology', { term: '', definition: '' })}
             >
               {t('rulesEditor.addTerm', '+ Add Term')}
             </button>
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.speakerIdentification', 'Speaker Identification')}</h3>
             <p className="section-description">{t('rulesEditor.speakersDescription', 'Add information about different speakers')}</p>
-            
+
             {(rules.speakerIdentification || []).map((speaker, index) => (
               <div key={index} className="array-item-row">
                 <div className="term-inputs">
@@ -144,7 +152,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                     className="definition-input"
                   />
                 </div>
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('speakerIdentification', index)}
                 >
@@ -152,19 +160,19 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('speakerIdentification', { speakerId: '', description: '' })}
             >
               {t('rulesEditor.addSpeaker', '+ Add Speaker')}
             </button>
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.formattingConventions', 'Formatting & Style Conventions')}</h3>
             <p className="section-description">{t('rulesEditor.formattingDescription', 'Add formatting and style rules')}</p>
-            
+
             {(rules.formattingConventions || []).map((convention, index) => (
               <div key={index} className="array-item-row">
                 <input
@@ -173,7 +181,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                   placeholder={t('rulesEditor.conventionPlaceholder', 'Formatting rule...')}
                   className="full-width-input"
                 />
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('formattingConventions', index)}
                 >
@@ -181,19 +189,19 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('formattingConventions', '')}
             >
               {t('rulesEditor.addFormatting', '+ Add Formatting Rule')}
             </button>
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.spellingAndGrammar', 'Spelling, Grammar & Punctuation')}</h3>
             <p className="section-description">{t('rulesEditor.spellingDescription', 'Add spelling, grammar, and punctuation rules')}</p>
-            
+
             {(rules.spellingAndGrammar || []).map((rule, index) => (
               <div key={index} className="array-item-row">
                 <input
@@ -202,7 +210,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                   placeholder={t('rulesEditor.spellingRulePlaceholder', 'Spelling or grammar rule...')}
                   className="full-width-input"
                 />
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('spellingAndGrammar', index)}
                 >
@@ -210,19 +218,19 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('spellingAndGrammar', '')}
             >
               {t('rulesEditor.addSpellingRule', '+ Add Spelling/Grammar Rule')}
             </button>
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.relationships', 'Relationships & Social Hierarchy')}</h3>
             <p className="section-description">{t('rulesEditor.relationshipsDescription', 'Add information about relationships between people')}</p>
-            
+
             {(rules.relationships || []).map((relationship, index) => (
               <div key={index} className="array-item-row">
                 <input
@@ -231,7 +239,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                   placeholder={t('rulesEditor.relationshipPlaceholder', 'Relationship information...')}
                   className="full-width-input"
                 />
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('relationships', index)}
                 >
@@ -239,19 +247,19 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('relationships', '')}
             >
               {t('rulesEditor.addRelationship', '+ Add Relationship')}
             </button>
           </div>
-          
+
           <div className="rules-editor-section">
             <h3>{t('videoAnalysis.additionalNotes', 'Additional Notes')}</h3>
             <p className="section-description">{t('rulesEditor.notesDescription', 'Add any other notes for consistent transcription')}</p>
-            
+
             {(rules.additionalNotes || []).map((note, index) => (
               <div key={index} className="array-item-row">
                 <input
@@ -260,7 +268,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                   placeholder={t('rulesEditor.notePlaceholder', 'Additional note...')}
                   className="full-width-input"
                 />
-                <button 
+                <button
                   className="remove-item-button"
                   onClick={() => removeArrayItem('additionalNotes', index)}
                 >
@@ -268,8 +276,8 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
                 </button>
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="add-item-button"
               onClick={() => addArrayItem('additionalNotes', '')}
             >
@@ -277,9 +285,9 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave }) => 
             </button>
           </div>
         </div>
-        
+
         <div className="modal-footer">
-          <button className="cancel-button" onClick={onClose}>
+          <button className="cancel-button" onClick={handleCancel}>
             {t('common.cancel', 'Cancel')}
           </button>
           <button className="save-button" onClick={handleSave}>

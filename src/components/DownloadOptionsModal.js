@@ -332,6 +332,12 @@ Just return the plain text of the consolidated document.
 Here are the subtitles:\n\n{subtitlesText}`
                     : `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
 
+IMPORTANT: Your response should ONLY contain the summary text as plain text.
+DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
+DO NOT structure your response as JSON with title and content fields.
+DO NOT use markdown formatting.
+Just return the plain text of the summary.
+
 IMPORTANT: Your response should ONLY contain the summary text.
 DO NOT include any explanations, comments, headers, or additional text in your response.
 DO NOT include phrases like "Here's a summary" or "In summary" at the beginning.
