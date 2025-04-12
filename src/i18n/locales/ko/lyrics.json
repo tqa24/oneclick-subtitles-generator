@@ -1,0 +1,13 @@
+{
+  "synchronizedLyrics": "동기화된 자막",
+  "stickyTimingsToggle": "Stick",
+  "timingInstructions": "타임스탬프를 드래그하여 각 자막의 타이밍을 조정하세요. 고정 모드는 그 이후의 모든 자막을 조정합니다.",
+  "editTooltip": "자막 텍스트 편집",
+  "deleteTooltip": "자막 삭제",
+  "insertTooltip": "새 줄 추가",
+  "mergeTooltip": "자막 병합",
+  "insertAbove": "위에 추가",
+  "insertBelow": "아래에 추가",
+  "mergeAbove": "위 자막과 병합",
+  "mergeBelow": "아래 자막과 병합"
+}

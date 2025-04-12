@@ -1,0 +1,13 @@
+{
+  "title": "Select Video Source",
+  "youtubeUrl": "YouTube URL",
+  "youtubeSearch": "Search YouTube",
+  "fileUpload": "Upload File",
+  "enterYoutubeUrl": "Enter YouTube URL",
+  "searchForVideos": "Search for videos",
+  "dragDropText": "Drag & Drop Video or Audio here",
+  "orText": "or",
+  "browse": "Click to browse files",
+  "supportedFormats": "Supported formats: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
+  "maxFileSize": "(Duration doesn't matter, but high-resolution or high-framerate videos can easily overload the model)"
+}

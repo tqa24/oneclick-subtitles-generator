@@ -1,0 +1,12 @@
+{
+  "placeholder": "YouTube URL 입력 (예: youtube.com/watch?v=...)",
+  "instructionsTitle": "사용 방법",
+  "instructionsStep1": "자막을 생성하고 싶은 YouTube 동영상 찾기",
+  "instructionsStep2": "브라우저 주소 표시줄에서 URL 복사",
+  "instructionsStep3": "위 입력창에 URL 붙여넣기",
+  "examplesTitle": "지원되는 URL 형식:",
+  "example1": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "example2": "https://youtu.be/dQw4w9WgXcQ",
+  "example3": "youtube.com/watch?v=dQw4w9WgXcQ",
+  "videoId": "비디오 ID:"
+}

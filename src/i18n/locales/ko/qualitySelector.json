@@ -1,0 +1,9 @@
+{
+  "videoQuality": "동영상 품질",
+  "lowestQuality": "최저 품질 (1시간 이상 동영상에 권장)",
+  "lowQuality": "저 품질",
+  "mediumQuality": "중간 품질 (기본값)",
+  "highQuality": "고 품질",
+  "hdQuality": "HD 품질 (긴 동영상에서 문제 발생 가능)",
+  "longVideoWarning": "1시간 이상의 동영상에는 앱 충돌을 피하기 위해 144p를 사용하세요"
+}

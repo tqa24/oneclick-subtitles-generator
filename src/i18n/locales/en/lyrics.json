@@ -1,0 +1,13 @@
+{
+  "synchronizedLyrics": "Synchronized Subtitles",
+  "stickyTimingsToggle": "Stick",
+  "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles.",
+  "editTooltip": "Edit lyric text",
+  "deleteTooltip": "Delete lyric",
+  "insertTooltip": "Add new line",
+  "mergeTooltip": "Merge lyrics",
+  "insertAbove": "Add above",
+  "insertBelow": "Add below",
+  "mergeAbove": "Merge with above",
+  "mergeBelow": "Merge with below"
+}

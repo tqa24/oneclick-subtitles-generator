@@ -1,0 +1,15 @@
+{
+  "editPrompt": "Chỉnh sửa lệnh",
+  "editPromptTooltip": "Chỉnh sửa lệnh Gemini",
+  "enterPrompt": "Nhập lệnh tùy chỉnh của bạn tại đây...",
+  "availableVariables": "Biến khả dụng:",
+  "variablesInstruction": "Các biến sau được biểu thị bằng các biểu tượng trong vùng văn bản:",
+  "subtitlesTextDesc": "Nội dung văn bản phụ đề",
+  "targetLanguageDesc": "Ngôn ngữ đích (cho bản dịch)",
+  "reset": "Khôi phục mặc định",
+  "editConsolidatePrompt": "Chỉnh sửa lệnh hợp nhất",
+  "editSummarizePrompt": "Chỉnh sửa lệnh tóm tắt",
+  "editTranslationPrompt": "Chỉnh sửa lệnh dịch",
+  "customizePromptDesc": "Tùy chỉnh cách Gemini xử lý nội dung của bạn.",
+  "customizeTranslationDesc": "Tùy chỉnh cách Gemini dịch phụ đề của bạn."
+}

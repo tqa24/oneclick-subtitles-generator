@@ -1,0 +1,10 @@
+{
+  "gemini25Pro": "Gemini 2.5 Pro",
+  "gemini20FlashThinking": "Gemini 2.0 Flash Thinking",
+  "gemini20Flash": "Gemini 2.0 Flash",
+  "gemini20FlashLite": "Gemini 2.0 Flash Lite",
+  "bestAccuracy": "최고 정확도",
+  "highAccuracy": "높은 정확도",
+  "balancedModel": "균형 잡힌",
+  "fastestModel": "가장 빠름"
+}

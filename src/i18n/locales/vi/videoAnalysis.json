@@ -1,0 +1,20 @@
+{
+  "title": "Kết quả phân tích video",
+  "recommendedPreset": "Mẫu đề xuất",
+  "transcriptionRules": "Quy tắc phiên âm",
+  "rulesDescription": "Một bộ quy tắc đã được tạo ra để đảm bảo phiên âm nhất quán cho video này.",
+  "previewRules": "Xem trước & Chỉnh sửa quy tắc",
+  "useDefaultPreset": "Sử dụng mẫu mặc định của tôi",
+  "useRecommended": "Sử dụng đề xuất",
+  "editRules": "Chỉnh sửa quy tắc",
+  "continueWithRules": "Tiếp tục với các quy tắc này",
+  "atmosphere": "Bối cảnh",
+  "terminology": "Thuật ngữ & Tên riêng",
+  "speakerIdentification": "Nhận diện người nói",
+  "formattingConventions": "Định dạng & Quy ước văn phong",
+  "spellingAndGrammar": "Chính tả, Ngữ pháp & Dấu câu",
+  "relationships": "Mối quan hệ & Thứ bậc xã hội",
+  "additionalNotes": "Ghi chú bổ sung",
+  "autoSelectCountdown": "Tự động chọn mẫu đề xuất trong (nhấp bất kỳ đâu để hủy)",
+  "seconds": "giây"
+}

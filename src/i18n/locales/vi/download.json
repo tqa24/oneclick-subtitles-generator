@@ -1,0 +1,19 @@
+{
+  "options": "Tùy chọn tải xuống & xử lý",
+  "subtitleSource": "Nguồn phụ đề",
+  "original": "Gốc",
+  "translated": "Đã dịch",
+  "fileFormat": "Định dạng tập tin",
+  "downloadFiles": "Tải xuống tập tin",
+  "processText": "Xử lý văn bản",
+  "processType": "Loại xử lý",
+  "selectModel": "Chọn mô hình",
+  "selectModelForProcessing": "Chọn mô hình để xử lý",
+  "download": "Tải xuống",
+  "process": "Xử lý",
+  "consolidate": "Tài liệu hoàn chỉnh (TXT)",
+  "summarize": "Tóm tắt (TXT)",
+  "txtNoTimings": "TXT (không có thời gian)",
+  "consolidateExplanation": "Chuyển đổi phụ đề thành một tài liệu mạch lạc, cải thiện lưu chảy và khả năng đọc trong khi vẫn giữ nguyên ý nghĩa ban đầu.",
+  "summarizeExplanation": "Tạo bản tóm tắt ngắn gọn về các điểm chính và thông tin quan trọng, với độ dài khoảng 1/3 so với văn bản gốc."
+}

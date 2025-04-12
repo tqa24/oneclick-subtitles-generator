@@ -1,0 +1,13 @@
+{
+  "synchronizedLyrics": "Phụ đề đồng bộ hóa",
+  "stickyTimingsToggle": "Stick",
+  "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Stick\" sẽ điều chỉnh tất cả phụ đề theo sau.",
+  "editTooltip": "Chỉnh sửa văn bản phụ đề",
+  "deleteTooltip": "Xóa phụ đề",
+  "insertTooltip": "Thêm dòng mới",
+  "mergeTooltip": "Gộp phụ đề",
+  "insertAbove": "Thêm vào trên",
+  "insertBelow": "Thêm vào dưới",
+  "mergeAbove": "Gộp với phụ đề trên",
+  "mergeBelow": "Gộp với phụ đề dưới"
+}

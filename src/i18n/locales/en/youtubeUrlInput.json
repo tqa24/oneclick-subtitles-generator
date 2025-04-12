@@ -1,0 +1,12 @@
+{
+  "placeholder": "Enter YouTube URL (e.g., youtube.com/watch?v=...)",
+  "instructionsTitle": "How to use",
+  "instructionsStep1": "Find a YouTube video you want to generate subtitles for",
+  "instructionsStep2": "Copy the URL from your browser's address bar",
+  "instructionsStep3": "Paste the URL in the input box above",
+  "examplesTitle": "Supported URL formats:",
+  "example1": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "example2": "https://youtu.be/dQw4w9WgXcQ",
+  "example3": "youtube.com/watch?v=dQw4w9WgXcQ",
+  "videoId": "Video ID:"
+}

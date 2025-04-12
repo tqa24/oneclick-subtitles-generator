@@ -1,0 +1,15 @@
+{
+  "editPrompt": "프롬프트 편집",
+  "editPromptTooltip": "Gemini 프롬프트 편집",
+  "enterPrompt": "여기에 사용자 정의 프롬프트를 입력하세요...",
+  "availableVariables": "사용 가능한 변수:",
+  "variablesInstruction": "다음 변수들은 텍스트 영역에서 아이콘으로 표시됩니다:",
+  "subtitlesTextDesc": "자막 텍스트 내용",
+  "targetLanguageDesc": "대상 언어 (번역용)",
+  "reset": "기본값으로 초기화",
+  "editConsolidatePrompt": "통합 프롬프트 편집",
+  "editSummarizePrompt": "요약 프롬프트 편집",
+  "editTranslationPrompt": "번역 프롬프트 편집",
+  "customizePromptDesc": "Gemini가 콘텐츠를 처리하는 방법을 사용자 정의하세요.",
+  "customizeTranslationDesc": "Gemini가 자막을 번역하는 방법을 사용자 정의하세요."
+}
