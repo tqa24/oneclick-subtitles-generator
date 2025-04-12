@@ -39,6 +39,29 @@ export const secondsToSrtTime = (seconds) => {
 };
 
 /**
+ * Clean subtitle text by removing any SRT formatting that might be embedded in it
+ * @param {string} text - The subtitle text that might contain SRT formatting
+ * @returns {string} - Cleaned text without SRT formatting
+ */
+export const cleanSubtitleText = (text) => {
+  if (!text) return '';
+
+  // Remove any SRT entry numbers at the beginning of lines
+  let cleanedText = text.replace(/^"?\d+\s*$/gm, '');
+
+  // Remove timestamp lines (00:00:00,000 --> 00:00:00,000)
+  cleanedText = cleanedText.replace(/^\d{2}:\d{2}:\d{2},\d{3}\s*-->\s*\d{2}:\d{2}:\d{2},\d{3}\s*$/gm, '');
+
+  // Remove any quotes that might be wrapping the entire text
+  cleanedText = cleanedText.replace(/^"|"$/g, '');
+
+  // Remove any empty lines that might have been created
+  cleanedText = cleanedText.split('\n').filter(line => line.trim()).join('\n');
+
+  return cleanedText.trim();
+};
+
+/**
  * Generate SRT content from subtitles
  * @param {Array} subtitles - Array of subtitle objects
  * @returns {string} - SRT content
@@ -81,7 +104,10 @@ export const generateSrtContent = (subtitles) => {
       endTime = '00:00:05,000';
     }
 
-    return `${index + 1}\n${startTime} --> ${endTime}\n${subtitle.text}`;
+    // Clean the subtitle text to remove any SRT formatting that might be embedded in it
+    const cleanedText = cleanSubtitleText(subtitle.text);
+
+    return `${index + 1}\n${startTime} --> ${endTime}\n${cleanedText}`;
   }).join('\n\n');
 };
 
