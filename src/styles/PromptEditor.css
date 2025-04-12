@@ -410,3 +410,38 @@
 .prompt-editor-actions .primary-button:hover {
   background-color: color-mix(in srgb, var(--md-primary), black 10%);
 }
+
+/* Examples section */
+.prompt-editor-examples {
+  background-color: var(--md-surface-2);
+  padding: 16px;
+  border-radius: var(--md-shape-medium);
+  border-left: 4px solid var(--md-secondary);
+  margin-top: 8px;
+}
+
+.prompt-editor-examples h4 {
+  margin: 0 0 8px 0;
+  font-size: var(--md-title-small-size);
+  font-weight: var(--md-title-small-weight);
+  color: var(--md-on-surface);
+}
+
+.prompt-editor-examples ul {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.prompt-editor-examples li {
+  margin-bottom: 4px;
+  color: var(--md-on-surface-variant);
+}
+
+.prompt-editor-note {
+  margin: 12px 0 0 0;
+  padding: 8px;
+  background-color: var(--md-surface-3);
+  border-radius: var(--md-shape-small);
+  font-size: var(--md-body-small-size);
+  color: var(--md-on-surface-variant);
+}

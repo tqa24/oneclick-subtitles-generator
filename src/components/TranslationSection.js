@@ -505,24 +505,10 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
               onClose={() => setIsPromptEditorOpen(false)}
               initialPrompt={customTranslationPrompt || `Translate the following subtitles to {targetLanguage}.
 
-IMPORTANT: You MUST preserve the exact SRT format with numbers and timestamps.
-DO NOT modify the timestamps or subtitle numbers.
-ONLY translate the text content between timestamps and blank lines.
-DO NOT include any explanations, comments, or additional text in your response.
-
-Format must be exactly:
-1
-00:01:23,456 --> 00:01:26,789
-Translated text here
-
-2
-00:01:27,123 --> 00:01:30,456
-Next translated text here
-
-Here are the subtitles to translate:\n\n{subtitlesText}`}
+{subtitlesText}`}
               onSave={handleSavePrompt}
               title={t('promptEditor.editTranslationPrompt', 'Edit Translation Prompt')}
-              description={t('promptEditor.customizeTranslationDesc', 'Customize how Gemini translates your subtitles.')}
+              description={t('promptEditor.customizeTranslationDesc', 'Add custom instructions for translation. The system will automatically handle formatting.')}
             />
           </>
         ) : (
