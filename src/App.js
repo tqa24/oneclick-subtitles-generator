@@ -21,6 +21,7 @@ import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
 import { abortAllRequests, PROMPT_PRESETS } from './services/geminiService';
+import { abortVideoAnalysis } from './services/videoAnalysisService';
 import { parseSrtContent } from './utils/srtParser';
 import { splitVideoOnServer } from './utils/videoSplitter';
 import { getVideoDuration, getMaxSegmentDurationSeconds } from './utils/durationUtils';
@@ -41,7 +42,7 @@ function App() {
   const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
   const [optimizeVideos, setOptimizeVideos] = useState(localStorage.getItem('optimize_videos') !== 'false');
   const [optimizedResolution, setOptimizedResolution] = useState(localStorage.getItem('optimized_resolution') || '360p');
-  const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') === 'true');
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') !== 'false');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [currentDownloadId, setCurrentDownloadId] = useState(null); // Track the current downloading video ID
@@ -341,7 +342,7 @@ function App() {
       }
 
       if (event.key === 'use_optimized_preview' || !event.key) {
-        const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true';
+        const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false';
         setUseOptimizedPreview(newUseOptimizedPreview);
       }
 
@@ -1661,6 +1662,18 @@ function App() {
                       }, 1000);
                       // Abort all ongoing Gemini API requests
                       abortAllRequests();
+                      // Abort any active video analysis
+                      const analysisAborted = abortVideoAnalysis();
+                      if (analysisAborted) {
+                        // If video analysis was aborted, update the status
+                        setStatus({ message: t('output.videoAnalysisAborted', 'Video analysis aborted'), type: 'warning' });
+                        // Clear video analysis state
+                        localStorage.removeItem('show_video_analysis');
+                        localStorage.removeItem('video_analysis_timestamp');
+                        localStorage.removeItem('video_analysis_result');
+                        setShowVideoAnalysis(false);
+                        setVideoAnalysisResult(null);
+                      }
                       // Reset retrying state immediately
                       setIsRetrying(false);
                       // The state will be updated by the event listener in useSubtitles hook

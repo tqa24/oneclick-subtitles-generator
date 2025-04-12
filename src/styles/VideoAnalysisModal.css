@@ -169,13 +169,17 @@
 
 .timer {
   font-weight: bold;
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: var(--md-primary);
   margin: 0 6px;
   display: inline-block;
   background-color: var(--md-primary-container);
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 8px;
+  min-width: 40px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: pulse 1s infinite;
 }
 
 .modal-footer {

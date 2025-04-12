@@ -30,7 +30,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const [originalVttUrl, setOriginalVttUrl] = useState('');
   const [translatedVttUrl, setTranslatedVttUrl] = useState('');
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
-    return localStorage.getItem('use_optimized_preview') === 'true';
+    return localStorage.getItem('use_optimized_preview') !== 'false';
   });
 
   // Use refs to track previous values to prevent unnecessary updates
