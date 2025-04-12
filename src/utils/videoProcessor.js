@@ -23,6 +23,9 @@ export { setTranscriptionRules } from './transcriptionRulesStore';
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
+    // Set processing flag to indicate we're working on a video
+    localStorage.setItem('video_processing_in_progress', 'true');
+    console.log('Set video_processing_in_progress flag to true');
     // Determine if this is a video or audio file based on MIME type
     const isAudio = mediaFile.type.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';

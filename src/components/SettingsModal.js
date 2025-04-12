@@ -80,6 +80,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useStructuredOutput, setUseStructuredOutput] = useState(true); // Default to using structured output
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash-lite'); // Default to Flash Lite
+  const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
@@ -133,6 +135,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientSecret: '',
     useStructuredOutput: true,
     useVideoAnalysis: true,
+    videoAnalysisModel: 'gemini-2.0-flash-lite',
+    videoAnalysisTimeout: '20',
     optimizeVideos: true,
     optimizedResolution: '360p',
     useOptimizedPreview: false
@@ -150,6 +154,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedUseStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true if not set
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash-lite'; // Default to Flash Lite
+      const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUserPresets = getUserPromptPresets();
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
@@ -188,6 +194,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setUseStructuredOutput(savedUseStructuredOutput);
       setUseVideoAnalysis(savedUseVideoAnalysis);
+      setVideoAnalysisModel(savedVideoAnalysisModel);
+      setVideoAnalysisTimeout(savedVideoAnalysisTimeout);
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUserPromptPresets(savedUserPresets);
       setUseOAuth(savedUseOAuth);
@@ -572,6 +580,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientSecret !== originalSettings.youtubeClientSecret ||
       useStructuredOutput !== originalSettings.useStructuredOutput ||
       useVideoAnalysis !== originalSettings.useVideoAnalysis ||
+      videoAnalysisModel !== originalSettings.videoAnalysisModel ||
+      videoAnalysisTimeout !== originalSettings.videoAnalysisTimeout ||
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview;
@@ -579,8 +589,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(settingsChanged);
   }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useStructuredOutput, useVideoAnalysis, optimizeVideos, optimizedResolution,
-      useOptimizedPreview, originalSettings]);
+      youtubeClientSecret, useStructuredOutput, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
+      optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
 
   // Handle save button click
   const handleSave = () => {
@@ -594,6 +604,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
     localStorage.setItem('use_structured_output', useStructuredOutput.toString());
     localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
+    localStorage.setItem('video_analysis_model', videoAnalysisModel);
+    localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
@@ -621,6 +633,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientSecret,
       useStructuredOutput,
       useVideoAnalysis,
+      videoAnalysisModel,
+      videoAnalysisTimeout,
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview
@@ -1140,8 +1154,47 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     {t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}
                   </label>
                   <p className="setting-description">
-                    {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini 2.0 Flash to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
+                    {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
                   </p>
+                </div>
+
+                <div className="video-analysis-model-setting">
+                  <label htmlFor="video-analysis-model">
+                    {t('settings.videoAnalysisModel', 'Analysis Model')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.videoAnalysisModelDescription', 'Select the Gemini model to use for video analysis. Flash Lite is faster but less detailed, while Flash is more thorough but slower.')}
+                  </p>
+                  <select
+                    id="video-analysis-model"
+                    value={videoAnalysisModel}
+                    onChange={(e) => setVideoAnalysisModel(e.target.value)}
+                    className="video-analysis-model-select"
+                    disabled={!useVideoAnalysis}
+                  >
+                    <option value="gemini-2.0-flash-lite">{t('settings.modelFlashLite', 'Gemini 2.0 Flash Lite (Faster)')}</option>
+                    <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
+                  </select>
+                </div>
+
+                <div className="video-analysis-timeout-setting">
+                  <label htmlFor="video-analysis-timeout">
+                    {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.videoAnalysisTimeoutDescription', 'Set how long to wait for user input before automatically proceeding with the recommended preset.')}
+                  </p>
+                  <select
+                    id="video-analysis-timeout"
+                    value={videoAnalysisTimeout}
+                    onChange={(e) => setVideoAnalysisTimeout(e.target.value)}
+                    className="video-analysis-timeout-select"
+                    disabled={!useVideoAnalysis}
+                  >
+                    <option value="none">{t('settings.timeoutNone', 'No Timeout')}</option>
+                    <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
+                    <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
+                  </select>
                 </div>
               </div>
 

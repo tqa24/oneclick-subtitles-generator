@@ -233,8 +233,17 @@
     "structuredOutputSetting": "Structured Output",
     "videoAnalysis": "Video Analysis",
     "useVideoAnalysis": "Preset Detect + Context Memory/Rules",
-    "useVideoAnalysisDescription": "Before splitting videos, analyzing the whole video with Gemini 2.0 Flash to determine the best prompt preset and generate transcription rules. Disable for faster processing.",
+    "useVideoAnalysisDescription": "Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.",
     "videoAnalysisSection": "Video Analysis",
+    "videoAnalysisModel": "Analysis Model",
+    "videoAnalysisModelDescription": "Select the Gemini model to use for video analysis. Flash Lite is faster but less detailed, while Flash is more thorough but slower.",
+    "modelFlashLite": "Gemini 2.0 Flash Lite (Faster)",
+    "modelFlash": "Gemini 2.0 Flash (More Detailed)",
+    "videoAnalysisTimeout": "Analysis Timeout",
+    "videoAnalysisTimeoutDescription": "Set how long to wait for user input before automatically proceeding with the recommended preset.",
+    "timeoutNone": "No Timeout",
+    "timeout10Seconds": "10 Seconds",
+    "timeout20Seconds": "20 Seconds",
     "videoOptimization": "Video Optimization",
     "optimizeVideos": "Automatically optimize uploaded videos",
     "optimizeVideosDescription": "Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.",
@@ -507,7 +516,9 @@
     "formattingConventions": "Formatting & Style Conventions",
     "spellingAndGrammar": "Spelling, Grammar & Punctuation",
     "relationships": "Relationships & Social Hierarchy",
-    "additionalNotes": "Additional Notes"
+    "additionalNotes": "Additional Notes",
+    "autoSelectCountdown": "Auto-selecting recommended preset in (click anywhere to cancel)",
+    "seconds": "seconds"
   },
 
   "rulesEditor": {

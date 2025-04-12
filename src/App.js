@@ -61,20 +61,35 @@ function App() {
     console.log('videoAnalysisResult changed:', videoAnalysisResult);
   }, [videoAnalysisResult]);
 
-  // Check localStorage for video analysis data on mount
+  // Clear status messages and video analysis state on mount
   useEffect(() => {
+    // Clear any lingering status messages on page load
+    setStatus({});
+
+    // Clear video processing flag
+    localStorage.removeItem('video_processing_in_progress');
+
+    // Check if there's an active video analysis in progress
     const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
     const timestamp = localStorage.getItem('video_analysis_timestamp');
 
     // Check if the analysis is stale (older than 5 minutes)
     const isStale = timestamp && (Date.now() - parseInt(timestamp, 10) > 5 * 60 * 1000);
 
-    if (isStale) {
-      // Clear stale analysis data
-      console.log('Clearing stale video analysis data');
+    // Always clear video analysis data on page refresh
+    // Check if this is a page refresh using a more modern approach
+    const pageWasReloaded = window.performance &&
+      (window.performance.getEntriesByType('navigation')[0]?.type === 'reload' ||
+       document.referrer === document.location.href);
+
+    if (isStale || pageWasReloaded) {
+      // Clear analysis data
+      console.log('Clearing video analysis data on page refresh or stale data');
       localStorage.removeItem('show_video_analysis');
       localStorage.removeItem('video_analysis_timestamp');
       localStorage.removeItem('video_analysis_result');
+      setShowVideoAnalysis(false);
+      setVideoAnalysisResult(null);
       return;
     }
 
@@ -94,6 +109,8 @@ function App() {
         localStorage.removeItem('show_video_analysis');
         localStorage.removeItem('video_analysis_timestamp');
         localStorage.removeItem('video_analysis_result');
+        setShowVideoAnalysis(false);
+        setVideoAnalysisResult(null);
       }
     }
   }, []);

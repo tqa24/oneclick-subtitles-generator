@@ -6,7 +6,9 @@
 .waveform-setting,
 .optimize-videos-setting,
 .optimized-resolution-setting,
-.use-optimized-preview-setting {
+.use-optimized-preview-setting,
+.video-analysis-model-setting,
+.video-analysis-timeout-setting {
   margin-top: 0.5rem;
   margin-bottom: 1.5rem;
 }
@@ -17,7 +19,9 @@
 .waveform-setting label,
 .optimize-videos-setting label,
 .optimized-resolution-setting label,
-.use-optimized-preview-setting label {
+.use-optimized-preview-setting label,
+.video-analysis-model-setting label,
+.video-analysis-timeout-setting label {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -34,7 +38,9 @@
 .segment-duration-select,
 .gemini-model-select,
 .time-format-select,
-.optimized-resolution-select {
+.optimized-resolution-select,
+.video-analysis-model-select,
+.video-analysis-timeout-select {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: var(--md-shape-pill);
@@ -58,7 +64,9 @@
 .segment-duration-select:focus,
 .gemini-model-select:focus,
 .time-format-select:focus,
-.optimized-resolution-select:focus {
+.optimized-resolution-select:focus,
+.video-analysis-model-select:focus,
+.video-analysis-timeout-select:focus {
   outline: none;
   border-color: var(--md-primary);
   box-shadow: var(--md-elevation-level2);
@@ -67,7 +75,9 @@
 .segment-duration-select:hover,
 .gemini-model-select:hover,
 .time-format-select:hover,
-.optimized-resolution-select:hover {
+.optimized-resolution-select:hover,
+.video-analysis-model-select:hover,
+.video-analysis-timeout-select:hover {
   border-color: var(--md-primary-container);
   background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
   transform: translateY(-1px);
@@ -78,7 +88,9 @@
 .segment-duration-select option,
 .gemini-model-select option,
 .time-format-select option,
-.optimized-resolution-select option {
+.optimized-resolution-select option,
+.video-analysis-model-select option,
+.video-analysis-timeout-select option {
   background-color: var(--md-surface-2);
   color: var(--md-on-surface);
   padding: 0.75rem;

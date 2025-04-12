@@ -18,13 +18,13 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
       throw new Error('Gemini API key not found');
     }
 
-    // Always use Gemini 2.0 Flash for analysis
-    const MODEL = "gemini-2.0-flash";
-    
+    // Get the selected model from localStorage or use the default
+    const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.0-flash-lite";
+
     // Convert the video file to base64
     onStatusUpdate({ message: 'Preparing video for analysis...', type: 'loading' });
     const base64Data = await fileToBase64(videoFile);
-    
+
     // Create the request data with the analysis prompt
     const analysisPrompt = `You are an expert video and audio content analyzer. Analyze this video and provide:
 
@@ -69,9 +69,9 @@ Provide your analysis in a structured format that can be used to guide the trans
 
     // Add response schema for structured output
     requestData = addResponseSchema(requestData, createVideoAnalysisSchema());
-    
+
     onStatusUpdate({ message: 'Analyzing video content...', type: 'loading' });
-    
+
     // Call the Gemini API
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
@@ -90,19 +90,19 @@ Provide your analysis in a structured format that can be used to guide the trans
     }
 
     const data = await response.json();
-    
+
     // Check if this is a structured JSON response
     if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
       console.log('Received structured JSON analysis response');
       return data.candidates[0].content.parts[0].structuredJson;
     }
-    
+
     // If not structured, try to parse the text response
     const resultText = data.candidates[0]?.content?.parts[0]?.text;
     if (!resultText) {
       throw new Error('No analysis returned from Gemini');
     }
-    
+
     // Try to parse the text as JSON
     try {
       return JSON.parse(resultText);
