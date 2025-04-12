@@ -58,6 +58,7 @@
     "splittingVideo": "Splitting video into segments...",
     "optimizingVideo": "Optimizing video for processing...",
     "analyzingVideo": "Analyzing video content...",
+    "preparingVideoAnalysis": "Preparing video for analysis...",
     "analysisError": "Video analysis failed, proceeding with default settings.",
     "srtOnlyMode": "Working with SRT only",
     "documentCompleted": "Document completed successfully",
@@ -493,6 +494,19 @@
     "longVideoWarning": "For videos longer than 1 hour, use 144p to avoid app crashes"
   },
 
+  "preview": {
+    "videoQualityToggle": "Toggle between original and optimized video quality",
+    "optimizedQuality": "Optimized Quality",
+    "originalQuality": "Original Quality",
+    "downloading": "Downloading video..."
+  },
+
+  "srtUpload": {
+    "buttonText": "Upload SRT",
+    "tooltip": "Upload your own SRT file",
+    "processing": "Processing..."
+  },
+
   "timeline": {
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
@@ -545,5 +559,11 @@
     "notesDescription": "Add any other notes for consistent transcription",
     "notePlaceholder": "Additional note...",
     "addNote": "+ Add Note"
+  },
+
+  "fileUpload": {
+    "remove": "Remove",
+    "sizeError": "File size exceeds the maximum limit of {{size}} MB.",
+    "formatError": "Unsupported file format. Please upload a supported video or audio file."
   }
 }

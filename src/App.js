@@ -16,7 +16,7 @@ import SrtUploadButton from './components/SrtUploadButton';
 import VideoAnalysisModal from './components/VideoAnalysisModal';
 import TranscriptionRulesEditor from './components/TranscriptionRulesEditor';
 import { useSubtitles } from './hooks/useSubtitles';
-import { setTranscriptionRules, getTranscriptionRules, clearTranscriptionRules } from './utils/transcriptionRulesStore';
+import { setTranscriptionRules, getTranscriptionRules } from './utils/transcriptionRulesStore';
 import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
@@ -630,6 +630,9 @@ function App() {
         setSubtitlesData(parsedSubtitles);
         setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
         return;
+      } else {
+        // If we have a video source, make sure we're not in SRT-only mode
+        setIsSrtOnlyMode(false);
       }
 
       // If we're in YouTube tabs, we need to download the video first
@@ -1126,6 +1129,11 @@ function App() {
         // Set the uploaded file
         setUploadedFile(file);
 
+        // If we're in SRT-only mode, switch to normal mode since we now have a video
+        if (isSrtOnlyMode) {
+          setIsSrtOnlyMode(false);
+        }
+
         // Reset downloading state
         setIsDownloading(false);
         setDownloadProgress(100);
@@ -1389,7 +1397,13 @@ function App() {
     setUploadedFile(null);
     setStatus({}); // Reset status
     setSubtitlesData(null); // Reset subtitles data
-    setIsSrtOnlyMode(false); // Reset SRT-only mode
+
+    // Only reset SRT-only mode if we don't have subtitles data in localStorage
+    const subtitlesData = localStorage.getItem('subtitles_data');
+    if (!subtitlesData) {
+      setIsSrtOnlyMode(false); // Reset SRT-only mode
+    }
+
     localStorage.removeItem('current_video_url');
     localStorage.removeItem('current_file_url');
     localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
@@ -1527,6 +1541,8 @@ function App() {
             uploadedFile={uploadedFile}
             setUploadedFile={setUploadedFile}
             apiKeysSet={apiKeysSet}
+            isSrtOnlyMode={isSrtOnlyMode}
+            setIsSrtOnlyMode={setIsSrtOnlyMode}
           />
 
           {/* Consistent layout container for buttons and output */}
