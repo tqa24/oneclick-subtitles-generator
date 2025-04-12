@@ -332,17 +332,22 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     localStorage.setItem('show_video_analysis', 'true');
                     localStorage.setItem('video_analysis_timestamp', Date.now().toString());
 
-                    // Add a small delay to ensure the modal is shown
+                    // Add a small delay to ensure the modal is shown, but only if it's not already shown
                     setTimeout(() => {
-                        console.log('Forcing modal to show after delay');
-                        // Dispatch events again after a delay
-                        const startEvent = new CustomEvent('videoAnalysisStarted');
-                        window.dispatchEvent(startEvent);
+                        // Check if the modal should still be shown
+                        if (localStorage.getItem('show_video_analysis') === 'true') {
+                            console.log('Forcing modal to show after delay');
+                            // Dispatch events again after a delay
+                            const startEvent = new CustomEvent('videoAnalysisStarted');
+                            window.dispatchEvent(startEvent);
 
-                        const completeEvent = new CustomEvent('videoAnalysisComplete', {
-                            detail: analysisResult
-                        });
-                        window.dispatchEvent(completeEvent);
+                            const completeEvent = new CustomEvent('videoAnalysisComplete', {
+                                detail: analysisResult
+                            });
+                            window.dispatchEvent(completeEvent);
+                        } else {
+                            console.log('Not showing modal after delay because show_video_analysis is not true');
+                        }
                     }, 500);
 
                     // Create a promise that will be resolved when the user makes a choice
@@ -362,6 +367,12 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     if (userChoice.transcriptionRules) {
                         setTranscriptionRules(userChoice.transcriptionRules);
                     }
+
+                    // Update status message to indicate we're moving to the next step
+                    onStatusUpdate({
+                        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+                        type: 'loading'
+                    });
                 } else {
                     console.log('Video analysis is disabled in settings, skipping analysis step');
                 }
@@ -392,6 +403,9 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 optimizedResolution
             }
         );
+
+        // Clear the processing flag now that splitting is complete
+        localStorage.removeItem('video_processing_in_progress');
 
         console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, splitResult);
 
@@ -548,6 +562,9 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
         return allSubtitles;
     } catch (error) {
         console.error(`Error processing long ${mediaType}:`, error);
+
+        // Clear the processing flag on error
+        localStorage.removeItem('video_processing_in_progress');
 
         // Provide more helpful error messages for common issues
         if (error.message && error.message.includes('timeout')) {
