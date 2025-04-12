@@ -1,0 +1,334 @@
+.rules-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  animation: fadeIn 0.2s ease;
+}
+
+.rules-editor-modal {
+  background-color: var(--md-surface);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--md-elevation-level3);
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-container);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.rules-editor-modal::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rules-editor-modal::-webkit-scrollbar-track {
+  background: var(--md-surface-container);
+  border-radius: 4px;
+}
+
+.rules-editor-modal::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline-variant);
+  border-radius: 4px;
+  border: 2px solid var(--md-surface-container);
+}
+
+.rules-editor-modal::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-outline);
+}
+
+/* Dark mode specific scrollbar styling for rules-editor-modal */
+html[data-theme="dark"] .rules-editor-modal {
+  scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
+}
+
+html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-track {
+  background: var(--md-surface-container-highest) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline) !important;
+  border: 2px solid var(--md-surface-container-highest) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-primary) !important;
+}
+
+.modal-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 70vh;
+  background-color: var(--md-surface-container);
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-container);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: var(--md-surface-container);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline-variant);
+  border-radius: 4px;
+  border: 2px solid var(--md-surface-container);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-outline);
+}
+
+/* Dark mode specific scrollbar styling */
+html[data-theme="dark"] .rules-editor-modal .modal-content {
+  scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
+  background-color: var(--md-surface-container-highest);
+}
+
+html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-track {
+  background: var(--md-surface-container-highest) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline) !important;
+  border: 2px solid var(--md-surface-container-highest) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-primary) !important;
+}
+
+.rules-editor-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--md-surface-variant);
+}
+
+.rules-editor-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.rules-editor-section h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: var(--md-on-surface);
+}
+
+.section-description {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: var(--md-on-surface-variant);
+  font-size: 0.9rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: 8px;
+  background-color: var(--md-surface-container);
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-container);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling for textarea */
+textarea::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: var(--md-surface-container);
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline-variant);
+  border-radius: 4px;
+  border: 2px solid var(--md-surface-container);
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-outline);
+}
+
+/* Dark mode specific scrollbar styling for textarea */
+html[data-theme="dark"] .rules-editor-modal textarea {
+  scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
+  background-color: var(--md-surface-container-high);
+}
+
+html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-track {
+  background: var(--md-surface-container-high) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline) !important;
+  border: 2px solid var(--md-surface-container-high) !important;
+}
+
+html[data-theme="dark"] .rules-editor-modal textarea::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-primary) !important;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 1px var(--md-primary);
+}
+
+.array-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.term-inputs {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+}
+
+input {
+  padding: 10px 12px;
+  border: 1px solid var(--md-outline);
+  border-radius: 8px;
+  background-color: var(--md-surface-container);
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 1px var(--md-primary);
+}
+
+.definition-input {
+  flex: 2;
+}
+
+.full-width-input {
+  width: 100%;
+}
+
+.remove-item-button {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-item-button:hover {
+  background-color: color-mix(in srgb, var(--md-error-container), black 10%);
+}
+
+.add-item-button {
+  background-color: var(--md-surface-container-high);
+  color: var(--md-primary);
+  border: 1px dashed var(--md-outline);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.add-item-button:hover {
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--md-surface-variant);
+  background-color: var(--md-surface-container);
+}
+
+.cancel-button {
+  background-color: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: var(--md-surface-container-highest);
+}
+
+.save-button {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

@@ -7,10 +7,13 @@ import { splitVideoOnServer } from './videoSplitter';
 import { getVideoDuration, getMaxSegmentDurationSeconds } from './durationUtils';
 import { processSegment } from '../services/segmentProcessingService';
 import { retrySegmentProcessing } from './segmentManager';
+import { analyzeVideoWithGemini } from '../services/videoAnalysisService';
+import { setTranscriptionRules } from './transcriptionRulesStore';
 
 // Re-export functions from other modules
 export { getVideoDuration } from './durationUtils';
 export { retrySegmentProcessing };
+export { setTranscriptionRules } from './transcriptionRulesStore';
 
 /**
  * Process a long media file (video or audio) by splitting it into segments and processing each segment
@@ -114,13 +117,90 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     // Create a File object from the blob
                     const optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
 
-                    // Use the optimized file for processing
+                    // Analyze the optimized video with Gemini before processing
                     onStatusUpdate({
-                        message: t('output.processingOptimizedVideo', 'Processing optimized video...'),
+                        message: t('output.analyzingVideo', 'Analyzing video content...'),
                         type: 'loading'
                     });
 
-                    return await callGeminiApi(optimizedFile, 'file-upload');
+                    // Dispatch event to notify App.js to show the analysis modal
+                    console.log('Dispatching videoAnalysisStarted event');
+                    const analysisEvent = new CustomEvent('videoAnalysisStarted');
+                    window.dispatchEvent(analysisEvent);
+                    console.log('videoAnalysisStarted event dispatched');
+
+                    try {
+                        // Analyze the optimized video
+                        const analysisResult = await analyzeVideoWithGemini(optimizedFile, onStatusUpdate);
+                        console.log('Video analysis result:', analysisResult);
+
+                        // Store the analysis result for the App component to use
+                        localStorage.setItem('video_analysis_result', JSON.stringify(analysisResult));
+
+                        // Dispatch event with the analysis result
+                        console.log('Dispatching videoAnalysisComplete event with result:', analysisResult);
+                        const analysisCompleteEvent = new CustomEvent('videoAnalysisComplete', {
+                            detail: analysisResult
+                        });
+                        window.dispatchEvent(analysisCompleteEvent);
+                        console.log('videoAnalysisComplete event dispatched');
+
+                        // Force the modal to show by directly setting the state in localStorage
+                        // This is a fallback in case the event system isn't working
+                        localStorage.setItem('show_video_analysis', 'true');
+                        localStorage.setItem('video_analysis_timestamp', Date.now().toString());
+
+                        // Add a small delay to ensure the modal is shown
+                        setTimeout(() => {
+                            console.log('Forcing modal to show after delay');
+                            // Dispatch events again after a delay
+                            const startEvent = new CustomEvent('videoAnalysisStarted');
+                            window.dispatchEvent(startEvent);
+
+                            const completeEvent = new CustomEvent('videoAnalysisComplete', {
+                                detail: analysisResult
+                            });
+                            window.dispatchEvent(completeEvent);
+                        }, 500);
+
+                        // Wait for the user to choose a preset or for the timer to expire
+                        // This is handled in App.js which will set the transcription rules
+
+                        // Create a promise that will be resolved when the user makes a choice
+                        const userChoicePromise = new Promise((resolve) => {
+                            const handleUserChoice = (event) => {
+                                window.removeEventListener('videoAnalysisUserChoice', handleUserChoice);
+                                resolve(event.detail);
+                            };
+                            window.addEventListener('videoAnalysisUserChoice', handleUserChoice);
+                        });
+
+                        // Wait for the user's choice
+                        const userChoice = await userChoicePromise;
+                        console.log('User choice:', userChoice);
+
+                        // Set the transcription rules globally
+                        if (userChoice.transcriptionRules) {
+                            setTranscriptionRules(userChoice.transcriptionRules);
+                        }
+
+                        // Use the optimized file for processing
+                        onStatusUpdate({
+                            message: t('output.processingOptimizedVideo', 'Processing optimized video...'),
+                            type: 'loading'
+                        });
+
+                        return await callGeminiApi(optimizedFile, 'file-upload');
+                    } catch (analysisError) {
+                        console.error('Error analyzing video:', analysisError);
+                        onStatusUpdate({
+                            message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
+                            type: 'warning'
+                        });
+
+                        // Continue with processing without analysis
+                        return await callGeminiApi(optimizedFile, 'file-upload');
+                    }
                 } catch (error) {
                     console.error('Error optimizing video:', error);
                     onStatusUpdate({
@@ -178,9 +258,127 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
         const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
         const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
+        // For videos, optimize and analyze before splitting
+        let analysisResult = null;
+        let userChoice = null;
+        let optimizedFile = mediaFile;
+
+        if (!isAudio && optimizeVideos) {
+            try {
+                // First optimize the video
+                onStatusUpdate({
+                    message: t('output.optimizingVideo', 'Optimizing video for processing...'),
+                    type: 'loading'
+                });
+
+                // Call the optimize-video endpoint
+                const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+                    method: 'POST',
+                    body: mediaFile,
+                    headers: {
+                        'Content-Type': mediaFile.type
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to optimize video: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('Video optimization result:', result);
+
+                // Create a blob URL for the optimized video
+                const optimizedVideoUrl = `http://localhost:3004${result.optimizedVideo}`;
+
+                // Fetch the optimized video as a blob
+                const videoResponse = await fetch(optimizedVideoUrl);
+                const videoBlob = await videoResponse.blob();
+
+                // Create a File object from the blob
+                optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
+
+                // Check if video analysis is enabled in settings
+                const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+
+                if (useVideoAnalysis) {
+                    // Now analyze the optimized video with Gemini before processing
+                    onStatusUpdate({
+                        message: t('output.analyzingVideo', 'Analyzing video content...'),
+                        type: 'loading'
+                    });
+
+                    // Dispatch event to notify App.js to show the analysis modal
+                    console.log('Dispatching videoAnalysisStarted event');
+                    const analysisEvent = new CustomEvent('videoAnalysisStarted');
+                    window.dispatchEvent(analysisEvent);
+                    console.log('videoAnalysisStarted event dispatched');
+
+                    // Analyze the optimized video
+                    analysisResult = await analyzeVideoWithGemini(optimizedFile, onStatusUpdate);
+                    console.log('Video analysis result:', analysisResult);
+
+                    // Store the analysis result for the App component to use
+                    localStorage.setItem('video_analysis_result', JSON.stringify(analysisResult));
+
+                    // Dispatch event with the analysis result
+                    console.log('Dispatching videoAnalysisComplete event with result:', analysisResult);
+                    const analysisCompleteEvent = new CustomEvent('videoAnalysisComplete', {
+                        detail: analysisResult
+                    });
+                    window.dispatchEvent(analysisCompleteEvent);
+                    console.log('videoAnalysisComplete event dispatched');
+
+                    // Force the modal to show by directly setting the state in localStorage
+                    localStorage.setItem('show_video_analysis', 'true');
+                    localStorage.setItem('video_analysis_timestamp', Date.now().toString());
+
+                    // Add a small delay to ensure the modal is shown
+                    setTimeout(() => {
+                        console.log('Forcing modal to show after delay');
+                        // Dispatch events again after a delay
+                        const startEvent = new CustomEvent('videoAnalysisStarted');
+                        window.dispatchEvent(startEvent);
+
+                        const completeEvent = new CustomEvent('videoAnalysisComplete', {
+                            detail: analysisResult
+                        });
+                        window.dispatchEvent(completeEvent);
+                    }, 500);
+
+                    // Create a promise that will be resolved when the user makes a choice
+                    const userChoicePromise = new Promise((resolve) => {
+                        const handleUserChoice = (event) => {
+                            window.removeEventListener('videoAnalysisUserChoice', handleUserChoice);
+                            resolve(event.detail);
+                        };
+                        window.addEventListener('videoAnalysisUserChoice', handleUserChoice);
+                    });
+
+                    // Wait for the user's choice
+                    userChoice = await userChoicePromise;
+                    console.log('User choice:', userChoice);
+
+                    // Set the transcription rules globally
+                    if (userChoice.transcriptionRules) {
+                        setTranscriptionRules(userChoice.transcriptionRules);
+                    }
+                } else {
+                    console.log('Video analysis is disabled in settings, skipping analysis step');
+                }
+            } catch (error) {
+                console.error('Error optimizing or analyzing video:', error);
+                onStatusUpdate({
+                    message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
+                    type: 'warning'
+                });
+                // Continue with the original file if optimization fails
+                optimizedFile = mediaFile;
+            }
+        }
+
         // Upload the media to the server and split it into segments
         const splitResult = await splitVideoOnServer(
-            mediaFile,
+            optimizedFile, // Use the optimized file if available
             getMaxSegmentDurationSeconds(),
             (progress, message) => {
                 onStatusUpdate({
@@ -190,7 +388,7 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             },
             true, // Enable fast splitting by default
             {
-                optimizeVideos,
+                optimizeVideos: false, // We've already optimized the video
                 optimizedResolution
             }
         );

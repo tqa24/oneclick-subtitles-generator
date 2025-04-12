@@ -219,3 +219,25 @@ export const downloadTXT = (subtitles, filename) => {
   // Return the plain text content for potential further processing
   return content;
 };
+
+/**
+ * Convert a file to base64 string
+ * @param {File} file - The file to convert
+ * @returns {Promise<string>} - Promise resolving to base64 string
+ */
+export const fileToBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      // Extract the base64 data from the data URL
+      // Format is: data:[<mediatype>][;base64],<data>
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = (error) => {
+      console.error('Error converting file to base64:', error);
+      reject(error);
+    };
+  });
+};
