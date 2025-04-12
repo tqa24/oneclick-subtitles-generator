@@ -68,9 +68,10 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 throw new Error(`Token limit exceeded for segment ${segmentIndex+1}. Please try with a shorter video segment or lower video quality.`);
             }
 
-            // Check for unrecognized format error
+            // Check for unrecognized format error or empty subtitles
             try {
                 const errorData = JSON.parse(error.message);
+
                 if (errorData.type === 'unrecognized_format') {
                     // Extract the raw text from the error
                     const rawText = errorData.rawText;
@@ -84,6 +85,15 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                         success = true;
                         break; // Exit the retry loop, we've handled it
                     }
+                }
+
+                // Handle the case where all subtitles are empty
+                if (errorData.type === 'empty_subtitles') {
+                    console.log(`Segment ${segmentIndex+1} has no speech content:`, errorData.message);
+                    // Return an empty array for this segment
+                    segmentSubtitles = [];
+                    success = true;
+                    break; // Exit the retry loop, we've handled it
                 }
             } catch (parseError) {
                 console.error('Error parsing error message:', parseError);
@@ -126,6 +136,12 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     // If we got here without subtitles, something went wrong
     if (!segmentSubtitles) {
         throw new Error(`Failed to process segment ${segmentIndex+1}`);
+    }
+
+    // Handle the case where the API returned an empty array (no speech in segment)
+    if (Array.isArray(segmentSubtitles) && segmentSubtitles.length === 0) {
+        console.log(`Segment ${segmentIndex+1} has no speech content (empty array returned)`);
+        // Continue processing with an empty array
     }
 
     // Get the actual segment duration and start time if available

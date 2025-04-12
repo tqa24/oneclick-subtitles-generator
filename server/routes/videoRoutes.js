@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtubeService');
-const { splitVideoIntoSegments, splitMediaIntoSegments } = require('../services/videoProcessingService');
+const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo } = require('../services/videoProcessingService');
 
 /**
  * GET /api/video-exists/:videoId - Check if a video exists
@@ -130,10 +130,36 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
     // Get segment duration from query params or use default (10 minutes)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
     const fastSplit = req.query.fastSplit === 'true';
+    const optimizeVideos = req.query.optimizeVideos === 'true';
+    const optimizedResolution = req.query.optimizedResolution || '360p';
+
+    let processPath = mediaPath;
+    let optimizedResult = null;
+
+    // Optimize video if requested and it's a video (not audio)
+    if (optimizeVideos && !isAudio) {
+      try {
+        console.log(`Optimizing video to ${optimizedResolution} before splitting`);
+        const optimizedFilename = `optimized_${timestamp}.${fileExtension}`;
+        const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+
+        optimizedResult = await optimizeVideo(mediaPath, optimizedPath, {
+          resolution: optimizedResolution,
+          fps: 15
+        });
+
+        // Use the optimized video for splitting
+        processPath = optimizedPath;
+        console.log(`Using optimized video for splitting: ${optimizedPath}`);
+      } catch (error) {
+        console.error('Error optimizing video:', error);
+        console.log('Falling back to original video for splitting');
+      }
+    }
 
     // Split the media file into segments
     const result = await splitMediaIntoSegments(
-      mediaPath,
+      processPath,
       segmentDuration,
       VIDEOS_DIR,
       `segment_${timestamp}`,
@@ -150,7 +176,15 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
       mediaType: mediaType,
       batchId: result.batchId,
       segments: result.segments.map(segment => `/videos/${path.basename(segment.path)}`),
-      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} uploaded and split successfully`
+      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} uploaded and split successfully`,
+      // Include optimized video information if available
+      optimized: optimizedResult ? {
+        video: `/videos/${path.basename(optimizedResult.path)}`,
+        resolution: optimizedResult.resolution,
+        fps: optimizedResult.fps,
+        width: optimizedResult.width,
+        height: optimizedResult.height
+      } : null
     });
   } catch (error) {
     console.error(`Error processing ${mediaType} upload:`, error);
@@ -184,10 +218,36 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     // Get segment duration from query params or use default (10 minutes = 600 seconds)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
     const fastSplit = req.query.fastSplit === 'true';
+    const optimizeVideos = req.query.optimizeVideos === 'true';
+    const optimizedResolution = req.query.optimizedResolution || '360p';
+
+    let processPath = mediaPath;
+    let optimizedResult = null;
+
+    // Optimize video if requested and it's a video (not audio)
+    if (optimizeVideos && !isAudio) {
+      try {
+        console.log(`Optimizing video to ${optimizedResolution} before splitting`);
+        const optimizedFilename = `optimized_${mediaId}.${fileExtension}`;
+        const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+
+        optimizedResult = await optimizeVideo(mediaPath, optimizedPath, {
+          resolution: optimizedResolution,
+          fps: 15
+        });
+
+        // Use the optimized video for splitting
+        processPath = optimizedPath;
+        console.log(`Using optimized video for splitting: ${optimizedPath}`);
+      } catch (error) {
+        console.error('Error optimizing video:', error);
+        console.log('Falling back to original video for splitting');
+      }
+    }
 
     // Split the media file into segments
     const result = await splitMediaIntoSegments(
-      mediaPath,
+      processPath,
       segmentDuration,
       VIDEOS_DIR,
       `${mediaId}_part`,
@@ -215,13 +275,70 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
         theoreticalStartTime: segment.theoreticalStartTime,
         theoreticalDuration: segment.theoreticalDuration
       })),
-      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split successfully`
+      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split successfully`,
+      // Include optimized video information if available
+      optimized: optimizedResult ? {
+        video: `/videos/${path.basename(optimizedResult.path)}`,
+        resolution: optimizedResult.resolution,
+        fps: optimizedResult.fps,
+        width: optimizedResult.width,
+        height: optimizedResult.height
+      } : null
     });
   } catch (error) {
     console.error(`Error splitting ${mediaType}:`, error);
     res.status(500).json({
       success: false,
       error: error.message || `Failed to split ${mediaType}`
+    });
+  }
+});
+
+/**
+ * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate
+ */
+router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), async (req, res) => {
+  try {
+    // Get optimization options from query params
+    const resolution = req.query.resolution || '360p';
+    const fps = parseInt(req.query.fps || '15');
+
+    // Generate a unique filename for the optimized video
+    const timestamp = Date.now();
+    const contentType = req.headers['content-type'] || 'video/mp4';
+    const fileExtension = contentType.split('/')[1] || 'mp4';
+    const originalFilename = `original_${timestamp}.${fileExtension}`;
+    const optimizedFilename = `optimized_${timestamp}.${fileExtension}`;
+    const originalPath = path.join(VIDEOS_DIR, originalFilename);
+    const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+
+    // Save the uploaded video file
+    fs.writeFileSync(originalPath, req.body);
+    console.log(`Original video saved to ${originalPath}`);
+
+    // Optimize the video
+    const result = await optimizeVideo(originalPath, optimizedPath, {
+      resolution,
+      fps
+    });
+
+    // Return the optimized video information
+    res.json({
+      success: true,
+      originalVideo: `/videos/${originalFilename}`,
+      optimizedVideo: `/videos/${optimizedFilename}`,
+      resolution: result.resolution,
+      fps: result.fps,
+      width: result.width,
+      height: result.height,
+      duration: result.duration,
+      message: `Video optimized successfully to ${result.resolution} at ${result.fps}fps`
+    });
+  } catch (error) {
+    console.error('Error optimizing video:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to optimize video'
     });
   }
 });

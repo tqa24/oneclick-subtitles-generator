@@ -11,9 +11,12 @@ const SERVER_URL = 'http://localhost:3004';
  * @param {number} segmentDuration - Duration of each segment in seconds (default: 600 seconds = 10 minutes)
  * @param {Function} onProgress - Progress callback function
  * @param {boolean} fastSplit - Whether to use fast splitting mode (uses stream copy instead of re-encoding)
+ * @param {Object} options - Additional options
+ * @param {boolean} options.optimizeVideos - Whether to optimize videos before splitting
+ * @param {string} options.optimizedResolution - Resolution to use for optimized videos ('360p' or '240p')
  * @returns {Promise<Object>} - Object containing segment URLs and metadata
  */
-export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onProgress = () => {}, fastSplit = false) => {
+export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onProgress = () => {}, fastSplit = false, options = {}) => {
   try {
     // Determine if this is a video or audio file based on MIME type
     const isAudio = mediaFile.type.startsWith('audio/');
@@ -24,8 +27,12 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     // Generate a unique ID for this media file
     const mediaId = `${mediaType}_${Date.now()}_${mediaFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
+    // Get video optimization settings from options
+    const optimizeVideos = options.optimizeVideos !== undefined ? options.optimizeVideos : true; // Default to true
+    const optimizedResolution = options.optimizedResolution || '360p'; // Default to 360p
+
     // Create URL with query parameters
-    const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}`;
+    const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}&optimizeVideos=${optimizeVideos}&optimizedResolution=${optimizedResolution}`;
 
     // Upload the media file
     const response = await fetch(url, {
@@ -102,7 +109,8 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
       mediaId: data.mediaId || data.videoId, // Support both new and old response formats
       segments: data.segments,
       message: data.message,
-      mediaType: mediaType
+      mediaType: mediaType,
+      optimized: data.optimized || null // Include optimized video information if available
     };
   } catch (error) {
     console.error(`Error splitting ${mediaFile.type.startsWith('audio/') ? 'audio' : 'video'}:`, error);

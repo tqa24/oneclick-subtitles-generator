@@ -3,9 +3,9 @@
 /* Cache section */
 .cache-section {
   min-height: 400px; /* Ensure the cache section has a minimum height */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* Push content to top and actions to bottom */
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Create a 2-column layout */
+  grid-gap: 20px; /* Add gap between columns */
   height: 100%; /* Take full height of parent */
 }
 
@@ -23,19 +23,21 @@
 }
 
 .cache-content {
-  flex: 1; /* Take available space */
+  grid-column: span 2; /* Header spans both columns */
 }
 
 .cache-actions {
-  margin-top: auto; /* Push to bottom */
-  padding-top: 20px; /* Add some space above the button */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-top: 20px;
 }
 
 .empty-cache-info {
   background-color: var(--md-surface-1);
   border-radius: var(--card-border-radius);
   padding: 16px 20px;
-  margin: 16px 0;
+  margin: 0;
   color: var(--text-secondary);
   border: 1px dashed var(--border-color);
   text-align: center;
@@ -43,6 +45,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  height: 100%;
 }
 
 .empty-cache-info p {
@@ -54,7 +57,7 @@
   background-color: var(--md-surface-1);
   border-radius: var(--card-border-radius);
   padding: 16px 20px;
-  margin: 16px 0;
+  margin: 0;
   color: var(--text-secondary);
   text-align: center;
   position: relative;
@@ -62,6 +65,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
 }
 
 .cache-loading p {
@@ -97,7 +101,8 @@
   background-color: var(--md-surface-1);
   border-radius: var(--card-border-radius);
   padding: 16px 20px;
-  margin: 16px 0;
+  margin: 0;
+  height: 100%;
   font-size: var(--md-body-medium-size);
   line-height: var(--md-body-medium-height);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
@@ -165,13 +170,26 @@
   transform: rotate(180deg);
 }
 
+/* Cache columns */
+.cache-left-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.cache-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 /* Cache status message */
 .cache-status-message {
   padding: 12px 16px;
-  margin: 16px 0;
+  margin: 0;
   border-radius: var(--card-border-radius);
   font-size: var(--md-body-medium-size);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+  height: 100%;
 }
 
 .cache-status-message.status-success {

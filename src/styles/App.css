@@ -139,7 +139,7 @@
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);
   height: 52px; /* Fixed height for consistency */
-  margin-left: 10px; /* Add spacing between buttons */
+  /* margin-left removed to allow button to appear properly on its own */
   position: relative;
   overflow: hidden;
   display: flex;

@@ -3,7 +3,10 @@
 .segment-duration-setting,
 .gemini-model-setting,
 .time-format-setting,
-.waveform-setting {
+.waveform-setting,
+.optimize-videos-setting,
+.optimized-resolution-setting,
+.use-optimized-preview-setting {
   margin-top: 0.5rem;
   margin-bottom: 1.5rem;
 }
@@ -11,7 +14,10 @@
 .segment-duration-setting label,
 .gemini-model-setting label,
 .time-format-setting label,
-.waveform-setting label {
+.waveform-setting label,
+.optimize-videos-setting label,
+.optimized-resolution-setting label,
+.use-optimized-preview-setting label {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
@@ -27,7 +33,8 @@
 /* Material Design 3 pill-style select controls */
 .segment-duration-select,
 .gemini-model-select,
-.time-format-select {
+.time-format-select,
+.optimized-resolution-select {
   width: 100%;
   padding: 0.75rem 1rem;
   border-radius: var(--md-shape-pill);
@@ -50,7 +57,8 @@
 /* Material Design 3 focus and hover states */
 .segment-duration-select:focus,
 .gemini-model-select:focus,
-.time-format-select:focus {
+.time-format-select:focus,
+.optimized-resolution-select:focus {
   outline: none;
   border-color: var(--md-primary);
   box-shadow: var(--md-elevation-level2);
@@ -58,7 +66,8 @@
 
 .segment-duration-select:hover,
 .gemini-model-select:hover,
-.time-format-select:hover {
+.time-format-select:hover,
+.optimized-resolution-select:hover {
   border-color: var(--md-primary-container);
   background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
   transform: translateY(-1px);
@@ -68,7 +77,8 @@
 /* Material Design 3 option styles */
 .segment-duration-select option,
 .gemini-model-select option,
-.time-format-select option {
+.time-format-select option,
+.optimized-resolution-select option {
   background-color: var(--md-surface-2);
   color: var(--md-on-surface);
   padding: 0.75rem;
@@ -138,9 +148,41 @@ input:checked + .toggle-slider:before {
   color: var(--text-primary);
 }
 
+/* Video optimization section styles */
+.video-optimization-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--md-outline-variant);
+}
+
+.video-optimization-section h4 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+/* Disabled state for dependent controls */
+select:disabled,
+input[type="checkbox"]:disabled,
+.checkbox-label.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .segment-duration-select,
 [data-theme="dark"] .gemini-model-select,
-[data-theme="dark"] .time-format-select {
+[data-theme="dark"] .time-format-select,
+[data-theme="dark"] .optimized-resolution-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23E6E1E5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }

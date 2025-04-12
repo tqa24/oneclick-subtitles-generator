@@ -26,7 +26,15 @@ router.get('/cache-info', (req, res) => {
       const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
       subtitleFiles.forEach(file => {
         const filePath = path.join(SUBTITLES_DIR, file);
-        const fileSize = getFileSize(filePath);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
         details.subtitles.count++;
         details.subtitles.size += fileSize;
         details.subtitles.files.push({ name: file, size: fileSize });
@@ -38,7 +46,15 @@ router.get('/cache-info', (req, res) => {
       const videoFiles = fs.readdirSync(VIDEOS_DIR);
       videoFiles.forEach(file => {
         const filePath = path.join(VIDEOS_DIR, file);
-        const fileSize = getFileSize(filePath);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
         details.videos.count++;
         details.videos.size += fileSize;
         details.videos.files.push({ name: file, size: fileSize });
@@ -82,26 +98,56 @@ router.delete('/clear-cache', (req, res) => {
     };
 
     // Clear subtitles directory
-    const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
-    subtitleFiles.forEach(file => {
-      const filePath = path.join(SUBTITLES_DIR, file);
-      const fileSize = getFileSize(filePath);
-      details.subtitles.count++;
-      details.subtitles.size += fileSize;
-      details.subtitles.files.push({ name: file, size: fileSize });
-      fs.unlinkSync(filePath);
-    });
+    if (fs.existsSync(SUBTITLES_DIR)) {
+      const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
+      subtitleFiles.forEach(file => {
+        const filePath = path.join(SUBTITLES_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.subtitles.count++;
+        details.subtitles.size += fileSize;
+        details.subtitles.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
 
     // Clear videos directory
-    const videoFiles = fs.readdirSync(VIDEOS_DIR);
-    videoFiles.forEach(file => {
-      const filePath = path.join(VIDEOS_DIR, file);
-      const fileSize = getFileSize(filePath);
-      details.videos.count++;
-      details.videos.size += fileSize;
-      details.videos.files.push({ name: file, size: fileSize });
-      fs.unlinkSync(filePath);
-    });
+    if (fs.existsSync(VIDEOS_DIR)) {
+      const videoFiles = fs.readdirSync(VIDEOS_DIR);
+      videoFiles.forEach(file => {
+        const filePath = path.join(VIDEOS_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.videos.count++;
+        details.videos.size += fileSize;
+        details.videos.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
 
 
 

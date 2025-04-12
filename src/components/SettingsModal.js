@@ -71,7 +71,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
+  const [useStructuredOutput, setUseStructuredOutput] = useState(true); // Default to using structured output
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
+  const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
+  const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
   const [isUpdating, setIsUpdating] = useState(false); // State for update process
   const [updateStatus, setUpdateStatus] = useState({ message: '', type: '' }); // Status message for update process
@@ -102,7 +106,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     transcriptionPrompt: DEFAULT_TRANSCRIPTION_PROMPT,
     useOAuth: false,
     youtubeClientId: '',
-    youtubeClientSecret: ''
+    youtubeClientSecret: '',
+    useStructuredOutput: true,
+    optimizeVideos: true,
+    optimizedResolution: '360p',
+    useOptimizedPreview: false
   });
 
   // Load saved settings on component mount
@@ -115,9 +123,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
+      const savedUseStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true if not set
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUserPresets = getUserPromptPresets();
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
+      const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
+      const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
+      const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const { clientId, clientSecret } = getClientCredentials();
       const authenticated = hasValidTokens();
 
@@ -133,7 +145,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         transcriptionPrompt: savedTranscriptionPrompt,
         useOAuth: savedUseOAuth,
         youtubeClientId: clientId,
-        youtubeClientSecret: clientSecret
+        youtubeClientSecret: clientSecret,
+        useStructuredOutput: savedUseStructuredOutput,
+        optimizeVideos: savedOptimizeVideos,
+        optimizedResolution: savedOptimizedResolution,
+        useOptimizedPreview: savedUseOptimizedPreview
       });
 
       setGeminiApiKey(savedGeminiKey);
@@ -143,12 +159,16 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setTimeFormat(savedTimeFormat);
       setShowWaveform(savedShowWaveform);
       setSegmentOffsetCorrection(savedOffsetCorrection);
+      setUseStructuredOutput(savedUseStructuredOutput);
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUserPromptPresets(savedUserPresets);
       setUseOAuth(savedUseOAuth);
       setYoutubeClientId(clientId);
       setYoutubeClientSecret(clientSecret);
       setIsAuthenticated(authenticated);
+      setOptimizeVideos(savedOptimizeVideos);
+      setOptimizedResolution(savedOptimizedResolution);
+      setUseOptimizedPreview(savedUseOptimizedPreview);
       setHasChanges(false); // Reset changes flag when loading settings
     };
 
@@ -551,12 +571,17 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       transcriptionPrompt !== originalSettings.transcriptionPrompt ||
       useOAuth !== originalSettings.useOAuth ||
       youtubeClientId !== originalSettings.youtubeClientId ||
-      youtubeClientSecret !== originalSettings.youtubeClientSecret;
+      youtubeClientSecret !== originalSettings.youtubeClientSecret ||
+      useStructuredOutput !== originalSettings.useStructuredOutput ||
+      optimizeVideos !== originalSettings.optimizeVideos ||
+      optimizedResolution !== originalSettings.optimizedResolution ||
+      useOptimizedPreview !== originalSettings.useOptimizedPreview;
 
     setHasChanges(settingsChanged);
   }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, originalSettings]);
+      youtubeClientSecret, useStructuredOutput, optimizeVideos, optimizedResolution,
+      useOptimizedPreview, originalSettings]);
 
   // Handle save button click
   const handleSave = () => {
@@ -568,14 +593,18 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
+    localStorage.setItem('use_structured_output', useStructuredOutput.toString());
+    localStorage.setItem('optimize_videos', optimizeVideos.toString());
+    localStorage.setItem('optimized_resolution', optimizedResolution);
+    localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
 
     // Store OAuth client credentials if they exist
     if (youtubeClientId && youtubeClientSecret) {
       storeClientCredentials(youtubeClientId, youtubeClientSecret);
     }
 
-    // Notify parent component about API keys, segment duration, model, and time format
-    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat);
+    // Notify parent component about API keys, segment duration, model, time format, and video optimization settings
+    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview);
 
     // Update original settings to match current settings
     setOriginalSettings({
@@ -589,7 +618,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       transcriptionPrompt,
       useOAuth,
       youtubeClientId,
-      youtubeClientSecret
+      youtubeClientSecret,
+      useStructuredOutput,
+      optimizeVideos,
+      optimizedResolution,
+      useOptimizedPreview
     });
 
     // Reset changes flag
@@ -1063,6 +1096,90 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 </select>
               </div>
 
+              <div className="structured-output-setting">
+                <label htmlFor="structured-output" className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="structured-output"
+                    checked={useStructuredOutput}
+                    onChange={(e) => setUseStructuredOutput(e.target.checked)}
+                  />
+                  {t('settings.useStructuredOutput', 'Use Structured Output')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.structuredOutputDescription', 'Enable structured JSON output from Gemini API for more reliable parsing. This improves accuracy but may increase token usage.')}
+                </p>
+              </div>
+
+              <div className="waveform-setting">
+                <label htmlFor="show-waveform" className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="show-waveform"
+                    checked={showWaveform}
+                    onChange={(e) => setShowWaveform(e.target.checked)}
+                  />
+                  {t('settings.showWaveform', 'Show Waveform')}
+                </label>
+                <p className="setting-description">
+                  {t('settings.showWaveformDescription', 'Display audio waveform in the editor. Disable on slower devices to improve performance.')}
+                </p>
+              </div>
+
+              <div className="video-optimization-section">
+                <h4>{t('settings.videoOptimization', 'Video Optimization')}</h4>
+
+                <div className="optimize-videos-setting">
+                  <label htmlFor="optimize-videos" className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      id="optimize-videos"
+                      checked={optimizeVideos}
+                      onChange={(e) => setOptimizeVideos(e.target.checked)}
+                    />
+                    {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}
+                  </p>
+                </div>
+
+                <div className="optimized-resolution-setting">
+                  <label htmlFor="optimized-resolution">
+                    {t('settings.optimizedResolution', 'Optimized Resolution')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.optimizedResolutionDescription', 'Select the resolution to use for optimized videos. Lower resolutions process faster but may reduce accuracy.')}
+                  </p>
+                  <select
+                    id="optimized-resolution"
+                    value={optimizedResolution}
+                    onChange={(e) => setOptimizedResolution(e.target.value)}
+                    className="optimized-resolution-select"
+                    disabled={!optimizeVideos}
+                  >
+                    <option value="240p">240p</option>
+                    <option value="360p">360p</option>
+                  </select>
+                </div>
+
+                <div className="use-optimized-preview-setting">
+                  <label htmlFor="use-optimized-preview" className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      id="use-optimized-preview"
+                      checked={useOptimizedPreview}
+                      onChange={(e) => setUseOptimizedPreview(e.target.checked)}
+                      disabled={!optimizeVideos}
+                    />
+                    {t('settings.useOptimizedPreview', 'Use optimized video for preview')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
+                  </p>
+                </div>
+              </div>
+
               <div className="time-format-setting">
                 <label htmlFor="time-format">
                   {t('settings.timeFormat', 'Time Format')}
@@ -1458,14 +1575,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 <p className="cache-description">
                   {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
                 </p>
+              </div>
 
-                {/* Cache status message */}
-                {cacheStatus.message && (
-                  <div className={`cache-status-message status-${cacheStatus.type}`}>
-                    {cacheStatus.message}
-                  </div>
-                )}
-
+              {/* Left Column */}
+              <div className="cache-left-column">
                 {/* Cache details */}
                 {cacheDetails && !loadingCacheInfo && (
                   <div className="cache-details">
@@ -1492,8 +1605,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                         {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
                       </p>
                     </div>
-
-
                   </div>
                 )}
 
@@ -1519,16 +1630,27 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 )}
               </div>
 
-              <div className="cache-actions">
-                <button
-                  className="clear-cache-btn"
-                  onClick={handleClearCache}
-                  disabled={clearingCache}
-                >
-                  {clearingCache
-                    ? t('settings.clearingCache', 'Clearing Cache...')
-                    : t('settings.clearCache', 'Clear Cache')}
-                </button>
+              {/* Right Column */}
+              <div className="cache-right-column">
+                {/* Cache status message */}
+                {cacheStatus.message && (
+                  <div className={`cache-status-message status-${cacheStatus.type}`}>
+                    {cacheStatus.message}
+                  </div>
+                )}
+
+                {/* Cache actions */}
+                <div className="cache-actions">
+                  <button
+                    className="clear-cache-btn"
+                    onClick={handleClearCache}
+                    disabled={clearingCache}
+                  >
+                    {clearingCache
+                      ? t('settings.clearingCache', 'Clearing Cache...')
+                      : t('settings.clearCache', 'Clear Cache')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
