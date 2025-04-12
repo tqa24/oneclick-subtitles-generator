@@ -323,8 +323,11 @@ const DownloadOptionsModal = ({
                   (processType === 'consolidate'
                     ? `I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
 
-IMPORTANT: Your response should ONLY contain the consolidated document text.
-DO NOT include any explanations, comments, headers, or additional text in your response.
+IMPORTANT: Your response should ONLY contain the consolidated document text as plain text.
+DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
+DO NOT structure your response as JSON with title and content fields.
+DO NOT use markdown formatting.
+Just return the plain text of the consolidated document.
 
 Here are the subtitles:\n\n{subtitlesText}`
                     : `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.

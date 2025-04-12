@@ -108,26 +108,83 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       // Make sure the result has the necessary properties for display
       const processedResult = result.map((sub, index) => {
         // Ensure each subtitle has start and end times
-        if (!sub.start && !sub.startTime && sub.originalId) {
-          // Try to find the original subtitle to get timing information
-          const originalSub = subtitles.find(s => s.id === sub.originalId);
-          if (originalSub) {
+        if ((!sub.start || sub.start === 0) && (!sub.startTime || sub.startTime === '00:00:00,000')) {
+          // First try to find by originalId if available
+          if (sub.originalId) {
+            const originalSub = subtitles.find(s => s.id === sub.originalId);
+            if (originalSub) {
+              console.log(`Found original subtitle for ID ${sub.originalId} at index ${index}`);
+              return {
+                ...sub,
+                start: originalSub.start,
+                end: originalSub.end,
+                startTime: sub.startTime || formatTimeString(originalSub.start),
+                endTime: sub.endTime || formatTimeString(originalSub.end)
+              };
+            }
+          }
+
+          // If originalId doesn't work, try to match by index
+          if (index < subtitles.length) {
+            const originalSub = subtitles[index];
+            console.log(`Using original subtitle at index ${index} as fallback`);
             return {
               ...sub,
               start: originalSub.start,
               end: originalSub.end,
               startTime: sub.startTime || formatTimeString(originalSub.start),
-              endTime: sub.endTime || formatTimeString(originalSub.end)
+              endTime: sub.endTime || formatTimeString(originalSub.end),
+              originalId: originalSub.id || index + 1
             };
+          }
+        } else if (sub.startTime && sub.endTime) {
+          // If we have startTime and endTime strings but no numeric start/end, convert them
+          if (!sub.start || !sub.end) {
+            try {
+              // Convert from SRT format (00:00:00,000) to seconds
+              const startMatch = sub.startTime.match(/^(\d+):(\d+):(\d+),(\d+)$/);
+              const endMatch = sub.endTime.match(/^(\d+):(\d+):(\d+),(\d+)$/);
+
+              if (startMatch) {
+                const startHours = parseInt(startMatch[1]);
+                const startMinutes = parseInt(startMatch[2]);
+                const startSeconds = parseInt(startMatch[3]);
+                const startMs = parseInt(startMatch[4]) / 1000;
+                sub.start = startHours * 3600 + startMinutes * 60 + startSeconds + startMs;
+              }
+
+              if (endMatch) {
+                const endHours = parseInt(endMatch[1]);
+                const endMinutes = parseInt(endMatch[2]);
+                const endSeconds = parseInt(endMatch[3]);
+                const endMs = parseInt(endMatch[4]) / 1000;
+                sub.end = endHours * 3600 + endMinutes * 60 + endSeconds + endMs;
+              }
+
+              console.log(`Converted time strings to seconds for subtitle ${index+1}: ${sub.start}s - ${sub.end}s`);
+            } catch (error) {
+              console.error(`Error converting time strings for subtitle ${index+1}:`, error);
+            }
           }
         }
         return sub;
       });
 
-      console.log('Processed translation result:', processedResult.length, 'subtitles');
-      setTranslatedSubtitles(processedResult);
+      // Sort the subtitles by start time to ensure they're in the correct order
+      const sortedResult = [...processedResult].sort((a, b) => {
+        // Use start time for sorting
+        return (a.start || 0) - (b.start || 0);
+      });
+
+      console.log('Processed translation result:', sortedResult.length, 'subtitles');
+      if (sortedResult.length > 0) {
+        console.log('First processed subtitle:', JSON.stringify(sortedResult[0]));
+        console.log('Last processed subtitle:', JSON.stringify(sortedResult[sortedResult.length - 1]));
+      }
+
+      setTranslatedSubtitles(sortedResult);
       if (onTranslationComplete) {
-        onTranslationComplete(processedResult);
+        onTranslationComplete(sortedResult);
       }
 
       // Save the split duration setting to localStorage
