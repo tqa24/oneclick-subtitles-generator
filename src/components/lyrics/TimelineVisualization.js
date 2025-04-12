@@ -373,6 +373,11 @@ const TimelineVisualization = ({
           height={30}
         />
       )}
+      {!videoSource && (
+        <div className="srt-only-timeline-message">
+          <span>{t('timeline.srtOnlyMode', 'SRT Only Mode - Timeline visualization based on subtitle timing')}</span>
+        </div>
+      )}
       {showWaveformDisabledNotice && (
         <div className="waveform-disabled-notice">
           {t('timeline.waveformDisabled', 'Waveform visualization has been automatically disabled for videos longer than 30 minutes to improve performance.')}

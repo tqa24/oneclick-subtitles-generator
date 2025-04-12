@@ -68,6 +68,22 @@
   text-align: center;
 }
 
+/* SRT-only timeline message */
+.srt-only-timeline-message {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  padding: 4px 8px;
+  font-size: 12px;
+  text-align: center;
+  border-radius: 0 0 8px 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* Waveform disabled notice */
 .waveform-disabled-notice {
   position: absolute;

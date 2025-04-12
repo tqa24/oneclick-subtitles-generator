@@ -18,6 +18,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
   const [videoUrl, setVideoUrl] = useState('');
   const [optimizedVideoUrl, setOptimizedVideoUrl] = useState('');
+  const [optimizedVideoInfo, setOptimizedVideoInfo] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -125,8 +126,16 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
         // Check if we have an optimized version in localStorage
         const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
         if (splitResult.optimized && splitResult.optimized.video) {
-          console.log('Found optimized video:', splitResult.optimized.video);
+          console.log('Found optimized video:', splitResult.optimized);
           setOptimizedVideoUrl(`http://localhost:3004${splitResult.optimized.video}`);
+
+          // Store the optimization info
+          setOptimizedVideoInfo({
+            resolution: splitResult.optimized.resolution || '360p',
+            fps: splitResult.optimized.fps || 15,
+            width: splitResult.optimized.width,
+            height: splitResult.optimized.height
+          });
         }
         return;
       }
@@ -598,9 +607,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, subtitle, setDuration, vide
                   <span className="toggle-label">
                     {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
                   </span>
-                  {useOptimizedPreview && (
+                  {useOptimizedPreview && optimizedVideoInfo && (
                     <span className="quality-info">
-                      {optimizedVideoUrl && optimizedVideoUrl.includes('360p') ? '360p' : '240p'}, 15fps
+                      {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
                     </span>
                   )}
                 </div>

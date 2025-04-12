@@ -12,7 +12,7 @@ import OnboardingModal from './components/OnboardingModal';
 import TranslationWarningToast from './components/TranslationWarningToast';
 import SrtUploadButton from './components/SrtUploadButton';
 import { useSubtitles } from './hooks/useSubtitles';
-import { downloadYoutubeVideo } from './utils/videoDownloader';
+import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
 import { abortAllRequests, PROMPT_PRESETS } from './services/geminiService';
@@ -39,9 +39,11 @@ function App() {
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') === 'true');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [currentDownloadId, setCurrentDownloadId] = useState(null); // Track the current downloading video ID
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('onboarding_completed') !== 'true');
   const [isAppReady, setIsAppReady] = useState(!showOnboarding);
   const [isRetrying, setIsRetrying] = useState(false); // Track when retry is in progress
+  const [isSrtOnlyMode, setIsSrtOnlyMode] = useState(false); // Track when we're working with SRT only
 
   const {
     subtitlesData,
@@ -403,6 +405,12 @@ function App() {
   };
 
   const validateInput = () => {
+    // If we're in SRT-only mode, always return true
+    if (isSrtOnlyMode) {
+      return true;
+    }
+
+    // Otherwise, check for video/audio sources
     if (activeTab === 'youtube-url') {
       return selectedVideo !== null;
     } else if (activeTab === 'youtube-search') {
@@ -421,6 +429,14 @@ function App() {
 
       if (parsedSubtitles.length === 0) {
         setStatus({ message: t('errors.invalidSrtFormat', 'Invalid SRT format or empty file'), type: 'error' });
+        return;
+      }
+
+      // If we don't have a video source, set SRT-only mode
+      if (!validateInput() || (!activeTab.includes('youtube') && !uploadedFile)) {
+        setIsSrtOnlyMode(true);
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
         return;
       }
 
@@ -462,6 +478,9 @@ function App() {
             const file = new File([blob], filename, { type: 'video/mp4' });
 
             // Check if video optimization is enabled
+            const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+            const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
+
             if (optimizeVideos) {
               try {
                 setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
@@ -590,6 +609,12 @@ function App() {
       return;
     }
 
+    // If we're in SRT-only mode, just show a message
+    if (isSrtOnlyMode) {
+      setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
+      return;
+    }
+
     let input, inputType;
 
     // For YouTube tabs, download the video first and switch to upload tab
@@ -610,6 +635,10 @@ function App() {
           setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
         }
 
+        // Extract video ID and set it as current download
+        const videoId = extractYoutubeVideoId(selectedVideo.url);
+        setCurrentDownloadId(videoId);
+
         // Download the YouTube video with the selected quality
         const videoUrl = await downloadYoutubeVideo(
           selectedVideo.url,
@@ -620,6 +649,9 @@ function App() {
           },
           selectedVideo.quality || '360p' // Use the selected quality or default to 360p
         );
+
+        // Clear the current download ID when done
+        setCurrentDownloadId(null);
 
         try {
           // Create a fetch request to get the video as a blob
@@ -642,6 +674,9 @@ function App() {
           const file = new File([blob], filename, { type: 'video/mp4' });
 
           // Check if video optimization is enabled
+          const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+          const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
+
           if (optimizeVideos) {
             try {
               setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
@@ -752,7 +787,9 @@ function App() {
    */
   const prepareVideoForSegments = async (videoFile) => {
     try {
-      // Video optimization settings are passed directly to splitVideoOnServer
+      // Get video optimization settings from localStorage
+      const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+      const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
       // Set status to loading
       setStatus({ message: t('output.preparingVideo', 'Preparing video for segment processing...'), type: 'loading' });
@@ -851,6 +888,10 @@ function App() {
       setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
       // Download the YouTube video with the selected quality
+      // Extract video ID and set it as current download
+      const videoId = extractYoutubeVideoId(selectedVideo.url);
+      setCurrentDownloadId(videoId);
+
       const videoUrl = await downloadYoutubeVideo(
         selectedVideo.url,
         (progress) => {
@@ -858,6 +899,9 @@ function App() {
         },
         selectedVideo.quality || '360p' // Use the selected quality or default to 360p
       );
+
+      // Clear the current download ID when done
+      setCurrentDownloadId(null);
 
       try {
         // Create a fetch request to get the video as a blob
@@ -955,6 +999,12 @@ function App() {
       return;
     }
 
+    // If we're in SRT-only mode, just show a message
+    if (isSrtOnlyMode) {
+      setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
+      return;
+    }
+
     // Set retrying state to true immediately
     setIsRetrying(true);
 
@@ -1010,6 +1060,9 @@ function App() {
           const file = new File([blob], filename, { type: 'video/mp4' });
 
           // Check if video optimization is enabled
+          const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+          const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
+
           if (optimizeVideos) {
             try {
               setStatus({ message: t('output.optimizingVideo', 'Optimizing video for processing...'), type: 'loading' });
@@ -1121,6 +1174,22 @@ function App() {
     }
   };
 
+  /**
+   * Handle cancelling the current download
+   */
+  const handleCancelDownload = () => {
+    if (currentDownloadId) {
+      // Cancel the download
+      cancelYoutubeVideoDownload(currentDownloadId);
+
+      // Reset states
+      setIsDownloading(false);
+      setDownloadProgress(0);
+      setCurrentDownloadId(null);
+      setStatus({ message: t('output.downloadCancelled', 'Download cancelled'), type: 'warning' });
+    }
+  };
+
   const handleTabChange = (tab) => {
     localStorage.setItem('lastActiveTab', tab);
     setActiveTab(tab);
@@ -1128,6 +1197,7 @@ function App() {
     setUploadedFile(null);
     setStatus({}); // Reset status
     setSubtitlesData(null); // Reset subtitles data
+    setIsSrtOnlyMode(false); // Reset SRT-only mode
     localStorage.removeItem('current_video_url');
     localStorage.removeItem('current_file_url');
     localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
@@ -1153,14 +1223,13 @@ function App() {
 
           {/* Consistent layout container for buttons and output */}
           <div className="content-layout-container">
-          {validateInput() && (
-            <div className="buttons-container">
-              <SrtUploadButton
-                onSrtUpload={handleSrtUpload}
-                disabled={isGenerating || isDownloading}
-              />
+          <div className="buttons-container">
+            <SrtUploadButton
+              onSrtUpload={handleSrtUpload}
+              disabled={isGenerating || isDownloading}
+            />
               {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
-              {retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+              {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
                 <button
                   className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
                   onClick={handleGenerateSubtitles}
@@ -1194,8 +1263,36 @@ function App() {
                     </span>
                     <span className="processing-dots"></span>
                   </span>
-                ) : t('header.tagline')}
+                ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') : t('header.tagline')}
               </button>
+              )}
+
+              {/* Add cancel button as a proper member of the buttons-container */}
+              {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+                <button
+                  className="cancel-download-btn"
+                  onClick={handleCancelDownload}
+                  title={t('output.cancelDownload', 'Cancel download')}
+                >
+                  {/* Static Gemini icons for fallback */}
+                  <div className="gemini-icon-container">
+                    <div className="gemini-mini-icon random-1 size-sm">
+                      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
+                      </svg>
+                    </div>
+                    <div className="gemini-mini-icon random-3 size-md">
+                      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  {t('output.cancelDownload', 'Cancel Download')}
+                </button>
               )}
 
               {(subtitlesData || status.type === 'error') && !isGenerating && !isDownloading && (
@@ -1293,7 +1390,6 @@ function App() {
                   </button>
                 )}
             </div>
-          )}
 
           <OutputContainer
             status={status}
@@ -1312,6 +1408,7 @@ function App() {
             timeFormat={timeFormat}
             showWaveform={showWaveform}
             useOptimizedPreview={useOptimizedPreview}
+            isSrtOnlyMode={isSrtOnlyMode}
           />
           </div>
         </main>

@@ -255,3 +255,140 @@
     margin-top: 10px;
   }
 }
+
+/* Cancel download button - styled like other buttons */
+.buttons-container .cancel-download-btn {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+  /* Pill-shaped button for Material Design 3 look */
+  padding: 16px 24px;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.5px;
+  box-shadow: var(--md-elevation-level2);
+  border-radius: var(--md-shape-pill);
+  height: 52px; /* Fixed height for consistency */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  z-index: 1;
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+}
+
+/* State layer for hover effect */
+.buttons-container .cancel-download-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+}
+
+.buttons-container .cancel-download-btn:hover::before {
+  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+}
+
+.buttons-container .cancel-download-btn:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
+}
+
+.buttons-container .cancel-download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level3);
+}
+
+.buttons-container .cancel-download-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.buttons-container .cancel-download-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.buttons-container .cancel-download-btn svg:not(.gemini-mini-icon svg) {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
+  z-index: 1; /* Ensure the X icon stays above the Gemini icons */
+}
+
+.buttons-container .cancel-download-btn:hover svg:not(.gemini-mini-icon svg) {
+  transform: rotate(90deg);
+}
+
+/* Gemini mini icons in the cancel button */
+.buttons-container .cancel-download-btn .gemini-icon-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.15;
+  z-index: 0;
+}
+
+/* Enhance the gemini icon container on hover for interactive effect */
+.buttons-container .cancel-download-btn:hover .gemini-icon-container {
+  opacity: 0.25;
+}
+
+.buttons-container .cancel-download-btn .gemini-mini-icon {
+  position: absolute;
+  opacity: 0.5;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Interactive effects for the mini icons */
+.buttons-container .cancel-download-btn:hover .gemini-mini-icon {
+  opacity: 0.8;
+}
+
+.buttons-container .cancel-download-btn .gemini-mini-icon.random-1 {
+  top: 10%;
+  left: 15%;
+  transform: rotate(15deg);
+}
+
+.buttons-container .cancel-download-btn:hover .gemini-mini-icon.random-1 {
+  transform: rotate(15deg) translateY(-2px);
+}
+
+.buttons-container .cancel-download-btn .gemini-mini-icon.random-3 {
+  bottom: 10%;
+  right: 15%;
+  transform: rotate(-15deg);
+}
+
+.buttons-container .cancel-download-btn:hover .gemini-mini-icon.random-3 {
+  transform: rotate(-15deg) translateY(2px);
+}
+
+.buttons-container .cancel-download-btn .gemini-mini-icon.size-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.buttons-container .cancel-download-btn .gemini-mini-icon.size-md {
+  width: 18px;
+  height: 18px;
+}

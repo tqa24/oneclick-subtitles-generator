@@ -53,6 +53,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Load last active tab from localStorage or default to 'api-keys'
     return localStorage.getItem('settings_last_active_tab') || 'api-keys';
   });
+
+  // State for tracking which About background to show
+  const [useAlternativeBackground, setUseAlternativeBackground] = useState(() => {
+    // Initialize from localStorage
+    return localStorage.getItem('about_alternative_bg') === 'true';
+  });
   const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
@@ -742,7 +748,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             </button>
             <button
               className={`settings-tab ${activeTab === 'about' ? 'active' : ''}`}
-              onClick={() => setActiveTab('about')}
+              onClick={() => {
+                // Toggle the background when clicking on the About tab
+                if (activeTab !== 'about') {
+                  // Get the current state from localStorage or default to false
+                  const currentState = localStorage.getItem('about_alternative_bg') === 'true';
+                  // Toggle the state
+                  const newState = !currentState;
+                  // Save the new state
+                  localStorage.setItem('about_alternative_bg', newState.toString());
+                  // Update the state
+                  setUseAlternativeBackground(newState);
+                }
+                setActiveTab('about');
+              }}
             >
               <AboutIcon />
               {t('settings.about', 'About')}
@@ -1657,7 +1676,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
           {/* About Tab Content */}
           <div className={`settings-tab-content ${activeTab === 'about' ? 'active' : ''}`}>
-            <div className="settings-section about-section">
+            <div className={`settings-section about-section ${useAlternativeBackground ? 'alternative-bg' : ''}`}>
               <h3>{t('settings.about', 'About')}</h3>
               <div className="about-content">
                 <h2 className="app-title">One-click Subtitles Generator</h2>
