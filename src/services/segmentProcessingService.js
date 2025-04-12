@@ -53,6 +53,14 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             retryCount++;
             console.error(`Error processing segment ${segmentIndex+1}, attempt ${retryCount}:`, error);
 
+            // Check if this is an empty response (empty JSON array)
+            if (error.message && error.message.includes('Unrecognized subtitle format') &&
+                error.message.includes('rawText":"[]"')) {
+                console.log('Empty JSON array response detected, returning empty subtitles');
+                // Return empty array instead of retrying
+                return [];
+            }
+
             // Check for 503 error
             if (error.message && (
                 (error.message.includes('503') && error.message.includes('Service Unavailable')) ||

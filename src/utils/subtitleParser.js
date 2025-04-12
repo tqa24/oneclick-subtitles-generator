@@ -220,6 +220,12 @@ export const parseGeminiResponse = (response) => {
             try {
                 const jsonData = JSON.parse(text);
                 if (Array.isArray(jsonData)) {
+                    // Handle completely empty array
+                    if (jsonData.length === 0) {
+                        console.log('Empty JSON array detected, returning empty subtitles');
+                        return []; // Return empty array instead of throwing an error
+                    }
+
                     let emptyCount = 0;
                     for (const item of jsonData) {
                         if (item.startTime === '00m00s000ms' &&

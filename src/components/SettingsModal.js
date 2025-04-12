@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/SettingsModal.css';
+import '../styles/settings/checkbox-fix.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../services/geminiService';
 import { getAuthUrl, storeClientCredentials, getClientCredentials, hasValidTokens, clearOAuthData } from '../services/youtubeApiService';
 
@@ -78,6 +79,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useStructuredOutput, setUseStructuredOutput] = useState(true); // Default to using structured output
+  const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
@@ -100,6 +102,23 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('settings_last_active_tab', activeTab);
   }, [activeTab]);
 
+  // Add ESC key handler to close the modal
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Add event listener when the component mounts
+    document.addEventListener('keydown', handleEscKey);
+
+    // Remove event listener when the component unmounts
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [onClose]);
+
   // Store original settings for comparison
   const [originalSettings, setOriginalSettings] = useState({
     geminiApiKey: '',
@@ -114,6 +133,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useStructuredOutput: true,
+    useVideoAnalysis: true,
     optimizeVideos: true,
     optimizedResolution: '360p',
     useOptimizedPreview: false
@@ -130,6 +150,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedUseStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true if not set
+      const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUserPresets = getUserPromptPresets();
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
@@ -153,6 +174,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         youtubeClientId: clientId,
         youtubeClientSecret: clientSecret,
         useStructuredOutput: savedUseStructuredOutput,
+        useVideoAnalysis: savedUseVideoAnalysis,
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview
@@ -166,6 +188,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setShowWaveform(savedShowWaveform);
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setUseStructuredOutput(savedUseStructuredOutput);
+      setUseVideoAnalysis(savedUseVideoAnalysis);
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUserPromptPresets(savedUserPresets);
       setUseOAuth(savedUseOAuth);
@@ -579,6 +602,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientId !== originalSettings.youtubeClientId ||
       youtubeClientSecret !== originalSettings.youtubeClientSecret ||
       useStructuredOutput !== originalSettings.useStructuredOutput ||
+      useVideoAnalysis !== originalSettings.useVideoAnalysis ||
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview;
@@ -586,7 +610,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(settingsChanged);
   }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useStructuredOutput, optimizeVideos, optimizedResolution,
+      youtubeClientSecret, useStructuredOutput, useVideoAnalysis, optimizeVideos, optimizedResolution,
       useOptimizedPreview, originalSettings]);
 
   // Handle save button click
@@ -600,6 +624,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
     localStorage.setItem('use_structured_output', useStructuredOutput.toString());
+    localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
@@ -626,6 +651,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientId,
       youtubeClientSecret,
       useStructuredOutput,
+      useVideoAnalysis,
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview
@@ -1116,6 +1142,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               </div>
 
               <div className="structured-output-setting">
+                <h4>{t('settings.structuredOutputSetting', 'Structured Output')}</h4>
                 <label htmlFor="structured-output" className="checkbox-label">
                   <input
                     type="checkbox"
@@ -1130,23 +1157,27 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                 </p>
               </div>
 
-              <div className="waveform-setting">
-                <label htmlFor="show-waveform" className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    id="show-waveform"
-                    checked={showWaveform}
-                    onChange={(e) => setShowWaveform(e.target.checked)}
-                  />
-                  {t('settings.showWaveform', 'Show Waveform')}
-                </label>
-                <p className="setting-description">
-                  {t('settings.showWaveformDescription', 'Display audio waveform in the editor. Disable on slower devices to improve performance.')}
-                </p>
+              <div className="video-analysis-section">
+                <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
+
+                <div className="use-video-analysis-setting">
+                  <label htmlFor="use-video-analysis" className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      id="use-video-analysis"
+                      checked={useVideoAnalysis}
+                      onChange={(e) => setUseVideoAnalysis(e.target.checked)}
+                    />
+                    {t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini 2.0 Flash to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
+                  </p>
+                </div>
               </div>
 
               <div className="video-optimization-section">
-                <h4>{t('settings.videoOptimization', 'Video Optimization')}</h4>
+                <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
 
                 <div className="optimize-videos-setting">
                   <label htmlFor="optimize-videos" className="checkbox-label">
@@ -1218,24 +1249,18 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               </div>
 
               <div className="waveform-setting">
-                <label htmlFor="show-waveform">
+                <label htmlFor="show-waveform" className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    id="show-waveform"
+                    checked={showWaveform}
+                    onChange={(e) => setShowWaveform(e.target.checked)}
+                  />
                   {t('settings.showWaveform', 'Show Audio Waveform')}
                 </label>
                 <p className="setting-description">
                   {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
                 </p>
-                <div className="toggle-switch-container">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      id="show-waveform"
-                      checked={showWaveform}
-                      onChange={(e) => setShowWaveform(e.target.checked)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                  <span className="toggle-label">{showWaveform ? t('common.on', 'On') : t('common.off', 'Off')}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -1580,7 +1605,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             <div className="settings-section cache-section">
               <div className="cache-content">
                 <div className="cache-section-header">
-                  <h3>{t('settings.cache', 'Cache Management')}</h3>
+                  <h3>{t('settings.cache', 'Cache')}</h3>
                   <button
                     className="refresh-cache-btn"
                     onClick={fetchCacheInfo}
@@ -1746,8 +1771,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             </button>
           </div>
           <div className="settings-footer-right">
-            <button className="cancel-btn" onClick={onClose}>
-              {t('common.cancel', 'Cancel')}
+            <button
+              className="cancel-btn"
+              onClick={onClose}
+              title={t('settings.pressEscToClose', 'Press ESC to close')}
+            >
+              {t('common.cancel', 'Cancel')} <span className="key-hint">(ESC)</span>
             </button>
             <button
               className="save-btn"

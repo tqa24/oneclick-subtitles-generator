@@ -2,6 +2,8 @@
  * Utility functions for creating response schemas for Gemini API
  */
 
+import { createVideoAnalysisSchema } from './videoAnalysisSchema';
+
 /**
  * Creates a schema for subtitle transcription
  * @returns {Object} Schema for subtitle transcription
@@ -123,3 +125,6 @@ export const addResponseSchema = (requestData, schema) => {
         }
     };
 };
+
+// Export the video analysis schema
+export { createVideoAnalysisSchema };

@@ -4,6 +4,8 @@ import './styles/App.css';
 import './styles/GeminiButtonAnimations.css';
 import './styles/ProcessingTextAnimation.css';
 import './styles/SrtUploadButton.css';
+import './styles/VideoAnalysisModal.css';
+import './styles/TranscriptionRulesEditor.css';
 import Header from './components/Header';
 import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
@@ -11,7 +13,10 @@ import SettingsModal from './components/SettingsModal';
 import OnboardingModal from './components/OnboardingModal';
 import TranslationWarningToast from './components/TranslationWarningToast';
 import SrtUploadButton from './components/SrtUploadButton';
+import VideoAnalysisModal from './components/VideoAnalysisModal';
+import TranscriptionRulesEditor from './components/TranscriptionRulesEditor';
 import { useSubtitles } from './hooks/useSubtitles';
+import { setTranscriptionRules } from './utils/transcriptionRulesStore';
 import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
@@ -44,6 +49,38 @@ function App() {
   const [isAppReady, setIsAppReady] = useState(!showOnboarding);
   const [isRetrying, setIsRetrying] = useState(false); // Track when retry is in progress
   const [isSrtOnlyMode, setIsSrtOnlyMode] = useState(false); // Track when we're working with SRT only
+  const [showVideoAnalysis, setShowVideoAnalysis] = useState(false); // Show video analysis modal
+  const [videoAnalysisResult, setVideoAnalysisResult] = useState(null); // Store video analysis result
+
+  // For debugging - log state changes
+  useEffect(() => {
+    console.log('showVideoAnalysis changed:', showVideoAnalysis);
+  }, [showVideoAnalysis]);
+
+  useEffect(() => {
+    console.log('videoAnalysisResult changed:', videoAnalysisResult);
+  }, [videoAnalysisResult]);
+
+  // Check localStorage for video analysis data on mount
+  useEffect(() => {
+    const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
+    if (showAnalysis) {
+      console.log('Found show_video_analysis=true in localStorage on mount');
+      setShowVideoAnalysis(true);
+
+      try {
+        const analysisResult = JSON.parse(localStorage.getItem('video_analysis_result'));
+        if (analysisResult) {
+          console.log('Setting videoAnalysisResult from localStorage on mount:', analysisResult);
+          setVideoAnalysisResult(analysisResult);
+        }
+      } catch (error) {
+        console.error('Error parsing video analysis result from localStorage on mount:', error);
+      }
+    }
+  }, []);
+  const [showRulesEditor, setShowRulesEditor] = useState(false); // Show rules editor modal
+  const [transcriptionRules, setTranscriptionRulesState] = useState(null); // Store transcription rules
 
   const {
     subtitlesData,
@@ -170,6 +207,36 @@ function App() {
     };
   }, []);
 
+  // Listen for video analysis events
+  useEffect(() => {
+    // Handle video analysis started
+    const handleVideoAnalysisStarted = () => {
+      console.log('Received videoAnalysisStarted event');
+      setShowVideoAnalysis(true);
+      console.log('showVideoAnalysis set to true');
+    };
+
+    // Handle video analysis complete
+    const handleVideoAnalysisComplete = (event) => {
+      console.log('Received videoAnalysisComplete event with detail:', event.detail);
+      if (event.detail) {
+        setVideoAnalysisResult(event.detail);
+        console.log('videoAnalysisResult state updated');
+      }
+    };
+
+    // Add event listeners
+    console.log('Adding video analysis event listeners');
+    window.addEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+    window.addEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+      window.removeEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
+    };
+  }, []);
+
   // Listen for theme and settings changes from other components
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -201,6 +268,26 @@ function App() {
       if (event.key === 'use_optimized_preview' || !event.key) {
         const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true';
         setUseOptimizedPreview(newUseOptimizedPreview);
+      }
+
+      // Check for video analysis changes
+      if (event.key === 'show_video_analysis' || event.key === 'video_analysis_timestamp' || !event.key) {
+        const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
+        if (showAnalysis) {
+          console.log('Setting showVideoAnalysis to true from localStorage');
+          setShowVideoAnalysis(true);
+
+          // Get the analysis result from localStorage
+          try {
+            const analysisResult = JSON.parse(localStorage.getItem('video_analysis_result'));
+            if (analysisResult) {
+              console.log('Setting videoAnalysisResult from localStorage:', analysisResult);
+              setVideoAnalysisResult(analysisResult);
+            }
+          } catch (error) {
+            console.error('Error parsing video analysis result from localStorage:', error);
+          }
+        }
       }
     };
 
@@ -1203,6 +1290,96 @@ function App() {
     localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
   };
 
+  // Handle using the recommended preset from video analysis
+  const handleUseRecommendedPreset = (presetId) => {
+    console.log('handleUseRecommendedPreset called with presetId:', presetId);
+    // Find the preset
+    const preset = PROMPT_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      // Save the preset to localStorage
+      localStorage.setItem('transcription_prompt', preset.prompt);
+
+      // Save the transcription rules
+      if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
+        setTranscriptionRules(videoAnalysisResult.transcriptionRules);
+        setTranscriptionRulesState(videoAnalysisResult.transcriptionRules);
+      }
+
+      // Dispatch event to notify videoProcessor that user has made a choice
+      const userChoiceEvent = new CustomEvent('videoAnalysisUserChoice', {
+        detail: {
+          presetId,
+          transcriptionRules: videoAnalysisResult?.transcriptionRules
+        }
+      });
+      window.dispatchEvent(userChoiceEvent);
+
+      // Clear the localStorage flag
+      localStorage.removeItem('show_video_analysis');
+      localStorage.removeItem('video_analysis_timestamp');
+      console.log('Removed show_video_analysis from localStorage');
+
+      // Close the modal
+      setShowVideoAnalysis(false);
+      console.log('Modal closed after using recommended preset');
+    }
+  };
+
+  // Handle using the default preset from settings
+  const handleUseDefaultPreset = () => {
+    console.log('handleUseDefaultPreset called');
+    // Dispatch event to notify videoProcessor that user has made a choice
+    const userChoiceEvent = new CustomEvent('videoAnalysisUserChoice', {
+      detail: {
+        presetId: null, // Use default preset
+        transcriptionRules: videoAnalysisResult?.transcriptionRules // Still use the rules
+      }
+    });
+    window.dispatchEvent(userChoiceEvent);
+
+    // Save the transcription rules
+    if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
+      setTranscriptionRules(videoAnalysisResult.transcriptionRules);
+      setTranscriptionRulesState(videoAnalysisResult.transcriptionRules);
+    }
+
+    // Clear the localStorage flag
+    localStorage.removeItem('show_video_analysis');
+    localStorage.removeItem('video_analysis_timestamp');
+    console.log('Removed show_video_analysis from localStorage');
+
+    // Close the modal
+    setShowVideoAnalysis(false);
+    console.log('Modal closed after using default preset');
+  };
+
+  // Handle editing the transcription rules
+  const handleEditRules = (rules) => {
+    console.log('handleEditRules called, closing VideoAnalysisModal and opening TranscriptionRulesEditor');
+    setTranscriptionRulesState(rules);
+    setShowRulesEditor(true);
+    // Close the video analysis modal when opening the rules editor
+    setShowVideoAnalysis(false);
+    // Clear localStorage flags to ensure modal stays closed
+    localStorage.removeItem('show_video_analysis');
+    localStorage.removeItem('video_analysis_timestamp');
+    console.log('VideoAnalysisModal should now be closed, showVideoAnalysis:', false);
+  };
+
+  // Handle saving the edited transcription rules
+  const handleSaveRules = (editedRules) => {
+    setTranscriptionRulesState(editedRules);
+    setTranscriptionRules(editedRules);
+
+    // Update the analysis result with the edited rules
+    if (videoAnalysisResult) {
+      setVideoAnalysisResult({
+        ...videoAnalysisResult,
+        transcriptionRules: editedRules
+      });
+    }
+  };
+
   return (
     <>
       <Header
@@ -1457,6 +1634,32 @@ function App() {
               setStatus({});
             }, 5000);
           }}
+        />
+      )}
+
+      {/* Video Analysis Modal */}
+      {console.log('Render - showVideoAnalysis:', showVideoAnalysis, 'videoAnalysisResult:', videoAnalysisResult)}
+      {/* Force modal to show for debugging */}
+      {/* Check if we should show the modal */}
+      {((showVideoAnalysis || localStorage.getItem('show_video_analysis') === 'true') &&
+        (videoAnalysisResult || localStorage.getItem('video_analysis_result'))) && (
+        <VideoAnalysisModal
+          isOpen={true} /* Force modal to be open */
+          onClose={null} /* Disabled close button */
+          analysisResult={videoAnalysisResult}
+          onUsePreset={handleUseRecommendedPreset}
+          onUseDefaultPreset={handleUseDefaultPreset}
+          onEditRules={handleEditRules}
+        />
+      )}
+
+      {/* Transcription Rules Editor */}
+      {showRulesEditor && transcriptionRules && (
+        <TranscriptionRulesEditor
+          isOpen={showRulesEditor}
+          onClose={() => setShowRulesEditor(false)}
+          initialRules={transcriptionRules}
+          onSave={handleSaveRules}
         />
       )}
 

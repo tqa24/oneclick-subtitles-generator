@@ -9,6 +9,7 @@ import {
     createSummarizationSchema,
     addResponseSchema
 } from '../utils/schemaUtils';
+import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
 
 // Map to store multiple AbortControllers for parallel requests
 const activeAbortControllers = new Map();
@@ -142,13 +143,80 @@ const getTranscriptionPrompt = (contentType) => {
     // Get custom prompt from localStorage or use default
     const customPrompt = localStorage.getItem('transcription_prompt');
 
-    // If custom prompt exists and is not empty, replace {contentType} with the actual content type
+    // Get the transcription rules if available
+    const transcriptionRules = getTranscriptionRules();
+
+    // Base prompt (either custom or default)
+    let basePrompt;
     if (customPrompt && customPrompt.trim() !== '') {
-        return customPrompt.replace('{contentType}', contentType);
+        basePrompt = customPrompt.replace('{contentType}', contentType);
+    } else {
+        basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
     }
 
-    // Otherwise use the default prompt
-    return PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+    // If we have transcription rules, append them to the prompt
+    if (transcriptionRules) {
+        let rulesText = '\n\nAdditional transcription rules to follow:\n';
+
+        // Add atmosphere if available
+        if (transcriptionRules.atmosphere) {
+            rulesText += `\n- Atmosphere: ${transcriptionRules.atmosphere}\n`;
+        }
+
+        // Add terminology if available
+        if (transcriptionRules.terminology && transcriptionRules.terminology.length > 0) {
+            rulesText += '\n- Terminology and Proper Nouns:\n';
+            transcriptionRules.terminology.forEach(term => {
+                rulesText += `  * ${term.term}: ${term.definition}\n`;
+            });
+        }
+
+        // Add speaker identification if available
+        if (transcriptionRules.speakerIdentification && transcriptionRules.speakerIdentification.length > 0) {
+            rulesText += '\n- Speaker Identification:\n';
+            transcriptionRules.speakerIdentification.forEach(speaker => {
+                rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
+            });
+        }
+
+        // Add formatting conventions if available
+        if (transcriptionRules.formattingConventions && transcriptionRules.formattingConventions.length > 0) {
+            rulesText += '\n- Formatting and Style Conventions:\n';
+            transcriptionRules.formattingConventions.forEach(convention => {
+                rulesText += `  * ${convention}\n`;
+            });
+        }
+
+        // Add spelling and grammar rules if available
+        if (transcriptionRules.spellingAndGrammar && transcriptionRules.spellingAndGrammar.length > 0) {
+            rulesText += '\n- Spelling, Grammar, and Punctuation:\n';
+            transcriptionRules.spellingAndGrammar.forEach(rule => {
+                rulesText += `  * ${rule}\n`;
+            });
+        }
+
+        // Add relationships if available
+        if (transcriptionRules.relationships && transcriptionRules.relationships.length > 0) {
+            rulesText += '\n- Relationships and Social Hierarchy:\n';
+            transcriptionRules.relationships.forEach(relationship => {
+                rulesText += `  * ${relationship}\n`;
+            });
+        }
+
+        // Add additional notes if available
+        if (transcriptionRules.additionalNotes && transcriptionRules.additionalNotes.length > 0) {
+            rulesText += '\n- Additional Notes:\n';
+            transcriptionRules.additionalNotes.forEach(note => {
+                rulesText += `  * ${note}\n`;
+            });
+        }
+
+        // Append the rules to the base prompt
+        return basePrompt + rulesText;
+    }
+
+    // Return the base prompt if no rules are available
+    return basePrompt;
 };
 
 export const callGeminiApi = async (input, inputType) => {
