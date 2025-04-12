@@ -161,8 +161,6 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               <VideoPreview
                 currentTime={currentTabIndex}
                 setCurrentTime={setCurrentTabIndex}
-                subtitle={editedLyrics?.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text ||
-                         subtitlesData.find(s => currentTabIndex >= s.start && currentTabIndex <= s.end)?.text || ''}
                 videoSource={videoSource}
                 setDuration={setVideoDuration}
                 onSeek={handleVideoSeek}

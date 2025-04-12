@@ -1,0 +1,252 @@
+/* Video processing redesigned layout */
+
+/* Main grid container for the video processing section */
+.video-processing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+/* Card styling for each settings group */
+.settings-card {
+  background-color: var(--md-surface-1);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--md-elevation-level1);
+  transition: all 0.3s var(--md-easing-standard);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--md-outline-variant);
+}
+
+.settings-card:hover {
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+/* Card header with icon */
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.settings-card-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--md-primary);
+  font-weight: 600;
+}
+
+.settings-card-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-primary-container);
+  border-radius: 50%;
+  color: var(--md-on-primary-container);
+}
+
+.settings-card-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+}
+
+/* Card content */
+.settings-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Accent line at the top of each card */
+.settings-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--md-primary);
+  opacity: 0.7;
+}
+
+/* Specific card accent colors */
+.settings-card.segments-card::before {
+  background-color: var(--md-primary);
+}
+
+.settings-card.model-card::before {
+  background-color: var(--md-secondary);
+}
+
+.settings-card.analysis-card::before {
+  background-color: var(--md-tertiary);
+}
+
+.settings-card.optimization-card::before {
+  background-color: #00BFA5; /* Teal */
+}
+
+.settings-card.display-card::before {
+  background-color: #FF9800; /* Orange */
+}
+
+/* Compact setting item */
+.compact-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compact-setting label {
+  font-weight: 600;
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.compact-setting .setting-description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--md-on-surface-variant);
+}
+
+/* Toggle switch container with label on the right */
+.toggle-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.toggle-switch-row .toggle-switch {
+  margin: 0;
+}
+
+.toggle-switch-row .toggle-label {
+  flex: 1;
+}
+
+/* Improved select styling */
+.enhanced-select {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--md-shape-medium);
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface);
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s var(--md-easing-standard);
+  box-shadow: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2349454F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+.enhanced-select:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 1px var(--md-primary);
+}
+
+.enhanced-select:hover {
+  border-color: var(--md-primary);
+  background-color: color-mix(in srgb, var(--md-surface), var(--md-primary) 5%);
+}
+
+/* Checkbox styling */
+.enhanced-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.enhanced-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--md-outline);
+  border-radius: 4px;
+  background-color: var(--md-surface);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  margin: 0;
+  transition: all 0.2s var(--md-easing-standard);
+}
+
+.enhanced-checkbox input[type="checkbox"]:checked {
+  background-color: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.enhanced-checkbox input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.enhanced-checkbox input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-primary), transparent 70%);
+}
+
+.enhanced-checkbox-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.enhanced-checkbox-label span {
+  font-weight: 500;
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+}
+
+.enhanced-checkbox-label small {
+  color: var(--md-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+/* Disabled state */
+.enhanced-select:disabled,
+.enhanced-checkbox input[type="checkbox"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.enhanced-checkbox.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .enhanced-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23CAC4D0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .video-processing-grid {
+    grid-template-columns: 1fr;
+  }
+}

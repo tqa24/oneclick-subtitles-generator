@@ -36,6 +36,12 @@
   --md-surface-4: #EBE4F2;
   --md-surface-5: #E8E0EE;
 
+  /* Surface container tokens */
+  --md-surface-container: #F9F1FF;
+  --md-surface-container-low: #F5EDFC;
+  --md-surface-container-high: #F0E7F8;
+  --md-surface-container-highest: #EBE1F4;
+
   /* State layer opacities */
   --md-state-hover-opacity: 0.08;
   --md-state-focus-opacity: 0.12;
@@ -176,6 +182,12 @@
   --md-surface-3: #282731;
   --md-surface-4: #2E2C38;
   --md-surface-5: #31303C;
+
+  /* Surface container tokens for dark theme */
+  --md-surface-container: #211F26;
+  --md-surface-container-low: #1D1B20;
+  --md-surface-container-high: #2B2930;
+  --md-surface-container-highest: #322F39;
 }
 
 /* Typography utility classes */

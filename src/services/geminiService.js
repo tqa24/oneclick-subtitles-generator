@@ -222,18 +222,15 @@ const getTranscriptionPrompt = (contentType) => {
 export const callGeminiApi = async (input, inputType) => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
-    const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
 
     let requestData = {
         model: MODEL,
         contents: []
     };
 
-    // Add response schema for structured output
-    if (useStructuredOutput) {
-        requestData = addResponseSchema(requestData, createSubtitleSchema());
-        console.log('Using structured output with schema:', JSON.stringify(requestData));
-    }
+    // Always use structured output
+    requestData = addResponseSchema(requestData, createSubtitleSchema());
+    console.log('Using structured output with schema:', JSON.stringify(requestData));
 
     if (inputType === 'youtube') {
         requestData.contents = [
@@ -575,10 +572,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         activeAbortControllers.set(requestId, controller);
         const signal = controller.signal;
 
-        // Determine if we should use structured output
-        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
-
-        // Create request data
+        // Create request data with structured output
         let requestData = {
             contents: [
                 {
@@ -596,11 +590,9 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             },
         };
 
-        // Add response schema for structured output
-        if (useStructuredOutput) {
-            requestData = addResponseSchema(requestData, createTranslationSchema());
-            console.log('Using structured output for translation with schema:', JSON.stringify(requestData));
-        }
+        // Always use structured output
+        requestData = addResponseSchema(requestData, createTranslationSchema());
+        console.log('Using structured output for translation with schema:', JSON.stringify(requestData));
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -882,10 +874,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             documentPrompt = getDefaultConsolidatePrompt(subtitlesText);
         }
 
-        // Determine if we should use structured output
-        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
-
-        // Create request data
+        // Create request data with structured output
         let requestData = {
             contents: [
                 {
@@ -903,11 +892,9 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             },
         };
 
-        // Add response schema for structured output
-        if (useStructuredOutput) {
-            requestData = addResponseSchema(requestData, createConsolidationSchema());
-            console.log('Using structured output for consolidation with schema:', JSON.stringify(requestData));
-        }
+        // Always use structured output
+        requestData = addResponseSchema(requestData, createConsolidationSchema());
+        console.log('Using structured output for consolidation with schema:', JSON.stringify(requestData));
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -1312,10 +1299,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             summaryPrompt = getDefaultSummarizePrompt(subtitlesText);
         }
 
-        // Determine if we should use structured output
-        const useStructuredOutput = localStorage.getItem('use_structured_output') !== 'false'; // Default to true
-
-        // Create request data
+        // Create request data with structured output
         let requestData = {
             contents: [
                 {
@@ -1333,11 +1317,9 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             },
         };
 
-        // Add response schema for structured output
-        if (useStructuredOutput) {
-            requestData = addResponseSchema(requestData, createSummarizationSchema());
-            console.log('Using structured output for summarization with schema:', JSON.stringify(requestData));
-        }
+        // Always use structured output
+        requestData = addResponseSchema(requestData, createSummarizationSchema());
+        console.log('Using structured output for summarization with schema:', JSON.stringify(requestData));
 
         const response = await fetch(apiUrl, {
             method: 'POST',

@@ -311,15 +311,20 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
 
     // Construct ffmpeg command for optimization
     const ffmpegArgs = [
+      '-hwaccel', 'auto',
       '-i', videoPath,
       '-vf', `scale=${width}:${height}`,
       '-r', fps.toString(),
       '-c:v', 'libx264',
-      '-preset', 'faster',
-      '-crf', '23',  // Reasonable quality (lower is better)
+      '-preset', 'veryfast',
+      '-crf', '28',
+      '-tune', 'fastdecode',
       '-c:a', 'aac',
-      '-b:a', '128k',
+      '-b:a', '32k',          // Reduced from 128k to 32k
+      '-ac', '1',             // Mono audio
+      '-ar', '22050',         // Lowest reasonable sample rate
       '-movflags', '+faststart',
+      '-threads', '0',
       '-y',  // Overwrite output file if it exists
       outputPath
     ];
@@ -438,15 +443,20 @@ function createAnalysisVideo(videoPath, outputPath) {
 
       // Construct ffmpeg command to select frames and maintain audio
       const ffmpegArgs = [
+        '-hwaccel', 'auto',
         '-i', videoPath,
         '-vf', `select='not(mod(n,${Math.round(frameInterval)}))',setpts=N/TB`,
-        '-af', 'asetpts=N/SR/TB',  // Keep audio at original speed
+        '-af', 'asetpts=N/SR/TB',
         '-c:v', 'libx264',
-        '-preset', 'faster',
-        '-crf', '28',  // Lower quality is fine for analysis
+        '-preset', 'veryfast',
+        '-crf', '30',
+        '-tune', 'fastdecode',
         '-c:a', 'aac',
-        '-b:a', '96k',  // Lower audio quality
-        '-y',  // Overwrite output file if it exists
+        '-b:a', '32k',
+        '-ac', '1',
+        '-ar', '22050',
+        '-threads', '0',
+        '-y',
         outputPath
       ];
 
@@ -504,3 +514,5 @@ module.exports = {
   createAnalysisVideo,
   getVideoFrameCount
 };
+
+
