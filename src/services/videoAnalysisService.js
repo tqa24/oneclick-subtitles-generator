@@ -4,6 +4,10 @@
 
 import { fileToBase64 } from '../utils/fileUtils';
 import { createVideoAnalysisSchema, addResponseSchema } from '../utils/schemaUtils';
+import i18n from '../i18n/i18n';
+
+// Translation function shorthand
+const t = (key, fallback) => i18n.t(key, fallback);
 
 // Store the active abort controller for video analysis
 let activeAnalysisController = null;
@@ -41,7 +45,7 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
     const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.0-flash-lite";
 
     // Convert the video file to base64
-    onStatusUpdate({ message: 'Preparing video for analysis...', type: 'loading' });
+    onStatusUpdate({ message: t('input.preparingVideoAnalysis', 'Preparing video for analysis...'), type: 'loading' });
     const base64Data = await fileToBase64(videoFile);
 
     // Create the request data with the analysis prompt
@@ -89,7 +93,7 @@ Provide your analysis in a structured format that can be used to guide the trans
     // Add response schema for structured output
     requestData = addResponseSchema(requestData, createVideoAnalysisSchema());
 
-    onStatusUpdate({ message: 'Analyzing video content...', type: 'loading' });
+    onStatusUpdate({ message: t('input.analyzingVideo', 'Analyzing video content...'), type: 'loading' });
 
     // Call the Gemini API
     const response = await fetch(

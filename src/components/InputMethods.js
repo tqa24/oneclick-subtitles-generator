@@ -5,7 +5,7 @@ import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
 import '../styles/InputMethods.css';
 
-const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab }) => {
+const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
 
   const renderInputMethod = () => {
@@ -28,6 +28,8 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           uploadedFile={uploadedFile}
           setUploadedFile={setUploadedFile}
           className="tab-content"
+          isSrtOnlyMode={isSrtOnlyMode}
+          setIsSrtOnlyMode={setIsSrtOnlyMode}
         />;
       default:
         return null;

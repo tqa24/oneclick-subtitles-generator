@@ -196,6 +196,30 @@
     "presetTranslateDirectly": "Dịch trực tiếp",
     "presetChaptering": "Phân chương",
     "presetIdentifySpeakers": "Nhận diện người nói",
+    "useStructuredOutput": "Sử dụng đầu ra cấu trúc",
+    "structuredOutputDescription": "Bật đầu ra JSON cấu trúc từ API Gemini để phân tích đáng tin cậy hơn. Điều này cải thiện độ chính xác nhưng có thể tăng sử dụng token.",
+    "structuredOutputSetting": "Đầu ra cấu trúc",
+    "videoAnalysis": "Phân tích video",
+    "useVideoAnalysis": "Phát hiện mẫu + Bộ nhớ/Quy tắc ngữ cảnh",
+    "useVideoAnalysisDescription": "Trước khi chia video, phân tích toàn bộ video với Gemini để xác định mẫu prompt tốt nhất và tạo quy tắc phiên âm. Tắt để xử lý nhanh hơn.",
+    "videoAnalysisSection": "Phân tích video",
+    "videoAnalysisModel": "Mô hình phân tích",
+    "videoAnalysisModelDescription": "Chọn mô hình Gemini để sử dụng cho phân tích video. Flash Lite nhanh hơn nhưng ít chi tiết hơn, trong khi Flash kỹ lưỡng hơn nhưng chậm hơn.",
+    "modelFlashLite": "Gemini 2.0 Flash Lite (Nhanh hơn)",
+    "modelFlash": "Gemini 2.0 Flash (Chi tiết hơn)",
+    "videoAnalysisTimeout": "Thời gian chờ phân tích",
+    "videoAnalysisTimeoutDescription": "Thiết lập thời gian chờ đầu vào của người dùng trước khi tự động tiến hành với mẫu đề xuất.",
+    "timeoutNone": "Không giới hạn",
+    "timeout10Seconds": "10 giây",
+    "timeout20Seconds": "20 giây",
+    "videoOptimization": "Tối ưu hóa video",
+    "optimizeVideos": "Tự động tối ưu hóa video đã tải lên",
+    "optimizeVideosDescription": "Tự động giảm video xuống độ phân giải thấp hơn và 15fps để xử lý nhanh hơn. Chất lượng video gốc được giữ nguyên để phát lại.",
+    "videoOptimizationSection": "Tối ưu hóa video",
+    "optimizedResolution": "Độ phân giải tối ưu",
+    "optimizedResolutionDescription": "Chọn độ phân giải để sử dụng cho video đã tối ưu hóa. Độ phân giải thấp hơn xử lý nhanh hơn nhưng có thể giảm độ chính xác.",
+    "useOptimizedPreview": "Sử dụng video đã tối ưu hóa để xem trước",
+    "useOptimizedPreviewDescription": "Hiển thị video đã tối ưu hóa trong trình phát xem trước. Điều này có thể cải thiện hiệu suất trên các thiết bị chậm hơn.",
     "cache": "Bộ nhớ đệm",
     "cacheDescription": "Xóa tất cả phụ đề và video đã tải xuống để giải phóng dung lượng.",
     "clearCache": "Xóa bộ nhớ đệm",
@@ -438,10 +462,76 @@
     "longVideoWarning": "Đối với video dài hơn 1 giờ, hãy sử dụng 144p để tránh ứng dụng bị treo"
   },
 
+  "preview": {
+    "videoQualityToggle": "Chuyển đổi giữa chất lượng video gốc và đã tối ưu",
+    "optimizedQuality": "Chất lượng tối ưu",
+    "originalQuality": "Chất lượng gốc",
+    "downloading": "Đang tải video..."
+  },
+
+  "srtUpload": {
+    "buttonText": "Tải lên SRT",
+    "tooltip": "Tải lên tập tin SRT của bạn",
+    "processing": "Đang xử lý..."
+  },
+
   "timeline": {
     "zoomIn": "Phóng to",
     "zoomOut": "Thu nhỏ",
     "resetZoom": "Đặt lại thu phóng",
-    "waveformDisabled": "Hiển thị dạng sóng âm thanh đã tự động bị tắt đối với video dài hơn 30 phút để cải thiện hiệu suất."
+    "waveformDisabled": "Hiển thị dạng sóng âm thanh đã tự động bị tắt đối với video dài hơn 30 phút để cải thiện hiệu suất.",
+    "srtOnlyMode": "Chế độ chỉ SRT - Hiển thị dòng thời gian dựa trên thời gian phụ đề"
+  },
+
+  "videoAnalysis": {
+    "title": "Kết quả phân tích video",
+    "recommendedPreset": "Mẫu được đề xuất",
+    "transcriptionRules": "Quy tắc phiên âm",
+    "rulesDescription": "Một bộ quy tắc đã được tạo ra để đảm bảo phiên âm nhất quán cho video này.",
+    "previewRules": "Xem trước & Chỉnh sửa quy tắc",
+    "useDefaultPreset": "Sử dụng mẫu mặc định của tôi",
+    "useRecommended": "Sử dụng đề xuất",
+    "editRules": "Chỉnh sửa quy tắc",
+    "continueWithRules": "Tiếp tục với các quy tắc này",
+    "atmosphere": "Bầu không khí",
+    "terminology": "Thuật ngữ & Danh từ riêng",
+    "speakerIdentification": "Nhận dạng người nói",
+    "formattingConventions": "Quy ước định dạng & kiểu",
+    "spellingAndGrammar": "Chính tả, ngữ pháp & dấu câu",
+    "relationships": "Mối quan hệ & Thứ bậc xã hội",
+    "additionalNotes": "Ghi chú bổ sung",
+    "autoSelectCountdown": "Tự động chọn mẫu được đề xuất trong (nhấp vào bất kỳ đâu để hủy)",
+    "seconds": "giây"
+  },
+
+  "rulesEditor": {
+    "title": "Chỉnh sửa quy tắc phiên âm",
+    "atmospherePlaceholder": "Mô tả về bối cảnh hoặc ngữ cảnh...",
+    "terminologyDescription": "Thêm thuật ngữ chuyên ngành, danh từ riêng và định nghĩa của chúng",
+    "termPlaceholder": "Thuật ngữ",
+    "definitionPlaceholder": "Định nghĩa",
+    "addTerm": "+ Thêm thuật ngữ",
+    "speakersDescription": "Thêm thông tin về những người nói khác nhau",
+    "speakerIdPlaceholder": "ID người nói (ví dụ: \"Người nói 1\", \"John\")",
+    "speakerDescPlaceholder": "Mô tả",
+    "addSpeaker": "+ Thêm người nói",
+    "formattingDescription": "Thêm quy tắc định dạng và kiểu",
+    "conventionPlaceholder": "Quy tắc định dạng...",
+    "addFormatting": "+ Thêm quy tắc định dạng",
+    "spellingDescription": "Thêm quy tắc chính tả, ngữ pháp và dấu câu",
+    "spellingRulePlaceholder": "Quy tắc chính tả hoặc ngữ pháp...",
+    "addSpellingRule": "+ Thêm quy tắc chính tả/ngữ pháp",
+    "relationshipsDescription": "Thêm thông tin về mối quan hệ giữa mọi người",
+    "relationshipPlaceholder": "Thông tin mối quan hệ...",
+    "addRelationship": "+ Thêm mối quan hệ",
+    "notesDescription": "Thêm bất kỳ ghi chú nào khác để phiên âm nhất quán",
+    "notePlaceholder": "Ghi chú bổ sung...",
+    "addNote": "+ Thêm ghi chú"
+  },
+
+  "fileUpload": {
+    "remove": "Xóa",
+    "sizeError": "Kích thước tập tin vượt quá giới hạn tối đa {{size}} MB.",
+    "formatError": "Định dạng tập tin không được hỗ trợ. Vui lòng tải lên tập tin video hoặc âm thanh được hỗ trợ."
   }
 }

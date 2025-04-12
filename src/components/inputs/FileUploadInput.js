@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className }) => {
+const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
   const [fileInfo, setFileInfo] = useState(null);
   const [error, setError] = useState('');
@@ -94,6 +94,11 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // Clear any selected YouTube video state via parent callback
         if (onVideoSelect) {
           onVideoSelect(null);
+        }
+
+        // If we're in SRT-only mode, switch to normal mode since we now have a video
+        if (isSrtOnlyMode && setIsSrtOnlyMode) {
+          setIsSrtOnlyMode(false);
         }
 
         setUploadedFile(file);
@@ -197,6 +202,12 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                 if (localStorage.getItem('current_file_url')) {
                   URL.revokeObjectURL(localStorage.getItem('current_file_url'));
                   localStorage.removeItem('current_file_url');
+                }
+
+                // If we have subtitles data in localStorage but no video, switch to SRT-only mode
+                const subtitlesData = localStorage.getItem('subtitles_data');
+                if (subtitlesData && setIsSrtOnlyMode) {
+                  setIsSrtOnlyMode(true);
                 }
               }}
             >
