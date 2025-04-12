@@ -228,8 +228,8 @@ const VideoAnalysisModal = ({
             <div className="modal-content">
               <div className="analysis-result">
                 {countdown !== null && (
-                  <div className="timer-section">
-                    <p>{t('videoAnalysis.autoSelectCountdown', 'Auto-selecting recommended preset in')} <span className="timer">{countdown}</span> {t('videoAnalysis.seconds', 'seconds')}</p>
+                  <div className="timer-section" onClick={handleUserInteraction}>
+                    <p>{t('videoAnalysis.autoSelectCountdown', 'Auto-selecting recommended preset in (click anywhere to cancel)')} <span className="timer">{countdown}</span> {t('videoAnalysis.seconds', 'seconds')}</p>
                   </div>
                 )}
                 <div className="recommended-preset">

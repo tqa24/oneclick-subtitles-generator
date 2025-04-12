@@ -40,6 +40,10 @@ const DownloadOptionsModal = ({
     consolidate: localStorage.getItem('custom_prompt_consolidate') || null,
     summarize: localStorage.getItem('custom_prompt_summarize') || null
   });
+  const [splitDuration, setSplitDuration] = useState(() => {
+    // Get the split duration from localStorage or use default (0 = no split)
+    return parseInt(localStorage.getItem('consolidation_split_duration') || '0');
+  });
 
   // Reset state when modal opens
   useEffect(() => {
@@ -95,7 +99,8 @@ const DownloadOptionsModal = ({
   const handleProcess = () => {
     // Pass the custom prompt if available
     const customPrompt = customPrompts[processType];
-    onProcess(subtitleSource, processType, selectedModel, customPrompt);
+    // Pass the split duration for consolidation
+    onProcess(subtitleSource, processType, selectedModel, splitDuration, customPrompt);
     onClose();
   };
 
@@ -152,7 +157,7 @@ const DownloadOptionsModal = ({
           {/* Action tabs */}
           <div className="tabs">
             <div
-              className={`tab active`}
+              className={`tab ${processType === null ? 'active' : ''}`}
               onClick={() => {
                 setFileFormat('srt');
                 setProcessType(null);
@@ -160,10 +165,8 @@ const DownloadOptionsModal = ({
             >
               {t('download.downloadFiles', 'Download Files')}
             </div>
-            {/* Process Text tab hidden for future development */}
-            {/*
             <div
-              className={`tab ${processType ? 'active' : ''}`}
+              className={`tab ${processType !== null ? 'active' : ''}`}
               onClick={() => {
                 setFileFormat(null);
                 setProcessType('consolidate');
@@ -171,7 +174,6 @@ const DownloadOptionsModal = ({
             >
               {t('download.processText', 'Process Text')}
             </div>
-            */}
           </div>
 
           {/* File format options */}
@@ -213,8 +215,7 @@ const DownloadOptionsModal = ({
             </div>
           )}
 
-          {/* Process options - Hidden for future development */}
-          {/*
+          {/* Process options */}
           {processType && (
             <>
               <div className="option-group">
@@ -232,7 +233,7 @@ const DownloadOptionsModal = ({
                         if (isPromptEditorOpen) setIsPromptEditorOpen(false);
                       }}
                     />
-                    <span>{t('output.completeDocument', 'Complete Document (TXT)')}</span>
+                    <span>{t('download.consolidate', 'Complete Document (TXT)')}</span>
                     <div className="info-icon-container" title={t('download.consolidateExplanation', 'Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.')}>
                       <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -265,6 +266,31 @@ const DownloadOptionsModal = ({
                 </div>
               </div>
 
+              {/* Split Duration Selection (only for consolidate) */}
+              {processType === 'consolidate' && (
+                <div className="option-group">
+                  <h4>{t('consolidation.splitDuration', 'Split Duration')}:</h4>
+                  <select
+                    value={splitDuration}
+                    onChange={(e) => setSplitDuration(parseInt(e.target.value))}
+                    className="split-duration-select"
+                    title={t('consolidation.splitDurationTooltip', 'Split text into chunks for processing to avoid token limits')}
+                  >
+                    <option value="0">{t('consolidation.noSplit', 'No Split')}</option>
+                    <option value="1">1 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="3">3 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="5">5 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="7">7 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="10">10 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="15">15 {t('consolidation.minutes', 'minutes')}</option>
+                    <option value="20">20 {t('consolidation.minutes', 'minutes')}</option>
+                  </select>
+                  <div className="setting-description">
+                    {t('consolidation.splitDurationHelp', 'Splitting text into smaller chunks helps prevent processing from being cut off due to token limits. For longer texts, use smaller chunks.')}
+                  </div>
+                </div>
+              )}
+
               <div className="option-group">
                 <div className="option-header">
                   <h4>{t('download.selectModel', 'Select Model')}</h4>
@@ -287,6 +313,7 @@ const DownloadOptionsModal = ({
                 />
               </div>
 
+              {/* Prompt Editor */}
               <PromptEditor
                 key={`prompt-editor-${processType}`} // Add key to force re-render when processType changes
                 isOpen={isPromptEditorOpen}
@@ -318,7 +345,6 @@ Here are the subtitles:\n\n{subtitlesText}`)
               />
             </>
           )}
-          */}
         </div>
 
         <div className="modal-footer">
@@ -335,8 +361,7 @@ Here are the subtitles:\n\n{subtitlesText}`)
               {t('download.download', 'Download')}
             </button>
           )}
-          {/* Process button hidden for future development */}
-          {/*
+          {/* Process button */}
           {processType && (
             <button className="action-button process-button" onClick={handleProcess}>
               <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
@@ -345,7 +370,6 @@ Here are the subtitles:\n\n{subtitlesText}`)
               {t('download.process', 'Process')}
             </button>
           )}
-          */}
         </div>
       </div>
     </div>

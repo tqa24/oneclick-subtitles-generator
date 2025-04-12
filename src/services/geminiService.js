@@ -494,13 +494,19 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
     // Create a map of original subtitles with their IDs for reference
     const originalSubtitlesMap = {};
-    subtitles.forEach(sub => {
+    subtitles.forEach((sub, index) => {
         // Ensure each subtitle has a unique ID
-        const id = sub.id || subtitles.indexOf(sub) + 1;
-        originalSubtitlesMap[id] = sub;
+        const id = sub.id || index + 1;
+        // Store the subtitle with its ID and index for reference
+        originalSubtitlesMap[id] = {
+            ...sub,
+            id: id,  // Ensure ID is set
+            index: index  // Store the index for order-based matching
+        };
     });
 
     // Store the original subtitles map in localStorage for reference
+    console.log('Storing original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
     localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
 
     // If splitDuration is specified and not 0, split subtitles into chunks based on duration
@@ -619,12 +625,163 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         }
 
         const data = await response.json();
+        console.log('Raw translation response:', JSON.stringify(data).substring(0, 500) + '...');
 
         // Check if this is a structured JSON response
         if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
             console.log('Received structured JSON translation response');
-            // Return the full response for parsing
-            return parseTranslatedSubtitles(data);
+            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+            console.log('Response structure:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+
+            // Check for translations array in the new schema format
+            if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
+                console.log('Found translations array in structured JSON with', structuredJson.translations.length, 'items');
+
+                // Map the structured JSON directly to subtitle objects
+                const translatedSubtitles = [];
+
+                for (let index = 0; index < structuredJson.translations.length; index++) {
+                    const item = structuredJson.translations[index];
+                    console.log(`Processing translation item ${index + 1}:`, JSON.stringify(item));
+
+                    if (!item || !item.text) {
+                        console.warn(`Skipping item ${index + 1} - missing text property`);
+                        continue;
+                    }
+
+                    // Get the original subtitle from the map to get timing information
+                    let originalSub = null;
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+
+                            // Try to find by ID first
+                            if (item.id) {
+                                originalSub = originalSubtitlesMap[item.id];
+                                if (originalSub) {
+                                    console.log(`Found original subtitle for ID ${item.id}`);
+                                }
+                            }
+
+                            // If not found by ID, try to find by index
+                            if (!originalSub) {
+                                // Convert object to array and sort by index
+                                const originalSubsArray = Object.values(originalSubtitlesMap);
+                                originalSubsArray.sort((a, b) => a.index - b.index);
+
+                                if (index < originalSubsArray.length) {
+                                    originalSub = originalSubsArray[index];
+                                    console.log(`Using original subtitle at index ${index} as fallback`);
+                                }
+                            }
+                        } else {
+                            console.warn('No original subtitles map found in localStorage');
+                        }
+                    } catch (error) {
+                        console.error('Error getting original subtitle:', error);
+                    }
+
+                    if (!originalSub) {
+                        console.warn(`No original subtitle found for item ${index + 1}`);
+                    }
+
+                    // Create the translated subtitle with timing information
+                    const translatedSubtitle = {
+                        id: parseInt(item.id) || (index + 1),
+                        start: originalSub ? originalSub.start : 0,
+                        end: originalSub ? originalSub.end : 5, // Default 5 seconds if no original
+                        text: item.text,
+                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
+                        language: getLanguageCode(targetLanguage)
+                    };
+
+                    // Add formatted time strings for display
+                    if (translatedSubtitle.start !== undefined) {
+                        const startHours = Math.floor(translatedSubtitle.start / 3600);
+                        const startMinutes = Math.floor((translatedSubtitle.start % 3600) / 60);
+                        const startSeconds = Math.floor(translatedSubtitle.start % 60);
+                        const startMs = Math.floor((translatedSubtitle.start % 1) * 1000);
+                        translatedSubtitle.startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
+                    }
+
+                    if (translatedSubtitle.end !== undefined) {
+                        const endHours = Math.floor(translatedSubtitle.end / 3600);
+                        const endMinutes = Math.floor((translatedSubtitle.end % 3600) / 60);
+                        const endSeconds = Math.floor(translatedSubtitle.end % 60);
+                        const endMs = Math.floor((translatedSubtitle.end % 1) * 1000);
+                        translatedSubtitle.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
+                    }
+
+                    translatedSubtitles.push(translatedSubtitle);
+                }
+
+                console.log('Created', translatedSubtitles.length, 'translated subtitles');
+                if (translatedSubtitles.length > 0) {
+                    console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
+                    console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
+                }
+
+                return translatedSubtitles;
+            } else if (Array.isArray(structuredJson)) {
+                console.log('Structured JSON is an array with', structuredJson.length, 'items (old format)');
+
+                // Map the structured JSON directly to subtitle objects
+                const translatedSubtitles = [];
+
+                for (let index = 0; index < structuredJson.length; index++) {
+                    const item = structuredJson[index];
+                    console.log(`Processing translation item ${index + 1}:`, JSON.stringify(item));
+
+                    if (!item || !item.text) {
+                        console.warn(`Skipping item ${index + 1} - missing text property`);
+                        continue;
+                    }
+
+                    // Get the original subtitle from the map to get timing information
+                    let originalSub = null;
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                            originalSub = originalSubtitlesMap[item.id];
+                        }
+                    } catch (error) {
+                        console.error('Error loading original subtitles map:', error);
+                    }
+
+                    // Create the translated subtitle with timing information
+                    const translatedSubtitle = {
+                        id: parseInt(item.id) || (index + 1),
+                        start: originalSub ? originalSub.start : 0,
+                        end: originalSub ? originalSub.end : 5, // Default 5 seconds if no original
+                        text: item.text,
+                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
+                        language: getLanguageCode(targetLanguage)
+                    };
+
+                    translatedSubtitles.push(translatedSubtitle);
+                }
+
+                console.log('Created', translatedSubtitles.length, 'translated subtitles');
+                if (translatedSubtitles.length > 0) {
+                    console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
+                    console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
+                }
+
+                return translatedSubtitles;
+            } else {
+                console.warn('Structured JSON is not in a recognized format, falling back to parser');
+            }
+
+            // If not directly handled, fall back to the parser
+            const result = parseTranslatedSubtitles(data);
+            console.log('Parsed translation result using parser:', result.length, 'subtitles');
+            if (result.length > 0) {
+                console.log('First subtitle from parser:', JSON.stringify(result[0]));
+                console.log('Last subtitle from parser:', JSON.stringify(result[result.length - 1]));
+            }
+            return result;
         }
 
         // Handle text response
@@ -634,10 +791,61 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             throw new Error('No translation returned from Gemini');
         }
 
+        console.log('Received text translation response of length:', translatedText.length);
+        console.log('First 200 characters of text response:', translatedText.substring(0, 200));
+
         // Remove this controller from the map after successful response
         activeAbortControllers.delete(requestId);
 
-        // Parse the translated subtitles
+        // Try to parse the text as JSON first (in case it's JSON but not properly marked as structuredJson)
+        try {
+            const jsonData = JSON.parse(translatedText);
+            console.log('Successfully parsed text response as JSON:', JSON.stringify(jsonData).substring(0, 200));
+
+            // Check if it matches our expected format
+            if (jsonData.translations && Array.isArray(jsonData.translations)) {
+                console.log('Found translations array in parsed JSON with', jsonData.translations.length, 'items');
+
+                // Process the translations
+                const translatedSubtitles = [];
+
+                for (let index = 0; index < jsonData.translations.length; index++) {
+                    const item = jsonData.translations[index];
+                    if (!item || !item.text) continue;
+
+                    // Get the original subtitle from the map
+                    let originalSub = null;
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                            originalSub = originalSubtitlesMap[item.id];
+                        }
+                    } catch (error) {
+                        console.error('Error loading original subtitles map:', error);
+                    }
+
+                    // Create the translated subtitle
+                    translatedSubtitles.push({
+                        id: parseInt(item.id) || (index + 1),
+                        start: originalSub ? originalSub.start : 0,
+                        end: originalSub ? originalSub.end : 5,
+                        text: item.text,
+                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
+                        language: getLanguageCode(targetLanguage)
+                    });
+                }
+
+                if (translatedSubtitles.length > 0) {
+                    console.log('Created', translatedSubtitles.length, 'translated subtitles from parsed JSON');
+                    return translatedSubtitles;
+                }
+            }
+        } catch (error) {
+            console.log('Text response is not valid JSON, proceeding with SRT parsing');
+        }
+
+        // Parse the translated subtitles as SRT
         return parseTranslatedSubtitles(translatedText);
     } catch (error) {
         // Check if this is an AbortError
@@ -660,11 +868,24 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
  * @param {string} subtitlesText - Plain text content from subtitles
  * @param {string} model - Gemini model to use
  * @param {string} customPrompt - Optional custom prompt to use
+ * @param {number} splitDuration - Duration in minutes for each chunk (0 = no split)
  * @returns {Promise<string>} - Completed document text
  */
-export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
+export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0) => {
     if (!subtitlesText || subtitlesText.trim() === '') {
         throw new Error('No text to process');
+    }
+
+    // If splitDuration is specified and not 0, split text into chunks
+    if (splitDuration > 0) {
+        console.log(`Splitting document into chunks of ${splitDuration} minutes`);
+        // Dispatch event to update UI with status
+        window.dispatchEvent(new CustomEvent('consolidation-status', {
+            detail: { message: i18n.t('consolidation.splittingText', 'Splitting text into chunks of {{duration}} minutes', {
+                duration: splitDuration
+            }) }
+        }));
+        return await completeDocumentByChunks(subtitlesText, model, customPrompt, splitDuration);
     }
 
     // Create a unique ID for this request
@@ -777,6 +998,91 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
  * @param {string} customPrompt - Optional custom prompt to use
  * @returns {Promise<string>} - Summarized document text
  */
+/**
+ * Split text into chunks based on approximate word count and process each chunk
+ * @param {string} subtitlesText - Plain text content from subtitles
+ * @param {string} model - Gemini model to use
+ * @param {string} customPrompt - Optional custom prompt to use
+ * @param {number} splitDuration - Duration in minutes for each chunk
+ * @returns {Promise<string>} - Completed document text with all chunks combined
+ */
+const completeDocumentByChunks = async (subtitlesText, model, customPrompt, splitDuration) => {
+    // Estimate words per minute for reading (average speaking rate)
+    const WORDS_PER_MINUTE = 150;
+
+    // Calculate approximate word count per chunk based on duration
+    const wordsPerChunk = WORDS_PER_MINUTE * splitDuration;
+
+    // Split text into words
+    const words = subtitlesText.split(/\s+/);
+
+    // Group words into chunks
+    const chunks = [];
+    let currentChunk = [];
+
+    for (let i = 0; i < words.length; i++) {
+        currentChunk.push(words[i]);
+
+        // Start a new chunk when we reach the word limit
+        if (currentChunk.length >= wordsPerChunk && i < words.length - 1) {
+            chunks.push(currentChunk.join(' '));
+            currentChunk = [];
+        }
+    }
+
+    // Add the last chunk if it's not empty
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk.join(' '));
+    }
+
+    console.log(`Split text into ${chunks.length} chunks`);
+
+    // Dispatch event to update UI with status
+    const splitMessage = i18n.t('consolidation.splitComplete', 'Split text into {{chunks}} chunks', {
+        chunks: chunks.length
+    });
+    window.dispatchEvent(new CustomEvent('consolidation-status', {
+        detail: { message: splitMessage }
+    }));
+
+    // Process each chunk
+    const processedChunks = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+
+        // Dispatch event to update UI with status
+        const chunkMessage = i18n.t('consolidation.processingChunk', 'Processing chunk {{current}}/{{total}}', {
+            current: i + 1,
+            total: chunks.length
+        });
+        window.dispatchEvent(new CustomEvent('consolidation-status', {
+            detail: { message: chunkMessage }
+        }));
+
+        try {
+            // Call completeDocument with the current chunk, but with splitDuration=0 to avoid infinite recursion
+            const processedChunk = await completeDocument(chunk, model, customPrompt, 0);
+            processedChunks.push(processedChunk);
+        } catch (error) {
+            console.error(`Error processing chunk ${i + 1}:`, error);
+            // If a chunk fails, add the original text to maintain the structure
+            processedChunks.push(`[Processing failed] ${chunk.substring(0, 100)}...`);
+        }
+    }
+
+    // Dispatch event to update UI with completion status
+    const completionMessage = i18n.t('consolidation.processingComplete', 'Processing completed for all {{count}} chunks', {
+        count: chunks.length
+    });
+    window.dispatchEvent(new CustomEvent('consolidation-status', {
+        detail: { message: completionMessage }
+    }));
+
+    // Combine all processed chunks
+    return processedChunks.join('\n\n');
+};
+
 export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
     if (!subtitlesText || subtitlesText.trim() === '') {
         throw new Error('No text to process');

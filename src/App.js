@@ -10,13 +10,13 @@ import Header from './components/Header';
 import InputMethods from './components/InputMethods';
 import OutputContainer from './components/OutputContainer';
 import SettingsModal from './components/SettingsModal';
-import OnboardingModal from './components/OnboardingModal';
+// OnboardingModal removed
 import TranslationWarningToast from './components/TranslationWarningToast';
 import SrtUploadButton from './components/SrtUploadButton';
 import VideoAnalysisModal from './components/VideoAnalysisModal';
 import TranscriptionRulesEditor from './components/TranscriptionRulesEditor';
 import { useSubtitles } from './hooks/useSubtitles';
-import { setTranscriptionRules } from './utils/transcriptionRulesStore';
+import { setTranscriptionRules, getTranscriptionRules, clearTranscriptionRules } from './utils/transcriptionRulesStore';
 import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
@@ -45,8 +45,8 @@ function App() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [currentDownloadId, setCurrentDownloadId] = useState(null); // Track the current downloading video ID
-  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('onboarding_completed') !== 'true');
-  const [isAppReady, setIsAppReady] = useState(!showOnboarding);
+  // Onboarding removed - app is always ready
+  const [isAppReady] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false); // Track when retry is in progress
   const [isSrtOnlyMode, setIsSrtOnlyMode] = useState(false); // Track when we're working with SRT only
   const [showVideoAnalysis, setShowVideoAnalysis] = useState(false); // Show video analysis modal
@@ -61,8 +61,30 @@ function App() {
     console.log('videoAnalysisResult changed:', videoAnalysisResult);
   }, [videoAnalysisResult]);
 
-  // Clear status messages and video analysis state on mount
+  // Set default values for settings that would normally be set during onboarding
   useEffect(() => {
+    // Set onboarding as completed
+    localStorage.setItem('onboarding_completed', 'true');
+
+    // Set default preset if not already set
+    if (!localStorage.getItem('selected_preset_id')) {
+      localStorage.setItem('selected_preset_id', 'general');
+    }
+
+    // Set default model if not already set
+    if (!localStorage.getItem('gemini_model')) {
+      localStorage.setItem('gemini_model', 'gemini-2.0-flash');
+    }
+
+    // Set default transcription prompt if not already set
+    if (!localStorage.getItem('transcription_prompt')) {
+      const defaultPreset = PROMPT_PRESETS.find(preset => preset.id === 'general');
+      if (defaultPreset) {
+        localStorage.setItem('transcription_prompt', defaultPreset.prompt);
+      }
+    }
+
+    // Clear status messages and video analysis state on mount
     // Clear any lingering status messages on page load
     setStatus({});
 
@@ -115,7 +137,15 @@ function App() {
     }
   }, []);
   const [showRulesEditor, setShowRulesEditor] = useState(false); // Show rules editor modal
-  const [transcriptionRules, setTranscriptionRulesState] = useState(null); // Store transcription rules
+  // Initialize transcription rules from localStorage if available
+  // These rules are used when retrying segments to ensure consistent transcription
+  // They persist across sessions and are applied to all transcription requests
+  const [transcriptionRules, setTranscriptionRulesState] = useState(() => {
+    // Try to get rules from localStorage via the utility function
+    const savedRules = getTranscriptionRules();
+    console.log('Initializing transcription rules from localStorage:', savedRules ? 'found' : 'not found');
+    return savedRules;
+  });
 
   const {
     subtitlesData,
@@ -1362,6 +1392,10 @@ function App() {
     localStorage.removeItem('current_video_url');
     localStorage.removeItem('current_file_url');
     localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
+
+    // Don't clear transcription rules when changing tabs
+    // This allows rules to persist across tab changes
+    // clearTranscriptionRules();
   };
 
   // Handle using the recommended preset from video analysis
@@ -1699,39 +1733,7 @@ function App() {
         />
       )}
 
-      {showOnboarding && (
-        <OnboardingModal
-          onComplete={(selections) => {
-            // Save the selected preset to transcription prompt
-            const selectedPreset = PROMPT_PRESETS.find(preset => preset.id === selections.presetId);
-            if (selectedPreset) {
-              let promptText = selectedPreset.prompt;
-
-              // If it's the translation preset and a target language is provided, replace the placeholder
-              if (selections.presetId === 'translate-vietnamese' && selections.targetLanguage) {
-                promptText = promptText.replace(/TARGET_LANGUAGE/g, selections.targetLanguage);
-              }
-
-              localStorage.setItem('transcription_prompt', promptText);
-            }
-
-            // Mark onboarding as complete
-            setShowOnboarding(false);
-            setIsAppReady(true);
-
-            // Show a success message
-            setStatus({
-              message: t('onboarding.completed', 'Setup complete! You can change these settings anytime.'),
-              type: 'success'
-            });
-
-            // Clear the message after 5 seconds
-            setTimeout(() => {
-              setStatus({});
-            }, 5000);
-          }}
-        />
-      )}
+      {/* Onboarding modal removed */}
 
       {/* Video Analysis Modal */}
       {console.log('Render - showVideoAnalysis:', showVideoAnalysis, 'videoAnalysisResult:', videoAnalysisResult)}

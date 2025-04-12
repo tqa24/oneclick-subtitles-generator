@@ -556,8 +556,88 @@ const parseStructuredJsonResponse = (response) => {
         const structuredJson = response.candidates[0].content.parts[0].structuredJson;
         console.log('Structured JSON response:', JSON.stringify(structuredJson).substring(0, 200) + '...');
 
+        // Check for translations array in the new schema format
+        if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
+            console.log('Found translations array in structured JSON with', structuredJson.translations.length, 'items');
+
+            const subtitles = [];
+
+            for (let i = 0; i < structuredJson.translations.length; i++) {
+                const item = structuredJson.translations[i];
+                console.log(`Processing translation item ${i + 1}:`, JSON.stringify(item));
+
+                if (!item || !item.text) {
+                    console.warn(`Skipping item ${i + 1} - missing text property`);
+                    continue;
+                }
+
+                // Try to get original subtitle from localStorage
+                try {
+                    const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                    if (originalSubtitlesMapJson) {
+                        const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                        const originalSub = originalSubtitlesMap[item.id];
+
+                        if (originalSub) {
+                            console.log(`Found original subtitle for ID ${item.id}:`, originalSub);
+                            subtitles.push({
+                                id: parseInt(item.id),
+                                start: originalSub.start,
+                                end: originalSub.end,
+                                text: item.text,
+                                originalId: parseInt(item.id)
+                            });
+                            continue;
+                        } else {
+                            console.warn(`Original subtitle not found for ID ${item.id} in map`);
+                        }
+                    } else {
+                        console.warn('No original subtitles map found in localStorage');
+                    }
+                } catch (error) {
+                    console.error('Error loading original subtitles map:', error);
+                }
+
+                // Fallback if original subtitle not found - try to find by index
+                try {
+                    const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                    if (originalSubtitlesMapJson) {
+                        const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                        const originalSubsArray = Object.values(originalSubtitlesMap);
+
+                        if (i < originalSubsArray.length) {
+                            const originalSub = originalSubsArray[i];
+                            console.log(`Using original subtitle at index ${i} for ID ${item.id}:`, originalSub);
+                            subtitles.push({
+                                id: parseInt(item.id) || (i + 1),
+                                start: originalSub.start,
+                                end: originalSub.end,
+                                text: item.text,
+                                originalId: originalSub.id || (i + 1)
+                            });
+                            continue;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error using index-based fallback:', error);
+                }
+
+                // Last resort fallback
+                console.warn(`Using default timing for subtitle ID ${item.id} at index ${i}`);
+                subtitles.push({
+                    id: parseInt(item.id) || (i + 1),
+                    start: 0,
+                    end: 0,
+                    text: item.text,
+                    originalId: parseInt(item.id) || (i + 1)
+                });
+            }
+
+            console.log(`Processed ${subtitles.length} out of ${structuredJson.translations.length} translation items`);
+            return subtitles;
+        }
         // If it's an array, assume it's a subtitle array
-        if (Array.isArray(structuredJson)) {
+        else if (Array.isArray(structuredJson)) {
             // Log the first item to help with debugging
             if (structuredJson.length > 0) {
                 console.log('First item in structured JSON array:', JSON.stringify(structuredJson[0]));
@@ -643,6 +723,7 @@ const parseStructuredJsonResponse = (response) => {
                             const originalSub = originalSubtitlesMap[item.id];
 
                             if (originalSub) {
+                                console.log(`Found original subtitle for ID ${item.id}:`, originalSub);
                                 subtitles.push({
                                     id: parseInt(item.id),
                                     start: originalSub.start,
@@ -651,13 +732,46 @@ const parseStructuredJsonResponse = (response) => {
                                     originalId: parseInt(item.id)
                                 });
                                 continue;
+                            } else {
+                                console.warn(`Original subtitle not found for ID ${item.id} in map`);
                             }
+                        } else {
+                            console.warn('No original subtitles map found in localStorage');
                         }
                     } catch (error) {
                         console.error('Error loading original subtitles map:', error);
                     }
 
-                    // Fallback if original subtitle not found
+                    // Fallback if original subtitle not found - try to find by index
+                    // This is important for when the ID in the response doesn't match the original ID
+                    // but the order is preserved
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                            // Get all values from the map as an array
+                            const originalSubsArray = Object.values(originalSubtitlesMap);
+
+                            // If we have an original subtitle at this index, use its timing
+                            if (i < originalSubsArray.length) {
+                                const originalSub = originalSubsArray[i];
+                                console.log(`Using original subtitle at index ${i} for ID ${item.id}:`, originalSub);
+                                subtitles.push({
+                                    id: parseInt(item.id) || (i + 1),
+                                    start: originalSub.start,
+                                    end: originalSub.end,
+                                    text: item.text,
+                                    originalId: originalSub.id || (i + 1)
+                                });
+                                continue;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error using index-based fallback:', error);
+                    }
+
+                    // Last resort fallback if original subtitle not found
+                    console.warn(`Using default timing for subtitle ID ${item.id} at index ${i}`);
                     subtitles.push({
                         id: parseInt(item.id) || (i + 1),
                         start: 0, // Default start time
@@ -838,9 +952,73 @@ const convertTimeStringToSeconds = (timeString) => {
  * @returns {Array} - Array of subtitle objects
  */
 export const parseTranslatedSubtitles = (response) => {
+    console.log('Parsing translated subtitles, response type:', typeof response);
+
     // Check if this is a structured JSON response
     if (typeof response === 'object' && response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-        return parseStructuredJsonResponse(response);
+        console.log('Found structuredJson in response');
+        try {
+            const result = parseStructuredJsonResponse(response);
+            console.log('Parsed structured JSON response:', result ? result.length : 0, 'subtitles');
+            if (result && result.length > 0) {
+                return result;
+            } else {
+                console.warn('Structured JSON parsing returned no subtitles, falling back to text parsing');
+            }
+        } catch (error) {
+            console.error('Error parsing structured JSON response:', error);
+            console.log('Falling back to text parsing');
+        }
+    }
+
+    // Try to parse the response as JSON if it's a string
+    if (typeof response === 'string') {
+        try {
+            const jsonData = JSON.parse(response);
+            console.log('Successfully parsed response string as JSON');
+
+            // Check if it matches our expected format
+            if (jsonData.translations && Array.isArray(jsonData.translations)) {
+                console.log('Found translations array in parsed JSON with', jsonData.translations.length, 'items');
+
+                // Process the translations
+                const subtitles = [];
+
+                for (let index = 0; index < jsonData.translations.length; index++) {
+                    const item = jsonData.translations[index];
+                    if (!item || !item.text) continue;
+
+                    // Get the original subtitle from the map
+                    let originalSub = null;
+                    try {
+                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
+                        if (originalSubtitlesMapJson) {
+                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+                            originalSub = originalSubtitlesMap[item.id];
+                        }
+                    } catch (error) {
+                        console.error('Error loading original subtitles map:', error);
+                    }
+
+                    // Create the translated subtitle
+                    subtitles.push({
+                        id: parseInt(item.id) || (index + 1),
+                        start: originalSub ? originalSub.start : 0,
+                        end: originalSub ? originalSub.end : 5,
+                        text: item.text,
+                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
+                        language: localStorage.getItem('translation_target_language')
+                    });
+                }
+
+                if (subtitles.length > 0) {
+                    console.log('Created', subtitles.length, 'translated subtitles from parsed JSON string');
+                    return subtitles;
+                }
+            }
+        } catch (error) {
+            console.log('Response string is not valid JSON, proceeding with SRT parsing');
+        }
     }
 
     // Handle text response

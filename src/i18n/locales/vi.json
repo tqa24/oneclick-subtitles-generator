@@ -352,6 +352,7 @@
     "selectModelForProcessing": "Chọn mô hình để xử lý",
     "download": "Tải xuống",
     "process": "Xử lý",
+    "consolidate": "Tài liệu hoàn chỉnh (TXT)",
     "summarize": "Tóm tắt (TXT)",
     "txtNoTimings": "TXT (không có thời gian)",
     "consolidateExplanation": "Chuyển đổi phụ đề thành một tài liệu mạch lạc, cải thiện lưu chảy và khả năng đọc trong khi vẫn giữ nguyên ý nghĩa ban đầu.",
