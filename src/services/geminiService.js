@@ -446,30 +446,37 @@ const fileToBase64 = (file) => {
 
 // Default prompts for different operations
 export const getDefaultTranslationPrompt = (subtitleText, targetLanguage) => {
-    return `Translate the following subtitles to ${targetLanguage}.
+    // Count the number of subtitles by counting the [n] markers
+    const subtitleCount = (subtitleText.match(/\[\d+\]/g) || []).length;
 
-IMPORTANT: You MUST preserve the exact SRT format with numbers and timestamps.
-DO NOT modify the timestamps or subtitle numbers.
-ONLY translate the text content between timestamps and blank lines.
-DO NOT include any explanations, comments, or additional text in your response.
+    return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
-Format must be exactly:
-1
-00:01:23,456 --> 00:01:26,789
-Translated text here
+IMPORTANT INSTRUCTIONS:
+1. KEEP the [n] numbering at the beginning of each line exactly as is.
+2. ONLY translate the text content after the [n] marker.
+3. DO NOT add any timestamps or other formatting.
+4. DO NOT include any explanations, comments, or additional text in your response.
+5. MAINTAIN exactly ${subtitleCount} numbered lines in the same order.
+6. Each line in your response should correspond to the same numbered line in the input.
+7. If a line is empty after the [n] marker, keep it empty in your response.
 
-2
-00:01:27,123 --> 00:01:30,456
-Next translated text here
+Format your response exactly like this:
+[1] Translated text for first subtitle
+[2] Translated text for second subtitle
+...
+[${subtitleCount}] Translated text for last subtitle
 
-Here are the subtitles to translate:\n\n${subtitleText}`;
+Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
 };
 
 export const getDefaultConsolidatePrompt = (subtitlesText) => {
     return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
 
-IMPORTANT: Your response should ONLY contain the consolidated document text.
-DO NOT include any explanations, comments, headers, or additional text in your response.
+IMPORTANT: Your response should ONLY contain the consolidated document text as plain text.
+DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
+DO NOT structure your response as JSON with title and content fields.
+DO NOT use markdown formatting.
+Just return the plain text of the consolidated document.
 
 Here are the subtitles:\n\n${subtitlesText}`;
 };
@@ -493,21 +500,27 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
     }
 
     // Create a map of original subtitles with their IDs for reference
-    const originalSubtitlesMap = {};
-    subtitles.forEach((sub, index) => {
-        // Ensure each subtitle has a unique ID
-        const id = sub.id || index + 1;
-        // Store the subtitle with its ID and index for reference
-        originalSubtitlesMap[id] = {
-            ...sub,
-            id: id,  // Ensure ID is set
-            index: index  // Store the index for order-based matching
-        };
-    });
+    // Only create and store the map if we're not in a chunked translation (splitDuration=0)
+    // This prevents overwriting the complete map when processing individual chunks
+    if (splitDuration === 0 && !localStorage.getItem('original_subtitles_map')) {
+        const originalSubtitlesMap = {};
+        subtitles.forEach((sub, index) => {
+            // Ensure each subtitle has a unique ID
+            const id = sub.id || index + 1;
+            // Store the subtitle with its ID and index for reference
+            originalSubtitlesMap[id] = {
+                ...sub,
+                id: id,  // Ensure ID is set
+                index: index  // Store the index for order-based matching
+            };
+        });
 
-    // Store the original subtitles map in localStorage for reference
-    console.log('Storing original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
-    localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
+        // Store the original subtitles map in localStorage for reference
+        console.log('Storing original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
+        localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
+    } else if (splitDuration === 0) {
+        console.log('Using existing original subtitles map from localStorage');
+    }
 
     // If splitDuration is specified and not 0, split subtitles into chunks based on duration
     if (splitDuration > 0) {
@@ -523,35 +536,8 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration);
     }
 
-    // Format subtitles as proper SRT text for Gemini
-    const subtitleText = subtitles.map((sub, index) => {
-        // Convert timestamps to SRT format if they're not already
-        let startTime = sub.startTime;
-        let endTime = sub.endTime;
-
-        // If we have numeric start/end instead of formatted strings
-        if (sub.start !== undefined && !startTime) {
-            const startHours = Math.floor(sub.start / 3600);
-            const startMinutes = Math.floor((sub.start % 3600) / 60);
-            const startSeconds = Math.floor(sub.start % 60);
-            const startMs = Math.floor((sub.start % 1) * 1000);
-            startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
-        }
-
-        if (sub.end !== undefined && !endTime) {
-            const endHours = Math.floor(sub.end / 3600);
-            const endMinutes = Math.floor((sub.end % 3600) / 60);
-            const endSeconds = Math.floor(sub.end % 60);
-            const endMs = Math.floor((sub.end % 1) * 1000);
-            endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
-        }
-
-        // Use the subtitle's ID or create one based on index
-        const id = sub.id || index + 1;
-
-        // Include a special comment with the original subtitle ID that won't affect translation
-        return `${index + 1}\n${startTime} --> ${endTime}\n${sub.text}\n<!-- original_id: ${id} -->`;
-    }).join('\n\n');
+    // Format subtitles as numbered text lines for Gemini (text only, no timestamps)
+    const subtitleText = subtitles.map((sub, index) => `[${index + 1}] ${sub.text}`).join('\n');
 
     // Create the prompt for translation
     let translationPrompt;
@@ -627,226 +613,202 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         const data = await response.json();
         console.log('Raw translation response:', JSON.stringify(data).substring(0, 500) + '...');
 
-        // Check if this is a structured JSON response
-        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-            console.log('Received structured JSON translation response');
-            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
-            console.log('Response structure:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+        // Process the translation response
+        let translatedTexts = [];
+        let retryCount = 0;
+        const maxRetries = 3;
 
-            // Check for translations array in the new schema format
-            if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
-                console.log('Found translations array in structured JSON with', structuredJson.translations.length, 'items');
+        // Function to process the response and extract translated texts
+        const processResponse = (responseData) => {
+            // Check if this is a structured JSON response
+            if (responseData.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
+                console.log('Received structured JSON translation response');
+                const structuredJson = responseData.candidates[0].content.parts[0].structuredJson;
 
-                // Map the structured JSON directly to subtitle objects
-                const translatedSubtitles = [];
-
-                for (let index = 0; index < structuredJson.translations.length; index++) {
-                    const item = structuredJson.translations[index];
-                    console.log(`Processing translation item ${index + 1}:`, JSON.stringify(item));
-
-                    if (!item || !item.text) {
-                        console.warn(`Skipping item ${index + 1} - missing text property`);
-                        continue;
-                    }
-
-                    // Get the original subtitle from the map to get timing information
-                    let originalSub = null;
-                    try {
-                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
-                        if (originalSubtitlesMapJson) {
-                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
-
-                            // Try to find by ID first
-                            if (item.id) {
-                                originalSub = originalSubtitlesMap[item.id];
-                                if (originalSub) {
-                                    console.log(`Found original subtitle for ID ${item.id}`);
-                                }
-                            }
-
-                            // If not found by ID, try to find by index
-                            if (!originalSub) {
-                                // Convert object to array and sort by index
-                                const originalSubsArray = Object.values(originalSubtitlesMap);
-                                originalSubsArray.sort((a, b) => a.index - b.index);
-
-                                if (index < originalSubsArray.length) {
-                                    originalSub = originalSubsArray[index];
-                                    console.log(`Using original subtitle at index ${index} as fallback`);
-                                }
-                            }
-                        } else {
-                            console.warn('No original subtitles map found in localStorage');
-                        }
-                    } catch (error) {
-                        console.error('Error getting original subtitle:', error);
-                    }
-
-                    if (!originalSub) {
-                        console.warn(`No original subtitle found for item ${index + 1}`);
-                    }
-
-                    // Create the translated subtitle with timing information
-                    const translatedSubtitle = {
-                        id: parseInt(item.id) || (index + 1),
-                        start: originalSub ? originalSub.start : 0,
-                        end: originalSub ? originalSub.end : 5, // Default 5 seconds if no original
-                        text: item.text,
-                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
-                        language: getLanguageCode(targetLanguage)
-                    };
-
-                    // Add formatted time strings for display
-                    if (translatedSubtitle.start !== undefined) {
-                        const startHours = Math.floor(translatedSubtitle.start / 3600);
-                        const startMinutes = Math.floor((translatedSubtitle.start % 3600) / 60);
-                        const startSeconds = Math.floor(translatedSubtitle.start % 60);
-                        const startMs = Math.floor((translatedSubtitle.start % 1) * 1000);
-                        translatedSubtitle.startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
-                    }
-
-                    if (translatedSubtitle.end !== undefined) {
-                        const endHours = Math.floor(translatedSubtitle.end / 3600);
-                        const endMinutes = Math.floor((translatedSubtitle.end % 3600) / 60);
-                        const endSeconds = Math.floor(translatedSubtitle.end % 60);
-                        const endMs = Math.floor((translatedSubtitle.end % 1) * 1000);
-                        translatedSubtitle.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
-                    }
-
-                    translatedSubtitles.push(translatedSubtitle);
+                // If it's an array of translations
+                if (Array.isArray(structuredJson)) {
+                    return structuredJson.map(item => item.text || '').filter(text => text !== undefined);
                 }
-
-                console.log('Created', translatedSubtitles.length, 'translated subtitles');
-                if (translatedSubtitles.length > 0) {
-                    console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
-                    console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
+                // If it has a translations array property
+                else if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
+                    return structuredJson.translations.map(item => item.text || '').filter(text => text !== undefined);
                 }
-
-                return translatedSubtitles;
-            } else if (Array.isArray(structuredJson)) {
-                console.log('Structured JSON is an array with', structuredJson.length, 'items (old format)');
-
-                // Map the structured JSON directly to subtitle objects
-                const translatedSubtitles = [];
-
-                for (let index = 0; index < structuredJson.length; index++) {
-                    const item = structuredJson[index];
-                    console.log(`Processing translation item ${index + 1}:`, JSON.stringify(item));
-
-                    if (!item || !item.text) {
-                        console.warn(`Skipping item ${index + 1} - missing text property`);
-                        continue;
-                    }
-
-                    // Get the original subtitle from the map to get timing information
-                    let originalSub = null;
-                    try {
-                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
-                        if (originalSubtitlesMapJson) {
-                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
-                            originalSub = originalSubtitlesMap[item.id];
-                        }
-                    } catch (error) {
-                        console.error('Error loading original subtitles map:', error);
-                    }
-
-                    // Create the translated subtitle with timing information
-                    const translatedSubtitle = {
-                        id: parseInt(item.id) || (index + 1),
-                        start: originalSub ? originalSub.start : 0,
-                        end: originalSub ? originalSub.end : 5, // Default 5 seconds if no original
-                        text: item.text,
-                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
-                        language: getLanguageCode(targetLanguage)
-                    };
-
-                    translatedSubtitles.push(translatedSubtitle);
-                }
-
-                console.log('Created', translatedSubtitles.length, 'translated subtitles');
-                if (translatedSubtitles.length > 0) {
-                    console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
-                    console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
-                }
-
-                return translatedSubtitles;
-            } else {
-                console.warn('Structured JSON is not in a recognized format, falling back to parser');
             }
 
-            // If not directly handled, fall back to the parser
-            const result = parseTranslatedSubtitles(data);
-            console.log('Parsed translation result using parser:', result.length, 'subtitles');
-            if (result.length > 0) {
-                console.log('First subtitle from parser:', JSON.stringify(result[0]));
-                console.log('Last subtitle from parser:', JSON.stringify(result[result.length - 1]));
+            // Handle text response
+            const translatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (translatedText) {
+                // Split the text by lines and extract the text after the [n] marker
+                const lines = translatedText.split('\n').map(line => line.trim());
+                const translatedLines = [];
+
+                // Process each line to extract the text after the [n] marker
+                for (const line of lines) {
+                    // Skip empty lines
+                    if (!line) continue;
+
+                    // Match the [n] marker and extract the text after it
+                    const match = line.match(/^\[(\d+)\]\s*(.*)$/);
+                    if (match) {
+                        const index = parseInt(match[1]) - 1; // Convert to 0-based index
+                        const text = match[2].trim();
+
+                        // Store the translation at the correct index
+                        if (index >= 0) {
+                            // Ensure the array is big enough
+                            while (translatedLines.length <= index) {
+                                translatedLines.push('');
+                            }
+                            translatedLines[index] = text;
+                        }
+                    } else {
+                        // If the line doesn't match the expected format, add it as is
+                        translatedLines.push(line);
+                    }
+                }
+
+                return translatedLines;
             }
-            return result;
+
+            return [];
+        };
+
+        // Try to process the response
+        translatedTexts = processResponse(data);
+
+        // Check if we have the correct number of translations
+        while (translatedTexts.length !== subtitles.length && retryCount < maxRetries) {
+            console.warn(`Translation count mismatch: got ${translatedTexts.length}, expected ${subtitles.length}. Retrying (${retryCount + 1}/${maxRetries})...`);
+            retryCount++;
+
+            // Try to fix the response by splitting or combining
+            if (translatedTexts.length < subtitles.length) {
+                // We have fewer translations than subtitles
+                // Try to split longer translations
+                const newTranslatedTexts = [];
+                let deficit = subtitles.length - translatedTexts.length;
+
+                for (let i = 0; i < translatedTexts.length && deficit > 0; i++) {
+                    const text = translatedTexts[i];
+                    if (text.length > 50) { // Only split longer texts
+                        const parts = text.split(/[.!?]\s+/);
+                        if (parts.length > 1) {
+                            const midpoint = Math.floor(parts.length / 2);
+                            const firstHalf = parts.slice(0, midpoint).join('. ') + '.';
+                            const secondHalf = parts.slice(midpoint).join('. ');
+                            newTranslatedTexts.push(firstHalf);
+                            newTranslatedTexts.push(secondHalf);
+                            deficit--;
+                            continue;
+                        }
+                    }
+                    newTranslatedTexts.push(text);
+                }
+
+                if (newTranslatedTexts.length > translatedTexts.length) {
+                    translatedTexts = newTranslatedTexts;
+                    continue;
+                }
+            } else if (translatedTexts.length > subtitles.length) {
+                // We have more translations than subtitles
+                // Try to combine shorter translations
+                const newTranslatedTexts = [];
+                let i = 0;
+                while (i < translatedTexts.length) {
+                    if (i < translatedTexts.length - 1 &&
+                        translatedTexts[i].length + translatedTexts[i+1].length < 100) {
+                        newTranslatedTexts.push(`${translatedTexts[i]} ${translatedTexts[i+1]}`);
+                        i += 2;
+                    } else {
+                        newTranslatedTexts.push(translatedTexts[i]);
+                        i++;
+                    }
+                }
+
+                if (newTranslatedTexts.length < translatedTexts.length) {
+                    translatedTexts = newTranslatedTexts;
+                    continue;
+                }
+            }
+
+            // If we couldn't fix it by splitting/combining, try again with the API
+            try {
+                // Retry the translation with a more explicit prompt
+                const retryPrompt = `Translate the following ${subtitles.length} subtitle texts to ${targetLanguage}.
+
+IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} numbered lines in the format [n] translated text.
+Keep the [n] numbering exactly as in the input.
+Do not skip any numbers or add any extra text.
+
+${subtitleText}`;
+
+                const retryRequestData = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: retryPrompt }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        temperature: 0.2,
+                        topK: 32,
+                        topP: 0.95,
+                        maxOutputTokens: 65536,
+                    },
+                };
+
+                const retryResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(retryRequestData),
+                    signal: signal
+                });
+
+                if (!retryResponse.ok) {
+                    throw new Error(`Retry failed with status ${retryResponse.status}`);
+                }
+
+                const retryData = await retryResponse.json();
+                translatedTexts = processResponse(retryData);
+            } catch (retryError) {
+                console.error('Translation retry failed:', retryError);
+                break; // Exit the retry loop if the API call fails
+            }
         }
 
-        // Handle text response
-        const translatedText = data.candidates[0]?.content?.parts[0]?.text;
-
-        if (!translatedText) {
-            throw new Error('No translation returned from Gemini');
+        // If we still don't have the right number of translations after all retries
+        if (translatedTexts.length !== subtitles.length) {
+            console.error(`Failed to get the correct number of translations after ${maxRetries} retries. Got ${translatedTexts.length}, expected ${subtitles.length}.`);
+            throw new Error(`Translation failed: received ${translatedTexts.length} translations but expected ${subtitles.length}. Please try again.`);
         }
 
-        console.log('Received text translation response of length:', translatedText.length);
-        console.log('First 200 characters of text response:', translatedText.substring(0, 200));
+        // Create translated subtitles by combining original timing with translated text
+        const translatedSubtitles = subtitles.map((originalSub, index) => {
+            return {
+                id: originalSub.id || index + 1,
+                start: originalSub.start,
+                end: originalSub.end,
+                startTime: originalSub.startTime,
+                endTime: originalSub.endTime,
+                text: translatedTexts[index] || originalSub.text, // Fallback to original text if no translation
+                originalId: originalSub.id || index + 1,
+                language: getLanguageCode(targetLanguage)
+            };
+        });
+
+        console.log('Created', translatedSubtitles.length, 'translated subtitles');
+        if (translatedSubtitles.length > 0) {
+            console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
+            console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
+        }
 
         // Remove this controller from the map after successful response
         activeAbortControllers.delete(requestId);
-
-        // Try to parse the text as JSON first (in case it's JSON but not properly marked as structuredJson)
-        try {
-            const jsonData = JSON.parse(translatedText);
-            console.log('Successfully parsed text response as JSON:', JSON.stringify(jsonData).substring(0, 200));
-
-            // Check if it matches our expected format
-            if (jsonData.translations && Array.isArray(jsonData.translations)) {
-                console.log('Found translations array in parsed JSON with', jsonData.translations.length, 'items');
-
-                // Process the translations
-                const translatedSubtitles = [];
-
-                for (let index = 0; index < jsonData.translations.length; index++) {
-                    const item = jsonData.translations[index];
-                    if (!item || !item.text) continue;
-
-                    // Get the original subtitle from the map
-                    let originalSub = null;
-                    try {
-                        const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
-                        if (originalSubtitlesMapJson) {
-                            const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
-                            originalSub = originalSubtitlesMap[item.id];
-                        }
-                    } catch (error) {
-                        console.error('Error loading original subtitles map:', error);
-                    }
-
-                    // Create the translated subtitle
-                    translatedSubtitles.push({
-                        id: parseInt(item.id) || (index + 1),
-                        start: originalSub ? originalSub.start : 0,
-                        end: originalSub ? originalSub.end : 5,
-                        text: item.text,
-                        originalId: originalSub ? originalSub.id : (parseInt(item.id) || (index + 1)),
-                        language: getLanguageCode(targetLanguage)
-                    });
-                }
-
-                if (translatedSubtitles.length > 0) {
-                    console.log('Created', translatedSubtitles.length, 'translated subtitles from parsed JSON');
-                    return translatedSubtitles;
-                }
-            }
-        } catch (error) {
-            console.log('Text response is not valid JSON, proceeding with SRT parsing');
-        }
-
-        // Parse the translated subtitles as SRT
-        return parseTranslatedSubtitles(translatedText);
+        return translatedSubtitles;
     } catch (error) {
         // Check if this is an AbortError
         if (error.name === 'AbortError') {
@@ -961,14 +923,157 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
             console.log('Received structured JSON document response');
             const structuredJson = data.candidates[0].content.parts[0].structuredJson;
-            return structuredJson;
+            console.log('Structured JSON content:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+
+            // Convert structured JSON to plain text
+            if (typeof structuredJson === 'string') {
+                return structuredJson;
+            } else if (typeof structuredJson === 'object') {
+                // Special handling for title+content format
+                if (structuredJson.title && structuredJson.content) {
+                    console.log('Found title and content properties in structured JSON');
+                    // Format as a proper document with title and content
+                    return `${structuredJson.title}\n\n${structuredJson.content}`;
+                }
+                // If it's an object with a text or content property, use that
+                else if (structuredJson.content) {
+                    console.log('Found content property in structured JSON');
+                    return structuredJson.content;
+                } else if (structuredJson.text) {
+                    console.log('Found text property in structured JSON');
+                    return structuredJson.text;
+                } else if (structuredJson.document) {
+                    console.log('Found document property in structured JSON');
+                    return structuredJson.document;
+                } else {
+                    // Otherwise, stringify it and extract plain text
+                    console.log('No direct text property found, extracting from object properties');
+                    // Extract any text fields from the JSON
+                    const textFields = [];
+                    const extractText = (obj, key = null) => {
+                        if (!obj) return;
+                        if (typeof obj === 'string') {
+                            // Skip short strings that are likely field names
+                            if (obj.length > 10 || key === 'title' || key === 'content' || key === 'text') {
+                                textFields.push(obj);
+                            }
+                        } else if (Array.isArray(obj)) {
+                            obj.forEach(item => extractText(item));
+                        } else if (typeof obj === 'object') {
+                            Object.entries(obj).forEach(([k, value]) => extractText(value, k));
+                        }
+                    };
+                    extractText(structuredJson);
+
+                    if (textFields.length > 0) {
+                        console.log(`Found ${textFields.length} text fields in structured JSON`);
+                        return textFields.join('\n\n');
+                    } else {
+                        // If no text fields found, return the stringified JSON as a last resort
+                        console.log('No text fields found, returning stringified JSON');
+                        return JSON.stringify(structuredJson, null, 2);
+                    }
+                }
+            }
         }
 
         // Handle text response
-        const completedText = data.candidates[0]?.content?.parts[0]?.text;
+        let completedText = data.candidates[0]?.content?.parts[0]?.text;
 
         if (!completedText) {
             throw new Error('No completed document returned from Gemini');
+        }
+
+        // Check if the response contains structured output and extract plain text if needed
+        if (completedText.includes('```json') ||
+            (completedText.includes('```') && completedText.includes('```') && completedText.trim().startsWith('```')) ||
+            (completedText.includes('{"') && completedText.includes('"}') && completedText.trim().startsWith('{')) ||
+            (completedText.includes('# ') && completedText.includes('## ') && completedText.trim().startsWith('#'))) {
+
+            console.log('Detected structured output in consolidation response, extracting plain text...');
+
+            // Try to parse as JSON first if it looks like JSON
+            if ((completedText.includes('{"') && completedText.includes('"}')) ||
+                (completedText.includes('```json') && completedText.includes('```'))) {
+                try {
+                    // Extract JSON from code blocks if present
+                    let jsonText = completedText;
+                    const jsonMatch = completedText.match(/```(?:json)?\s*([\s\S]*?)```/);
+                    if (jsonMatch && jsonMatch[1]) {
+                        jsonText = jsonMatch[1].trim();
+                    }
+
+                    // Try to parse the JSON
+                    const jsonData = JSON.parse(jsonText);
+                    console.log('Successfully parsed text as JSON');
+
+                    // Extract content from the JSON
+                    if (jsonData.content) {
+                        console.log('Found content property in parsed JSON');
+                        return jsonData.content;
+                    } else if (jsonData.text) {
+                        console.log('Found text property in parsed JSON');
+                        return jsonData.text;
+                    } else if (jsonData.document) {
+                        console.log('Found document property in parsed JSON');
+                        return jsonData.document;
+                    } else if (jsonData.title && jsonData.content) {
+                        console.log('Found title and content properties in parsed JSON');
+                        return `${jsonData.title}\n\n${jsonData.content}`;
+                    } else {
+                        // Extract text fields from the JSON object
+                        const textFields = [];
+                        const extractText = (obj, key = null) => {
+                            if (!obj) return;
+                            if (typeof obj === 'string') {
+                                if (obj.length > 10 || key === 'title' || key === 'content' || key === 'text') {
+                                    textFields.push(obj);
+                                }
+                            } else if (Array.isArray(obj)) {
+                                obj.forEach(item => extractText(item));
+                            } else if (typeof obj === 'object') {
+                                Object.entries(obj).forEach(([k, value]) => extractText(value, k));
+                            }
+                        };
+                        extractText(jsonData);
+
+                        if (textFields.length > 0) {
+                            console.log(`Found ${textFields.length} text fields in parsed JSON`);
+                            return textFields.join('\n\n');
+                        }
+                    }
+                } catch (error) {
+                    console.log('Failed to parse as JSON, falling back to text extraction', error);
+                }
+            }
+
+            // If JSON parsing failed or wasn't applicable, selectively clean the text
+            let cleanedText = completedText;
+
+            // Remove markdown code blocks but preserve their content
+            cleanedText = cleanedText.replace(/```(?:json|javascript|html|css|[a-z]*)\s*([\s\S]*?)```/g, '$1');
+
+            // Remove markdown headers but keep the text
+            cleanedText = cleanedText.replace(/#+\s+(.*?)\n/g, '$1\n');
+
+            // Only remove JSON-like structures if they appear to be examples, not the main content
+            if (cleanedText.includes('Example:') || cleanedText.includes('```json')) {
+                cleanedText = cleanedText.replace(/\{[\s\S]*?\}/g, '');
+            }
+
+            // Remove markdown formatting characters but preserve the text
+            cleanedText = cleanedText.replace(/[\*\#\`\[\]\(\)\|\>]/g, '');
+
+            // Normalize whitespace
+            cleanedText = cleanedText.replace(/\n\s*\n/g, '\n\n');
+
+            // If after all this cleaning we have very little text left, return the original
+            if (cleanedText.trim().length < completedText.trim().length * 0.3) {
+                console.log('Cleaned text is too short, returning original text');
+                return completedText;
+            }
+
+            return cleanedText.trim();
         }
 
         // Remove this controller from the map after successful response
@@ -1080,7 +1185,94 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
     }));
 
     // Combine all processed chunks
-    return processedChunks.join('\n\n');
+    console.log(`Combining ${processedChunks.length} processed chunks`);
+
+    // Check if any chunks are empty or very short
+    const validChunks = processedChunks.filter(chunk => chunk && chunk.trim().length > 10);
+    if (validChunks.length < processedChunks.length) {
+        console.log(`Filtered out ${processedChunks.length - validChunks.length} empty or very short chunks`);
+    }
+
+    // If we have no valid chunks, return a message
+    if (validChunks.length === 0) {
+        return 'The consolidation process did not produce any valid output. Please try again with different settings.';
+    }
+
+    // Process each chunk to extract content
+    const processedTextChunks = validChunks.map(chunk => {
+        console.log('Processing chunk:', chunk.substring(0, 100) + '...');
+
+        // Check if the chunk looks like JSON
+        if (chunk.trim().startsWith('{') && chunk.trim().endsWith('}')) {
+            try {
+                // Try to parse as JSON
+                const jsonData = JSON.parse(chunk);
+                console.log('Successfully parsed chunk as JSON with keys:', Object.keys(jsonData).join(', '));
+
+                // Extract content field if it exists
+                if (jsonData.content) {
+                    console.log('Extracted content field from JSON');
+                    return jsonData.content;
+                } else if (jsonData.text) {
+                    console.log('Extracted text field from JSON');
+                    return jsonData.text;
+                } else if (jsonData.document) {
+                    console.log('Extracted document field from JSON');
+                    return jsonData.document;
+                } else {
+                    // If no content field, stringify the entire object
+                    console.log('No content field found in JSON, using entire object');
+                    return JSON.stringify(jsonData);
+                }
+            } catch (error) {
+                console.log('Failed to parse as JSON:', error.message);
+                // If parsing fails, return the original chunk
+                return chunk;
+            }
+        }
+
+        // Check for JSON code blocks
+        const jsonBlockMatch = chunk.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonBlockMatch && jsonBlockMatch[1]) {
+            try {
+                const jsonData = JSON.parse(jsonBlockMatch[1].trim());
+                console.log('Successfully parsed JSON code block');
+
+                // Extract content field if it exists
+                if (jsonData.content) {
+                    console.log('Extracted content field from JSON code block');
+                    return jsonData.content;
+                } else if (jsonData.text) {
+                    console.log('Extracted text field from JSON code block');
+                    return jsonData.text;
+                } else if (jsonData.document) {
+                    console.log('Extracted document field from JSON code block');
+                    return jsonData.document;
+                } else {
+                    // If no content field, use the entire JSON block content
+                    return jsonBlockMatch[1].trim();
+                }
+            } catch (error) {
+                console.log('Failed to parse JSON code block:', error.message);
+                // If parsing fails, remove the code block markers
+                return jsonBlockMatch[1].trim();
+            }
+        }
+
+        // If not JSON, return the original chunk
+        return chunk;
+    });
+
+    // Filter out any empty chunks after processing
+    const nonEmptyChunks = processedTextChunks.filter(chunk => chunk && chunk.trim().length > 0);
+    if (nonEmptyChunks.length === 0) {
+        console.log('All chunks were empty after processing, returning original chunks');
+        return validChunks.join('\n\n');
+    }
+
+    // Join the processed chunks into a single text
+    console.log(`Joining ${nonEmptyChunks.length} processed chunks`);
+    return nonEmptyChunks.join('\n\n');
 };
 
 export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
@@ -1260,7 +1452,30 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
             translatedChunks.push(translatedChunk);
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
-            // If a chunk fails, add the original subtitles to maintain the structure
+
+            // If this is a count mismatch error, try one more time with a more explicit prompt
+            if (error.message && error.message.includes('received') && error.message.includes('expected')) {
+                try {
+                    console.log(`Retrying chunk ${i + 1} with more explicit prompt...`);
+                    // Create a more explicit prompt for this chunk with numbered lines
+                    const explicitPrompt = `Translate the following ${chunk.length} subtitle texts to ${targetLanguage}.
+
+IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} numbered lines in the format [n] translated text.
+Keep the [n] numbering exactly as in the input.
+Do not skip any numbers or add any extra text.
+
+${chunk.map((sub, idx) => `[${idx + 1}] ${sub.text}`).join('\n')}`;
+
+                    // Call translateSubtitles with the explicit prompt
+                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, explicitPrompt, 0);
+                    translatedChunks.push(translatedChunk);
+                    continue;
+                } catch (retryError) {
+                    console.error(`Retry for chunk ${i + 1} also failed:`, retryError);
+                }
+            }
+
+            // If all retries fail, add the original subtitles to maintain the structure
             translatedChunks.push(chunk.map(sub => ({
                 ...sub,
                 text: `[Translation failed] ${sub.text}`,
@@ -1278,7 +1493,16 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
     }));
 
     // Flatten the array of translated chunks
-    return translatedChunks.flat();
+    const result = translatedChunks.flat();
+
+    // Log the result
+    console.log(`Translation completed with ${result.length} total subtitles across ${chunks.length} chunks`);
+    if (result.length > 0) {
+        console.log('First translated subtitle:', JSON.stringify(result[0]));
+        console.log('Last translated subtitle:', JSON.stringify(result[result.length - 1]));
+    }
+
+    return result;
 };
 
 export { callGeminiApi as transcribeVideo, callGeminiApi as transcribeAudio, callGeminiApi as transcribeYouTubeVideo, translateSubtitles };

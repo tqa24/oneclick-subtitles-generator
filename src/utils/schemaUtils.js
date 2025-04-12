@@ -39,29 +39,11 @@ export const createSubtitleSchema = () => {
  */
 export const createTranslationSchema = () => {
     return {
-        type: "object",
-        properties: {
-            translations: {
-                type: "array",
-                items: {
-                    type: "object",
-                    properties: {
-                        id: {
-                            type: "string",
-                            description: "Subtitle ID"
-                        },
-                        text: {
-                            type: "string",
-                            description: "Translated text content"
-                        }
-                    },
-                    required: ["id", "text"],
-                    propertyOrdering: ["id", "text"]
-                }
-            }
-        },
-        required: ["translations"],
-        propertyOrdering: ["translations"]
+        type: "array",
+        items: {
+            type: "string",
+            description: "Translated text for a subtitle"
+        }
     };
 };
 

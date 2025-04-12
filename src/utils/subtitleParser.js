@@ -1128,11 +1128,74 @@ export const parseTranslatedSubtitles = (response) => {
         });
     }
 
-    // Try to load the original subtitles map from localStorage
+    // Try to load the original subtitles map from localStorage and fix timing
     try {
         const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
         if (originalSubtitlesMapJson) {
             const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
+            console.log('Found original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
+
+            // Fix timing for each subtitle based on originalId
+            for (let i = 0; i < subtitles.length; i++) {
+                const sub = subtitles[i];
+
+                // Try to find the original subtitle by ID
+                if (sub.originalId) {
+                    const originalSub = originalSubtitlesMap[sub.originalId];
+                    if (originalSub) {
+                        console.log(`Found original subtitle for ID ${sub.originalId} at index ${i}`);
+                        sub.start = originalSub.start;
+                        sub.end = originalSub.end;
+
+                        // Format the time strings
+                        if (sub.start !== undefined) {
+                            const startHours = Math.floor(sub.start / 3600);
+                            const startMinutes = Math.floor((sub.start % 3600) / 60);
+                            const startSeconds = Math.floor(sub.start % 60);
+                            const startMs = Math.floor((sub.start % 1) * 1000);
+                            sub.startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
+                        }
+
+                        if (sub.end !== undefined) {
+                            const endHours = Math.floor(sub.end / 3600);
+                            const endMinutes = Math.floor((sub.end % 3600) / 60);
+                            const endSeconds = Math.floor(sub.end % 60);
+                            const endMs = Math.floor((sub.end % 1) * 1000);
+                            sub.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
+                        }
+                        continue;
+                    }
+                }
+
+                // If not found by ID, try to find by index
+                const originalSubsArray = Object.values(originalSubtitlesMap);
+                originalSubsArray.sort((a, b) => a.index - b.index);
+
+                if (i < originalSubsArray.length) {
+                    const originalSub = originalSubsArray[i];
+                    console.log(`Using original subtitle at index ${i} as fallback for subtitle ${i+1}`);
+                    sub.start = originalSub.start;
+                    sub.end = originalSub.end;
+                    sub.originalId = originalSub.id;
+
+                    // Format the time strings
+                    if (sub.start !== undefined) {
+                        const startHours = Math.floor(sub.start / 3600);
+                        const startMinutes = Math.floor((sub.start % 3600) / 60);
+                        const startSeconds = Math.floor(sub.start % 60);
+                        const startMs = Math.floor((sub.start % 1) * 1000);
+                        sub.startTime = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:${String(startSeconds).padStart(2, '0')},${String(startMs).padStart(3, '0')}`;
+                    }
+
+                    if (sub.end !== undefined) {
+                        const endHours = Math.floor(sub.end / 3600);
+                        const endMinutes = Math.floor((sub.end % 3600) / 60);
+                        const endSeconds = Math.floor(sub.end % 60);
+                        const endMs = Math.floor((sub.end % 1) * 1000);
+                        sub.endTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:${String(endSeconds).padStart(2, '0')},${String(endMs).padStart(3, '0')}`;
+                    }
+                }
+            }
 
             // Add a reference to the target language
             const targetLanguage = localStorage.getItem('translation_target_language');
