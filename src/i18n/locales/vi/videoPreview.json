@@ -1,0 +1,6 @@
+{
+  "noSubtitlesToRender": "Không có phụ đề để hiển thị",
+  "noTranslatedSubtitles": "Không có phụ đề đã dịch",
+  "renderError": "Lỗi khi hiển thị phụ đề: {{error}}",
+  "rendering": "Đang xử lý video với phụ đề..."
+}

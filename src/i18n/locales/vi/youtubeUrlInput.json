@@ -1,0 +1,12 @@
+{
+  "placeholder": "Nhập URL YouTube (ví dụ: youtube.com/watch?v=...)",
+  "instructionsTitle": "Hướng dẫn sử dụng",
+  "instructionsStep1": "Tìm video YouTube bạn muốn tạo phụ đề",
+  "instructionsStep2": "Sao chép URL từ thanh địa chỉ trình duyệt",
+  "instructionsStep3": "Dán URL vào ô bên trên",
+  "examplesTitle": "Các định dạng URL được hỗ trợ:",
+  "example1": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "example2": "https://youtu.be/dQw4w9WgXcQ",
+  "example3": "youtube.com/watch?v=dQw4w9WgXcQ",
+  "videoId": "ID Video:"
+}

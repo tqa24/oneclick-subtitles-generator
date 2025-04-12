@@ -1,0 +1,20 @@
+{
+  "title": "Video Analysis Results",
+  "recommendedPreset": "Recommended Preset",
+  "transcriptionRules": "Transcription Rules",
+  "rulesDescription": "A set of rules has been generated to ensure consistent transcription for this video.",
+  "previewRules": "Preview & Edit Rules",
+  "useDefaultPreset": "Use Default Preset",
+  "useRecommended": "Use Recommended",
+  "editRules": "Edit Rules",
+  "continueWithRules": "Continue with these rules",
+  "atmosphere": "Atmosphere",
+  "terminology": "Terminology & Proper Nouns",
+  "speakerIdentification": "Speaker Identification",
+  "formattingConventions": "Formatting & Style Rules",
+  "spellingAndGrammar": "Spelling, Grammar & Punctuation",
+  "relationships": "Relationships & Social Hierarchy",
+  "additionalNotes": "Additional Notes",
+  "autoSelectCountdown": "Auto-selecting recommended preset in (click anywhere to cancel)",
+  "seconds": "seconds"
+}

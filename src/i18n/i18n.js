@@ -2,9 +2,9 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 // Import translations
-import enTranslation from './locales/en.json';
-import koTranslation from './locales/ko.json';
-import viTranslation from './locales/vi.json';
+import enTranslation from './locales/en/index';
+import koTranslation from './locales/ko/index';
+import viTranslation from './locales/vi/index';
 
 // Configure i18next
 i18n

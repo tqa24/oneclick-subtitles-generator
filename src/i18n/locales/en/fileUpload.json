@@ -1,0 +1,5 @@
+{
+  "remove": "Remove",
+  "sizeError": "File size exceeds the maximum limit of {{size}} MB.",
+  "formatError": "Unsupported file format. Please upload a supported video or audio file."
+}

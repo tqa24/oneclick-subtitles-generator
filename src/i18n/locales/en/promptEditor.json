@@ -1,0 +1,15 @@
+{
+  "editPrompt": "Edit Prompt",
+  "editPromptTooltip": "Edit Gemini prompt",
+  "enterPrompt": "Enter your custom prompt here...",
+  "availableVariables": "Available Variables:",
+  "variablesInstruction": "The following variables are represented by icons in the text area:",
+  "subtitlesTextDesc": "The subtitle text content",
+  "targetLanguageDesc": "The target language (for translation)",
+  "reset": "Reset to Default",
+  "editConsolidatePrompt": "Edit Consolidation Prompt",
+  "editSummarizePrompt": "Edit Summarization Prompt",
+  "editTranslationPrompt": "Edit Translation Prompt",
+  "customizePromptDesc": "Customize how Gemini processes your content.",
+  "customizeTranslationDesc": "Customize how Gemini translates your subtitles."
+}

@@ -1,0 +1,13 @@
+{
+  "apiKeyRequired": "Please set your API key in the settings first.",
+  "invalidInput": "Please provide a valid input (YouTube URL, search result, or file upload).",
+  "invalidFile": "Invalid file format or size. Please check the supported formats.",
+  "geminiOverloaded": "Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration. Or create a new Google Cloud Project and get an API Key.",
+  "tokenLimitExceeded": "The video segment is too large for Gemini to process. Please try with a shorter video or lower video quality.",
+  "fileSizeTooLarge": "File size ({{size}}MB) exceeds the recommended maximum of {{maxSize}}MB. Please use a smaller file or lower quality video.",
+  "youtubeAuthRequired": "YouTube authentication required. Please set up OAuth in settings.",
+  "youtubeApiKeyRequired": "Please set your YouTube API key in the settings to use this application.",
+  "bothKeysRequired": "Please set your Gemini API key and configure YouTube authentication in the settings to use this application.",
+  "quotaExceeded": "Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.",
+  "noMediaSelected": "Please select a video or audio file first"
+}

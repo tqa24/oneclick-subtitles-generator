@@ -1,0 +1,8 @@
+{
+  "videoQualityToggle": "Chuyển đổi giữa chất lượng video gốc và đã tối ưu",
+  "optimizedQuality": "Chất lượng tối ưu",
+  "originalQuality": "Chất lượng gốc",
+  "noOptimizedVersion": "Không có phiên bản tối ưu. Xử lý video với tối ưu hóa được bật để tạo một phiên bản.",
+  "unavailable": "không khả dụng",
+  "downloading": "Đang tải video..."
+}

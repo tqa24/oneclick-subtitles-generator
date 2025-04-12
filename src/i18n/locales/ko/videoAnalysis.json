@@ -1,0 +1,20 @@
+{
+  "title": "비디오 분석 결과",
+  "recommendedPreset": "추천 프리셋",
+  "transcriptionRules": "트랜스크립션 규칙",
+  "rulesDescription": "이 비디오의 일관된 트랜스크립션을 보장하기 위한 규칙 세트가 생성되었습니다.",
+  "previewRules": "규칙 미리보기 & 편집",
+  "useDefaultPreset": "기본 프리셋 사용",
+  "useRecommended": "추천 사용",
+  "editRules": "규칙 편집",
+  "continueWithRules": "이 규칙으로 계속하기",
+  "atmosphere": "분위기",
+  "terminology": "용어 & 고유명사",
+  "speakerIdentification": "발화자 식별",
+  "formattingConventions": "형식 & 스타일 규칙",
+  "spellingAndGrammar": "맞춤법, 문법 & 문장부호",
+  "relationships": "관계 & 사회적 계층",
+  "additionalNotes": "추가 메모",
+  "autoSelectCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
+  "seconds": "초"
+}

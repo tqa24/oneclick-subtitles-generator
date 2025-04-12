@@ -1,0 +1,13 @@
+{
+  "title": "Chọn nguồn video",
+  "youtubeUrl": "URL YouTube",
+  "youtubeSearch": "Tìm kiếm YouTube",
+  "fileUpload": "Tải lên tập tin",
+  "enterYoutubeUrl": "Nhập URL YouTube",
+  "searchForVideos": "Tìm kiếm video",
+  "dragDropText": "Kéo & Thả Video hoặc Audio vào đây",
+  "orText": "hoặc",
+  "browse": "Nhấp để chọn tập tin",
+  "supportedFormats": "Định dạng hỗ trợ: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
+  "maxFileSize": "(Thời lượng không quan trọng, nhưng video quá nét độ phân giải hoặc tốc độ khung hình cao sẽ dễ làm quá tải mô hình)"
+}
