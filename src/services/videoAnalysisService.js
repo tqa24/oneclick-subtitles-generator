@@ -5,6 +5,22 @@
 import { fileToBase64 } from '../utils/fileUtils';
 import { createVideoAnalysisSchema, addResponseSchema } from '../utils/schemaUtils';
 
+// Store the active abort controller for video analysis
+let activeAnalysisController = null;
+
+/**
+ * Abort any active video analysis request
+ */
+export const abortVideoAnalysis = () => {
+  if (activeAnalysisController) {
+    console.log('Aborting active video analysis request');
+    activeAnalysisController.abort();
+    activeAnalysisController = null;
+    return true;
+  }
+  return false;
+};
+
 /**
  * Analyzes a video with Gemini to determine the best prompt preset and generate transcription rules
  * @param {File} videoFile - The video file to analyze
@@ -12,6 +28,9 @@ import { createVideoAnalysisSchema, addResponseSchema } from '../utils/schemaUti
  * @returns {Promise<Object>} - Analysis results
  */
 export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
+  // Create a new AbortController and store it
+  activeAnalysisController = new AbortController();
+  const signal = activeAnalysisController.signal;
   try {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     if (!geminiApiKey) {
@@ -80,7 +99,8 @@ Provide your analysis in a structured format that can be used to guide the trans
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(requestData),
+        signal: signal // Add the abort signal
       }
     );
 
@@ -122,6 +142,18 @@ Provide your analysis in a structured format that can be used to guide the trans
     }
   } catch (error) {
     console.error('Error analyzing video:', error);
+
+    // Clear the active controller
+    activeAnalysisController = null;
+
+    // Check if this is an abort error
+    if (error.name === 'AbortError') {
+      throw new Error('Video analysis was cancelled');
+    }
+
     throw error;
+  } finally {
+    // Clear the active controller in case of success
+    activeAnalysisController = null;
   }
 };

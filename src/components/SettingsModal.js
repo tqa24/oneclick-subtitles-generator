@@ -85,7 +85,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
-  const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(true); // Default to optimized video in preview
   const [cacheStatus, setCacheStatus] = useState({ message: '', type: '' }); // Status message for cache operations
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
@@ -139,7 +139,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     videoAnalysisTimeout: '20',
     optimizeVideos: true,
     optimizedResolution: '360p',
-    useOptimizedPreview: false
+    useOptimizedPreview: true
   });
 
   // Load saved settings on component mount
@@ -161,7 +161,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
       const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
-      const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
+      const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false'; // Default to true if not set
       const { clientId, clientSecret } = getClientCredentials();
       const authenticated = hasValidTokens();
 
