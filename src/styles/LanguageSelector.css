@@ -43,11 +43,11 @@
 }
 
 .language-selector-button:hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+  background-color: rgba(128, 128, 128, 0.1); /* Neutral gray hover effect instead of blue */
 }
 
 .language-selector-button:hover {
-  border-color: var(--md-primary);
+  /* Removed blue border color */
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level1);
 }
@@ -60,25 +60,14 @@
   justify-content: center;
   width: 24px;
   height: 24px;
-  animation: pulse 3s infinite ease-in-out;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  /* Removed pulse animation */
 }
 
 .language-globe-icon {
   font-size: 20px;
   line-height: 1;
   transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
-  animation: slow-spin 20s infinite linear;
-}
-
-@keyframes slow-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  /* Removed rotation animation */
 }
 
 .language-current-flag {
@@ -99,8 +88,7 @@
 }
 
 .language-selector-button:hover .language-globe-icon {
-  animation-play-state: paused;
-  transform: rotate(15deg);
+  /* Removed rotation on hover */
 }
 
 .language-selector-button:hover .language-current-flag {
@@ -141,7 +129,7 @@
   animation: language-menu-appear var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
   transform-origin: top left;
   backdrop-filter: blur(10px);
-  border: 2px solid var(--md-primary); /* Make the border more visible */
+  border: 1px solid rgba(128, 128, 128, 0.2); /* Neutral gray border instead of blue */
   max-height: 80vh; /* Limit height to prevent overflow */
   overflow-y: auto; /* Add scrolling if needed */
 }
@@ -223,7 +211,7 @@
 }
 
 .language-option:hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
+  background-color: rgba(128, 128, 128, 0.1); /* Neutral gray hover effect */
 }
 
 .language-option:focus {
@@ -231,11 +219,11 @@
 }
 
 .language-option:focus::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-focus-opacity));
+  background-color: rgba(128, 128, 128, 0.15); /* Neutral gray focus effect */
 }
 
 .language-option.selected {
-  background-color: color-mix(in srgb, var(--md-primary), transparent 90%);
+  background-color: rgba(128, 128, 128, 0.1); /* Neutral gray selected effect */
   font-weight: 500;
   position: relative;
   overflow: hidden;
@@ -248,7 +236,7 @@
   left: 50%;
   width: 5px;
   height: 5px;
-  background: var(--md-primary);
+  background: rgba(128, 128, 128, 0.5); /* Neutral gray ripple */
   opacity: 0;
   border-radius: 100%;
   transform: scale(1, 1) translate(-50%, -50%);
@@ -297,7 +285,7 @@
 }
 
 .language-selected-icon {
-  color: var(--md-primary);
+  color: rgba(128, 128, 128, 0.8); /* Neutral gray icon */
   display: flex;
   align-items: center;
   justify-content: center;
