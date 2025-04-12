@@ -11,7 +11,7 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video b
 - Tải và giải nén zip từ GitHub
 - Mở PowerShell với quyền Administrator (Windows + X, chọn PowerShell Admin)
 
-#### 2. Cài Đặt Các Công Cụ Cần Thiết
+#### 2. Cài Đặt Trên Windows
 
 ```powershell
 # Cài đặt Chocolatey, FFmpeg, Node.js và Cho phép chạy script
