@@ -590,6 +590,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     left: 0;
                     right: 0;
                     width: var(--subtitle-box-width);
+                    max-width: 100%;
                     margin: 0 auto;
                     text-align: center;
                     z-index: 5;
@@ -609,8 +610,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     text-align: ${subtitleSettings.textAlign || 'center'};
                     text-transform: var(--subtitle-text-transform);
                     letter-spacing: var(--subtitle-letter-spacing);
-                    padding: 8px 12px;
-                    border-radius: 4px;
+                    padding: ${subtitleSettings.backgroundPadding || '10'}px;
+                    border-radius: ${subtitleSettings.backgroundRadius || '4'}px;
                     text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
                     max-width: 100%;
                     word-wrap: break-word;
@@ -619,7 +620,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               </style>
 
               {/* Custom subtitle display */}
-              <div className="custom-subtitle-container">
+              <div className="custom-subtitle-container" style={{ width: `${subtitleSettings.boxWidth || '80'}%` }}>
                 {currentSubtitleText && <div className="custom-subtitle">{currentSubtitleText}</div>}
               </div>
             </div>
