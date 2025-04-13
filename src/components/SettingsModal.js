@@ -1113,8 +1113,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   <div className="settings-card-header">
                     <div className="settings-card-icon">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2a10 10 0 1 0 10 10 4 4 0 1 1-4-4"></path>
-                        <path d="M18 6a4 4 0 1 0 0 8"></path>
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <circle cx="15.5" cy="8.5" r="1.5"></circle>
+                        <circle cx="8.5" cy="15.5" r="1.5"></circle>
+                        <circle cx="15.5" cy="15.5" r="1.5"></circle>
+                        <path d="M8.5 8.5l7 7"></path>
+                        <path d="M8.5 15.5l7-7"></path>
                       </svg>
                     </div>
                     <h4>{t('settings.modelSettings', 'AI Model')}</h4>
@@ -1155,13 +1160,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   <div className="settings-card-header">
                     <div className="settings-card-icon">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M2 12h5"></path>
-                        <path d="M17 12h5"></path>
-                        <path d="M9 4v16"></path>
-                        <path d="M15 4v16"></path>
-                        <path d="M12 18v4"></path>
-                        <path d="M12 2v4"></path>
-                        <circle cx="12" cy="12" r="2"></circle>
+                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                        <line x1="7" y1="2" x2="7" y2="22"></line>
+                        <line x1="17" y1="2" x2="17" y2="22"></line>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <line x1="2" y1="7" x2="7" y2="7"></line>
+                        <line x1="2" y1="17" x2="7" y2="17"></line>
+                        <line x1="17" y1="17" x2="22" y2="17"></line>
+                        <line x1="17" y1="7" x2="22" y2="7"></line>
                       </svg>
                     </div>
                     <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
@@ -1235,14 +1241,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   <div className="settings-card-header">
                     <div className="settings-card-icon">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2v4"></path>
-                        <path d="M12 18v4"></path>
-                        <path d="m4.93 10.93 2.83-2.83"></path>
-                        <path d="m16.24 16.24 2.83-2.83"></path>
-                        <path d="M2 12h4"></path>
-                        <path d="M18 12h4"></path>
-                        <path d="m10.93 4.93-2.83-2.83"></path>
-                        <path d="m16.24 7.76 2.83-2.83"></path>
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                       </svg>
                     </div>
                     <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
