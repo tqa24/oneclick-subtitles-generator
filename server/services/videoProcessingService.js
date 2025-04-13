@@ -320,7 +320,7 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
       '-crf', '28',
       '-tune', 'fastdecode',
       '-c:a', 'aac',
-      '-b:a', '32k',          // Reduced from 128k to 32k
+      '-b:a', '64k',          // Reduced from 128k to 32k
       '-ac', '1',             // Mono audio
       '-ar', '22050',         // Lowest reasonable sample rate
       '-movflags', '+faststart',
@@ -452,7 +452,7 @@ function createAnalysisVideo(videoPath, outputPath) {
         '-crf', '30',
         '-tune', 'fastdecode',
         '-c:a', 'aac',
-        '-b:a', '32k',
+        '-b:a', '64k',
         '-ac', '1',
         '-ar', '22050',
         '-threads', '0',
@@ -531,7 +531,7 @@ function convertAudioToVideo(audioPath, outputPath) {
         '-crf', '28',
         '-tune', 'stillimage',
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', '64k',
         '-shortest',
         '-threads', '0',
         '-y',
