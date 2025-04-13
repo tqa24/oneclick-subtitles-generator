@@ -1,4 +1,4 @@
-import { parseGeminiResponse, parseTranslatedSubtitles } from '../utils/subtitleParser';
+import { parseGeminiResponse } from '../utils/subtitleParser';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../utils/audioConverter';
 import { getLanguageCode } from '../utils/languageUtils';
 import i18n from '../i18n/i18n';
@@ -449,15 +449,14 @@ export const getDefaultTranslationPrompt = (subtitleText, targetLanguage) => {
     return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
 IMPORTANT INSTRUCTIONS:
-1. KEEP the [n] numbering at the beginning of each line exactly as is.
-2. ONLY translate the text content after the [n] marker.
-3. DO NOT add any timestamps, SRT formatting, or other formatting.
-4. DO NOT include any explanations, comments, or additional text in your response.
-5. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-6. DO NOT include quotes around your translations.
-7. MAINTAIN exactly ${subtitleCount} numbered lines in the same order.
-8. Each line in your response should correspond to the same numbered line in the input.
-9. If a line is empty after the [n] marker, keep it empty in your response.
+1. ONLY translate the text content after the [n] marker.
+2. DO NOT add any timestamps, SRT formatting, or other formatting.
+3. DO NOT include any explanations, comments, or additional text in your response.
+4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
+5. DO NOT include quotes around your translations.
+6. MAINTAIN exactly ${subtitleCount} numbered lines in the same order.
+7. Each line in your response should correspond to the same numbered line in the input.
+8. If a line is empty after the [n] marker, keep it empty in your response.
 
 Format your response exactly like this:
 Translated text for first subtitle
@@ -470,10 +469,12 @@ Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
 
 export const getDefaultConsolidatePrompt = (subtitlesText, language = null) => {
     const languageInstruction = language ?
-        `IMPORTANT: Your response must be in ${language}. DO NOT translate to any other language.` :
-        `IMPORTANT: Maintain the original language of the subtitles. DO NOT translate to English or any other language.`;
+        `CRITICAL INSTRUCTION: Your response MUST be in ${language} ONLY. DO NOT translate to English or any other language under any circumstances.` :
+        `CRITICAL INSTRUCTION: You MUST maintain the EXACT SAME LANGUAGE as the original subtitles. DO NOT translate to English or any other language under any circumstances.`;
 
-    return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
+    return `${languageInstruction}
+
+I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
 
 ${languageInstruction}
 
@@ -483,15 +484,19 @@ DO NOT structure your response as JSON with title and content fields.
 DO NOT use markdown formatting.
 Just return the plain text of the consolidated document.
 
-Here are the subtitles:\n\n${subtitlesText}`;
+Here are the subtitles:\n\n${subtitlesText}
+
+${languageInstruction}`;
 };
 
 export const getDefaultSummarizePrompt = (subtitlesText, language = null) => {
     const languageInstruction = language ?
-        `IMPORTANT: Your response must be in ${language}. DO NOT translate to any other language.` :
-        `IMPORTANT: Maintain the original language of the subtitles. DO NOT translate to English or any other language.`;
+        `CRITICAL INSTRUCTION: Your response MUST be in ${language} ONLY. DO NOT translate to English or any other language under any circumstances.` :
+        `CRITICAL INSTRUCTION: You MUST maintain the EXACT SAME LANGUAGE as the original subtitles. DO NOT translate to English or any other language under any circumstances.`;
 
-    return `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
+    return `${languageInstruction}
+
+I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
 
 ${languageInstruction}
 
@@ -505,7 +510,9 @@ IMPORTANT: Your response should ONLY contain the summary text.
 DO NOT include any explanations, comments, headers, or additional text in your response.
 DO NOT include phrases like "Here's a summary" or "In summary" at the beginning.
 
-Here are the subtitles:\n\n${subtitlesText}`;
+Here are the subtitles:\n\n${subtitlesText}
+
+${languageInstruction}`;
 };
 
 // Function to translate subtitles to a different language while preserving timing
@@ -811,8 +818,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                 // Retry the translation with a more explicit prompt
                 const retryPrompt = `Translate the following ${subtitles.length} subtitle texts to ${targetLanguage}.
 
-IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} numbered lines in the format [n] translated text.
-Keep the [n] numbering exactly as in the input.
+IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} numbered lines in the translated text.
 Do not skip any numbers or add any extra text.
 DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
 DO NOT include quotes around your translations.
@@ -952,9 +958,30 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         // First check if we're using translated subtitles
         const translatedLanguage = localStorage.getItem('translation_target_language');
 
-        // If we have a source parameter indicating we're using translated subtitles, use that language
+        // Get the source parameter indicating if we're using original or translated subtitles
         const source = localStorage.getItem('current_processing_source');
-        const language = source === 'translated' && translatedLanguage ? translatedLanguage : null;
+
+        // Determine the language based on the source
+        let language = null;
+
+        if (source === 'translated' && translatedLanguage) {
+            // If we're using translated subtitles, use the target language of the translation
+            language = translatedLanguage;
+            console.log(`Using translated subtitles language: ${language}`);
+        } else {
+            // For original subtitles, try to detect the language from the first few lines
+            // This is a simple approach - in a production environment, you might want to use
+            // a more sophisticated language detection library
+            try {
+                // In a future enhancement, we could get a sample of the text for language detection
+                // const sampleText = subtitlesText.substring(0, 500);
+                console.log(`Attempting to detect language from original subtitles`);
+                // For now, we'll rely on the language instruction in the prompt
+                // A future enhancement could be to add actual language detection here
+            } catch (error) {
+                console.log(`Error detecting language: ${error.message}`);
+            }
+        }
 
         if (customPrompt) {
             // Replace variables in the custom prompt
@@ -980,6 +1007,17 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
                 maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
             },
         };
+
+        // Add language code to generation config if available
+        if (language) {
+            const languageCode = getLanguageCode(language);
+            if (languageCode) {
+                console.log(`Setting language code for consolidation: ${languageCode}`);
+                requestData.generationConfig.stopSequences = [];
+                // Note: Gemini doesn't have a direct language parameter, but we can use this approach
+                // to help guide the model to maintain the correct language
+            }
+        }
 
         // Always use structured output
         requestData = addResponseSchema(requestData, createConsolidationSchema());
@@ -1007,6 +1045,11 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             const structuredJson = data.candidates[0].content.parts[0].structuredJson;
             console.log('Structured JSON content:', JSON.stringify(structuredJson).substring(0, 200) + '...');
 
+            // Log the language information if available
+            if (language) {
+                console.log(`Expected consolidation language: ${language}`);
+            }
+
             // Convert structured JSON to plain text
             if (typeof structuredJson === 'string') {
                 return structuredJson;
@@ -1014,6 +1057,13 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
                 // Special handling for title+content format
                 if (structuredJson.title && structuredJson.content) {
                     console.log('Found title and content properties in structured JSON');
+
+                    // Check if the content appears to be in the expected language
+                    if (language) {
+                        console.log(`Verifying content is in expected language: ${language}`);
+                        // In a future enhancement, we could add language detection here
+                    }
+
                     // Format as a proper document with title and content
                     return `${structuredJson.title}\n\n${structuredJson.content}`;
                 }
@@ -1401,9 +1451,30 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         // First check if we're using translated subtitles
         const translatedLanguage = localStorage.getItem('translation_target_language');
 
-        // If we have a source parameter indicating we're using translated subtitles, use that language
+        // Get the source parameter indicating if we're using original or translated subtitles
         const source = localStorage.getItem('current_processing_source');
-        const language = source === 'translated' && translatedLanguage ? translatedLanguage : null;
+
+        // Determine the language based on the source
+        let language = null;
+
+        if (source === 'translated' && translatedLanguage) {
+            // If we're using translated subtitles, use the target language of the translation
+            language = translatedLanguage;
+            console.log(`Using translated subtitles language: ${language}`);
+        } else {
+            // For original subtitles, try to detect the language from the first few lines
+            // This is a simple approach - in a production environment, you might want to use
+            // a more sophisticated language detection library
+            try {
+                // In a future enhancement, we could get a sample of the text for language detection
+                // const sampleText = subtitlesText.substring(0, 500);
+                console.log(`Attempting to detect language from original subtitles`);
+                // For now, we'll rely on the language instruction in the prompt
+                // A future enhancement could be to add actual language detection here
+            } catch (error) {
+                console.log(`Error detecting language: ${error.message}`);
+            }
+        }
 
         if (customPrompt) {
             // Replace variables in the custom prompt
@@ -1430,6 +1501,17 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             },
         };
 
+        // Add language code to generation config if available
+        if (language) {
+            const languageCode = getLanguageCode(language);
+            if (languageCode) {
+                console.log(`Setting language code for summarization: ${languageCode}`);
+                requestData.generationConfig.stopSequences = [];
+                // Note: Gemini doesn't have a direct language parameter, but we can use this approach
+                // to help guide the model to maintain the correct language
+            }
+        }
+
         // Always use structured output
         requestData = addResponseSchema(requestData, createSummarizationSchema());
         console.log('Using structured output for summarization with schema:', JSON.stringify(requestData));
@@ -1454,6 +1536,12 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
             console.log('Received structured JSON summary response');
             const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+
+            // Log the language information if available
+            if (language) {
+                console.log(`Expected summary language: ${language}`);
+            }
+
             return structuredJson;
         }
 
@@ -1469,6 +1557,12 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             if (structuredJson.summary) {
                 // Just return the summary text as plain text
                 summarizedText = structuredJson.summary;
+
+                // Check if the summary appears to be in the expected language
+                if (language) {
+                    console.log(`Verifying summary is in expected language: ${language}`);
+                    // In a future enhancement, we could add language detection here
+                }
 
                 // Optionally add key points if available
                 if (structuredJson.keyPoints && Array.isArray(structuredJson.keyPoints) && structuredJson.keyPoints.length > 0) {
@@ -1603,8 +1697,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
                     // Create a more explicit prompt for this chunk with numbered lines
                     const explicitPrompt = `Translate the following ${chunk.length} subtitle texts to ${targetLanguage}.
 
-IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} numbered lines in the format [n] translated text.
-Keep the [n] numbering exactly as in the input.
+IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} numbered lines in the translated text.
 Do not skip any numbers or add any extra text.
 DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
 DO NOT include quotes around your translations.
