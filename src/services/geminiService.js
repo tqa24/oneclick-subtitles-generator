@@ -443,20 +443,20 @@ const fileToBase64 = (file) => {
 
 // Default prompts for different operations
 export const getDefaultTranslationPrompt = (subtitleText, targetLanguage) => {
-    // Count the number of subtitles by counting the [n] markers
-    const subtitleCount = (subtitleText.match(/\[\d+\]/g) || []).length;
+    // Count the number of subtitles by counting the lines
+    const subtitleCount = subtitleText.split('\n').filter(line => line.trim()).length;
 
     return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
 IMPORTANT INSTRUCTIONS:
-1. ONLY translate the text content after the [n] marker.
+1. Translate each line of text separately.
 2. DO NOT add any timestamps, SRT formatting, or other formatting.
 3. DO NOT include any explanations, comments, or additional text in your response.
 4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
 5. DO NOT include quotes around your translations.
-6. MAINTAIN exactly ${subtitleCount} numbered lines in the same order.
-7. Each line in your response should correspond to the same numbered line in the input.
-8. If a line is empty after the [n] marker, keep it empty in your response.
+6. MAINTAIN exactly ${subtitleCount} lines in the same order.
+7. Each line in your response should correspond to the same line in the input.
+8. If a line is empty, keep it empty in your response.
 
 Format your response exactly like this:
 Translated text for first subtitle
@@ -560,8 +560,8 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration);
     }
 
-    // Format subtitles as numbered text lines for Gemini (text only, no timestamps)
-    const subtitleText = subtitles.map((sub, index) => `[${index + 1}] ${sub.text}`).join('\n');
+    // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
+    const subtitleText = subtitles.map(sub => sub.text).join('\n');
 
     // Create the prompt for translation
     let translationPrompt;
@@ -678,59 +678,43 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                     }
                 }
 
-                // Split the text by lines and extract the text after the [n] marker
+                // Split the text by lines
                 const lines = translatedText.split('\n').map(line => line.trim());
-                const translatedLines = [];
 
                 // Log the number of lines for debugging
                 console.log(`Number of lines in response: ${lines.length}`);
                 console.log(`First few lines: ${lines.slice(0, 5).join('\n')}`);
                 console.log(`Last few lines: ${lines.slice(-5).join('\n')}`);
 
-                // Check for and remove any header or footer lines that might be causing the n+2 issue
-                let startIndex = 0;
-                let endIndex = lines.length;
+                // Filter out any header or footer lines that might be instructions or explanations
+                // Look for lines that start with common instruction patterns
+                const instructionPatterns = [
+                    /^here\s+are/i,
+                    /^translated\s+subtitles/i,
+                    /^translations:/i,
+                    /^subtitle\s+translations/i,
+                    /^note:/i,
+                    /^\d+\.\s+/  // Numbered list items
+                ];
 
-                // Look for header lines that don't match the [n] format
-                while (startIndex < lines.length && !lines[startIndex].match(/^\[(\d+)\]\s*.*$/)) {
-                    console.log(`Skipping header line: ${lines[startIndex]}`);
-                    startIndex++;
-                }
+                // Filter out lines that match instruction patterns
+                const filteredLines = lines.filter(line => {
+                    if (!line.trim()) return false; // Skip empty lines
 
-                // Look for footer lines that don't match the [n] format
-                while (endIndex > startIndex && !lines[endIndex - 1].match(/^\[(\d+)\]\s*.*$/)) {
-                    console.log(`Skipping footer line: ${lines[endIndex - 1]}`);
-                    endIndex--;
-                }
+                    // Check if line matches any instruction pattern
+                    for (const pattern of instructionPatterns) {
+                        if (pattern.test(line)) {
+                            console.log(`Skipping instruction line: ${line}`);
+                            return false;
+                        }
+                    }
+                    return true;
+                });
 
-                // Process only the lines that match our expected format
-                const filteredLines = lines.slice(startIndex, endIndex);
                 console.log(`After filtering headers/footers: ${filteredLines.length} lines`);
 
-                // Process each line to extract the text after the [n] marker
-                for (const line of filteredLines) {
-                    // Skip empty lines
-                    if (!line) continue;
-
-                    // Match the [n] marker and extract the text after it
-                    const match = line.match(/^\[(\d+)\]\s*(.*)$/);
-                    if (match) {
-                        const index = parseInt(match[1]) - 1; // Convert to 0-based index
-                        const text = match[2].trim();
-
-                        // Store the translation at the correct index
-                        if (index >= 0) {
-                            // Ensure the array is big enough
-                            while (translatedLines.length <= index) {
-                                translatedLines.push('');
-                            }
-                            translatedLines[index] = text;
-                        }
-                    } else {
-                        // If the line doesn't match the expected format, log it but don't add it
-                        console.log(`Skipping line with unexpected format: ${line}`);
-                    }
-                }
+                // Use the filtered lines directly as translations
+                const translatedLines = filteredLines;
 
                 return translatedLines;
             }
@@ -818,8 +802,8 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                 // Retry the translation with a more explicit prompt
                 const retryPrompt = `Translate the following ${subtitles.length} subtitle texts to ${targetLanguage}.
 
-IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} numbered lines in the translated text.
-Do not skip any numbers or add any extra text.
+IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} lines of translated text.
+DO NOT include any explanations, comments, or additional text in your response.
 DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
 DO NOT include quotes around your translations.
 DO NOT add any timestamps, SRT formatting, or other formatting.
@@ -1694,16 +1678,16 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
             if (error.message && error.message.includes('received') && error.message.includes('expected')) {
                 try {
                     console.log(`Retrying chunk ${i + 1} with more explicit prompt...`);
-                    // Create a more explicit prompt for this chunk with numbered lines
+                    // Create a more explicit prompt for this chunk without numbered lines
                     const explicitPrompt = `Translate the following ${chunk.length} subtitle texts to ${targetLanguage}.
 
-IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} numbered lines in the translated text.
-Do not skip any numbers or add any extra text.
+IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} lines of translated text.
+Do not skip any lines or add any extra text.
 DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
 DO NOT include quotes around your translations.
 DO NOT add any timestamps, SRT formatting, or other formatting.
 
-${chunk.map((sub, idx) => `[${idx + 1}] ${sub.text}`).join('\n')}`;
+${chunk.map(sub => sub.text).join('\n')}`;
 
                     // Call translateSubtitles with the explicit prompt
                     const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, explicitPrompt, 0);
