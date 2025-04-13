@@ -461,6 +461,7 @@ router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/
       height: result.height,
       fps: result.fps,
       duration: result.duration,
+      resolution: '144p',  // Explicitly set resolution to 144p
       message: 'Audio converted to video successfully'
     });
   } catch (error) {
