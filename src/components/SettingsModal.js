@@ -4,6 +4,7 @@ import '../styles/SettingsModal.css';
 import '../styles/settings/checkbox-fix.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../services/geminiService';
 import { getAuthUrl, storeClientCredentials, getClientCredentials, hasValidTokens, clearOAuthData } from '../services/youtubeApiService';
+import LanguageSelector from './LanguageSelector';
 
 // Tab icons
 const ApiKeyIcon = () => (
@@ -54,6 +55,58 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Load last active tab from localStorage or default to 'api-keys'
     return localStorage.getItem('settings_last_active_tab') || 'api-keys';
   });
+
+  // Theme state and functions
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+
+  // Function to toggle between light and dark themes
+  const toggleTheme = () => {
+    let newTheme;
+    // Simple toggle between light and dark
+    if (theme === 'light' || theme === 'system') {
+      newTheme = 'dark';
+    } else {
+      newTheme = 'light';
+    }
+
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+
+    // Force re-render by triggering a storage event
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  // Get icon for the current theme
+  const getThemeIcon = () => {
+    if (theme === 'dark') {
+      return (
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      );
+    }
+  };
+
+  // Get aria-label for the theme toggle button
+  const getThemeLabel = () => {
+    // Return the opposite of current theme to indicate what will happen on click
+    return theme === 'dark' ? t('theme.light') : t('theme.dark');
+  };
 
   // State for tracking which About background to show
   const [useAlternativeBackground, setUseAlternativeBackground] = useState(() => {
@@ -139,6 +192,25 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     optimizedResolution: '360p',
     useOptimizedPreview: true
   });
+
+  // Listen for system theme changes and apply initial theme
+  useEffect(() => {
+    const handleSystemThemeChange = (e) => {
+      if (localStorage.getItem('theme') === 'system') {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      }
+    };
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+
+    // Handle initial theme setup
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -1805,7 +1877,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
         <div className="settings-footer">
           <div className="settings-footer-left">
-            {/* Update button removed as most users can't use git pull */}
+            {/* Theme toggle and language selector */}
+            <div className="settings-footer-controls">
+              <button
+                className="theme-toggle"
+                onClick={toggleTheme}
+                aria-label={getThemeLabel()}
+                title={getThemeLabel()}
+              >
+                {getThemeIcon()}
+              </button>
+              <LanguageSelector isDropup={true} />
+            </div>
+
+            {/* Factory reset button */}
             <button
               className="factory-reset-btn"
               onClick={handleFactoryReset}
