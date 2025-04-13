@@ -593,7 +593,7 @@ function convertAudioToVideo(audioPath, outputPath) {
       // Using 144p resolution (256x144) instead of 360p
       const ffmpegArgs = [
         '-f', 'lavfi',
-        '-i', 'color=c=black:s=256x144:r=15',
+        '-i', `color=c=black:s=256x144:r=15:d=${duration}`,  // Explicitly set duration
         '-i', audioPath,
         '-c:v', 'libx264',
         '-preset', 'veryfast',
@@ -601,7 +601,8 @@ function convertAudioToVideo(audioPath, outputPath) {
         '-tune', 'stillimage',
         '-c:a', 'aac',
         '-b:a', '64k',
-        '-shortest',
+        '-map', '0:v:0',  // Explicitly map video stream
+        '-map', '1:a:0',  // Explicitly map audio stream
         '-threads', '0',
         '-y',
         outputPath
