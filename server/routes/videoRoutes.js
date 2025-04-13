@@ -183,13 +183,14 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
       batchId: result.batchId,
       segments: result.segments.map(segment => `/videos/${path.basename(segment.path)}`),
       message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} uploaded and split successfully`,
-      // Include optimized video information if available
+      // Include optimized video information if available and actually optimized
       optimized: optimizedResult ? {
         video: `/videos/${path.basename(optimizedResult.path)}`,
         resolution: optimizedResult.resolution,
         fps: optimizedResult.fps,
         width: optimizedResult.width,
-        height: optimizedResult.height
+        height: optimizedResult.height,
+        wasOptimized: optimizedResult.optimized !== false
       } : null
     });
   } catch (error) {
@@ -289,13 +290,14 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
         theoreticalDuration: segment.theoreticalDuration
       })),
       message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split successfully`,
-      // Include optimized video information if available
+      // Include optimized video information if available and actually optimized
       optimized: optimizedResult ? {
         video: `/videos/${path.basename(optimizedResult.path)}`,
         resolution: optimizedResult.resolution,
         fps: optimizedResult.fps,
         width: optimizedResult.width,
-        height: optimizedResult.height
+        height: optimizedResult.height,
+        wasOptimized: optimizedResult.optimized !== false
       } : null
     });
   } catch (error) {
@@ -343,7 +345,6 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
 
     // If it's an audio file, convert it to video first
     let videoPath = originalPath;
-    let conversionResult = null;
 
     if (isAudio) {
       try {
@@ -351,7 +352,7 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
         const videoFilename = `converted_${timestamp}.mp4`;
         videoPath = path.join(VIDEOS_DIR, videoFilename);
 
-        conversionResult = await convertAudioToVideo(originalPath, videoPath);
+        await convertAudioToVideo(originalPath, videoPath);
         console.log(`[OPTIMIZE-VIDEO] Audio successfully converted to video: ${videoPath}`);
       } catch (error) {
         console.error('[OPTIMIZE-VIDEO] Error converting audio to video:', error);
@@ -370,10 +371,15 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
       fps
     });
 
+    // Determine which video to use for analysis (optimized or original)
+    const wasOptimized = result.optimized !== false;
+    const videoForAnalysis = wasOptimized ? optimizedPath : videoPath;
+
     // Create an analysis video with 500 frames
     console.log('[OPTIMIZE-VIDEO] Creating analysis video with 500 frames for Gemini analysis');
     console.log(`[OPTIMIZE-VIDEO] Analysis video will be saved to: ${analysisPath}`);
-    const analysisResult = await createAnalysisVideo(optimizedPath, analysisPath);
+    console.log(`[OPTIMIZE-VIDEO] Using ${wasOptimized ? 'optimized' : 'original'} video for analysis`);
+    const analysisResult = await createAnalysisVideo(videoForAnalysis, analysisPath);
 
     if (analysisResult.isOriginal) {
       console.log(`[OPTIMIZE-VIDEO] Video has only ${analysisResult.frameCount} frames, using optimized video for analysis`);
@@ -383,24 +389,29 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     }
 
     // Return the optimized and analysis video information
+    // Use the optimized video path based on whether optimization was performed
+    const optimizedVideoPath = wasOptimized ? `/videos/${optimizedFilename}` : `/videos/${originalFilename}`;
+
     res.json({
       success: true,
       originalMedia: `/videos/${originalFilename}`,
       // Report the original media type to the client
       mediaType: isAudio ? 'audio' : 'video',
-      optimizedVideo: `/videos/${optimizedFilename}`,
+      optimizedVideo: optimizedVideoPath,
       resolution: result.resolution,
       fps: result.fps,
       width: result.width,
       height: result.height,
       duration: result.duration,
-      message: `${isAudio ? 'Audio' : 'Video'} optimized successfully to ${result.resolution} at ${result.fps}fps`,
+      message: wasOptimized
+        ? `${isAudio ? 'Audio' : 'Video'} optimized successfully to ${result.resolution} at ${result.fps}fps`
+        : `${isAudio ? 'Audio' : 'Video'} resolution (${result.width}x${result.height}) is already ${result.height}p or lower. No optimization needed.`,
       // Include analysis video information
       analysis: analysisResult.isOriginal ? {
-        // If the video has fewer than 500 frames, we use the optimized video
-        video: `/videos/${optimizedFilename}`,
+        // If the video has fewer than 500 frames, we use the optimized video (or original if not optimized)
+        video: optimizedVideoPath,
         frameCount: analysisResult.frameCount,
-        message: 'Using optimized video for analysis (fewer than 500 frames)'
+        message: 'Using video for analysis (fewer than 500 frames)'
       } : {
         video: `/videos/${analysisFilename}`,
         frameCount: analysisResult.frameCount,
