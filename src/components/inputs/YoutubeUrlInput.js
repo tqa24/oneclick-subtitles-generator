@@ -226,20 +226,26 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       )}
 
       {!selectedVideo && (
-        <div className="youtube-instructions">
-          <h3>{t('youtubeUrlInput.instructionsTitle', 'How to use')}</h3>
-          <ol>
-            <li>{t('youtubeUrlInput.instructionsStep1', 'Find a YouTube video you want to generate subtitles for')}</li>
-            <li>{t('youtubeUrlInput.instructionsStep2', 'Copy the URL from your browser address bar')}</li>
-            <li>{t('youtubeUrlInput.instructionsStep3', 'Paste the URL above')}</li>
-          </ol>
+        <div className="youtube-instructions-container">
+          <div className="youtube-instructions-row">
+            <div className="youtube-instructions-col">
+              <h4>{t('youtubeUrlInput.instructionsTitle', 'How to use')}</h4>
+              <ol>
+                <li>{t('youtubeUrlInput.instructionsStep1', 'Find a YouTube video you want to generate subtitles for')}</li>
+                <li>{t('youtubeUrlInput.instructionsStep2', 'Copy the URL from your browser address bar')}</li>
+                <li>{t('youtubeUrlInput.instructionsStep3', 'Paste the URL above')}</li>
+              </ol>
+            </div>
 
-          <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
-          <ul className="url-examples">
-            <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
-            <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
-            <li>{t('youtubeUrlInput.example3', 'youtube.com/watch?v=dQw4w9WgXcQ')}</li>
-          </ul>
+            <div className="youtube-instructions-col">
+              <h4>{t('youtubeUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
+              <ul>
+                <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+                <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
+                <li>{t('youtubeUrlInput.example3', 'youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
 
