@@ -288,82 +288,110 @@ const getVideoDuration = getMediaDuration;
  * @returns {Promise<Object>} - Result object with optimized video path and metadata
  */
 function optimizeVideo(videoPath, outputPath, options = {}) {
-  return new Promise((resolve, reject) => {
-    // Set default options
-    const resolution = options.resolution || '360p';
-    const fps = options.fps || 15;
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Set default options
+      const resolution = options.resolution || '360p';
+      const fps = options.fps || 15;
 
-    // Map resolution string to actual dimensions
-    let width, height;
-    switch (resolution) {
-      case '240p':
-        width = 426;
-        height = 240;
-        break;
-      case '360p':
-      default:
-        width = 640;
-        height = 360;
-        break;
-    }
-
-    console.log(`Optimizing video to ${resolution} (${width}x${height}) at ${fps}fps`);
-
-    // Construct ffmpeg command for optimization
-    const ffmpegArgs = [
-      '-hwaccel', 'auto',
-      '-i', videoPath,
-      '-vf', `scale=${width}:${height}`,
-      '-r', fps.toString(),
-      '-c:v', 'libx264',
-      '-preset', 'veryfast',
-      '-crf', '28',
-      '-tune', 'fastdecode',
-      '-c:a', 'aac',
-      '-b:a', '64k',          // Reduced from 128k to 32k
-      '-ac', '1',             // Mono audio
-      '-ar', '22050',         // Lowest reasonable sample rate
-      '-movflags', '+faststart',
-      '-threads', '0',
-      '-y',  // Overwrite output file if it exists
-      outputPath
-    ];
-
-    const optimizeCmd = spawn('ffmpeg', ffmpegArgs);
-
-    optimizeCmd.stderr.on('data', (data) => {
-      const output = data.toString();
-      if (output.includes('frame=')) {
-        process.stdout.write('.');
-      }
-      console.log('ffmpeg stderr:', output);
-    });
-
-    optimizeCmd.on('close', async (code) => {
-      if (code !== 0) {
-        return reject(new Error('Failed to optimize video'));
+      // Map resolution string to actual dimensions
+      let targetWidth, targetHeight;
+      switch (resolution) {
+        case '240p':
+          targetWidth = 426;
+          targetHeight = 240;
+          break;
+        case '360p':
+        default:
+          targetWidth = 640;
+          targetHeight = 360;
+          break;
       }
 
-      try {
-        // Get the duration of the optimized video
-        const duration = await getMediaDuration(outputPath);
+      // Get the current video resolution
+      const { width: sourceWidth, height: sourceHeight } = await getVideoResolution(videoPath);
+      console.log(`Source video resolution: ${sourceWidth}x${sourceHeight}`);
 
+      // Only optimize if the source resolution is higher than the target resolution
+      // For 360p, that means height > 360
+      if (sourceHeight <= targetHeight) {
+        console.log(`Video resolution (${sourceWidth}x${sourceHeight}) is already ${sourceHeight}p or lower. Skipping optimization.`);
+
+        // Return the original video path and metadata
+        const duration = await getMediaDuration(videoPath);
         resolve({
-          path: outputPath,
+          path: videoPath,
           duration,
-          resolution,
+          resolution: `${sourceHeight}p`,
           fps,
-          width,
-          height
+          width: sourceWidth,
+          height: sourceHeight,
+          optimized: false
         });
-      } catch (error) {
-        reject(new Error(`Failed to get optimized video duration: ${error.message}`));
+        return;
       }
-    });
 
-    optimizeCmd.on('error', (err) => {
-      reject(err);
-    });
+      console.log(`Optimizing video to ${resolution} (${targetWidth}x${targetHeight}) at ${fps}fps`);
+
+      // Construct ffmpeg command for optimization
+      const ffmpegArgs = [
+        '-hwaccel', 'auto',
+        '-i', videoPath,
+        '-vf', `scale=${targetWidth}:${targetHeight}`,
+        '-r', fps.toString(),
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '28',
+        '-tune', 'fastdecode',
+        '-c:a', 'aac',
+        '-b:a', '64k',          // Reduced from 128k to 32k
+        '-ac', '1',             // Mono audio
+        '-ar', '22050',         // Lowest reasonable sample rate
+        '-movflags', '+faststart',
+        '-threads', '0',
+        '-y',  // Overwrite output file if it exists
+        outputPath
+      ];
+
+      const optimizeCmd = spawn('ffmpeg', ffmpegArgs);
+
+      optimizeCmd.stderr.on('data', (data) => {
+        const output = data.toString();
+        if (output.includes('frame=')) {
+          process.stdout.write('.');
+        }
+        console.log('ffmpeg stderr:', output);
+      });
+
+      optimizeCmd.on('close', async (code) => {
+        if (code !== 0) {
+          return reject(new Error('Failed to optimize video'));
+        }
+
+        try {
+          // Get the duration of the optimized video
+          const duration = await getMediaDuration(outputPath);
+
+          resolve({
+            path: outputPath,
+            duration,
+            resolution,
+            fps,
+            width: targetWidth,
+            height: targetHeight,
+            optimized: true
+          });
+        } catch (error) {
+          reject(new Error(`Failed to get optimized video duration: ${error.message}`));
+        }
+      });
+
+      optimizeCmd.on('error', (err) => {
+        reject(err);
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -404,6 +432,47 @@ function getVideoFrameCount(videoPath) {
     });
 
     frameCountProbe.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+/**
+ * Get the resolution (width and height) of a video file
+ * @param {string} videoPath - Path to the video file
+ * @returns {Promise<Object>} - Object with width and height properties
+ */
+function getVideoResolution(videoPath) {
+  return new Promise((resolve, reject) => {
+    const resolutionProbe = spawn('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=width,height',
+      '-of', 'csv=p=0',
+      videoPath
+    ]);
+
+    let resolutionOutput = '';
+
+    resolutionProbe.stdout.on('data', (data) => {
+      resolutionOutput += data.toString();
+    });
+
+    resolutionProbe.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(`Failed to get resolution for ${videoPath}`));
+      }
+
+      const [width, height] = resolutionOutput.trim().split(',').map(Number);
+      console.log(`Video resolution: ${width}x${height}`);
+      resolve({ width, height });
+    });
+
+    resolutionProbe.stderr.on('data', (data) => {
+      console.error(`ffprobe stderr: ${data}`);
+    });
+
+    resolutionProbe.on('error', (err) => {
       reject(err);
     });
   });
@@ -590,6 +659,7 @@ module.exports = {
   optimizeVideo,
   createAnalysisVideo,
   getVideoFrameCount,
+  getVideoResolution,
   convertAudioToVideo
 };
 
