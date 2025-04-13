@@ -57,6 +57,39 @@
 .settings-footer-left {
   display: flex;
   gap: 0.75rem;
+  align-items: center;
+}
+
+.settings-footer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+/* Theme toggle button in settings footer */
+.settings-footer .theme-toggle {
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.settings-footer .theme-toggle:hover {
+  background-color: var(--hover-overlay);
+  color: var(--text-primary);
+}
+
+/* Language selector in settings footer */
+.settings-footer .language-selector-container {
+  height: 36px;
 }
 
 .settings-footer-right {
@@ -77,7 +110,17 @@
     justify-content: space-between;
   }
 
-  .update-btn,
+  .settings-footer-left {
+    flex-wrap: wrap;
+  }
+
+  .settings-footer-controls {
+    display: flex;
+    margin-bottom: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+
   .factory-reset-btn,
   .cancel-btn,
   .save-btn {

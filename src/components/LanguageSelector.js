@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/LanguageSelector.css';
 import { createPortal } from 'react-dom';
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ isDropup = false }) => {
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
@@ -36,11 +36,19 @@ const LanguageSelector = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
 
-      // Position the menu below the button
-      setMenuPosition({
-        top: buttonRect.bottom + scrollTop,
-        left: buttonRect.left + scrollLeft,
-      });
+      if (isDropup) {
+        // Position the menu above the button
+        setMenuPosition({
+          bottom: window.innerHeight - buttonRect.top + scrollTop,
+          left: buttonRect.left + scrollLeft,
+        });
+      } else {
+        // Position the menu below the button
+        setMenuPosition({
+          top: buttonRect.bottom + scrollTop,
+          left: buttonRect.left + scrollLeft,
+        });
+      }
     }
   };
 
@@ -115,7 +123,7 @@ const LanguageSelector = () => {
     <div className="language-selector-container">
       <button
         ref={buttonRef}
-        className="language-selector-button"
+        className={`language-selector-button ${isDropup ? 'dropup' : ''}`}
         onClick={toggleMenu}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -136,11 +144,13 @@ const LanguageSelector = () => {
       {isOpen && createPortal(
         <div
           ref={menuRef}
-          className="language-menu"
+          className={`language-menu ${isDropup ? 'dropup' : ''}`}
           role="menu"
           style={{
-            top: `${menuPosition.top}px`,
-            left: `${menuPosition.left}px`,
+            ...(isDropup
+              ? { bottom: `${menuPosition.bottom}px`, left: `${menuPosition.left}px` }
+              : { top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }
+            )
           }}
         >
           <div className="language-menu-header">

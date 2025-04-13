@@ -134,6 +134,12 @@
   overflow-y: auto; /* Add scrolling if needed */
 }
 
+/* Dropup menu styling */
+.language-menu.dropup {
+  transform-origin: bottom left;
+  animation: language-menu-appear-up var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
+}
+
 @keyframes language-menu-appear {
   0% {
     opacity: 0;
@@ -142,6 +148,21 @@
   70% {
     opacity: 1;
     transform: translateY(5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes language-menu-appear-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.02);
   }
   100% {
     opacity: 1;
