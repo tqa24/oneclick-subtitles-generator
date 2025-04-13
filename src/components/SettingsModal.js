@@ -1168,17 +1168,25 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   </div>
                   <div className="settings-card-content">
                     <div className="compact-setting">
-                      <label className="enhanced-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={useVideoAnalysis}
-                          onChange={(e) => setUseVideoAnalysis(e.target.checked)}
-                        />
-                        <div className="enhanced-checkbox-label">
-                          <span>{t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}</span>
-                          <small>{t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}</small>
+                      <div className="setting-header">
+                        <label htmlFor="use-video-analysis">
+                          {t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}
+                        </label>
+                        <div className="toggle-switch-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              id="use-video-analysis"
+                              checked={useVideoAnalysis}
+                              onChange={(e) => setUseVideoAnalysis(e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
                         </div>
-                      </label>
+                      </div>
+                      <p className="setting-description">
+                        {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
+                      </p>
                     </div>
 
                     <div className="compact-setting">
@@ -1241,17 +1249,25 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                   </div>
                   <div className="settings-card-content">
                     <div className="compact-setting">
-                      <label className="enhanced-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={optimizeVideos}
-                          onChange={(e) => setOptimizeVideos(e.target.checked)}
-                        />
-                        <div className="enhanced-checkbox-label">
-                          <span>{t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}</span>
-                          <small>{t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}</small>
+                      <div className="setting-header">
+                        <label htmlFor="optimize-videos">
+                          {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
+                        </label>
+                        <div className="toggle-switch-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              id="optimize-videos"
+                              checked={optimizeVideos}
+                              onChange={(e) => setOptimizeVideos(e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
                         </div>
-                      </label>
+                      </div>
+                      <p className="setting-description">
+                        {t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}
+                      </p>
                     </div>
 
                     <div className="compact-setting">
@@ -1274,18 +1290,26 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     </div>
 
                     <div className="compact-setting">
-                      <label className="enhanced-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={useOptimizedPreview}
-                          onChange={(e) => setUseOptimizedPreview(e.target.checked)}
-                          disabled={!optimizeVideos}
-                        />
-                        <div className="enhanced-checkbox-label">
-                          <span>{t('settings.useOptimizedPreview', 'Use optimized video for preview')}</span>
-                          <small>{t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}</small>
+                      <div className="setting-header">
+                        <label htmlFor="use-optimized-preview">
+                          {t('settings.useOptimizedPreview', 'Use optimized video for preview')}
+                        </label>
+                        <div className="toggle-switch-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              id="use-optimized-preview"
+                              checked={useOptimizedPreview}
+                              onChange={(e) => setUseOptimizedPreview(e.target.checked)}
+                              disabled={!optimizeVideos}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
                         </div>
-                      </label>
+                      </div>
+                      <p className="setting-description">
+                        {t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1322,17 +1346,25 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     </div>
 
                     <div className="compact-setting">
-                      <label className="enhanced-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={showWaveform}
-                          onChange={(e) => setShowWaveform(e.target.checked)}
-                        />
-                        <div className="enhanced-checkbox-label">
-                          <span>{t('settings.showWaveform', 'Show Audio Waveform')}</span>
-                          <small>{t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}</small>
+                      <div className="setting-header">
+                        <label htmlFor="show-waveform">
+                          {t('settings.showWaveform', 'Show Audio Waveform')}
+                        </label>
+                        <div className="toggle-switch-container">
+                          <label className="toggle-switch">
+                            <input
+                              type="checkbox"
+                              id="show-waveform"
+                              checked={showWaveform}
+                              onChange={(e) => setShowWaveform(e.target.checked)}
+                            />
+                            <span className="toggle-slider"></span>
+                          </label>
                         </div>
-                      </label>
+                      </div>
+                      <p className="setting-description">
+                        {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+                      </p>
                     </div>
                   </div>
                 </div>
