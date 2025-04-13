@@ -112,11 +112,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       setVideoUrl('');
       setOptimizedVideoUrl('');
       setError('');
+      setOptimizedVideoInfo(null); // Reset optimized video info
 
       if (!videoSource) {
-        setError(t('preview.noVideo', 'No video source available. Please select a video first.'));
+        // Don't show error message - SRT-only mode will be activated in App.js
         return;
       }
+
+      console.log('VideoPreview: Loading new video source:', videoSource);
 
       // If it's a blob URL (from file upload), use it directly
       if (videoSource.startsWith('blob:')) {
@@ -124,18 +127,35 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         setVideoUrl(videoSource);
 
         // Check if we have an optimized version in localStorage
-        const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
-        if (splitResult.optimized && splitResult.optimized.video) {
-          console.log('Found optimized video:', splitResult.optimized);
-          setOptimizedVideoUrl(`http://localhost:3004${splitResult.optimized.video}`);
+        try {
+          const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
 
-          // Store the optimization info
-          setOptimizedVideoInfo({
-            resolution: splitResult.optimized.resolution || '360p',
-            fps: splitResult.optimized.fps || 15,
-            width: splitResult.optimized.width,
-            height: splitResult.optimized.height
-          });
+          // Verify the optimized video exists and matches the current video source
+          if (splitResult.optimized && splitResult.optimized.video &&
+              splitResult.originalMedia && // Make sure we have original media info
+              // Check if this split result is for the current video
+              // by comparing the timestamp in the URL or filename
+              videoSource.includes(splitResult.originalMedia.split('/').pop().split('.')[0])) {
+
+            console.log('Found matching optimized video:', splitResult.optimized);
+            setOptimizedVideoUrl(`http://localhost:3004${splitResult.optimized.video}`);
+
+            // Store the optimization info
+            setOptimizedVideoInfo({
+              resolution: splitResult.optimized.resolution || '360p',
+              fps: splitResult.optimized.fps || 15,
+              width: splitResult.optimized.width,
+              height: splitResult.optimized.height
+            });
+          } else {
+            console.log('No matching optimized video found for current source');
+            setOptimizedVideoUrl('');
+            setOptimizedVideoInfo(null);
+          }
+        } catch (error) {
+          console.error('Error parsing split result from localStorage:', error);
+          setOptimizedVideoUrl('');
+          setOptimizedVideoInfo(null);
         }
         return;
       }
@@ -626,7 +646,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             </div>
           ) : (
             <div className="no-video-message">
-              {t('preview.noVideo', 'No video source available. Please select a video first.')}
+              {/* Empty state - SRT-only mode will be activated in App.js */}
             </div>
           )
         )}

@@ -1535,6 +1535,20 @@ function App() {
     setShowRulesEditor(true);
   };
 
+  // Handle when video source is removed or added
+  useEffect(() => {
+    // If we have subtitles data but no video source, switch to SRT-only mode
+    if (!selectedVideo && !uploadedFile && subtitlesData) {
+      console.log('No video source but subtitles exist - switching to SRT-only mode');
+      setIsSrtOnlyMode(true);
+    }
+    // If we have a video source, switch to normal mode
+    else if ((selectedVideo || uploadedFile) && subtitlesData && isSrtOnlyMode) {
+      console.log('Video source detected - switching from SRT-only mode to normal mode');
+      setIsSrtOnlyMode(false);
+    }
+  }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode]);
+
   return (
     <>
       <Header
