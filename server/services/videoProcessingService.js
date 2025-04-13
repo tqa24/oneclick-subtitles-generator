@@ -521,9 +521,10 @@ function convertAudioToVideo(audioPath, outputPath) {
       console.log(`[AUDIO-TO-VIDEO] Output path: ${outputPath}`);
 
       // Construct ffmpeg command to create a video with black background and the audio
+      // Using 144p resolution (256x144) instead of 360p
       const ffmpegArgs = [
         '-f', 'lavfi',
-        '-i', 'color=c=black:s=640x360:r=15',
+        '-i', 'color=c=black:s=256x144:r=15',
         '-i', audioPath,
         '-c:v', 'libx264',
         '-preset', 'veryfast',
@@ -563,8 +564,8 @@ function convertAudioToVideo(audioPath, outputPath) {
           resolve({
             path: outputPath,
             duration: videoDuration,
-            width: 640,
-            height: 360,
+            width: 256,
+            height: 144,
             fps: 15
           });
         } catch (error) {
