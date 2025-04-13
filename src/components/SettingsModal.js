@@ -1173,34 +1173,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
                   </div>
                   <div className="settings-card-content">
-                    <div className="compact-setting">
-                      <div className="setting-header">
-                        <label htmlFor="use-video-analysis">
-                          {t('settings.useVideoAnalysis', 'Preset Detect + Context Memory/Rules')}
-                        </label>
-                        <div className="toggle-switch-container">
-                          <label className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              id="use-video-analysis"
-                              checked={useVideoAnalysis}
-                              onChange={(e) => setUseVideoAnalysis(e.target.checked)}
-                            />
-                            <span className="toggle-slider"></span>
-                          </label>
-                        </div>
-                      </div>
-                      <p className="setting-description">
-                        {t('settings.useVideoAnalysisDescription', 'Before splitting videos, analyzing the whole video with Gemini to determine the best prompt preset and generate transcription rules. Disable for faster processing.')}
-                      </p>
-                    </div>
+                    {/* Hidden: Preset Detect + Context Memory/Rules setting */}
 
                     <div className="compact-setting">
                       <label htmlFor="video-analysis-model">
                         {t('settings.videoAnalysisModel', 'Analysis Model')}
                       </label>
                       <p className="setting-description">
-                        {t('settings.videoAnalysisModelDescription', 'Select the Gemini model to use for video analysis. Flash Lite is faster but less detailed, while Flash is more thorough but slower.')}
+                        {t('settings.videoAnalysisModel.simplified', 'Select the model to use for video analysis. Flash Lite is faster but less accurate.')}
                       </p>
                       <select
                         id="video-analysis-model"
@@ -1219,7 +1199,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                         {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
                       </label>
                       <p className="setting-description">
-                        {t('settings.videoAnalysisTimeoutDescription', 'Set how long to wait for user input before automatically proceeding with the recommended preset.')}
+                        {t('settings.videoAnalysisTimeout.simplified', 'Maximum time to wait for video analysis results before proceeding with default settings.')}
                       </p>
                       <select
                         id="video-analysis-timeout"
@@ -1247,27 +1227,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                     <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
                   </div>
                   <div className="settings-card-content">
-                    <div className="compact-setting">
-                      <div className="setting-header">
-                        <label htmlFor="optimize-videos">
-                          {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
-                        </label>
-                        <div className="toggle-switch-container">
-                          <label className="toggle-switch">
-                            <input
-                              type="checkbox"
-                              id="optimize-videos"
-                              checked={optimizeVideos}
-                              onChange={(e) => setOptimizeVideos(e.target.checked)}
-                            />
-                            <span className="toggle-slider"></span>
-                          </label>
-                        </div>
-                      </div>
-                      <p className="setting-description">
-                        {t('settings.optimizeVideosDescription', 'Automatically scale down videos to a lower resolution and 15fps for faster processing. Original video quality is preserved for playback.')}
-                      </p>
-                    </div>
+                    {/* Hidden: Automatically optimize uploaded videos setting */}
 
                     <div className="compact-setting">
                       <label htmlFor="optimized-resolution">
@@ -1307,7 +1267,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
                         </div>
                       </div>
                       <p className="setting-description">
-                        {t('settings.useOptimizedPreviewDescription', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
+                        {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
                       </p>
                     </div>
                   </div>
