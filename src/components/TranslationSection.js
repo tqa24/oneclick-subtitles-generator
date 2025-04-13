@@ -467,26 +467,38 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 <label htmlFor="include-rules">{t('translation.includeRules', 'Include Context Rules')}:</label>
               </div>
               <div className="row-content">
-                <div className="checkbox-container">
-                  <input
-                    type="checkbox"
-                    id="include-rules"
-                    checked={includeRules}
-                    onChange={(e) => {
-                      const value = e.target.checked;
-                      setIncludeRules(value);
-                      localStorage.setItem('translation_include_rules', value.toString());
-                    }}
-                    disabled={isTranslating || translatedSubtitles !== null || !rulesAvailable}
-                  />
-                  <label htmlFor="include-rules" className="checkbox-label">
-                    {t('translation.includeRulesLabel', 'Append transcription rules to translation requests')}
+                <div className="toggle-switch-row">
+                  <label className="toggle-switch" htmlFor="include-rules">
+                    <input
+                      type="checkbox"
+                      id="include-rules"
+                      checked={includeRules}
+                      onChange={(e) => {
+                        const value = e.target.checked;
+                        setIncludeRules(value);
+                        localStorage.setItem('translation_include_rules', value.toString());
+                      }}
+                      disabled={isTranslating || translatedSubtitles !== null || !rulesAvailable}
+                    />
+                    <span className="toggle-slider"></span>
                   </label>
-                </div>
-                <div className="setting-description">
-                  {rulesAvailable
-                    ? t('translation.includeRulesDescription', 'Includes video analysis context and rules with each translation request for better consistency across segments.')
-                    : t('translation.noRulesAvailable', 'No transcription rules available. This option requires analyzing the video with Gemini first.')}
+                  <div className="label-with-help">
+                    <label htmlFor="include-rules" className="toggle-label">
+                      {t('translation.includeRulesLabel', 'Append transcription rules to translation requests')}
+                    </label>
+                    <div
+                      className="help-icon-container"
+                      title={rulesAvailable
+                        ? t('translation.includeRulesDescription', 'Includes video analysis context and rules with each translation request for better consistency across segments.')
+                        : t('translation.noRulesAvailable', 'No transcription rules available. This option requires analyzing the video with Gemini first.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
