@@ -6,7 +6,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 
-const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true, useOptimizedPreview = false, isSrtOnlyMode = false }) => {
+const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true, useOptimizedPreview = false, isSrtOnlyMode = false, onViewRules }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -126,6 +126,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
               onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
             }}
             retryingSegments={retryingSegments}
+            onViewRules={onViewRules}
           />
         ) : (
           <div className={`status ${status.type}`}>{status.message}</div>
@@ -151,6 +152,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
             onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
           }}
           retryingSegments={retryingSegments}
+          onViewRules={onViewRules}
         />
       )}
 

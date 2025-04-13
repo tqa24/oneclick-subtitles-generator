@@ -68,5 +68,7 @@
   "subtitlesSaved": "Progress saved successfully",
   "forceStop": "Force Stop",
   "forceStopTooltip": "Stop all Gemini requests",
-  "requestsAborted": "All Gemini requests have been aborted"
+  "requestsAborted": "All Gemini requests have been aborted",
+  "viewRules": "View Rules",
+  "viewRulesTitle": "View transcription rules"
 }

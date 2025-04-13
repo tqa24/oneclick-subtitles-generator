@@ -6,7 +6,7 @@
   "processingLongVideo": "긴 비디오 처리 중...",
   "splittingVideo": "비디오를 세그먼트로 분할 중...",
   "optimizingVideo": "처리를 위해 비디오 최적화 중...",
-  "analyzingVideo": "비디오 콘텐츠 분석 중...",
+  "analyzingVideo": "비디오 콘텐츠 분석 중... (만약 정지되면 \"분석 모델\"을 변경하고 다시 시도하세요)",
   "preparingVideoAnalysis": "분석을 위한 비디오 준비 중...",
   "analysisError": "비디오 분석 실패, 기본 설정으로 진행합니다.",
   "srtOnlyMode": "SRT만 사용 중",

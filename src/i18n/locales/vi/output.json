@@ -68,5 +68,7 @@
   "subtitlesSaved": "Tiến trình đã được lưu thành công",
   "forceStop": "Dừng Ngay",
   "forceStopTooltip": "Dừng tất cả các yêu cầu Gemini",
-  "requestsAborted": "Tất cả các yêu cầu Gemini đã bị hủy"
+  "requestsAborted": "Tất cả các yêu cầu Gemini đã bị hủy",
+  "viewRules": "Xem quy tắc",
+  "viewRulesTitle": "Xem quy tắc phiên âm"
 }

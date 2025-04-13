@@ -15,6 +15,7 @@ import TranslationWarningToast from './components/TranslationWarningToast';
 import SrtUploadButton from './components/SrtUploadButton';
 import VideoAnalysisModal from './components/VideoAnalysisModal';
 import TranscriptionRulesEditor from './components/TranscriptionRulesEditor';
+import ServerConnectionOverlay from './components/ServerConnectionOverlay';
 import { useSubtitles } from './hooks/useSubtitles';
 import { setTranscriptionRules, getTranscriptionRules } from './utils/transcriptionRulesStore';
 import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
@@ -1529,6 +1530,11 @@ function App() {
     }
   };
 
+  // Handle viewing transcription rules
+  const handleViewRules = () => {
+    setShowRulesEditor(true);
+  };
+
   return (
     <>
       <Header
@@ -1749,6 +1755,7 @@ function App() {
             showWaveform={showWaveform}
             useOptimizedPreview={useOptimizedPreview}
             isSrtOnlyMode={isSrtOnlyMode}
+            onViewRules={handleViewRules}
           />
           </div>
         </main>
@@ -1799,16 +1806,14 @@ function App() {
           isOpen={showRulesEditor}
           onClose={(action) => {
             setShowRulesEditor(false);
-            // Reopen the video analysis modal
-            if (action === 'cancel' || action === 'save') {
+            // Reopen the video analysis modal only if it was previously open
+            if ((action === 'cancel' || action === 'save') && videoAnalysisResult) {
               setShowVideoAnalysis(true);
               // Set localStorage flag to ensure modal stays open
               localStorage.setItem('show_video_analysis', 'true');
               // If we have a video analysis result, make sure it's available
-              if (videoAnalysisResult) {
-                localStorage.setItem('video_analysis_result', JSON.stringify(videoAnalysisResult));
-                localStorage.setItem('video_analysis_timestamp', Date.now().toString());
-              }
+              localStorage.setItem('video_analysis_result', JSON.stringify(videoAnalysisResult));
+              localStorage.setItem('video_analysis_timestamp', Date.now().toString());
             }
           }}
           initialRules={transcriptionRules}
@@ -1818,6 +1823,9 @@ function App() {
 
       {/* Toast for translation warnings */}
       <TranslationWarningToast />
+
+      {/* Server connection overlay - make sure the URL matches your server */}
+      <ServerConnectionOverlay serverUrl="http://localhost:3004" />
     </>
   );
 }

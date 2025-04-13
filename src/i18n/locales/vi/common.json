@@ -5,5 +5,16 @@
   "save": "Lưu",
   "close": "Đóng",
   "on": "Bật",
-  "off": "Tắt"
+  "off": "Tắt",
+  "serverConnection": {
+    "title": "Lỗi Kết Nối Máy Chủ",
+    "message": "Không thể kết nối đến máy chủ. Vui lòng kiểm tra xem máy chủ có đang chạy đúng cách không.",
+    "howToFix": "Cách khắc phục:",
+    "step1": "Đảm bảo ứng dụng máy chủ đang chạy",
+    "step2": "Kiểm tra xem máy chủ có đang chạy tại",
+    "step3": "Khởi động lại ứng dụng máy chủ nếu cần",
+    "retry": "Thử Kết Nối Lại",
+    "checking": "Đang kiểm tra...",
+    "retryCount": "Số lần thử lại: {{count}}"
+  }
 }

@@ -68,5 +68,7 @@
   "subtitlesSaved": "진행 상황이 성공적으로 저장되었습니다",
   "forceStop": "강제 중지",
   "forceStopTooltip": "모든 Gemini 요청 중지",
-  "requestsAborted": "모든 Gemini 요청이 중단되었습니다"
+  "requestsAborted": "모든 Gemini 요청이 중단되었습니다",
+  "viewRules": "규칙 보기",
+  "viewRulesTitle": "음성 인식 규칙 보기"
 }

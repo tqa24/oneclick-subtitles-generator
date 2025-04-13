@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/ParallelProcessingStatus.css';
-import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown } from 'react-icons/fi';
+import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown, FiFileText } from 'react-icons/fi';
 
 /**
  * Component to display the status of parallel segment processing
@@ -13,13 +13,24 @@ import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown } from 'react
  * @param {Function} props.onRetryWithModel - Function to retry processing a segment with a specific model
  * @param {Function} props.onGenerateSegment - Function to generate a specific segment (for strong model)
  * @param {Array} props.retryingSegments - Array of segment indices that are currently being retried
+ * @param {Function} props.onViewRules - Function to open the transcription rules editor
  * @returns {JSX.Element} - Rendered component
  */
-const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetrySegment, onRetryWithModel, onGenerateSegment, retryingSegments = [] }) => {
+const ParallelProcessingStatus = ({
+  segments,
+  overallStatus,
+  statusType,
+  onRetrySegment,
+  onRetryWithModel,
+  onGenerateSegment,
+  retryingSegments = [],
+  onViewRules
+ }) => {
   const { t } = useTranslation();
   const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRefs = useRef({});
+  const [rulesAvailable, setRulesAvailable] = useState(false);
 
   // Calculate dropdown position when a button is clicked
   const calculateDropdownPosition = (index) => {
@@ -58,8 +69,25 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
     }
   };
 
+  // Check if transcription rules are available
+  useEffect(() => {
+    const checkRulesAvailability = async () => {
+      try {
+        // Dynamically import to avoid circular dependencies
+        const { getTranscriptionRules } = await import('../utils/transcriptionRulesStore');
+        const rules = getTranscriptionRules();
+        setRulesAvailable(!!rules);
+      } catch (error) {
+        console.error('Error checking transcription rules availability:', error);
+        setRulesAvailable(false);
+      }
+    };
+
+    checkRulesAvailability();
+  }, []);
+
   // Close dropdown when clicking outside and handle scroll/resize
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event) => {
       // Check if the click is outside any dropdown
       const dropdowns = document.querySelectorAll('.model-dropdown');
@@ -124,7 +152,19 @@ const ParallelProcessingStatus = ({ segments, overallStatus, statusType, onRetry
       </div>
 
       <div className="segments-status">
-        <h4>{t('output.segmentsStatus', 'Segments Status')}</h4>
+        <div className="segments-status-header">
+          <h4>{t('output.segmentsStatus', 'Segments Status')}</h4>
+          {rulesAvailable && onViewRules && (
+            <button
+              className="view-rules-button"
+              onClick={onViewRules}
+              title={t('output.viewRules', 'View transcription rules')}
+            >
+              <FiFileText size={14} />
+              <span>{t('output.viewRules', 'View Rules')}</span>
+            </button>
+          )}
+        </div>
         <div className="segments-grid">
           {segments.map((segment, index) => (
             <div
