@@ -376,7 +376,45 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                     console.log('Video analysis result:', analysisResult);
 
                     // Store the analysis result for the App component to use
-                    localStorage.setItem('video_analysis_result', JSON.stringify(analysisResult));
+                    try {
+                        // Ensure the result can be properly stringified
+                        const resultString = JSON.stringify(analysisResult);
+                        // Check if the result is too large for localStorage (typically 5MB limit)
+                        if (resultString.length > 4 * 1024 * 1024) { // 4MB to be safe
+                            console.warn('Analysis result is too large for localStorage, truncating...');
+                            // Create a simplified version with limited terminology
+                            const simplifiedResult = {
+                                ...analysisResult,
+                                transcriptionRules: {
+                                    ...analysisResult.transcriptionRules,
+                                    // Limit terminology to first 20 items if it exists
+                                    terminology: analysisResult.transcriptionRules.terminology ?
+                                        analysisResult.transcriptionRules.terminology.slice(0, 20) : [],
+                                    // Add a note about truncation
+                                    additionalNotes: [
+                                        ...(analysisResult.transcriptionRules.additionalNotes || []),
+                                        'Note: The terminology list was truncated as it was too large for storage.'
+                                    ]
+                                }
+                            };
+                            localStorage.setItem('video_analysis_result', JSON.stringify(simplifiedResult));
+                        } else {
+                            localStorage.setItem('video_analysis_result', resultString);
+                        }
+                    } catch (error) {
+                        console.error('Error storing analysis result in localStorage:', error);
+                        // Store a simplified version instead
+                        const fallbackResult = {
+                            recommendedPreset: {
+                                id: analysisResult.recommendedPreset?.id || 'general',
+                                reason: 'Preset from analysis (storage error occurred)'
+                            },
+                            transcriptionRules: {
+                                additionalNotes: ['Error storing full analysis result. Using simplified version.']
+                            }
+                        };
+                        localStorage.setItem('video_analysis_result', JSON.stringify(fallbackResult));
+                    }
 
                     // Dispatch event with the analysis result
                     console.log('Dispatching videoAnalysisComplete event with result:', analysisResult);

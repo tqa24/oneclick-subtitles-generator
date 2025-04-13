@@ -190,11 +190,8 @@ const VideoAnalysisModal = ({
     console.log('VideoAnalysisModal - analysisResult is null, trying localStorage');
     // Try to get analysis result from localStorage
     try {
-      const storedResult = JSON.parse(localStorage.getItem('video_analysis_result'));
-      if (storedResult) {
-        console.log('Using analysis result from localStorage');
-        analysisResult = storedResult;
-      } else {
+      const storedResultString = localStorage.getItem('video_analysis_result');
+      if (!storedResultString) {
         console.log('No analysis result in localStorage');
         // Clear localStorage flags to ensure modal doesn't show again
         localStorage.removeItem('show_video_analysis');
@@ -203,8 +200,32 @@ const VideoAnalysisModal = ({
         if (onClose) onClose();
         return null;
       }
+
+      // Try to parse the stored result
+      try {
+        const storedResult = JSON.parse(storedResultString);
+        if (storedResult) {
+          console.log('Using analysis result from localStorage');
+          analysisResult = storedResult;
+        } else {
+          throw new Error('Invalid analysis result structure');
+        }
+      } catch (parseError) {
+        console.error('Error parsing analysis result from localStorage:', parseError);
+        // Create a default analysis result
+        analysisResult = {
+          recommendedPreset: {
+            id: 'general',
+            reason: 'Default preset selected due to parsing error in stored analysis result'
+          },
+          transcriptionRules: {
+            additionalNotes: ['The original analysis result could not be parsed. Using default settings.']
+          }
+        };
+        console.log('Created default analysis result due to parsing error');
+      }
     } catch (error) {
-      console.error('Error parsing analysis result from localStorage:', error);
+      console.error('Error accessing localStorage:', error);
       // Clear localStorage flags to ensure modal doesn't show again
       localStorage.removeItem('show_video_analysis');
       localStorage.removeItem('video_analysis_timestamp');
@@ -300,72 +321,112 @@ const VideoAnalysisModal = ({
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.terminology && analysisResult.transcriptionRules.terminology.length > 0 && (
+              {analysisResult.transcriptionRules.terminology &&
+               Array.isArray(analysisResult.transcriptionRules.terminology) &&
+               analysisResult.transcriptionRules.terminology.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.terminology', 'Terminology & Proper Nouns')}</h3>
                   <ul className="terminology-list">
-                    {analysisResult.transcriptionRules.terminology.map((term, index) => (
-                      <li key={index}>
-                        <strong>{term.term}</strong>: {term.definition}
-                      </li>
-                    ))}
+                    {analysisResult.transcriptionRules.terminology.map((term, index) => {
+                      // Check if term is a valid object with required properties
+                      if (!term || typeof term !== 'object' || !term.term) {
+                        return null; // Skip invalid terms
+                      }
+                      return (
+                        <li key={index}>
+                          <strong>{term.term}</strong>: {term.definition || 'No definition provided'}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.speakerIdentification && analysisResult.transcriptionRules.speakerIdentification.length > 0 && (
+              {analysisResult.transcriptionRules.speakerIdentification &&
+               Array.isArray(analysisResult.transcriptionRules.speakerIdentification) &&
+               analysisResult.transcriptionRules.speakerIdentification.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.speakerIdentification', 'Speaker Identification')}</h3>
                   <ul className="speakers-list">
-                    {analysisResult.transcriptionRules.speakerIdentification.map((speaker, index) => (
-                      <li key={index}>
-                        <strong>{speaker.speakerId}</strong>: {speaker.description}
-                      </li>
-                    ))}
+                    {analysisResult.transcriptionRules.speakerIdentification.map((speaker, index) => {
+                      // Check if speaker is a valid object with required properties
+                      if (!speaker || typeof speaker !== 'object' || !speaker.speakerId) {
+                        return null; // Skip invalid speakers
+                      }
+                      return (
+                        <li key={index}>
+                          <strong>{speaker.speakerId}</strong>: {speaker.description || 'No description provided'}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.formattingConventions && analysisResult.transcriptionRules.formattingConventions.length > 0 && (
+              {analysisResult.transcriptionRules.formattingConventions &&
+               Array.isArray(analysisResult.transcriptionRules.formattingConventions) &&
+               analysisResult.transcriptionRules.formattingConventions.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.formattingConventions', 'Formatting & Style Conventions')}</h3>
                   <ul>
-                    {analysisResult.transcriptionRules.formattingConventions.map((convention, index) => (
-                      <li key={index}>{convention}</li>
-                    ))}
+                    {analysisResult.transcriptionRules.formattingConventions.map((convention, index) => {
+                      // Skip null or undefined conventions
+                      if (convention === null || convention === undefined) {
+                        return null;
+                      }
+                      return <li key={index}>{String(convention)}</li>;
+                    })}
                   </ul>
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.spellingAndGrammar && analysisResult.transcriptionRules.spellingAndGrammar.length > 0 && (
+              {analysisResult.transcriptionRules.spellingAndGrammar &&
+               Array.isArray(analysisResult.transcriptionRules.spellingAndGrammar) &&
+               analysisResult.transcriptionRules.spellingAndGrammar.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.spellingAndGrammar', 'Spelling, Grammar & Punctuation')}</h3>
                   <ul>
-                    {analysisResult.transcriptionRules.spellingAndGrammar.map((rule, index) => (
-                      <li key={index}>{rule}</li>
-                    ))}
+                    {analysisResult.transcriptionRules.spellingAndGrammar.map((rule, index) => {
+                      // Skip null or undefined rules
+                      if (rule === null || rule === undefined) {
+                        return null;
+                      }
+                      return <li key={index}>{String(rule)}</li>;
+                    })}
                   </ul>
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.relationships && analysisResult.transcriptionRules.relationships.length > 0 && (
+              {analysisResult.transcriptionRules.relationships &&
+               Array.isArray(analysisResult.transcriptionRules.relationships) &&
+               analysisResult.transcriptionRules.relationships.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.relationships', 'Relationships & Social Hierarchy')}</h3>
                   <ul>
-                    {analysisResult.transcriptionRules.relationships.map((relationship, index) => (
-                      <li key={index}>{relationship}</li>
-                    ))}
+                    {analysisResult.transcriptionRules.relationships.map((relationship, index) => {
+                      // Skip null or undefined relationships
+                      if (relationship === null || relationship === undefined) {
+                        return null;
+                      }
+                      return <li key={index}>{String(relationship)}</li>;
+                    })}
                   </ul>
                 </div>
               )}
 
-              {analysisResult.transcriptionRules.additionalNotes && analysisResult.transcriptionRules.additionalNotes.length > 0 && (
+              {analysisResult.transcriptionRules.additionalNotes &&
+               Array.isArray(analysisResult.transcriptionRules.additionalNotes) &&
+               analysisResult.transcriptionRules.additionalNotes.length > 0 && (
                 <div className="rule-section">
                   <h3>{t('videoAnalysis.additionalNotes', 'Additional Notes')}</h3>
                   <ul>
-                    {analysisResult.transcriptionRules.additionalNotes.map((note, index) => (
-                      <li key={index}>{note}</li>
-                    ))}
+                    {analysisResult.transcriptionRules.additionalNotes.map((note, index) => {
+                      // Skip null or undefined notes
+                      if (note === null || note === undefined) {
+                        return null;
+                      }
+                      return <li key={index}>{String(note)}</li>;
+                    })}
                   </ul>
                 </div>
               )}

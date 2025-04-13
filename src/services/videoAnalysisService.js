@@ -12,6 +12,9 @@ const t = (key, fallback) => i18n.t(key, fallback);
 // Store the active abort controller for video analysis
 let activeAnalysisController = null;
 
+// Maximum number of terminology items to keep to prevent localStorage overflow
+const MAX_TERMINOLOGY_ITEMS = 50;
+
 /**
  * Abort any active video analysis request
  */
@@ -23,6 +26,61 @@ export const abortVideoAnalysis = () => {
     return true;
   }
   return false;
+};
+
+/**
+ * Sanitize and limit the size of the analysis result to prevent localStorage overflow
+ * @param {Object} analysisResult - The raw analysis result from Gemini
+ * @returns {Object} - The sanitized analysis result
+ */
+const sanitizeAnalysisResult = (analysisResult) => {
+  if (!analysisResult) return null;
+
+  try {
+    // Create a deep copy to avoid modifying the original
+    const sanitized = JSON.parse(JSON.stringify(analysisResult));
+
+    // Ensure we have the required structure
+    if (!sanitized.recommendedPreset) {
+      sanitized.recommendedPreset = {
+        id: 'general',
+        reason: 'Default preset selected due to missing recommendation'
+      };
+    }
+
+    if (!sanitized.transcriptionRules) {
+      sanitized.transcriptionRules = {};
+    }
+
+    // Limit terminology items if there are too many
+    if (sanitized.transcriptionRules.terminology &&
+        Array.isArray(sanitized.transcriptionRules.terminology) &&
+        sanitized.transcriptionRules.terminology.length > MAX_TERMINOLOGY_ITEMS) {
+      console.log(`Limiting terminology items from ${sanitized.transcriptionRules.terminology.length} to ${MAX_TERMINOLOGY_ITEMS}`);
+      sanitized.transcriptionRules.terminology = sanitized.transcriptionRules.terminology.slice(0, MAX_TERMINOLOGY_ITEMS);
+
+      // Add a note about truncation
+      if (!sanitized.transcriptionRules.additionalNotes) {
+        sanitized.transcriptionRules.additionalNotes = [];
+      }
+      sanitized.transcriptionRules.additionalNotes.push(
+        `Note: The terminology list was truncated from the original analysis as it was too large.`
+      );
+    }
+
+    return sanitized;
+  } catch (error) {
+    console.error('Error sanitizing analysis result:', error);
+    return {
+      recommendedPreset: {
+        id: 'general',
+        reason: 'Default preset selected due to sanitization error'
+      },
+      transcriptionRules: {
+        additionalNotes: ['Error sanitizing analysis result. Using default settings.']
+      }
+    };
+  }
 };
 
 /**
@@ -116,34 +174,41 @@ Provide your analysis in a structured format that can be used to guide the trans
     const data = await response.json();
 
     // Check if this is a structured JSON response
+    let analysisResult;
     if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
       console.log('Received structured JSON analysis response');
-      return data.candidates[0].content.parts[0].structuredJson;
+      analysisResult = data.candidates[0].content.parts[0].structuredJson;
+    } else {
+      // If not structured, try to parse the text response
+      const resultText = data.candidates[0]?.content?.parts[0]?.text;
+      if (!resultText) {
+        throw new Error('No analysis returned from Gemini');
+      }
+
+      // Try to parse the text as JSON
+      try {
+        analysisResult = JSON.parse(resultText);
+      } catch (e) {
+        console.error('Failed to parse analysis as JSON:', e);
+        // Create a simplified object with the raw text
+        analysisResult = {
+          rawResponse: resultText.substring(0, 1000), // Limit the size of raw response
+          recommendedPreset: {
+            id: 'general',
+            reason: 'Default preset selected due to parsing error'
+          },
+          transcriptionRules: {
+            additionalNotes: [resultText.substring(0, 1000) + '... (truncated)']
+          }
+        };
+      }
     }
 
-    // If not structured, try to parse the text response
-    const resultText = data.candidates[0]?.content?.parts[0]?.text;
-    if (!resultText) {
-      throw new Error('No analysis returned from Gemini');
-    }
+    // Sanitize the result to prevent localStorage overflow
+    const sanitizedResult = sanitizeAnalysisResult(analysisResult);
+    console.log('Sanitized analysis result:', sanitizedResult);
 
-    // Try to parse the text as JSON
-    try {
-      return JSON.parse(resultText);
-    } catch (e) {
-      console.error('Failed to parse analysis as JSON:', e);
-      // Return a simplified object with the raw text
-      return {
-        rawResponse: resultText,
-        recommendedPreset: {
-          id: 'general',
-          reason: 'Default preset selected due to parsing error'
-        },
-        transcriptionRules: {
-          additionalNotes: [resultText]
-        }
-      };
-    }
+    return sanitizedResult;
   } catch (error) {
     console.error('Error analyzing video:', error);
 
