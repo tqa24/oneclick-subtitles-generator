@@ -8,181 +8,109 @@ const PromptEditor = ({
   initialPrompt,
   onSave,
   title,
-  description
+  description,
+  promptType // Optional prop to explicitly set the prompt type
 }) => {
   const { t } = useTranslation();
-  const [prompt, setPrompt] = useState(initialPrompt);
+
+  // Determine the prompt type based on title or explicit promptType prop
+  const getPromptType = () => {
+    if (promptType) return promptType;
+
+    if (title) {
+      if (title.includes('Translation')) return 'translation';
+      if (title.includes('Consolidation')) return 'consolidate';
+      if (title.includes('Summarization')) return 'summarize';
+    }
+
+    // Default to translation if we can't determine
+    return 'translation';
+  };
+
+  const currentPromptType = getPromptType();
+
+  // Get the default template based on prompt type
+  const getDefaultTemplate = (type) => {
+    switch (type) {
+      case 'translation':
+        return `Translate the following subtitles to {targetLanguage}.\n\n{subtitlesText}`;
+      case 'consolidate':
+        return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document.\n\nHere are the subtitles:\n\n{subtitlesText}`;
+      case 'summarize':
+        return `I have a collection of subtitles from a video or audio. Please create a concise summary.\n\nHere are the subtitles:\n\n{subtitlesText}`;
+      default:
+        return `Translate the following subtitles to {targetLanguage}.\n\n{subtitlesText}`;
+    }
+  };
+
+  // Get the base template (first line) based on prompt type
+  const getBaseTemplate = (type) => {
+    switch (type) {
+      case 'translation':
+        return `Translate the following subtitles to {targetLanguage}.`;
+      case 'consolidate':
+        return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document.`;
+      case 'summarize':
+        return `I have a collection of subtitles from a video or audio. Please create a concise summary.`;
+      default:
+        return `Translate the following subtitles to {targetLanguage}.`;
+    }
+  };
+
+  // Extract just the custom instructions from the full prompt
+  const extractCustomInstructions = (fullPrompt) => {
+    // Get the default template for the current prompt type
+    const defaultTemplate = getDefaultTemplate(currentPromptType);
+    const baseTemplate = getBaseTemplate(currentPromptType);
+
+    // If it's just the default template, return empty string
+    if (fullPrompt.trim() === defaultTemplate.trim()) {
+      return '';
+    }
+
+    // Otherwise, extract the custom part (everything before {subtitlesText})
+    const subtitlesTextIndex = fullPrompt.indexOf('{subtitlesText}');
+    if (subtitlesTextIndex > 0) {
+      // Get everything before {subtitlesText} except the default text
+      const beforeDefault = `${baseTemplate}\n\n`;
+      const customPart = fullPrompt.substring(0, subtitlesTextIndex).replace(beforeDefault, '');
+      return customPart.trim();
+    }
+
+    return '';
+  };
+
+  // Combine custom instructions with the default template
+  const createFullPrompt = (customInstructions) => {
+    const baseTemplate = getBaseTemplate(currentPromptType);
+
+    // If there are custom instructions, add them after the base template
+    if (customInstructions && customInstructions.trim()) {
+      return `${baseTemplate}\n\n${customInstructions.trim()}\n\n{subtitlesText}`;
+    }
+
+    // Otherwise just return the default template
+    return `${baseTemplate}\n\n{subtitlesText}`;
+  };
+
+  const [customInstructions, setCustomInstructions] = useState(extractCustomInstructions(initialPrompt));
   const modalRef = useRef(null);
   const textareaRef = useRef(null);
-  const subtitlesTextCardRef = useRef(null);
-  const targetLanguageCardRef = useRef(null);
 
-  // Focus the textarea when the modal opens
+  // Focus the textarea when the modal opens and reset custom instructions when prompt type changes
   useEffect(() => {
     if (isOpen && textareaRef.current) {
+      // Reset custom instructions when initialPrompt changes
+      setCustomInstructions(extractCustomInstructions(initialPrompt));
+
       textareaRef.current.focus();
       // Place cursor at the end
       textareaRef.current.selectionStart = textareaRef.current.value.length;
       textareaRef.current.selectionEnd = textareaRef.current.value.length;
     }
-  }, [isOpen]);
+  }, [isOpen, initialPrompt, currentPromptType, extractCustomInstructions]);
 
-  // Effect to handle the floating variable cards positioning
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    const subtitlesTextCard = subtitlesTextCardRef.current;
-    const targetLanguageCard = targetLanguageCardRef.current;
-
-    if (!textarea || !subtitlesTextCard || !targetLanguageCard || !isOpen) return;
-
-
-
-    // Create overlay to hide the actual variable text
-    const createTextOverlay = (variablePos, variableName) => {
-      // Remove any existing overlays
-      document.querySelectorAll('.variable-text-overlay').forEach(el => el.remove());
-
-      // Get the exact position of the variable in the textarea
-      const { left, top, width, height } = getExactVariablePosition(variablePos, variableName);
-
-      // Create an overlay to hide the variable text
-      const overlay = document.createElement('div');
-      overlay.className = 'variable-text-overlay';
-      overlay.style.position = 'absolute';
-      overlay.style.left = left + 'px';
-      overlay.style.top = top + 'px';
-      overlay.style.backgroundColor = window.getComputedStyle(textarea).backgroundColor;
-      overlay.style.width = width + 'px';
-      overlay.style.height = height + 'px';
-      overlay.style.zIndex = '10';
-      overlay.style.pointerEvents = 'none';
-
-      // Add the overlay to the container
-      textarea.parentElement.appendChild(overlay);
-    };
-
-    // Function to update the position of the variable cards
-    const updateCardPositions = () => {
-      // Remove any existing overlays
-      document.querySelectorAll('.variable-text-overlay').forEach(el => el.remove());
-
-      // Find the positions of the variables in the text
-      const subtitlesTextPos = prompt.indexOf('{subtitlesText}');
-      const targetLanguagePos = prompt.indexOf('{targetLanguage}');
-
-      // Calculate positions for both cards
-      if (subtitlesTextPos !== -1) {
-        positionCard(subtitlesTextCard, subtitlesTextPos, '{subtitlesText}');
-      } else {
-        // Hide the card if the variable is not in the text
-        subtitlesTextCard.style.display = 'none';
-      }
-
-      if (targetLanguagePos !== -1) {
-        positionCard(targetLanguageCard, targetLanguagePos, '{targetLanguage}');
-      } else {
-        // Hide the card if the variable is not in the text
-        targetLanguageCard.style.display = 'none';
-      }
-    };
-
-    // Helper function to position a card based on variable position
-    const positionCard = (card, variablePos, variableName) => {
-      // Show the card
-      card.style.display = 'flex';
-
-      // Get the exact position of the variable in the textarea
-      const { left, top, height } = getExactVariablePosition(variablePos, variableName);
-
-      // Position the card to exactly cover the variable text
-      card.style.left = left + 'px';
-      card.style.top = (top + height / 2) + 'px';
-
-      // Create an overlay to hide the variable text
-      createTextOverlay(variablePos, variableName);
-    };
-
-    // Helper function to get the exact position of a variable in the textarea
-    const getExactVariablePosition = (variablePos, variableName) => {
-      // Create a mirror div to exactly match the textarea's content and styling
-      const mirror = document.createElement('div');
-      mirror.style.position = 'absolute';
-      mirror.style.top = '0';
-      mirror.style.left = '0';
-      mirror.style.visibility = 'hidden';
-      mirror.style.pointerEvents = 'none';
-      mirror.style.width = textarea.clientWidth + 'px';
-      mirror.style.height = 'auto';
-      mirror.style.whiteSpace = 'pre-wrap';
-      mirror.style.overflowWrap = 'break-word';
-      mirror.style.boxSizing = 'border-box';
-
-      // Copy all relevant styles from the textarea
-      const textareaStyle = window.getComputedStyle(textarea);
-      mirror.style.font = textareaStyle.font;
-      mirror.style.padding = textareaStyle.padding;
-      mirror.style.border = textareaStyle.border;
-      mirror.style.lineHeight = textareaStyle.lineHeight;
-
-      // Split the text into three parts: before variable, variable, and after variable
-      const textBeforeVariable = prompt.substring(0, variablePos);
-      const variableText = variableName;
-
-      // Create spans for each part
-      const beforeSpan = document.createElement('span');
-      beforeSpan.textContent = textBeforeVariable;
-
-      const variableSpan = document.createElement('span');
-      variableSpan.textContent = variableText;
-      variableSpan.id = 'variable-position-marker';
-      variableSpan.style.position = 'relative';
-
-      // Add the spans to the mirror
-      mirror.appendChild(beforeSpan);
-      mirror.appendChild(variableSpan);
-
-      // Add the mirror to the document
-      document.body.appendChild(mirror);
-
-      // Get the position of the variable span
-      const variableRect = variableSpan.getBoundingClientRect();
-      const textareaRect = textarea.getBoundingClientRect();
-
-      // Calculate the position relative to the textarea
-      const left = variableRect.left - textareaRect.left;
-      const top = variableRect.top - textareaRect.top + textarea.scrollTop;
-
-      // Clean up
-      document.body.removeChild(mirror);
-
-      return {
-        left,
-        top,
-        width: variableRect.width,
-        height: variableRect.height
-      };
-    };
-
-    // Update positions initially and on text changes
-    updateCardPositions();
-
-    // Add event listeners
-    textarea.addEventListener('click', updateCardPositions);
-    textarea.addEventListener('keyup', updateCardPositions);
-    textarea.addEventListener('scroll', updateCardPositions);
-    textarea.addEventListener('input', updateCardPositions);
-
-    // Clean up event listeners
-    return () => {
-      textarea.removeEventListener('click', updateCardPositions);
-      textarea.removeEventListener('keyup', updateCardPositions);
-      textarea.removeEventListener('scroll', updateCardPositions);
-      textarea.removeEventListener('input', updateCardPositions);
-
-      // Remove any overlays
-      document.querySelectorAll('.variable-text-overlay').forEach(el => el.remove());
-    };
-  }, [prompt, isOpen]);
+  // No additional effects needed for the simplified prompt editor
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -219,256 +147,23 @@ const PromptEditor = ({
   }, [isOpen, onClose]);
 
   const handleSave = () => {
-    onSave(prompt);
+    // Convert custom instructions back to full prompt format before saving
+    const fullPrompt = createFullPrompt(customInstructions);
+    onSave(fullPrompt);
     onClose();
   };
 
   const handleReset = () => {
-    setPrompt(initialPrompt);
+    setCustomInstructions('');
   };
 
-  // Handler functions to prevent deletion of variables
+  // Simple handler for custom instructions
   const handleChange = (e) => {
-    const newValue = e.target.value;
-    const currentValue = prompt;
-    const cursorPos = e.target.selectionStart;
-
-    // Check if variables were removed
-    const subtitlesTextRemoved = currentValue.includes('{subtitlesText}') && !newValue.includes('{subtitlesText}');
-    const targetLanguageRemoved = currentValue.includes('{targetLanguage}') && !newValue.includes('{targetLanguage}');
-
-    if (subtitlesTextRemoved || targetLanguageRemoved) {
-      // Find where variables were in the original text
-      const subtitlesTextPos = currentValue.indexOf('{subtitlesText}');
-      const targetLanguagePos = currentValue.indexOf('{targetLanguage}');
-
-      // Determine which variable was removed and restore it
-      if (subtitlesTextRemoved && subtitlesTextPos !== -1) {
-        // Determine if user is trying to delete the placeholder
-        const isDeleteAttempt =
-          // Check if cursor is at or near the placeholder position
-          (cursorPos >= subtitlesTextPos && cursorPos <= subtitlesTextPos + '{subtitlesText}'.length) ||
-          // Or if text before and after the placeholder matches the new value
-          (currentValue.substring(0, subtitlesTextPos) +
-           currentValue.substring(subtitlesTextPos + '{subtitlesText}'.length) === newValue);
-
-        if (isDeleteAttempt) {
-          // Prevent deletion by keeping the original value
-          e.target.value = currentValue;
-          // Restore cursor position
-          setTimeout(() => {
-            e.target.selectionStart = cursorPos;
-            e.target.selectionEnd = cursorPos;
-          }, 0);
-          return; // Exit without updating state
-        } else {
-          // If it wasn't a direct deletion attempt, add it back at cursor position
-          const restoredValue = newValue.substring(0, cursorPos) +
-                              '{subtitlesText}' +
-                              newValue.substring(cursorPos);
-          setPrompt(restoredValue);
-          // Position cursor after the placeholder
-          setTimeout(() => {
-            const newPos = cursorPos + '{subtitlesText}'.length;
-            e.target.selectionStart = newPos;
-            e.target.selectionEnd = newPos;
-          }, 0);
-          return;
-        }
-      }
-
-      if (targetLanguageRemoved && targetLanguagePos !== -1) {
-        // Determine if user is trying to delete the placeholder
-        const isDeleteAttempt =
-          // Check if cursor is at or near the placeholder position
-          (cursorPos >= targetLanguagePos && cursorPos <= targetLanguagePos + '{targetLanguage}'.length) ||
-          // Or if text before and after the placeholder matches the new value
-          (currentValue.substring(0, targetLanguagePos) +
-           currentValue.substring(targetLanguagePos + '{targetLanguage}'.length) === newValue);
-
-        if (isDeleteAttempt) {
-          // Prevent deletion by keeping the original value
-          e.target.value = currentValue;
-          // Restore cursor position
-          setTimeout(() => {
-            e.target.selectionStart = cursorPos;
-            e.target.selectionEnd = cursorPos;
-          }, 0);
-          return; // Exit without updating state
-        } else {
-          // If it wasn't a direct deletion attempt, add it back at cursor position
-          const restoredValue = newValue.substring(0, cursorPos) +
-                              '{targetLanguage}' +
-                              newValue.substring(cursorPos);
-          setPrompt(restoredValue);
-          // Position cursor after the placeholder
-          setTimeout(() => {
-            const newPos = cursorPos + '{targetLanguage}'.length;
-            e.target.selectionStart = newPos;
-            e.target.selectionEnd = newPos;
-          }, 0);
-          return;
-        }
-      }
-    }
-
-    // If we get here, the variables are still in the text or were handled above
-    setPrompt(newValue);
+    setCustomInstructions(e.target.value);
   };
 
-  // Prevent deletion of variables with Delete or Backspace keys
-  const handleKeyDown = (e) => {
-    // Check for variables in the text
-    const subtitlesTextPos = prompt.indexOf('{subtitlesText}');
-    const targetLanguagePos = prompt.indexOf('{targetLanguage}');
-
-    if (subtitlesTextPos !== -1 || targetLanguagePos !== -1) {
-      const cursorPos = e.target.selectionStart;
-      const selectionEnd = e.target.selectionEnd;
-      const hasSelection = cursorPos !== selectionEnd;
-
-      // Check if selection includes any of the variables
-      const selectionIncludesSubtitlesText =
-        hasSelection &&
-        subtitlesTextPos !== -1 &&
-        cursorPos <= subtitlesTextPos + '{subtitlesText}'.length &&
-        selectionEnd >= subtitlesTextPos;
-
-      const selectionIncludesTargetLanguage =
-        hasSelection &&
-        targetLanguagePos !== -1 &&
-        cursorPos <= targetLanguagePos + '{targetLanguage}'.length &&
-        selectionEnd >= targetLanguagePos;
-
-      // Check if cursor is at the start or end of variables
-      const cursorAtSubtitlesTextStart =
-        subtitlesTextPos !== -1 &&
-        cursorPos === subtitlesTextPos &&
-        e.key === 'Delete';
-
-      const cursorAtSubtitlesTextEnd =
-        subtitlesTextPos !== -1 &&
-        cursorPos === subtitlesTextPos + '{subtitlesText}'.length &&
-        e.key === 'Backspace';
-
-      const cursorAtTargetLanguageStart =
-        targetLanguagePos !== -1 &&
-        cursorPos === targetLanguagePos &&
-        e.key === 'Delete';
-
-      const cursorAtTargetLanguageEnd =
-        targetLanguagePos !== -1 &&
-        cursorPos === targetLanguagePos + '{targetLanguage}'.length &&
-        e.key === 'Backspace';
-
-      // Check if cursor is inside variables
-      const cursorInsideSubtitlesText =
-        subtitlesTextPos !== -1 &&
-        cursorPos > subtitlesTextPos &&
-        cursorPos < subtitlesTextPos + '{subtitlesText}'.length &&
-        (e.key === 'Delete' || e.key === 'Backspace');
-
-      const cursorInsideTargetLanguage =
-        targetLanguagePos !== -1 &&
-        cursorPos > targetLanguagePos &&
-        cursorPos < targetLanguagePos + '{targetLanguage}'.length &&
-        (e.key === 'Delete' || e.key === 'Backspace');
-
-      // Prevent cut/delete operations on the variables
-      if ((selectionIncludesSubtitlesText || selectionIncludesTargetLanguage ||
-           cursorAtSubtitlesTextStart || cursorAtSubtitlesTextEnd ||
-           cursorAtTargetLanguageStart || cursorAtTargetLanguageEnd ||
-           cursorInsideSubtitlesText || cursorInsideTargetLanguage) &&
-          (e.key === 'Delete' || e.key === 'Backspace' ||
-           (e.key === 'x' && e.ctrlKey) || (e.key === 'X' && e.ctrlKey))) {
-        e.preventDefault();
-      }
-    }
-  };
-
-  // Prevent cutting the variables
-  const handleCut = (e) => {
-    const subtitlesTextPos = prompt.indexOf('{subtitlesText}');
-    const targetLanguagePos = prompt.indexOf('{targetLanguage}');
-
-    if (subtitlesTextPos !== -1 || targetLanguagePos !== -1) {
-      const cursorPos = e.target.selectionStart;
-      const selectionEnd = e.target.selectionEnd;
-
-      // Check if selection includes any of the variables
-      const selectionIncludesSubtitlesText =
-        subtitlesTextPos !== -1 &&
-        cursorPos <= subtitlesTextPos + '{subtitlesText}'.length &&
-        selectionEnd >= subtitlesTextPos;
-
-      const selectionIncludesTargetLanguage =
-        targetLanguagePos !== -1 &&
-        cursorPos <= targetLanguagePos + '{targetLanguage}'.length &&
-        selectionEnd >= targetLanguagePos;
-
-      if (selectionIncludesSubtitlesText || selectionIncludesTargetLanguage) {
-        e.preventDefault();
-      }
-    }
-  };
-
-  // Handle paste to ensure variables are preserved
-  const handlePaste = (e) => {
-    const subtitlesTextPos = prompt.indexOf('{subtitlesText}');
-    const targetLanguagePos = prompt.indexOf('{targetLanguage}');
-
-    if (subtitlesTextPos !== -1 || targetLanguagePos !== -1) {
-      const cursorPos = e.target.selectionStart;
-      const selectionEnd = e.target.selectionEnd;
-
-      // Check if selection includes any of the variables
-      const selectionIncludesSubtitlesText =
-        subtitlesTextPos !== -1 &&
-        cursorPos <= subtitlesTextPos + '{subtitlesText}'.length &&
-        selectionEnd >= subtitlesTextPos;
-
-      const selectionIncludesTargetLanguage =
-        targetLanguagePos !== -1 &&
-        cursorPos <= targetLanguagePos + '{targetLanguage}'.length &&
-        selectionEnd >= targetLanguagePos;
-
-      if (selectionIncludesSubtitlesText || selectionIncludesTargetLanguage) {
-        e.preventDefault();
-
-        // Get pasted text
-        const pastedText = e.clipboardData.getData('text');
-
-        // Create new text with variables preserved
-        let newText = prompt.substring(0, cursorPos) + pastedText + prompt.substring(selectionEnd);
-
-        // If the new text doesn't include the variables, add them back
-        if (selectionIncludesSubtitlesText && !newText.includes('{subtitlesText}')) {
-          // Add variable at cursor position after paste
-          newText = prompt.substring(0, cursorPos) +
-                   pastedText +
-                   '{subtitlesText}' +
-                   prompt.substring(selectionEnd);
-        }
-
-        if (selectionIncludesTargetLanguage && !newText.includes('{targetLanguage}')) {
-          // Add variable at cursor position after paste
-          newText = prompt.substring(0, cursorPos) +
-                   pastedText +
-                   '{targetLanguage}' +
-                   prompt.substring(selectionEnd);
-        }
-
-        setPrompt(newText);
-
-        // Set cursor position after the pasted text
-        setTimeout(() => {
-          const newPos = cursorPos + pastedText.length;
-          e.target.selectionStart = newPos;
-          e.target.selectionEnd = newPos;
-        }, 0);
-      }
-    }
-  };
+  // We don't need special handlers for keyDown, cut, or paste anymore
+  // since we're only editing custom instructions, not the full prompt with variables
 
   if (!isOpen) return null;
 
@@ -476,59 +171,41 @@ const PromptEditor = ({
     <div className="prompt-editor-overlay">
       <div className="prompt-editor-modal" ref={modalRef}>
         <div className="prompt-editor-header">
-          <h3>{title || t('promptEditor.editPrompt', 'Edit Prompt')}</h3>
+          <h3>{title || t('promptEditor.editPrompt', 'Add Custom Instructions')}</h3>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
         <div className="prompt-editor-content">
-          {description && (
-            <p className="prompt-editor-description">{description}</p>
-          )}
+          <p className="prompt-editor-description">
+            {description || t('promptEditor.customizePromptDesc', 'Add your custom instructions below. These will be added to the default prompt.')}
+          </p>
 
-          <div className="prompt-editor-container">
-            <textarea
-              ref={textareaRef}
-              className="prompt-editor-textarea"
-              value={prompt}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onCut={handleCut}
-              onPaste={handlePaste}
-              rows={12}
-              placeholder={t('promptEditor.enterPrompt', 'Enter your custom prompt here...')}
-            />
-
-            {/* Floating variable cards */}
-            <div
-              className="variable-floating-card subtitles-text-card"
-              ref={subtitlesTextCardRef}
-            >
-              <span className="variable-icon">📝</span>
-              <span className="variable-label">subtitlesText</span>
-            </div>
-
-            <div
-              className="variable-floating-card target-language-card"
-              ref={targetLanguageCardRef}
-            >
-              <span className="variable-icon">🌐</span>
-              <span className="variable-label">targetLanguage</span>
+          <div className="prompt-editor-default-template">
+            <h4>Default Template:</h4>
+            <div className="default-template-box">
+              {currentPromptType === 'translation' ? (
+                <p>Translate the following subtitles to <span className="variable-highlight">{'{targetLanguage}'}</span>.</p>
+              ) : currentPromptType === 'consolidate' ? (
+                <p>I have a collection of subtitles from a video or audio. Please convert these into a coherent document.</p>
+              ) : (
+                <p>I have a collection of subtitles from a video or audio. Please create a concise summary.</p>
+              )}
+              <p className="custom-instructions-placeholder">[Your custom instructions will appear here]</p>
+              <p><span className="variable-highlight">{'{subtitlesText}'}</span></p>
             </div>
           </div>
 
-          <div className="prompt-editor-variables">
-            <h4>{t('promptEditor.availableVariables', 'Available Variables:')}</h4>
-            <p className="variables-instruction">{t('promptEditor.variablesInstruction', 'The following variables are represented by icons in the text area:')}</p>
-            <ul>
-              <li>
-                <span className="variable-icon" style={{ color: '#4caf50' }}>📝</span>
-                <code>{'{subtitlesText}'}</code> - {t('promptEditor.subtitlesTextDesc', 'The subtitle text content')}
-              </li>
-              <li>
-                <span className="variable-icon" style={{ color: '#2196f3' }}>🌐</span>
-                <code>{'{targetLanguage}'}</code> - {t('promptEditor.targetLanguageDesc', 'The target language for translation')}
-              </li>
-            </ul>
+          <div className="prompt-editor-container">
+            <label htmlFor="custom-instructions" className="instructions-label">Your Custom Instructions:</label>
+            <textarea
+              id="custom-instructions"
+              ref={textareaRef}
+              className="prompt-editor-textarea"
+              value={customInstructions}
+              onChange={handleChange}
+              rows={8}
+              placeholder={t('promptEditor.enterPrompt', 'Enter your custom instructions here...')}
+            />
           </div>
 
           <div className="prompt-editor-examples">
@@ -556,9 +233,9 @@ const PromptEditor = ({
               </ul>
             ) : (
               <ul>
-                <li>Maintain a formal/informal tone</li>
+                <li>Maintain a formal tone</li>
                 <li>Use specific terminology or vocabulary</li>
-                <li>Adapt content for your specific needs</li>
+                <li>Add Japanese translations next to your translated text, wrapped in parentheses</li>
                 <li>Preserve important details</li>
               </ul>
             )}
@@ -567,7 +244,7 @@ const PromptEditor = ({
 
           <div className="prompt-editor-actions">
             <button className="secondary-button" onClick={handleReset}>
-              {t('promptEditor.reset', 'Reset')}
+              {t('promptEditor.reset', 'Clear')}
             </button>
             <button className="primary-button" onClick={handleSave}>
               {t('promptEditor.save', 'Save')}
