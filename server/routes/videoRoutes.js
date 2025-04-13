@@ -214,7 +214,14 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     const mediaType = isAudio ? 'audio' : 'video';
 
     // Generate a unique filename for the original media file
-    const mediaId = req.query.mediaId || req.query.videoId || `${mediaType}_${Date.now()}`;
+    let mediaId = req.query.mediaId || req.query.videoId || `${mediaType}_${Date.now()}`;
+
+    // Remove any file extension from mediaId to prevent double extensions
+    mediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
+
+    // Log the cleaned mediaId
+    console.log(`[SPLIT-VIDEO] Using mediaId: ${mediaId} (after removing any extensions)`);
+
     const fileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
     const filename = `${mediaId}.${fileExtension}`;
     const mediaPath = path.join(VIDEOS_DIR, filename);
@@ -241,7 +248,9 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
       try {
         console.log(`[SPLIT-VIDEO] Optimizing video to ${optimizedResolution} before splitting`);
         console.log(`[SPLIT-VIDEO] optimizeVideos=${optimizeVideos} (should be false if already optimized)`);
-        const optimizedFilename = `optimized_${mediaId}.mp4`;
+        // Ensure we don't have double extensions in the optimized filename
+        const cleanMediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
+        const optimizedFilename = `optimized_${cleanMediaId}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
         console.log(`[SPLIT-VIDEO] Creating optimized video at: ${optimizedPath}`);
 
@@ -250,9 +259,20 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
           fps: 15
         });
 
-        // Use the optimized video for splitting
-        processPath = optimizedPath;
-        console.log(`[SPLIT-VIDEO] Using optimized video for splitting: ${optimizedPath}`);
+        // Double-check that the optimization was successful
+        if (!optimizedResult) {
+          console.error(`[SPLIT-VIDEO] Optimization failed: optimizedResult is null or undefined`);
+          throw new Error('Video optimization failed');
+        }
+
+        // Only use the optimized video if it actually exists
+        if (fs.existsSync(optimizedPath)) {
+          processPath = optimizedPath;
+          console.log(`[SPLIT-VIDEO] Using optimized video for splitting: ${optimizedPath}`);
+        } else {
+          console.log(`[SPLIT-VIDEO] Optimized video not found at ${optimizedPath}, falling back to original video`);
+          // Keep using the original video path
+        }
       } catch (error) {
         console.error('[SPLIT-VIDEO] Error optimizing video:', error);
         console.log('[SPLIT-VIDEO] Falling back to previous video for splitting');

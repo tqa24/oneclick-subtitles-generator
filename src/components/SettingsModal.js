@@ -133,7 +133,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash-lite'); // Default to Flash Lite
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Flash
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [cacheDetails, setCacheDetails] = useState(null); // Store cache details
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
@@ -187,7 +187,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.0-flash-lite',
+    videoAnalysisModel: 'gemini-2.0-flash',
     videoAnalysisTimeout: '20',
     optimizeVideos: true,
     optimizedResolution: '360p',
@@ -224,7 +224,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash-lite'; // Default to Flash Lite
+      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to Flash
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUserPresets = getUserPromptPresets();
