@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateSubtitles, completeDocument, summarizeDocument, abortAllRequests } from '../services/geminiService';
 import { downloadSRT, downloadJSON, downloadTXT } from '../utils/fileUtils';
@@ -41,6 +41,41 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('translation_split_duration') || '0');
   });
+
+  // Calculate segment distribution based on split duration
+  const segmentDistribution = useMemo(() => {
+    if (!subtitles || subtitles.length === 0 || splitDuration === 0) {
+      return [subtitles?.length || 0]; // No split, all subtitles in one segment
+    }
+
+    // Convert splitDuration from minutes to seconds
+    const splitDurationSeconds = splitDuration * 60;
+
+    // Group subtitles into chunks based on their timestamps
+    const chunks = [];
+    let currentChunk = [];
+    let chunkStartTime = subtitles[0]?.start || 0;
+
+    subtitles.forEach(subtitle => {
+      // If this subtitle would exceed the chunk duration, start a new chunk
+      if (subtitle.start - chunkStartTime > splitDurationSeconds) {
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.length);
+          currentChunk = [];
+          chunkStartTime = subtitle.start;
+        }
+      }
+
+      currentChunk.push(subtitle);
+    });
+
+    // Add the last chunk if it's not empty
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk.length);
+    }
+
+    return chunks.length > 0 ? chunks : [subtitles.length];
+  }, [subtitles, splitDuration]);
 
   // State for whether transcription rules are available
   const [rulesAvailable, setRulesAvailable] = useState(false);
@@ -433,21 +468,63 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 <label>{t('translation.splitDuration', 'Split Duration')}:</label>
               </div>
               <div className="row-content">
-                <select
-                  value={splitDuration}
-                  onChange={(e) => setSplitDuration(parseInt(e.target.value))}
-                  className="split-duration-select"
-                  title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
-                >
-                  <option value="0">{t('translation.noSplit', 'No Split')}</option>
-                  <option value="1">1 {t('translation.minutes', 'minutes')}</option>
-                  <option value="3">3 {t('translation.minutes', 'minutes')}</option>
-                  <option value="5">5 {t('translation.minutes', 'minutes')}</option>
-                  <option value="7">7 {t('translation.minutes', 'minutes')}</option>
-                  <option value="10">10 {t('translation.minutes', 'minutes')}</option>
-                  <option value="15">15 {t('translation.minutes', 'minutes')}</option>
-                  <option value="20">20 {t('translation.minutes', 'minutes')}</option>
-                </select>
+                <div className="split-duration-slider-container">
+                  <div className="slider-control-row">
+                    <div className="slider-with-value">
+                      <div className="custom-slider-container">
+                        <div className="custom-slider-track">
+                          <div
+                            className="custom-slider-fill"
+                            style={{ width: `${(splitDuration / 20) * 100}%` }}
+                          ></div>
+                          <div
+                            className="custom-slider-thumb"
+                            style={{ left: `${(splitDuration / 20) * 100}%` }}
+                          ></div>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="1"
+                          value={splitDuration}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            setSplitDuration(value);
+                            localStorage.setItem('translation_split_duration', value.toString());
+                          }}
+                          className="custom-slider-input"
+                          title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
+                        />
+                      </div>
+                      <div className="slider-value-display">
+                        {splitDuration === 0
+                          ? t('translation.noSplit', 'No Split')
+                          : `${splitDuration} ${t('translation.minutes', 'min')}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Compact segment distribution preview */}
+                  {subtitles && subtitles.length > 0 && (
+                    <div className="segment-preview-compact">
+                      {splitDuration === 0 ? (
+                        <span className="single-segment">
+                          {t('translation.allSubtitles', 'All {{count}} subtitles', {count: subtitles.length})}
+                        </span>
+                      ) : (
+                        <div className="segment-pills">
+                          {segmentDistribution.map((count, index) => (
+                            <span key={index} className="segment-pill">
+                              {count}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div
                   className="help-icon-container"
                   title={t('translation.splitDurationHelp', 'Splitting subtitles into smaller chunks helps prevent translations from being cut off due to token limits. For longer videos, use smaller chunks.')}
