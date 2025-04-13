@@ -33,19 +33,27 @@
   z-index: 0;
 }
 
-/* Material Design 3 typography for header - enhanced styling */
-.segments-status h4 {
+/* Segments status header with title and rules button */
+.segments-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 0;
   margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  position: relative;
+  z-index: 1;
+}
+
+/* Material Design 3 typography for header - enhanced styling */
+.segments-status-header h4 {
+  margin: 0;
   font-size: var(--md-title-medium-size);
   line-height: var(--md-title-medium-height);
   font-weight: var(--md-title-medium-weight);
   color: var(--md-on-surface);
   transition: color var(--transition-speed);
-  position: relative;
-  z-index: 1;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--md-outline-variant);
 }
 
 /* Material Design 3 grid layout - enhanced styling */
@@ -416,6 +424,33 @@
 /* Keep the active dropdown button above others */
 .active-dropdown-btn {
   z-index: 100000 !important; /* Higher than the dropdown */
+}
+
+/* View rules button */
+.view-rules-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border: 1px solid var(--md-primary);
+  border-radius: 16px;
+  font-size: var(--md-label-small-size);
+  font-weight: var(--md-label-small-weight);
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.view-rules-button:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.view-rules-button:active {
+  transform: translateY(0);
+  background-color: rgba(var(--md-primary-rgb), 0.3);
 }
 
 /* Material Design 3 retrying indicator */

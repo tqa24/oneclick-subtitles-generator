@@ -6,7 +6,7 @@
   "processingLongVideo": "Processing long video...",
   "splittingVideo": "Splitting video into segments...",
   "optimizingVideo": "Optimizing video for processing...",
-  "analyzingVideo": "Analyzing video content...",
+  "analyzingVideo": "Analyzing video content... (If stuck, change \"Analysis Model\" and try again)",
   "preparingVideoAnalysis": "Preparing video for analysis...",
   "analysisError": "Video analysis failed, proceeding with default settings.",
   "srtOnlyMode": "SRT only mode",

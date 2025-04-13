@@ -27,8 +27,16 @@ ensureDirectories();
 app.use(cors({
   origin: CORS_ORIGIN,
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires']
 }));
+
+// Add CORS headers to all responses for health endpoint
+app.use('/api/health', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  next();
+});
 
 // Configure JSON body parser with increased limit for base64 encoded files
 app.use(express.json({ limit: '500mb' }));
@@ -40,6 +48,11 @@ app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 // Test endpoint to verify server is working
 app.get('/api/test', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// Health check endpoint for frontend to verify server connection
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is healthy', timestamp: new Date().toISOString() });
 });
 
 // Register API routes
