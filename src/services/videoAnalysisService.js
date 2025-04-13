@@ -102,12 +102,27 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
     // Get the selected model from localStorage or use the default
     const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.0-flash-lite";
 
-    // Convert the video file to base64
+    // Get video duration
     onStatusUpdate({ message: t('input.preparingVideoAnalysis', 'Preparing video for analysis...'), type: 'loading' });
+    let videoDuration = 0;
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { getVideoDuration } = await import('../utils/durationUtils');
+      videoDuration = await getVideoDuration(videoFile);
+      console.log(`Video duration for analysis: ${videoDuration} seconds`);
+    } catch (error) {
+      console.warn('Could not determine video duration:', error);
+    }
+
+    // Convert the video file to base64
     const base64Data = await fileToBase64(videoFile);
 
+    // Determine how comprehensive the rule set should be based on video length
+    const isLongVideo = videoDuration > 600; // More than 10 minutes
+    const isVeryLongVideo = videoDuration > 1800; // More than 30 minutes
+
     // Create the request data with the analysis prompt
-    const analysisPrompt = `You are an expert video and audio content analyzer. Analyze this video and provide:
+    const analysisPrompt = `You are an expert video and audio content analyzer. This video is ${Math.round(videoDuration)} seconds long (${Math.round(videoDuration/60)} minutes). Analyze this video and provide:
 
 1. The most suitable transcription preset for this content from the following options:
    - general: General purpose transcription
@@ -118,12 +133,12 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
    - diarize-speakers: Identify different speakers (for multi-person conversations)
    - chaptering: Create chapters based on content (for long-form content)
 
-2. A detailed rule set for consistent transcription, including (only if applicable):
+2. A detailed rule set for consistent transcription. ${isLongVideo ? 'Since this is a longer video, provide as many detailed rules as possible to ensure consistency across the entire transcription.' : ''} ${isVeryLongVideo ? 'This is a very long video, so an extremely comprehensive rule set is essential - aim for at least 5-10 items in each applicable category.' : ''} Include (only if applicable):
    - Atmosphere: Description of the setting or context
-   - Terminology: List of specialized terms and proper nouns with definitions
-   - Speaker Identification: Descriptions of different speakers
-   - Formatting and Style Conventions: How to format specific content
-   - Spelling, Grammar, and Punctuation: Special rules for this content
+   - Terminology: List of specialized terms and proper nouns with definitions (${isLongVideo ? 'provide as many as you can identify' : 'provide key terms'})
+   - Speaker Identification: Descriptions of different speakers (${isLongVideo ? 'be very detailed about voice characteristics, speaking patterns, and any identifying features' : 'basic identification'})
+   - Formatting and Style Conventions: How to format specific content (${isLongVideo ? 'be comprehensive and specific' : 'basic guidelines'})
+   - Spelling, Grammar, and Punctuation: Special rules for this content (${isLongVideo ? 'include all exceptions and special cases' : 'key rules only'})
    - Relationships and Social Hierarchy: Information about relationships between people
    - Any other aspects that would help ensure consistent, high-quality transcription
 
