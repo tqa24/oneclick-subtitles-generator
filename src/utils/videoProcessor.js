@@ -71,9 +71,12 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
             // For videos that don't need splitting, still optimize if enabled
-            if (!isAudio && optimizeVideos) {
+            // For audio files, always convert to video first
+            if (isAudio || (!isAudio && optimizeVideos)) {
                 onStatusUpdate({
-                    message: t('output.optimizingVideo', 'Optimizing video for processing...'),
+                    message: isAudio
+                        ? t('output.processingAudio', 'Processing audio file...')
+                        : t('output.optimizingVideo', 'Optimizing video for processing...'),
                     type: 'loading'
                 });
 
@@ -283,16 +286,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
         const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
         const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
-        // For videos, optimize and analyze before splitting
+        // For videos and audio files, optimize and analyze before splitting
         let analysisResult = null;
         let userChoice = null;
         let optimizedFile = mediaFile;
 
-        if (!isAudio && optimizeVideos) {
+        // Always process audio files through the optimize-video endpoint
+        // For videos, only if optimization is enabled
+        if (isAudio || (!isAudio && optimizeVideos)) {
             try {
-                // First optimize the video
+                // First optimize the video or process audio
                 onStatusUpdate({
-                    message: t('output.optimizingVideo', 'Optimizing video for processing...'),
+                    message: isAudio
+                        ? t('output.processingAudio', 'Processing audio file...')
+                        : t('output.optimizingVideo', 'Optimizing video for processing...'),
                     type: 'loading'
                 });
 
@@ -348,7 +355,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 }
 
                 // Check if video analysis is enabled in settings
-                const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+                // For audio files, we always want to analyze the converted video
+                const useVideoAnalysis = isAudio || localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
 
                 if (useVideoAnalysis) {
                     // Now analyze the video with Gemini before processing

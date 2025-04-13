@@ -468,8 +468,14 @@ Translated text for last subtitle
 Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
 };
 
-export const getDefaultConsolidatePrompt = (subtitlesText) => {
+export const getDefaultConsolidatePrompt = (subtitlesText, language = null) => {
+    const languageInstruction = language ?
+        `IMPORTANT: Your response must be in ${language}. DO NOT translate to any other language.` :
+        `IMPORTANT: Maintain the original language of the subtitles. DO NOT translate to English or any other language.`;
+
     return `I have a collection of subtitles from a video or audio. Please convert these into a coherent document, organizing the content naturally based on the context. Maintain the original meaning but improve flow and readability.
+
+${languageInstruction}
 
 IMPORTANT: Your response should ONLY contain the consolidated document text as plain text.
 DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
@@ -480,8 +486,14 @@ Just return the plain text of the consolidated document.
 Here are the subtitles:\n\n${subtitlesText}`;
 };
 
-export const getDefaultSummarizePrompt = (subtitlesText) => {
+export const getDefaultSummarizePrompt = (subtitlesText, language = null) => {
+    const languageInstruction = language ?
+        `IMPORTANT: Your response must be in ${language}. DO NOT translate to any other language.` :
+        `IMPORTANT: Maintain the original language of the subtitles. DO NOT translate to English or any other language.`;
+
     return `I have a collection of subtitles from a video or audio. Please create a concise summary of the main points and key information. The summary should be about 1/3 the length of the original text but capture all essential information.
+
+${languageInstruction}
 
 IMPORTANT: Your response should ONLY contain the summary text as plain text.
 DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
@@ -935,11 +947,20 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
 
         // Create the prompt for document completion
         let documentPrompt;
+
+        // Try to detect the language of the subtitles
+        // First check if we're using translated subtitles
+        const translatedLanguage = localStorage.getItem('translation_target_language');
+
+        // If we have a source parameter indicating we're using translated subtitles, use that language
+        const source = localStorage.getItem('current_processing_source');
+        const language = source === 'translated' && translatedLanguage ? translatedLanguage : null;
+
         if (customPrompt) {
             // Replace variables in the custom prompt
             documentPrompt = customPrompt.replace('{subtitlesText}', subtitlesText);
         } else {
-            documentPrompt = getDefaultConsolidatePrompt(subtitlesText);
+            documentPrompt = getDefaultConsolidatePrompt(subtitlesText, language);
         }
 
         // Create request data with structured output
@@ -1375,11 +1396,20 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
 
         // Create the prompt for document summarization
         let summaryPrompt;
+
+        // Try to detect the language of the subtitles
+        // First check if we're using translated subtitles
+        const translatedLanguage = localStorage.getItem('translation_target_language');
+
+        // If we have a source parameter indicating we're using translated subtitles, use that language
+        const source = localStorage.getItem('current_processing_source');
+        const language = source === 'translated' && translatedLanguage ? translatedLanguage : null;
+
         if (customPrompt) {
             // Replace variables in the custom prompt
             summaryPrompt = customPrompt.replace('{subtitlesText}', subtitlesText);
         } else {
-            summaryPrompt = getDefaultSummarizePrompt(subtitlesText);
+            summaryPrompt = getDefaultSummarizePrompt(subtitlesText, language);
         }
 
         // Create request data with structured output

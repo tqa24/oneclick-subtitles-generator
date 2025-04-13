@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { convertAudioToVideo } from '../../utils/audioToVideoConverter';
+import '../../styles/FileUploadInput.css';
 
 const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
   const [fileInfo, setFileInfo] = useState(null);
   const [error, setError] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   // Maximum file size in MB (2GB = 2048MB)
@@ -31,16 +34,29 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
   }, [SUPPORTED_AUDIO_FORMATS]);
 
   // Display file information - wrapped in useCallback to avoid dependency issues
-  const displayFileInfo = useCallback((file) => {
+  const displayFileInfo = useCallback((file, originalFile = null) => {
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-    const mediaType = isVideoFile(file.type) ? 'Video' : 'Audio';
 
-    setFileInfo({
-      name: file.name,
-      type: file.type,
-      size: `${fileSizeMB} MB`,
-      mediaType
-    });
+    // If we have an original audio file, use its information for display
+    // This maintains the illusion that we're still working with an audio file
+    if (originalFile && originalFile.type.startsWith('audio/')) {
+      setFileInfo({
+        // Keep the original audio filename
+        name: originalFile.name,
+        // Keep the original audio type
+        type: originalFile.type,
+        size: `${fileSizeMB} MB`,
+        mediaType: 'Audio'
+      });
+    } else {
+      const mediaType = isVideoFile(file.type) ? 'Video' : 'Audio';
+      setFileInfo({
+        name: file.name,
+        type: file.type,
+        size: `${fileSizeMB} MB`,
+        mediaType
+      });
+    }
   }, [isVideoFile]);
 
   // Update fileInfo when uploadedFile changes (for auto-downloaded files)
@@ -70,15 +86,18 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
   };
 
   // Handle file selection
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    processFile(file);
+    await processFile(file);
   };
 
   // Process the file
-  const processFile = (file) => {
+  const processFile = async (file) => {
     if (file) {
       if (validateFile(file)) {
+        // Set loading state immediately
+        setIsLoading(true);
+
         // Clear ALL video-related storage first
         localStorage.removeItem('current_video_url');
         localStorage.removeItem('current_file_cache_id');
@@ -87,8 +106,40 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           localStorage.removeItem('current_file_url');
         }
 
-        // Create a new object URL for the file
-        const objectUrl = URL.createObjectURL(file);
+        // Check if this is an audio file
+        const isAudio = file.type.startsWith('audio/');
+        let processedFile = file;
+
+        // If it's an audio file, immediately convert it to video
+        if (isAudio) {
+          try {
+            // Show loading state
+            setFileInfo({
+              name: file.name,
+              type: file.type,
+              size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+              mediaType: 'Audio',
+              converting: true
+            });
+
+            // Convert audio to video
+            processedFile = await convertAudioToVideo(file);
+
+            // Update file info but keep the original audio file information for display
+            // This maintains the illusion that we're still working with an audio file
+            displayFileInfo(processedFile, file);
+          } catch (error) {
+            console.error('Error converting audio to video:', error);
+            setError(t('fileUpload.conversionError', 'Failed to convert audio to video. Please try again.'));
+            setUploadedFile(null);
+            setFileInfo(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // Create a new object URL for the processed file
+        const objectUrl = URL.createObjectURL(processedFile);
         localStorage.setItem('current_file_url', objectUrl);
 
         // Clear any selected YouTube video state via parent callback
@@ -101,8 +152,17 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           setIsSrtOnlyMode(false);
         }
 
-        setUploadedFile(file);
-        displayFileInfo(file);
+        // Store the processed file for actual processing
+        setUploadedFile(processedFile);
+
+        // For non-audio files, display the file info normally
+        // For audio files, we've already set the file info with the original audio details
+        if (!isAudio) {
+          displayFileInfo(processedFile);
+        }
+
+        // Clear loading state after processing is complete
+        setIsLoading(false);
       } else {
         setUploadedFile(null);
         setFileInfo(null);
@@ -110,18 +170,25 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           URL.revokeObjectURL(localStorage.getItem('current_file_url'));
           localStorage.removeItem('current_file_url');
         }
+        // Clear loading state if validation fails
+        setIsLoading(false);
       }
     }
   };
 
   // Trigger file input click
   const handleBrowseClick = () => {
+    // Don't allow clicking when loading
+    if (isLoading) return;
+
     fileInputRef.current.click();
   };
 
   // Handle drag events
   const handleDragOver = (e) => {
     e.preventDefault();
+    // Don't allow drag when loading
+    if (isLoading) return;
     setIsDragOver(true);
   };
 
@@ -130,18 +197,21 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
     setIsDragOver(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     setIsDragOver(false);
 
+    // Don't allow drop when loading
+    if (isLoading) return;
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
+      await processFile(e.dataTransfer.files[0]);
     }
   };
 
   return (
     <div
-      className={`file-upload-input ${isDragOver ? 'drag-over' : ''} ${className || ''}`}
+      className={`file-upload-input ${isDragOver ? 'drag-over' : ''} ${isLoading ? 'loading' : ''} ${className || ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -155,7 +225,24 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         className="hidden-file-input"
       />
 
-      {!uploadedFile ? (
+      {isLoading ? (
+        <div className="upload-content loading">
+          <svg className="loading-icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="2" fill="none">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 12 12"
+                to="360 12 12"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </path>
+          </svg>
+          <h3>{t('fileUpload.processing', 'Processing audio...')}</h3>
+          <p>{t('fileUpload.pleaseWait', 'Please wait while we process your file')}</p>
+        </div>
+      ) : !uploadedFile ? (
         <div className="upload-content">
           <svg className="upload-icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="1" fill="none">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -193,30 +280,49 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
             <h4 className="file-name">{fileInfo ? fileInfo.name : 'File'}</h4>
             <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
             <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
-            <button
-              className="remove-file-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFileInfo(null);
-                setUploadedFile(null);
-                if (localStorage.getItem('current_file_url')) {
-                  URL.revokeObjectURL(localStorage.getItem('current_file_url'));
-                  localStorage.removeItem('current_file_url');
-                }
 
-                // If we have subtitles data in localStorage but no video, switch to SRT-only mode
-                const subtitlesData = localStorage.getItem('subtitles_data');
-                if (subtitlesData && setIsSrtOnlyMode) {
-                  setIsSrtOnlyMode(true);
-                }
-              }}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-              {t('fileUpload.remove', 'Remove')}
-            </button>
+            {fileInfo && fileInfo.converting ? (
+              <div className="converting-indicator">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" style={{ marginRight: '6px' }}>
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      from="0 12 12"
+                      to="360 12 12"
+                      dur="1s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                </svg>
+                {t('fileUpload.processing', 'Processing audio...')}
+              </div>
+            ) : (
+              <button
+                className="remove-file-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFileInfo(null);
+                  setUploadedFile(null);
+                  if (localStorage.getItem('current_file_url')) {
+                    URL.revokeObjectURL(localStorage.getItem('current_file_url'));
+                    localStorage.removeItem('current_file_url');
+                  }
+
+                  // If we have subtitles data in localStorage but no video, switch to SRT-only mode
+                  const subtitlesData = localStorage.getItem('subtitles_data');
+                  if (subtitlesData && setIsSrtOnlyMode) {
+                    setIsSrtOnlyMode(true);
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                {t('fileUpload.remove', 'Remove')}
+              </button>
+            )}
           </div>
         </div>
       )}

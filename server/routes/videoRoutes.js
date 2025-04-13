@@ -8,7 +8,13 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtubeService');
-const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo } = require('../services/videoProcessingService');
+const {
+  splitVideoIntoSegments,
+  splitMediaIntoSegments,
+  optimizeVideo,
+  createAnalysisVideo,
+  convertAudioToVideo
+} = require('../services/videoProcessingService');
 
 /**
  * GET /api/video-exists/:videoId - Check if a video exists
@@ -140,10 +146,10 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
     if (optimizeVideos && !isAudio) {
       try {
         console.log(`Optimizing video to ${optimizedResolution} before splitting`);
-        const optimizedFilename = `optimized_${timestamp}.${fileExtension}`;
+        const optimizedFilename = `optimized_${timestamp}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
 
-        optimizedResult = await optimizeVideo(mediaPath, optimizedPath, {
+        optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
           fps: 15
         });
@@ -153,7 +159,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
         console.log(`Using optimized video for splitting: ${optimizedPath}`);
       } catch (error) {
         console.error('Error optimizing video:', error);
-        console.log('Falling back to original video for splitting');
+        console.log('Falling back to previous video for splitting');
       }
     }
 
@@ -187,10 +193,11 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
       } : null
     });
   } catch (error) {
-    console.error(`Error processing ${mediaType} upload:`, error);
+    const errorMediaType = req.headers['content-type']?.startsWith('audio/') ? 'audio' : 'video';
+    console.error(`Error processing ${errorMediaType} upload:`, error);
     res.status(500).json({
       success: false,
-      error: error.message || `Failed to process ${mediaType}`
+      error: error.message || `Failed to process ${errorMediaType}`
     });
   }
 });
@@ -233,11 +240,11 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
       try {
         console.log(`[SPLIT-VIDEO] Optimizing video to ${optimizedResolution} before splitting`);
         console.log(`[SPLIT-VIDEO] optimizeVideos=${optimizeVideos} (should be false if already optimized)`);
-        const optimizedFilename = `optimized_${mediaId}.${fileExtension}`;
+        const optimizedFilename = `optimized_${mediaId}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
         console.log(`[SPLIT-VIDEO] Creating optimized video at: ${optimizedPath}`);
 
-        optimizedResult = await optimizeVideo(mediaPath, optimizedPath, {
+        optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
           fps: 15
         });
@@ -247,7 +254,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
         console.log(`[SPLIT-VIDEO] Using optimized video for splitting: ${optimizedPath}`);
       } catch (error) {
         console.error('[SPLIT-VIDEO] Error optimizing video:', error);
-        console.log('[SPLIT-VIDEO] Falling back to original video for splitting');
+        console.log('[SPLIT-VIDEO] Falling back to previous video for splitting');
       }
     }
 
@@ -292,44 +299,73 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
       } : null
     });
   } catch (error) {
-    console.error(`[SPLIT-VIDEO] Error splitting ${mediaType}:`, error);
+    const errorMediaType = req.headers['content-type']?.startsWith('audio/') ? 'audio' : 'video';
+    console.error(`[SPLIT-VIDEO] Error splitting ${errorMediaType}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message || `Failed to split ${mediaType}`
+      error: error.message || `Failed to split ${errorMediaType}`
     });
   }
 });
 
 /**
  * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate
- * Also creates an analysis video with 1000 frames for Gemini analysis
+ * Also creates an analysis video with 500 frames for Gemini analysis
+ * Automatically converts audio files to video at the start
  */
-router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), async (req, res) => {
+router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async (req, res) => {
   try {
     // Get optimization options from query params
     const resolution = req.query.resolution || '360p';
     const fps = parseInt(req.query.fps || '15');
 
-    // Generate a unique filename for the optimized video
-    const timestamp = Date.now();
+    // Determine if this is a video or audio file based on MIME type
     const contentType = req.headers['content-type'] || 'video/mp4';
-    const fileExtension = contentType.split('/')[1] || 'mp4';
-    const originalFilename = `original_${timestamp}.${fileExtension}`;
-    const optimizedFilename = `optimized_${timestamp}.${fileExtension}`;
-    const analysisFilename = `analysis_500frames_${timestamp}.${fileExtension}`;
+    const isAudio = contentType.startsWith('audio/');
+    const mediaType = isAudio ? 'audio' : 'video';
+
+    // Generate a unique filename for the original file
+    const timestamp = Date.now();
+    const originalFileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
+    const originalFilename = `original_${timestamp}.${originalFileExtension}`;
     const originalPath = path.join(VIDEOS_DIR, originalFilename);
+
+    // Always use mp4 for processed files
+    const optimizedFilename = `optimized_${timestamp}.mp4`;
+    const analysisFilename = `analysis_500frames_${timestamp}.mp4`;
     const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
     const analysisPath = path.join(VIDEOS_DIR, analysisFilename);
 
-    // Save the uploaded video file
+    // Save the uploaded file
     fs.writeFileSync(originalPath, req.body);
-    console.log(`[OPTIMIZE-VIDEO] Original video saved to ${originalPath}`);
+    console.log(`[OPTIMIZE-VIDEO] Original ${mediaType} saved to ${originalPath}`);
     console.log(`[OPTIMIZE-VIDEO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
 
+    // If it's an audio file, convert it to video first
+    let videoPath = originalPath;
+    let conversionResult = null;
+
+    if (isAudio) {
+      try {
+        console.log(`[OPTIMIZE-VIDEO] Converting audio to video at the start`);
+        const videoFilename = `converted_${timestamp}.mp4`;
+        videoPath = path.join(VIDEOS_DIR, videoFilename);
+
+        conversionResult = await convertAudioToVideo(originalPath, videoPath);
+        console.log(`[OPTIMIZE-VIDEO] Audio successfully converted to video: ${videoPath}`);
+      } catch (error) {
+        console.error('[OPTIMIZE-VIDEO] Error converting audio to video:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to convert audio to video'
+        });
+      }
+    }
+
     // Optimize the video
-    console.log(`[OPTIMIZE-VIDEO] Optimizing video to ${resolution} at ${fps}fps`);
+    console.log(`[OPTIMIZE-VIDEO] Optimizing ${isAudio ? 'converted audio' : 'video'} to ${resolution} at ${fps}fps`);
     console.log(`[OPTIMIZE-VIDEO] Optimized video will be saved to: ${optimizedPath}`);
-    const result = await optimizeVideo(originalPath, optimizedPath, {
+    const result = await optimizeVideo(videoPath, optimizedPath, {
       resolution,
       fps
     });
@@ -349,14 +385,16 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), a
     // Return the optimized and analysis video information
     res.json({
       success: true,
-      originalVideo: `/videos/${originalFilename}`,
+      originalMedia: `/videos/${originalFilename}`,
+      // Report the original media type to the client
+      mediaType: isAudio ? 'audio' : 'video',
       optimizedVideo: `/videos/${optimizedFilename}`,
       resolution: result.resolution,
       fps: result.fps,
       width: result.width,
       height: result.height,
       duration: result.duration,
-      message: `Video optimized successfully to ${result.resolution} at ${result.fps}fps`,
+      message: `${isAudio ? 'Audio' : 'Video'} optimized successfully to ${result.resolution} at ${result.fps}fps`,
       // Include analysis video information
       analysis: analysisResult.isOriginal ? {
         // If the video has fewer than 500 frames, we use the optimized video
@@ -372,10 +410,64 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: 'video/*' }), a
       }
     });
   } catch (error) {
-    console.error('[OPTIMIZE-VIDEO] Error optimizing video:', error);
+    const errorMediaType = req.headers['content-type']?.startsWith('audio/') ? 'audio' : 'video';
+    console.error(`[OPTIMIZE-VIDEO] Error optimizing ${errorMediaType}:`, error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to optimize video'
+      error: error.message || `Failed to optimize ${errorMediaType}`
+    });
+  }
+});
+
+/**
+ * POST /api/convert-audio-to-video - Convert an audio file to a video file
+ */
+router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/*' }), async (req, res) => {
+  try {
+    // Get the content type to determine the audio format
+    const contentType = req.headers['content-type'] || 'audio/mp3';
+
+    // Generate a unique filename for the audio file
+    const timestamp = Date.now();
+    const fileExtension = contentType.split('/')[1] || 'mp3';
+    const audioFilename = `audio_${timestamp}.${fileExtension}`;
+    const videoFilename = `converted_${timestamp}.mp4`;
+    const audioPath = path.join(VIDEOS_DIR, audioFilename);
+    const videoPath = path.join(VIDEOS_DIR, videoFilename);
+
+    // Save the uploaded audio file
+    fs.writeFileSync(audioPath, req.body);
+    console.log(`[CONVERT-AUDIO] Audio saved to ${audioPath}`);
+    console.log(`[CONVERT-AUDIO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
+
+    // Convert the audio to video
+    console.log(`[CONVERT-AUDIO] Converting audio to video`);
+    const result = await convertAudioToVideo(audioPath, videoPath);
+    console.log(`[CONVERT-AUDIO] Audio converted to video: ${videoPath}`);
+
+    // Delete the original audio file - we don't need it anymore
+    try {
+      fs.unlinkSync(audioPath);
+      console.log(`[CONVERT-AUDIO] Deleted original audio file: ${audioPath}`);
+    } catch (deleteError) {
+      console.error(`[CONVERT-AUDIO] Error deleting audio file: ${deleteError.message}`);
+    }
+
+    // Return the path to the video file
+    res.json({
+      success: true,
+      video: `/videos/${videoFilename}`,
+      width: result.width,
+      height: result.height,
+      fps: result.fps,
+      duration: result.duration,
+      message: 'Audio converted to video successfully'
+    });
+  } catch (error) {
+    console.error('[CONVERT-AUDIO] Error converting audio to video:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to convert audio to video'
     });
   }
 });
