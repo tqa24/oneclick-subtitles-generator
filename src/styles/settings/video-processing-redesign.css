@@ -117,7 +117,27 @@
   color: var(--md-on-surface-variant);
 }
 
-/* Toggle switch container with label on the right */
+/* Setting header with toggle switch */
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.setting-header label {
+  flex: 1;
+  padding-right: 10px;
+}
+
+/* Toggle switch container */
+.toggle-switch-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Toggle switch row (for horizontal layout) */
 .toggle-switch-row {
   display: flex;
   align-items: center;
@@ -131,6 +151,12 @@
 
 .toggle-switch-row .toggle-label {
   flex: 1;
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
 }
 
 /* Improved select styling */
