@@ -252,6 +252,9 @@ const LyricsDisplay = ({
   const handleProcess = async (source, processType, model, splitDurationParam, customPrompt) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
 
+    // Store the current source in localStorage for language detection
+    localStorage.setItem('current_processing_source', source);
+
     if (!subtitlesToUse || subtitlesToUse.length === 0) return;
 
     // First, get the text content if we don't have it yet

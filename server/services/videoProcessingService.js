@@ -505,6 +505,82 @@ function createAnalysisVideo(videoPath, outputPath) {
   });
 }
 
+/**
+ * Convert an audio file to a video file with a black background
+ * @param {string} audioPath - Path to the audio file
+ * @param {string} outputPath - Path to save the video file
+ * @returns {Promise<Object>} - Result object with video path and metadata
+ */
+function convertAudioToVideo(audioPath, outputPath) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Get the duration of the audio file
+      const duration = await getMediaDuration(audioPath);
+      console.log(`[AUDIO-TO-VIDEO] Converting audio file to video. Duration: ${duration.toFixed(2)}s`);
+      console.log(`[AUDIO-TO-VIDEO] Input path: ${audioPath}`);
+      console.log(`[AUDIO-TO-VIDEO] Output path: ${outputPath}`);
+
+      // Construct ffmpeg command to create a video with black background and the audio
+      const ffmpegArgs = [
+        '-f', 'lavfi',
+        '-i', 'color=c=black:s=640x360:r=15',
+        '-i', audioPath,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '28',
+        '-tune', 'stillimage',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-shortest',
+        '-threads', '0',
+        '-y',
+        outputPath
+      ];
+
+      const convertCmd = spawn('ffmpeg', ffmpegArgs);
+
+      convertCmd.stderr.on('data', (data) => {
+        const output = data.toString();
+        if (output.includes('frame=')) {
+          process.stdout.write('.');
+        }
+        console.log('ffmpeg stderr:', output);
+      });
+
+      convertCmd.on('close', async (code) => {
+        if (code !== 0) {
+          return reject(new Error('Failed to convert audio to video'));
+        }
+
+        try {
+          // Get the duration of the created video
+          const videoDuration = await getMediaDuration(outputPath);
+
+          console.log(`[AUDIO-TO-VIDEO] Successfully converted audio to video`);
+          console.log(`[AUDIO-TO-VIDEO] Video duration: ${videoDuration.toFixed(2)}s`);
+          console.log(`[AUDIO-TO-VIDEO] Video path: ${outputPath}`);
+
+          resolve({
+            path: outputPath,
+            duration: videoDuration,
+            width: 640,
+            height: 360,
+            fps: 15
+          });
+        } catch (error) {
+          reject(new Error(`Failed to get converted video metadata: ${error.message}`));
+        }
+      });
+
+      convertCmd.on('error', (err) => {
+        reject(err);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 module.exports = {
   splitVideoIntoSegments,
   splitMediaIntoSegments,
@@ -512,7 +588,8 @@ module.exports = {
   getMediaDuration,
   optimizeVideo,
   createAnalysisVideo,
-  getVideoFrameCount
+  getVideoFrameCount,
+  convertAudioToVideo
 };
 
 
