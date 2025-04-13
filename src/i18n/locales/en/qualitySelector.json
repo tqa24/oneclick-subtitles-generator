@@ -5,5 +5,5 @@
   "mediumQuality": "Medium quality (default)",
   "highQuality": "High quality",
   "hdQuality": "HD quality (may cause issues with long videos)",
-  "longVideoWarning": "For videos longer than 1 hour, use 144p to avoid app crashes"
+  "longVideoWarning": "Choosing quality smaller or larger than 360p will increase download time due to audio stitching process"
 }

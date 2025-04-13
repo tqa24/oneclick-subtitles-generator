@@ -5,5 +5,5 @@
   "mediumQuality": "중간 품질 (기본값)",
   "highQuality": "고 품질",
   "hdQuality": "HD 품질 (긴 동영상에서 문제 발생 가능)",
-  "longVideoWarning": "1시간 이상의 동영상에는 앱 충돌을 피하기 위해 144p를 사용하세요"
+  "longVideoWarning": "360p보다 낮거나 높은 화질을 선택하면 오디오 스티칭 과정으로 인해 다운로드 시간이 증가합니다"
 }

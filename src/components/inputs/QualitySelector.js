@@ -64,8 +64,8 @@ const QualitySelector = ({ onChange, className }) => {
         </div>
       </div>
 
-      {/* Warning message for long videos */}
-      {selectedQuality !== '144p' && (
+      {/* Warning message for audio stitching */}
+      {selectedQuality !== '360p' && (
         <div className="quality-warning">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
             <circle cx="12" cy="12" r="10"></circle>
