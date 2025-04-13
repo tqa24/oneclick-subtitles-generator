@@ -516,7 +516,7 @@ ${languageInstruction}`;
 };
 
 // Function to translate subtitles to a different language while preserving timing
-const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0) => {
+const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false) => {
     // Store the target language for reference
     localStorage.setItem('translation_target_language', targetLanguage);
     if (!subtitles || subtitles.length === 0) {
@@ -557,7 +557,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message }
         }));
-        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration);
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules);
     }
 
     // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
@@ -572,6 +572,64 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             .replace('{targetLanguage}', targetLanguage);
     } else {
         translationPrompt = getDefaultTranslationPrompt(subtitleText, targetLanguage);
+    }
+
+    // If includeRules is true, append transcription rules to the prompt
+    if (includeRules) {
+        try {
+            // Get transcription rules from the store
+            const { getTranscriptionRules } = require('../utils/transcriptionRulesStore');
+            const transcriptionRules = getTranscriptionRules();
+
+            if (transcriptionRules && Object.keys(transcriptionRules).length > 0) {
+            console.log('Appending transcription rules to translation prompt');
+            let rulesText = '\n\nIMPORTANT CONTEXT: Use the following rules and context from the video analysis to ensure consistent translation:\n';
+
+            // Add atmosphere if available
+            if (transcriptionRules.atmosphere) {
+                rulesText += `\n- Atmosphere/Context: ${transcriptionRules.atmosphere}\n`;
+            }
+
+            // Add terminology if available
+            if (transcriptionRules.terminology && transcriptionRules.terminology.length > 0) {
+                rulesText += '\n- Terminology (maintain these terms consistently):\n';
+                transcriptionRules.terminology.forEach(term => {
+                    rulesText += `  * ${term.term}: ${term.definition}\n`;
+                });
+            }
+
+            // Add speaker identification if available
+            if (transcriptionRules.speakerIdentification && transcriptionRules.speakerIdentification.length > 0) {
+                rulesText += '\n- Speakers:\n';
+                transcriptionRules.speakerIdentification.forEach(speaker => {
+                    rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
+                });
+            }
+
+            // Add formatting conventions if available
+            if (transcriptionRules.formattingConventions && transcriptionRules.formattingConventions.length > 0) {
+                rulesText += '\n- Formatting Conventions:\n';
+                transcriptionRules.formattingConventions.forEach(convention => {
+                    rulesText += `  * ${convention}\n`;
+                });
+            }
+
+            // Add additional notes if available
+            if (transcriptionRules.additionalNotes && transcriptionRules.additionalNotes.length > 0) {
+                rulesText += '\n- Additional Notes:\n';
+                transcriptionRules.additionalNotes.forEach(note => {
+                    rulesText += `  * ${note}\n`;
+                });
+            }
+
+            // Append the rules to the translation prompt
+            translationPrompt += rulesText;
+            } else {
+                console.log('No transcription rules found to append to translation prompt');
+            }
+        } catch (error) {
+            console.error('Error retrieving transcription rules:', error);
+        }
     }
 
     // Create a unique ID for this request
@@ -1611,9 +1669,10 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
  * @param {string} model - Gemini model to use
  * @param {string} customPrompt - Custom prompt for translation
  * @param {number} splitDuration - Duration in minutes for each chunk
+ * @param {boolean} includeRules - Whether to include transcription rules in the prompt
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration) => {
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false) => {
     // Convert splitDuration from minutes to seconds
     const splitDurationSeconds = splitDuration * 60;
 
@@ -1669,7 +1728,8 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
         try {
             // Call translateSubtitles with the current chunk, but with splitDuration=0 to avoid infinite recursion
-            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0);
+            // Pass along the includeRules parameter to maintain consistency across chunks
+            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules);
             translatedChunks.push(translatedChunk);
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
@@ -1690,7 +1750,8 @@ DO NOT add any timestamps, SRT formatting, or other formatting.
 ${chunk.map(sub => sub.text).join('\n')}`;
 
                     // Call translateSubtitles with the explicit prompt
-                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, explicitPrompt, 0);
+                    // Pass along the includeRules parameter to maintain consistency across chunks
+                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, explicitPrompt, 0, includeRules);
                     translatedChunks.push(translatedChunk);
                     continue;
                 } catch (retryError) {

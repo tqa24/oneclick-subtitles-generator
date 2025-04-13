@@ -41,6 +41,33 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('translation_split_duration') || '0');
   });
+
+  // State for whether transcription rules are available
+  const [rulesAvailable, setRulesAvailable] = useState(false);
+
+  // State for whether to include transcription rules in translation requests
+  const [includeRules, setIncludeRules] = useState(() => {
+    // Get the preference from localStorage or default to true
+    return localStorage.getItem('translation_include_rules') !== 'false';
+  });
+
+  // Check if transcription rules are available
+  useEffect(() => {
+    const checkRulesAvailability = async () => {
+      try {
+        // Dynamically import to avoid circular dependencies
+        const { getTranscriptionRules } = await import('../utils/transcriptionRulesStore');
+        const rules = getTranscriptionRules();
+        setRulesAvailable(!!rules);
+        console.log('Transcription rules available:', !!rules);
+      } catch (error) {
+        console.error('Error checking transcription rules availability:', error);
+        setRulesAvailable(false);
+      }
+    };
+
+    checkRulesAvailability();
+  }, []);
   const [translationStatus, setTranslationStatus] = useState('');
 
   // Reference to the status message element for scrolling
@@ -89,8 +116,8 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     setIsTranslating(true);
 
     try {
-      // Pass the selected model, custom prompt, and split duration to the translation function
-      const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt, splitDuration);
+      // Pass the selected model, custom prompt, split duration, and includeRules option to the translation function
+      const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt, splitDuration, includeRules);
       console.log('Translation result received:', result ? result.length : 0, 'subtitles');
 
       // Check if result is valid
@@ -434,7 +461,37 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
               </div>
             </div>
 
-            {/* Fourth row: Prompt editing */}
+            {/* Fourth row: Include Rules option */}
+            <div className="translation-row rules-row">
+              <div className="row-label">
+                <label htmlFor="include-rules">{t('translation.includeRules', 'Include Context Rules')}:</label>
+              </div>
+              <div className="row-content">
+                <div className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    id="include-rules"
+                    checked={includeRules}
+                    onChange={(e) => {
+                      const value = e.target.checked;
+                      setIncludeRules(value);
+                      localStorage.setItem('translation_include_rules', value.toString());
+                    }}
+                    disabled={isTranslating || translatedSubtitles !== null || !rulesAvailable}
+                  />
+                  <label htmlFor="include-rules" className="checkbox-label">
+                    {t('translation.includeRulesLabel', 'Append transcription rules to translation requests')}
+                  </label>
+                </div>
+                <div className="setting-description">
+                  {rulesAvailable
+                    ? t('translation.includeRulesDescription', 'Includes video analysis context and rules with each translation request for better consistency across segments.')
+                    : t('translation.noRulesAvailable', 'No transcription rules available. This option requires analyzing the video with Gemini first.')}
+                </div>
+              </div>
+            </div>
+
+            {/* Fifth row: Prompt editing */}
             <div className="translation-row prompt-row">
               <div className="row-label">
                 <label>{t('translation.promptSettings', 'Prompt')}:</label>
