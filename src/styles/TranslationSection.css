@@ -34,15 +34,25 @@
 /* Row layout for consistent alignment */
 .translation-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 1rem;
+  min-height: 42px; /* Match the height of input elements */
+}
+
+/* Ensure edit prompt button has consistent height */
+.translation-row .edit-prompt-button-with-text {
+  height: 42px;
+  box-sizing: border-box;
 }
 
 /* Label column */
 .row-label {
   flex: 0 0 100px;
   text-align: right;
-  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
 }
 
 .row-label label {
@@ -55,6 +65,8 @@
 .row-content {
   flex: 1;
   min-width: 0; /* Prevent flex items from overflowing */
+  display: flex;
+  align-items: center;
 }
 
 /* Action content alignment */
@@ -75,6 +87,8 @@
   color: var(--text-primary);
   font-size: 0.95rem;
   transition: border-color 0.2s, box-shadow 0.2s;
+  height: 42px;
+  box-sizing: border-box;
 }
 
 /* Style for the model dropdown in translation section */
@@ -109,6 +123,8 @@
   background-position: right 0.75rem center;
   background-size: 1.25rem;
   padding-right: 2.5rem;
+  height: 42px;
+  box-sizing: border-box;
 }
 
 .split-duration-select:focus {
@@ -398,6 +414,18 @@
   vertical-align: middle;
 }
 
+/* Specific positioning for the help icon in the rules row */
+.toggle-switch-row .help-icon-container {
+  margin-left: 4px;
+}
+
+/* Label with help icon container */
+.label-with-help {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
 .help-icon {
   width: 18px;
   height: 18px;
@@ -426,6 +454,83 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Toggle switch styles for rules row */
+.toggle-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  height: 42px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  margin-right: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--md-outline-variant);
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--md-surface);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--md-primary);
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 1px var(--md-primary);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toggle-label {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+/* Setting description for toggle switches */
+.setting-description {
+  margin: 0.5rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 /* Responsive styles */
