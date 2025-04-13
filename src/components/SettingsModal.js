@@ -114,6 +114,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     return localStorage.getItem('about_alternative_bg') === 'true';
   });
   const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false); // Track if settings have been loaded
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
@@ -234,24 +235,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const { clientId, clientSecret } = getClientCredentials();
       const authenticated = hasValidTokens();
 
-      // Store original settings for comparison
-      setOriginalSettings({
-        geminiApiKey: savedGeminiKey,
-        youtubeApiKey: savedYoutubeKey,
-        segmentDuration: savedSegmentDuration,
-        geminiModel: savedGeminiModel,
-        timeFormat: savedTimeFormat,
-        showWaveform: savedShowWaveform,
-        segmentOffsetCorrection: savedOffsetCorrection,
-        transcriptionPrompt: savedTranscriptionPrompt,
-        useOAuth: savedUseOAuth,
-        youtubeClientId: clientId,
-        youtubeClientSecret: clientSecret,
-        useVideoAnalysis: savedUseVideoAnalysis,
-        optimizeVideos: savedOptimizeVideos,
-        optimizedResolution: savedOptimizedResolution,
-        useOptimizedPreview: savedUseOptimizedPreview
-      });
+      // Original settings will be set after all state updates
 
       setGeminiApiKey(savedGeminiKey);
       setYoutubeApiKey(savedYoutubeKey);
@@ -273,6 +257,30 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOptimizedResolution(savedOptimizedResolution);
       setUseOptimizedPreview(savedUseOptimizedPreview);
       setHasChanges(false); // Reset changes flag when loading settings
+
+      // Set original settings to match loaded settings
+      setOriginalSettings({
+        geminiApiKey: savedGeminiKey,
+        youtubeApiKey: savedYoutubeKey,
+        segmentDuration: savedSegmentDuration,
+        geminiModel: savedGeminiModel,
+        timeFormat: savedTimeFormat,
+        showWaveform: savedShowWaveform,
+        segmentOffsetCorrection: savedOffsetCorrection,
+        transcriptionPrompt: savedTranscriptionPrompt,
+        useOAuth: savedUseOAuth,
+        youtubeClientId: clientId,
+        youtubeClientSecret: clientSecret,
+        useVideoAnalysis: savedUseVideoAnalysis,
+        videoAnalysisModel: savedVideoAnalysisModel,
+        videoAnalysisTimeout: savedVideoAnalysisTimeout,
+        optimizeVideos: savedOptimizeVideos,
+        optimizedResolution: savedOptimizedResolution,
+        useOptimizedPreview: savedUseOptimizedPreview
+      });
+
+      // Mark settings as loaded
+      setIsSettingsLoaded(true);
     };
 
     // Load settings initially
@@ -632,6 +640,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
   // Effect to check for changes in settings
   useEffect(() => {
+    // Only check for changes if settings have been loaded
+    if (!isSettingsLoaded) return;
+
     // Compare current settings with original settings
     const settingsChanged =
       geminiApiKey !== originalSettings.geminiApiKey ||
@@ -653,7 +664,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useOptimizedPreview !== originalSettings.useOptimizedPreview;
 
     setHasChanges(settingsChanged);
-  }, [geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
+  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
       optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
@@ -704,8 +715,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useOptimizedPreview
     });
 
-    // Reset changes flag
+    // Reset changes flag and mark settings as loaded
     setHasChanges(false);
+    setIsSettingsLoaded(true);
 
     onClose();
   };
