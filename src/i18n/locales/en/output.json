@@ -70,5 +70,8 @@
   "forceStopTooltip": "Stop all Gemini requests",
   "requestsAborted": "All Gemini requests have been aborted",
   "viewRules": "View Rules",
-  "viewRulesTitle": "View transcription rules"
+  "viewRulesTitle": "View transcription rules",
+  "srtOnlyMode": "Working with SRT only. No video source available.",
+  "srtOnlyModeInfo": "Working with SRT file only. No video source available.",
+  "srtOnlyModeHint": "You can still edit, translate, and download the subtitles."
 }

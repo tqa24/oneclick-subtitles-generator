@@ -62,6 +62,9 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
   const [videoSource, setVideoSource] = useState('');
   const [actualVideoUrl, setActualVideoUrl] = useState('');
   useEffect(() => {
+    // Reset the actual video URL when the source changes
+    setActualVideoUrl('');
+
     // First check for uploaded file
     const uploadedFileUrl = localStorage.getItem('current_file_url');
     if (uploadedFileUrl) {
@@ -78,6 +81,7 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
     }
 
     // Clear video source if nothing is selected
+    console.log('No video source found, clearing video source');
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
 

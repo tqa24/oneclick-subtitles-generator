@@ -101,6 +101,9 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // Clear ALL video-related storage first
         localStorage.removeItem('current_video_url');
         localStorage.removeItem('current_file_cache_id');
+        localStorage.removeItem('split_result'); // Clear any cached split result
+
+        // Revoke any existing object URLs to prevent memory leaks
         if (localStorage.getItem('current_file_url')) {
           URL.revokeObjectURL(localStorage.getItem('current_file_url'));
           localStorage.removeItem('current_file_url');
@@ -308,9 +311,11 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                     localStorage.removeItem('current_file_url');
                   }
 
-                  // If we have subtitles data in localStorage but no video, switch to SRT-only mode
+                  // Always switch to SRT-only mode when removing the video source
+                  // if there's subtitles data in localStorage
                   const subtitlesData = localStorage.getItem('subtitles_data');
                   if (subtitlesData && setIsSrtOnlyMode) {
+                    console.log('Switching to SRT-only mode after removing video source');
                     setIsSrtOnlyMode(true);
                   }
                 }}

@@ -70,5 +70,8 @@
   "forceStopTooltip": "Dừng tất cả các yêu cầu Gemini",
   "requestsAborted": "Tất cả các yêu cầu Gemini đã bị hủy",
   "viewRules": "Xem quy tắc",
-  "viewRulesTitle": "Xem quy tắc phiên âm"
+  "viewRulesTitle": "Xem quy tắc phiên âm",
+  "srtOnlyMode": "Đang làm việc chỉ với tệp SRT. Không có nguồn video.",
+  "srtOnlyModeInfo": "Đang làm việc chỉ với tệp SRT. Không có nguồn video.",
+  "srtOnlyModeHint": "Bạn vẫn có thể chỉnh sửa, dịch và tải xuống phụ đề."
 }
