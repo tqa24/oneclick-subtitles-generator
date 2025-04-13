@@ -508,6 +508,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 {subtitlesText}`}
               onSave={handleSavePrompt}
               title={t('promptEditor.editTranslationPrompt', 'Edit Translation Prompt')}
+              promptType="translation" // Explicitly set the prompt type
               description={t('promptEditor.customizeTranslationDesc', 'Add custom instructions for translation. The system will automatically handle formatting.')}
             />
           </>

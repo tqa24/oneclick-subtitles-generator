@@ -93,10 +93,53 @@
   background-color: var(--md-on-surface-variant);
 }
 
-/* Prompt editor container for positioning the floating cards */
+/* Prompt editor container */
 .prompt-editor-container {
   position: relative;
   margin-top: 0.5rem;
+}
+
+/* Default template box */
+.prompt-editor-default-template {
+  margin-top: 16px;
+}
+
+.default-template-box {
+  background-color: var(--md-surface-2);
+  padding: 16px;
+  border-radius: var(--md-shape-medium);
+  border-left: 4px solid var(--md-primary);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--md-on-surface-variant);
+}
+
+.default-template-box p {
+  margin: 4px 0;
+}
+
+.variable-highlight {
+  color: var(--md-primary);
+  font-weight: 500;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.custom-instructions-placeholder {
+  color: var(--md-outline);
+  font-style: italic;
+  padding-left: 16px;
+  border-left: 2px dashed var(--md-outline);
+  margin: 8px 0 8px 8px !important;
+}
+
+.instructions-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--md-on-surface);
 }
 
 .prompt-editor-description {
@@ -116,8 +159,8 @@
   font-size: var(--md-body-medium-size);
   line-height: 1.5;
   resize: vertical;
-  min-height: 200px;
-  height: 200px;
+  min-height: 150px;
+  height: 150px;
   scrollbar-width: thin;
   scrollbar-color: var(--md-primary) var(--md-surface-2);
 }

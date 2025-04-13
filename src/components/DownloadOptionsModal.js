@@ -334,6 +334,7 @@ Here are the subtitles:\n\n{subtitlesText}`)
                     ? t('promptEditor.editConsolidatePrompt', 'Edit Consolidation Prompt')
                     : t('promptEditor.editSummarizePrompt', 'Edit Summarization Prompt')
                 }
+                promptType={processType} // Explicitly set the prompt type
                 description={t('promptEditor.customizePromptDesc', 'Add custom instructions for processing. The system will automatically handle formatting.')}
               />
             </>
