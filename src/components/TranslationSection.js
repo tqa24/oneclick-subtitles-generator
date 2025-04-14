@@ -21,7 +21,7 @@ const formatTimeString = (timeInSeconds) => {
 
 const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) => {
   const { t } = useTranslation();
-  const [targetLanguage, setTargetLanguage] = useState('');
+  const [targetLanguages, setTargetLanguages] = useState([{ id: 1, value: '' }]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedSubtitles, setTranslatedSubtitles] = useState(null);
   const [error, setError] = useState('');
@@ -41,6 +41,23 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('translation_split_duration') || '0');
   });
+
+  // Multi-language translation settings
+  const [selectedDelimiter, setSelectedDelimiter] = useState(' '); // Default to space
+  const [useParentheses, setUseParentheses] = useState(false);
+
+  // Available delimiters
+  const delimiters = [
+    { id: 'space', value: ' ', label: t('translation.delimiterSpace', 'Space') },
+    { id: 'newline', value: '\n', label: t('translation.delimiterNewline', 'New Line') },
+    { id: 'slash', value: ' / ', label: t('translation.delimiterSlash', 'Slash (/)') },
+    { id: 'pipe', value: ' | ', label: t('translation.delimiterPipe', 'Pipe (|)') },
+    { id: 'dash', value: ' - ', label: t('translation.delimiterDash', 'Dash (-)') },
+    { id: 'colon', value: ' : ', label: t('translation.delimiterColon', 'Colon (:)') },
+    { id: 'semicolon', value: ' ; ', label: t('translation.delimiterSemicolon', 'Semicolon (;)') },
+    { id: 'comma', value: ', ', label: t('translation.delimiterComma', 'Comma (,)') },
+    { id: 'dot', value: '. ', label: t('translation.delimiterDot', 'Dot (.)') }
+  ];
 
   // Calculate segment distribution based on split duration
   const segmentDistribution = useMemo(() => {
@@ -158,9 +175,30 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     return () => window.removeEventListener('translation-status', handleTranslationStatus);
   }, []);
 
+  // Helper function to add a new language input
+  const handleAddLanguage = () => {
+    setTargetLanguages([...targetLanguages, { id: Date.now(), value: '' }]);
+  };
+
+  // Helper function to remove a language input
+  const handleRemoveLanguage = (id) => {
+    if (targetLanguages.length > 1) {
+      setTargetLanguages(targetLanguages.filter(lang => lang.id !== id));
+    }
+  };
+
+  // Helper function to update a language value
+  const handleLanguageChange = (id, value) => {
+    setTargetLanguages(targetLanguages.map(lang =>
+      lang.id === id ? { ...lang, value } : lang
+    ));
+  };
+
   const handleTranslate = async () => {
-    if (!targetLanguage.trim()) {
-      setError(t('translation.languageRequired', 'Please enter a target language'));
+    // Check if at least one language is entered
+    const hasValidLanguage = targetLanguages.some(lang => lang.value.trim() !== '');
+    if (!hasValidLanguage) {
+      setError(t('translation.languageRequired', 'Please enter at least one target language'));
       return;
     }
 
@@ -173,8 +211,20 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     setIsTranslating(true);
 
     try {
-      // Pass the selected model, custom prompt, split duration, and includeRules option to the translation function
-      const result = await translateSubtitles(subtitles, targetLanguage, selectedModel, customTranslationPrompt, splitDuration, includeRules);
+      // Prepare language array for multi-language translation
+      const languages = targetLanguages.map(lang => lang.value.trim()).filter(lang => lang !== '');
+
+      // Pass the selected model, custom prompt, split duration, includeRules, delimiter and parentheses options
+      const result = await translateSubtitles(
+        subtitles,
+        languages.length === 1 ? languages[0] : languages,
+        selectedModel,
+        customTranslationPrompt,
+        splitDuration,
+        includeRules,
+        useParentheses ? null : selectedDelimiter, // If parentheses are selected, don't use a delimiter
+        useParentheses
+      );
       console.log('Translation result received:', result ? result.length : 0, 'subtitles');
 
       // Check if result is valid
@@ -286,7 +336,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : subtitles;
 
     if (subtitlesToUse && subtitlesToUse.length > 0) {
-      const langSuffix = source === 'translated' ? `_${targetLanguage.toLowerCase().replace(/\\s+/g, '_')}` : '';
+      let langSuffix = '';
+      if (source === 'translated') {
+        if (targetLanguages.length > 1) {
+          langSuffix = '_multi_lang';
+        } else {
+          langSuffix = `_${targetLanguages[0]?.value?.toLowerCase().replace(/\s+/g, '_') || 'translated'}`;
+        }
+      }
       const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
 
       switch (format) {
@@ -307,7 +364,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   };
 
   // Handle process request from modal
-  const handleProcess = async (source, processType, model) => {
+  const handleProcess = async (source, processType) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : subtitles;
 
     if (!subtitlesToUse || subtitlesToUse.length === 0) return;
@@ -322,10 +379,22 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     setIsProcessing(true);
     try {
       let result;
+      // For multi-language translations, use the first non-empty language or null
+      let targetLang = null;
+      if (source === 'translated') {
+        if (targetLanguages.length > 1) {
+          // For multi-language, we'll use the first valid language
+          const validLanguage = targetLanguages.find(lang => lang.value?.trim() !== '');
+          targetLang = validLanguage?.value || null;
+        } else {
+          targetLang = targetLanguages[0]?.value || null;
+        }
+      }
+
       if (processType === 'consolidate') {
-        result = await completeDocument(textContent, model);
+        result = await completeDocument(textContent, selectedModel, targetLang);
       } else if (processType === 'summarize') {
-        result = await summarizeDocument(textContent, model);
+        result = await summarizeDocument(textContent, selectedModel, targetLang);
       }
 
       // Check if the result is JSON and extract plain text
@@ -383,7 +452,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       }, 3000);
 
       // Download the processed document
-      const langSuffix = source === 'translated' ? `_${targetLanguage.toLowerCase().replace(/\\s+/g, '_')}` : '';
+      let langSuffix = '';
+      if (source === 'translated') {
+        if (targetLanguages.length > 1) {
+          langSuffix = '_multi_lang';
+        } else {
+          langSuffix = `_${targetLanguages[0]?.value?.toLowerCase().replace(/\s+/g, '_') || 'translated'}`;
+        }
+      }
       const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
       const filename = processType === 'consolidate'
         ? `${baseFilename}_document.txt`
@@ -449,23 +525,105 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       </div>
 
       <div className="translation-controls">
-        {/* First row: Language input */}
+        {/* First row: Language inputs */}
         <div className="translation-row language-row">
           <div className="row-label">
             <label htmlFor="target-language">{t('translation.targetLanguage', 'Target Language')}:</label>
           </div>
           <div className="row-content">
-            <input
-              id="target-language"
-              type="text"
-              value={targetLanguage}
-              onChange={(e) => setTargetLanguage(e.target.value)}
-              placeholder={t('translation.languagePlaceholder', 'Enter target language (e.g., Spanish, French, Japanese)')}
-              disabled={isTranslating || translatedSubtitles !== null}
-              className="language-input"
-            />
+            <div className="language-inputs-container">
+              {targetLanguages.map((lang) => (
+                <div key={lang.id} className="language-input-group">
+                  <input
+                    id={`target-language-${lang.id}`}
+                    type="text"
+                    value={lang.value}
+                    onChange={(e) => handleLanguageChange(lang.id, e.target.value)}
+                    placeholder={t('translation.languagePlaceholder', 'Enter target language (e.g., Spanish, French, Japanese)')}
+                    disabled={isTranslating || translatedSubtitles !== null}
+                    className="language-input"
+                  />
+                  {targetLanguages.length > 1 && (
+                    <button
+                      className="remove-language-btn"
+                      onClick={() => handleRemoveLanguage(lang.id)}
+                      disabled={isTranslating || translatedSubtitles !== null}
+                      title={t('translation.removeLanguage', 'Remove')}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                className="add-language-btn"
+                onClick={handleAddLanguage}
+                disabled={isTranslating || translatedSubtitles !== null}
+                title={t('translation.addLanguage', 'Add Language')}
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                {t('translation.addLanguage', 'Add Language')}
+              </button>
+              <p className="setting-description">
+                {t('translation.multiLanguageDescription', 'Translate to multiple languages at once')}
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Delimiter settings - only show when multiple languages are added */}
+        {targetLanguages.length > 1 && (
+          <div className="translation-row delimiter-row">
+            <div className="row-label">
+              <label>{t('translation.delimiterSettings', 'Delimiter Settings')}:</label>
+            </div>
+            <div className="row-content">
+              <div className="delimiter-options">
+                <div className="delimiter-pills">
+                  {delimiters.map(delimiter => (
+                    <button
+                      key={delimiter.id}
+                      className={`delimiter-pill ${selectedDelimiter === delimiter.value ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedDelimiter(delimiter.value);
+                        // When selecting a delimiter, turn off parentheses
+                        if (useParentheses) setUseParentheses(false);
+                      }}
+                      disabled={isTranslating || translatedSubtitles !== null}
+                    >
+                      {delimiter.label}
+                    </button>
+                  ))}
+
+                  {/* Parentheses option - only show when exactly one additional language */}
+                  {targetLanguages.length === 2 && (
+                    <button
+                      className={`delimiter-pill parentheses-pill ${useParentheses ? 'active' : ''}`}
+                      onClick={() => {
+                        setUseParentheses(!useParentheses);
+                        // When enabling parentheses, clear the delimiter selection
+                        if (!useParentheses) setSelectedDelimiter('');
+                      }}
+                      disabled={isTranslating || translatedSubtitles !== null}
+                      title={t('translation.useParenthesesDescription', 'Add second language in parentheses')}
+                    >
+                      {t('translation.useParentheses', 'Use Parentheses')}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('translation.delimiterDescription', 'Choose how to separate multiple languages in the output')}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Second row: Model selection */}
         {!translatedSubtitles ? (
@@ -651,7 +809,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   <button
                     className="translate-button"
                     onClick={handleTranslate}
-                    disabled={!targetLanguage.trim()}
+                    disabled={!targetLanguages.some(lang => lang.value.trim() !== '')}
                   >
                     {t('translation.translate', 'Translate')}
                   </button>
@@ -723,7 +881,12 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             </div>
             <div className="row-content">
               <div className="translation-preview">
-                <h4>{t('translation.preview', 'Translation Preview')} ({targetLanguage})</h4>
+                <h4>
+                  {t('translation.preview', 'Translation Preview')}
+                  {targetLanguages.length > 1
+                    ? ` (${targetLanguages.map(lang => lang.value).filter(val => val.trim() !== '').join(', ')})`
+                    : targetLanguages[0]?.value?.trim() ? ` (${targetLanguages[0].value})` : ''}
+                </h4>
                 <div className="translation-preview-content">
                   {translatedSubtitles.slice(0, 5).map((subtitle, index) => {
                     // Determine the time display format

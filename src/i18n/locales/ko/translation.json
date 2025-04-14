@@ -34,5 +34,21 @@
   "includeRulesDescription": "분할된 번역 작업에서 일관성을 유지하기 위해 각 번역 요청에 비디오 분석 컨텍스트와 규칙을 포함합니다.",
   "noRulesAvailable": "사용 가능한 전사 규칙이 없습니다. 이 옵션은 Gemini로 비디오를 분석해야 합니다.",
   "customSubtitlesNoRules": "사용자 지정 자막을 제공했기 때문에 이 옵션이 비활성화되었습니다. 사용자 지정 자막 모드는 비디오 분석과 규칙 생성을 건너뜁니다.",
-  "allSubtitles": "모든 {{count}}개의 자막"
+  "allSubtitles": "모든 {{count}}개의 자막",
+  "addLanguage": "언어 추가",
+  "removeLanguage": "제거",
+  "multiLanguageDescription": "여러 언어로 한 번에 번역",
+  "delimiterSettings": "구분자 설정",
+  "delimiterDescription": "출력에서 여러 언어를 구분하는 방법 선택",
+  "useParentheses": "괄호 사용",
+  "useParenthesesDescription": "두 번째 언어를 괄호 안에 추가 (하나의 추가 언어만 있을 때)",
+  "delimiterSpace": "공백",
+  "delimiterNewline": "줄바꿈",
+  "delimiterSlash": "슬래시 (/)",
+  "delimiterPipe": "파이프 (|)",
+  "delimiterDash": "대시 (-)",
+  "delimiterColon": "콜론 (:)",
+  "delimiterSemicolon": "세미콜론 (;)",
+  "delimiterComma": "쉼표 (,)",
+  "delimiterDot": "점 (.)"
 }

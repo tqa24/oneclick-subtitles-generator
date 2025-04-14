@@ -34,5 +34,21 @@
   "includeRulesDescription": "Includes video analysis context and rules with each translation request for better consistency across segments.",
   "noRulesAvailable": "No transcription rules available. This option requires analyzing the video with Gemini first.",
   "customSubtitlesNoRules": "This option is disabled because you provided custom subtitles. Custom subtitles mode skips video analysis and rule generation.",
-  "allSubtitles": "All {{count}} subtitles"
+  "allSubtitles": "All {{count}} subtitles",
+  "addLanguage": "Add Language",
+  "removeLanguage": "Remove",
+  "multiLanguageDescription": "Translate to multiple languages at once",
+  "delimiterSettings": "Delimiter Settings",
+  "delimiterDescription": "Choose how to separate multiple languages in the output",
+  "useParentheses": "Use Parentheses",
+  "useParenthesesDescription": "Add second language in parentheses (only for one additional language)",
+  "delimiterSpace": "Space",
+  "delimiterNewline": "New Line",
+  "delimiterSlash": "Slash (/)",
+  "delimiterPipe": "Pipe (|)",
+  "delimiterDash": "Dash (-)",
+  "delimiterColon": "Colon (:)",
+  "delimiterSemicolon": "Semicolon (;)",
+  "delimiterComma": "Comma (,)",
+  "delimiterDot": "Dot (.)"
 }

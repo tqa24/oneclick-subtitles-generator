@@ -64,16 +64,49 @@ export const createSubtitleSchema = (isUserProvided = false) => {
 
 /**
  * Creates a schema for subtitle translation
+ * @param {boolean} multiLanguage - Whether multiple languages are being translated
  * @returns {Object} Schema for subtitle translation
  */
-export const createTranslationSchema = () => {
-    return {
-        type: "array",
-        items: {
-            type: "string",
-            description: "Translated text for a subtitle"
-        }
-    };
+export const createTranslationSchema = (multiLanguage = false) => {
+    if (multiLanguage) {
+        return {
+            type: "object",
+            properties: {
+                translations: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            language: {
+                                type: "string",
+                                description: "Target language for this translation"
+                            },
+                            texts: {
+                                type: "array",
+                                items: {
+                                    type: "string",
+                                    description: "Translated text for a subtitle"
+                                }
+                            }
+                        },
+                        required: ["language", "texts"],
+                        propertyOrdering: ["language", "texts"]
+                    }
+                }
+            },
+            required: ["translations"],
+            propertyOrdering: ["translations"]
+        };
+    } else {
+        // Original schema for single language translation
+        return {
+            type: "array",
+            items: {
+                type: "string",
+                description: "Translated text for a subtitle"
+            }
+        };
+    }
 };
 
 /**

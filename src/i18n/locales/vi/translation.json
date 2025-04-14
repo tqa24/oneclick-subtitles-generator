@@ -34,5 +34,21 @@
   "includeRulesDescription": "Bao gồm ngữ cảnh phân tích video và quy tắc với mỗi yêu cầu dịch để đảm bảo tính nhất quán giữa các phần.",
   "noRulesAvailable": "Không có quy tắc phiên âm nào. Tùy chọn này yêu cầu phân tích video với Gemini trước.",
   "customSubtitlesNoRules": "Tùy chọn này bị vô hiệu hóa vì bạn đã cung cấp phụ đề tùy chỉnh. Chế độ phụ đề tùy chỉnh bỏ qua phân tích video và tạo quy tắc.",
-  "allSubtitles": "Tất cả {{count}} phụ đề"
+  "allSubtitles": "Tất cả {{count}} phụ đề",
+  "addLanguage": "Thêm ngôn ngữ",
+  "removeLanguage": "Xóa",
+  "multiLanguageDescription": "Dịch sang nhiều ngôn ngữ cùng lúc",
+  "delimiterSettings": "Cài đặt dấu phân cách",
+  "delimiterDescription": "Chọn cách phân cách nhiều ngôn ngữ trong kết quả",
+  "useParentheses": "Sử dụng dấu ngoặc",
+  "useParenthesesDescription": "Thêm ngôn ngữ thứ hai trong dấu ngoặc (chỉ khi có một ngôn ngữ bổ sung)",
+  "delimiterSpace": "Khoảng trắng",
+  "delimiterNewline": "Xuống dòng",
+  "delimiterSlash": "Dấu xéo (/)",
+  "delimiterPipe": "Dấu dọc (|)",
+  "delimiterDash": "Dấu gạch ngang (-)",
+  "delimiterColon": "Dấu hai chấm (:)",
+  "delimiterSemicolon": "Dấu chấm phẩy (;)",
+  "delimiterComma": "Dấu phẩy (,)",
+  "delimiterDot": "Dấu chấm (.)"
 }
