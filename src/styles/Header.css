@@ -19,8 +19,8 @@
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
   background-clip: text;
   -webkit-background-clip: text;
-  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.5px;
+  font-family: 'Be Vietnam Pro', 'Noto Sans Vietnamese', 'Lexend', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.25px;
   transition: transform 0.3s ease;
   cursor: pointer; /* Indicate it's clickable */
   white-space: nowrap;

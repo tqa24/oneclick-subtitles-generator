@@ -12,7 +12,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(27, 161, 227, 0.8)' }
     ],
     stroke: 'currentColor',
-    glow: '0 0 5px rgba(86, 132, 209, 0.5)'
+    glow: null // Removed blue glow effect
   },
   // Purple-pink scheme
   {
@@ -21,7 +21,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(236, 64, 122, 0.8)' }
     ],
     stroke: 'rgba(236, 64, 122, 0.9)',
-    glow: '0 0 5px rgba(236, 64, 122, 0.5)'
+    glow: null // Removed pink glow effect
   },
   // Blue-green scheme
   {
@@ -30,7 +30,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(0, 150, 136, 0.8)' }
     ],
     stroke: 'rgba(0, 150, 136, 0.9)',
-    glow: '0 0 5px rgba(0, 150, 136, 0.5)'
+    glow: null // Removed blue-green glow effect
   },
   // Orange-red scheme
   {
@@ -39,7 +39,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(244, 67, 54, 0.8)' }
     ],
     stroke: 'rgba(244, 67, 54, 0.9)',
-    glow: '0 0 5px rgba(244, 67, 54, 0.5)'
+    glow: null // Removed orange-red glow effect
   },
   // Green-yellow scheme
   {
@@ -48,7 +48,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(255, 235, 59, 0.8)' }
     ],
     stroke: 'rgba(76, 175, 80, 0.9)',
-    glow: '0 0 5px rgba(76, 175, 80, 0.5)'
+    glow: null // Removed green-yellow glow effect
   },
   // Monochrome scheme
   {
@@ -57,7 +57,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(255, 255, 255, 0.6)' }
     ],
     stroke: 'rgba(255, 255, 255, 0.9)',
-    glow: '0 0 5px rgba(255, 255, 255, 0.7)'
+    glow: null // Removed white glow effect
   }
 ];
 
@@ -84,15 +84,10 @@ export const createGeminiSVG = (isFilled, colorSchemeIndex = 0) => {
   // Only use the standard Gemini icon path (no plus icons)
   const pathD = 'M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z';
 
-  // Add filter for glow effect if specified
-  const filterId = `glow-${Math.floor(Math.random() * 10000)}`;
-  const filterDef = scheme.glow ?
-    `<filter id="${filterId}" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="1" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>` : '';
-
-  const filterAttr = scheme.glow ? `filter="url(#${filterId})"` : '';
+  // No glow filter effect
+  const filterId = '';
+  const filterDef = '';
+  const filterAttr = '';
 
   return `<svg width="100%" height="100%" viewBox="0 0 28 28" fill="${fillValue}" xmlns="http://www.w3.org/2000/svg">
     <defs>

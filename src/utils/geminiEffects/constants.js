@@ -24,7 +24,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(27, 161, 227, 0.8)' }
     ],
     stroke: 'currentColor',
-    glow: '0 0 5px rgba(86, 132, 209, 0.5)'
+    glow: null // Removed blue glow effect
   },
   // Purple-pink scheme
   {
@@ -33,7 +33,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(236, 64, 122, 0.8)' }
     ],
     stroke: 'rgba(236, 64, 122, 0.9)',
-    glow: '0 0 5px rgba(236, 64, 122, 0.5)'
+    glow: null // Removed pink glow effect
   },
   // Blue-green scheme
   {
@@ -42,7 +42,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(0, 150, 136, 0.8)' }
     ],
     stroke: 'rgba(0, 150, 136, 0.9)',
-    glow: '0 0 5px rgba(0, 150, 136, 0.5)'
+    glow: null // Removed blue-green glow effect
   },
   // Orange-red scheme
   {
@@ -51,7 +51,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(244, 67, 54, 0.8)' }
     ],
     stroke: 'rgba(244, 67, 54, 0.9)',
-    glow: '0 0 5px rgba(244, 67, 54, 0.5)'
+    glow: null // Removed orange-red glow effect
   },
   // Green-yellow scheme
   {
@@ -60,7 +60,7 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(255, 235, 59, 0.8)' }
     ],
     stroke: 'rgba(76, 175, 80, 0.9)',
-    glow: '0 0 5px rgba(76, 175, 80, 0.5)'
+    glow: null // Removed green-yellow glow effect
   },
   // Monochrome scheme
   {
@@ -69,6 +69,6 @@ export const COLOR_SCHEMES = [
       { offset: '100%', color: 'rgba(255, 255, 255, 0.6)' }
     ],
     stroke: 'rgba(255, 255, 255, 0.9)',
-    glow: '0 0 5px rgba(255, 255, 255, 0.7)'
+    glow: null // Removed white glow effect
   }
 ];

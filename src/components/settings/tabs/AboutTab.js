@@ -21,6 +21,12 @@ const AboutTab = ({ useAlternativeBackground }) => {
             </a>
           </p>
           <p>
+            <strong>YouTube:</strong>
+            <a href="https://www.youtube.com/@tteokl" target="_blank" rel="noopener noreferrer">
+              https://www.youtube.com/@tteokl
+            </a>
+          </p>
+          <p>
             <strong>Google Scholar:</strong>
             <a href="https://scholar.google.com/citations?user=kWFVuFwAAAAJ&hl=en" target="_blank" rel="noopener noreferrer">
               https://scholar.google.com/citations?user=kWFVuFwAAAAJ&hl=en

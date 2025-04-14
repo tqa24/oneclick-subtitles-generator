@@ -30,9 +30,9 @@ export const applyPhysics = (particle) => {
   particle.vx *= PHYSICS.damping;
   particle.vy *= PHYSICS.damping;
 
-  // Add very subtle random movement to create a floating effect
-  particle.vx += (Math.random() - 0.5) * 0.01;
-  particle.vy += (Math.random() - 0.5) * 0.01;
+  // Removed random movement to prevent pulsing effect
+  // particle.vx += (Math.random() - 0.5) * 0.01;
+  // particle.vy += (Math.random() - 0.5) * 0.01;
 
   // Apply the velocity
   particle.x += particle.vx;

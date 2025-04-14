@@ -27,7 +27,7 @@
   stroke: currentColor;
   fill: none;
   stroke-width: 1.5;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+  /* Removed drop-shadow filter that could cause blue square effect */
   transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
 }
 
@@ -44,16 +44,35 @@
 
 /* Special styling for different particle types */
 .gemini-mini-icon.pulse {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
-  transition: transform 0.2s var(--md-easing-emphasized), opacity 0.2s var(--md-easing-emphasized);
+  /* No filter, box-shadow, or background to prevent blue square effect */
+  filter: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  transition: opacity 0.2s var(--md-easing-emphasized);
+}
+
+/* Ensure SVG paths don't have any filter or glow effects */
+.gemini-mini-icon.pulse svg,
+.gemini-mini-icon.pulse svg path,
+.gemini-mini-icon.dynamic svg,
+.gemini-mini-icon.dynamic svg path {
+  filter: none !important;
+  box-shadow: none !important;
+  -webkit-filter: none !important;
 }
 
 .gemini-mini-icon.trail {
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+  /* No filter, box-shadow, or background to prevent blue square effect */
+  filter: none !important;
+  box-shadow: none !important;
+  background: none !important;
 }
 
 .gemini-mini-icon.trail-particle {
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+  /* No filter, box-shadow, or background to prevent blue square effect */
+  filter: none !important;
+  box-shadow: none !important;
+  background: none !important;
   transition: transform 0.1s linear, opacity 0.1s linear;
 }
 
@@ -97,83 +116,83 @@
 
 /* Animation keyframes for the mini icons - expanded with more variations */
 @keyframes float-up {
-  0% { transform: translateY(10px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translateY(-15px) scale(1.2); opacity: 0; }
+  0% { transform: translateY(10px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-15px); opacity: 0; }
 }
 
 @keyframes float-down {
-  0% { transform: translateY(-10px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translateY(15px) scale(1.2); opacity: 0; }
+  0% { transform: translateY(-10px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(15px); opacity: 0; }
 }
 
 @keyframes float-left {
-  0% { transform: translateX(10px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translateX(-15px) scale(1.2); opacity: 0; }
+  0% { transform: translateX(10px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateX(-15px); opacity: 0; }
 }
 
 @keyframes float-right {
-  0% { transform: translateX(-10px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translateX(15px) scale(1.2); opacity: 0; }
+  0% { transform: translateX(-10px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translateX(15px); opacity: 0; }
 }
 
 @keyframes float-diagonal-1 {
-  0% { transform: translate(5px, 5px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translate(-10px, -10px) scale(1.2); opacity: 0; }
+  0% { transform: translate(5px, 5px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translate(-10px, -10px); opacity: 0; }
 }
 
 @keyframes float-diagonal-2 {
-  0% { transform: translate(-5px, 5px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translate(10px, -10px) scale(1.2); opacity: 0; }
+  0% { transform: translate(-5px, 5px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translate(10px, -10px); opacity: 0; }
 }
 
 @keyframes float-diagonal-3 {
-  0% { transform: translate(5px, -5px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translate(-10px, 10px) scale(1.2); opacity: 0; }
+  0% { transform: translate(5px, -5px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translate(-10px, 10px); opacity: 0; }
 }
 
 @keyframes float-diagonal-4 {
-  0% { transform: translate(-5px, -5px) scale(0.8); opacity: 0; }
-  20% { opacity: 0.7; }
-  80% { opacity: 0.5; }
-  100% { transform: translate(10px, 10px) scale(1.2); opacity: 0; }
+  0% { transform: translate(-5px, -5px); opacity: 0; }
+  20% { opacity: 0.3; }
+  80% { opacity: 0.3; }
+  100% { transform: translate(10px, 10px); opacity: 0; }
 }
 
 @keyframes pulse-fade {
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-  100% { transform: scale(0.8); opacity: 0; }
+  0% { transform: scale(1); opacity: 0; }
+  50% { transform: scale(1); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0; }
 }
 
 @keyframes pulse-fade-rotate {
-  0% { transform: scale(0.8) rotate(0deg); opacity: 0; }
-  50% { transform: scale(1.2) rotate(180deg); opacity: 0.7; }
-  100% { transform: scale(0.8) rotate(360deg); opacity: 0; }
+  0% { transform: rotate(0deg); opacity: 0; }
+  50% { transform: rotate(180deg); opacity: 0.3; }
+  100% { transform: rotate(360deg); opacity: 0; }
 }
 
 @keyframes rotate-fade-cw {
-  0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
-  50% { transform: rotate(180deg) scale(1.2); opacity: 0.7; }
-  100% { transform: rotate(360deg) scale(0.8); opacity: 0; }
+  0% { transform: rotate(0deg); opacity: 0; }
+  50% { transform: rotate(180deg); opacity: 0.3; }
+  100% { transform: rotate(360deg); opacity: 0; }
 }
 
 @keyframes rotate-fade-ccw {
-  0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
-  50% { transform: rotate(-180deg) scale(1.2); opacity: 0.7; }
-  100% { transform: rotate(-360deg) scale(0.8); opacity: 0; }
+  0% { transform: rotate(0deg); opacity: 0; }
+  50% { transform: rotate(-180deg); opacity: 0.3; }
+  100% { transform: rotate(-360deg); opacity: 0; }
 }
 
 @keyframes swing {
@@ -203,9 +222,8 @@
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
 .srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
 .add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
-  animation-name: pulse-fade;
-  animation-duration: 4s;
-  animation-delay: 0.5s;
+  /* Removed pulse animation */
+  opacity: 0.3;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2,
@@ -220,33 +238,29 @@
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
 .srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
 .add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
-  animation-name: rotate-fade;
-  animation-duration: 6s;
-  animation-delay: 1s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
 .add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4 {
-  animation-name: float-diagonal;
-  animation-duration: 4.5s;
-  animation-delay: 3s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
 .add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5 {
-  animation-name: pulse-fade;
-  animation-duration: 5.5s;
-  animation-delay: 0.8s;
+  /* Removed pulse animation */
+  opacity: 0.3;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
 .add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6 {
-  animation-name: float-up;
-  animation-duration: 4.8s;
-  animation-delay: 1.5s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 /* Processing state animations - more active and continuous */
@@ -304,34 +318,30 @@
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
 .srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-1,
 .add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-1 {
-  animation-name: float-up;
-  animation-duration: 1.5s;
-  animation-delay: 0.1s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
 .add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-2 {
-  animation-name: rotate-fade;
-  animation-duration: 2s;
-  animation-delay: 0.3s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
 .srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-3,
 .add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-3 {
-  animation-name: float-diagonal;
-  animation-duration: 1.8s;
-  animation-delay: 0.5s;
+  /* Removed animation */
+  opacity: 0.3;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
 .add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-4 {
-  animation-name: pulse-fade;
-  animation-duration: 1.2s;
-  animation-delay: 0.2s;
+  /* Removed pulse animation */
+  opacity: 0.3;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-5,

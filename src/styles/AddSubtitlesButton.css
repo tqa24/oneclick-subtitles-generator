@@ -220,6 +220,20 @@
   100% { transform: rotate(360deg); }
 }
 
+@keyframes pulse-glow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1.0);
+    opacity: 0;
+  }
+}
+
 /* Gemini icon container and mini icons */
 .add-subtitles-button .gemini-icon-container {
   position: absolute;
@@ -242,8 +256,19 @@
   stroke: var(--md-on-tertiary);
   fill: none;
   stroke-width: 1.5;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
+  /* No filter, box-shadow, or background to prevent blue square effect */
+  filter: none !important;
+  box-shadow: none !important;
+  background: none !important;
   transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
+}
+
+/* Ensure SVG paths don't have any filter or glow effects */
+.add-subtitles-button .gemini-mini-icon svg,
+.add-subtitles-button .gemini-mini-icon svg path {
+  filter: none !important;
+  box-shadow: none !important;
+  -webkit-filter: none !important;
 }
 
 .add-subtitles-button.has-subtitles .gemini-mini-icon {
