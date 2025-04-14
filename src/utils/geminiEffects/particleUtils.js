@@ -13,8 +13,8 @@ import { createGeminiSVG, getSizeInPixels } from './renderUtils';
  * @returns {Object} - Particle object
  */
 export const createParticle = (x, y, sizeClass, isFilled = false) => {
-  // Randomize the color scheme
-  const colorSchemeIndex = Math.floor(Math.random() * 6);
+  // Randomize the color scheme - now with more color schemes
+  const colorSchemeIndex = Math.floor(Math.random() * 8);
 
   return {
     x,
@@ -54,13 +54,13 @@ export const createParticles = (buttonElement, container, limit) => {
     // Use the exact limit if provided (for hover state)
     particleCount = limit;
   } else {
-    // Default counts for initial state
+    // Default counts for initial state - more particles for larger buttons
     if (isGenerateButton) {
-      particleCount = 15 + Math.floor(Math.random() * 10); // 15-25 particles for generate button
+      particleCount = 40 + Math.floor(Math.random() * 15); // 40-55 particles for generate button (more particles for larger button)
     } else if (isForceStopButton) {
-      particleCount = 12 + Math.floor(Math.random() * 8); // 12-20 particles for force stop button
+      particleCount = 20 + Math.floor(Math.random() * 10); // 20-30 particles for force stop button
     } else {
-      particleCount = 10 + Math.floor(Math.random() * 5); // 10-15 particles for retry button
+      particleCount = 20 + Math.floor(Math.random() * 10); // 20-30 particles for other buttons
     }
   }
 
@@ -84,13 +84,24 @@ export const createParticles = (buttonElement, container, limit) => {
     // Randomly decide if this will be a filled or outlined icon
     const isFilled = Math.random() > 0.5; // 50% chance of filled icons
 
-    // Assign random size with weighted distribution
-    const sizeClasses = [
-      { class: 'size-xs', weight: 0.3 },
-      { class: 'size-sm', weight: 0.4 },
-      { class: 'size-md', weight: 0.2 },
-      { class: 'size-lg', weight: 0.1 }
-    ];
+    // Assign random size with weighted distribution based on button type
+    let sizeClasses;
+
+    if (isGenerateButton) {
+      // For generate button - only extra small and small stars
+      sizeClasses = [
+        { class: 'size-xs', weight: 0.70 }, // Mostly extra small stars for generate button
+        { class: 'size-sm', weight: 0.30 }, // Some small stars
+        // No medium stars at all for generate button
+      ];
+    } else {
+      // For other buttons - standard distribution
+      sizeClasses = [
+        { class: 'size-xs', weight: 0.50 }, // Mostly extra small stars
+        { class: 'size-sm', weight: 0.35 }, // Some small stars
+        { class: 'size-md', weight: 0.15 }, // Few medium stars
+      ];
+    }
 
     // Weighted random selection
     let randomWeight = Math.random();

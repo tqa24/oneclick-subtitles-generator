@@ -67,7 +67,7 @@
   background-color: var(--md-tertiary);
   color: var(--md-on-tertiary);
   border: none;
-  box-shadow: var(--md-elevation-1);
+  box-shadow: var(--md-elevation-level2); /* Updated to match other buttons */
   margin-left: 10px;
   height: 40px;
   overflow: hidden;
@@ -76,6 +76,9 @@
 /* Style when in the buttons-container */
 .buttons-container .add-subtitles-buttons-group {
   margin: 0 10px 0 0;
+  display: flex;
+  align-items: center;
+  height: 52px; /* Match the height of other buttons in the container */
 }
 
 .buttons-container .add-subtitles-button {
@@ -84,22 +87,29 @@
   background-color: var(--md-tertiary);
   color: var(--md-on-tertiary);
   border: none;
+  box-shadow: var(--md-elevation-level2); /* Ensure consistent shadow with other buttons */
 }
 
 .add-subtitles-button:hover {
-  background-color: var(--md-tertiary-hover);
-  box-shadow: var(--md-elevation-2);
-  transform: translateY(-1px);
+  background-color: transparent !important;
+  box-shadow: var(--md-elevation-level3); /* Updated to match other buttons */
+  transform: translateY(-2px); /* Updated to match other buttons */
+  color: var(--md-tertiary); /* Use tertiary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
 }
 
 .add-subtitles-button:active {
   transform: translateY(0);
-  box-shadow: var(--md-elevation-1);
+  box-shadow: var(--md-elevation-level1); /* Updated to match other buttons */
 }
 
 /* Hover and active states for button in buttons-container */
 .buttons-container .add-subtitles-button:hover {
-  background-color: var(--md-tertiary-hover);
+  background-color: transparent !important;
+  color: var(--md-tertiary); /* Use tertiary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+  box-shadow: var(--md-elevation-level3); /* Updated to match other buttons */
+  transform: translateY(-2px); /* Updated to match other buttons */
 }
 
 .buttons-container .add-subtitles-button:active {
@@ -120,7 +130,9 @@
 }
 
 .add-subtitles-button.has-subtitles:hover {
-  background-color: var(--md-primary-hover);
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
 }
 
 /* Has subtitles state for button in buttons-container */
@@ -130,8 +142,9 @@
 }
 
 .buttons-container .add-subtitles-button.has-subtitles:hover {
-  background-color: var(--md-primary-hover);
-  color: var(--md-on-primary);
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
 }
 
 /* Clear button in buttons-container */
@@ -253,7 +266,7 @@
   height: 14px;
   opacity: 0;
   pointer-events: none;
-  stroke: var(--md-on-tertiary);
+  stroke: #FFFFFF; /* Explicit white color for better visibility */
   fill: none;
   stroke-width: 1.5;
   /* No filter, box-shadow, or background to prevent blue square effect */
@@ -263,16 +276,32 @@
   transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
 }
 
-/* Ensure SVG paths don't have any filter or glow effects */
+/* Allow SVG filters for star-like glow effects */
 .add-subtitles-button .gemini-mini-icon svg,
 .add-subtitles-button .gemini-mini-icon svg path {
-  filter: none !important;
+  /* Allow SVG filters but prevent CSS filters */
   box-shadow: none !important;
   -webkit-filter: none !important;
+  /* Add a subtle animation */
+  animation: add-btn-star-twinkle 3s infinite alternate ease-in-out;
+}
+
+/* Change icon color on hover to match text */
+.add-subtitles-button:hover .gemini-mini-icon {
+  stroke: var(--md-tertiary);
+}
+
+.add-subtitles-button.has-subtitles:hover .gemini-mini-icon {
+  stroke: var(--md-primary);
+}
+
+@keyframes add-btn-star-twinkle {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; }
 }
 
 .add-subtitles-button.has-subtitles .gemini-mini-icon {
-  stroke: var(--md-on-primary);
+  stroke: #FFFFFF; /* Explicit white color for better visibility */
 }
 
 /* Different sizes for variety */
@@ -280,3 +309,4 @@
 .add-subtitles-button .gemini-mini-icon.size-sm { width: 12px; height: 12px; }
 .add-subtitles-button .gemini-mini-icon.size-md { width: 16px; height: 16px; }
 .add-subtitles-button .gemini-mini-icon.size-lg { width: 20px; height: 20px; }
+.add-subtitles-button .gemini-mini-icon.size-xl { width: 24px; height: 24px; }

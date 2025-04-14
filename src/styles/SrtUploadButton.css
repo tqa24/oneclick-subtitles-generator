@@ -42,7 +42,7 @@
 }
 
 .srt-upload-button:hover::before {
-  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+  background-color: transparent !important;
 }
 
 .srt-upload-button:active::before {
@@ -52,6 +52,9 @@
 .srt-upload-button:hover {
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level3);
+  background-color: transparent !important;
+  color: var(--md-secondary); /* Use secondary color for text on hover for better readability */
+  text-shadow: none; /* Remove any text shadow on hover */
 }
 
 .srt-upload-button:active {
@@ -86,12 +89,19 @@
   background: none !important;
 }
 
-/* Ensure SVG paths don't have any filter or glow effects */
+/* Allow SVG filters for star-like glow effects */
 .srt-upload-button .gemini-mini-icon svg,
 .srt-upload-button .gemini-mini-icon svg path {
-  filter: none !important;
+  /* Allow SVG filters but prevent CSS filters */
   box-shadow: none !important;
   -webkit-filter: none !important;
+  /* Add a subtle animation */
+  animation: srt-btn-star-twinkle 3s infinite alternate ease-in-out;
+}
+
+@keyframes srt-btn-star-twinkle {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; }
 }
 
 /* Processing state */

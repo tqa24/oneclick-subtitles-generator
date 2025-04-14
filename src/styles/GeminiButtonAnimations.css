@@ -51,14 +51,21 @@
   transition: opacity 0.2s var(--md-easing-emphasized);
 }
 
-/* Ensure SVG paths don't have any filter or glow effects */
+/* Allow SVG filters for star-like glow effects */
 .gemini-mini-icon.pulse svg,
 .gemini-mini-icon.pulse svg path,
 .gemini-mini-icon.dynamic svg,
 .gemini-mini-icon.dynamic svg path {
-  filter: none !important;
+  /* Allow SVG filters but prevent CSS filters */
   box-shadow: none !important;
   -webkit-filter: none !important;
+  /* Add a subtle animation */
+  animation: star-twinkle 3s infinite alternate ease-in-out;
+}
+
+@keyframes star-twinkle {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; }
 }
 
 .gemini-mini-icon.trail {
@@ -367,6 +374,23 @@
 .add-subtitles-button:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
+  background: transparent !important; /* Ensure transparent background to expose stars */
+}
+
+/* Enhance star visibility and glow on hover */
+.generate-btn:hover .gemini-mini-icon svg,
+.retry-gemini-btn:hover .gemini-mini-icon svg,
+.srt-upload-button:hover .gemini-mini-icon svg,
+.add-subtitles-button:hover .gemini-mini-icon svg {
+  transform: scale(1.2);
+  transition: transform 0.3s ease-out;
+  animation: hover-star-twinkle 1.5s infinite alternate ease-in-out !important;
+}
+
+@keyframes hover-star-twinkle {
+  0% { opacity: 0.9; }
+  50% { opacity: 1; }
+  100% { opacity: 0.9; }
 }
 
 /* Cursor-reactive animations - removed in favor of physics-based interactions */
@@ -392,23 +416,35 @@
   stroke: var(--md-on-tertiary);
 }
 
+/* Change icon colors on hover to match text */
+.generate-btn:hover .gemini-mini-icon {
+  stroke: var(--md-primary);
+}
+
+.retry-gemini-btn:hover .gemini-mini-icon {
+  stroke: var(--md-tertiary);
+}
+
+.srt-upload-button:hover .gemini-mini-icon {
+  stroke: var(--md-secondary);
+}
+
 /* Add gradient effects to the icons */
 .generate-btn .gemini-mini-icon svg path,
 .retry-gemini-btn .gemini-mini-icon svg path,
 .force-stop-btn .gemini-mini-icon svg path,
 .srt-upload-button .gemini-mini-icon svg path,
 .add-subtitles-button .gemini-mini-icon svg path {
-  stroke-dasharray: 120;
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 1s var(--md-easing-emphasized);
+  /* Removed stroke-dasharray and stroke-dashoffset */
+  transition: opacity 0.3s var(--md-easing-emphasized);
 }
 
 .generate-btn:hover .gemini-mini-icon svg path,
 .retry-gemini-btn:hover .gemini-mini-icon svg path,
 .force-stop-btn:hover .gemini-mini-icon svg path,
 .add-subtitles-button:hover .gemini-mini-icon svg path {
-  stroke-dashoffset: 120;
-  transition: stroke-dashoffset 2s var(--md-easing-emphasized);
+  /* Removed stroke-dashoffset animation */
+  opacity: 1;
 }
 
 /* Processing state special effects */
@@ -416,14 +452,11 @@
 .retry-gemini-btn.processing .gemini-mini-icon svg path,
 .force-stop-btn.processing .gemini-mini-icon svg path,
 .add-subtitles-button.processing .gemini-mini-icon svg path {
-  animation: dash-animation 2s var(--md-easing-emphasized) infinite;
+  /* Removed dash animation */
+  opacity: 0.9;
 }
 
-@keyframes dash-animation {
-  0% { stroke-dashoffset: 0; }
-  50% { stroke-dashoffset: 120; }
-  100% { stroke-dashoffset: 0; }
-}
+/* Removed dash-animation keyframes */
 
 /* Disabled state - only show animations when processing */
 .generate-btn:disabled:not(.processing) .gemini-icon-container,
