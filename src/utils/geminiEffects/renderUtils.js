@@ -70,15 +70,15 @@ export const getSizeInPixels = (sizeClass) => {
 export const updateParticleElements = (particles) => {
   particles.forEach(particle => {
     if (!particle.element) return;
-    
+
     // Update position and rotation
     particle.element.style.left = `${particle.x}%`;
     particle.element.style.top = `${particle.y}%`;
     particle.element.style.transform = `rotate(${particle.rotation}deg)`;
-    
+
     // Update opacity based on active state
     particle.element.style.opacity = particle.isActive ? '1' : '0';
-    
+
     // Update trail particles if they exist
     if (particle.trailParticles && particle.isActive) {
       particle.trailParticles.forEach((trail, index) => {
@@ -86,7 +86,7 @@ export const updateParticleElements = (particles) => {
         const delay = (index + 1) * 2;
         const trailX = particle.x - (particle.vx * delay);
         const trailY = particle.y - (particle.vy * delay);
-        
+
         trail.element.style.left = `${trailX}%`;
         trail.element.style.top = `${trailY}%`;
         trail.element.style.opacity = particle.isActive ? trail.opacity.toString() : '0';

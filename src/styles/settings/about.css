@@ -46,6 +46,8 @@
   color: var(--md-primary);
   margin-bottom: 0.5rem;
   text-align: center;
+  font-family: 'Be Vietnam Pro', 'Noto Sans Vietnamese', 'Lexend', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
 }
 
 .version-info {

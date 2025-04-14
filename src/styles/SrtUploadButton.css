@@ -79,6 +79,21 @@
   z-index: 1;
 }
 
+/* Ensure mini icons don't have any filter or glow effects */
+.srt-upload-button .gemini-mini-icon {
+  filter: none !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+
+/* Ensure SVG paths don't have any filter or glow effects */
+.srt-upload-button .gemini-mini-icon svg,
+.srt-upload-button .gemini-mini-icon svg path {
+  filter: none !important;
+  box-shadow: none !important;
+  -webkit-filter: none !important;
+}
+
 /* Processing state */
 .srt-upload-button.processing {
   position: relative;
@@ -99,14 +114,14 @@
 
 @keyframes pulse-glow {
   0% {
-    transform: scale(0.5);
+    transform: scale(0.8);
     opacity: 0;
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.2;
   }
   100% {
-    transform: scale(1.2);
+    transform: scale(1.0);
     opacity: 0;
   }
 }

@@ -186,7 +186,6 @@ export const setupButtonEventListeners = (button, particles, cursorPosition, isH
         particle.vx = Math.cos(angle) * speed;
         particle.vy = Math.sin(angle) * speed;
       });
-
     }
   });
 
