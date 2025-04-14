@@ -238,48 +238,10 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Container for model retry dropdown */
+/* Container for model retry button */
 .model-retry-dropdown-container {
   position: relative;
   margin-left: 4px;
-  /* Ensure the container has the correct positioning context */
-  z-index: 100;
-}
-
-/* When dropdown is open, ensure container has higher z-index */
-.model-dropdown-open .model-retry-dropdown-container {
-  z-index: 99999; /* Match the dropdown z-index */
-}
-
-/* Dropdown icon */
-.dropdown-icon {
-  margin-left: 2px;
-  font-size: 10px;
-}
-
-/* Model dropdown menu */
-.model-dropdown {
-  position: fixed;
-  width: 280px;
-  background-color: var(--md-surface-2);
-  border-radius: var(--md-shape-medium);
-  box-shadow: var(--md-elevation-level3);
-  border: 1px solid var(--md-outline-variant);
-  z-index: 99999; /* Very high z-index to ensure it's above everything */
-  overflow: hidden;
-  /* Add animation for smooth appearance */
-  animation: dropdown-appear 0.2s var(--md-easing-emphasized) forwards;
-}
-
-@keyframes dropdown-appear {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Dropdown header */

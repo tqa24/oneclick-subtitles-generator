@@ -15,16 +15,17 @@
   border-radius: var(--md-shape-pill);
   color: var(--md-on-surface);
   cursor: pointer;
-  font-size: var(--md-label-medium-size);
-  line-height: var(--md-label-medium-height);
-  font-weight: 500; /* Medium weight for consistency */
+  font-size: var(--md-label-large-size); /* Match factory-reset-btn font size */
+  line-height: var(--md-label-large-height); /* Match factory-reset-btn line height */
+  font-weight: var(--md-label-large-weight); /* Match factory-reset-btn font weight */
   font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
-  padding: 8px 16px;
+  padding: 10px 24px; /* Match factory-reset-btn padding */
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   position: relative;
   overflow: hidden;
   height: 40px;
   min-width: 120px;
+  box-shadow: var(--md-elevation-level1); /* Add box shadow like factory-reset-btn */
 }
 
 /* State layer for hover effect */
@@ -47,8 +48,12 @@
 }
 
 .language-selector-button:hover {
-  /* Removed blue border color */
   transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2); /* Increase shadow on hover */
+}
+
+.language-selector-button:active {
+  transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
 }
 

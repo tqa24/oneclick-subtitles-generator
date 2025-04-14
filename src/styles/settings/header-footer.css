@@ -63,8 +63,8 @@
 .settings-footer-controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-right: 0.5rem;
+  gap: 0.75rem; /* Match the gap in settings-footer-left */
+  margin-right: 0;
 }
 
 /* Theme toggle button in settings footer */
@@ -89,7 +89,14 @@
 
 /* Language selector in settings footer */
 .settings-footer .language-selector-container {
-  height: 36px;
+  height: 40px; /* Match the height of factory-reset-btn */
+}
+
+/* Ensure language selector button in footer has consistent styling */
+.settings-footer .language-selector-button {
+  display: flex;
+  align-items: center;
+  height: 40px; /* Explicitly set height to match factory-reset-btn */
 }
 
 .settings-footer-right {
