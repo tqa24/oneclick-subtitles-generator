@@ -376,7 +376,7 @@ export const useSubtitles = (t) => {
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
         // Extract options
-        const { userProvidedSubtitles } = options;
+        const { userProvidedSubtitles, modelId } = options;
         // Initialize subtitlesData to empty array if it's null
         // This happens when using the strong model where we process segments one by one
         const currentSubtitles = subtitlesData || [];
@@ -405,6 +405,14 @@ export const useSubtitles = (t) => {
         const event = new CustomEvent('segmentStatusUpdate', { detail: [retryingStatus] });
         window.dispatchEvent(event);
 
+        // Save the current model if we're using a different one for this retry
+        let currentModel = null;
+        if (modelId) {
+            console.log(`Using model ${modelId} for segment ${segmentIndex} retry`);
+            currentModel = localStorage.getItem('gemini_model');
+            localStorage.setItem('gemini_model', modelId);
+        }
+
         try {
             // Retry processing the specific segment
             const updatedSubtitles = await retrySegmentProcessing(
@@ -419,7 +427,7 @@ export const useSubtitles = (t) => {
                 },
                 t,
                 mediaType,
-                { userProvidedSubtitles }
+                { userProvidedSubtitles, modelId }
             );
 
             // Update the subtitles data with the new results
@@ -457,6 +465,12 @@ export const useSubtitles = (t) => {
         } finally {
             // Remove this segment from the retrying list
             setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
+
+            // Restore the original model if we changed it
+            if (modelId && currentModel) {
+                console.log(`Restoring original model ${currentModel} after segment ${segmentIndex} retry`);
+                localStorage.setItem('gemini_model', currentModel);
+            }
         }
     }, [subtitlesData, t]);
 

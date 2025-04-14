@@ -4,7 +4,8 @@
 .generate-btn .gemini-icon-container,
 .retry-gemini-btn .gemini-icon-container,
 .force-stop-btn .gemini-icon-container,
-.srt-upload-button .gemini-icon-container {
+.srt-upload-button .gemini-icon-container,
+.add-subtitles-button .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -192,21 +193,24 @@
 
 /* Idle state animations - subtle and occasional */
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon {
   animation-iteration-count: infinite;
   animation-direction: alternate;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
-.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
+.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
   animation-name: pulse-fade;
   animation-duration: 4s;
   animation-delay: 0.5s;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2 {
   animation-name: float-up;
   animation-duration: 5s;
   animation-delay: 2s;
@@ -214,28 +218,32 @@
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
 .retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
-.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
+.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
   animation-name: rotate-fade;
   animation-duration: 6s;
   animation-delay: 1s;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4 {
   animation-name: float-diagonal;
   animation-duration: 4.5s;
   animation-delay: 3s;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5 {
   animation-name: pulse-fade;
   animation-duration: 5.5s;
   animation-delay: 0.8s;
 }
 
 .generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6 {
+.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
+.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6 {
   animation-name: float-up;
   animation-duration: 4.8s;
   animation-delay: 1.5s;
@@ -243,14 +251,16 @@
 
 /* Processing state animations - more active and continuous */
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon {
   animation-iteration-count: infinite;
   opacity: 0.9; /* Make icons more visible during processing */
 }
 
 /* Special processing state - show all particles */
 .generate-btn.processing .gemini-mini-icon,
-.retry-gemini-btn.processing .gemini-mini-icon {
+.retry-gemini-btn.processing .gemini-mini-icon,
+.add-subtitles-button.processing .gemini-mini-icon {
   opacity: 0.8 !important;
   transition: opacity 0.3s var(--md-easing-emphasized);
 }
@@ -259,7 +269,8 @@
 .generate-btn.processing,
 .retry-gemini-btn.processing,
 .force-stop-btn.processing,
-.srt-upload-button.processing {
+.srt-upload-button.processing,
+.add-subtitles-button.processing {
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
@@ -268,7 +279,8 @@
 .generate-btn.processing::after,
 .retry-gemini-btn.processing::after,
 .force-stop-btn.processing::after,
-.srt-upload-button.processing::after {
+.srt-upload-button.processing::after,
+.add-subtitles-button.processing::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -290,14 +302,16 @@
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
-.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-1 {
+.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-1,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-1 {
   animation-name: float-up;
   animation-duration: 1.5s;
   animation-delay: 0.1s;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-2 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-2 {
   animation-name: rotate-fade;
   animation-duration: 2s;
   animation-delay: 0.3s;
@@ -305,28 +319,32 @@
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
 .retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
-.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-3 {
+.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-3,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-3 {
   animation-name: float-diagonal;
   animation-duration: 1.8s;
   animation-delay: 0.5s;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-4 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-4 {
   animation-name: pulse-fade;
   animation-duration: 1.2s;
   animation-delay: 0.2s;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-5,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-5 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-5,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-5 {
   animation-name: float-up;
   animation-duration: 1.7s;
   animation-delay: 0.4s;
 }
 
 .generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-6,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-6 {
+.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-6,
+.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-6 {
   animation-name: rotate-fade;
   animation-duration: 1.4s;
   animation-delay: 0.6s;
@@ -335,7 +353,8 @@
 /* Hover state enhancements */
 .generate-btn:hover .gemini-icon-container,
 .retry-gemini-btn:hover .gemini-icon-container,
-.srt-upload-button:hover .gemini-icon-container {
+.srt-upload-button:hover .gemini-icon-container,
+.add-subtitles-button:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
 }
@@ -359,11 +378,16 @@
   stroke: var(--md-on-secondary);
 }
 
+.add-subtitles-button .gemini-mini-icon {
+  stroke: var(--md-on-tertiary);
+}
+
 /* Add gradient effects to the icons */
 .generate-btn .gemini-mini-icon svg path,
 .retry-gemini-btn .gemini-mini-icon svg path,
 .force-stop-btn .gemini-mini-icon svg path,
-.srt-upload-button .gemini-mini-icon svg path {
+.srt-upload-button .gemini-mini-icon svg path,
+.add-subtitles-button .gemini-mini-icon svg path {
   stroke-dasharray: 120;
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 1s var(--md-easing-emphasized);
@@ -371,7 +395,8 @@
 
 .generate-btn:hover .gemini-mini-icon svg path,
 .retry-gemini-btn:hover .gemini-mini-icon svg path,
-.force-stop-btn:hover .gemini-mini-icon svg path {
+.force-stop-btn:hover .gemini-mini-icon svg path,
+.add-subtitles-button:hover .gemini-mini-icon svg path {
   stroke-dashoffset: 120;
   transition: stroke-dashoffset 2s var(--md-easing-emphasized);
 }
@@ -379,7 +404,8 @@
 /* Processing state special effects */
 .generate-btn.processing .gemini-mini-icon svg path,
 .retry-gemini-btn.processing .gemini-mini-icon svg path,
-.force-stop-btn.processing .gemini-mini-icon svg path {
+.force-stop-btn.processing .gemini-mini-icon svg path,
+.add-subtitles-button.processing .gemini-mini-icon svg path {
   animation: dash-animation 2s var(--md-easing-emphasized) infinite;
 }
 
@@ -391,13 +417,15 @@
 
 /* Disabled state - only show animations when processing */
 .generate-btn:disabled:not(.processing) .gemini-icon-container,
-.retry-gemini-btn:disabled:not(.processing) .gemini-icon-container {
+.retry-gemini-btn:disabled:not(.processing) .gemini-icon-container,
+.add-subtitles-button:disabled:not(.processing) .gemini-icon-container {
   display: none;
 }
 
 /* Ensure animations work even when button is disabled but processing */
 .generate-btn:disabled.processing .gemini-icon-container,
-.retry-gemini-btn:disabled.processing .gemini-icon-container {
+.retry-gemini-btn:disabled.processing .gemini-icon-container,
+.add-subtitles-button:disabled.processing .gemini-icon-container {
   display: block;
   opacity: 0.8; /* Slightly dimmed to indicate disabled state */
 }
