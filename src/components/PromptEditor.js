@@ -30,7 +30,7 @@ const PromptEditor = ({
   const currentPromptType = getPromptType();
 
   // Get the default template based on prompt type
-  const getDefaultTemplate = (type) => {
+  const getDefaultTemplate = React.useCallback((type) => {
     switch (type) {
       case 'translation':
         return `Translate the following subtitles to {targetLanguage}.\n\n{subtitlesText}`;
@@ -41,10 +41,10 @@ const PromptEditor = ({
       default:
         return `Translate the following subtitles to {targetLanguage}.\n\n{subtitlesText}`;
     }
-  };
+  }, []);
 
   // Get the base template (first line) based on prompt type
-  const getBaseTemplate = (type) => {
+  const getBaseTemplate = React.useCallback((type) => {
     switch (type) {
       case 'translation':
         return `Translate the following subtitles to {targetLanguage}.`;
@@ -55,10 +55,11 @@ const PromptEditor = ({
       default:
         return `Translate the following subtitles to {targetLanguage}.`;
     }
-  };
+  }, []);
 
   // Extract just the custom instructions from the full prompt
-  const extractCustomInstructions = (fullPrompt) => {
+  // Using useCallback to memoize the function and prevent unnecessary re-renders
+  const extractCustomInstructions = React.useCallback((fullPrompt) => {
     // Get the default template for the current prompt type
     const defaultTemplate = getDefaultTemplate(currentPromptType);
     const baseTemplate = getBaseTemplate(currentPromptType);
@@ -78,10 +79,10 @@ const PromptEditor = ({
     }
 
     return '';
-  };
+  }, [currentPromptType, getBaseTemplate, getDefaultTemplate]);
 
   // Combine custom instructions with the default template
-  const createFullPrompt = (customInstructions) => {
+  const createFullPrompt = React.useCallback((customInstructions) => {
     const baseTemplate = getBaseTemplate(currentPromptType);
 
     // If there are custom instructions, add them after the base template
@@ -91,24 +92,35 @@ const PromptEditor = ({
 
     // Otherwise just return the default template
     return `${baseTemplate}\n\n{subtitlesText}`;
-  };
+  }, [currentPromptType, getBaseTemplate]);
 
-  const [customInstructions, setCustomInstructions] = useState(extractCustomInstructions(initialPrompt));
+  // Initialize state with extracted custom instructions
+  const [customInstructions, setCustomInstructions] = useState(() => {
+    return extractCustomInstructions(initialPrompt || '');
+  });
   const modalRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Focus the textarea when the modal opens and reset custom instructions when prompt type changes
+  // Focus the textarea when the modal opens
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      // Reset custom instructions when initialPrompt changes
-      setCustomInstructions(extractCustomInstructions(initialPrompt));
-
       textareaRef.current.focus();
       // Place cursor at the end
       textareaRef.current.selectionStart = textareaRef.current.value.length;
       textareaRef.current.selectionEnd = textareaRef.current.value.length;
     }
-  }, [isOpen, initialPrompt, currentPromptType, extractCustomInstructions]);
+  }, [isOpen]);
+
+  // Reset custom instructions when initialPrompt changes and modal is opened
+  // Using a ref to track if this is the initial render
+  const initialRenderRef = useRef(true);
+  useEffect(() => {
+    // Only reset on initial render or when modal is opened
+    if (initialRenderRef.current || isOpen) {
+      initialRenderRef.current = false;
+      setCustomInstructions(extractCustomInstructions(initialPrompt || ''));
+    }
+  }, [isOpen, initialPrompt, extractCustomInstructions]);
 
   // No additional effects needed for the simplified prompt editor
 
@@ -146,21 +158,22 @@ const PromptEditor = ({
     };
   }, [isOpen, onClose]);
 
-  const handleSave = () => {
+  const handleSave = React.useCallback(() => {
     // Convert custom instructions back to full prompt format before saving
     const fullPrompt = createFullPrompt(customInstructions);
     onSave(fullPrompt);
     onClose();
-  };
+  }, [createFullPrompt, customInstructions, onClose, onSave]);
 
-  const handleReset = () => {
+  const handleReset = React.useCallback(() => {
     setCustomInstructions('');
-  };
+  }, []);
 
-  // Simple handler for custom instructions
-  const handleChange = (e) => {
-    setCustomInstructions(e.target.value);
-  };
+  // Handler for custom instructions text changes
+  const handleChange = React.useCallback((e) => {
+    const newValue = e.target.value;
+    setCustomInstructions(newValue);
+  }, []);
 
   // We don't need special handlers for keyDown, cut, or paste anymore
   // since we're only editing custom instructions, not the full prompt with variables
@@ -205,6 +218,8 @@ const PromptEditor = ({
               onChange={handleChange}
               rows={8}
               placeholder={t('promptEditor.enterPrompt', 'Enter your custom instructions here...')}
+              autoComplete="off"
+              spellCheck="false"
             />
           </div>
 
