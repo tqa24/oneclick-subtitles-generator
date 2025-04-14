@@ -18,7 +18,9 @@ import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
  * @param {string} mediaType - Type of media ('video' or 'audio')
  * @returns {Promise<Array>} - Array of subtitle objects with adjusted timestamps
  */
-export async function processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType = 'video') {
+export async function processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType = 'video', options = {}) {
+    // Extract options
+    const { userProvidedSubtitles } = options;
     let retryCount = 0;
     const maxRetries = 3;
     let success = false;
@@ -47,16 +49,39 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 size: segmentFile.size
             });
 
-            // Get transcription rules from localStorage
-            const transcriptionRules = getTranscriptionRules();
-            if (transcriptionRules) {
-                console.log(`Using transcription rules for segment ${segmentIndex+1}:`, transcriptionRules);
+            // Only get transcription rules if we're not using user-provided subtitles
+            if (!userProvidedSubtitles) {
+                // Get transcription rules from localStorage
+                const transcriptionRules = getTranscriptionRules();
+                if (transcriptionRules) {
+                    console.log(`Using transcription rules for segment ${segmentIndex+1}:`, transcriptionRules);
+                } else {
+                    console.log(`No transcription rules found for segment ${segmentIndex+1}`);
+                }
             } else {
-                console.log(`No transcription rules found for segment ${segmentIndex+1}`);
+                console.log(`Skipping transcription rules for segment ${segmentIndex+1} because user-provided subtitles are present`);
             }
 
             // Process the segment with Gemini
-            segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload');
+            console.log(`Processing segment ${segmentIndex+1} with${userProvidedSubtitles ? ' user-provided' : ''} subtitles`);
+
+            // Get the total duration from the parent if available
+            const totalDuration = options.totalDuration || null;
+
+            // Create segment info for the prompt
+            const segmentInfo = {
+                isSegment: true,
+                segmentIndex,
+                startTime,
+                duration: segment.duration,
+                totalDuration
+            };
+
+            // Pass segment info to callGeminiApi
+            segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload', {
+                userProvidedSubtitles,
+                segmentInfo
+            });
             success = true;
         } catch (error) {
             retryCount++;

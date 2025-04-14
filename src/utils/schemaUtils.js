@@ -6,31 +6,60 @@ import { createVideoAnalysisSchema } from './videoAnalysisSchema';
 
 /**
  * Creates a schema for subtitle transcription
+ * @param {boolean} isUserProvided - Whether the subtitles are user-provided
  * @returns {Object} Schema for subtitle transcription
  */
-export const createSubtitleSchema = () => {
-    return {
-        type: "array",
-        items: {
-            type: "object",
-            properties: {
-                startTime: {
-                    type: "string",
-                    description: "Start time in format MMmSSsNNNms (e.g., '00m00s500ms')"
+export const createSubtitleSchema = (isUserProvided = false) => {
+    if (isUserProvided) {
+        // For user-provided subtitles, we only need timing information
+        // This simplifies the task for the model and ensures it doesn't modify the text
+        return {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    startTime: {
+                        type: "string",
+                        description: "Start time in format MMmSSsNNNms (e.g., '00m00s500ms')"
+                    },
+                    endTime: {
+                        type: "string",
+                        description: "End time in format MMmSSsNNNms (e.g., '00m01s000ms')"
+                    },
+                    index: {
+                        type: "integer",
+                        description: "Index of the subtitle in the provided list (starting from 0). MUST be a valid index from the provided list."
+                    }
                 },
-                endTime: {
-                    type: "string",
-                    description: "End time in format MMmSSsNNNms (e.g., '00m01s000ms')"
+                required: ["startTime", "endTime", "index"],
+                propertyOrdering: ["index", "startTime", "endTime"]
+            }
+        };
+    } else {
+        // For normal transcription, we need the full schema
+        return {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    startTime: {
+                        type: "string",
+                        description: "Start time in format MMmSSsNNNms (e.g., '00m00s500ms')"
+                    },
+                    endTime: {
+                        type: "string",
+                        description: "End time in format MMmSSsNNNms (e.g., '00m01s000ms')"
+                    },
+                    text: {
+                        type: "string",
+                        description: "Transcribed text content"
+                    }
                 },
-                text: {
-                    type: "string",
-                    description: "Transcribed text content"
-                }
-            },
-            required: ["startTime", "endTime", "text"],
-            propertyOrdering: ["startTime", "endTime", "text"]
-        }
-    };
+                required: ["startTime", "endTime", "text"],
+                propertyOrdering: ["startTime", "endTime", "text"]
+            }
+        };
+    }
 };
 
 /**
@@ -100,14 +129,15 @@ export const createSummarizationSchema = () => {
  * @param {Object} schema - The schema to apply
  * @returns {Object} Updated request data with schema
  */
-export const addResponseSchema = (requestData, schema) => {
+export const addResponseSchema = (requestData, schema, isUserProvided = false) => {
     return {
         ...requestData,
         generationConfig: {
             ...(requestData.generationConfig || {}),
-            temperature: 0.2,
-            topK: 32,
-            topP: 0.95,
+            // Use a lower temperature for user-provided subtitles to make the model more deterministic
+            temperature: isUserProvided ? 0.01 : 0.2,
+            topK: isUserProvided ? 1 : 32,
+            topP: isUserProvided ? 0.5 : 0.95,
             maxOutputTokens: 65536,
             responseMimeType: 'application/json',
             responseSchema: schema

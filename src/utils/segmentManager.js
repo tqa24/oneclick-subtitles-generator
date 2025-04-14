@@ -15,7 +15,9 @@ import { processSegment, updateSegmentStatus } from '../services/segmentProcessi
  * @param {string} mediaType - Type of media ('video' or 'audio')
  * @returns {Promise<Array>} - Updated array of subtitle objects
  */
-export const retrySegmentProcessing = async (segmentIndex, segments, currentSubtitles, onStatusUpdate, t, mediaType = 'video') => {
+export const retrySegmentProcessing = async (segmentIndex, segments, currentSubtitles, onStatusUpdate, t, mediaType = 'video', options = {}) => {
+    // Extract options
+    const { userProvidedSubtitles } = options;
     if (!segments || !segments[segmentIndex]) {
         throw new Error(`Segment ${segmentIndex + 1} not found`);
     }
@@ -48,7 +50,11 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
     try {
         // Process the segment
         console.log(`Retrying segment ${segmentIndex + 1} with startTime=${startTime}, mediaType=${mediaType}`);
-        const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType);
+        if (userProvidedSubtitles) {
+            console.log(`Using user-provided subtitles for segment ${segmentIndex + 1}`);
+            console.log('User-provided subtitles content:', userProvidedSubtitles);
+        }
+        const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType, { userProvidedSubtitles });
 
         // Update status to show success
         updateSegmentStatus(segmentIndex, 'success', t('output.processingComplete', 'Processing complete'), t, timeRange);

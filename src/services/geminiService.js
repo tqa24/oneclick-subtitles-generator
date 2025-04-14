@@ -139,7 +139,7 @@ export const abortAllRequests = () => {
 };
 
 // Get the active prompt (either from localStorage or default)
-const getTranscriptionPrompt = (contentType) => {
+const getTranscriptionPrompt = (contentType, userProvidedSubtitles = null, options = {}) => {
     // Get custom prompt from localStorage or use default
     const customPrompt = localStorage.getItem('transcription_prompt');
 
@@ -152,6 +152,92 @@ const getTranscriptionPrompt = (contentType) => {
         basePrompt = customPrompt.replace('{contentType}', contentType);
     } else {
         basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+    }
+
+    // If we have user-provided subtitles, replace the entire prompt with a simplified version
+    if (userProvidedSubtitles && userProvidedSubtitles.trim() !== '') {
+        // Use a very simple prompt that only focuses on timing the provided subtitles
+        // No preset information, no transcription rules, just the core task
+        console.log('SIMPLIFIED PROMPT: Using simplified prompt for user-provided subtitles');
+        console.log('USER SUBTITLES:', userProvidedSubtitles);
+        console.log('CALLER INFO:', new Error().stack);
+
+        // Split the subtitles into an array and count them
+        const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
+        const subtitleCount = subtitleLines.length;
+        console.log(`Found ${subtitleCount} subtitle lines to time`);
+
+        // Create a numbered list of subtitles for the prompt
+        const numberedSubtitles = subtitleLines.map((line, index) => `[${index}] ${line}`).join('\n');
+
+        // Get segment information if available
+        const segmentInfo = options?.segmentInfo || {};
+        const isSegment = segmentInfo.isSegment || false;
+        const segmentIndex = segmentInfo.segmentIndex !== undefined ? segmentInfo.segmentIndex : null;
+        const segmentStartTime = segmentInfo.startTime !== undefined ? segmentInfo.startTime : 0;
+        const segmentDuration = segmentInfo.duration !== undefined ? segmentInfo.duration : null;
+        const totalDuration = segmentInfo.totalDuration !== undefined ? segmentInfo.totalDuration : null;
+
+        let segmentInfoText = '';
+        if (isSegment && segmentIndex !== null && segmentDuration !== null && totalDuration !== null) {
+            segmentInfoText = `\nIMPORTANT SEGMENT INFORMATION:\n- This is segment #${segmentIndex + 1} of a longer video\n- This segment starts at ${segmentStartTime.toFixed(2)} seconds in the original video\n- This segment is ${segmentDuration.toFixed(2)} seconds long\n- The total video duration is ${totalDuration.toFixed(2)} seconds\n\nNOTE: Even though this is a segment of a longer video, please provide timestamps starting from 0:00 for this segment. We will adjust the timestamps later.`;
+        }
+
+        let simplifiedPrompt;
+        if (isSegment) {
+            // For segments, we need a more flexible approach
+            simplifiedPrompt = `CRITICAL INSTRUCTION: I have a segment of a video and a list of all possible subtitles for the entire video. Your task is to:
+
+1. IDENTIFY which of the numbered subtitles below appear in this specific video segment
+2. Provide ACCURATE TIMESTAMPS for ONLY those subtitles that appear in this segment
+
+DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.${segmentInfoText}
+
+You MUST return timing entries ONLY for subtitles that appear in this segment, in the following JSON format:
+[
+  { "index": 3, "startTime": "00m00s500ms", "endTime": "00m01s000ms" },
+  { "index": 4, "startTime": "00m01s100ms", "endTime": "00m02s000ms" },
+  ...
+]
+
+IMPORTANT RULES:
+1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
+2. The index must match the subtitle number in brackets from the list below
+3. Only include subtitles that actually appear in this segment
+4. DO NOT include the subtitle text in your response, ONLY the timing information and index
+5. If you hear something different in the audio, use the EXACT text from the numbered list below
+6. Timestamps should be relative to the START of this segment (start at 0:00)
+7. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
+8. If you're not 100% certain a subtitle appears in this segment, DO NOT include it.
+
+Here are ALL possible subtitles for the entire video (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
+        } else {
+            // For full video processing, we can use the original approach
+            simplifiedPrompt = `CRITICAL INSTRUCTION: Your ONLY task is to provide accurate timestamps for the subtitles below.
+
+DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.
+
+You MUST return timing entries in the following JSON format:
+[
+  { "index": 0, "startTime": "00m00s500ms", "endTime": "00m01s000ms" },
+  { "index": 1, "startTime": "00m01s100ms", "endTime": "00m02s000ms" },
+  ...
+]
+
+IMPORTANT RULES:
+1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
+2. The index must match the subtitle number in brackets below
+3. Only include subtitles that actually appear in the video
+4. DO NOT include the subtitle text in your response, ONLY the timing information
+5. If you hear something different in the audio, use the EXACT text from the numbered list below
+6. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
+7. If you're not 100% certain a subtitle appears in the video, DO NOT include it.
+
+Here are the subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
+        }
+
+        console.log('SIMPLIFIED PROMPT CONTENT:', simplifiedPrompt);
+        return simplifiedPrompt;
     }
 
     // If we have transcription rules, append them to the prompt
@@ -219,7 +305,9 @@ const getTranscriptionPrompt = (contentType) => {
     return basePrompt;
 };
 
-export const callGeminiApi = async (input, inputType) => {
+export const callGeminiApi = async (input, inputType, options = {}) => {
+    // Extract options
+    const { userProvidedSubtitles } = options;
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
 
@@ -228,8 +316,9 @@ export const callGeminiApi = async (input, inputType) => {
         contents: []
     };
 
-    // Always use structured output
-    requestData = addResponseSchema(requestData, createSubtitleSchema());
+    // Always use structured output, but with different schema based on whether we have user-provided subtitles
+    const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
+    requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
     console.log('Using structured output with schema:', JSON.stringify(requestData));
 
     if (inputType === 'youtube') {
@@ -281,11 +370,145 @@ export const callGeminiApi = async (input, inputType) => {
             lastModified: new Date(processedInput.lastModified).toISOString()
         });
 
+        // Check if we have user-provided subtitles
+        const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
+
+        // Extract segment information if available
+        const segmentInfo = options?.segmentInfo || {};
+
         // For audio files, we need to ensure the prompt is appropriate
-        const promptText = getTranscriptionPrompt(contentType);
+        const promptText = getTranscriptionPrompt(contentType, userProvidedSubtitles, { segmentInfo });
 
         // Log the prompt being used
         console.log(`Using ${contentType} prompt: ${promptText.substring(0, 100)}...`);
+
+        // Log if we're using user-provided subtitles
+        if (isUserProvided) {
+            console.log('Using user-provided subtitles, skipping preset and rules');
+
+            // When using user-provided subtitles, we want to use a very simple request
+            // without any additional configuration or schema
+            requestData = {
+                model: MODEL,
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: promptText },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            // Still add the structured output schema, but with the user-provided flag
+            requestData = addResponseSchema(requestData, createSubtitleSchema(true), true);
+            console.log('Using user-provided subtitles schema with low temperature to enforce timing-only response');
+
+            // Count the number of subtitles for validation
+            const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
+            const expectedSubtitleCount = subtitleLines.length;
+            console.log(`Expecting ${expectedSubtitleCount} timing entries in the response`);
+
+            // Store user-provided subtitles in localStorage for the parser to access
+            localStorage.setItem('user_provided_subtitles', userProvidedSubtitles);
+            console.log('Stored user-provided subtitles in localStorage for parser access');
+
+            // Skip the rest of the function since we've already set up the request data
+            console.log('Using simplified request for user-provided subtitles');
+
+            // Log the MIME type being sent to the API
+            console.log('Using MIME type for Gemini API:', mimeType);
+
+            // Return early to skip the rest of the function
+            // Use the same API call logic as below but in a more direct way
+            const requestId = `request_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+            try {
+                // Create a new AbortController for this request
+                const controller = new AbortController();
+                activeAbortControllers.set(requestId, controller);
+                const signal = controller.signal;
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData),
+                        signal: signal // Add the AbortController signal
+                    }
+                );
+
+                if (!response.ok) {
+                    try {
+                        const errorData = await response.json();
+                        throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+                    } catch (jsonError) {
+                        throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+
+                // For user-provided subtitles, validate the response
+                if (isUserProvided && data?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
+                    const structuredJson = data.candidates[0].content.parts[0].structuredJson;
+                    if (Array.isArray(structuredJson)) {
+                        console.log(`Received ${structuredJson.length} timing entries`);
+
+                        // For segments, we expect a variable number of entries
+                        const isSegment = options?.segmentInfo?.isSegment || false;
+
+                        if (!isSegment) {
+                            // For full video processing, we expect entries for all subtitles
+                            // But we'll be more flexible and just log a warning if the counts don't match
+                            if (structuredJson.length !== expectedSubtitleCount) {
+                                console.warn(`Warning: Expected ${expectedSubtitleCount} timing entries but got ${structuredJson.length}`);
+                            }
+                        }
+
+                        // Validate that all entries have the required fields
+                        for (const entry of structuredJson) {
+                            if (!entry.index && entry.index !== 0) {
+                                console.error('Missing index in timing entry:', entry);
+                                throw new Error('Invalid timing entry: missing index');
+                            }
+                            if (!entry.startTime) {
+                                console.error('Missing startTime in timing entry:', entry);
+                                throw new Error('Invalid timing entry: missing startTime');
+                            }
+                            if (!entry.endTime) {
+                                console.error('Missing endTime in timing entry:', entry);
+                                throw new Error('Invalid timing entry: missing endTime');
+                            }
+                        }
+                    }
+                }
+
+                // Remove this controller from the map after successful response
+                activeAbortControllers.delete(requestId);
+                return parseGeminiResponse(data);
+            } catch (error) {
+                // Check if this is an AbortError
+                if (error.name === 'AbortError') {
+                    console.log('Gemini API request was aborted');
+                    throw new Error('Request was aborted');
+                } else {
+                    console.error('Error calling Gemini API:', error);
+                    // Remove this controller from the map on error
+                    activeAbortControllers.delete(requestId);
+                    throw error;
+                }
+            }
+        }
 
         requestData.contents = [
             {

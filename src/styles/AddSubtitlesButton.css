@@ -1,0 +1,77 @@
+.add-subtitles-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: 1px solid var(--border-color);
+  margin-left: 10px;
+  height: 40px;
+}
+
+/* Style when in the buttons-container */
+.buttons-container .add-subtitles-button {
+  height: 40px;
+  margin: 0 10px 0 0;
+  background-color: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.add-subtitles-button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.add-subtitles-button:active {
+  transform: translateY(1px);
+}
+
+/* Hover and active states for button in buttons-container */
+.buttons-container .add-subtitles-button:hover {
+  background-color: var(--md-surface-container-highest);
+}
+
+.buttons-container .add-subtitles-button:active {
+  transform: translateY(1px);
+  background-color: var(--md-surface-container-highest);
+}
+
+.add-subtitles-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-subtitles-button.has-subtitles {
+  background-color: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+.add-subtitles-button.has-subtitles:hover {
+  background-color: var(--success-color-dark);
+  border-color: var(--success-color-dark);
+}
+
+/* Has subtitles state for button in buttons-container */
+.buttons-container .add-subtitles-button.has-subtitles {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary-container);
+}
+
+.buttons-container .add-subtitles-button.has-subtitles:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border-color: var(--md-primary);
+}
+
+.add-subtitles-button .icon {
+  font-size: 16px;
+}

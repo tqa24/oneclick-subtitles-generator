@@ -144,8 +144,24 @@ export const parseGeminiResponse = (response) => {
                     const firstItem = jsonData[0];
                     console.log('First item in JSON array:', JSON.stringify(firstItem));
 
+                    // Check for standard subtitle format with text
                     if (firstItem.startTime && firstItem.endTime && firstItem.text) {
                         console.log('Detected subtitle format JSON array, parsing as structured data');
+                        // Create a mock structured response
+                        const mockResponse = {
+                            candidates: [{
+                                content: {
+                                    parts: [{
+                                        structuredJson: jsonData
+                                    }]
+                                }
+                            }]
+                        };
+                        return parseStructuredJsonResponse(mockResponse);
+                    }
+                    // Check for timing-only format with index (for user-provided subtitles)
+                    else if (firstItem.startTime && firstItem.endTime && firstItem.index !== undefined) {
+                        console.log('Detected timing-only format JSON array with index, parsing as structured data');
                         // Create a mock structured response
                         const mockResponse = {
                             candidates: [{
@@ -651,16 +667,28 @@ const parseStructuredJsonResponse = (response) => {
             let allEmpty = true;
             let emptyCount = 0;
 
-            for (let i = 0; i < structuredJson.length; i++) {
-                const item = structuredJson[i];
-                if (item.startTime === '00m00s000ms' &&
-                    item.endTime === '00m00s000ms' &&
-                    (!item.text || item.text.trim() === '')) {
-                    emptyCount++;
-                } else {
-                    allEmpty = false;
-                    break;
+            // Skip this check for timing-only format (with index property)
+            const isTimingOnlyFormat = structuredJson.length > 0 &&
+                                      structuredJson[0].index !== undefined &&
+                                      structuredJson[0].startTime &&
+                                      structuredJson[0].endTime;
+
+            if (!isTimingOnlyFormat) {
+                for (let i = 0; i < structuredJson.length; i++) {
+                    const item = structuredJson[i];
+                    if (item.startTime === '00m00s000ms' &&
+                        item.endTime === '00m00s000ms' &&
+                        (!item.text || item.text.trim() === '')) {
+                        emptyCount++;
+                    } else {
+                        allEmpty = false;
+                        break;
+                    }
                 }
+            } else {
+                // For timing-only format, we don't need to check for empty subtitles
+                allEmpty = false;
+                console.log('Skipping empty subtitle check for timing-only format');
             }
 
             // If all subtitles are empty or more than 90% are empty, this is likely an error
@@ -676,19 +704,60 @@ const parseStructuredJsonResponse = (response) => {
 
             // Skip empty subtitles at 00m00s000ms
             let startIndex = 0;
-            while (startIndex < structuredJson.length &&
-                   structuredJson[startIndex].startTime === '00m00s000ms' &&
-                   structuredJson[startIndex].endTime === '00m00s000ms' &&
-                   (!structuredJson[startIndex].text || structuredJson[startIndex].text.trim() === '')) {
-                console.log(`Skipping empty subtitle at index ${startIndex}`);
-                startIndex++;
+
+            // Skip this check for timing-only format
+            if (!isTimingOnlyFormat) {
+                while (startIndex < structuredJson.length &&
+                       structuredJson[startIndex].startTime === '00m00s000ms' &&
+                       structuredJson[startIndex].endTime === '00m00s000ms' &&
+                       (!structuredJson[startIndex].text || structuredJson[startIndex].text.trim() === '')) {
+                    console.log(`Skipping empty subtitle at index ${startIndex}`);
+                    startIndex++;
+                }
+            } else {
+                console.log('Skipping empty subtitle check for timing-only format');
             }
 
             for (let i = startIndex; i < structuredJson.length; i++) {
                 const item = structuredJson[i];
 
-                // Handle subtitle format
-                if (item.startTime && item.endTime) {
+                // Handle timing-only format (for user-provided subtitles)
+                if (item.startTime && item.endTime && item.index !== undefined) {
+                    try {
+                        // Convert time format from MMmSSsNNNms to seconds
+                        const start = convertTimeStringToSeconds(item.startTime);
+                        const end = convertTimeStringToSeconds(item.endTime);
+                        const index = item.index;
+
+                        console.log(`Converted time for timing-only item ${index}: ${item.startTime} -> ${start}, ${item.endTime} -> ${end}`);
+
+                        // Get the corresponding text from user-provided subtitles
+                        const userProvidedSubtitles = localStorage.getItem('user_provided_subtitles');
+                        if (userProvidedSubtitles) {
+                            const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
+                            if (index < subtitleLines.length) {
+                                const text = subtitleLines[index].trim();
+                                console.log(`Using user-provided subtitle text for index ${index}: ${text}`);
+
+                                subtitles.push({
+                                    id: i + 1,
+                                    start,
+                                    end,
+                                    text: text
+                                });
+                            } else {
+                                console.warn(`Index ${index} out of range for user-provided subtitles (length: ${subtitleLines.length}) - skipping this entry`);
+                                // Skip this entry instead of throwing an error
+                            }
+                        } else {
+                            console.error('No user-provided subtitles found in localStorage');
+                        }
+                    } catch (error) {
+                        console.error(`Error processing timing-only item ${i + 1}:`, error);
+                    }
+                }
+                // Handle regular subtitle format
+                else if (item.startTime && item.endTime) {
                     try {
                         // Convert time format from MMmSSsNNNms to seconds
                         const start = convertTimeStringToSeconds(item.startTime);

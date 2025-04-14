@@ -73,5 +73,7 @@
   "viewRulesTitle": "Xem quy tắc phiên âm",
   "srtOnlyMode": "Đang làm việc chỉ với tệp SRT. Không có nguồn video.",
   "srtOnlyModeInfo": "Đang làm việc chỉ với tệp SRT. Không có nguồn video.",
-  "srtOnlyModeHint": "Bạn vẫn có thể chỉnh sửa, dịch và tải xuống phụ đề."
+  "srtOnlyModeHint": "Bạn vẫn có thể chỉnh sửa, dịch và tải xuống phụ đề.",
+  "processingWithCustomSubtitles": "Đang xử lý video với phụ đề bạn đã cung cấp...",
+  "analyzingVideo": "Đang phân tích nội dung video..."
 }

@@ -26,6 +26,8 @@ import fileUpload from './fileUpload.json';
 import lyrics from './lyrics.json';
 import inputMethods from './inputMethods.json';
 import download from './download.json';
+import subtitlesInput from './subtitlesInput.json';
+import segmentRetry from './segmentRetry.json';
 
 // Combine all translations
 const enTranslations = {
@@ -54,7 +56,9 @@ const enTranslations = {
   fileUpload,
   lyrics,
   inputMethods,
-  download
+  download,
+  subtitlesInput,
+  segmentRetry
 };
 
 export default enTranslations;

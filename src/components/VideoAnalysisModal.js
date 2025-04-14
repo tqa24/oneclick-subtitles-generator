@@ -143,10 +143,8 @@ const VideoAnalysisModal = ({
     console.log('VideoAnalysisModal: handleEditRules called, passing rules to parent component');
     // Call the parent component's onEditRules function
     onEditRules(analysisResult.transcriptionRules);
-    // Reset the local state
-    setShowRules(false);
+    // Don't reset the local state here - let the parent component handle the transition completely
     // The parent component (App.js) will handle closing this modal and opening the rules editor
-    // We don't close the modal here - that's handled by the parent component
     console.log('VideoAnalysisModal: onEditRules called, waiting for parent to handle transition');
   };
 

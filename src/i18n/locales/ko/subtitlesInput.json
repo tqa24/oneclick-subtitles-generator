@@ -1,0 +1,15 @@
+{
+  "title": "자막 추가",
+  "explanation": "타이밍 없이 자막을 여기에 붙여넣으세요. 자막을 생성할 때 시스템은 이 텍스트를 오디오와 일치시키고 정확한 타이밍을 만드는 데 집중합니다. 각 줄은 별도의 자막으로 처리됩니다.",
+  "exampleTitle": "예시:",
+  "example": "안녕하세요, 튜토리얼에 오신 것을 환영합니다.\n오늘은 머신 러닝에 대해 배울 것입니다.\n시작해 봅시다!",
+  "placeholder": "여기에 자막을 입력하세요...",
+  "keyboardShortcuts": "키보드 단축키:",
+  "toSave": "저장",
+  "toCancel": "취소",
+  "cancel": "취소",
+  "save": "자막 저장",
+  "addSubtitles": "자막 추가",
+  "editSubtitles": "제공된 자막 편집",
+  "subtitlesAdded": "자막 추가됨"
+}

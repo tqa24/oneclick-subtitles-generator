@@ -73,5 +73,7 @@
   "viewRulesTitle": "View transcription rules",
   "srtOnlyMode": "Working with SRT only. No video source available.",
   "srtOnlyModeInfo": "Working with SRT file only. No video source available.",
-  "srtOnlyModeHint": "You can still edit, translate, and download the subtitles."
+  "srtOnlyModeHint": "You can still edit, translate, and download the subtitles.",
+  "processingWithCustomSubtitles": "Processing video with your provided subtitles...",
+  "analyzingVideo": "Analyzing video content..."
 }

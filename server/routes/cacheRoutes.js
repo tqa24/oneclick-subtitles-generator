@@ -7,6 +7,10 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SUBTITLES_DIR } = require('../config');
+
+// Define paths for user-provided subtitles and transcription rules
+const USER_SUBTITLES_DIR = path.join(SUBTITLES_DIR, 'user-provided');
+const RULES_DIR = path.join(SUBTITLES_DIR, 'rules');
 const { getFileSize, formatBytes } = require('../utils/fileUtils');
 
 /**
@@ -17,6 +21,8 @@ router.get('/cache-info', (req, res) => {
     const details = {
       subtitles: { count: 0, size: 0, files: [] },
       videos: { count: 0, size: 0, files: [] },
+      userSubtitles: { count: 0, size: 0, files: [] },
+      rules: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -63,13 +69,55 @@ router.get('/cache-info', (req, res) => {
 
 
 
+    // Get user-provided subtitles directory info
+    if (fs.existsSync(USER_SUBTITLES_DIR)) {
+      const userSubtitleFiles = fs.readdirSync(USER_SUBTITLES_DIR);
+      userSubtitleFiles.forEach(file => {
+        const filePath = path.join(USER_SUBTITLES_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.userSubtitles.count++;
+        details.userSubtitles.size += fileSize;
+        details.userSubtitles.files.push({ name: file, size: fileSize });
+      });
+    }
+
+    // Get rules directory info
+    if (fs.existsSync(RULES_DIR)) {
+      const rulesFiles = fs.readdirSync(RULES_DIR);
+      rulesFiles.forEach(file => {
+        const filePath = path.join(RULES_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.rules.count++;
+        details.rules.size += fileSize;
+        details.rules.files.push({ name: file, size: fileSize });
+      });
+    }
+
     // Calculate totals
-    details.totalCount = details.subtitles.count + details.videos.count;
-    details.totalSize = details.subtitles.size + details.videos.size;
+    details.totalCount = details.subtitles.count + details.videos.count + details.userSubtitles.count + details.rules.count;
+    details.totalSize = details.subtitles.size + details.videos.size + details.userSubtitles.size + details.rules.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
     details.videos.formattedSize = formatBytes(details.videos.size);
+    details.userSubtitles.formattedSize = formatBytes(details.userSubtitles.size);
+    details.rules.formattedSize = formatBytes(details.rules.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({
@@ -93,6 +141,8 @@ router.delete('/clear-cache', (req, res) => {
     const details = {
       subtitles: { count: 0, size: 0, files: [] },
       videos: { count: 0, size: 0, files: [] },
+      userSubtitles: { count: 0, size: 0, files: [] },
+      rules: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -151,13 +201,67 @@ router.delete('/clear-cache', (req, res) => {
 
 
 
+    // Clear user-provided subtitles directory
+    if (fs.existsSync(USER_SUBTITLES_DIR)) {
+      const userSubtitleFiles = fs.readdirSync(USER_SUBTITLES_DIR);
+      userSubtitleFiles.forEach(file => {
+        const filePath = path.join(USER_SUBTITLES_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.userSubtitles.count++;
+        details.userSubtitles.size += fileSize;
+        details.userSubtitles.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Clear rules directory
+    if (fs.existsSync(RULES_DIR)) {
+      const rulesFiles = fs.readdirSync(RULES_DIR);
+      rulesFiles.forEach(file => {
+        const filePath = path.join(RULES_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.rules.count++;
+        details.rules.size += fileSize;
+        details.rules.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
+
     // Calculate totals
-    details.totalCount = details.subtitles.count + details.videos.count;
-    details.totalSize = details.subtitles.size + details.videos.size;
+    details.totalCount = details.subtitles.count + details.videos.count + details.userSubtitles.count + details.rules.count;
+    details.totalSize = details.subtitles.size + details.videos.size + details.userSubtitles.size + details.rules.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
     details.videos.formattedSize = formatBytes(details.videos.size);
+    details.userSubtitles.formattedSize = formatBytes(details.userSubtitles.size);
+    details.rules.formattedSize = formatBytes(details.rules.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({

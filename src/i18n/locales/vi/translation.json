@@ -25,5 +25,14 @@
   "splittingSubtitles": "Đang chia {{count}} phụ đề thành các phần {{duration}} phút",
   "splitComplete": "Đã chia {{count}} phụ đề thành {{chunks}} phần",
   "translatingChunk": "Đang dịch phần {{current}}/{{total}} với {{count}} phụ đề",
-  "translationComplete": "Đã hoàn thành dịch tất cả {{count}} phần"
+  "translationComplete": "Đã hoàn thành dịch tất cả {{count}} phần",
+  "cancel": "Hủy",
+  "cancelTooltip": "Hủy quá trình dịch",
+  "cancelled": "Dịch đã bị hủy bởi người dùng",
+  "includeRules": "Bao gồm quy tắc ngữ cảnh",
+  "includeRulesLabel": "Thêm quy tắc phiên âm vào các yêu cầu dịch",
+  "includeRulesDescription": "Bao gồm ngữ cảnh phân tích video và quy tắc với mỗi yêu cầu dịch để đảm bảo tính nhất quán giữa các phần.",
+  "noRulesAvailable": "Không có quy tắc phiên âm nào. Tùy chọn này yêu cầu phân tích video với Gemini trước.",
+  "customSubtitlesNoRules": "Tùy chọn này bị vô hiệu hóa vì bạn đã cung cấp phụ đề tùy chỉnh. Chế độ phụ đề tùy chỉnh bỏ qua phân tích video và tạo quy tắc.",
+  "allSubtitles": "Tất cả {{count}} phụ đề"
 }

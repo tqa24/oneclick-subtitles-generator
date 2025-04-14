@@ -4,6 +4,8 @@ import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
 import { getVideoDuration, processLongVideo, retrySegmentProcessing } from '../utils/videoProcessor';
+import { setCurrentCacheId as setRulesCacheId } from '../utils/transcriptionRulesStore';
+import { setCurrentCacheId as setSubtitlesCacheId } from '../utils/userSubtitlesStore';
 
 export const useSubtitles = (t) => {
     const [subtitlesData, setSubtitlesData] = useState(null);
@@ -71,7 +73,9 @@ export const useSubtitles = (t) => {
         }
     };
 
-    const generateSubtitles = useCallback(async (input, inputType, apiKeysSet) => {
+    const generateSubtitles = useCallback(async (input, inputType, apiKeysSet, options = {}) => {
+        // Extract options
+        const { userProvidedSubtitles } = options;
         if (!apiKeysSet.gemini) {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
             return false;
@@ -90,11 +94,21 @@ export const useSubtitles = (t) => {
             if (inputType === 'youtube') {
                 cacheId = extractYoutubeVideoId(input);
                 preloadYouTubeVideo(input);
+
+                // Set cache ID for both stores
+                setRulesCacheId(cacheId);
+                setSubtitlesCacheId(cacheId);
+                console.log('Set cache ID for YouTube video:', cacheId);
             } else if (inputType === 'file-upload') {
                 cacheId = await generateFileCacheId(input);
 
                 // Store the cache ID in localStorage for later use (e.g., saving edited subtitles)
                 localStorage.setItem('current_file_cache_id', cacheId);
+
+                // Set cache ID for both stores
+                setRulesCacheId(cacheId);
+                setSubtitlesCacheId(cacheId);
+                console.log('Set cache ID for uploaded file:', cacheId);
 
                 // Check if this is a video file and get its duration
                 if (input.type.startsWith('video/')) {
@@ -144,15 +158,15 @@ export const useSubtitles = (t) => {
 
                     // Always use segmentation for media files
                     // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t);
+                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
-                    subtitles = await callGeminiApi(input, inputType);
+                    subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
                 }
             } else {
                 // Normal processing for YouTube
-                subtitles = await callGeminiApi(input, inputType);
+                subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
             }
 
             setSubtitlesData(subtitles);
@@ -241,7 +255,9 @@ export const useSubtitles = (t) => {
         }
     }, [t]);
 
-    const retryGeneration = useCallback(async (input, inputType, apiKeysSet) => {
+    const retryGeneration = useCallback(async (input, inputType, apiKeysSet, options = {}) => {
+        // Extract options
+        const { userProvidedSubtitles } = options;
         if (!apiKeysSet.gemini) {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
             return false;
@@ -271,15 +287,15 @@ export const useSubtitles = (t) => {
 
                     // Always use segmentation for media files to match generateSubtitles behavior
                     // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t);
+                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
-                    subtitles = await callGeminiApi(input, inputType);
+                    subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
                 }
             } else {
                 // Normal processing for YouTube
-                subtitles = await callGeminiApi(input, inputType);
+                subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
             }
 
             setSubtitlesData(subtitles);
@@ -290,6 +306,11 @@ export const useSubtitles = (t) => {
                 if (cacheId && subtitles && subtitles.length > 0) {
                     await saveSubtitlesToCache(cacheId, subtitles);
                 }
+
+                // Set cache ID for both stores
+                setRulesCacheId(cacheId);
+                setSubtitlesCacheId(cacheId);
+                console.log('Set cache ID for YouTube video (retry):', cacheId);
             } else if (inputType === 'file-upload') {
                 // For file uploads, generate and store the cache ID
                 const cacheId = await generateFileCacheId(input);
@@ -298,6 +319,11 @@ export const useSubtitles = (t) => {
                 if (cacheId && subtitles && subtitles.length > 0) {
                     await saveSubtitlesToCache(cacheId, subtitles);
                 }
+
+                // Set cache ID for both stores
+                setRulesCacheId(cacheId);
+                setSubtitlesCacheId(cacheId);
+                console.log('Set cache ID for uploaded file (retry):', cacheId);
             }
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
@@ -348,7 +374,9 @@ export const useSubtitles = (t) => {
     // State to track which segments are currently being retried is defined at the top of the hook
 
     // Function to retry a specific segment
-    const retrySegment = useCallback(async (segmentIndex, segments) => {
+    const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
+        // Extract options
+        const { userProvidedSubtitles } = options;
         // Initialize subtitlesData to empty array if it's null
         // This happens when using the strong model where we process segments one by one
         const currentSubtitles = subtitlesData || [];
@@ -390,7 +418,8 @@ export const useSubtitles = (t) => {
                     }
                 },
                 t,
-                mediaType
+                mediaType,
+                { userProvidedSubtitles }
             );
 
             // Update the subtitles data with the new results

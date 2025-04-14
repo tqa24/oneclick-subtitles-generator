@@ -1,0 +1,15 @@
+{
+  "title": "Add Your Subtitles",
+  "explanation": "Paste your subtitles here without timings. When you generate subtitles, the system will focus on matching these texts with the audio and creating accurate timings. Each line will be treated as a separate subtitle.",
+  "exampleTitle": "Example:",
+  "example": "Hello, welcome to our tutorial.\nToday we will learn about machine learning.\nLet's get started!",
+  "placeholder": "Enter your subtitles here...",
+  "keyboardShortcuts": "Keyboard shortcuts:",
+  "toSave": "to save",
+  "toCancel": "to cancel",
+  "cancel": "Cancel",
+  "save": "Save Subtitles",
+  "addSubtitles": "Add subtitles",
+  "editSubtitles": "Edit provided subtitles",
+  "subtitlesAdded": "Subtitles added"
+}

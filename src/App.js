@@ -15,9 +15,11 @@ import TranslationWarningToast from './components/TranslationWarningToast';
 import SrtUploadButton from './components/SrtUploadButton';
 import VideoAnalysisModal from './components/VideoAnalysisModal';
 import TranscriptionRulesEditor from './components/TranscriptionRulesEditor';
+import AddSubtitlesButton from './components/AddSubtitlesButton';
 import ServerConnectionOverlay from './components/ServerConnectionOverlay';
 import { useSubtitles } from './hooks/useSubtitles';
-import { setTranscriptionRules, getTranscriptionRules } from './utils/transcriptionRulesStore';
+import { setTranscriptionRules, getTranscriptionRulesSync, setCurrentCacheId as setRulesCacheId } from './utils/transcriptionRulesStore';
+import { setUserProvidedSubtitles, getUserProvidedSubtitlesSync, setCurrentCacheId as setSubtitlesCacheId } from './utils/userSubtitlesStore';
 import { downloadYoutubeVideo, cancelYoutubeVideoDownload, extractYoutubeVideoId } from './utils/videoDownloader';
 import { initGeminiButtonEffects, resetGeminiButtonState, resetAllGeminiButtonEffects } from './utils/geminiButtonEffects';
 import { hasValidTokens } from './services/youtubeApiService';
@@ -53,6 +55,18 @@ function App() {
   const [isSrtOnlyMode, setIsSrtOnlyMode] = useState(false); // Track when we're working with SRT only
   const [showVideoAnalysis, setShowVideoAnalysis] = useState(false); // Show video analysis modal
   const [videoAnalysisResult, setVideoAnalysisResult] = useState(null); // Store video analysis result
+
+  // State for user-provided subtitles
+  const [userProvidedSubtitles, setUserProvidedSubtitlesState] = useState(() => {
+    // Try to get user-provided subtitles synchronously
+    const savedSubtitles = getUserProvidedSubtitlesSync();
+    return savedSubtitles || '';
+  });
+
+  // Track whether user-provided subtitles are being used
+  const [useUserProvidedSubtitles, setUseUserProvidedSubtitles] = useState(() => {
+    return localStorage.getItem('use_user_provided_subtitles') === 'true';
+  });
 
   // For debugging - log state changes
   useEffect(() => {
@@ -140,13 +154,12 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [showRulesEditor, setShowRulesEditor] = useState(false); // Show rules editor modal
-  // Initialize transcription rules from localStorage if available
+  // Initialize transcription rules from store
   // These rules are used when retrying segments to ensure consistent transcription
-  // They persist across sessions and are applied to all transcription requests
   const [transcriptionRules, setTranscriptionRulesState] = useState(() => {
-    // Try to get rules from localStorage via the utility function
-    const savedRules = getTranscriptionRules();
-    console.log('Initializing transcription rules from localStorage:', savedRules ? 'found' : 'not found');
+    // Try to get rules synchronously via the utility function
+    const savedRules = getTranscriptionRulesSync();
+    console.log('Initializing transcription rules from store:', savedRules ? 'found' : 'not found');
     return savedRules;
   });
 
@@ -189,9 +202,18 @@ function App() {
 
     console.log('Generating segment', segmentIndex, 'and combining with existing subtitles');
 
+    // Prepare options for segment generation
+    const segmentOptions = {};
+
+    // Add user-provided subtitles if available and enabled
+    if (useUserProvidedSubtitles && userProvidedSubtitles) {
+      segmentOptions.userProvidedSubtitles = userProvidedSubtitles;
+      console.log('Using user-provided subtitles for segment generation');
+    }
+
     // Use the retrySegment function which will properly combine this segment's results
     // with any previously processed segments
-    await retrySegment(segmentIndex, segments);
+    await retrySegment(segmentIndex, segments, segmentOptions);
   };
 
   // Handler for retrying a segment with a specific model
@@ -210,9 +232,18 @@ function App() {
     // Temporarily set the selected model
     localStorage.setItem('gemini_model', modelId);
 
+    // Prepare options for segment retry
+    const segmentOptions = {};
+
+    // Add user-provided subtitles if available and enabled
+    if (useUserProvidedSubtitles && userProvidedSubtitles) {
+      segmentOptions.userProvidedSubtitles = userProvidedSubtitles;
+      console.log('Using user-provided subtitles for segment retry with model', modelId);
+    }
+
     try {
       // Use the retrySegment function with the temporarily set model
-      await retrySegment(segmentIndex, segments);
+      await retrySegment(segmentIndex, segments, segmentOptions);
     } finally {
       // Restore the original model
       if (currentModel) {
@@ -947,8 +978,17 @@ function App() {
           // Simulate the upload process
           setStatus({ message: t('output.processingVideo', 'Processing. This may take a few minutes...'), type: 'loading' });
 
+          // Prepare options for subtitle generation
+          const subtitleOptions = {};
+
+          // Add user-provided subtitles if available and enabled
+          if (useUserProvidedSubtitles && userProvidedSubtitles) {
+            subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
+            console.log('Using user-provided subtitles for generation');
+          }
+
           // Start generating subtitles with the downloaded file
-          await generateSubtitles(file, 'file-upload', apiKeysSet);
+          await generateSubtitles(file, 'file-upload', apiKeysSet, subtitleOptions);
         } catch (error) {
           console.error('Error processing downloaded video:', error);
           // Reset downloading state
@@ -973,7 +1013,16 @@ function App() {
       inputType = 'file-upload';
     }
 
-    await generateSubtitles(input, inputType, apiKeysSet);
+    // Prepare options for subtitle generation
+    const subtitleOptions = {};
+
+    // Add user-provided subtitles if available and enabled
+    if (useUserProvidedSubtitles && userProvidedSubtitles) {
+      subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
+      console.log('Using user-provided subtitles for generation');
+    }
+
+    await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
 
     // Reset button animation state when generation is complete
     resetGeminiButtonState();
@@ -1340,8 +1389,17 @@ function App() {
           // Simulate the upload process
           setStatus({ message: t('output.processingVideo', 'Processing. This may take a few minutes...'), type: 'loading' });
 
+          // Prepare options for subtitle generation
+          const subtitleOptions = {};
+
+          // Add user-provided subtitles if available and enabled
+          if (useUserProvidedSubtitles && userProvidedSubtitles) {
+            subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
+            console.log('Using user-provided subtitles for retry generation');
+          }
+
           // Start generating subtitles with the downloaded file
-          await retryGeneration(file, 'file-upload', apiKeysSet);
+          await retryGeneration(file, 'file-upload', apiKeysSet, subtitleOptions);
         } catch (error) {
           console.error('Error processing downloaded video:', error);
           // Reset downloading state
@@ -1371,7 +1429,16 @@ function App() {
     }
 
     try {
-      await retryGeneration(input, inputType, apiKeysSet);
+      // Prepare options for subtitle generation
+      const subtitleOptions = {};
+
+      // Add user-provided subtitles if available and enabled
+      if (useUserProvidedSubtitles && userProvidedSubtitles) {
+        subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
+        console.log('Using user-provided subtitles for retry generation');
+      }
+
+      await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
     } finally {
       // Reset retrying state regardless of success or failure
       setIsRetrying(false);
@@ -1507,19 +1574,36 @@ function App() {
   // Handle editing the transcription rules
   const handleEditRules = (rules) => {
     console.log('handleEditRules called, closing VideoAnalysisModal and opening TranscriptionRulesEditor');
-    setTranscriptionRulesState(rules);
-    setShowRulesEditor(true);
-    // Close the video analysis modal when opening the rules editor
+    // First, close the video analysis modal
     setShowVideoAnalysis(false);
+
+    // Use a small timeout to ensure state updates properly
+    setTimeout(() => {
+      // Then set the rules and open the editor
+      setTranscriptionRulesState(rules);
+      setShowRulesEditor(true);
+      console.log('TranscriptionRulesEditor should now be open, showRulesEditor:', true);
+    }, 50); // Small delay to ensure proper transition
+
     // Save the current analysis result to state but don't clear localStorage flags
     // This allows us to reopen the modal when the rules editor is closed
     console.log('VideoAnalysisModal should now be closed, showVideoAnalysis:', false);
   };
 
   // Handle saving the edited transcription rules
-  const handleSaveRules = (editedRules) => {
+  const handleSaveRules = async (editedRules) => {
+    // Update state
     setTranscriptionRulesState(editedRules);
-    setTranscriptionRules(editedRules);
+
+    // Set cache ID based on the current video source
+    const cacheId = getCacheIdForCurrentVideo();
+    if (cacheId) {
+      setRulesCacheId(cacheId);
+      console.log('Set cache ID for transcription rules:', cacheId);
+    }
+
+    // Save to store (which will handle caching)
+    await setTranscriptionRules(editedRules);
 
     // Update the analysis result with the edited rules
     if (videoAnalysisResult) {
@@ -1530,10 +1614,54 @@ function App() {
     }
   };
 
+  // Get cache ID for the current video source
+  const getCacheIdForCurrentVideo = () => {
+    if (selectedVideo) {
+      // For YouTube videos, use the video ID
+      return extractYoutubeVideoId(selectedVideo.url);
+    } else if (uploadedFile) {
+      // For uploaded files, use the file name without extension
+      const fileName = uploadedFile.name;
+      const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+      return fileNameWithoutExt;
+    }
+    return null;
+  };
+
   // Handle viewing transcription rules
   const handleViewRules = () => {
     setShowRulesEditor(true);
   };
+
+  // Handle adding or updating user-provided subtitles
+  const handleUserSubtitlesAdd = async (subtitlesText) => {
+    // Update state
+    setUserProvidedSubtitlesState(subtitlesText);
+
+    // Set cache ID based on the current video source
+    const cacheId = getCacheIdForCurrentVideo();
+    if (cacheId) {
+      setSubtitlesCacheId(cacheId);
+      console.log('Set cache ID for user-provided subtitles:', cacheId);
+    }
+
+    // Save to store (which will handle caching)
+    await setUserProvidedSubtitles(subtitlesText);
+
+    // Enable using user-provided subtitles
+    setUseUserProvidedSubtitles(true);
+    localStorage.setItem('use_user_provided_subtitles', 'true');
+
+    console.log('User-provided subtitles saved:', subtitlesText.length > 100 ?
+      subtitlesText.substring(0, 100) + '...' : subtitlesText);
+  };
+
+  // Handle toggling the use of user-provided subtitles
+  // This function can be used in the future if we add a toggle in the UI
+  // const handleToggleUserSubtitles = (useSubtitles) => {
+  //   setUseUserProvidedSubtitles(useSubtitles);
+  //   localStorage.setItem('use_user_provided_subtitles', useSubtitles.toString());
+  // };
 
   // Handle when video source is removed or added
   useEffect(() => {
@@ -1576,6 +1704,16 @@ function App() {
               onSrtUpload={handleSrtUpload}
               disabled={isGenerating || isDownloading}
             />
+
+            {/* Add Subtitles Button - only show when we have a video source */}
+            {(selectedVideo || uploadedFile) && !isGenerating && !isDownloading && (
+              <AddSubtitlesButton
+                onSubtitlesAdd={handleUserSubtitlesAdd}
+                hasSubtitles={userProvidedSubtitles.trim() !== ''}
+                subtitlesText={userProvidedSubtitles}
+                disabled={isGenerating || isDownloading}
+              />
+            )}
               {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
               {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
                 <button
@@ -1770,6 +1908,8 @@ function App() {
             useOptimizedPreview={useOptimizedPreview}
             isSrtOnlyMode={isSrtOnlyMode}
             onViewRules={handleViewRules}
+            userProvidedSubtitles={userProvidedSubtitles}
+            onUserSubtitlesAdd={handleUserSubtitlesAdd}
           />
           </div>
         </main>

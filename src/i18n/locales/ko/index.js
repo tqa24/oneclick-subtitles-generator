@@ -25,6 +25,9 @@ import srtUpload from './srtUpload.json';
 import fileUpload from './fileUpload.json';
 import lyrics from './lyrics.json';
 import inputMethods from './inputMethods.json';
+import download from './download.json';
+import subtitlesInput from './subtitlesInput.json';
+import segmentRetry from './segmentRetry.json';
 
 // Combine all translations
 const koTranslations = {
@@ -52,7 +55,10 @@ const koTranslations = {
   srtUpload,
   fileUpload,
   lyrics,
-  inputMethods
+  inputMethods,
+  download,
+  subtitlesInput,
+  segmentRetry
 };
 
 export default koTranslations;
