@@ -76,7 +76,7 @@ export const updateParticleElements = (particles) => {
     particle.element.style.top = `${particle.y}%`;
     particle.element.style.transform = `rotate(${particle.rotation}deg)`;
 
-    // Update opacity based on active state
+    // Update opacity based on active state - higher default opacity
     particle.element.style.opacity = particle.isActive ? '1' : '0';
 
     // Update trail particles if they exist

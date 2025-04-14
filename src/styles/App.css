@@ -171,7 +171,7 @@
 .buttons-container .generate-btn:hover::before,
 .buttons-container .retry-gemini-btn:hover::before,
 .buttons-container .force-stop-btn:hover::before {
-  background-color: rgba(255, 255, 255, var(--md-state-hover-opacity));
+  background-color: transparent !important;
 }
 
 .buttons-container .generate-btn:active::before,
@@ -185,6 +185,22 @@
 .buttons-container .force-stop-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level3);
+  background-color: transparent !important;
+}
+
+.buttons-container .generate-btn:hover {
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+.buttons-container .retry-gemini-btn:hover {
+  color: var(--md-tertiary); /* Use tertiary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+.buttons-container .force-stop-btn:hover {
+  color: var(--md-error); /* Use error color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
 }
 
 .buttons-container .generate-btn:active,
