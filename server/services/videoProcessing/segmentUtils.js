@@ -1,49 +1,11 @@
 /**
- * Media (video and audio) processing functionality
+ * Utilities for splitting media into segments
  */
 
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-
-/**
- * Get the duration of a media file using ffprobe
- * @param {string} mediaPath - Path to the media file
- * @returns {Promise<number>} - Duration in seconds
- */
-function getMediaDuration(mediaPath) {
-  return new Promise((resolve, reject) => {
-    const durationProbe = spawn('ffprobe', [
-      '-v', 'error',
-      '-show_entries', 'format=duration',
-      '-of', 'default=noprint_wrappers=1:nokey=1',
-      mediaPath
-    ]);
-
-    let durationOutput = '';
-
-    durationProbe.stdout.on('data', (data) => {
-      durationOutput += data.toString();
-    });
-
-    durationProbe.on('close', (code) => {
-      if (code !== 0) {
-        return reject(new Error(`Failed to get media duration for ${mediaPath}`));
-      }
-
-      const duration = parseFloat(durationOutput.trim());
-      resolve(duration);
-    });
-
-    durationProbe.stderr.on('data', (data) => {
-      console.error(`ffprobe stderr: ${data}`);
-    });
-
-    durationProbe.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
+const { getMediaDuration } = require('./durationUtils');
 
 /**
  * Split a media file (video or audio) into segments using ffmpeg
@@ -56,46 +18,56 @@ function getMediaDuration(mediaPath) {
  * @param {string} options.mediaType - Type of media ('video' or 'audio')
  * @returns {Promise<Object>} - Result object with segments array
  */
-function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, filePrefix, options = {}) {
+async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, filePrefix, options = {}) {
   // Default to video if mediaType not specified
   const mediaType = options.mediaType || 'video';
   const isAudio = mediaType === 'audio';
   const outputExtension = isAudio ? 'mp3' : 'mp4';
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const timestamp = Date.now();
     const safePrefix = filePrefix.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 20);
     const batchId = `${safePrefix}_${timestamp}`;
 
-    // First, get the duration of the media file
-    const durationProbe = spawn('ffprobe', [
-      '-v', 'error',
-      '-show_entries', 'format=duration',
-      '-of', 'default=noprint_wrappers=1:nokey=1',
-      mediaPath
-    ]);
-
-    let durationOutput = '';
-
-    durationProbe.stdout.on('data', (data) => {
-      durationOutput += data.toString();
-    });
-
-    durationProbe.on('close', async (code) => {
-      if (code !== 0) {
-        return reject(new Error(`Failed to get ${mediaType} duration`));
+    // First, validate the media file exists and is accessible
+    try {
+      // Check if the file exists
+      if (!fs.existsSync(mediaPath)) {
+        console.error(`[SPLIT-MEDIA] Media file does not exist: ${mediaPath}`);
+        return reject(new Error(`Media file does not exist: ${mediaPath}`));
       }
 
-      const totalDuration = parseFloat(durationOutput.trim());
-      console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${totalDuration} seconds`);
+      // Check file size to ensure it's not empty or corrupted
+      const fileStats = fs.statSync(mediaPath);
+      if (fileStats.size < 1000) { // Less than 1KB
+        console.error(`[SPLIT-MEDIA] Media file is too small (${fileStats.size} bytes), might be corrupted: ${mediaPath}`);
+        return reject(new Error(`Media file is too small or corrupted: ${mediaPath}`));
+      }
+
+      console.log(`[SPLIT-MEDIA] Media file validated: ${mediaPath}, size: ${fileStats.size} bytes`);
+
+      // Get the duration of the media file using our more robust getMediaDuration function
+      console.log(`[SPLIT-MEDIA] Getting duration for media file: ${mediaPath}`);
+      const totalDuration = await getMediaDuration(mediaPath);
+      console.log(`[SPLIT-MEDIA] ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${totalDuration} seconds`);
 
       const numSegments = Math.ceil(totalDuration / segmentDuration);
       console.log(`Splitting ${mediaType} into ${numSegments} segments of ${segmentDuration} seconds each`);
 
       const outputPattern = path.join(outputDir, `${batchId}_%03d.${outputExtension}`);
 
+      // Double-check the file path before proceeding
+      if (!fs.existsSync(mediaPath)) {
+        console.error(`[SPLIT-MEDIA] Media file disappeared before splitting: ${mediaPath}`);
+        return reject(new Error(`Media file not found before splitting: ${mediaPath}`));
+      }
+
+      // Log the absolute file path for debugging
+      const absolutePath = path.resolve(mediaPath);
+      console.log(`[SPLIT-MEDIA] Using absolute path for ffmpeg: ${absolutePath}`);
+
       // Construct ffmpeg command based on splitting mode
       const ffmpegArgs = [
-        '-i', mediaPath,
+        '-i', absolutePath, // Use absolute path to avoid any path resolution issues
         '-f', 'segment',
         '-segment_time', segmentDuration.toString(),
         '-reset_timestamps', '1'
@@ -258,15 +230,10 @@ function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, filePrefi
       segmentCmd.on('error', (err) => {
         reject(err);
       });
-    });
-
-    durationProbe.stderr.on('data', (data) => {
-      console.error(`ffprobe stderr: ${data}`);
-    });
-
-    durationProbe.on('error', (err) => {
-      reject(err);
-    });
+    } catch (error) {
+      console.error(`[SPLIT-MEDIA] Error getting media duration: ${error.message}`);
+      reject(error);
+    }
   });
 }
 
@@ -275,12 +242,7 @@ const splitVideoIntoSegments = (videoPath, segmentDuration, outputDir, filePrefi
   return splitMediaIntoSegments(videoPath, segmentDuration, outputDir, filePrefix, { ...options, mediaType: 'video' });
 };
 
-// For backward compatibility
-const getVideoDuration = getMediaDuration;
-
 module.exports = {
-  splitVideoIntoSegments,
   splitMediaIntoSegments,
-  getVideoDuration,
-  getMediaDuration
+  splitVideoIntoSegments
 };

@@ -62,6 +62,25 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
           setError(t('youtube.authError', 'YouTube authentication required. Please set up OAuth in settings.'));
         } else if (error.message.includes('quota exceeded')) {
           setError(t('errors.quotaExceeded', 'Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.'));
+        } else if (error.message.includes('api not enabled')) {
+          setError(t('errors.youtubeApiNotEnabled', 'YouTube Data API v3 is not enabled in your Google Cloud project. Please enable it by visiting the Google Cloud Console and enabling the YouTube Data API v3 service.'));
+          // Add a button to open the Google Cloud Console API Library
+          const apiEnableUrl = 'https://console.developers.google.com/apis/api/youtube.googleapis.com/overview';
+          setError(
+            <>
+              {t('errors.youtubeApiNotEnabled', 'YouTube Data API v3 is not enabled in your Google Cloud project.')}
+              <div className="error-action">
+                <a
+                  href={apiEnableUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="error-action-button"
+                >
+                  {t('settings.enableYouTubeAPI', 'Enable YouTube Data API v3')}
+                </a>
+              </div>
+            </>
+          );
         } else {
           setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
         }
@@ -71,6 +90,24 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
           setError(t('youtube.noApiKey', 'Please set your YouTube API key in the settings first.'));
         } else if (error.message.includes('quota exceeded')) {
           setError(t('errors.quotaExceeded', 'Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.'));
+        } else if (error.message.includes('api not enabled')) {
+          // Add a button to open the Google Cloud Console API Library
+          const apiEnableUrl = 'https://console.developers.google.com/apis/api/youtube.googleapis.com/overview';
+          setError(
+            <>
+              {t('errors.youtubeApiNotEnabled', 'YouTube Data API v3 is not enabled in your Google Cloud project.')}
+              <div className="error-action">
+                <a
+                  href={apiEnableUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="error-action-button"
+                >
+                  {t('settings.enableYouTubeAPI', 'Enable YouTube Data API v3')}
+                </a>
+              </div>
+            </>
+          );
         } else {
           setError(t('youtube.searchError', 'Error searching YouTube. Please try again or enter a URL directly.'));
         }

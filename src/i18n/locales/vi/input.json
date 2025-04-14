@@ -26,7 +26,7 @@
   "qualityWarning": "Đối với video dài, nên dùng chất lượng thấp hơn để tránh vấn đề xử lý.",
   "processingLongVideo": "Đang xử lý video dài...",
   "splittingVideo": "Đang chia video thành các phần...",
-  "optimizingVideo": "Đang tối ưu hóa video để xử lý...",
+  "optimizingVideo": "Đang tối ưu hóa video để xử lý... (Thời gian xử lý tuỳ theo độ dài video và cấu hình máy)",
   "analyzingVideo": "Đang phân tích nội dung video... (Nếu bị nghẽn, hãy thay đổi \"Mô hình phân tích\" và thử lại)",
   "preparingVideoAnalysis": "Đang chuẩn bị video để phân tích...",
   "preparingAnalysisVideo": "Đang chuẩn bị video phân tích với 500 khung hình...",

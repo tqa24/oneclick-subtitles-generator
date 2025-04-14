@@ -1,0 +1,160 @@
+/* Button styles for translation section */
+
+.translate-button,
+.download-translation-button,
+.reset-translation-button,
+.download-process-button,
+.cancel-translation-button {
+  padding: 0 1rem; /* Reduced horizontal padding */
+  height: 42px;
+  border-radius: 21px;
+  font-size: 0.9rem; /* Slightly smaller font */
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.translate-button {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.translate-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+}
+
+.translate-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.translate-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.translation-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end; /* Align the New Translation button to the right */
+}
+
+.download-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.download-translation-button {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: none;
+}
+
+.download-translation-button:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.download-translation-button.json {
+  background-color: var(--md-tertiary-container, #e8def8);
+  color: var(--md-on-tertiary-container, #1d192b);
+}
+
+.download-translation-button.txt {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.download-translation-button.json:hover {
+  background-color: var(--md-tertiary, #6750a4);
+  color: var(--md-on-tertiary, #ffffff);
+}
+
+.reset-translation-button {
+  background-color: var(--md-surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.reset-translation-button:hover {
+  background-color: var(--md-surface-3);
+}
+
+.cancel-translation-button {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+  border: none;
+  margin-left: 0.75rem;
+}
+
+.cancel-translation-button:hover {
+  background-color: color-mix(in srgb, var(--md-error), black 10%);
+}
+
+.cancel-translation-button:active {
+  transform: scale(0.98);
+}
+
+.download-process-button {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.download-process-button:hover {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Style for the model dropdown in translation section */
+.translate-model-dropdown {
+  background-color: var(--md-surface-3);
+  border-color: var(--md-outline-variant);
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .translate-button,
+  .download-translation-button,
+  .reset-translation-button,
+  .cancel-translation-button {
+    padding: 0 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  /* Keep buttons on one line */
+  .translation-actions {
+    gap: 0.5rem;
+  }
+
+  .download-buttons {
+    gap: 0.5rem;
+  }
+}

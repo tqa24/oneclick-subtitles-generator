@@ -4,7 +4,7 @@
 
 import { callGeminiApi, getProcessingForceStopped } from './geminiService';
 import { fetchSegment } from '../utils/videoSplitter';
-import { parseRawTextManually } from '../utils/subtitleParser';
+import { parseRawTextManually } from '../utils/subtitle';
 import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
 
 /**

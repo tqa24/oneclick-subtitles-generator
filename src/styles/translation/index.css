@@ -1,0 +1,14 @@
+/* Translation Section CSS - Main file that imports all modular components */
+
+/* Import base styles */
+@import './base.css';
+
+/* Import component styles */
+@import './header.css';
+@import './inputs.css';
+@import './delimiters.css';
+@import './slider.css';
+@import './buttons.css';
+@import './preview.css';
+@import './status.css';
+@import './toggle.css';

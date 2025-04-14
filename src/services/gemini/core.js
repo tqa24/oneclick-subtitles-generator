@@ -2,21 +2,21 @@
  * Core functionality for Gemini API
  */
 
-import { parseGeminiResponse } from '../../utils/subtitleParser';
+import { parseGeminiResponse } from '../../utils/subtitle';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../../utils/audioConverter';
-import { 
-    createSubtitleSchema, 
-    createTranslationSchema, 
-    createConsolidationSchema, 
-    createSummarizationSchema, 
-    addResponseSchema 
+import {
+    createSubtitleSchema,
+    createTranslationSchema,
+    createConsolidationSchema,
+    createSummarizationSchema,
+    addResponseSchema
 } from '../../utils/schemaUtils';
 import { getTranscriptionPrompt } from './promptManagement';
 import { fileToBase64 } from './utils';
-import { 
-    createRequestController, 
-    removeRequestController, 
-    getProcessingForceStopped 
+import {
+    createRequestController,
+    removeRequestController,
+    getProcessingForceStopped
 } from './requestManagement';
 
 /**

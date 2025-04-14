@@ -222,22 +222,7 @@
 
 /* Pulse animation removed to prevent dizziness */
 
-/* Material Design 3 typography for app title */
-.app-title {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: var(--md-on-surface);
-  transition: color var(--transition-speed);
-  font-size: var(--md-headline-medium-size);
-  line-height: var(--md-headline-medium-height);
-  font-weight: 500; /* Lighter weight for Material Design */
-  letter-spacing: -0.5px;
-  position: relative;
-  display: inline-block;
-  z-index: 1;
-}
-
-/* Removed decorative underline as requested */
+/* Removed app-title class to avoid conflicts */
 
 @media (max-width: 640px) {
   .buttons-container {

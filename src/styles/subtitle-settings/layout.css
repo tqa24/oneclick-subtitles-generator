@@ -1,0 +1,147 @@
+/* Layout styles for subtitle settings */
+
+/* Create a grid layout for transparent mode */
+.subtitle-settings-panel.transparent .settings-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns for better layout */
+  grid-template-rows: auto;
+  gap: 15px;
+  padding: 20px;
+  height: 450px !important; /* Fixed height of 450px as requested with !important to override any inheritance */
+  max-height: 450px !important; /* Ensure it doesn't exceed 450px with !important to override any inheritance */
+  min-height: auto !important; /* Override any min-height from content-scrollbars.css */
+  overflow-y: auto;
+  background-color: transparent;
+  position: relative;
+  grid-template-rows: auto repeat(6, auto);
+}
+
+/* Position the reset button in the 3-column layout */
+.subtitle-settings-panel.transparent .reset-settings-btn {
+  grid-column: 1 / -1; /* Span all columns */
+  grid-row: 7;
+  width: auto;
+  margin-top: 20px;
+  background-color: rgba(var(--md-primary-rgb, 103, 80, 164), 0.2);
+  border: 1px solid rgba(var(--md-primary-rgb, 103, 80, 164), 0.3);
+  color: white;
+  font-weight: 500;
+  border-radius: var(--md-shape-pill);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.subtitle-settings-panel.transparent .reset-settings-btn:hover {
+  background-color: rgba(var(--md-primary-rgb, 103, 80, 164), 0.3);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.subtitle-settings-panel.transparent .reset-settings-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 3-column layout for settings */
+
+/* Column-specific styling - all transparent */
+.subtitle-settings-panel.transparent .setting-group:nth-child(1),
+.subtitle-settings-panel.transparent .setting-group:nth-child(2),
+.subtitle-settings-panel.transparent .setting-group:nth-child(3),
+.subtitle-settings-panel.transparent .setting-group:nth-child(13),
+.subtitle-settings-panel.transparent .setting-group:nth-child(14),
+.subtitle-settings-panel.transparent .setting-group:nth-child(5),
+.subtitle-settings-panel.transparent .setting-group:nth-child(6),
+.subtitle-settings-panel.transparent .setting-group:nth-child(7),
+.subtitle-settings-panel.transparent .setting-group:nth-child(8),
+.subtitle-settings-panel.transparent .setting-group:nth-child(4),
+.subtitle-settings-panel.transparent .setting-group:nth-child(9),
+.subtitle-settings-panel.transparent .setting-group:nth-child(10),
+.subtitle-settings-panel.transparent .setting-group:nth-child(11),
+.subtitle-settings-panel.transparent .setting-group:nth-child(12),
+.subtitle-settings-panel.transparent .setting-group:nth-child(15) {
+  border-left: none;
+  background-color: transparent;
+}
+
+/* Font settings - Column 1 */
+.subtitle-settings-panel.transparent .setting-group:nth-child(1) { /* Font family */
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(2) { /* Font size */
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(3) { /* Font weight */
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(13) { /* Text color */
+  grid-column: 1;
+  grid-row: 5;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(14) { /* Text shadow */
+  grid-column: 1;
+  grid-row: 6;
+}
+
+/* Text formatting - Column 2 */
+.subtitle-settings-panel.transparent .setting-group:nth-child(4) { /* Position */
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(5) { /* Text alignment */
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(6) { /* Text transform */
+  grid-column: 2;
+  grid-row: 4;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(7) { /* Line spacing */
+  grid-column: 2;
+  grid-row: 5;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(8) { /* Letter spacing */
+  grid-column: 2;
+  grid-row: 6;
+}
+
+/* Background settings - Column 3 */
+.subtitle-settings-panel.transparent .setting-group:nth-child(9) { /* Background color */
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(10) { /* Opacity */
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(11) { /* Box width */
+  grid-column: 3;
+  grid-row: 4;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(12) { /* Background radius */
+  grid-column: 3;
+  grid-row: 5;
+}
+
+.subtitle-settings-panel.transparent .setting-group:nth-child(15) { /* Background padding */
+  grid-column: 3;
+  grid-row: 6;
+}

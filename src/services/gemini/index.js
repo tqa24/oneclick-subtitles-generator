@@ -7,17 +7,17 @@
 import { callGeminiApi } from './core';
 
 // Export request management functionality
-import { 
-    abortAllRequests, 
-    getProcessingForceStopped, 
-    setProcessingForceStopped 
+import {
+    abortAllRequests,
+    getProcessingForceStopped,
+    setProcessingForceStopped
 } from './requestManagement';
 
 // Export prompt management functionality
-import { 
-    PROMPT_PRESETS, 
-    DEFAULT_TRANSCRIPTION_PROMPT, 
-    getUserPromptPresets, 
+import {
+    PROMPT_PRESETS,
+    DEFAULT_TRANSCRIPTION_PROMPT,
+    getUserPromptPresets,
     saveUserPromptPresets,
     getDefaultTranslationPrompt,
     getDefaultConsolidatePrompt,
@@ -28,7 +28,7 @@ import {
 import { translateSubtitles } from './translation';
 
 // Export document processing functionality
-import { completeDocument, summarizeDocument } from './documentProcessing';
+import { completeDocument, summarizeDocument } from './documentProcessingService';
 
 // Export aliases for backward compatibility
 const transcribeVideo = callGeminiApi;
@@ -39,12 +39,12 @@ const transcribeYouTubeVideo = callGeminiApi;
 export {
     // Core API
     callGeminiApi,
-    
+
     // Request management
     abortAllRequests,
     getProcessingForceStopped,
     setProcessingForceStopped,
-    
+
     // Prompt management
     PROMPT_PRESETS,
     DEFAULT_TRANSCRIPTION_PROMPT,
@@ -53,14 +53,14 @@ export {
     getDefaultTranslationPrompt,
     getDefaultConsolidatePrompt,
     getDefaultSummarizePrompt,
-    
+
     // Translation
     translateSubtitles,
-    
+
     // Document processing
     completeDocument,
     summarizeDocument,
-    
+
     // Aliases for backward compatibility
     transcribeVideo,
     transcribeAudio,

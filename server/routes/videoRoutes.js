@@ -7,7 +7,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
-const { downloadYouTubeVideo } = require('../services/youtubeService');
+const { downloadYouTubeVideo } = require('../services/youtube');
 const {
   splitVideoIntoSegments,
   splitMediaIntoSegments,

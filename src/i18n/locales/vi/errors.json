@@ -8,5 +8,6 @@
   "youtubeAuthRequired": "Yêu cầu xác thực YouTube. Vui lòng thiết lập OAuth trong cài đặt.",
   "youtubeApiKeyRequired": "Vui lòng cài đặt khóa API YouTube trong cài đặt để sử dụng ứng dụng này.",
   "bothKeysRequired": "Vui lòng cài đặt khóa API Gemini và cấu hình xác thực YouTube trong cài đặt để sử dụng ứng dụng này.",
+  "youtubeApiNotEnabled": "YouTube Data API v3 chưa được kích hoạt trong dự án Google Cloud của bạn. Vui lòng kích hoạt bằng cách truy cập Google Cloud Console và bật dịch vụ YouTube Data API v3.",
   "quotaExceeded": "Đã vượt quá hạn ngạch, vui lòng đợi đến ngày mai, hoặc tạo dự án Google Cloud mới và cập nhật API hoặc OAuth."
 }
