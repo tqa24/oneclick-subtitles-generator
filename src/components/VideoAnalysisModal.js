@@ -70,7 +70,6 @@ const VideoAnalysisModal = ({
 
     // Set up the timeout for auto-selection
     timeoutRef.current = setTimeout(() => {
-      console.log('Timeout reached, auto-selecting recommended preset');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -140,17 +139,14 @@ const VideoAnalysisModal = ({
 
   // Handle edit rules
   const handleEditRules = () => {
-    console.log('VideoAnalysisModal: handleEditRules called, passing rules to parent component');
     // Call the parent component's onEditRules function
     onEditRules(analysisResult.transcriptionRules);
     // Don't reset the local state here - let the parent component handle the transition completely
     // The parent component (App.js) will handle closing this modal and opening the rules editor
-    console.log('VideoAnalysisModal: onEditRules called, waiting for parent to handle transition');
   };
 
   // Handle continue with rules
   const handleContinueWithRules = () => {
-    console.log('VideoAnalysisModal: handleContinueWithRules called, using recommended preset');
     setShowRules(false);
     onUsePreset(analysisResult.recommendedPreset.id);
   };
@@ -158,18 +154,15 @@ const VideoAnalysisModal = ({
   // Handle user interaction to cancel auto-selection
   const handleUserInteraction = () => {
     if (!userInteracted && countdown !== null) {
-      console.log('User interaction detected, cancelling auto-selection');
       setUserInteracted(true);
 
       // Clear the interval and timeout using refs
       if (intervalRef.current) {
-        console.log('Clearing interval');
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
 
       if (timeoutRef.current) {
-        console.log('Clearing timeout');
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
@@ -179,18 +172,15 @@ const VideoAnalysisModal = ({
     }
   };
 
-  console.log('VideoAnalysisModal render - isOpen:', isOpen, 'analysisResult:', analysisResult);
 
   // Always show the modal when it's rendered
   // isOpen is now ignored
 
   if (!analysisResult) {
-    console.log('VideoAnalysisModal - analysisResult is null, trying localStorage');
     // Try to get analysis result from localStorage
     try {
       const storedResultString = localStorage.getItem('video_analysis_result');
       if (!storedResultString) {
-        console.log('No analysis result in localStorage');
         // Clear localStorage flags to ensure modal doesn't show again
         localStorage.removeItem('show_video_analysis');
         localStorage.removeItem('video_analysis_timestamp');
@@ -203,7 +193,6 @@ const VideoAnalysisModal = ({
       try {
         const storedResult = JSON.parse(storedResultString);
         if (storedResult) {
-          console.log('Using analysis result from localStorage');
           analysisResult = storedResult;
         } else {
           throw new Error('Invalid analysis result structure');
@@ -220,7 +209,6 @@ const VideoAnalysisModal = ({
             additionalNotes: ['The original analysis result could not be parsed. Using default settings.']
           }
         };
-        console.log('Created default analysis result due to parsing error');
       }
     } catch (error) {
       console.error('Error accessing localStorage:', error);

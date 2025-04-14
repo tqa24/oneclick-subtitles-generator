@@ -1,0 +1,28 @@
+/* Translation status and error styles */
+
+.translation-error {
+  width: 100%;
+  color: var(--error-color);
+  background-color: var(--error-background);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 3px solid var(--error-color);
+}
+
+/* Translation status messages */
+.translation-status {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: var(--md-surface-2);
+  border-radius: var(--md-shape-small);
+  font-size: 0.9rem;
+  color: var(--md-on-surface-variant);
+  border-left: 3px solid var(--md-primary);
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

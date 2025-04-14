@@ -1,0 +1,325 @@
+/* Transparent mode styles for subtitle settings */
+
+/* Transparent panel styles - expanded layout that fits within video container */
+.subtitle-settings-panel.transparent {
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  width: 1200px; /* Fixed width */
+  max-width: 100%;
+  right: 0;
+  left: 0;
+  top: 0;
+  position: absolute;
+  transform: none;
+  transform-origin: center;
+  overflow: hidden;
+  border-radius: 0;
+  z-index: 10;
+  backdrop-filter: none;
+  margin: 7px auto; /* Center the panel */
+  max-height: 64vh;
+  border-radius: 24px;
+}
+
+.subtitle-settings-panel.transparent .settings-header {
+  background-color: transparent;
+  border-bottom-color: transparent;
+  padding: 8px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.subtitle-settings-panel.transparent .column-header {
+  display: block; /* Show in transparent mode */
+  font-weight: 500;
+  color: white;
+  font-size: 1rem;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.subtitle-settings-panel.transparent .font-column-header {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.subtitle-settings-panel.transparent .text-column-header {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.subtitle-settings-panel.transparent .background-column-header {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+/* Position header is not needed in this layout */
+.subtitle-settings-panel.transparent .position-column-header {
+  display: none;
+}
+
+/* Add subtle background to each setting group for better visibility */
+.subtitle-settings-panel.transparent .setting-group {
+  background-color: rgba(var(--md-surface-rgb, 28, 27, 31), 0.1);
+  padding: 16px;
+  border-radius: var(--md-shape-pill);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: var(--md-shape-medium);
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+/* Make form controls visible but transparent with pill shapes */
+.subtitle-settings-panel.transparent input[type="text"],
+.subtitle-settings-panel.transparent input[type="number"],
+.subtitle-settings-panel.transparent select {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 10px 16px;
+  border-radius: var(--md-shape-pill);
+  height: 42px;
+  font-size: var(--md-body-medium-size);
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.subtitle-settings-panel.transparent input[type="text"]:focus,
+.subtitle-settings-panel.transparent input[type="number"]:focus,
+.subtitle-settings-panel.transparent select:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.subtitle-settings-panel.transparent .button-toggle-group {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: var(--md-shape-pill);
+  overflow: hidden;
+  display: flex;
+}
+
+.subtitle-settings-panel.transparent input[type="range"] {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: var(--md-shape-pill);
+  margin: 10px 0;
+}
+
+.subtitle-settings-panel.transparent input[type="range"]::-webkit-slider-thumb {
+  background: white;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.subtitle-settings-panel.transparent input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle-settings-panel.transparent input[type="range"]::-moz-range-thumb {
+  background: white;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.subtitle-settings-panel.transparent input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle-settings-panel.transparent input[type="color"] {
+  height: 42px;
+  padding: 3px;
+  background: transparent;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+/* Improve visibility of labels and text */
+.subtitle-settings-panel.transparent label,
+.subtitle-settings-panel.transparent .setting-description {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Add a subtle glow to the panel header */
+.subtitle-settings-panel.transparent .settings-header h4 {
+  text-shadow: 0 0 10px rgba(var(--md-primary-rgb, 103, 80, 164), 0.3);
+}
+
+/* Style buttons and select elements in transparent mode */
+.subtitle-settings-panel.transparent button:not(.transparency-toggle-btn):not(.close-settings-btn):not(.button-toggle),
+.subtitle-settings-panel.transparent select {
+  background-color: rgba(var(--md-surface-1-rgb, 36, 35, 39), 0.7);
+  border-color: rgba(var(--md-outline-variant-rgb, 73, 69, 79), 0.7);
+  border-radius: var(--md-shape-pill);
+  padding: 10px 16px;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  color: white; /* Ensure text is white for better contrast */
+}
+
+.subtitle-settings-panel.transparent button:not(.transparency-toggle-btn):not(.close-settings-btn):not(.button-toggle):hover,
+.subtitle-settings-panel.transparent select:hover {
+  background-color: rgba(var(--md-surface-1-rgb, 36, 35, 39), 0.9);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.subtitle-settings-panel.transparent button:not(.transparency-toggle-btn):not(.close-settings-btn):not(.button-toggle):active {
+  transform: scale(0.98);
+}
+
+/* Style dropdown options in transparent mode */
+.subtitle-settings-panel.transparent select option {
+  background-color: rgba(36, 35, 39, 0.95); /* Dark background */
+  color: white; /* White text */
+  padding: 8px 12px;
+}
+
+/* Style the dropdown arrow in transparent mode */
+.subtitle-settings-panel.transparent select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+}
+
+/* Make labels more visible against transparent background */
+.subtitle-settings-panel.transparent label,
+.subtitle-settings-panel.transparent .setting-title {
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+  color: var(--md-on-surface);
+}
+
+/* Label styling */
+.subtitle-settings-panel.transparent .setting-group label {
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: white;
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Range values */
+.subtitle-settings-panel.transparent .range-value {
+  font-size: 0.85rem;
+  min-width: 48px;
+  color: white;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--md-shape-pill);
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Font preview */
+.subtitle-settings-panel.transparent .font-preview {
+  margin-top: 10px;
+  padding: 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle-settings-panel.transparent .font-preview-label {
+  font-size: 0.8rem;
+  color: white;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.subtitle-settings-panel.transparent .font-preview-text {
+  font-size: 1rem;
+  color: white;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Transparent mode button toggle styles */
+.subtitle-settings-panel.transparent .button-toggle {
+  color: white;
+  padding: 10px;
+}
+
+.subtitle-settings-panel.transparent .button-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.subtitle-settings-panel.transparent .button-toggle.active {
+  background-color: rgba(var(--md-primary-rgb, 103, 80, 164), 0.5);
+  color: white;
+}
+
+/* Transparent mode header buttons */
+.subtitle-settings-panel.transparent .transparency-toggle-btn {
+  color: white;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.subtitle-settings-panel.transparent .close-settings-btn {
+  color: white;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  transition: background-color 0.2s var(--md-easing-standard),
+              color 0.2s var(--md-easing-standard),
+              transform 0.1s var(--md-easing-standard);
+}
+
+.subtitle-settings-panel.transparent .close-settings-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.subtitle-settings-panel.transparent .close-settings-btn:active {
+  transform: scale(0.95);
+}
+
+.subtitle-settings-panel.transparent .transparency-toggle-btn.active {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Reset button in transparent mode */
+.subtitle-settings-panel.transparent .reset-settings-btn {
+  margin-top: 20px;
+  padding: 12px;
+  font-size: 1rem;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.subtitle-settings-panel.transparent .reset-settings-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

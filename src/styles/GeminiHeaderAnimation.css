@@ -1,4 +1,4 @@
-/* GeminiHeaderAnimation.css - Styling for the header constellation animation */
+/* GeminiHeaderAnimation.css - Simple styling */
 
 .gemini-header-canvas {
   position: absolute;
@@ -9,39 +9,33 @@
   pointer-events: auto; /* Enable mouse interactions */
   z-index: 0;
   opacity: 0.7;
-  transition: opacity 0.5s var(--md-easing-emphasized);
+  transition: opacity 0.3s ease;
   cursor: pointer; /* Show pointer cursor to indicate interactivity */
 }
 
 /* Make the canvas more visible on hover */
 .app-header:hover .gemini-header-canvas {
-  opacity: 1;
-}
-
-/* Ensure the header has position relative for proper canvas positioning */
-.app-header {
-  position: relative;
-  overflow: hidden;
+  opacity: 0.9;
 }
 
 /* Ensure header content is above the canvas */
-.title-container,
+.header-title,
 .header-actions {
   position: relative;
   z-index: 1;
 }
 
-/* Add a subtle glow effect to the app title when header is hovered */
-.app-header:hover .app-title {
+/* Add a subtle glow effect to the header title when header is hovered */
+.app-header:hover .header-title {
   text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
 }
 
-/* Add a subtle animation to the app title */
+/* Add a subtle animation to the header title */
 @keyframes title-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
 }
 
-.app-header:hover .app-title {
-  animation: title-pulse 3s infinite var(--md-easing-emphasized);
+.app-header:hover .header-title {
+  animation: title-pulse 3s infinite ease-in-out;
 }

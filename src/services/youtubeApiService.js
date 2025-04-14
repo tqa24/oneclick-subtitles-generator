@@ -8,13 +8,31 @@ const TOKEN_STORAGE_KEY = 'youtube_oauth_token';
 const CLIENT_ID_STORAGE_KEY = 'youtube_client_id';
 const CLIENT_SECRET_STORAGE_KEY = 'youtube_client_secret';
 
+// Debug flag - set to false to disable verbose logging
+const DEBUG_LOGGING = false;
+
+/**
+ * Conditionally log messages based on debug flag
+ * @param {string} message - Message to log
+ * @param {any} data - Optional data to log
+ */
+const debugLog = (message, data) => {
+  if (!DEBUG_LOGGING) return;
+
+  if (data !== undefined) {
+    console.log(message, data);
+  } else {
+    console.log(message);
+  }
+};
+
 /**
  * Check if OAuth is enabled
  * @returns {boolean} True if OAuth is enabled
  */
 export const isOAuthEnabled = () => {
   const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
-  console.log('isOAuthEnabled check:', useOAuth, localStorage.getItem('use_youtube_oauth'));
+  debugLog('isOAuthEnabled check:', useOAuth);
   return useOAuth;
 };
 
@@ -24,7 +42,7 @@ export const isOAuthEnabled = () => {
  */
 export const hasValidTokens = () => {
   const tokens = getStoredTokens();
-  console.log('hasValidTokens check:', tokens ? 'Has tokens' : 'No tokens');
+  debugLog('hasValidTokens check:', tokens ? 'Has tokens' : 'No tokens');
 
   if (!tokens) {
     return false;
@@ -36,7 +54,7 @@ export const hasValidTokens = () => {
     const now = new Date();
     // Add a 5-minute buffer to be safe
     const isValid = expiryDate > new Date(now.getTime() + 5 * 60 * 1000);
-    console.log('Token expiry check:', isValid, 'Expires:', expiryDate, 'Now:', now);
+    debugLog('Token expiry check:', { isValid, expiryDate, now });
     return isValid;
   }
 
@@ -49,7 +67,7 @@ export const hasValidTokens = () => {
  */
 export const getStoredTokens = () => {
   const tokenString = localStorage.getItem(TOKEN_STORAGE_KEY);
-  console.log('getStoredTokens check:', tokenString ? 'Has token string' : 'No token string');
+  debugLog('getStoredTokens check:', tokenString ? 'Has token string' : 'No token string');
 
   if (!tokenString) {
     return null;
@@ -57,7 +75,7 @@ export const getStoredTokens = () => {
 
   try {
     const tokens = JSON.parse(tokenString);
-    console.log('Parsed tokens:', tokens);
+    debugLog('Parsed tokens:', tokens);
     return tokens;
   } catch (error) {
     console.error('Error parsing stored tokens:', error);
@@ -224,25 +242,25 @@ export const getAccessToken = async () => {
 export const searchYouTubeVideos = async (query, maxResults = 5) => {
   try {
     let accessToken;
-    console.log('searchYouTubeVideos called with query:', query);
+    debugLog('searchYouTubeVideos called with query:', query);
 
     const useOAuth = isOAuthEnabled();
-    console.log('Using OAuth?', useOAuth);
+    debugLog('Using OAuth?', useOAuth);
 
     if (useOAuth) {
       // Use OAuth
       const hasTokens = hasValidTokens();
-      console.log('Has valid tokens?', hasTokens);
+      debugLog('Has valid tokens?', hasTokens);
 
       if (!hasTokens) {
-        console.error('Not authenticated with YouTube');
+        console.error('Not authenticated with YouTube'); // Keep as console.error for critical errors
         throw new Error('Not authenticated with YouTube');
       }
 
       accessToken = await getAccessToken();
-      console.log('Got access token:', accessToken ? 'Yes' : 'No');
+      debugLog('Got access token:', accessToken ? 'Yes' : 'No');
 
-      console.log('Making OAuth request to YouTube API');
+      debugLog('Making OAuth request to YouTube API');
       const response = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&q=${encodeURIComponent(query)}&type=video`,
         {
@@ -252,10 +270,10 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
         }
       );
 
-      console.log('YouTube API response status:', response.status);
+      debugLog('YouTube API response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('YouTube API error response:', errorText);
+        console.error('YouTube API error response:', errorText); // Keep as console.error for critical errors
 
         // Check for quota exceeded error
         if (response.status === 403 && errorText.includes('quotaExceeded')) {
@@ -266,7 +284,7 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
       }
 
       const data = await response.json();
-      console.log('YouTube API response data:', data);
+      debugLog('YouTube API response data:', data);
 
       if (data.items && data.items.length > 0) {
         const results = data.items.map(item => ({
@@ -276,39 +294,64 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
           channel: item.snippet.channelTitle,
           url: `https://www.youtube.com/watch?v=${item.id.videoId}`
         }));
-        console.log('Mapped results:', results);
+        debugLog('Mapped results:', results);
         return results;
       }
     } else {
       // Use API key
       const youtubeApiKey = localStorage.getItem('youtube_api_key');
-      console.log('Using API key:', youtubeApiKey ? 'Yes' : 'No');
+      debugLog('Using API key:', youtubeApiKey ? 'Yes' : 'No');
 
       if (!youtubeApiKey) {
-        console.error('YouTube API key not found');
+        console.error('YouTube API key not found'); // Keep as console.error for critical errors
         throw new Error('YouTube API key not found');
       }
 
-      console.log('Making API key request to YouTube API');
+      debugLog('Making API key request to YouTube API');
       const response = await fetch(
         `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=${maxResults}&q=${encodeURIComponent(query)}&type=video&key=${youtubeApiKey}`
       );
 
-      console.log('YouTube API response status:', response.status);
+      debugLog('YouTube API response status:', response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('YouTube API error response:', errorText);
+        console.error('YouTube API error response:', errorText); // Keep as console.error for critical errors
 
-        // Check for quota exceeded error
-        if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('quota exceeded');
-        } else {
+        // Parse the error response to get more details
+        try {
+          const errorData = JSON.parse(errorText);
+
+          // Check for specific error types
+          if (response.status === 403) {
+            if (errorText.includes('quotaExceeded')) {
+              throw new Error('quota exceeded');
+            } else if (errorData.error && errorData.error.errors && errorData.error.errors.length > 0) {
+              const firstError = errorData.error.errors[0];
+
+              // Check for API not enabled error
+              if (firstError.reason === 'accessNotConfigured' ||
+                  (errorData.error.message && errorData.error.message.includes('API v3 has not been used in project') &&
+                   errorData.error.message.includes('or it is disabled'))) {
+                throw new Error('api not enabled');
+              }
+            }
+          }
+
+          // If no specific error was identified, throw a generic error with the message
+          if (errorData.error && errorData.error.message) {
+            throw new Error(`YouTube API error: ${errorData.error.message}`);
+          } else {
+            throw new Error('YouTube API request failed');
+          }
+        } catch (parseError) {
+          // If we can't parse the error as JSON, just use the original error text
+          debugLog('Error parsing YouTube API error response:', parseError);
           throw new Error('YouTube API request failed');
         }
       }
 
       const data = await response.json();
-      console.log('YouTube API response data:', data);
+      debugLog('YouTube API response data:', data);
 
       if (data.items && data.items.length > 0) {
         const results = data.items.map(item => ({
@@ -318,14 +361,14 @@ export const searchYouTubeVideos = async (query, maxResults = 5) => {
           channel: item.snippet.channelTitle,
           url: `https://www.youtube.com/watch?v=${item.id.videoId}`
         }));
-        console.log('Mapped results:', results);
+        debugLog('Mapped results:', results);
         return results;
       }
     }
 
     return [];
   } catch (error) {
-    console.error('Error searching YouTube:', error);
+    console.error('Error searching YouTube:', error); // Keep as console.error for critical errors
     throw error;
   }
 };
@@ -358,12 +401,37 @@ export const getVideoDetails = async (videoId) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('YouTube API error response:', errorText);
+        console.error('YouTube API error response:', errorText); // Keep as console.error for critical errors
 
-        // Check for quota exceeded error
-        if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('quota exceeded');
-        } else {
+        // Parse the error response to get more details
+        try {
+          const errorData = JSON.parse(errorText);
+
+          // Check for specific error types
+          if (response.status === 403) {
+            if (errorText.includes('quotaExceeded')) {
+              throw new Error('quota exceeded');
+            } else if (errorData.error && errorData.error.errors && errorData.error.errors.length > 0) {
+              const firstError = errorData.error.errors[0];
+
+              // Check for API not enabled error
+              if (firstError.reason === 'accessNotConfigured' ||
+                  (errorData.error.message && errorData.error.message.includes('API v3 has not been used in project') &&
+                   errorData.error.message.includes('or it is disabled'))) {
+                throw new Error('api not enabled');
+              }
+            }
+          }
+
+          // If no specific error was identified, throw a generic error with the message
+          if (errorData.error && errorData.error.message) {
+            throw new Error(`YouTube API error: ${errorData.error.message}`);
+          } else {
+            throw new Error('YouTube API request failed');
+          }
+        } catch (parseError) {
+          // If we can't parse the error as JSON, just use the original error text
+          debugLog('Error parsing YouTube API error response:', parseError);
           throw new Error('YouTube API request failed');
         }
       }
@@ -395,12 +463,37 @@ export const getVideoDetails = async (videoId) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('YouTube API error response:', errorText);
+        console.error('YouTube API error response:', errorText); // Keep as console.error for critical errors
 
-        // Check for quota exceeded error
-        if (response.status === 403 && errorText.includes('quotaExceeded')) {
-          throw new Error('quota exceeded');
-        } else {
+        // Parse the error response to get more details
+        try {
+          const errorData = JSON.parse(errorText);
+
+          // Check for specific error types
+          if (response.status === 403) {
+            if (errorText.includes('quotaExceeded')) {
+              throw new Error('quota exceeded');
+            } else if (errorData.error && errorData.error.errors && errorData.error.errors.length > 0) {
+              const firstError = errorData.error.errors[0];
+
+              // Check for API not enabled error
+              if (firstError.reason === 'accessNotConfigured' ||
+                  (errorData.error.message && errorData.error.message.includes('API v3 has not been used in project') &&
+                   errorData.error.message.includes('or it is disabled'))) {
+                throw new Error('api not enabled');
+              }
+            }
+          }
+
+          // If no specific error was identified, throw a generic error with the message
+          if (errorData.error && errorData.error.message) {
+            throw new Error(`YouTube API error: ${errorData.error.message}`);
+          } else {
+            throw new Error('YouTube API request failed');
+          }
+        } catch (parseError) {
+          // If we can't parse the error as JSON, just use the original error text
+          debugLog('Error parsing YouTube API error response:', parseError);
           throw new Error('YouTube API request failed');
         }
       }
@@ -422,7 +515,7 @@ export const getVideoDetails = async (videoId) => {
 
     return null;
   } catch (error) {
-    console.error('Error fetching video details:', error);
+    console.error('Error fetching video details:', error); // Keep as console.error for critical errors
     throw error;
   }
 };

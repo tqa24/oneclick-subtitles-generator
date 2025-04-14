@@ -1,0 +1,18 @@
+/* Header styles for translation section */
+
+.translation-header {
+  margin-bottom: 1.5rem;
+}
+
+.translation-header h3 {
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.translation-description {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}

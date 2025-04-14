@@ -11,11 +11,9 @@ const Header = ({ onSettingsClick }) => {
       {/* Gemini constellation animation */}
       <GeminiHeaderAnimation />
 
-      <div className="title-container">
-        <h1 className="app-title">
-          {t('header.appTitle')}
-        </h1>
-      </div>
+      <h1 className="header-title">
+        {t('header.appTitle')}
+      </h1>
 
       <div className="header-actions">
         <button

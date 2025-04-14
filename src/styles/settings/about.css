@@ -41,7 +41,7 @@
   background-image: url('../../assets/about-background-alternative.svg');
 }
 
-.app-title {
+.about-app-title {
   font-size: 1.8rem;
   color: var(--md-primary);
   margin-bottom: 0.5rem;
@@ -97,7 +97,7 @@
   padding: 0 1rem;
 }
 
-[data-theme="dark"] .app-title {
+[data-theme="dark"] .about-app-title {
   color: var(--md-primary-light);
 }
 
