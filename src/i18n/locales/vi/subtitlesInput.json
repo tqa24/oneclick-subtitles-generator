@@ -1,0 +1,15 @@
+{
+  "title": "Thêm Phụ Đề Của Bạn",
+  "explanation": "Dán phụ đề của bạn vào đây mà không cần thời gian. Khi bạn tạo phụ đề, hệ thống sẽ tập trung vào việc khớp các văn bản này với âm thanh và tạo thời gian chính xác. Mỗi dòng sẽ được coi là một phụ đề riêng biệt.",
+  "exampleTitle": "Ví dụ:",
+  "example": "Xin chào, chào mừng đến với hướng dẫn của chúng tôi.\nHôm nay chúng ta sẽ tìm hiểu về máy học.\nHãy bắt đầu!",
+  "placeholder": "Nhập phụ đề của bạn tại đây...",
+  "keyboardShortcuts": "Phím tắt:",
+  "toSave": "để lưu",
+  "toCancel": "để hủy",
+  "cancel": "Hủy",
+  "save": "Lưu Phụ Đề",
+  "addSubtitles": "Thêm phụ đề",
+  "editSubtitles": "Chỉnh sửa phụ đề đã cung cấp",
+  "subtitlesAdded": "Đã thêm phụ đề"
+}

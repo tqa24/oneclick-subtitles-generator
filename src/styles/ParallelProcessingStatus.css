@@ -407,6 +407,21 @@
   border: 1px solid rgb(0, 160, 0);
 }
 
+/* Custom Subtitles styles */
+.model-custom {
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
+  border: 1px solid var(--md-secondary);
+}
+
+/* Divider for model options */
+.model-option-divider {
+  height: 1px;
+  background-color: var(--md-outline-variant);
+  margin: 8px 16px;
+  opacity: 0.7;
+}
+
 /* Active state for segment retry button */
 .segment-retry-btn:active {
   /* No transform to prevent layout shifts */

@@ -80,6 +80,28 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   // State for whether transcription rules are available
   const [rulesAvailable, setRulesAvailable] = useState(false);
 
+  // Check if user-provided subtitles are present
+  const [userProvidedSubtitles, setUserProvidedSubtitles] = useState('');
+  const hasUserProvidedSubtitles = userProvidedSubtitles.trim() !== '';
+
+  // Load user-provided subtitles
+  useEffect(() => {
+    const loadUserProvidedSubtitles = async () => {
+      try {
+        // Dynamically import to avoid circular dependencies
+        const { getUserProvidedSubtitlesSync } = await import('../utils/userSubtitlesStore');
+        const subtitles = getUserProvidedSubtitlesSync();
+        setUserProvidedSubtitles(subtitles || '');
+        console.log('User-provided subtitles loaded:', subtitles ? 'yes' : 'no');
+      } catch (error) {
+        console.error('Error loading user-provided subtitles:', error);
+        setUserProvidedSubtitles('');
+      }
+    };
+
+    loadUserProvidedSubtitles();
+  }, []);
+
   // State for whether to include transcription rules in translation requests
   const [includeRules, setIncludeRules] = useState(() => {
     // Get the preference from localStorage or default to true
@@ -91,8 +113,8 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     const checkRulesAvailability = async () => {
       try {
         // Dynamically import to avoid circular dependencies
-        const { getTranscriptionRules } = await import('../utils/transcriptionRulesStore');
-        const rules = getTranscriptionRules();
+        const { getTranscriptionRulesSync } = await import('../utils/transcriptionRulesStore');
+        const rules = getTranscriptionRulesSync();
         setRulesAvailable(!!rules);
         console.log('Transcription rules available:', !!rules);
       } catch (error) {
@@ -555,7 +577,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                         setIncludeRules(value);
                         localStorage.setItem('translation_include_rules', value.toString());
                       }}
-                      disabled={isTranslating || translatedSubtitles !== null || !rulesAvailable}
+                      disabled={isTranslating || translatedSubtitles !== null || !rulesAvailable || hasUserProvidedSubtitles}
                     />
                     <span className="toggle-slider"></span>
                   </label>
@@ -565,9 +587,11 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                     </label>
                     <div
                       className="help-icon-container"
-                      title={rulesAvailable
-                        ? t('translation.includeRulesDescription', 'Includes video analysis context and rules with each translation request for better consistency across segments.')
-                        : t('translation.noRulesAvailable', 'No transcription rules available. This option requires analyzing the video with Gemini first.')}
+                      title={hasUserProvidedSubtitles
+                        ? t('translation.customSubtitlesNoRules', 'This option is disabled because you provided custom subtitles. Custom subtitles mode skips video analysis and rule generation.')
+                        : rulesAvailable
+                          ? t('translation.includeRulesDescription', 'Includes video analysis context and rules with each translation request for better consistency across segments.')
+                          : t('translation.noRulesAvailable', 'No transcription rules available. This option requires analyzing the video with Gemini first.')}
                     >
                       <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
                         <circle cx="12" cy="12" r="10"></circle>

@@ -8,12 +8,34 @@ import { getVideoDuration, getMaxSegmentDurationSeconds } from './durationUtils'
 import { processSegment } from '../services/segmentProcessingService';
 import { retrySegmentProcessing } from './segmentManager';
 import { analyzeVideoWithGemini } from '../services/videoAnalysisService';
-import { setTranscriptionRules } from './transcriptionRulesStore';
+import { setTranscriptionRules, setCurrentCacheId as setRulesCacheId } from './transcriptionRulesStore';
+import { setUserProvidedSubtitles, setCurrentCacheId as setSubtitlesCacheId } from './userSubtitlesStore';
+import { extractYoutubeVideoId } from './videoDownloader';
 
 // Re-export functions from other modules
 export { getVideoDuration } from './durationUtils';
 export { retrySegmentProcessing };
 export { setTranscriptionRules } from './transcriptionRulesStore';
+
+/**
+ * Generate a cache ID for a media file
+ * @param {File} mediaFile - The media file
+ * @returns {string} - Cache ID
+ */
+const getCacheIdForMedia = (mediaFile) => {
+  if (!mediaFile) return null;
+
+  // For files, use the file name without extension as the cache ID
+  const fileName = mediaFile.name;
+  const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+
+  // Add a hash based on file size and last modified date for uniqueness
+  const fileSize = mediaFile.size;
+  const lastModified = mediaFile.lastModified || Date.now();
+  const hash = `${fileSize}_${lastModified}`;
+
+  return `${fileNameWithoutExt}_${hash}`;
+};
 
 /**
  * Process a long media file (video or audio) by splitting it into segments and processing each segment
@@ -22,7 +44,18 @@ export { setTranscriptionRules } from './transcriptionRulesStore';
  * @param {Function} t - Translation function
  * @returns {Promise<Array>} - Array of subtitle objects
  */
-export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
+export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {}) => {
+    // Extract options
+    const { userProvidedSubtitles } = options;
+
+    // Set cache ID for the current video
+    const cacheId = getCacheIdForMedia(mediaFile);
+    if (cacheId) {
+        // Set cache ID for both stores
+        setRulesCacheId(cacheId);
+        setSubtitlesCacheId(cacheId);
+        console.log('Set cache ID for current video:', cacheId);
+    }
     // Set processing flag to indicate we're working on a video
     localStorage.setItem('video_processing_in_progress', 'true');
     console.log('Set video_processing_in_progress flag to true');
@@ -145,6 +178,21 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                         analysisFile = new File([analysisBlob], `analysis_${mediaFile.name}`, { type: mediaFile.type });
                     }
 
+                    // Check if we should skip analysis when user-provided subtitles are present
+                    const skipAnalysis = !!userProvidedSubtitles;
+
+                    if (skipAnalysis) {
+                        console.log('Skipping video analysis because user-provided subtitles are present');
+                        // Update status message to indicate we're using custom subtitles
+                        onStatusUpdate({
+                            message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
+                            type: 'loading'
+                        });
+                        // Skip directly to processing with user-provided subtitles
+                        console.log('Using user-provided subtitles for direct processing (short video)');
+                        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
+                    }
+
                     // Analyze the video with Gemini before processing
                     onStatusUpdate({
                         message: t('output.analyzingVideo', 'Analyzing video content...'),
@@ -218,7 +266,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                             type: 'loading'
                         });
 
-                        return await callGeminiApi(optimizedFile, 'file-upload');
+                        console.log('Using user-provided subtitles after analysis');
+                        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
                     } catch (analysisError) {
                         console.error('Error analyzing video:', analysisError);
                         onStatusUpdate({
@@ -227,7 +276,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                         });
 
                         // Continue with processing without analysis
-                        return await callGeminiApi(optimizedFile, 'file-upload');
+                        console.log('Using user-provided subtitles after analysis error');
+                        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
                     }
                 } catch (error) {
                     console.error('Error optimizing video:', error);
@@ -236,11 +286,13 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                         type: 'warning'
                     });
                     // Fall back to using the original file
-                    return await callGeminiApi(mediaFile, 'file-upload');
+                    console.log('Using user-provided subtitles after optimization error');
+                    return await callGeminiApi(mediaFile, 'file-upload', { userProvidedSubtitles });
                 }
             } else {
                 // For audio or when optimization is disabled, process directly
-                return await callGeminiApi(mediaFile, 'file-upload');
+                console.log('Using user-provided subtitles for direct processing (optimization disabled)');
+                return await callGeminiApi(mediaFile, 'file-upload', { userProvidedSubtitles });
             }
         }
 
@@ -356,7 +408,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
 
                 // Check if video analysis is enabled in settings
                 // For audio files, we always want to analyze the converted video
-                const useVideoAnalysis = isAudio || localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+                // Skip analysis if user-provided subtitles are present
+                const useVideoAnalysis = !userProvidedSubtitles && (isAudio || localStorage.getItem('use_video_analysis') !== 'false'); // Default to true if not set
 
                 if (useVideoAnalysis) {
                     // Now analyze the video with Gemini before processing
@@ -470,7 +523,16 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                         type: 'loading'
                     });
                 } else {
-                    console.log('Video analysis is disabled in settings, skipping analysis step');
+                    if (userProvidedSubtitles) {
+                        console.log('Skipping video analysis because user-provided subtitles are present');
+                        // Update status message to indicate we're using custom subtitles
+                        onStatusUpdate({
+                            message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
+                            type: 'loading'
+                        });
+                    } else {
+                        console.log('Video analysis is disabled in settings, skipping analysis step');
+                    }
                 }
             } catch (error) {
                 console.error('Error optimizing or analyzing video:', error);
@@ -576,6 +638,11 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
             console.log(`Processing segment ${segmentIndex + 1}:`);
             console.log(`  Using startTime=${startTime.toFixed(2)}s, duration=${segmentDuration.toFixed(2)}s, endTime=${endTime.toFixed(2)}s`);
 
+            // Log if we're using user-provided subtitles
+            if (userProvidedSubtitles) {
+                console.log(`  Using user-provided subtitles for segment ${segmentIndex + 1} in parallel processing`);
+            }
+
             if (segment.startTime !== undefined) {
                 const theoreticalStart = segmentIndex * getMaxSegmentDurationSeconds();
                 console.log(`  Actual start time differs from theoretical by ${(startTime - theoreticalStart).toFixed(2)}s`);
@@ -594,7 +661,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 const response = await fetch(`http://localhost:3004/api/subtitle-exists/${segmentCacheId}`);
                 const data = await response.json();
 
-                if (data.exists) {
+                if (data.exists && !userProvidedSubtitles) {
+                    // Only use cache if we don't have user-provided subtitles
                     console.log(`Loaded cached subtitles for segment ${i+1}`);
                     updateSegmentStatus(i, 'cached', t('output.loadedFromCache', 'Loaded from cache'));
 
@@ -604,6 +672,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                         start: subtitle.start + startTime,
                         end: subtitle.end + startTime
                     }));
+                } else if (userProvidedSubtitles && data.exists) {
+                    console.log(`Ignoring cache for segment ${i+1} because user-provided subtitles are present`);
                 }
 
                 // If not cached, process the segment
@@ -611,7 +681,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t) => {
                 // Determine if this is a video or audio file
                 const isAudio = mediaFile.type.startsWith('audio/');
                 const mediaType = isAudio ? 'audio' : 'video';
-                const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType);
+                // Pass userProvidedSubtitles to processSegment if available
+                if (userProvidedSubtitles) {
+                    console.log(`Using user-provided subtitles for segment ${segmentIndex+1} in parallel processing`);
+                }
+
+                // Get the total duration of the video
+                const totalDuration = await getVideoDuration(mediaFile);
+                console.log(`Total video duration for segment processing: ${totalDuration}s`);
+
+                // Pass userProvidedSubtitles and totalDuration to processSegment
+                const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType, {
+                    userProvidedSubtitles,
+                    totalDuration
+                });
                 updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'), timeRange);
                 return result;
             } catch (error) {

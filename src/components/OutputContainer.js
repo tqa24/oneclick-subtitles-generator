@@ -5,8 +5,30 @@ import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './TranslationSection';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
+import AddSubtitlesButton from './AddSubtitlesButton';
 
-const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVideo, uploadedFile, isGenerating, segmentsStatus = [], activeTab, onRetrySegment, onRetryWithModel, onGenerateSegment, videoSegments = [], retryingSegments = [], timeFormat = 'seconds', showWaveform = true, useOptimizedPreview = false, isSrtOnlyMode = false, onViewRules }) => {
+const OutputContainer = ({
+  status,
+  subtitlesData,
+  setSubtitlesData,
+  selectedVideo,
+  uploadedFile,
+  isGenerating,
+  segmentsStatus = [],
+  activeTab,
+  onRetrySegment,
+  onRetryWithModel,
+  onGenerateSegment,
+  videoSegments = [],
+  retryingSegments = [],
+  timeFormat = 'seconds',
+  showWaveform = true,
+  useOptimizedPreview = false,
+  isSrtOnlyMode = false,
+  onViewRules,
+  userProvidedSubtitles = '',
+  onUserSubtitlesAdd
+}) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -110,6 +132,8 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
 
   return (
     <div className="output-container">
+      {/* Add Subtitles Button removed - now only in buttons-container */}
+
       {/* Show status message or segments status */}
       {status?.message && (
         segmentsStatus.length > 0 && (!activeTab.includes('youtube') || subtitlesData) ? (
@@ -117,10 +141,11 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
             segments={segmentsStatus}
             overallStatus={status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')}
             statusType={status?.type || 'success'}
-            onRetrySegment={(segmentIndex) => {
-              console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
-              onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
+            onRetrySegment={(segmentIndex, segments, options) => {
+              console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments, 'options:', options);
+              onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
             }}
+            userProvidedSubtitles={userProvidedSubtitles}
             onRetryWithModel={(segmentIndex, modelId) => {
               console.log('OutputContainer: Retrying segment', segmentIndex, 'with model', modelId, 'and videoSegments:', videoSegments);
               onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);
@@ -143,10 +168,11 @@ const OutputContainer = ({ status, subtitlesData, setSubtitlesData, selectedVide
           segments={segmentsStatus}
           overallStatus={t('output.segmentsReady', 'Video segments are ready for processing!')}
           statusType="success"
-          onRetrySegment={(segmentIndex) => {
-            console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments);
-            onRetrySegment && onRetrySegment(segmentIndex, videoSegments);
+          onRetrySegment={(segmentIndex, segments, options) => {
+            console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments, 'options:', options);
+            onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
           }}
+          userProvidedSubtitles={userProvidedSubtitles}
           onRetryWithModel={(segmentIndex, modelId) => {
             console.log('OutputContainer: Retrying segment', segmentIndex, 'with model', modelId, 'and videoSegments:', videoSegments);
             onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);

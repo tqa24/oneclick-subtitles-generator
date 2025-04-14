@@ -1,0 +1,13 @@
+{
+  "downloadSRT": "SRT 다운로드",
+  "downloadVTT": "VTT 다운로드",
+  "downloadJSON": "JSON 다운로드",
+  "downloadTXT": "텍스트 다운로드",
+  "downloadTranslation": "번역 다운로드",
+  "downloadOriginal": "원본 다운로드",
+  "downloadOptions": "다운로드 옵션",
+  "downloadingFile": "파일 다운로드 중...",
+  "downloadComplete": "다운로드 완료",
+  "downloadFailed": "다운로드 실패",
+  "downloadCancelled": "다운로드 취소됨"
+}

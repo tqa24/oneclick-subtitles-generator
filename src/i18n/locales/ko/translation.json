@@ -25,5 +25,14 @@
   "splittingSubtitles": "{{count}}개의 자막을 {{duration}}분 청크로 분할 중",
   "splitComplete": "{{count}}개의 자막을 {{chunks}}개의 청크로 분할 완료",
   "translatingChunk": "청크 {{current}}/{{total}} ({{count}}개의 자막) 번역 중",
-  "translationComplete": "모든 {{count}}개의 청크 번역 완료"
+  "translationComplete": "모든 {{count}}개의 청크 번역 완료",
+  "cancel": "취소",
+  "cancelTooltip": "번역 과정 취소",
+  "cancelled": "번역이 사용자에 의해 취소되었습니다",
+  "includeRules": "컨텍스트 규칙 포함",
+  "includeRulesLabel": "번역 요청에 전사 규칙 추가",
+  "includeRulesDescription": "분할된 번역 작업에서 일관성을 유지하기 위해 각 번역 요청에 비디오 분석 컨텍스트와 규칙을 포함합니다.",
+  "noRulesAvailable": "사용 가능한 전사 규칙이 없습니다. 이 옵션은 Gemini로 비디오를 분석해야 합니다.",
+  "customSubtitlesNoRules": "사용자 지정 자막을 제공했기 때문에 이 옵션이 비활성화되었습니다. 사용자 지정 자막 모드는 비디오 분석과 규칙 생성을 건너뜁니다.",
+  "allSubtitles": "모든 {{count}}개의 자막"
 }

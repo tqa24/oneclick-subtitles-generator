@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/ParallelProcessingStatus.css';
-import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown, FiFileText } from 'react-icons/fi';
+import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown, FiFileText, FiEdit } from 'react-icons/fi';
+import SegmentRetryModal from './SegmentRetryModal';
 
 /**
  * Component to display the status of parallel segment processing
@@ -14,6 +15,7 @@ import { FiRefreshCw, FiStar, FiAward, FiZap, FiCpu, FiChevronDown, FiFileText }
  * @param {Function} props.onGenerateSegment - Function to generate a specific segment (for strong model)
  * @param {Array} props.retryingSegments - Array of segment indices that are currently being retried
  * @param {Function} props.onViewRules - Function to open the transcription rules editor
+ * @param {string} props.userProvidedSubtitles - User-provided subtitles for the whole media
  * @returns {JSX.Element} - Rendered component
  */
 const ParallelProcessingStatus = ({
@@ -24,13 +26,16 @@ const ParallelProcessingStatus = ({
   onRetryWithModel,
   onGenerateSegment,
   retryingSegments = [],
-  onViewRules
+  onViewRules,
+  userProvidedSubtitles = ''
  }) => {
   const { t } = useTranslation();
   const [openDropdownIndex, setOpenDropdownIndex] = useState(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRefs = useRef({});
   const [rulesAvailable, setRulesAvailable] = useState(false);
+  const [showRetryModal, setShowRetryModal] = useState(false);
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(null);
 
   // Calculate dropdown position when a button is clicked
   const calculateDropdownPosition = (index) => {
@@ -145,11 +150,34 @@ const ParallelProcessingStatus = ({
     );
   }
 
+  // Handle opening the retry modal
+  const handleOpenRetryModal = (index) => {
+    setSelectedSegmentIndex(index);
+    setShowRetryModal(true);
+  };
+
+  // Handle retry with custom subtitles
+  const handleRetryWithOptions = (segmentIndex, segments, options) => {
+    onRetrySegment(segmentIndex, segments, options);
+  };
+
   return (
     <div className={`parallel-processing-container ${openDropdownIndex !== null ? 'model-dropdown-open' : ''}`}>
       <div className={`status ${statusType}`}>
         {overallStatus}
       </div>
+
+      {/* Segment Retry Modal */}
+      {showRetryModal && selectedSegmentIndex !== null && (
+        <SegmentRetryModal
+          isOpen={showRetryModal}
+          onClose={() => setShowRetryModal(false)}
+          segmentIndex={selectedSegmentIndex}
+          segments={segments}
+          onRetry={handleRetryWithOptions}
+          userProvidedSubtitles={userProvidedSubtitles}
+        />
+      )}
 
       <div className="segments-status">
         <div className="segments-status-header">
@@ -334,6 +362,34 @@ const ParallelProcessingStatus = ({
                         <div className="model-option-text">
                           <div className="model-option-name">{t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite')}</div>
                           <div className="model-option-desc">{t('models.fastestModel', 'Fastest')}</div>
+                        </div>
+                      </div>
+
+                      {/* Custom Subtitles Option */}
+                      <div className="model-option-divider"></div>
+                      <div
+                        className="model-option custom-subtitles-option"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log('Opening custom subtitles modal for segment', index);
+                          setOpenDropdownIndex(null);
+                          handleOpenRetryModal(index);
+                        }}
+                        role="button"
+                        tabIndex="0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setOpenDropdownIndex(null);
+                            handleOpenRetryModal(index);
+                          }
+                        }}
+                      >
+                        <div className="model-option-icon model-custom">
+                          <FiEdit size={14} />
+                        </div>
+                        <div className="model-option-text">
+                          <div className="model-option-name">{t('segmentRetry.customSubtitles', 'Custom Subtitles')}</div>
+                          <div className="model-option-desc">{t('segmentRetry.provideSubtitles', 'Provide your own text')}</div>
                         </div>
                       </div>
                     </div>

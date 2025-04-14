@@ -24,6 +24,8 @@ import timeline from './timeline.json';
 import videoAnalysis from './videoAnalysis.json';
 import rulesEditor from './rulesEditor.json';
 import fileUpload from './fileUpload.json';
+import subtitlesInput from './subtitlesInput.json';
+import segmentRetry from './segmentRetry.json';
 
 const vi = {
   common,
@@ -51,7 +53,9 @@ const vi = {
   timeline,
   videoAnalysis,
   rulesEditor,
-  fileUpload
+  fileUpload,
+  subtitlesInput,
+  segmentRetry
 };
 
 export default vi;
