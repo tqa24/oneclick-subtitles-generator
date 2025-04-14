@@ -345,45 +345,16 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                     }
                 }
 
-                // Split the text by lines
-                const lines = translatedText.split('\n').map(line => line.trim());
+                // Split the text by lines and remove empty lines
+                const lines = translatedText.split('\n').map(line => line.trim()).filter(line => line.trim());
 
                 // Log the number of lines for debugging
                 console.log(`Number of lines in response: ${lines.length}`);
                 console.log(`First few lines: ${lines.slice(0, 5).join('\n')}`);
                 console.log(`Last few lines: ${lines.slice(-5).join('\n')}`);
 
-                // Filter out any header or footer lines that might be instructions or explanations
-                // Look for lines that start with common instruction patterns
-                const instructionPatterns = [
-                    /^here\s+are/i,
-                    /^translated\s+subtitles/i,
-                    /^translations:/i,
-                    /^subtitle\s+translations/i,
-                    /^note:/i,
-                    /^\d+\.\s+/  // Numbered list items
-                ];
-
-                // Filter out lines that match instruction patterns
-                const filteredLines = lines.filter(line => {
-                    if (!line.trim()) return false; // Skip empty lines
-
-                    // Check if line matches any instruction pattern
-                    for (const pattern of instructionPatterns) {
-                        if (pattern.test(line)) {
-                            console.log(`Skipping instruction line: ${line}`);
-                            return false;
-                        }
-                    }
-                    return true;
-                });
-
-                console.log(`After filtering headers/footers: ${filteredLines.length} lines`);
-
-                // Use the filtered lines directly as translations
-                const translatedLines = filteredLines;
-
-                return translatedLines;
+                // No filtering of lines - we'll rely on the retry mechanism if the count is wrong
+                return lines;
             }
 
             return [];
@@ -397,86 +368,12 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
             console.warn(`Translation count mismatch: got ${translatedTexts.length}, expected ${subtitles.length}. Retrying (${retryCount + 1}/${maxRetries})...`);
             retryCount++;
 
-            // Special handling for the n+2 case which happens consistently
-            if (translatedTexts.length === subtitles.length + 2) {
-                console.log('Detected the n+2 pattern - removing the last two entries');
-                // Remove the last two entries which are likely extra information or commentary
-                translatedTexts = translatedTexts.slice(0, subtitles.length);
-                console.log(`After removing last two entries: ${translatedTexts.length} translations`);
-                continue;
-            }
-
-            // Try to fix the response by splitting or combining
-            if (translatedTexts.length < subtitles.length) {
-                // We have fewer translations than subtitles
-                // Try to split longer translations
-                const newTranslatedTexts = [];
-                let deficit = subtitles.length - translatedTexts.length;
-
-                for (let i = 0; i < translatedTexts.length && deficit > 0; i++) {
-                    const text = translatedTexts[i];
-                    if (text.length > 50) { // Only split longer texts
-                        const parts = text.split(/[.!?]\s+/);
-                        if (parts.length > 1) {
-                            const midpoint = Math.floor(parts.length / 2);
-                            const firstHalf = parts.slice(0, midpoint).join('. ') + '.';
-                            const secondHalf = parts.slice(midpoint).join('. ');
-                            newTranslatedTexts.push(firstHalf);
-                            newTranslatedTexts.push(secondHalf);
-                            deficit--;
-                            continue;
-                        }
-                    }
-                    newTranslatedTexts.push(text);
-                }
-
-                if (newTranslatedTexts.length > translatedTexts.length) {
-                    translatedTexts = newTranslatedTexts;
-                    continue;
-                }
-            } else if (translatedTexts.length > subtitles.length) {
-                // We have more translations than subtitles
-                // First, check if we can just truncate the array (if the extra entries are at the end)
-                if (translatedTexts.length > subtitles.length) {
-                    const truncatedTexts = translatedTexts.slice(0, subtitles.length);
-                    console.log(`Truncating ${translatedTexts.length} translations to ${truncatedTexts.length}`);
-                    translatedTexts = truncatedTexts;
-                    continue;
-                }
-
-                // If truncation doesn't work, try to combine shorter translations
-                const newTranslatedTexts = [];
-                let i = 0;
-                while (i < translatedTexts.length) {
-                    if (i < translatedTexts.length - 1 &&
-                        translatedTexts[i].length + translatedTexts[i+1].length < 100) {
-                        newTranslatedTexts.push(`${translatedTexts[i]} ${translatedTexts[i+1]}`);
-                        i += 2;
-                    } else {
-                        newTranslatedTexts.push(translatedTexts[i]);
-                        i++;
-                    }
-                }
-
-                if (newTranslatedTexts.length < translatedTexts.length) {
-                    translatedTexts = newTranslatedTexts;
-                    continue;
-                }
-            }
-
-            // If we couldn't fix it by splitting/combining, try again with the API
+            // No adjustments to the translations - we'll rely solely on the retry mechanism
             try {
-                // Retry the translation with a more explicit prompt
-                const retryPrompt = `Translate the following ${subtitles.length} subtitle texts to ${targetLanguage}.
+                // Simplified retry prompt that focuses on the correct number of subtitles
+                const retryPrompt = `Here is my request: ${translationPrompt} with ${subtitles.length} subtitle lines, but your last answer was incomplete which had ${translatedTexts.length}, please make it ${subtitles.length}`;
 
-IMPORTANT: Your response MUST contain EXACTLY ${subtitles.length} lines of translated text.
-DO NOT include any explanations, comments, or additional text in your response.
-DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-DO NOT include quotes around your translations.
-DO NOT add any timestamps, SRT formatting, or other formatting.
-
-${subtitleText}`;
-
+                // Use the same request structure as the original request
                 const retryRequestData = {
                     contents: [
                         {
@@ -494,12 +391,15 @@ ${subtitleText}`;
                     },
                 };
 
+                // Always use structured output for retries too
+                const schemaRequestData = addResponseSchema(retryRequestData, createTranslationSchema(isMultiLanguage));
+
                 const retryResponse = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(retryRequestData),
+                    body: JSON.stringify(schemaRequestData),
                     signal: signal
                 });
 
@@ -634,64 +534,17 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
 
-            // If this is a count mismatch error, try one more time with a more explicit prompt
+            // If this is a count mismatch error, try one more time with a simplified prompt
             if (error.message && error.message.includes('received') && error.message.includes('expected')) {
                 try {
-                    console.log(`Retrying chunk ${i + 1} with more explicit prompt...`);
-                    // Create a more explicit prompt for this chunk without numbered lines
-                    const isMultiLanguage = Array.isArray(targetLanguage) && targetLanguage.length > 0;
-                    const languageText = isMultiLanguage ? targetLanguage.join(', ') : targetLanguage;
+                    console.log(`Retrying chunk ${i + 1} with simplified prompt...`);
+                    // Create a simplified retry prompt for this chunk
+                    const originalPrompt = customPrompt || getDefaultTranslationPrompt(chunk.map(sub => sub.text).join('\n'), targetLanguage, Array.isArray(targetLanguage) && targetLanguage.length > 0);
+                    const simplifiedPrompt = `Here is my request: ${originalPrompt} with ${chunk.length} subtitle lines, but your last answer was incomplete, please make it ${chunk.length}`;
 
-                    let explicitPrompt;
-
-                    if (isMultiLanguage) {
-                        explicitPrompt = `Translate the following ${chunk.length} subtitle texts to these languages: ${languageText}.
-
-IMPORTANT: Your response MUST be in a structured JSON format with translations for each language.
-Do not skip any lines or add any extra text.
-DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-DO NOT include quotes around your translations.
-DO NOT add any timestamps, SRT formatting, or other formatting.
-
-Format your response as a JSON object with this structure:
-{
-  "translations": [
-    {
-      "language": "Language1",
-      "texts": [
-        "Translated text for first subtitle in Language1",
-        "Translated text for second subtitle in Language1",
-        ...
-      ]
-    },
-    {
-      "language": "Language2",
-      "texts": [
-        "Translated text for first subtitle in Language2",
-        "Translated text for second subtitle in Language2",
-        ...
-      ]
-    },
-    ...
-  ]
-}
-
-${chunk.map(sub => sub.text).join('\n')}`;
-                    } else {
-                        explicitPrompt = `Translate the following ${chunk.length} subtitle texts to ${languageText}.
-
-IMPORTANT: Your response MUST contain EXACTLY ${chunk.length} lines of translated text.
-Do not skip any lines or add any extra text.
-DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-DO NOT include quotes around your translations.
-DO NOT add any timestamps, SRT formatting, or other formatting.
-
-${chunk.map(sub => sub.text).join('\n')}`;
-                    }
-
-                    // Call translateSubtitles with the explicit prompt
+                    // Call translateSubtitles with the simplified prompt
                     // Pass along all parameters to maintain consistency across chunks
-                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, explicitPrompt, 0, includeRules, delimiter, useParentheses);
+                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, simplifiedPrompt, 0, includeRules, delimiter, useParentheses);
                     translatedChunks.push(translatedChunk);
                     continue;
                 } catch (retryError) {
