@@ -84,8 +84,19 @@ export const createTranslationSchema = (multiLanguage = false) => {
                             texts: {
                                 type: "array",
                                 items: {
-                                    type: "string",
-                                    description: "Translated text for a subtitle"
+                                    type: "object",
+                                    properties: {
+                                        original: {
+                                            type: "string",
+                                            description: "Original text of the subtitle"
+                                        },
+                                        translated: {
+                                            type: "string",
+                                            description: "Translated text for the subtitle"
+                                        }
+                                    },
+                                    required: ["original", "translated"],
+                                    propertyOrdering: ["original", "translated"]
                                 }
                             }
                         },
@@ -98,12 +109,23 @@ export const createTranslationSchema = (multiLanguage = false) => {
             propertyOrdering: ["translations"]
         };
     } else {
-        // Original schema for single language translation
+        // Updated schema for single language translation to include original text
         return {
             type: "array",
             items: {
-                type: "string",
-                description: "Translated text for a subtitle"
+                type: "object",
+                properties: {
+                    original: {
+                        type: "string",
+                        description: "Original text of the subtitle"
+                    },
+                    translated: {
+                        type: "string",
+                        description: "Translated text for the subtitle"
+                    }
+                },
+                required: ["original", "translated"],
+                propertyOrdering: ["original", "translated"]
             }
         };
     }

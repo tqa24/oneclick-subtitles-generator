@@ -226,14 +226,35 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
 
                     // For each subtitle, combine translations from all languages
                     for (let i = 0; i < primaryTexts.length; i++) {
-                        let combinedText = primaryTexts[i] || '';
+                        // Check if we have the new format with original and translated properties
+                        const primaryItem = primaryTexts[i] || {};
+                        let translatedText = '';
+
+                        if (primaryItem.original !== undefined && primaryItem.translated !== undefined) {
+                            // New format with original and translated properties
+                            translatedText = primaryItem.translated;
+                        } else {
+                            // Old format with just the text
+                            translatedText = primaryItem;
+                        }
+
+                        let combinedText = translatedText;
 
                         // If we have exactly one additional language and useParentheses is true
                         if (languages.length === 2 && useParentheses) {
                             const secondaryLang = languages[1];
                             const secondaryTexts = languageTranslations[secondaryLang] || [];
-                            if (secondaryTexts[i]) {
-                                combinedText += ` (${secondaryTexts[i]})`;
+                            const secondaryItem = secondaryTexts[i] || {};
+
+                            let secondaryTranslatedText = '';
+                            if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
+                                secondaryTranslatedText = secondaryItem.translated;
+                            } else {
+                                secondaryTranslatedText = secondaryItem;
+                            }
+
+                            if (secondaryTranslatedText) {
+                                combinedText += ` (${secondaryTranslatedText})`;
                             }
                         }
                         // Otherwise use the specified delimiter
@@ -241,8 +262,17 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                             for (let j = 1; j < languages.length; j++) {
                                 const lang = languages[j];
                                 const texts = languageTranslations[lang] || [];
-                                if (texts[i]) {
-                                    combinedText += `${delimiter}${texts[i]}`;
+                                const secondaryItem = texts[i] || {};
+
+                                let secondaryTranslatedText = '';
+                                if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
+                                    secondaryTranslatedText = secondaryItem.translated;
+                                } else {
+                                    secondaryTranslatedText = secondaryItem;
+                                }
+
+                                if (secondaryTranslatedText) {
+                                    combinedText += `${delimiter}${secondaryTranslatedText}`;
                                 }
                             }
                         }
@@ -254,13 +284,27 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                 }
 
                 // Original single language processing
-                // If it's an array of translations
+                // If it's an array of translations with the new format (original + translated)
                 if (Array.isArray(structuredJson)) {
-                    return structuredJson.map(item => item.text || '').filter(text => text !== undefined);
+                    return structuredJson.map(item => {
+                        // Check if this is the new format with original and translated properties
+                        if (item.original !== undefined && item.translated !== undefined) {
+                            return item.translated;
+                        }
+                        // Fall back to the old format or any other property that might contain the text
+                        return item.text || item.translated || '';
+                    }).filter(text => text !== undefined);
                 }
                 // If it has a translations array property (old format)
                 else if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
-                    return structuredJson.translations.map(item => item.text || '').filter(text => text !== undefined);
+                    return structuredJson.translations.map(item => {
+                        // Check if this is the new format with original and translated properties
+                        if (item.original !== undefined && item.translated !== undefined) {
+                            return item.translated;
+                        }
+                        // Fall back to the old format
+                        return item.text || '';
+                    }).filter(text => text !== undefined);
                 }
             }
 
@@ -296,14 +340,35 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
 
                             // For each subtitle, combine translations from all languages
                             for (let i = 0; i < primaryTexts.length; i++) {
-                                let combinedText = primaryTexts[i] || '';
+                                // Check if we have the new format with original and translated properties
+                                const primaryItem = primaryTexts[i] || {};
+                                let translatedText = '';
+
+                                if (primaryItem.original !== undefined && primaryItem.translated !== undefined) {
+                                    // New format with original and translated properties
+                                    translatedText = primaryItem.translated;
+                                } else {
+                                    // Old format with just the text
+                                    translatedText = primaryItem;
+                                }
+
+                                let combinedText = translatedText;
 
                                 // If we have exactly one additional language and useParentheses is true
                                 if (languages.length === 2 && useParentheses) {
                                     const secondaryLang = languages[1];
                                     const secondaryTexts = languageTranslations[secondaryLang] || [];
-                                    if (secondaryTexts[i]) {
-                                        combinedText += ` (${secondaryTexts[i]})`;
+                                    const secondaryItem = secondaryTexts[i] || {};
+
+                                    let secondaryTranslatedText = '';
+                                    if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
+                                        secondaryTranslatedText = secondaryItem.translated;
+                                    } else {
+                                        secondaryTranslatedText = secondaryItem;
+                                    }
+
+                                    if (secondaryTranslatedText) {
+                                        combinedText += ` (${secondaryTranslatedText})`;
                                     }
                                 }
                                 // Otherwise use the specified delimiter
@@ -311,8 +376,17 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                                     for (let j = 1; j < languages.length; j++) {
                                         const lang = languages[j];
                                         const texts = languageTranslations[lang] || [];
-                                        if (texts[i]) {
-                                            combinedText += `${delimiter}${texts[i]}`;
+                                        const secondaryItem = texts[i] || {};
+
+                                        let secondaryTranslatedText = '';
+                                        if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
+                                            secondaryTranslatedText = secondaryItem.translated;
+                                        } else {
+                                            secondaryTranslatedText = secondaryItem;
+                                        }
+
+                                        if (secondaryTranslatedText) {
+                                            combinedText += `${delimiter}${secondaryTranslatedText}`;
                                         }
                                     }
                                 }
@@ -336,8 +410,12 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                             console.log('Detected JSON array format with', jsonArray.length, 'items');
                             // Return the array items directly
                             return jsonArray.map(item => {
+                                // Check if this is the new format with original and translated properties
+                                if (item && typeof item === 'object' && item.original !== undefined && item.translated !== undefined) {
+                                    return item.translated;
+                                }
                                 // Remove any quotes if the item is a string
-                                return typeof item === 'string' ? item.replace(/^"|"$/g, '') : item;
+                                return typeof item === 'string' ? item.replace(/^"|"$/g, '') : (item.text || item.translated || '');
                             });
                         }
                     } catch (e) {
