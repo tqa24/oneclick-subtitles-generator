@@ -194,22 +194,22 @@ const PromptEditor = ({
           </p>
 
           <div className="prompt-editor-default-template">
-            <h4>Default Template:</h4>
+            <h4>{t('promptEditor.defaultTemplate', 'Default Template:')}</h4>
             <div className="default-template-box">
               {currentPromptType === 'translation' ? (
-                <p>Translate the following subtitles to <span className="variable-highlight">{'{targetLanguage}'}</span>.</p>
+                <p>{t('promptEditor.defaultTranslationTemplate', 'Translate the following subtitles to')} <span className="variable-highlight">{'{targetLanguage}'}</span>.</p>
               ) : currentPromptType === 'consolidate' ? (
                 <p>I have a collection of subtitles from a video or audio. Please convert these into a coherent document.</p>
               ) : (
                 <p>I have a collection of subtitles from a video or audio. Please create a concise summary.</p>
               )}
-              <p className="custom-instructions-placeholder">[Your custom instructions will appear here]</p>
+              <p className="custom-instructions-placeholder">{t('promptEditor.customInstructionsPlaceholder', '[Your custom instructions will appear here]')}</p>
               <p><span className="variable-highlight">{'{subtitlesText}'}</span></p>
             </div>
           </div>
 
           <div className="prompt-editor-container">
-            <label htmlFor="custom-instructions" className="instructions-label">Your Custom Instructions:</label>
+            <label htmlFor="custom-instructions" className="instructions-label">{t('promptEditor.customInstructions', 'Your Custom Instructions:')}</label>
             <textarea
               id="custom-instructions"
               ref={textareaRef}
@@ -224,11 +224,11 @@ const PromptEditor = ({
           </div>
 
           <div className="prompt-editor-examples">
-            <h4>Examples of Custom Instructions:</h4>
+            <h4>{t('promptEditor.examplesTitle', 'Examples of Custom Instructions:')}</h4>
             {title && title.includes('Translation') ? (
               <ul>
-                <li>Maintain a formal/informal tone</li>
-                <li>Use specific terminology or vocabulary</li>
+                <li>{t('promptEditor.exampleFormalTone', 'Maintain a formal tone')}</li>
+                <li>{t('promptEditor.exampleTerminology', 'Use specific terminology or vocabulary')}</li>
                 <li>Adapt cultural references</li>
                 <li>Preserve humor or wordplay when possible</li>
               </ul>
@@ -248,13 +248,13 @@ const PromptEditor = ({
               </ul>
             ) : (
               <ul>
-                <li>Maintain a formal tone</li>
-                <li>Use specific terminology or vocabulary</li>
-                <li>Add Japanese translations next to your translated text, wrapped in parentheses</li>
-                <li>Preserve important details</li>
+                <li>{t('promptEditor.exampleFormalTone', 'Maintain a formal tone')}</li>
+                <li>{t('promptEditor.exampleTerminology', 'Use specific terminology or vocabulary')}</li>
+                <li>{t('promptEditor.exampleJapanese', 'Add Japanese translations next to your translated text, wrapped in parentheses')}</li>
+                <li>{t('promptEditor.examplePreserveDetails', 'Preserve important details')}</li>
               </ul>
             )}
-            <p className="prompt-editor-note"><strong>Note:</strong> The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions.</p>
+            <p className="prompt-editor-note"><strong>{t('common.note', 'Note')}:</strong> {t('promptEditor.templateNote', 'The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions.')}</p>
           </div>
 
           <div className="prompt-editor-actions">
@@ -262,7 +262,7 @@ const PromptEditor = ({
               {t('promptEditor.reset', 'Clear')}
             </button>
             <button className="primary-button" onClick={handleSave}>
-              {t('promptEditor.save', 'Save')}
+              {t('common.save', 'Save')}
             </button>
           </div>
         </div>

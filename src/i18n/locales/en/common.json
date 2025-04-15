@@ -6,6 +6,7 @@
   "close": "Close",
   "on": "On",
   "off": "Off",
+  "note": "Note",
   "serverConnection": {
     "title": "Server Connection Error",
     "message": "Cannot connect to the server. Please check if the server is running properly.",

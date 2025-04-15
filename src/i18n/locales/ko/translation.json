@@ -50,5 +50,17 @@
   "delimiterColon": "콜론 (:)",
   "delimiterSemicolon": "세미콜론 (;)",
   "delimiterComma": "쉼표 (,)",
-  "delimiterDot": "점 (.)"
+  "delimiterDot": "점 (.)",
+  "delimiterArrow": "화살표",
+  "delimiterDoubleArrow": "이중 화살표",
+  "delimiterBullet": "글머리 기호",
+  "delimiterCustom": "사용자 지정",
+  "customDelimiterPlaceholder": "사용자 지정 구분자 입력",
+  "bracketStyleParentheses": "소괄호",
+  "bracketStyleSquare": "대괄호",
+  "bracketStyleCurly": "중괄호",
+  "bracketStyleAngle": "꺾쇠괄호",
+  "bracketStyleCustom": "사용자 지정 괄호",
+  "openBracketPlaceholder": "여는 괄호",
+  "closeBracketPlaceholder": "닫는 괄호"
 }
