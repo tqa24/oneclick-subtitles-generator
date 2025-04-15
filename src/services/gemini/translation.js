@@ -21,29 +21,43 @@ import { createRequestController, removeRequestController } from './requestManag
  * @param {boolean} useParentheses - Whether to use parentheses for the second language
  *                                  For 2 languages, both delimiter and brackets can be used together
  *                                  For 3+ languages, only delimiter is used
+ * @param {Object} bracketStyle - Optional bracket style { open, close }
+ * @param {Array} chainItems - Optional chain items for chain-based formatting
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-export const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false, delimiter = ' ', useParentheses = false) => {
-    // Determine if we're doing multi-language translation
-    const isMultiLanguage = Array.isArray(targetLanguage) && targetLanguage.length > 0;
+const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null) => {
+    // Check if we're in format mode (empty target languages array)
+    const isFormatMode = Array.isArray(targetLanguage) && targetLanguage.length === 0;
 
-    // Store the target language(s) for reference
-    localStorage.setItem('translation_target_language', isMultiLanguage ? JSON.stringify(targetLanguage) : targetLanguage);
+    // Determine if we're doing multi-language translation
+    const isMultiLanguage = !isFormatMode && Array.isArray(targetLanguage) && targetLanguage.length > 0;
+
+    // Log chain items if provided
+    if (chainItems) {
+        console.log('Translation function received chain items:', JSON.stringify(chainItems, null, 2));
+    }
+
+    // Store the target language(s) for reference (except in format mode)
+    if (!isFormatMode) {
+        localStorage.setItem('translation_target_language', isMultiLanguage ? JSON.stringify(targetLanguage) : targetLanguage);
+    }
 
     if (!subtitles || subtitles.length === 0) {
         throw new Error('No subtitles to translate');
     }
 
-    // Get bracket style if using parentheses in single language mode
-    let bracketStyle = ['(', ')'];
-    if (!isMultiLanguage && useParentheses) {
+    // Get bracket style if using parentheses in single language mode and no custom style was provided
+    if (!bracketStyle && useParentheses) {
         try {
             const savedStyle = localStorage.getItem('bracketStyle');
             if (savedStyle) {
-                bracketStyle = JSON.parse(savedStyle);
+                bracketStyle = { open: JSON.parse(savedStyle)[0], close: JSON.parse(savedStyle)[1] };
+            } else {
+                bracketStyle = { open: '(', close: ')' };
             }
         } catch (error) {
             console.warn('Error loading bracket style:', error);
+            bracketStyle = { open: '(', close: ')' };
         }
     }
 
@@ -70,6 +84,23 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
         console.log('Using existing original subtitles map from localStorage');
     }
 
+    // If in format mode, we don't need to call the API, just format the subtitles
+    if (isFormatMode) {
+        console.log('Format mode: applying formatting to subtitles');
+        // Dispatch event to update UI with status
+        const message = i18n.t('translation.formattingSubtitles', 'Formatting {{count}} subtitles', {
+            count: subtitles.length
+        });
+        window.dispatchEvent(new CustomEvent('translation-status', {
+            detail: { message }
+        }));
+
+        // Format the subtitles with the chain items if provided, otherwise use the specified delimiter and bracket style
+        return chainItems
+            ? formatSubtitlesWithChain(subtitles, chainItems)
+            : formatSubtitles(subtitles, delimiter, useParentheses, bracketStyle);
+    }
+
     // If splitDuration is specified and not 0, split subtitles into chunks based on duration
     if (splitDuration > 0) {
         console.log(`Splitting translation into chunks of ${splitDuration} minutes`);
@@ -81,7 +112,7 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message }
         }));
-        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle);
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems);
     }
 
     // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
@@ -354,58 +385,111 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                                 }
                             });
 
-                            // Combine translations based on delimiter or parentheses
-                            const combinedTranslations = [];
+                            // Prepare to store the combined translations
+                            let combinedTranslations = [];
                             const languages = Object.keys(languageTranslations);
 
-                            // Get the first language's translations as the base
-                            const primaryLang = languages[0];
-                            const primaryTexts = languageTranslations[primaryLang] || [];
+                            // Check if we have chain items for chain-based formatting
+                            if (chainItems && chainItems.length > 0) {
+                                console.log('Using chain-based formatting with chain items:', JSON.stringify(chainItems, null, 2));
+                                console.log('Chain items length:', chainItems.length);
 
-                            // For each subtitle, combine translations from all languages
-                            for (let i = 0; i < primaryTexts.length; i++) {
-                                // Check if we have the new format with original and translated properties
-                                const primaryItem = primaryTexts[i] || {};
-                                let translatedText = '';
+                                // Get all translations for each subtitle
+                                for (let i = 0; i < subtitles.length; i++) {
+                                    const originalText = subtitles[i].text;
 
-                                if (primaryItem.original !== undefined && primaryItem.translated !== undefined) {
-                                    // New format with original and translated properties
-                                    translatedText = primaryItem.translated;
-                                } else {
-                                    // Old format with just the text
-                                    translatedText = primaryItem;
-                                }
+                                    // Create a map of language to translated text
+                                    const translationMap = {
+                                        'original': originalText
+                                    };
 
-                                let combinedText = translatedText;
-
-                                // If we have exactly one additional language and useParentheses is true
-                                if (languages.length === 2 && useParentheses) {
-                                    const secondaryLang = languages[1];
-                                    const secondaryTexts = languageTranslations[secondaryLang] || [];
-                                    const secondaryItem = secondaryTexts[i] || {};
-
-                                    let secondaryTranslatedText = '';
-                                    if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
-                                        secondaryTranslatedText = secondaryItem.translated;
-                                    } else {
-                                        secondaryTranslatedText = secondaryItem;
-                                    }
-
-                                    if (secondaryTranslatedText) {
-                                        // For 2 languages with both options, use brackets and delimiter
-                                        if (delimiter && delimiter !== ' ') {
-                                            combinedText += `${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
-                                        } else {
-                                            combinedText += ` ${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
-                                        }
-                                    }
-                                }
-                                // Otherwise use the specified delimiter
-                                else if (languages.length > 1 && delimiter) {
-                                    for (let j = 1; j < languages.length; j++) {
+                                    // Add translations for each language
+                                    for (let j = 0; j < languages.length; j++) {
                                         const lang = languages[j];
                                         const texts = languageTranslations[lang] || [];
-                                        const secondaryItem = texts[i] || {};
+                                        const item = texts[i] || {};
+
+                                        let translatedText = '';
+                                        if (item.original !== undefined && item.translated !== undefined) {
+                                            translatedText = item.translated;
+                                        } else {
+                                            translatedText = item;
+                                        }
+
+                                        translationMap[lang] = translatedText;
+                                    }
+
+                                    console.log(`Subtitle ${i+1} translation map:`, translationMap);
+
+                                    // Build the formatted text by walking through the chain
+                                    let formattedText = '';
+
+                                    for (let j = 0; j < chainItems.length; j++) {
+                                        const item = chainItems[j];
+                                        console.log(`Processing chain item ${j}:`, item);
+
+                                        if (item.type === 'language') {
+                                            if (item.isOriginal) {
+                                                // Add the original text
+                                                formattedText += originalText;
+                                                console.log(`Added original text: ${originalText}`);
+                                            } else {
+                                                // Find the translation for this language
+                                                const langName = item.value;
+                                                // Try to find the closest matching language
+                                                const matchingLang = languages.find(l =>
+                                                    l.toLowerCase().includes(langName.toLowerCase()) ||
+                                                    langName.toLowerCase().includes(l.toLowerCase())
+                                                );
+
+                                                if (matchingLang && translationMap[matchingLang]) {
+                                                    formattedText += translationMap[matchingLang];
+                                                    console.log(`Added translation for ${langName}: ${translationMap[matchingLang]}`);
+                                                } else {
+                                                    // If no matching translation found, use the language name as placeholder
+                                                    formattedText += langName;
+                                                    console.log(`No translation found for ${langName}, using as placeholder`);
+                                                }
+                                            }
+                                        } else if (item.type === 'delimiter') {
+                                            // Add the delimiter directly
+                                            formattedText += item.value || '';
+                                            console.log(`Added delimiter: ${item.value || ''}`);
+                                        }
+                                    }
+
+                                    console.log(`Subtitle ${i+1} formatted text:`, formattedText);
+                                    combinedTranslations.push(formattedText);
+                                }
+                            } else {
+                                // Traditional formatting (without chain items)
+                                console.log('Using traditional formatting with delimiter/parentheses');
+
+                                // Get the first language's translations as the base
+                                const primaryLang = languages[0];
+                                const primaryTexts = languageTranslations[primaryLang] || [];
+
+                                // For each subtitle, combine translations from all languages
+                                for (let i = 0; i < primaryTexts.length; i++) {
+                                    // Check if we have the new format with original and translated properties
+                                    const primaryItem = primaryTexts[i] || {};
+                                    let translatedText = '';
+
+                                    if (primaryItem.original !== undefined && primaryItem.translated !== undefined) {
+                                        // New format with original and translated properties
+                                        translatedText = primaryItem.translated;
+                                    } else {
+                                        // Old format with just the text
+                                        translatedText = primaryItem;
+                                    }
+
+                                    let combinedText = translatedText;
+
+                                    // If we have exactly one additional language and useParentheses is true
+                                    if (languages.length === 2 && useParentheses) {
+                                        const secondaryLang = languages[1];
+                                        const secondaryTexts = languageTranslations[secondaryLang] || [];
+                                        const secondaryItem = secondaryTexts[i] || {};
 
                                         let secondaryTranslatedText = '';
                                         if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
@@ -415,12 +499,36 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                                         }
 
                                         if (secondaryTranslatedText) {
-                                            combinedText += `${delimiter}${secondaryTranslatedText}`;
+                                            // For 2 languages with both options, use brackets and delimiter
+                                            if (delimiter && delimiter !== ' ') {
+                                                combinedText += `${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                            } else {
+                                                combinedText += ` ${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                            }
                                         }
                                     }
-                                }
+                                    // Otherwise use the specified delimiter
+                                    else if (languages.length > 1 && delimiter) {
+                                        for (let j = 1; j < languages.length; j++) {
+                                            const lang = languages[j];
+                                            const texts = languageTranslations[lang] || [];
+                                            const secondaryItem = texts[i] || {};
 
-                                combinedTranslations.push(combinedText);
+                                            let secondaryTranslatedText = '';
+                                            if (secondaryItem.original !== undefined && secondaryItem.translated !== undefined) {
+                                                secondaryTranslatedText = secondaryItem.translated;
+                                            } else {
+                                                secondaryTranslatedText = secondaryItem;
+                                            }
+
+                                            if (secondaryTranslatedText) {
+                                                combinedText += `${delimiter}${secondaryTranslatedText}`;
+                                            }
+                                        }
+                                    }
+
+                                    combinedTranslations.push(combinedText);
+                                }
                             }
 
                             return combinedTranslations;
@@ -581,10 +689,11 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
  * @param {boolean} useParentheses - Whether to use parentheses for the second language
  *                                  For 2 languages, both delimiter and brackets can be used together
  *                                  For 3+ languages, only delimiter is used
- * @param {Array} bracketStyle - Custom bracket style for single language mode or dual language mode
+ * @param {Object} bracketStyle - Custom bracket style { open, close } for single language mode or dual language mode
+ * @param {Array} chainItems - Optional chain items for chain-based formatting
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = ['(', ')']) => {
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null) => {
     // Convert splitDuration from minutes to seconds
     const splitDurationSeconds = splitDuration * 60;
 
@@ -641,7 +750,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
         try {
             // Call translateSubtitles with the current chunk, but with splitDuration=0 to avoid infinite recursion
             // Pass along all parameters to maintain consistency across chunks
-            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle);
+            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle, chainItems);
             translatedChunks.push(translatedChunk);
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
@@ -693,3 +802,145 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
     return result;
 };
+
+/**
+ * Format subtitles with the specified delimiter and bracket style
+ * @param {Array} subtitles - Subtitles to format
+ * @param {string} delimiter - Delimiter to use
+ * @param {boolean} useParentheses - Whether to use parentheses
+ * @param {Object} bracketStyle - Optional bracket style { open, close }
+ * @returns {Promise<Array>} - Promise resolving to array of formatted subtitles
+ */
+const formatSubtitles = (subtitles, delimiter = ' ', useParentheses = false, bracketStyle = null) => {
+    // Create a copy of the subtitles to avoid modifying the original
+    const formattedSubtitles = JSON.parse(JSON.stringify(subtitles));
+
+    // Get bracket style if using parentheses and no custom style was provided
+    if (!bracketStyle && useParentheses) {
+        bracketStyle = { open: '(', close: ')' };
+    }
+
+    // Format each subtitle
+    for (let i = 0; i < formattedSubtitles.length; i++) {
+        const subtitle = formattedSubtitles[i];
+
+        // Apply bracket style if specified
+        if (useParentheses && bracketStyle) {
+            subtitle.text = `${bracketStyle.open}${subtitle.text}${bracketStyle.close}`;
+        }
+
+        // Apply delimiter if specified (for consistency with translation mode)
+        if (delimiter && delimiter !== ' ') {
+            // For newline delimiter, add it at the end
+            if (delimiter === '\n') {
+                subtitle.text = `${subtitle.text}${delimiter}`;
+            }
+            // For other delimiters, we don't need to add them in format mode
+        }
+    }
+
+    // Simulate a delay to show the formatting process
+    return new Promise(resolve => {
+        setTimeout(() => {
+            // Dispatch event to update UI with status
+            const message = i18n.t('translation.formattingComplete', 'Formatting complete');
+            window.dispatchEvent(new CustomEvent('translation-status', {
+                detail: { message, isComplete: true }
+            }));
+
+            resolve(formattedSubtitles);
+        }, 500); // Short delay for UI feedback
+    });
+};
+
+/**
+ * Format subtitles according to the exact chain arrangement
+ * @param {Array} subtitles - Subtitles to format
+ * @param {Array} chainItems - Chain items defining the format
+ * @returns {Promise<Array>} - Promise resolving to array of formatted subtitles
+ */
+const formatSubtitlesWithChain = (subtitles, chainItems) => {
+    console.log('Formatting with chain items:', JSON.stringify(chainItems, null, 2));
+
+    // Create a copy of the subtitles to avoid modifying the original
+    const formattedSubtitles = JSON.parse(JSON.stringify(subtitles));
+
+    // Find the original language item in the chain
+    const originalItem = chainItems.find(item => item.type === 'language' && item.isOriginal);
+
+    if (!originalItem) {
+        console.warn('No original language found in chain items');
+        return Promise.resolve(formattedSubtitles);
+    }
+
+    // Log the subtitles for debugging
+    console.log('Subtitles to format:', formattedSubtitles.slice(0, 2));
+
+    // Format each subtitle according to the chain
+    for (let i = 0; i < formattedSubtitles.length; i++) {
+        const subtitle = formattedSubtitles[i];
+
+        // Make a copy of the subtitle for debugging if needed
+        // const originalSubtitle = { ...subtitle };
+
+        // Store the original text
+        const originalText = subtitle.text;
+        console.log(`Subtitle ${i+1} original text:`, originalText);
+
+        // Build the formatted text by directly concatenating based on chain order
+        let formattedText = '';
+
+        // Process each item in the chain in order
+        for (let j = 0; j < chainItems.length; j++) {
+            const item = chainItems[j];
+            console.log(`Processing chain item ${j}:`, item);
+
+            if (item.type === 'language') {
+                if (item.isOriginal) {
+                    // Add the original text directly
+                    formattedText += originalText;
+                    console.log(`Added original text: ${originalText}`);
+                } else {
+                    // Add the target language name as a placeholder
+                    formattedText += item.value || '';
+                    console.log(`Added target language: ${item.value || ''}`);
+                }
+            } else if (item.type === 'delimiter') {
+                // Add the delimiter directly
+                formattedText += item.value || '';
+                console.log(`Added delimiter: ${item.value || ''}`);
+            }
+        }
+
+        console.log(`Subtitle ${i+1} formatted text:`, formattedText);
+
+        // Update the subtitle text with the formatted result
+        subtitle.text = formattedText;
+    }
+
+    // Simulate a delay to show the formatting process
+    return new Promise(resolve => {
+        setTimeout(() => {
+            // Dispatch event to update UI with status
+            const message = i18n.t('translation.formattingComplete', 'Formatting complete');
+            window.dispatchEvent(new CustomEvent('translation-status', {
+                detail: { message, isComplete: true }
+            }));
+
+            resolve(formattedSubtitles);
+        }, 500); // Short delay for UI feedback
+    });
+};
+
+// Function to cancel translation
+const cancelTranslation = () => {
+    console.log('Cancelling translation...');
+    const controllers = createRequestController();
+    for (const controller of controllers) {
+        controller.abort();
+    }
+    removeRequestController();
+};
+
+// Export the functions
+export { translateSubtitles, cancelTranslation };

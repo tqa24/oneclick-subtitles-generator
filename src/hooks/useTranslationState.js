@@ -124,10 +124,12 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
    * @param {Array} languages - Languages to translate to
    * @param {string|null} delimiter - Delimiter for multi-language translation
    * @param {boolean} useParentheses - Whether to use parentheses for the second language
+   * @param {Object} bracketStyle - Optional bracket style { open, close }
+   * @param {Array} chainItems - Optional chain items for format mode
    */
-  const handleTranslate = async (languages, delimiter = ' ', useParentheses = false) => {
-    // Check if at least one language is entered
-    if (languages.length === 0) {
+  const handleTranslate = async (languages, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null) => {
+    // Check if at least one language is entered (unless in format mode with chainItems)
+    if (languages.length === 0 && !chainItems) {
       setError(t('translation.languageRequired', 'Please enter at least one target language'));
       return;
     }
@@ -154,7 +156,9 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         splitDuration,
         includeRules,
         useBothOptions ? delimiter : (useParentheses ? null : delimiter), // Pass delimiter even when using parentheses for 2 languages
-        useParentheses
+        useParentheses,
+        bracketStyle, // Pass the bracket style
+        chainItems // Pass the chain items for format mode
       );
       console.log('Translation result received:', result ? result.length : 0, 'subtitles');
 
