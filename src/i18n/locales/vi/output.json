@@ -20,7 +20,7 @@
   "translationComplete": "Dịch hoàn tất!",
   "translationFailed": "Dịch thất bại: {{error}}",
   "targetLanguage": "Ngôn ngữ đích",
-  "targetLanguagePlaceholder": "Nhập ngôn ngữ đích (ví dụ: Tiếng Anh)",
+  "targetLanguagePlaceholder": "Ngôn ngữ đích (ví dụ: Tiếng Anh)",
   "downloadTranslation": "Tải xuống bản dịch",
   "noTranslation": "Chưa có bản dịch được tạo.",
   "downloadingVideo": "Đang tải video...",

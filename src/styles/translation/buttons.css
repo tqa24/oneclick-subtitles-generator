@@ -38,6 +38,16 @@
   cursor: not-allowed;
 }
 
+/* Format button style */
+.translate-button.format-button {
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+}
+
+.translate-button.format-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-tertiary), black 10%);
+}
+
 .translation-actions {
   display: flex;
   flex-direction: row;

@@ -8,13 +8,15 @@ import { useTranslation } from 'react-i18next';
  * @param {Function} props.onTranslate - Function to handle translation
  * @param {Function} props.onCancel - Function to handle cancellation
  * @param {boolean} props.disabled - Whether the buttons are disabled
+ * @param {boolean} props.isFormatMode - Whether we're in format mode (only original language)
  * @returns {JSX.Element} - Rendered component
  */
 const TranslationActions = ({
   isTranslating,
   onTranslate,
   onCancel,
-  disabled = false
+  disabled = false,
+  isFormatMode = false
 }) => {
   const { t } = useTranslation();
 
@@ -44,11 +46,13 @@ const TranslationActions = ({
           </>
         ) : (
           <button
-            className="translate-button"
+            className={`translate-button ${isFormatMode ? 'format-button' : ''}`}
             onClick={onTranslate}
             disabled={disabled}
           >
-            {t('translation.translate', 'Translate')}
+            {isFormatMode
+              ? t('translation.format', 'Format')
+              : t('translation.translate', 'Translate')}
           </button>
         )}
       </div>

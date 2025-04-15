@@ -25,7 +25,7 @@ import {
 } from './promptManagement';
 
 // Export translation functionality
-import { translateSubtitles } from './translation';
+import { translateSubtitles, cancelTranslation } from './translation';
 
 // Export document processing functionality
 import { completeDocument, summarizeDocument } from './documentProcessingService';
@@ -56,6 +56,7 @@ export {
 
     // Translation
     translateSubtitles,
+    cancelTranslation,
 
     // Document processing
     completeDocument,
