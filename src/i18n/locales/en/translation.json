@@ -50,5 +50,17 @@
   "delimiterColon": "Colon (:)",
   "delimiterSemicolon": "Semicolon (;)",
   "delimiterComma": "Comma (,)",
-  "delimiterDot": "Dot (.)"
+  "delimiterDot": "Dot (.)",
+  "delimiterArrow": "Arrow",
+  "delimiterDoubleArrow": "Double Arrow",
+  "delimiterBullet": "Bullet",
+  "delimiterCustom": "Custom",
+  "customDelimiterPlaceholder": "Enter custom delimiter",
+  "bracketStyleParentheses": "Parentheses",
+  "bracketStyleSquare": "Square Brackets",
+  "bracketStyleCurly": "Curly Braces",
+  "bracketStyleAngle": "Angle Brackets",
+  "bracketStyleCustom": "Custom Brackets",
+  "openBracketPlaceholder": "Opening bracket",
+  "closeBracketPlaceholder": "Closing bracket"
 }

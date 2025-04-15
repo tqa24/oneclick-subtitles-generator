@@ -50,5 +50,17 @@
   "delimiterColon": "Dấu hai chấm (:)",
   "delimiterSemicolon": "Dấu chấm phẩy (;)",
   "delimiterComma": "Dấu phẩy (,)",
-  "delimiterDot": "Dấu chấm (.)"
+  "delimiterDot": "Dấu chấm (.)",
+  "delimiterArrow": "Dấu mũi tên",
+  "delimiterDoubleArrow": "Dấu mũi tên kép",
+  "delimiterBullet": "Dấu chấm danh sách",
+  "delimiterCustom": "Tùy chỉnh",
+  "customDelimiterPlaceholder": "Nhập dấu phân cách tùy chỉnh",
+  "bracketStyleParentheses": "Dấu ngoặc đơn",
+  "bracketStyleSquare": "Dấu ngoặc vuông",
+  "bracketStyleCurly": "Dấu ngoặc nhọn",
+  "bracketStyleAngle": "Dấu ngoặc nhọn",
+  "bracketStyleCustom": "Dấu ngoặc tùy chỉnh",
+  "openBracketPlaceholder": "Dấu ngoặc mở",
+  "closeBracketPlaceholder": "Dấu ngoặc đóng"
 }

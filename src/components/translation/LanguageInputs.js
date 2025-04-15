@@ -65,9 +65,6 @@ const LanguageInputs = ({
             </svg>
             {t('translation.addLanguage', 'Add Language')}
           </button>
-          <p className="setting-description">
-            {t('translation.multiLanguageDescription', 'Translate to multiple languages at once')}
-          </p>
         </div>
       </div>
     </div>

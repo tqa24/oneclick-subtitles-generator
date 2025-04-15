@@ -19,6 +19,8 @@ import { createRequestController, removeRequestController } from './requestManag
  * @param {boolean} includeRules - Whether to include transcription rules in the prompt
  * @param {string|null} delimiter - Delimiter to use for multiple languages
  * @param {boolean} useParentheses - Whether to use parentheses for the second language
+ *                                  For 2 languages, both delimiter and brackets can be used together
+ *                                  For 3+ languages, only delimiter is used
  * @returns {Promise<Array>} - Array of translated subtitles
  */
 export const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false, delimiter = ' ', useParentheses = false) => {
@@ -30,6 +32,19 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
 
     if (!subtitles || subtitles.length === 0) {
         throw new Error('No subtitles to translate');
+    }
+
+    // Get bracket style if using parentheses in single language mode
+    let bracketStyle = ['(', ')'];
+    if (!isMultiLanguage && useParentheses) {
+        try {
+            const savedStyle = localStorage.getItem('bracketStyle');
+            if (savedStyle) {
+                bracketStyle = JSON.parse(savedStyle);
+            }
+        } catch (error) {
+            console.warn('Error loading bracket style:', error);
+        }
     }
 
     // Create a map of original subtitles with their IDs for reference
@@ -66,7 +81,7 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message }
         }));
-        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses);
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle);
     }
 
     // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
@@ -254,7 +269,12 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                             }
 
                             if (secondaryTranslatedText) {
-                                combinedText += ` (${secondaryTranslatedText})`;
+                                // For 2 languages with both options, use brackets and delimiter
+                                if (delimiter && delimiter !== ' ') {
+                                    combinedText += `${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                } else {
+                                    combinedText += ` ${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                }
                             }
                         }
                         // Otherwise use the specified delimiter
@@ -289,7 +309,9 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                     return structuredJson.map(item => {
                         // Check if this is the new format with original and translated properties
                         if (item.original !== undefined && item.translated !== undefined) {
-                            return item.translated;
+                            return useParentheses
+                                ? `${item.original}${bracketStyle[0]}${item.translated}${bracketStyle[1]}`
+                                : item.translated;
                         }
                         // Fall back to the old format or any other property that might contain the text
                         return item.text || item.translated || '';
@@ -300,7 +322,9 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                     return structuredJson.translations.map(item => {
                         // Check if this is the new format with original and translated properties
                         if (item.original !== undefined && item.translated !== undefined) {
-                            return item.translated;
+                            return useParentheses
+                                ? `${item.original}${bracketStyle[0]}${item.translated}${bracketStyle[1]}`
+                                : item.translated;
                         }
                         // Fall back to the old format
                         return item.text || '';
@@ -368,7 +392,12 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                                     }
 
                                     if (secondaryTranslatedText) {
-                                        combinedText += ` (${secondaryTranslatedText})`;
+                                        // For 2 languages with both options, use brackets and delimiter
+                                        if (delimiter && delimiter !== ' ') {
+                                            combinedText += `${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                        } else {
+                                            combinedText += ` ${bracketStyle[0]}${secondaryTranslatedText}${bracketStyle[1]}`;
+                                        }
                                     }
                                 }
                                 // Otherwise use the specified delimiter
@@ -412,7 +441,9 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
                             return jsonArray.map(item => {
                                 // Check if this is the new format with original and translated properties
                                 if (item && typeof item === 'object' && item.original !== undefined && item.translated !== undefined) {
-                                    return item.translated;
+                                    return useParentheses
+                                        ? `${item.original}${bracketStyle[0]}${item.translated}${bracketStyle[1]}`
+                                        : item.translated;
                                 }
                                 // Remove any quotes if the item is a string
                                 return typeof item === 'string' ? item.replace(/^"|"$/g, '') : (item.text || item.translated || '');
@@ -548,9 +579,12 @@ export const translateSubtitles = async (subtitles, targetLanguage, model = 'gem
  * @param {boolean} includeRules - Whether to include transcription rules in the prompt
  * @param {string|null} delimiter - Delimiter to use for multiple languages
  * @param {boolean} useParentheses - Whether to use parentheses for the second language
+ *                                  For 2 languages, both delimiter and brackets can be used together
+ *                                  For 3+ languages, only delimiter is used
+ * @param {Array} bracketStyle - Custom bracket style for single language mode or dual language mode
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false) => {
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = ['(', ')']) => {
     // Convert splitDuration from minutes to seconds
     const splitDurationSeconds = splitDuration * 60;
 
@@ -607,7 +641,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
         try {
             // Call translateSubtitles with the current chunk, but with splitDuration=0 to avoid infinite recursion
             // Pass along all parameters to maintain consistency across chunks
-            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules, delimiter, useParentheses);
+            const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle);
             translatedChunks.push(translatedChunk);
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
@@ -622,7 +656,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
                     // Call translateSubtitles with the simplified prompt
                     // Pass along all parameters to maintain consistency across chunks
-                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, simplifiedPrompt, 0, includeRules, delimiter, useParentheses);
+                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, simplifiedPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle);
                     translatedChunks.push(translatedChunk);
                     continue;
                 } catch (retryError) {

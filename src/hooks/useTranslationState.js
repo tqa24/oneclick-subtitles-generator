@@ -141,6 +141,10 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     setIsTranslating(true);
 
     try {
+      // For 2 target languages, we can use both delimiter and brackets
+      // For 3+ languages, we only use delimiter
+      const useBothOptions = languages.length === 2 && useParentheses;
+
       // Pass the selected model, custom prompt, split duration, includeRules, delimiter and parentheses options
       const result = await translateSubtitles(
         subtitles,
@@ -149,7 +153,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         customTranslationPrompt,
         splitDuration,
         includeRules,
-        useParentheses ? null : delimiter, // If parentheses are selected, don't use a delimiter
+        useBothOptions ? delimiter : (useParentheses ? null : delimiter), // Pass delimiter even when using parentheses for 2 languages
         useParentheses
       );
       console.log('Translation result received:', result ? result.length : 0, 'subtitles');
