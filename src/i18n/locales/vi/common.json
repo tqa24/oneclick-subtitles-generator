@@ -6,6 +6,7 @@
   "close": "Đóng",
   "on": "Bật",
   "off": "Tắt",
+  "note": "Lưu ý",
   "serverConnection": {
     "title": "Lỗi Kết Nối Máy Chủ",
     "message": "Không thể kết nối đến máy chủ. Vui lòng kiểm tra xem máy chủ có đang chạy đúng cách không.",

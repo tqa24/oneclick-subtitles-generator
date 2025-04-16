@@ -7,9 +7,20 @@
   "subtitlesTextDesc": "Nội dung văn bản phụ đề",
   "targetLanguageDesc": "Ngôn ngữ đích (cho bản dịch)",
   "reset": "Khôi phục mặc định",
+  "save": "Lưu",
   "editConsolidatePrompt": "Chỉnh sửa lệnh hợp nhất",
   "editSummarizePrompt": "Chỉnh sửa lệnh tóm tắt",
   "editTranslationPrompt": "Chỉnh sửa lệnh dịch",
   "customizePromptDesc": "Tùy chỉnh cách Gemini xử lý nội dung của bạn.",
-  "customizeTranslationDesc": "Tùy chỉnh cách Gemini dịch phụ đề của bạn."
+  "customizeTranslationDesc": "Tùy chỉnh cách Gemini dịch phụ đề của bạn.",
+  "defaultTemplate": "Mẫu mặc định:",
+  "customInstructions": "Hướng dẫn tùy chỉnh của bạn:",
+  "customInstructionsPlaceholder": "[Hướng dẫn tùy chỉnh của bạn sẽ xuất hiện ở đây]",
+  "defaultTranslationTemplate": "Dịch các phụ đề sau sang {targetLanguage}.",
+  "examplesTitle": "Ví dụ về hướng dẫn tùy chỉnh:",
+  "exampleFormalTone": "Duy trì giọng điệu trang trọng",
+  "exampleTerminology": "Sử dụng thuật ngữ hoặc từ vựng cụ thể",
+  "exampleJapanese": "Thêm bản dịch tiếng Nhật bên cạnh văn bản đã dịch, được đặt trong ngoặc đơn",
+  "examplePreserveDetails": "Giữ lại các chi tiết quan trọng",
+  "templateNote": "Lưu ý: Hệ thống sẽ tự động xử lý định dạng và cấu trúc của đầu ra. Bạn chỉ cần thêm hướng dẫn tùy chỉnh của mình."
 }

@@ -212,7 +212,7 @@ export const downloadJSON = (subtitles, filename) => {
  * @returns {string} - Plain text content
  */
 export const generateTxtContent = (subtitles) => {
-  return subtitles.map(subtitle => subtitle.text).join('\n\n');
+  return subtitles.map(subtitle => subtitle.text).join('\n');
 };
 
 /**

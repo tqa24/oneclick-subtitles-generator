@@ -7,9 +7,20 @@
   "subtitlesTextDesc": "The subtitle text content",
   "targetLanguageDesc": "The target language (for translation)",
   "reset": "Reset to Default",
+  "save": "Save",
   "editConsolidatePrompt": "Edit Consolidation Prompt",
   "editSummarizePrompt": "Edit Summarization Prompt",
   "editTranslationPrompt": "Edit Translation Prompt",
   "customizePromptDesc": "Customize how Gemini processes your content.",
-  "customizeTranslationDesc": "Customize how Gemini translates your subtitles."
+  "customizeTranslationDesc": "Customize how Gemini translates your subtitles.",
+  "defaultTemplate": "Default Template:",
+  "customInstructions": "Your Custom Instructions:",
+  "customInstructionsPlaceholder": "[Your custom instructions will appear here]",
+  "defaultTranslationTemplate": "Translate the following subtitles to {targetLanguage}.",
+  "examplesTitle": "Examples of Custom Instructions:",
+  "exampleFormalTone": "Maintain a formal tone",
+  "exampleTerminology": "Use specific terminology or vocabulary",
+  "exampleJapanese": "Add Japanese translations next to your translated text, wrapped in parentheses",
+  "examplePreserveDetails": "Preserve important details",
+  "templateNote": "Note: The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions."
 }
