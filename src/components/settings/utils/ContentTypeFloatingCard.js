@@ -16,6 +16,12 @@ const ContentTypeFloatingCard = ({ textareaRef, floatingCardRef, transcriptionPr
         existingOverlay.remove();
       }
 
+      // Check if transcriptionPrompt is defined
+      if (!transcriptionPrompt) {
+        console.warn('transcriptionPrompt is undefined in ContentTypeFloatingCard');
+        return;
+      }
+
       // Find the position of {contentType} in the text
       const contentTypePos = transcriptionPrompt.indexOf('{contentType}');
 

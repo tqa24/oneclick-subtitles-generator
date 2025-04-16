@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { downloadSRT, downloadJSON, downloadTXT } from '../../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../../services/geminiService';
 import useTranslationState from '../../hooks/useTranslationState';
-import useLanguageInputs from '../../hooks/useLanguageInputs';
+import useLanguageChain from '../../hooks/useLanguageChain';
 import TranslationHeader from './TranslationHeader';
-import LanguageInputs from './LanguageInputs';
-import DelimiterOptions from './DelimiterOptions';
+import LanguageChain from './LanguageChain';
 import ModelSelection from './ModelSelection';
 import SplitDurationSlider from './SplitDurationSlider';
 import RulesToggle from './RulesToggle';
@@ -18,11 +17,8 @@ import TranslationPreview from './TranslationPreview';
 import TranslationComplete from './TranslationComplete';
 // Narration section moved to OutputContainer
 import '../../styles/translation/index.css';
-<<<<<<< Updated upstream
-=======
 import '../../styles/translation/languageChain.css';
 // Narration styles moved to OutputContainer
->>>>>>> Stashed changes
 
 /**
  * Translation section component
@@ -38,20 +34,25 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   const [txtContent, setTxtContent] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedDocument, setProcessedDocument] = useState(null);
-  
-  // Multi-language translation settings
-  const [selectedDelimiter, setSelectedDelimiter] = useState(' '); // Default to space
-  const [useParentheses, setUseParentheses] = useState(false);
 
-  // Use custom hooks for state management
+  // Use language chain hook for managing languages and delimiters
   const {
-    targetLanguages,
-    handleAddLanguage,
-    handleRemoveLanguage,
-    handleLanguageChange,
+    chainItems,
+    addLanguage,
+    addOriginalLanguage,
+    addDelimiter,
+    removeItem,
+    updateLanguage,
+    updateDelimiter,
+    moveItem,
+    getLanguageValues,
+    getDelimiterValues,
     hasValidLanguage,
-    getLanguageValues
-  } = useLanguageInputs();
+    hasOnlyOriginalLanguage
+  } = useLanguageChain(false); // false = don't include original language by default
+
+  // Get target languages from chain items
+  const targetLanguages = chainItems.filter(item => item.type === 'language' && !item.isOriginal);
 
   const {
     isTranslating,
@@ -76,10 +77,35 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 
   // Wrapper for handleTranslate to pass the current languages and delimiter settings
   const handleTranslate = () => {
-    if (!hasValidLanguage()) {
+    // Format mode - only original language in the chain
+    const isFormatMode = hasOnlyOriginalLanguage();
+
+    // In format mode, we don't need to check for valid languages
+    if (!isFormatMode && !hasValidLanguage()) {
       return;
     }
-    translate(getLanguageValues(), selectedDelimiter, useParentheses);
+
+    // Always pass the chain items to ensure the exact arrangement is preserved
+    console.log('Chain items for translation/formatting:', chainItems);
+
+    if (isFormatMode) {
+      // In format mode, pass empty languages array
+      translate([], '', false, null, chainItems);
+    } else {
+      // In translation mode, pass languages and chain items
+      // Get the first delimiter's value and style (if any) as fallback
+      const delimiters = getDelimiterValues();
+      const firstDelimiter = delimiters.length > 0 ? delimiters[0] : { value: ' ', style: { open: '', close: '' } };
+
+      // Check if we're using brackets (parentheses)
+      const useParentheses = firstDelimiter.style && (firstDelimiter.style.open || firstDelimiter.style.close);
+
+      // Get languages for translation
+      const languages = getLanguageValues();
+
+      // Pass both the languages and the chain items
+      translate(languages, firstDelimiter.value, useParentheses, firstDelimiter.style, chainItems);
+    }
   };
 
   // Handle download request from modal
@@ -242,26 +268,26 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       <TranslationHeader />
 
       <div className="translation-controls">
-        {/* Language inputs */}
-        <LanguageInputs
-          targetLanguages={targetLanguages}
-          onAddLanguage={handleAddLanguage}
-          onRemoveLanguage={handleRemoveLanguage}
-          onLanguageChange={handleLanguageChange}
-          disabled={isTranslating || translatedSubtitles !== null}
-        />
-
-        {/* Delimiter settings - only show when multiple languages are added */}
-        {targetLanguages.length > 1 && (
-          <DelimiterOptions
-            selectedDelimiter={selectedDelimiter}
-            onDelimiterChange={setSelectedDelimiter}
-            useParentheses={useParentheses}
-            onParenthesesChange={setUseParentheses}
-            disabled={isTranslating || translatedSubtitles !== null}
-            showParenthesesOption={targetLanguages.length === 2}
-          />
-        )}
+        {/* Language Chain UI */}
+        <div className="translation-row language-chain-row">
+          <div className="row-label">
+            <label>{t('translation.languageChain', 'Language Chain')}:</label>
+          </div>
+          <div className="row-content">
+            <LanguageChain
+              chainItems={chainItems}
+              onAddLanguage={addLanguage}
+              onAddOriginalLanguage={addOriginalLanguage}
+              onAddDelimiter={addDelimiter}
+              onRemoveItem={removeItem}
+              onUpdateLanguage={updateLanguage}
+              onUpdateDelimiter={updateDelimiter}
+              onMoveItem={moveItem}
+              disabled={isTranslating || translatedSubtitles !== null}
+              showOriginalOption={true}
+            />
+          </div>
+        </div>
 
         {/* If we have translated subtitles, show the complete view */}
         {translatedSubtitles ? (
@@ -276,41 +302,47 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
           />
         ) : (
           <>
-            {/* Model selection */}
-            <ModelSelection
-              selectedModel={selectedModel}
-              onModelSelect={handleModelSelect}
-            />
+            {/* Check if we're in format mode (only original language) */}
+            {!hasOnlyOriginalLanguage() && (
+              <>
+                {/* Model selection */}
+                <ModelSelection
+                  selectedModel={selectedModel}
+                  onModelSelect={handleModelSelect}
+                />
 
-            {/* Split duration slider */}
-            <SplitDurationSlider
-              splitDuration={splitDuration}
-              onSplitDurationChange={handleSplitDurationChange}
-              subtitles={subtitles}
-              disabled={isTranslating || translatedSubtitles !== null}
-            />
+                {/* Split duration slider */}
+                <SplitDurationSlider
+                  splitDuration={splitDuration}
+                  onSplitDurationChange={handleSplitDurationChange}
+                  subtitles={subtitles}
+                  disabled={isTranslating || translatedSubtitles !== null}
+                />
 
-            {/* Include rules toggle */}
-            <RulesToggle
-              includeRules={includeRules}
-              onIncludeRulesChange={handleIncludeRulesChange}
-              rulesAvailable={rulesAvailable}
-              hasUserProvidedSubtitles={hasUserProvidedSubtitles}
-              disabled={isTranslating || translatedSubtitles !== null}
-            />
+                {/* Include rules toggle */}
+                <RulesToggle
+                  includeRules={includeRules}
+                  onIncludeRulesChange={handleIncludeRulesChange}
+                  rulesAvailable={rulesAvailable}
+                  hasUserProvidedSubtitles={hasUserProvidedSubtitles}
+                  disabled={isTranslating || translatedSubtitles !== null}
+                />
 
-            {/* Prompt editor button */}
-            <PromptEditorButton
-              customPrompt={customTranslationPrompt}
-              onSavePrompt={handleSavePrompt}
-            />
+                {/* Prompt editor button */}
+                <PromptEditorButton
+                  customPrompt={customTranslationPrompt}
+                  onSavePrompt={handleSavePrompt}
+                />
+              </>
+            )}
 
             {/* Translation actions */}
             <TranslationActions
               isTranslating={isTranslating}
               onTranslate={handleTranslate}
               onCancel={handleCancelTranslation}
-              disabled={!hasValidLanguage()}
+              disabled={!hasOnlyOriginalLanguage() && !hasValidLanguage()}
+              isFormatMode={hasOnlyOriginalLanguage()}
             />
 
             {/* Translation status */}

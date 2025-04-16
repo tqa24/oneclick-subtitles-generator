@@ -22,24 +22,20 @@ IMPORTANT: If there is no speech or spoken content in the audio, return an empty
 
 IMPORTANT: If there is no visible text in the video, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
-    // --- Replaced 'focus-speech' with two specific presets ---
     {
-        id: 'focus-spoken-words', // New ID
-        title: 'Focus on Spoken Words', // New Title
-        // Prompt modified to EXCLUDE lyrics
+        id: 'focus-spoken-words',
+        title: 'Focus on Spoken Words',
         prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words (1-2 sentences max). For example: [00m30s000ms - 00m35s500ms] This is the spoken dialogue. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.
 
 IMPORTANT: If there is no spoken dialogue in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
     {
-        id: 'focus-lyrics', // New ID
-        title: 'Focus on Lyrics', // New Title
-        // Prompt created to INCLUDE ONLY lyrics
+        id: 'focus-lyrics',
+        title: 'Focus on Lyrics',
         prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics (1-2 lines/sentences max). For example: [00m45s100ms - 00m50s250ms] These are the lyrics being sung. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.
 
 IMPORTANT: If there are no sung lyrics in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
     },
-    // --- End of replaced presets ---
     {
         id: 'describe-video',
         title: 'Describe video',
@@ -75,11 +71,8 @@ Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences
 // Default transcription prompt that will be used if no custom prompt is set
 export const DEFAULT_TRANSCRIPTION_PROMPT = PROMPT_PRESETS[0].prompt;
 
-/**
- * Get saved user prompt presets from localStorage
- * @returns {Array} - Array of user prompt presets
- */
-export const getUserPromptPresets = () => {
+// Function declarations first
+const getUserPromptPresetsImpl = () => {
     try {
         const savedPresets = localStorage.getItem('user_prompt_presets');
         return savedPresets ? JSON.parse(savedPresets) : [];
@@ -89,11 +82,7 @@ export const getUserPromptPresets = () => {
     }
 };
 
-/**
- * Save user prompt presets to localStorage
- * @param {Array} presets - Array of user prompt presets to save
- */
-export const saveUserPromptPresets = (presets) => {
+const saveUserPromptPresetsImpl = (presets) => {
     try {
         localStorage.setItem('user_prompt_presets', JSON.stringify(presets));
     } catch (error) {
@@ -101,14 +90,7 @@ export const saveUserPromptPresets = (presets) => {
     }
 };
 
-/**
- * Get the transcription prompt based on content type and options
- * @param {string} contentType - Type of content (video, audio)
- * @param {string|null} userProvidedSubtitles - Optional user-provided subtitles
- * @param {Object} options - Additional options
- * @returns {string} - The transcription prompt
- */
-export const getTranscriptionPrompt = (contentType, userProvidedSubtitles = null, options = {}) => {
+const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, options = {}) => {
     // Get custom prompt from localStorage or use default
     const customPrompt = localStorage.getItem('transcription_prompt');
 
@@ -274,20 +256,37 @@ Here are the subtitles to time (with index numbers from 0 to ${subtitleCount - 1
     return basePrompt;
 };
 
-/**
- * Get the default translation prompt
- * @param {string} subtitleText - Text of subtitles to translate
- * @param {string|Array} targetLanguage - Target language(s) for translation
- * @param {boolean} multiLanguage - Whether multiple languages are being translated
- * @returns {string} - Translation prompt
- */
-export const getDefaultTranslationPrompt = (subtitleText, targetLanguage, multiLanguage = false) => {
+const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLanguage = false) => {
     // Count the number of subtitles by counting the lines
-    const subtitleCount = subtitleText.split('\n').filter(line => line.trim()).length;
+    const subtitleLines = subtitleText.split('\n').filter(line => line.trim());
+    const subtitleCount = subtitleLines.length;
 
     if (multiLanguage && Array.isArray(targetLanguage)) {
         // For multiple languages
         const languageList = targetLanguage.join(', ');
+
+        // Build example JSON with actual subtitle lines
+        let exampleJson = '{\n  "translations": [';
+
+        // Add examples for each language
+        for (let langIndex = 0; langIndex < targetLanguage.length; langIndex++) {
+            const lang = targetLanguage[langIndex];
+            exampleJson += '\n    {\n      "language": "' + lang + '",\n      "texts": [';
+
+            // Use all subtitle lines as examples
+            for (let i = 0; i < Math.min(3, subtitleLines.length); i++) {
+                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, '\"') + '", "translated": "[Translation in ' + lang + ']" }' + (i < Math.min(3, subtitleLines.length) - 1 ? ',' : '');
+            }
+
+            // If there are more lines, add ellipsis
+            if (subtitleLines.length > 3) {
+                exampleJson += ',\n        ...';
+            }
+
+            exampleJson += '\n      ]\n    }' + (langIndex < targetLanguage.length - 1 ? ',' : '');
+        }
+
+        exampleJson += '\n  ]\n}';
 
         return `Translate the following ${subtitleCount} subtitle texts to these languages: ${languageList}.
 
@@ -301,33 +300,24 @@ IMPORTANT INSTRUCTIONS:
 7. Each line in your response should correspond to the same line in the input.
 8. If a line is empty, keep it empty in your response.
 9. Return your response in a structured format with each language's translations grouped together.
+10. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
 
 Format your response as a JSON object with this structure:
-{
-  "translations": [
-    {
-      "language": "Language1",
-      "texts": [
-        "Translated text for first subtitle in Language1",
-        "Translated text for second subtitle in Language1",
-        ...
-      ]
-    },
-    {
-      "language": "Language2",
-      "texts": [
-        "Translated text for first subtitle in Language2",
-        "Translated text for second subtitle in Language2",
-        ...
-      ]
-    },
-    ...
-  ]
-}
-
-Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
+${exampleJson}
+`;
     } else {
-        // Original single language prompt
+        // Updated single language prompt to include original text
+        // Build a JSON example with the actual subtitle lines
+        let exampleJson = '[\n';
+
+        // Add up to 5 example lines using the actual subtitle content
+        // Use all subtitle lines as examples
+        for (let i = 0; i < subtitleLines.length; i++) {
+            exampleJson += `  { "original": "${subtitleLines[i].replace(/"/g, '\\"')}", "translated": "[Translation of this line in ${targetLanguage}]" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
+        }
+
+        exampleJson += ']';
+
         return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
 IMPORTANT INSTRUCTIONS:
@@ -339,24 +329,16 @@ IMPORTANT INSTRUCTIONS:
 6. MAINTAIN exactly ${subtitleCount} lines in the same order.
 7. Each line in your response should correspond to the same line in the input.
 8. If a line is empty, keep it empty in your response.
+9. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
 
-Format your response exactly like this:
-Translated text for first subtitle
-Translated text for second subtitle
-...
-Translated text for last subtitle
+Format your response as a JSON array with objects containing both original and translated text:
+${exampleJson}
 
-Here are the ${subtitleCount} subtitle texts to translate:\n\n${subtitleText}`;
+`;
     }
 };
 
-/**
- * Get the default consolidation prompt
- * @param {string} subtitlesText - Text of subtitles to consolidate
- * @param {string|null} language - Language of the subtitles
- * @returns {string} - Consolidation prompt
- */
-export const getDefaultConsolidatePrompt = (subtitlesText, language = null) => {
+const getDefaultConsolidatePromptImpl = (subtitlesText, language = null) => {
     const languageInstruction = language ?
         `CRITICAL INSTRUCTION: Your response MUST be in ${language} ONLY. DO NOT translate to English or any other language under any circumstances.` :
         `CRITICAL INSTRUCTION: You MUST maintain the EXACT SAME LANGUAGE as the original subtitles. DO NOT translate to English or any other language under any circumstances.`;
@@ -378,13 +360,7 @@ Here are the subtitles:\n\n${subtitlesText}
 ${languageInstruction}`;
 };
 
-/**
- * Get the default summarization prompt
- * @param {string} subtitlesText - Text of subtitles to summarize
- * @param {string|null} language - Language of the subtitles
- * @returns {string} - Summarization prompt
- */
-export const getDefaultSummarizePrompt = (subtitlesText, language = null) => {
+const getDefaultSummarizePromptImpl = (subtitlesText, language = null) => {
     const languageInstruction = language ?
         `CRITICAL INSTRUCTION: Your response MUST be in ${language} ONLY. DO NOT translate to English or any other language under any circumstances.` :
         `CRITICAL INSTRUCTION: You MUST maintain the EXACT SAME LANGUAGE as the original subtitles. DO NOT translate to English or any other language under any circumstances.`;
@@ -409,3 +385,11 @@ Here are the subtitles:\n\n${subtitlesText}
 
 ${languageInstruction}`;
 };
+
+// Export all functions at the module level
+export const getUserPromptPresets = getUserPromptPresetsImpl;
+export const saveUserPromptPresets = saveUserPromptPresetsImpl;
+export const getTranscriptionPrompt = getTranscriptionPromptImpl;
+export const getDefaultTranslationPrompt = getDefaultTranslationPromptImpl;
+export const getDefaultConsolidatePrompt = getDefaultConsolidatePromptImpl;
+export const getDefaultSummarizePrompt = getDefaultSummarizePromptImpl;

@@ -15,13 +15,19 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
 
   // Handle selecting a preset
   const handleSelectPreset = (preset, customLanguage = '') => {
-    // If it's the translation preset, replace the target language placeholder
-    if (preset.id === 'translate-vietnamese' && customLanguage) {
-      // Replace 'TARGET_LANGUAGE' with the custom language in the prompt
-      const updatedPrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage);
-      setTranscriptionPrompt(updatedPrompt);
+    // Check if preset is a string (direct prompt) or an object (preset)
+    if (typeof preset === 'string') {
+      // If it's a direct prompt string, just set it
+      setTranscriptionPrompt(preset);
     } else {
-      setTranscriptionPrompt(preset.prompt);
+      // If it's the translation preset, replace the target language placeholder
+      if (preset.id === 'translate-vietnamese' && customLanguage) {
+        // Replace 'TARGET_LANGUAGE' with the custom language in the prompt
+        const updatedPrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage);
+        setTranscriptionPrompt(updatedPrompt);
+      } else {
+        setTranscriptionPrompt(preset.prompt);
+      }
     }
   };
 
@@ -219,7 +225,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                 </button>
                 <button
                   className="use-preset-btn"
-                  onClick={() => handleSelectPreset(preset.prompt)}
+                  onClick={() => handleSelectPreset(preset)}
                 >
                   {t('settings.usePreset', 'Use')}
                 </button>
@@ -435,10 +441,10 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             rows={8}
             className="transcription-prompt-textarea"
           />
-          <ContentTypeFloatingCard 
-            textareaRef={textareaRef} 
-            floatingCardRef={floatingCardRef} 
-            transcriptionPrompt={transcriptionPrompt} 
+          <ContentTypeFloatingCard
+            textareaRef={textareaRef}
+            floatingCardRef={floatingCardRef}
+            transcriptionPrompt={transcriptionPrompt}
           />
         </div>
         <div className="prompt-actions">
