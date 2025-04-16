@@ -2,6 +2,8 @@
  * Utilities for video optimization
  */
 
+import { SERVER_URL } from '../../config';
+
 /**
  * Optimize a video file using the server API
  * @param {File} mediaFile - The media file to optimize
@@ -14,7 +16,7 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   if (!mediaFile) throw new Error('No media file provided');
 
   // Call the optimize-video endpoint
-  const response = await fetch(`http://localhost:3004/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+  const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
     method: 'POST',
     body: mediaFile,
     headers: {
@@ -42,12 +44,12 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   }));
 
   // Create a blob URL for the optimized video
-  const optimizedVideoUrl = `http://localhost:3004${result.optimizedVideo}`;
+  const optimizedVideoUrl = `${SERVER_URL}${result.optimizedVideo}`;
 
   // Check if we have an analysis video available
   const useAnalysisVideo = result.analysis && result.analysis.video;
   const videoToFetch = useAnalysisVideo ?
-    `http://localhost:3004${result.analysis.video}` :
+    `${SERVER_URL}${result.analysis.video}` :
     optimizedVideoUrl;
 
   // Log which video we're using for analysis

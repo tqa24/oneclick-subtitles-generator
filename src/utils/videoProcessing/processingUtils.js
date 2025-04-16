@@ -12,6 +12,7 @@ import { optimizeVideo } from './optimizationUtils';
 import { analyzeVideoAndWaitForUserChoice } from './analysisUtils';
 import { setCurrentCacheId as setRulesCacheId } from '../transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../userSubtitlesStore';
+import { API_BASE_URL } from '../../config';
 
 /**
  * Process a short video/audio file (shorter than max segment duration)
@@ -342,7 +343,7 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
       try {
         // First check if we have this segment cached
         updateSegmentStatus(i, 'loading', t('output.checkingCache', 'Checking cache...'));
-        const response = await fetch(`http://localhost:3004/api/subtitle-exists/${segmentCacheId}`);
+        const response = await fetch(`${API_BASE_URL}/subtitle-exists/${segmentCacheId}`);
         const data = await response.json();
 
         if (data.exists && !userProvidedSubtitles) {

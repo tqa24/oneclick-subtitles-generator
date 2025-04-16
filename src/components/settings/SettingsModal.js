@@ -5,6 +5,7 @@ import '../../styles/settings/checkbox-fix.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT } from '../../services/geminiService';
 import { getClientCredentials, hasValidTokens } from '../../services/youtubeApiService';
 import LanguageSelector from '../LanguageSelector';
+import { API_BASE_URL, SERVER_URL } from '../../config';
 
 // Import modularized components
 import ApiKeysTab from './tabs/ApiKeysTab';
@@ -223,7 +224,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
       try {
         // 1. Clear server-side cache
-        const cacheResponse = await fetch('http://localhost:3004/api/clear-cache', {
+        const cacheResponse = await fetch(`${API_BASE_URL}/clear-cache`, {
           method: 'DELETE'
         });
 

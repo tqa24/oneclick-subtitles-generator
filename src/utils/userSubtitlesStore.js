@@ -3,6 +3,8 @@
  * This file is used to manage user-provided subtitles and persist them for the current video
  */
 
+import { API_BASE_URL } from '../config';
+
 // Store user-provided subtitles globally
 let globalUserSubtitles = null;
 
@@ -39,7 +41,7 @@ export const setUserProvidedSubtitles = async (subtitlesText) => {
   // Save to cache if we have a cache ID
   if (subtitlesText && currentCacheId) {
     try {
-      const response = await fetch('http://localhost:3004/api/save-user-subtitles', {
+      const response = await fetch(`${API_BASE_URL}/save-user-subtitles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +89,7 @@ export const getUserProvidedSubtitles = async () => {
   // Try to load from cache if we have a cache ID
   if (currentCacheId) {
     try {
-      const response = await fetch(`http://localhost:3004/api/user-subtitles/${currentCacheId}`);
+      const response = await fetch(`${API_BASE_URL}/user-subtitles/${currentCacheId}`);
       const data = await response.json();
       
       if (data.exists && data.subtitlesText) {
@@ -154,7 +156,7 @@ export const clearUserProvidedSubtitles = async () => {
     try {
       // We don't have a direct API to delete a specific subtitle,
       // but we can overwrite it with an empty string
-      const response = await fetch('http://localhost:3004/api/save-user-subtitles', {
+      const response = await fetch(`${API_BASE_URL}/save-user-subtitles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,9 +8,12 @@ import {
 import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
 import { convertTimeStringToSeconds } from '../../utils/vttUtils';
 import SubtitleSettings from '../SubtitleSettings';
+// Narration settings now integrated into the translation section
 import '../../styles/VideoPreview.css';
+import '../../styles/narration/index.css';
+import { SERVER_URL } from '../../config';
 
-const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -138,7 +141,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               videoSource.includes(splitResult.originalMedia.split('/').pop().split('.')[0])) {
 
             console.log('Found matching optimized video:', splitResult.optimized);
-            setOptimizedVideoUrl(`http://localhost:3004${splitResult.optimized.video}`);
+            setOptimizedVideoUrl(`${SERVER_URL}${splitResult.optimized.video}`);
 
             // Store the optimization info
             setOptimizedVideoInfo({
@@ -483,6 +486,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
   return (
     <div className="video-preview">
+      {/* Narration Settings moved to unified component in translation section */}
+
       <div className="video-preview-header">
         <h3>{t('output.videoPreview', 'Video Preview with Subtitles')}</h3>
         <SubtitleSettings

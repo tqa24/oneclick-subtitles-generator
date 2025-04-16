@@ -1,0 +1,3 @@
+@echo off
+echo Activating Python 3.11 virtual environment...
+call .venv-py311Scriptsactivate.bat

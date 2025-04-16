@@ -68,6 +68,7 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - Optimized performance for long videos with many subtitles
 - Smooth, continuous progress indicator for current subtitle
 - Dark mode by default with support for light mode and system preference
+- Generate narration audio from subtitles using F5-TTS voice cloning technology
 
 ## Prerequisites
 
@@ -75,6 +76,8 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - [FFmpeg](https://ffmpeg.org/) (required for video processing)
 - Google Gemini API key
 - Google YouTube API key (optional, for YouTube search functionality)
+- [Python](https://www.python.org/) (v3.10 or higher, required for F5-TTS narration feature)
+- [uv](https://github.com/astral-sh/uv) (required for F5-TTS installation)
 
 ### Windows Installation
 
@@ -172,6 +175,32 @@ cd subtitles-generator
 npm install
 ```
 
+4. (Optional) Install F5-TTS for narration feature:
+
+   **Using the setup scripts (recommended):**
+   - On Windows: Run `setup-and-run.bat`
+   - On macOS/Linux: Run `./setup-and-run.sh`
+
+   **Or using npm scripts:**
+   ```bash
+   npm run setup:f5tts
+   ```
+   Or install all dependencies at once:
+   ```bash
+   npm run install:all
+   ```
+
+   **Troubleshooting:**
+   ```bash
+   # Check if uv is installed correctly
+   npm run check:uv
+
+   # Test if uv can run Python scripts
+   npm run test:python
+   ```
+
+For more details on the F5-TTS integration, see [F5-TTS-README.md](F5-TTS-README.md)
+
 ## Running the Application
 
 ### On Windows and macOS
@@ -232,6 +261,13 @@ This will launch the application in your default web browser.
    - Click "Download SRT" for standard subtitle format
    - Click "Download JSON" for raw data format
 
+5. **Generate Narration** (if F5-TTS is installed):
+   - Set up reference audio in the narration settings above the video player
+   - Upload, record, or extract reference audio from the video
+   - Translate your subtitles
+   - Click "Generate Narration" in the narration section below the translation results
+   - Play or download the generated narration audio
+
 ## Configuration
 
 Adjust settings via the gear icon in the top-right corner:
@@ -253,6 +289,8 @@ Adjust settings via the gear icon in the top-right corner:
 - Parallel processing for handling videos longer than 15 minutes
 - Responsive design that works on various screen sizes
 - Hardware-accelerated animations for smooth user experience
+- F5-TTS integration for voice cloning and narration generation
+- Python Flask backend for F5-TTS processing
 
 ## Performance Optimizations
 

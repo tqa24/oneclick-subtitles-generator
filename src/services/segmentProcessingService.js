@@ -6,6 +6,7 @@ import { callGeminiApi, getProcessingForceStopped } from './geminiService';
 import { fetchSegment } from '../utils/videoSplitter';
 import { parseRawTextManually } from '../utils/subtitle';
 import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
+import { API_BASE_URL } from '../config';
 
 /**
  * Process a single media segment (video or audio)
@@ -159,7 +160,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     // Cache the segment results
     if (success && segmentSubtitles) {
         try {
-            await fetch('http://localhost:3004/api/save-subtitles', {
+            await fetch(`${API_BASE_URL}/save-subtitles`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

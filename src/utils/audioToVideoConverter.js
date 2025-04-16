@@ -27,7 +27,7 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
         console.log(`Audio file type: ${audioFile.type}, size: ${audioFile.size} bytes`);
 
         // Call the server endpoint to convert audio to video
-        const response = await fetch('http://localhost:3004/api/convert-audio-to-video', {
+        const response = await fetch('http://localhost:3007/api/convert-audio-to-video', {
             method: 'POST',
             body: audioFile,
             headers: {
@@ -43,7 +43,7 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
         console.log('Audio conversion result:', result);
 
         // Fetch the converted video as a blob
-        const videoUrl = `http://localhost:3004${result.video}`;
+        const videoUrl = `http://localhost:3007${result.video}`;
         const videoResponse = await fetch(videoUrl);
         const videoBlob = await videoResponse.blob();
 

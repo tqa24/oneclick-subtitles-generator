@@ -380,7 +380,7 @@ const LyricsDisplay = ({
       }
 
       // Save to cache
-      const response = await fetch('http://localhost:3004/api/save-subtitles', {
+      const response = await fetch('http://localhost:3007/api/save-subtitles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
