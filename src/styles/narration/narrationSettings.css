@@ -1,0 +1,198 @@
+.narration-settings {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--md-surface-1);
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid var(--border-color);
+}
+
+.narration-settings-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: var(--text-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.service-unavailable {
+  font-size: 0.8rem;
+  color: var(--md-error);
+  font-weight: normal;
+  background-color: var(--md-error-container);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.reference-audio-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reference-audio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reference-audio-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-color-primary);
+}
+
+.clear-reference-btn {
+  background: none;
+  border: none;
+  color: var(--text-color-secondary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-reference-btn:hover {
+  background-color: var(--md-surface-2);
+  color: var(--text-color-primary);
+}
+
+.reference-audio-player {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.audio-player {
+  width: 100%;
+  height: 40px;
+}
+
+.reference-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reference-text-container label {
+  font-size: 0.9rem;
+  color: var(--text-color-secondary);
+}
+
+.reference-text-container textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--md-surface-2);
+  color: var(--text-color-primary);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.reference-audio-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.control-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.upload-btn,
+.record-btn,
+.stop-btn,
+.extract-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.upload-btn {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.upload-btn:hover {
+  background-color: var(--md-primary-container-hover);
+}
+
+.record-btn {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.record-btn:hover {
+  background-color: var(--md-error-container-hover);
+}
+
+.stop-btn {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+}
+
+.stop-btn:hover {
+  background-color: var(--md-error-hover);
+}
+
+.extract-btn {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.extract-btn:hover {
+  background-color: var(--md-secondary-container-hover);
+}
+
+.upload-btn:disabled,
+.record-btn:disabled,
+.stop-btn:disabled,
+.extract-btn:disabled {
+  background-color: var(--md-surface-3);
+  color: var(--text-color-disabled);
+  cursor: not-allowed;
+}
+
+.segment-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-inputs input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--md-surface-2);
+  color: var(--text-color-primary);
+}
+
+.time-inputs span {
+  color: var(--text-color-secondary);
+}
+
+.narration-error {
+  color: var(--md-error);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--md-error-container);
+  border-radius: 4px;
+}
