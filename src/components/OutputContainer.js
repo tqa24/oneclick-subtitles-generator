@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
+import '../styles/narration/unifiedNarration.css';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';
+import { UnifiedNarrationSection } from './narration';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 import AddSubtitlesButton from './AddSubtitlesButton';
 
@@ -35,6 +37,7 @@ const OutputContainer = ({
   const [editedLyrics, setEditedLyrics] = useState(null);
   const [translatedSubtitles, setTranslatedSubtitles] = useState(null);
   const [seekTime, setSeekTime] = useState(null); // Track when seeking happens
+  const [referenceAudio, setReferenceAudio] = useState(null); // Reference audio for narration
 
   const handleLyricClick = (time) => {
     setCurrentTabIndex(time);
@@ -200,6 +203,7 @@ const OutputContainer = ({
                 subtitlesArray={editedLyrics || subtitlesData}
                 onVideoUrlReady={setActualVideoUrl}
                 useOptimizedPreview={useOptimizedPreview}
+                onReferenceAudioChange={setReferenceAudio}
               />
             )}
 
@@ -236,11 +240,25 @@ const OutputContainer = ({
           </div>
 
           {/* Translation Section */}
-          <TranslationSection
-            subtitles={editedLyrics || subtitlesData}
-            videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
-            onTranslationComplete={setTranslatedSubtitles}
-          />
+          <>
+            {console.log('OutputContainer passing data to TranslationSection')}
+            <TranslationSection
+              subtitles={editedLyrics || subtitlesData}
+              videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+              onTranslationComplete={setTranslatedSubtitles}
+            />
+          </>
+
+          {/* Unified Narration Section - Now separate from Translation */}
+          <>
+            {console.log('OutputContainer rendering UnifiedNarrationSection with referenceAudio and videoPath:', referenceAudio, actualVideoUrl)}
+            <UnifiedNarrationSection
+              subtitles={translatedSubtitles || editedLyrics || subtitlesData}
+              referenceAudio={referenceAudio}
+              videoPath={actualVideoUrl}
+              onReferenceAudioChange={setReferenceAudio}
+            />
+          </>
         </>
       )}
     </div>

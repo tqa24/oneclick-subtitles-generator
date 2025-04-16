@@ -16,7 +16,13 @@ import TranslationStatus from './TranslationStatus';
 import TranslationError from './TranslationError';
 import TranslationPreview from './TranslationPreview';
 import TranslationComplete from './TranslationComplete';
+// Narration section moved to OutputContainer
 import '../../styles/translation/index.css';
+<<<<<<< Updated upstream
+=======
+import '../../styles/translation/languageChain.css';
+// Narration styles moved to OutputContainer
+>>>>>>> Stashed changes
 
 /**
  * Translation section component
@@ -325,6 +331,8 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
           translatedSubtitles={translatedSubtitles}
           targetLanguages={targetLanguages}
         />
+
+        {/* Narration Section moved to OutputContainer */}
       </div>
     </div>
   );

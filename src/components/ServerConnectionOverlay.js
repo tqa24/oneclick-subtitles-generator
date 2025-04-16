@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../styles/ServerConnectionOverlay.css';
 import { useTranslation } from 'react-i18next';
 
-const ServerConnectionOverlay = ({ serverUrl = 'http://localhost:3004' }) => {
+const ServerConnectionOverlay = ({ serverUrl = 'http://localhost:3007' }) => {
   const { t } = useTranslation();
   const [isServerConnected, setIsServerConnected] = useState(true);
   const [isChecking, setIsChecking] = useState(false);

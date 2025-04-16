@@ -51,13 +51,13 @@ debug/
 # OS generated files
 Thumbs.db
 ehthumbs.db
-Icon?
 Desktop.ini
 .directory
 
 # Generated content
 videos/
 subtitles/
+narration/
 
 # Temporary files
 .tmp/

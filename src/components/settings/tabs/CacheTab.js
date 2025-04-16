@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { API_BASE_URL } from '../../../config';
 
 const CacheTab = () => {
   const { t } = useTranslation();
@@ -14,7 +15,7 @@ const CacheTab = () => {
     setCacheStatus({ message: '', type: '' }); // Reset status message
 
     try {
-      const response = await fetch('http://localhost:3004/api/cache-info');
+      const response = await fetch(`${API_BASE_URL}/cache-info`);
       const data = await response.json();
 
       if (data.success) {
@@ -49,7 +50,7 @@ const CacheTab = () => {
     setCacheStatus({ message: '', type: '' }); // Reset status message
 
     try {
-      const response = await fetch('http://localhost:3004/api/clear-cache', {
+      const response = await fetch(`${API_BASE_URL}/clear-cache`, {
         method: 'DELETE'
       });
 

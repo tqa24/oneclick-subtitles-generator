@@ -4,6 +4,8 @@
  * and to persist transcription rules for the current video
  */
 
+import { API_BASE_URL } from '../config';
+
 // Store transcription rules globally
 let globalTranscriptionRules = null;
 
@@ -40,7 +42,7 @@ export const setTranscriptionRules = async (rules) => {
   // Save to cache if we have a cache ID
   if (rules && currentCacheId) {
     try {
-      const response = await fetch('http://localhost:3004/api/save-rules', {
+      const response = await fetch(`${API_BASE_URL}/save-rules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +90,7 @@ export const getTranscriptionRules = async () => {
   // Try to load from cache if we have a cache ID
   if (currentCacheId) {
     try {
-      const response = await fetch(`http://localhost:3004/api/rules/${currentCacheId}`);
+      const response = await fetch(`${API_BASE_URL}/rules/${currentCacheId}`);
       const data = await response.json();
 
       if (data.exists && data.rules) {
@@ -157,7 +159,7 @@ export const clearTranscriptionRules = async () => {
     try {
       // We don't have a direct API to delete a specific rule,
       // but we can overwrite it with an empty object
-      const response = await fetch('http://localhost:3004/api/save-rules', {
+      const response = await fetch(`${API_BASE_URL}/save-rules`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

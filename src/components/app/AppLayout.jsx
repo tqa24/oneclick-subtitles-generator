@@ -269,7 +269,7 @@ const AppLayout = ({
       <TranslationWarningToast />
 
       {/* Server connection overlay - make sure the URL matches your server */}
-      <ServerConnectionOverlay serverUrl="http://localhost:3004" />
+      <ServerConnectionOverlay serverUrl="http://localhost:3007" />
     </>
   );
 };
