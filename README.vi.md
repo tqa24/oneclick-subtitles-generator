@@ -21,6 +21,7 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManage
 choco install ffmpeg -y
 winget install OpenJS.NodeJS.LTS
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 
 ```
@@ -35,14 +36,16 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 
 # Cài đặt Node.js và FFmpeg
 brew install node ffmpeg
+# Cài đặt uv
+curl -fsSL https://astral.sh/uv/install.sh | sh
 ```
 
 ### Cài Đặt Ứng Dụng
 
 ```bash
 cd đường-dẫn-đến-thư-mục-giải-nén
-npm install
-npm run dev
+npm run install:all
+npm run dev:cuda
 ```
 
 Trình duyệt sẽ tự động mở tại http://localhost:3005
