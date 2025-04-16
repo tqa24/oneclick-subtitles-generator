@@ -57,7 +57,8 @@ Desktop.ini
 # Generated content
 videos/
 subtitles/
-narration/
+narration/output/
+narration/reference/
 
 # Temporary files
 .tmp/
