@@ -28,6 +28,7 @@ import inputMethods from './inputMethods.json';
 import download from './download.json';
 import subtitlesInput from './subtitlesInput.json';
 import segmentRetry from './segmentRetry.json';
+import narration from './narration.json';
 
 // Combine all translations
 const koTranslations = {
@@ -58,7 +59,8 @@ const koTranslations = {
   inputMethods,
   download,
   subtitlesInput,
-  segmentRetry
+  segmentRetry,
+  narration
 };
 
 export default koTranslations;

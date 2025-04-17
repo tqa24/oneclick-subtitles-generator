@@ -254,6 +254,8 @@ const OutputContainer = ({
             {console.log('OutputContainer rendering UnifiedNarrationSection with referenceAudio and videoPath:', referenceAudio, actualVideoUrl)}
             <UnifiedNarrationSection
               subtitles={translatedSubtitles || editedLyrics || subtitlesData}
+              originalSubtitles={editedLyrics || subtitlesData}
+              translatedSubtitles={translatedSubtitles}
               referenceAudio={referenceAudio}
               videoPath={actualVideoUrl}
               onReferenceAudioChange={setReferenceAudio}

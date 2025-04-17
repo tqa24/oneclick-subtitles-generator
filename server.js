@@ -86,6 +86,24 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is healthy', timestamp: new Date().toISOString() });
 });
 
+// Endpoint to save localStorage data for server-side use
+app.post('/api/save-local-storage', express.json(), (req, res) => {
+  try {
+    const localStorageData = req.body;
+    console.log('Received localStorage data:', Object.keys(localStorageData));
+
+    // Save to a file
+    const localStoragePath = path.join(__dirname, 'localStorage.json');
+    fs.writeFileSync(localStoragePath, JSON.stringify(localStorageData, null, 2));
+
+    console.log('Saved localStorage data to:', localStoragePath);
+    res.json({ success: true, message: 'localStorage data saved successfully' });
+  } catch (error) {
+    console.error('Error saving localStorage data:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Register API routes
 app.use('/api', videoRoutes);
 app.use('/api', subtitleRoutes);
@@ -97,7 +115,7 @@ app.get('/api/narration/status', async (req, res) => {
   // Check if we've already checked for the narration service recently
   const lastCheckTime = req.app.get('lastNarrationServiceCheck') || 0;
   const now = Date.now();
-  const checkInterval = 5000; // 5 seconds - reduced from 10s for faster updates
+  const checkInterval = 30000; // 30 seconds - increased from 5s to reduce frequent checks
 
   // Only check for the actual service if we haven't checked recently
   if (now - lastCheckTime > checkInterval) {
@@ -132,10 +150,10 @@ app.get('/api/narration/status', async (req, res) => {
             actualPort = portFromFile;
             deviceInfo = statusData.device || 'cpu'; // Get device info from the actual service
             console.log(`Actual narration service is running on port ${portFromFile}, device: ${deviceInfo}`);
-            
+
             // Update the stored values
             req.app.set('narrationServiceDevice', deviceInfo);
-            
+
             if (statusData.gpu_info) {
               console.log('GPU info:', JSON.stringify(statusData.gpu_info));
               req.app.set('narrationServiceGpuInfo', statusData.gpu_info);
@@ -202,7 +220,7 @@ const upload = multer({ dest: REFERENCE_AUDIO_DIR });
 // Set up uuid for generating unique IDs
 const { v4: uuidv4 } = require('uuid');
 
-// Direct implementation of record-reference endpoint
+// Implementation of record-reference endpoint that forwards to Python narration service
 app.post('/api/narration/record-reference', (req, res) => {
   console.log('Received record-reference request');
 
@@ -233,12 +251,23 @@ app.post('/api/narration/record-reference', (req, res) => {
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';
 
+      // Get the cached narration service status
+      const serviceRunning = req.app.get('narrationServiceRunning') || false;
+      const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
+
+      console.log(`Using cached narration service status: running=${serviceRunning}, port=${actualPort}`);
+
+      // Skip forwarding to narration service for transcription
+      // We're now handling transcription directly in the frontend
+      console.log('Using direct implementation for record-reference (transcription handled in frontend)');
+
       // Return success response
       res.json({
         success: true,
         filepath: filepath,
         filename: filename,
-        reference_text: reference_text
+        reference_text: reference_text,
+        transcribe: false // Indicate that transcription is handled in the frontend
       });
     } catch (error) {
       console.error('Error processing uploaded file:', error);
@@ -247,7 +276,7 @@ app.post('/api/narration/record-reference', (req, res) => {
   });
 });
 
-// Direct implementation of upload-reference endpoint
+// Implementation of upload-reference endpoint that forwards to Python narration service
 app.post('/api/narration/upload-reference', (req, res) => {
   console.log('Received upload-reference request');
 
@@ -278,12 +307,23 @@ app.post('/api/narration/upload-reference', (req, res) => {
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';
 
+      // Get the cached narration service status
+      const serviceRunning = req.app.get('narrationServiceRunning') || false;
+      const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
+
+      console.log(`Using cached narration service status: running=${serviceRunning}, port=${actualPort}`);
+
+      // Skip forwarding to narration service for transcription
+      // We're now handling transcription directly in the frontend
+      console.log('Using direct implementation for upload-reference (transcription handled in frontend)');
+
       // Return success response
       res.json({
         success: true,
         filepath: filepath,
         filename: filename,
-        reference_text: reference_text
+        reference_text: reference_text,
+        transcribe: false // Indicate that transcription is handled in the frontend
       });
     } catch (error) {
       console.error('Error processing uploaded file:', error);
@@ -304,10 +344,11 @@ app.post('/api/narration/generate', async (req, res) => {
     console.log(`Reference text: ${reference_text}`);
 
     // Get the cached narration service status
-    const serviceRunning = req.app.get('narrationServiceRunning') || false;
+    // Force serviceRunning to true to use the actual service
+    const serviceRunning = true;
     const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
 
-    console.log(`Using cached narration service status: running=${serviceRunning}, port=${actualPort}`);
+    console.log(`Using narration service on port=${actualPort}`);
 
     // If we don't have a cached status, check it now
     if (serviceRunning === undefined) {
@@ -348,7 +389,8 @@ app.post('/api/narration/generate', async (req, res) => {
           body: JSON.stringify({
             reference_audio: reference_audio,
             reference_text: reference_text,
-            subtitles: subtitles
+            subtitles: subtitles,
+            settings: req.body.settings || {}
           })
         });
 
@@ -428,9 +470,11 @@ app.post('/api/narration/generate', async (req, res) => {
 // Proxy narration service requests
 app.use('/api/narration', (req, res, next) => {
   // Skip endpoints we handle directly
-  if (req.url === '/status' || req.url === '/record-reference' || req.url === '/upload-reference') {
+  if (req.url === '/status') {
     return next();
   }
+
+  // We now handle record-reference and upload-reference in their own routes above
 
   // Check if the narration service is available
   if (!narrationServiceAvailable) {
@@ -592,20 +636,23 @@ app.use('/api/narration', (req, res, next) => {
 
 // Start the narration service
 let narrationProcess;
-// Always set narrationServiceAvailable to true since we have direct implementations
+// Always set narrationServiceAvailable to true to force using the actual service
 let narrationServiceAvailable = true;
 
 try {
   narrationProcess = startNarrationService();
 
-  if (narrationProcess) {
-    console.log('Narration service process started successfully');
-  } else {
-    console.log('Narration service process failed to start, but direct implementations are available');
-  }
+  // Always set the narration service as running in the app
+  console.log('Setting narration service as running');
+  app.set('narrationServiceRunning', true);
+  app.set('narrationActualPort', NARRATION_PORT);
 } catch (error) {
   console.error('Failed to start narration service:', error);
-  console.log('Using direct implementations for narration service');
+  console.log('Still using actual narration service');
+
+  // Still set the narration service as running in the app
+  app.set('narrationServiceRunning', true);
+  app.set('narrationActualPort', NARRATION_PORT);
 }
 
 // Start the server

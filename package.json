@@ -4,7 +4,7 @@
   "description": "A subtitle generator application using Gemini AI",
   "homepage": "./",
   "scripts": {
-    "start": "set PORT=3005 && react-scripts start",
+    "start": "set PORT=3008 && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
