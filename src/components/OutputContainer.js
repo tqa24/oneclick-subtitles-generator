@@ -93,20 +93,17 @@ const OutputContainer = ({
     // First check for uploaded file
     const uploadedFileUrl = localStorage.getItem('current_file_url');
     if (uploadedFileUrl) {
-      console.log('Setting video source to uploaded file:', uploadedFileUrl);
       setVideoSource(uploadedFileUrl);
       return;
     }
 
     // Then check for YouTube video
     if (selectedVideo?.url) {
-      console.log('Setting video source to YouTube URL:', selectedVideo.url);
       setVideoSource(selectedVideo.url);
       return;
     }
 
     // Clear video source if nothing is selected
-    console.log('No video source found, clearing video source');
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
 
@@ -118,7 +115,6 @@ const OutputContainer = ({
       if (lastSubtitle && lastSubtitle.end) {
         // Add a small buffer to the end (10 seconds)
         setVideoDuration(lastSubtitle.end + 10);
-        console.log('Set virtual duration for SRT-only mode:', lastSubtitle.end + 10);
       }
     }
   }, [isSrtOnlyMode, subtitlesData]);
@@ -144,17 +140,14 @@ const OutputContainer = ({
             segments={segmentsStatus}
             overallStatus={status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')}
             statusType={status?.type || 'success'}
-            onRetrySegment={(segmentIndex, segments, options) => {
-              console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments, 'options:', options);
+            onRetrySegment={(segmentIndex, _, options) => {
               onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
             }}
             userProvidedSubtitles={userProvidedSubtitles}
             onRetryWithModel={(segmentIndex, modelId) => {
-              console.log('OutputContainer: Retrying segment', segmentIndex, 'with model', modelId, 'and videoSegments:', videoSegments);
               onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);
             }}
             onGenerateSegment={(segmentIndex) => {
-              console.log('OutputContainer: Generating segment', segmentIndex, 'with videoSegments:', videoSegments);
               onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
             }}
             retryingSegments={retryingSegments}
@@ -171,17 +164,14 @@ const OutputContainer = ({
           segments={segmentsStatus}
           overallStatus={t('output.segmentsReady', 'Video segments are ready for processing!')}
           statusType="success"
-          onRetrySegment={(segmentIndex, segments, options) => {
-            console.log('OutputContainer: Retrying segment', segmentIndex, 'with videoSegments:', videoSegments, 'options:', options);
+          onRetrySegment={(segmentIndex, _, options) => {
             onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
           }}
           userProvidedSubtitles={userProvidedSubtitles}
           onRetryWithModel={(segmentIndex, modelId) => {
-            console.log('OutputContainer: Retrying segment', segmentIndex, 'with model', modelId, 'and videoSegments:', videoSegments);
             onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);
           }}
           onGenerateSegment={(segmentIndex) => {
-            console.log('OutputContainer: Generating segment', segmentIndex, 'with videoSegments:', videoSegments);
             onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
           }}
           retryingSegments={retryingSegments}
@@ -241,7 +231,6 @@ const OutputContainer = ({
 
           {/* Translation Section */}
           <>
-            {console.log('OutputContainer passing data to TranslationSection')}
             <TranslationSection
               subtitles={editedLyrics || subtitlesData}
               videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
@@ -251,7 +240,6 @@ const OutputContainer = ({
 
           {/* Unified Narration Section - Now separate from Translation */}
           <>
-            {console.log('OutputContainer rendering UnifiedNarrationSection with referenceAudio and videoPath:', referenceAudio, actualVideoUrl)}
             <UnifiedNarrationSection
               subtitles={translatedSubtitles || editedLyrics || subtitlesData}
               originalSubtitles={editedLyrics || subtitlesData}
