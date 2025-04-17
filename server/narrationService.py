@@ -5,7 +5,7 @@ import base64
 import requests
 import json
 import time
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
@@ -748,11 +748,17 @@ def extract_audio_segment():
         logger.error(f"Error extracting audio segment: {e}")
         return jsonify({'error': str(e)}), 500
 
-@narration_bp.route('/generate', methods=['POST'])
+@narration_bp.route('/generate', methods=['POST', 'HEAD'])
 def generate_narration():
     """Generate narration for subtitles"""
     if not HAS_F5TTS:
         return jsonify({'error': 'F5-TTS is not available'}), 503
+
+    # Handle HEAD request to check if streaming is supported
+    if request.method == 'HEAD':
+        response = Response()
+        response.headers['Content-Type'] = 'text/event-stream'
+        return response
 
     data = request.json
     reference_audio = data.get('reference_audio')
@@ -823,51 +829,110 @@ def generate_narration():
         # Use the same device as the global model
         current_device = device
 
-        # Initialize a new model instance for this specific request
-        request_model = F5TTS(device=current_device)
+        # Initialize request_model variable
+        request_model = None
 
-        # Log the device being used
-        logger.info(f"New F5TTS instance created with device: {current_device}")
+        try:
+            # Initialize a new model instance for this specific request
+            request_model = F5TTS(device=current_device)
+            # Log the device being used
+            logger.info(f"New F5TTS instance created with device: {current_device}")
 
-        results = []
+            # Verify the model was created successfully
+            if request_model is None:
+                error_msg = "F5-TTS model initialization failed"
+                logger.error(error_msg)
+                return jsonify({'error': error_msg}), 500
+        except Exception as e:
+            logger.error(f"Error creating F5TTS instance: {e}")
+            return jsonify({'error': f'Error initializing F5-TTS: {str(e)}'}), 500
 
-        for subtitle in subtitles:
-            subtitle_id = subtitle.get('id')
-            text = subtitle.get('text', '')
+        # Create a local copy of the model for the generator function
+        model_for_generator = request_model
 
-            if not text:
-                continue
+        # Use Flask's streaming response to send results incrementally
+        def generate_narration_stream(model=model_for_generator):
+            # Initialize results list
+            results = []
 
-            # Generate a unique filename for this subtitle
-            unique_id = str(uuid.uuid4())
-            output_filename = f"narration_{subtitle_id}_{unique_id}.wav"
-            output_path = os.path.join(OUTPUT_AUDIO_DIR, output_filename)
+            # Check if the model was successfully created
+            if model is None:
+                error_msg = "F5-TTS model initialization failed"
+                logger.error(error_msg)
+                yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
+                return
 
-            # Generate narration
-            try:
-                # Generate narration and save to file
-                logger.info(f"Generating narration for subtitle {subtitle_id} using device: {current_device}")
-                logger.info(f"Using reference audio: {reference_audio}")
-                logger.info(f"Using reference text: {reference_text}")
-                logger.info(f"Generating for text: {text}")
+            # Process each subtitle one by one
+            for subtitle in subtitles:
+                subtitle_id = subtitle.get('id')
+                text = subtitle.get('text', '')
 
-                # Handle character encoding issues
+                if not text:
+                    # Skip empty subtitles but still send a response
+                    result = {
+                        'subtitle_id': subtitle_id,
+                        'text': '',
+                        'success': True,
+                        'skipped': True
+                    }
+                    results.append(result)
+                    # Send the current result as a JSON string followed by a special delimiter
+                    yield f"data: {json.dumps({'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)})}\n\n"
+                    continue
+
+                # Generate a unique filename for this subtitle
+                unique_id = str(uuid.uuid4())
+                output_filename = f"narration_{subtitle_id}_{unique_id}.wav"
+                output_path = os.path.join(OUTPUT_AUDIO_DIR, output_filename)
+
+                # Send progress update with more detailed message
+                progress_message = f'Generating narration for subtitle {subtitle_id} ({len(results) + 1}/{len(subtitles)})'
+                logger.info(progress_message)
+                yield f"data: {json.dumps({'type': 'progress', 'message': progress_message, 'current': len(results) + 1, 'total': len(subtitles)})}\n\n"
+
                 try:
-                    # Try to encode the text to ASCII to check for non-ASCII characters
-                    text.encode('ascii')
-                except UnicodeEncodeError:
-                    # If there are non-ASCII characters, replace them with their ASCII equivalents or remove them
-                    import unicodedata
-                    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
-                    logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
+                    # Generate narration and save to file
+                    logger.info(f"Generating narration for subtitle {subtitle_id} using device: {current_device}")
+                    logger.info(f"Using reference audio: {reference_audio}")
+                    logger.info(f"Using reference text: {reference_text}")
+                    logger.info(f"Generating for text: {text}")
 
-                # Force CUDA if available
-                import torch
-                if torch.cuda.is_available():
-                    logger.info(f"Using CUDA for subtitle {subtitle_id} generation")
-                    with torch.cuda.device(0):
-                        # Use the request-specific model instance with supported settings
-                        request_model.infer(
+                    # Double-check that the model is still valid
+                    if model is None:
+                        raise ValueError("Model is not available for generation")
+
+                    # Handle character encoding issues
+                    try:
+                        # Try to encode the text to ASCII to check for non-ASCII characters
+                        text.encode('ascii')
+                    except UnicodeEncodeError:
+                        # If there are non-ASCII characters, replace them with their ASCII equivalents or remove them
+                        import unicodedata
+                        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+                        logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
+
+                    # Force CUDA if available
+                    import torch
+                    if torch.cuda.is_available():
+                        logger.info(f"Using CUDA for subtitle {subtitle_id} generation")
+                        with torch.cuda.device(0):
+                            # Use the model instance with supported settings
+                            model.infer(
+                                ref_file=reference_audio,
+                                ref_text=reference_text,
+                                gen_text=text,
+                                file_wave=output_path,
+                                remove_silence=remove_silence,
+                                speed=speed,
+                                nfe_step=nfe_step,
+                                sway_sampling_coef=sway_coef,
+                                cfg_strength=cfg_strength,
+                                seed=seed
+                            )
+                    else:
+                        logger.warning(f"CUDA not available for subtitle {subtitle_id} generation, using CPU")
+                        # Use the model instance with supported settings
+                        model.infer(
                             ref_file=reference_audio,
                             ref_text=reference_text,
                             gen_text=text,
@@ -879,50 +944,80 @@ def generate_narration():
                             cfg_strength=cfg_strength,
                             seed=seed
                         )
-                else:
-                    logger.warning(f"CUDA not available for subtitle {subtitle_id} generation, using CPU")
-                    # Use the request-specific model instance with supported settings
-                    request_model.infer(
-                        ref_file=reference_audio,
-                        ref_text=reference_text,
-                        gen_text=text,
-                        file_wave=output_path,
-                        remove_silence=remove_silence,
-                        speed=speed,
-                        nfe_step=nfe_step,
-                        sway_sampling_coef=sway_coef,
-                        cfg_strength=cfg_strength,
-                        seed=seed
-                    )
-                logger.info(f"Successfully generated narration for subtitle {subtitle_id}")
+                    logger.info(f"Successfully generated narration for subtitle {subtitle_id}")
 
-                results.append({
-                    'subtitle_id': subtitle_id,
-                    'text': text,
-                    'audio_path': output_path,
-                    'filename': output_filename,
-                    'success': True
-                })
+                    # Create result object
+                    result = {
+                        'subtitle_id': subtitle_id,
+                        'text': text,
+                        'audio_path': output_path,
+                        'filename': output_filename,
+                        'success': True
+                    }
+                    results.append(result)
 
+                    # Send the current result as a JSON string followed by a special delimiter
+                    result_data = {'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)}
+                    logger.info(f"Sending result for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
+                    yield f"data: {json.dumps(result_data)}\n\n"
+
+                    # Free memory after each generation
+                    try:
+                        if torch.cuda.is_available():
+                            # Force garbage collection
+                            import gc
+                            gc.collect()
+
+                            # Empty CUDA cache
+                            torch.cuda.empty_cache()
+                            logger.info(f"Cleared CUDA cache after generating subtitle {subtitle_id}")
+                    except Exception as mem_error:
+                        logger.error(f"Error freeing memory: {mem_error}")
+
+                except Exception as e:
+                    logger.error(f"Error generating narration for subtitle {subtitle_id}: {e}")
+                    result = {
+                        'subtitle_id': subtitle_id,
+                        'text': text,
+                        'error': str(e),
+                        'success': False
+                    }
+                    results.append(result)
+
+                    # Send the error result
+                    error_data = {'type': 'error', 'result': result, 'progress': len(results), 'total': len(subtitles)}
+                    logger.info(f"Sending error for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
+                    yield f"data: {json.dumps(error_data)}\n\n"
+
+            # Clean up the model to free memory if it exists
+            try:
+                # Force garbage collection
+                import gc
+                gc.collect()
+
+                if torch.cuda.is_available():
+                    # Empty CUDA cache
+                    torch.cuda.empty_cache()
+
+                    # Log memory usage
+                    allocated = torch.cuda.memory_allocated(0)
+                    reserved = torch.cuda.memory_reserved(0)
+                    logger.info(f"Cleared CUDA cache after generation. Memory allocated: {allocated/1024**2:.2f}MB, reserved: {reserved/1024**2:.2f}MB")
             except Exception as e:
-                logger.error(f"Error generating narration for subtitle {subtitle_id}: {e}")
-                results.append({
-                    'subtitle_id': subtitle_id,
-                    'text': text,
-                    'error': str(e),
-                    'success': False
-                })
+                logger.error(f"Error cleaning up resources: {e}")
 
-        # Clean up the request-specific model to free memory
-        del request_model
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            logger.info("Cleared CUDA cache after generation")
+            # Send final completion message
+            complete_data = {'type': 'complete', 'results': results, 'total': len(results)}
+            logger.info(f"Sending completion message with {len(results)} results")
+            yield f"data: {json.dumps(complete_data)}\n\n"
 
-        return jsonify({
-            'success': True,
-            'results': results
-        })
+        # Return a streaming response with error handling
+        try:
+            # Pass the model explicitly to the generator function
+            return Response(generate_narration_stream(model=model_for_generator), mimetype='text/event-stream')
+        except Exception as e:
+            logger.error(f"Unexpected error in streaming response: {e}")
+            return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
     except Exception as e:
         logger.error(f"Error generating narration: {e}")

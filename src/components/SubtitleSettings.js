@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/SubtitleSettings.css';
+import NarrationPlaybackMenu from './narration/NarrationPlaybackMenu';
+import SimpleNarrationMenu from './narration/SimpleNarrationMenu';
 
 const SubtitleSettings = ({
   settings,
@@ -9,7 +11,11 @@ const SubtitleSettings = ({
   onDownloadWithTranslatedSubtitles,
   hasTranslation,
   translatedSubtitles,
-  targetLanguage
+  targetLanguage,
+  videoRef,
+  originalNarrations = [],
+  translatedNarrations = [],
+  getAudioUrl
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(() => {
@@ -150,8 +156,297 @@ const SubtitleSettings = ({
 
   // Position is now a percentage value from 0 (top) to 100 (bottom)
 
+  // Log narration data for debugging
+  console.log('SubtitleSettings narration data:', {
+    originalNarrations: originalNarrations?.length || 0,
+    translatedNarrations: translatedNarrations?.length || 0,
+    videoRef: !!videoRef,
+    getAudioUrl: !!getAudioUrl
+  });
+
+  // Create states for the narration menu
+  const [showNarrationMenu, setShowNarrationMenu] = useState(false);
+  const [narrationSource, setNarrationSource] = useState('original');
+  const [narrationVolume, setNarrationVolume] = useState(0.8);
+  const [videoVolume, setVideoVolume] = useState(0.3);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Reference for the menu container
+  const menuRef = useRef(null);
+
+  // Add escape key and click outside handlers to close the menu
+  useEffect(() => {
+    // Handle escape key
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && showNarrationMenu) {
+        console.log('Escape key pressed, closing narration menu');
+        setShowNarrationMenu(false);
+      }
+    };
+
+    // Handle click outside
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target) && showNarrationMenu) {
+        console.log('Click outside detected, closing narration menu');
+        setShowNarrationMenu(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNarrationMenu]);
+
+  // Update video volume when it changes
+  useEffect(() => {
+    if (videoRef && videoRef.current) {
+      videoRef.current.volume = videoVolume;
+    }
+  }, [videoVolume, videoRef]);
+
   return (
     <div className="subtitle-settings-container">
+      {/* Direct narration button */}
+      <div ref={menuRef} style={{ position: 'absolute', left: '-50px', top: '0', zIndex: 1000 }}>
+        <button
+          onClick={() => setShowNarrationMenu(!showNarrationMenu)}
+          style={{
+            width: '40px',
+            height: '40px',
+            backgroundColor: showNarrationMenu ? '#1565C0' : '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '20px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          N
+        </button>
+
+        {/* Direct menu panel */}
+        {showNarrationMenu && (
+          <div
+            style={{
+              position: 'absolute',
+              left: '50px',
+              top: '0',
+              width: '300px',
+              backgroundColor: 'white',
+              border: '1px solid #ccc',
+              borderRadius: '8px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              zIndex: 9999,
+              padding: '16px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0 }}>{t('narration.playbackTitle', 'Narration')}</h3>
+              <button
+                onClick={() => setShowNarrationMenu(false)}
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Playback Controls */}
+            <div style={{ marginBottom: '16px' }}>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  backgroundColor: isPlaying ? '#f44336' : '#2196F3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                {isPlaying ? (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="6" y="4" width="4" height="16" fill="currentColor"></rect>
+                      <rect x="14" y="4" width="4" height="16" fill="currentColor"></rect>
+                    </svg>
+                    {t('narration.stopPlayback', 'Stop Narration')}
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>
+                    </svg>
+                    {t('narration.startPlayback', 'Play Narration')}
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Narration Source Selection */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                {t('narration.narrationSource', 'Source')}:
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <label style={{
+                  flex: 1,
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '16px',
+                  backgroundColor: narrationSource === 'original' ? '#e3f2fd' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="radio"
+                    name="narration-source"
+                    checked={narrationSource === 'original'}
+                    onChange={() => setNarrationSource('original')}
+                    style={{ marginRight: '4px' }}
+                  />
+                  {t('narration.original', 'Original')}
+                </label>
+                <label style={{
+                  flex: 1,
+                  padding: '8px',
+                  border: '1px solid #ccc',
+                  borderRadius: '16px',
+                  backgroundColor: narrationSource === 'translated' ? '#e3f2fd' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="radio"
+                    name="narration-source"
+                    checked={narrationSource === 'translated'}
+                    onChange={() => setNarrationSource('translated')}
+                    style={{ marginRight: '4px' }}
+                  />
+                  {t('narration.translated', 'Translated')}
+                </label>
+              </div>
+            </div>
+
+            {/* Volume Controls */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: '500' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  </svg>
+                  {t('narration.narrationVolume', 'Narration Volume')}:
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={narrationVolume}
+                    onChange={(e) => setNarrationVolume(parseFloat(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ minWidth: '40px', textAlign: 'right' }}>{Math.round(narrationVolume * 100)}%</span>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: '500' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                  </svg>
+                  {t('narration.videoVolume', 'Video Audio Volume')}:
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={videoVolume}
+                    onChange={(e) => setVideoVolume(parseFloat(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ minWidth: '40px', textAlign: 'right' }}>{Math.round(videoVolume * 100)}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Message */}
+            <div style={{
+              padding: '12px',
+              backgroundColor: '#e3f2fd',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              borderLeft: '4px solid #2196F3'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>
+                  {narrationSource === 'original'
+                    ? t('narration.originalNarrationReady', 'Original narration ready for playback')
+                    : t('narration.translatedNarrationReady', 'Translated narration ready for playback')}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNarrationMenu(false)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '20px',
+                marginTop: '16px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              {t('narration.closeMenu', 'Close Menu')}
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="action-buttons">
         {/* Render with Subtitles and Render with Translated buttons hidden for now */}
 

@@ -1,0 +1,361 @@
+/* Narration Playback Menu Styles - Material Design 3 */
+
+.narration-playback-container {
+  position: absolute;
+  left: -50px; /* Position to the left of the subtitle-settings-container */
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Toggle button */
+.narration-playback-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--md-elevation-level2);
+  transition: all 0.3s ease;
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  left: 10px; /* Move button slightly to the right */
+}
+
+.narration-playback-toggle:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: var(--md-elevation-level3);
+}
+
+/* Menu panel */
+.narration-playback-menu {
+  width: 300px;
+  background-color: var(--md-surface-2, #f5f5f5);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.1);
+  overflow: hidden;
+  position: absolute;
+  left: 50px; /* Position to the right of the button */
+  top: 0; /* Align with the top of the container */
+  z-index: 1002; /* Ensure it's above other elements */
+}
+
+/* Open state */
+.narration-playback-container.open .narration-playback-menu {
+  transform: translateX(0) !important;
+  display: block !important; /* Force display when open */
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Add a visible indicator when the menu is open */
+.narration-playback-container.open .narration-playback-toggle {
+  background-color: #1565C0 !important; /* Darker blue when open */
+  box-shadow: 0 0 0 2px white, 0 0 0 4px #2196F3; /* Add a glow effect */
+}
+
+/* Menu header */
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--md-surface-3);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.menu-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.close-menu {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.close-menu:hover {
+  background-color: var(--md-surface-4);
+  color: var(--text-primary);
+}
+
+/* Menu content */
+.menu-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Playback controls */
+.playback-controls {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* Narration source selection */
+.narration-source {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.narration-source label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+/* Volume controls */
+.volume-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.volume-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.volume-control label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+/* Slider container */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.range-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--md-surface-variant);
+  border-radius: 2px;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px var(--md-primary-container);
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px var(--md-primary-container);
+}
+
+.slider-value {
+  min-width: 40px;
+  text-align: right;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+/* Status message */
+.narration-status {
+  margin-top: 8px;
+}
+
+.status-message {
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.status-message svg {
+  flex-shrink: 0;
+}
+
+.status-message.info {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-left: 4px solid var(--md-primary);
+}
+
+.status-message.warning {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-left: 4px solid var(--md-tertiary);
+}
+
+.narration-count {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+/* Radio pill group */
+.radio-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.radio-pill {
+  position: relative;
+}
+
+.radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-pill label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.radio-pill input[type="radio"]:checked + label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.radio-pill input[type="radio"]:disabled + label {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+}
+
+/* Pill button */
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.pill-button:hover {
+  background-color: var(--md-surface-4);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.pill-button:active {
+  transform: translateY(1px);
+}
+
+.pill-button.primary {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.pill-button.primary:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.pill-button.error {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.pill-button.error:hover {
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+}
+
+.pill-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+}
+
+.pill-button:disabled:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .narration-playback-container {
+    top: auto;
+    bottom: 20px;
+    left: 0;
+    transform: none;
+  }
+
+  .narration-playback-menu {
+    width: 280px;
+  }
+}

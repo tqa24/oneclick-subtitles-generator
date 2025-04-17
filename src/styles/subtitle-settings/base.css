@@ -4,6 +4,8 @@
   display: flex;
   align-items: center;
   font-family: 'Roboto', 'Poppins', sans-serif;
+  position: relative; /* Add position relative for absolute positioning of children */
+  margin-left: 50px; /* Add margin to make space for the narration button */
 }
 
 /* Animations */

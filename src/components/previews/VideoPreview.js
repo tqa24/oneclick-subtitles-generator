@@ -498,6 +498,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
           translatedSubtitles={translatedSubtitles}
           targetLanguage={translatedSubtitles && translatedSubtitles.length > 0 && translatedSubtitles[0].language}
+          videoRef={videoRef}
+          originalNarrations={window.originalNarrations || [{ subtitle_id: 'test', subtitle: { start: 1, end: 5 }, filename: 'test.wav', success: true, text: 'Test narration' }]}
+          translatedNarrations={window.translatedNarrations || []}
+          getAudioUrl={(filename) => `${SERVER_URL}/narration/audio/${filename || 'test.wav'}`}
         />
       </div>
 

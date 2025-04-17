@@ -18,6 +18,7 @@
   "preparingGeneration": "Preparing to generate narration...",
   "generatingNarration": "Generating narration for {{count}} subtitles...",
   "generatingNarrationWithSource": "Generating narration for {{count}} {{source}}...",
+  "generatingProgress": "Generated {{progress}} of {{total}} narrations...",
   "generationComplete": "Narration generation complete",
   "results": "Generated Narration",
   "play": "Play",
