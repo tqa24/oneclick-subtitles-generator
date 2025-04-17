@@ -169,24 +169,7 @@
   gap: 0.5rem;
 }
 
-.time-inputs {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
-.time-inputs input {
-  width: 80px;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background-color: var(--md-surface-2);
-  color: var(--text-color-primary);
-}
-
-.time-inputs span {
-  color: var(--text-color-secondary);
-}
 
 .narration-error {
   color: var(--md-error);

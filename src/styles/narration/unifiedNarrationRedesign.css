@@ -80,12 +80,32 @@
 .audio-player-container {
   width: 100%;
   margin-bottom: 0.5rem;
+  max-width: 600px;
 }
 
 .audio-player {
   width: 100%;
   height: 36px;
   border-radius: 8px;
+}
+
+/* Audio status container */
+.audio-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.audio-status-container .status-message {
+  position: static;
+  margin: 0;
+  max-width: none;
+  pointer-events: auto;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Pill buttons for actions */
@@ -165,6 +185,16 @@
   gap: 0.5rem;
 }
 
+/* Audio controls container */
+.audio-controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 /* Audio controls */
 .audio-controls {
   display: flex;
@@ -173,28 +203,45 @@
   margin-top: 0.5rem;
 }
 
-/* Time inputs */
-.time-inputs {
+/* Audio preview */
+.audio-preview {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-left: auto;
+  max-width: 300px;
+  flex-shrink: 0;
 }
 
-.time-input {
-  width: 80px;
-  padding: 0.5rem;
+.audio-preview .audio-player-container {
+  flex: 1;
+  margin-bottom: 0;
+  min-width: 200px;
+}
+
+.audio-preview .audio-player {
+  width: 100%;
+  height: 36px;
   border-radius: 8px;
-  border: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-1);
-  color: var(--md-on-surface);
-  font-size: 0.9rem;
-  transition: border-color 0.2s ease;
 }
 
-.time-input:focus {
-  outline: none;
-  border-color: var(--md-primary);
+.audio-preview .clear-button {
+  padding: 0.35rem;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.audio-preview .status-message {
+  margin-bottom: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+
 
 /* Switch component */
 .switch-container {
@@ -203,17 +250,54 @@
   gap: 0.75rem;
 }
 
+/* Switch container in reference content row */
+.reference-content-row .switch-container {
+  background-color: var(--md-surface-1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 24px;
+  border: 1px solid var(--md-outline-variant);
+  /* Ensure it's clickable */
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0.5rem; /* Align with textarea */
+}
+
+/* Help icon container */
+.help-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.help-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--md-outline);
+  transition: color 0.2s ease;
+}
+
+.help-icon:hover {
+  color: var(--md-primary);
+}
+
+/* Switch styling - Material Design toggle */
 .switch {
   position: relative;
   display: inline-block;
   width: 36px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .toggle-slider {
@@ -224,8 +308,9 @@
   right: 0;
   bottom: 0;
   background-color: var(--md-surface-variant);
-  transition: .4s;
-  border-radius: 20px;
+  transition: background-color 0.3s ease;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .toggle-slider:before {
@@ -236,8 +321,9 @@
   left: 2px;
   bottom: 2px;
   background-color: var(--md-on-surface-variant);
-  transition: .4s;
+  transition: transform 0.3s ease, background-color 0.3s ease;
   border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 input:checked + .toggle-slider {
@@ -247,6 +333,24 @@ input:checked + .toggle-slider {
 input:checked + .toggle-slider:before {
   background-color: var(--md-on-primary);
   transform: translateX(16px);
+}
+
+/* Disabled state */
+input:disabled + .toggle-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Focus state for accessibility */
+input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+}
+
+/* Reference text container */
+.reference-text-container {
+  position: relative;
+  flex: 1;
+  min-width: 0; /* Prevent flex item from overflowing */
 }
 
 /* Reference text */
@@ -260,17 +364,36 @@ input:checked + .toggle-slider:before {
   font-size: 0.95rem;
   resize: vertical;
   min-height: 60px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .reference-text:focus {
   outline: none;
   border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
 }
 
 .reference-text:disabled {
   background-color: var(--md-surface-2);
   cursor: not-allowed;
+}
+
+/* Recognizing indicator */
+.recognizing-indicator {
+  position: absolute;
+  bottom: -40px;
+  right: 0;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  z-index: 1;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
 }
 
 /* Radio pill group */
@@ -318,6 +441,32 @@ input:checked + .toggle-slider:before {
   color: var(--md-on-surface-variant);
 }
 
+/* Reference audio container */
+.reference-audio-container {
+  position: relative;
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--md-surface-2);
+  border-radius: 12px;
+  border: 1px solid var(--md-outline-variant);
+}
+
+/* Reference content row */
+.reference-content-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Improve reference audio row styling */
+.reference-audio-row .row-content {
+  padding: 0;
+}
+
 /* Status messages */
 .status-message {
   padding: 0.75rem 1rem;
@@ -352,31 +501,41 @@ input:checked + .toggle-slider:before {
   border-left: 4px solid var(--md-secondary);
 }
 
-/* Advanced settings toggle */
-.advanced-settings-toggle {
-  display: flex;
+/* Status message success inside reference-audio-container */
+.reference-audio-container .status-message.success {
+  position: absolute;
+  top: 4.5rem; /* Position below the header */
+  right: 1rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  max-width: 200px;
+  z-index: 1;
+  border-radius: 4px;
+  box-shadow: var(--md-elevation-level1);
+  font-size: 0.8rem;
+  border-left-width: 2px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+  /* Ensure it doesn't cover other elements */
+  height: fit-content;
+  pointer-events: none;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background-color: var(--md-surface-2);
-  border-radius: 8px;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  border: 1px solid var(--md-outline-variant);
-  transition: background-color 0.2s ease;
 }
 
-.advanced-settings-toggle:hover {
-  background-color: var(--md-surface-3);
+.reference-audio-container .status-message.success:hover {
+  opacity: 1;
 }
 
-.advanced-settings-toggle-icon {
-  transition: transform 0.3s ease;
+/* Clear button styling */
+.reference-audio-container .clear-button {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
 }
 
-.advanced-settings-toggle-icon.expanded {
-  transform: rotate(180deg);
-}
+
+
+/* Advanced settings button - Styling moved to advancedSettingsModal.css */
 
 /* Results section */
 .results-section {
@@ -461,15 +620,25 @@ input:checked + .toggle-slider:before {
     width: 100%;
   }
 
-  .audio-controls {
+  .audio-controls-container {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
   }
 
-  .time-inputs {
+  .audio-controls {
+    flex-direction: row;
+    align-items: center;
     width: 100%;
-    margin-bottom: 0.5rem;
   }
+
+  .audio-preview {
+    margin-left: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+
 
   .result-item {
     flex-direction: column;
@@ -486,4 +655,35 @@ input:checked + .toggle-slider:before {
     width: 100%;
     justify-content: flex-end;
   }
+
+  /* Responsive containers */
+  .reference-text-container,
+  .audio-player-container {
+    max-width: 100%;
+  }
+
+  /* Responsive status message in reference-audio-container */
+  .reference-audio-container .status-message.success {
+    position: static;
+    max-width: 100%;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Responsive reference content row */
+  .reference-content-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reference-content-row .switch-container {
+    margin-top: 0.75rem;
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.75rem;
+  }
+
+
 }

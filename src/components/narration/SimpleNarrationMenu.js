@@ -11,17 +11,13 @@ const SimpleNarrationMenu = () => {
 
   // Toggle menu open/closed
   const toggleMenu = () => {
-    console.log('Toggle menu called, current state:', isOpen);
     setIsOpen(!isOpen);
   };
 
   // Close menu
   const closeMenu = () => {
-    console.log('Close menu called');
     setIsOpen(false);
   };
-
-  console.log('SimpleNarrationMenu rendering, isOpen:', isOpen);
 
   return (
     <div style={{ position: 'absolute', left: '-50px', top: '0', zIndex: 1000 }}>

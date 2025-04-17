@@ -345,39 +345,7 @@
   gap: 8px;
 }
 
-.unified-narration-section .time-inputs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.unified-narration-section .time-inputs input {
-  width: 90px;
-  padding: 10px 12px;
-  border: 1px solid var(--outline, #ced4da);
-  border-radius: 8px;
-  background-color: var(--surface, #ffffff);
-  color: var(--on-surface, #212529);
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-[data-theme='dark'] .unified-narration-section .time-inputs input {
-  background-color: var(--surface, #343a40);
-  color: var(--on-surface, #f8f9fa);
-  border-color: var(--outline, #495057);
-}
-
-.unified-narration-section .time-inputs input:focus {
-  outline: none;
-  border-color: var(--primary, #0066cc);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
-}
-
-[data-theme='dark'] .unified-narration-section .time-inputs input:focus {
-  border-color: var(--primary, #0d6efd);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
-}
 
 .unified-narration-section .narration-error {
   margin: 16px 0;

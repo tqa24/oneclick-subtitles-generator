@@ -57,6 +57,28 @@
   background-color: color-mix(in srgb, var(--md-secondary-container), rgba(0, 0, 0, var(--md-state-hover-opacity)));
 }
 
+.subtitle-settings-toggle.md-filled-tonal-button.active {
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Narration settings button styles */
+.narration-settings-toggle.md-filled-tonal-button {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.narration-settings-toggle.md-filled-tonal-button:hover {
+  background-color: color-mix(in srgb, var(--md-tertiary-container), rgba(0, 0, 0, var(--md-state-hover-opacity)));
+}
+
+.narration-settings-toggle.md-filled-tonal-button.active {
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+  box-shadow: var(--md-elevation-level2);
+}
+
 /* Header buttons */
 .transparency-toggle-btn,
 .close-settings-btn {
