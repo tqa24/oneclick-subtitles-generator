@@ -79,19 +79,15 @@ console.log('Narration service using API_BASE_URL:', API_BASE_URL);
  */
 export const checkNarrationStatus = async () => {
   try {
-    console.log('Checking narration service status');
     const response = await fetch(`${API_BASE_URL}/narration/status`);
 
     if (!response.ok) {
-      console.error('Narration service status check failed:', response.status);
       return { available: false, error: `Server returned ${response.status}` };
     }
 
     const data = await response.json();
-    console.log('Narration service status:', data);
     return data;
   } catch (error) {
-    console.error('Error checking narration status:', error);
     return { available: false, error: error.message };
   }
 };
@@ -104,8 +100,6 @@ export const checkNarrationStatus = async () => {
  */
 export const uploadReferenceAudio = async (file, referenceText = '') => {
   try {
-    console.log('Uploading reference audio file:', file.name, 'size:', file.size);
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -120,22 +114,18 @@ export const uploadReferenceAudio = async (file, referenceText = '') => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Server returned error:', response.status, errorText);
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
-      console.error('Server returned non-JSON response:', text);
       throw new Error('Server returned non-JSON response');
     }
 
     const data = await response.json();
-    console.log('Upload response:', data);
     return data;
   } catch (error) {
-    console.error('Error uploading reference audio:', error);
     throw error;
   }
 };
@@ -148,11 +138,7 @@ export const uploadReferenceAudio = async (file, referenceText = '') => {
  */
 export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
   try {
-    console.log('Saving recorded audio, blob size:', audioBlob.size, 'type:', audioBlob.type);
-    console.time('saveRecordedAudio'); // Start timing
-
-    // Simplify: Use the original blob directly with FormData
-    // This is the most reliable approach
+    // Use the original blob directly with FormData
     const formData = new FormData();
 
     // Make sure we have a proper filename with extension
@@ -166,39 +152,25 @@ export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
     const shouldTranscribe = !referenceText;
     formData.append('transcribe', shouldTranscribe.toString());
 
-    console.log('Should transcribe:', shouldTranscribe, 'Reference text:', referenceText ? 'provided' : 'empty');
-
-    console.log('Sending FormData request with original blob');
-    console.timeLog('saveRecordedAudio', 'FormData prepared'); // Log time for preparation
-
     const response = await fetch(`${API_BASE_URL}/narration/record-reference`, {
       method: 'POST',
       body: formData
     });
 
-    console.log('Received response from server');
-    console.timeLog('saveRecordedAudio', 'Server response received'); // Log time for server response
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Server returned error:', response.status, errorText);
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
-      console.error('Server returned non-JSON response:', text);
       throw new Error('Server returned non-JSON response');
     }
 
     const data = await response.json();
-    console.log('Received response data:', data);
-    console.timeEnd('saveRecordedAudio'); // End timing
     return data;
   } catch (error) {
-    console.error('Error saving recorded audio:', error);
-    console.timeEnd('saveRecordedAudio'); // End timing even on error
     throw error;
   }
 };
@@ -212,8 +184,6 @@ export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
  */
 export const extractAudioSegment = async (videoPath, startTime, endTime) => {
   try {
-    console.log('Extracting audio segment:', { videoPath, startTime, endTime });
-
     const response = await fetch(`${API_BASE_URL}/narration/extract-segment`, {
       method: 'POST',
       headers: {
@@ -229,22 +199,18 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Server returned error:', response.status, errorText);
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
-      console.error('Server returned non-JSON response:', text);
       throw new Error('Server returned non-JSON response');
     }
 
     const data = await response.json();
-    console.log('Extraction response:', data);
     return data;
   } catch (error) {
-    console.error('Error extracting audio segment:', error);
     throw error;
   }
 };
@@ -272,13 +238,6 @@ export const generateNarration = async (
   onComplete = () => {}
 ) => {
   try {
-    console.log('Generating narration:', {
-      referenceAudio,
-      referenceText,
-      subtitlesCount: subtitles.length,
-      settings
-    });
-
     // Create a fetch request with streaming response
     const response = await fetch(`${API_BASE_URL}/narration/generate`, {
       method: 'POST',
@@ -295,7 +254,6 @@ export const generateNarration = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Server returned error:', response.status, errorText);
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
@@ -303,7 +261,6 @@ export const generateNarration = async (
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('text/event-stream')) {
       // Handle streaming response
-      console.log('Received streaming response');
 
       // Create a reader for the response body
       const reader = response.body.getReader();
@@ -312,28 +269,20 @@ export const generateNarration = async (
       const results = [];
 
       // Process the stream
-      console.log('Starting to process streaming response');
       while (true) {
         const { done, value } = await reader.read();
 
         if (done) {
-          console.log('Stream complete');
           break;
         }
 
         // Decode the chunk and add it to the buffer
         const chunk = decoder.decode(value, { stream: true });
-        console.log(`Received chunk: ${chunk.substring(0, 50)}...`);
         buffer += chunk;
 
         // Process complete events in the buffer
         const events = buffer.split('\n\n');
         buffer = events.pop() || ''; // Keep the last incomplete event in the buffer
-
-        console.log(`Processing ${events.length} events from buffer`);
-        if (events.length > 0) {
-          console.log(`First event: ${events[0].substring(0, 50)}...`);
-        }
 
         for (const event of events) {
           if (event.trim() && event.startsWith('data: ')) {
@@ -342,15 +291,12 @@ export const generateNarration = async (
               let data;
               try {
                 data = JSON.parse(event.substring(6));
-                console.log('Received event:', data.type);
               } catch (parseError) {
-                console.error('Error parsing event data:', parseError, 'Event:', event);
                 continue;
               }
 
               // Handle different event types
               if (!data || !data.type) {
-                console.error('Invalid event data:', data);
                 continue;
               }
 
@@ -378,7 +324,6 @@ export const generateNarration = async (
                       if (data.error.includes('F5-TTS model initialization failed') ||
                           data.error.includes('Error initializing F5-TTS') ||
                           data.error.includes('Model is not available')) {
-                        console.error('Critical model error, stopping processing');
                         return { success: false, error: data.error };
                       }
                     } else {
@@ -389,15 +334,12 @@ export const generateNarration = async (
                   case 'complete':
                     onComplete(data.results || results);
                     return { success: true, results: data.results || results };
-
-                  default:
-                    console.warn('Unknown event type:', data.type);
                 }
               } catch (eventError) {
-                console.error('Error handling event:', eventError, 'Event data:', data);
+                // Silently handle event errors
               }
             } catch (error) {
-              console.error('Error parsing event data:', error, 'Event:', event);
+              // Silently handle parsing errors
             }
           }
         }
@@ -408,9 +350,7 @@ export const generateNarration = async (
       return { success: true, results };
     } else if (contentType && contentType.includes('application/json')) {
       // Handle regular JSON response (fallback)
-      console.log('Received JSON response');
       const data = await response.json();
-      console.log('Generation response:', data);
 
       if (data.results) {
         // Call onResult for each result
@@ -426,11 +366,9 @@ export const generateNarration = async (
     } else {
       // Handle unexpected content type
       const text = await response.text();
-      console.error('Server returned unexpected content type:', contentType, 'Response:', text);
       throw new Error(`Unexpected content type: ${contentType}`);
     }
   } catch (error) {
-    console.error('Error generating narration:', error);
     onError(error);
     throw error;
   }
@@ -442,7 +380,5 @@ export const generateNarration = async (
  * @returns {string} - Audio file URL
  */
 export const getAudioUrl = (filename) => {
-  const url = `${SERVER_URL}/narration/audio/${filename}`;
-  console.log('Generated audio URL:', url);
-  return url;
+  return `${SERVER_URL}/narration/audio/${filename}`;
 };

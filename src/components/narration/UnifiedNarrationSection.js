@@ -109,7 +109,6 @@ const UnifiedNarrationSection = ({
         // Clear any previous errors
         setError('');
       } catch (error) {
-        console.error('Error checking narration status:', error);
         // Still set isAvailable to true even if there's an error
         setIsAvailable(true);
         setError('');
@@ -141,7 +140,7 @@ const UnifiedNarrationSection = ({
         setAdvancedSettings(JSON.parse(savedSettings));
       }
     } catch (error) {
-      console.error('Error loading narration advanced settings:', error);
+      // Silently fail if settings can't be loaded
     }
   }, []);
 
@@ -172,8 +171,6 @@ const UnifiedNarrationSection = ({
       } else {
         window.translatedNarrations = generationResults;
       }
-
-      console.log(`Stored ${generationResults.length} ${subtitleSource} narrations in window object`);
     }
   }, [generationResults, subtitleSource]);
 
@@ -260,6 +257,18 @@ const UnifiedNarrationSection = ({
         </p>
       </div>
 
+      {/* Audio Controls */}
+      <AudioControls
+        handleFileUpload={handleFileUpload}
+        fileInputRef={fileInputRef}
+        isRecording={isRecording}
+        startRecording={startRecording}
+        stopRecording={stopRecording}
+        isAvailable={isAvailable}
+        referenceAudio={referenceAudio}
+        clearReferenceAudio={clearReferenceAudio}
+      />
+
       {/* Reference Audio Section */}
       <ReferenceAudioSection
         referenceAudio={referenceAudio}
@@ -272,23 +281,6 @@ const UnifiedNarrationSection = ({
         clearReferenceAudio={clearReferenceAudio}
         isRecording={isRecording}
         isExtractingSegment={isExtractingSegment}
-      />
-
-      {/* Audio Controls */}
-      <AudioControls
-        handleFileUpload={handleFileUpload}
-        fileInputRef={fileInputRef}
-        isRecording={isRecording}
-        startRecording={startRecording}
-        stopRecording={stopRecording}
-        segmentStartTime={segmentStartTime}
-        setSegmentStartTime={setSegmentStartTime}
-        segmentEndTime={segmentEndTime}
-        setSegmentEndTime={setSegmentEndTime}
-        extractSegment={extractSegment}
-        isExtractingSegment={isExtractingSegment}
-        videoPath={videoPath}
-        isAvailable={isAvailable}
       />
 
       {/* Error Message */}
@@ -304,18 +296,10 @@ const UnifiedNarrationSection = ({
 
       {/* Advanced Settings Toggle */}
       <AdvancedSettingsToggle
-        showAdvancedSettings={showAdvancedSettings}
-        setShowAdvancedSettings={setShowAdvancedSettings}
+        advancedSettings={advancedSettings}
+        setAdvancedSettings={setAdvancedSettings}
+        isGenerating={isGenerating}
       />
-
-      {/* Advanced Settings */}
-      {showAdvancedSettings && (
-        <NarrationAdvancedSettings
-          settings={advancedSettings}
-          onSettingsChange={setAdvancedSettings}
-          disabled={isGenerating}
-        />
-      )}
 
       {/* Generate Button */}
       <GenerateButton

@@ -19,13 +19,7 @@ const NarrationPlaybackMenu = ({
   videoRef,
   getAudioUrl
 }) => {
-  // Log props for debugging
-  console.log('NarrationPlaybackMenu props:', {
-    originalNarrations: originalNarrations?.length || 0,
-    translatedNarrations: translatedNarrations?.length || 0,
-    videoRef: !!videoRef,
-    getAudioUrl: !!getAudioUrl
-  });
+
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -140,12 +134,7 @@ const NarrationPlaybackMenu = ({
 
   // Toggle menu open/closed
   const toggleMenu = () => {
-    console.log('Toggle menu called, current state:', isOpen);
-    setIsOpen(prevState => {
-      const newState = !prevState;
-      console.log('Setting isOpen to:', newState);
-      return newState;
-    });
+    setIsOpen(prevState => !prevState);
   };
 
   // Handle click outside to close menu
@@ -181,8 +170,7 @@ const NarrationPlaybackMenu = ({
     });
   }, [narrationVolume]);
 
-  // Log state for debugging
-  console.log('NarrationPlaybackMenu state:', { isOpen });
+
 
   return (
     <div className={`narration-playback-container ${isOpen ? 'open' : ''}`} ref={menuRef}>
@@ -205,10 +193,7 @@ const NarrationPlaybackMenu = ({
           <h3>{t('narration.playbackTitle', 'Narration')}</h3>
           <button
             className="close-menu"
-            onClick={() => {
-              console.log('Close button clicked, setting isOpen to false');
-              setIsOpen(false);
-            }}
+            onClick={() => setIsOpen(false)}
             style={{
               padding: '8px',
               backgroundColor: 'rgba(0,0,0,0.1)',
@@ -365,10 +350,7 @@ const NarrationPlaybackMenu = ({
           {/* Extra close button at the bottom */}
           <button
             className="pill-button error close-menu-button"
-            onClick={() => {
-              console.log('Bottom close button clicked, setting isOpen to false');
-              setIsOpen(false);
-            }}
+            onClick={() => setIsOpen(false)}
             style={{
               marginTop: '16px',
               width: '100%',

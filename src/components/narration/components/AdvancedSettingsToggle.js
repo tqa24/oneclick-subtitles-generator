@@ -1,18 +1,25 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import AdvancedSettingsModal from './AdvancedSettingsModal';
 
 /**
  * Advanced Settings Toggle component
  * @param {Object} props - Component props
- * @param {boolean} props.showAdvancedSettings - Whether advanced settings are shown
- * @param {Function} props.setShowAdvancedSettings - Function to set show advanced settings
+ * @param {Object} props.advancedSettings - Advanced settings object
+ * @param {Function} props.setAdvancedSettings - Function to update advanced settings
+ * @param {boolean} props.isGenerating - Whether narration is being generated
  * @returns {JSX.Element} - Rendered component
  */
 const AdvancedSettingsToggle = ({
-  showAdvancedSettings,
-  setShowAdvancedSettings
+  advancedSettings,
+  setAdvancedSettings,
+  isGenerating
 }) => {
   const { t } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   return (
     <div className="narration-row advanced-settings-row">
@@ -20,19 +27,26 @@ const AdvancedSettingsToggle = ({
         <label>{t('narration.advancedSettings', 'Advanced Settings')}:</label>
       </div>
       <div className="row-content">
-        <div
-          className="advanced-settings-toggle"
-          onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+        <button
+          className="pill-button secondary advanced-settings-button"
+          onClick={openModal}
         >
-          <span className="advanced-settings-toggle-label">
+          <span className="advanced-settings-button-label">
             {t('narration.advancedSettingsToggle', 'Voice & Audio Settings')}
           </span>
-          <span className={`advanced-settings-toggle-icon ${showAdvancedSettings ? 'expanded' : ''}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </span>
-        </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+
+        {/* Advanced Settings Modal */}
+        <AdvancedSettingsModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          settings={advancedSettings}
+          onSettingsChange={setAdvancedSettings}
+          disabled={isGenerating}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 {
   "optimized_resolution": "360p",
-  "split_result": "{\"success\":true,\"originalMedia\":\"/videos/video_1744865646260_video_1744260778548_YouTube_Video_mp4_mp4.mp4\",\"mediaId\":\"video_1744865646260_video_1744260778548_YouTube_Video_mp4_mp4\",\"segments\":[{\"path\":\"/videos/video_1744865646260__1744865646654_000.mp4\",\"url\":\"http://localhost:3007/videos/video_1744865646260__1744865646654_000.mp4?startTime=0&duration=182.715874\",\"name\":\"video_1744865646260__1744865646654_000.mp4\",\"startTime\":0,\"duration\":182.715874,\"theoreticalStartTime\":0,\"theoreticalDuration\":180},{\"path\":\"/videos/video_1744865646260__1744865646654_001.mp4\",\"url\":\"http://localhost:3007/videos/video_1744865646260__1744865646654_001.mp4?startTime=182.715874&duration=40.473991\",\"name\":\"video_1744865646260__1744865646654_001.mp4\",\"startTime\":182.715874,\"duration\":40.473991,\"theoreticalStartTime\":180,\"theoreticalDuration\":43.190203999999994}],\"message\":\"Video split successfully\",\"mediaType\":\"video\",\"optimized\":{\"video\":\"/videos/video_1744865646260_video_1744260778548_YouTube_Video_mp4_mp4.mp4\",\"resolution\":\"360p\",\"fps\":15,\"width\":640,\"height\":360,\"wasOptimized\":false}}",
+  "split_result": "{\"success\":true,\"originalMedia\":\"/videos/video_1744895614843_video_1744260778548_YouTube_Video_mp4_mp4.mp4\",\"mediaId\":\"video_1744895614843_video_1744260778548_YouTube_Video_mp4_mp4\",\"segments\":[{\"path\":\"/videos/video_1744895614843__1744895615532_000.mp4\",\"url\":\"http://localhost:3007/videos/video_1744895614843__1744895615532_000.mp4?startTime=0&duration=182.715874\",\"name\":\"video_1744895614843__1744895615532_000.mp4\",\"startTime\":0,\"duration\":182.715874,\"theoreticalStartTime\":0,\"theoreticalDuration\":180},{\"path\":\"/videos/video_1744895614843__1744895615532_001.mp4\",\"url\":\"http://localhost:3007/videos/video_1744895614843__1744895615532_001.mp4?startTime=182.715874&duration=40.473991\",\"name\":\"video_1744895614843__1744895615532_001.mp4\",\"startTime\":182.715874,\"duration\":40.473991,\"theoreticalStartTime\":180,\"theoreticalDuration\":43.190203999999994}],\"message\":\"Video split successfully\",\"mediaType\":\"video\",\"optimized\":{\"video\":\"/videos/video_1744895614843_video_1744260778548_YouTube_Video_mp4_mp4.mp4\",\"resolution\":\"360p\",\"fps\":15,\"width\":640,\"height\":360,\"wasOptimized\":false}}",
   "theme": "dark",
   "gemini_model": "gemini-2.0-flash",
   "use_youtube_oauth": "false",
@@ -12,7 +12,7 @@
   "show_waveform": "true",
   "selected_preset": "focus-lyrics",
   "video_analysis_model": "gemini-2.0-flash",
-  "current_file_url": "blob:http://localhost:3008/495ebc7e-4996-4b9f-a90e-ef43a6d05e99",
+  "current_file_url": "blob:http://localhost:3008/9d9af262-9e79-469c-8eb7-6661a9b900da",
   "time_format": "hms",
   "lastActiveTab": "file-upload",
   "translation_split_duration": "0",

@@ -37,53 +37,48 @@ const ReferenceAudioSection = ({
       </div>
       <div className="row-content">
         <div className="reference-audio-container">
-          {/* Reference Audio Player */}
-          {referenceAudio && referenceAudio.url && (
-            <div className="audio-player-container">
-              <audio controls src={referenceAudio.url} className="audio-player">
-                {t('narration.audioNotSupported', 'Your browser does not support the audio element.')}
-              </audio>
-              <button
-                className="pill-button error clear-button"
-                onClick={clearReferenceAudio}
-                title={t('narration.clearReference', 'Clear reference audio')}
-              >
-                {t('narration.clear', 'Clear')}
-              </button>
-            </div>
-          )}
-          {referenceAudio && !referenceAudio.url && referenceAudio.filepath && (
-            <div className="status-message success">
-              <span className="status-icon">✓</span>
-              {t('narration.referenceAudioReady', 'Reference audio is ready')}
-              <button
-                className="pill-button error clear-button"
-                onClick={clearReferenceAudio}
-                title={t('narration.clearReference', 'Clear reference audio')}
-              >
-                {t('narration.clear', 'Clear')}
-              </button>
-            </div>
-          )}
-
-          {/* Auto-Recognition Switch */}
-          <div className="switch-container">
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={autoRecognize}
-                onChange={(e) => setAutoRecognize(e.target.checked)}
-                disabled={isRecording || isExtractingSegment || isRecognizing}
+          {/* Reference Content Row */}
+          <div className="reference-content-row">
+            {/* Reference Text */}
+            <div className="reference-text-container">
+              <textarea
+                className="reference-text"
+                value={referenceText}
+                onChange={(e) => setReferenceText(e.target.value)}
+                placeholder={t('narration.referenceTextPlaceholder', 'Enter text that matches the reference audio...')}
+                rows={2}
+                disabled={isRecognizing}
               />
-              <span className="toggle-slider"></span>
-            </label>
-            <span>{t('narration.autoRecognize', 'Auto-recognize voice')}</span>
-            <div className="help-icon-container" title={t('narration.autoRecognizeDescription', 'Automatically transcribe audio after recording or uploading')}>
-              <svg className="help-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
+              {isRecognizing && (
+                <div className="status-message info recognizing-indicator">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                  </svg>
+                  {t('narration.recognizing', 'Recognizing voice...')}
+                </div>
+              )}
+            </div>
+
+            {/* Auto-Recognition Switch */}
+            <div className="switch-container">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={autoRecognize}
+                  onChange={(e) => setAutoRecognize(e.target.checked)}
+                  disabled={isRecording || isExtractingSegment || isRecognizing}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              <span>{t('narration.autoRecognize', 'Auto-recognize voice')}</span>
+              <div className="help-icon-container" title={t('narration.autoRecognizeDescription', 'Automatically transcribe audio after recording or uploading')}>
+                <svg className="help-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -98,27 +93,6 @@ const ReferenceAudioSection = ({
               {t('narration.nonEnglishWarning', `Warning: The reference audio appears to be non-English. F5-TTS works best with English audio.`)}
             </div>
           )}
-
-          {/* Reference Text */}
-          <div className="reference-text-container">
-            <textarea
-              className="reference-text"
-              value={referenceText}
-              onChange={(e) => setReferenceText(e.target.value)}
-              placeholder={t('narration.referenceTextPlaceholder', 'Enter text that matches the reference audio...')}
-              rows={2}
-              disabled={isRecognizing}
-            />
-            {isRecognizing && (
-              <div className="status-message info recognizing-indicator">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
-                </svg>
-                {t('narration.recognizing', 'Recognizing voice...')}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

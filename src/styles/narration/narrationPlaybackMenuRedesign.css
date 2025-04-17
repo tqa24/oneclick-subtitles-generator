@@ -1,0 +1,196 @@
+/* Redesigned Narration Playback Menu - Matching Subtitle Settings Styling */
+
+/* Narration menu container */
+.narration-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Narration settings toggle button */
+.narration-settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.narration-settings-toggle:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Active state styling is handled by the buttons.css file */
+
+/* Status message styling */
+.status-message,
+.notification-message {
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.status-message.info,
+.notification-message.info {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-left: 4px solid var(--md-primary);
+}
+
+.status-message.warning,
+.notification-message.warning {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-left: 4px solid var(--md-tertiary);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Radio pill group */
+.radio-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.radio-pill {
+  position: relative;
+}
+
+.radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-pill label {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.radio-pill input[type="radio"]:checked + label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.radio-pill input[type="radio"]:focus + label {
+  box-shadow: 0 0 0 2px var(--md-primary-container);
+}
+
+.radio-pill input[type="radio"]:disabled + label,
+.radio-pill label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+}
+
+/* Slider container */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Disabled elements */
+label.disabled {
+  opacity: 0.5;
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+}
+
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.range-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--md-surface-variant);
+  border-radius: 3px;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  border: none;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  border: none;
+}
+
+.range-value {
+  min-width: 48px;
+  text-align: center;
+  padding: 4px 8px;
+  background-color: var(--md-surface-1);
+  border-radius: var(--md-shape-pill);
+  border: 1px solid var(--md-outline-variant);
+  font-size: 0.85rem;
+}
+
+/* Narration panel specific styles */
+.subtitle-settings-panel.narration-panel {
+  transform: none;
+  transform-origin: top right;
+}
+
+.subtitle-settings-panel.narration-panel .settings-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subtitle-settings-panel.narration-panel {
+    width: 280px !important;
+    max-width: 90vw;
+    right: 0;
+  }
+
+  .action-button.narration-settings-toggle span {
+    display: none;
+  }
+
+  .action-button.narration-settings-toggle {
+    padding: 8px;
+  }
+}

@@ -1,0 +1,135 @@
+/* Advanced Settings Modal Styles */
+
+.advanced-settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.advanced-settings-modal {
+  background-color: var(--md-surface-1);
+  border-radius: var(--md-shape-large);
+  box-shadow: var(--md-elevation-level3);
+  width: 90%;
+  max-width: 700px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-appear 0.3s var(--md-easing-emphasized);
+  border: 1px solid var(--md-outline-variant);
+  overflow: hidden;
+}
+
+.advanced-settings-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-2);
+}
+
+.advanced-settings-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.advanced-settings-modal-header .close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  transition: background-color 0.2s ease;
+}
+
+.advanced-settings-modal-header .close-button:hover {
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+}
+
+.advanced-settings-modal-content {
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.advanced-settings-modal-content .advanced-settings {
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  margin-bottom: 0;
+  padding: 1.5rem;
+}
+
+.advanced-settings-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-2);
+}
+
+/* Advanced Settings Button */
+.advanced-settings-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.advanced-settings-button:hover {
+  background-color: color-mix(in srgb, var(--md-secondary-container), var(--md-on-secondary-container) 10%);
+}
+
+.advanced-settings-button svg {
+  flex-shrink: 0;
+}
+
+/* Animation */
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .advanced-settings-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .advanced-settings-modal-content {
+    padding: 1rem;
+  }
+}
