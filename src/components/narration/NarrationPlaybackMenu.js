@@ -45,6 +45,9 @@ const NarrationPlaybackMenu = ({
     }
   }, [videoVolume, videoRef]);
 
+  // Store audio durations
+  const audioDurationsRef = useRef({});
+
   // Handle video timeupdate to trigger narration playback
   useEffect(() => {
     const handleTimeUpdate = () => {
@@ -59,19 +62,30 @@ const NarrationPlaybackMenu = ({
         const end = parseFloat(subtitle.end) || 0;
 
         // Calculate the middle point of the subtitle
-        const midPoint = (start + end) / 2;
+        const subtitleMidPoint = (start + end) / 2;
 
-        // Define a window around the midpoint when narration should play
-        // This can be adjusted based on the narration length
-        const narrationDuration = 3; // Estimated duration in seconds
-        const startPlay = midPoint - (narrationDuration / 2);
-        const endPlay = midPoint + (narrationDuration / 2);
+        // Get or estimate the narration duration
+        let narrationDuration = audioDurationsRef.current[narration.subtitle_id];
+        if (!narrationDuration) {
+          // If we don't have the duration yet, create a temporary audio element to get it
+          const tempAudio = new Audio(getAudioUrl(narration.filename));
+          tempAudio.addEventListener('loadedmetadata', () => {
+            // Store the actual duration for future use
+            audioDurationsRef.current[narration.subtitle_id] = tempAudio.duration;
+          });
+          // Use subtitle duration as fallback until we know the actual audio duration
+          narrationDuration = end - start;
+        }
+
+        // Calculate when to start playing to align the middle of the narration with the middle of the subtitle
+        const startPlay = subtitleMidPoint - (narrationDuration / 2);
+        const endPlay = subtitleMidPoint + (narrationDuration / 2);
 
         // Check if current time is within the play window
         if (currentTime >= startPlay && currentTime <= endPlay) {
           // If we're not already playing this narration, play it
           if (currentNarration?.id !== narration.subtitle_id) {
-            playNarration(narration);
+            playNarration(narration, subtitleMidPoint);
           }
         }
       });
@@ -88,10 +102,10 @@ const NarrationPlaybackMenu = ({
         videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
       }
     };
-  }, [isPlaying, activeNarrations, currentNarration, videoRef]);
+  }, [isPlaying, activeNarrations, currentNarration, videoRef, getAudioUrl]);
 
   // Play a specific narration
-  const playNarration = (narration) => {
+  const playNarration = (narration, subtitleMidPoint) => {
     // Stop any currently playing narration
     if (currentNarration && audioRefs.current[currentNarration.id]) {
       audioRefs.current[currentNarration.id].pause();
@@ -104,13 +118,43 @@ const NarrationPlaybackMenu = ({
     if (!audioRefs.current[narration.subtitle_id]) {
       const audio = new Audio(getAudioUrl(narration.filename));
       audio.volume = narrationVolume;
+
+      // Store the audio duration once it's loaded
+      audio.addEventListener('loadedmetadata', () => {
+        audioDurationsRef.current[narration.subtitle_id] = audio.duration;
+      });
+
       audioRefs.current[narration.subtitle_id] = audio;
     }
 
     // Play the narration
     const audioElement = audioRefs.current[narration.subtitle_id];
     audioElement.volume = narrationVolume;
-    audioElement.currentTime = 0;
+
+    // If we know the audio duration, calculate the correct start time to align the middle
+    // of the audio with the middle of the subtitle
+    if (audioDurationsRef.current[narration.subtitle_id] && subtitleMidPoint && videoRef?.current) {
+      const audioDuration = audioDurationsRef.current[narration.subtitle_id];
+      const currentVideoTime = videoRef.current.currentTime;
+
+      // Calculate how far we are from the subtitle midpoint
+      const timeFromMidPoint = subtitleMidPoint - currentVideoTime;
+
+      // Calculate where in the audio we should start playing
+      // If timeFromMidPoint is positive, we're before the midpoint
+      // If timeFromMidPoint is negative, we're after the midpoint
+      const audioStartTime = (audioDuration / 2) - timeFromMidPoint;
+
+      // Ensure the start time is within valid bounds
+      if (audioStartTime >= 0 && audioStartTime < audioDuration) {
+        audioElement.currentTime = audioStartTime;
+      } else {
+        audioElement.currentTime = 0;
+      }
+    } else {
+      audioElement.currentTime = 0;
+    }
+
     audioElement.play();
   };
 

@@ -144,12 +144,13 @@ const UnifiedNarrationSection = ({
     }
   }, []);
 
-  // Scroll to status when generating
+  // Scroll to status only when generation starts, not for every status update
   useEffect(() => {
-    if (isGenerating && statusRef.current) {
+    // Only scroll when generation starts, not for every status update
+    if (isGenerating && statusRef.current && generationStatus === t('narration.preparingGeneration', 'Preparing to generate narration...')) {
       statusRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isGenerating, generationStatus]);
+  }, [isGenerating, generationStatus, t]);
 
   // Handle audio playback
   useEffect(() => {

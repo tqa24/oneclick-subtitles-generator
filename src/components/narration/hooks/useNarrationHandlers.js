@@ -47,22 +47,16 @@ const useNarrationHandlers = ({
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {
-    console.log('File upload triggered');
     const file = event.target.files[0];
     if (!file) {
-      console.log('No file selected');
       return;
     }
 
-    console.log('File selected:', file.name, 'size:', file.size, 'type:', file.type);
-
     try {
-      console.log('Uploading reference audio file...');
       let result;
 
       // First upload the file without transcription
       result = await uploadReferenceAudio(file, referenceText);
-      console.log('Upload result:', result);
 
       // If auto-recognize is enabled and upload was successful, transcribe the audio
       if (autoRecognize && result && result.success) {
@@ -131,23 +125,19 @@ const useNarrationHandlers = ({
 
         // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
         if (autoRecognize || (!referenceText && result.reference_text)) {
-          console.log('Setting reference text from result:', result.reference_text);
           setReferenceText(result.reference_text);
 
           // Check if the audio is not in English
           if (result.is_english === false) {
             setLanguageWarning(true);
-            console.warn(`Reference audio appears to be non-English.`);
           } else {
             // Make sure to reset the language warning if it's English
             setLanguageWarning(false);
-            console.log('Reference audio is in English');
           }
         }
 
         // Notify parent component
         if (onReferenceAudioChange) {
-          console.log('Notifying parent component of reference audio change');
           onReferenceAudioChange({
             filepath: result.filepath,
             filename: result.filename,
@@ -156,11 +146,9 @@ const useNarrationHandlers = ({
           });
         }
       } else if (result) {
-        console.error('Upload failed:', result.error);
         setError(result.error || t('narration.uploadError', 'Error uploading reference audio'));
       }
     } catch (error) {
-      console.error('Error uploading reference audio:', error);
       setError(error.message || t('narration.uploadError', 'Error uploading reference audio'));
     }
   };
@@ -171,22 +159,17 @@ const useNarrationHandlers = ({
       setError(''); // Clear any previous errors
       audioChunksRef.current = [];
 
-      console.log('Requesting microphone access');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('Microphone access granted');
 
       mediaRecorderRef.current = new MediaRecorder(stream);
 
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log('Received audio chunk, size:', event.data.size);
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        console.log('Recording stopped, processing audio...');
-        console.log('Audio chunks:', audioChunksRef.current.length);
 
         if (audioChunksRef.current.length === 0) {
           setError(t('narration.noAudioData', 'No audio data recorded'));
@@ -194,7 +177,6 @@ const useNarrationHandlers = ({
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        console.log('Created audio blob, size:', audioBlob.size);
         const audioUrl = URL.createObjectURL(audioBlob);
 
         setRecordedAudio({
@@ -204,7 +186,6 @@ const useNarrationHandlers = ({
 
         // Save the recorded audio
         try {
-          console.log('Saving recorded audio, size:', audioBlob.size);
           let result;
 
           // Set recognizing state if auto-recognize is enabled
@@ -220,13 +201,9 @@ const useNarrationHandlers = ({
 
             try {
               // Use direct transcription with Gemini API
-              console.log('Auto-recognize is enabled, using direct transcription with Gemini');
-
               try {
                 // First transcribe the audio directly
                 const transcriptionResult = await transcribeAudio(audioBlob);
-                console.log('Transcription result:', transcriptionResult);
-
                 // Then save the audio file with the transcription text
                 result = await saveRecordedAudio(audioBlob, transcriptionResult.text);
 
@@ -234,16 +211,7 @@ const useNarrationHandlers = ({
                 result.reference_text = transcriptionResult.text;
                 result.is_english = transcriptionResult.is_english;
                 result.language = transcriptionResult.language;
-
-                // Log the language detection result
-                console.log('Language detection result:', {
-                  text: transcriptionResult.text,
-                  is_english: transcriptionResult.is_english,
-                  language: transcriptionResult.language
-                });
               } catch (transcriptionError) {
-                console.error('Error during transcription:', transcriptionError);
-
                 // If it's an API key error, show a specific message
                 if (transcriptionError.message.includes('API key')) {
                   setError(transcriptionError.message);
@@ -269,12 +237,10 @@ const useNarrationHandlers = ({
             }
           } else {
             // If auto-recognize is disabled, just save with the existing text
-            console.log('Auto-recognize is disabled, using existing text:', referenceText ? 'has text' : 'empty');
             result = await saveRecordedAudio(audioBlob, referenceText);
           }
 
           if (result && result.success) {
-            console.log('Audio saved successfully:', result);
             setReferenceAudio({
               filepath: result.filepath,
               filename: result.filename,
@@ -289,11 +255,9 @@ const useNarrationHandlers = ({
               // Check if the audio is not in English
               if (result.is_english === false) {
                 setLanguageWarning(true);
-                console.warn(`Reference audio appears to be non-English.`);
               } else {
                 // Make sure to reset the language warning if it's English
                 setLanguageWarning(false);
-                console.log('Reference audio is in English');
               }
             }
 
@@ -307,39 +271,30 @@ const useNarrationHandlers = ({
               });
             }
           } else if (result) {
-            console.error('Server returned error:', result.error);
             setError(result.error || t('narration.recordingError', 'Error saving recorded audio'));
           }
         } catch (error) {
-          console.error('Error saving recorded audio:', error);
           setError(error.message || t('narration.recordingError', 'Error saving recorded audio'));
         }
       };
 
       mediaRecorderRef.current.start();
-      console.log('Recording started');
       setIsRecording(true);
     } catch (error) {
-      console.error('Error starting recording:', error);
       setError(error.message || t('narration.microphoneError', 'Error accessing microphone'));
     }
   };
 
   // Handle recording stop
   const stopRecording = () => {
-    console.log('Stopping recording...');
     if (mediaRecorderRef.current && setIsRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      console.log('Recording stopped');
 
       // Stop all audio tracks
       if (mediaRecorderRef.current.stream) {
-        console.log('Stopping audio tracks...');
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
-    } else {
-      console.error('No media recorder found or not recording');
     }
   };
 
@@ -379,36 +334,20 @@ const useNarrationHandlers = ({
 
           // Fetch the audio file
           const audioUrl = getAudioUrl(result.filename);
-          console.log('Fetching audio from URL for transcription:', audioUrl);
           const response = await fetch(audioUrl);
           const audioBlob = await response.blob();
 
           // Transcribe the audio
-          console.log('Transcribing extracted audio segment');
           try {
             const transcriptionResult = await transcribeAudio(audioBlob);
-            console.log('Transcription result:', transcriptionResult);
-
             // Add transcription data to the result
             result.reference_text = transcriptionResult.text;
             result.is_english = transcriptionResult.is_english;
             result.language = transcriptionResult.language;
-
-            // Log the language detection result
-            console.log('Language detection result (segment):', {
-              text: transcriptionResult.text,
-              is_english: transcriptionResult.is_english,
-              language: transcriptionResult.language
-            });
           } catch (transcriptionError) {
-            console.error('Error during segment transcription:', transcriptionError);
-
             // If it's an API key error, show a specific message
             if (transcriptionError.message.includes('API key')) {
               setError(transcriptionError.message);
-            } else {
-              // For other errors, just log it
-              console.error('Transcription error:', transcriptionError);
             }
           }
 
@@ -418,9 +357,8 @@ const useNarrationHandlers = ({
           // Reset recognizing state
           setIsRecognizing(false);
         } catch (error) {
-          console.error('Error transcribing extracted audio:', error);
           setIsRecognizing(false);
-          // Don't throw the error, just log it and continue with the extracted audio
+          // Don't throw the error, just continue with the extracted audio
         }
       }
 
@@ -439,11 +377,9 @@ const useNarrationHandlers = ({
           // Check if the audio is not in English
           if (result.is_english === false) {
             setLanguageWarning(true);
-            console.warn(`Reference audio appears to be non-English.`);
           } else {
             // Make sure to reset the language warning if it's English
             setLanguageWarning(false);
-            console.log('Reference audio is in English');
           }
         }
 
@@ -460,7 +396,6 @@ const useNarrationHandlers = ({
         setError(result.error || t('narration.extractionError', 'Error extracting audio segment'));
       }
     } catch (error) {
-      console.error('Error extracting audio segment:', error);
       setError(t('narration.extractionError', 'Error extracting audio segment'));
     } finally {
       setIsExtractingSegment(false);
@@ -549,12 +484,10 @@ const useNarrationHandlers = ({
 
       // Define callbacks for the streaming response
       const handleProgress = (message, current, total) => {
-        console.log(`Progress update: ${message}`);
         setGenerationStatus(message);
       };
 
       const handleResult = (result, progress, total) => {
-        console.log(`Received result ${progress}/${total}:`, result);
         // Add the result to the temporary results array
         tempResults.push(result);
         // Update the UI with the current results
@@ -573,7 +506,6 @@ const useNarrationHandlers = ({
       };
 
       const handleError = (error) => {
-        console.error('Error in narration generation:', error);
         if (typeof error === 'object' && error.error) {
           setError(`${t('narration.generationError', 'Error generating narration')}: ${error.error}`);
         } else if (typeof error === 'string') {
@@ -584,7 +516,6 @@ const useNarrationHandlers = ({
       };
 
       const handleComplete = (results) => {
-        console.log('Narration generation complete:', results);
         setGenerationStatus(t('narration.generationComplete', 'Narration generation complete'));
         // Ensure we have the final results
         setGenerationResults(results);
@@ -606,7 +537,6 @@ const useNarrationHandlers = ({
         setError(result?.error || t('narration.generationError', 'Error generating narration'));
       }
     } catch (error) {
-      console.error('Error generating narration:', error);
       setError(t('narration.generationError', 'Error generating narration'));
     } finally {
       setIsGenerating(false);
