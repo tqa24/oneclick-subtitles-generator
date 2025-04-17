@@ -4,6 +4,72 @@
 
 import { API_BASE_URL, SERVER_URL } from '../config';
 
+/**
+ * Convert a Blob to base64 string
+ * @param {Blob} blob - The blob to convert
+ * @returns {Promise<string>} - Base64 string
+ */
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    if (!blob || blob.size === 0) {
+      console.error('Invalid blob provided to blobToBase64:', blob);
+      reject(new Error('Invalid or empty blob'));
+      return;
+    }
+
+    console.log('Converting blob to base64, type:', blob.type, 'size:', blob.size);
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      try {
+        if (!reader.result) {
+          console.error('FileReader result is empty');
+          reject(new Error('FileReader result is empty'));
+          return;
+        }
+
+        // Log the first few characters of the result to help with debugging
+        console.log('FileReader result starts with:', reader.result.substring(0, 50) + '...');
+
+        // Check if the result contains a comma (data URL format)
+        if (reader.result.indexOf(',') === -1) {
+          console.error('FileReader result is not in expected format');
+          reject(new Error('FileReader result is not in expected format'));
+          return;
+        }
+
+        // Remove the data URL prefix (e.g., 'data:audio/wav;base64,')
+        const base64String = reader.result.split(',')[1];
+
+        if (!base64String) {
+          console.error('Failed to extract base64 data from FileReader result');
+          reject(new Error('Failed to extract base64 data'));
+          return;
+        }
+
+        console.log('Successfully converted blob to base64, length:', base64String.length);
+        resolve(base64String);
+      } catch (error) {
+        console.error('Error in FileReader onloadend:', error);
+        reject(error);
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      reject(error);
+    };
+
+    try {
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error calling readAsDataURL:', error);
+      reject(error);
+    }
+  });
+};
+
 // Log the API_BASE_URL for debugging
 console.log('Narration service using API_BASE_URL:', API_BASE_URL);
 
@@ -82,21 +148,36 @@ export const uploadReferenceAudio = async (file, referenceText = '') => {
  */
 export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
   try {
-    console.log('Saving recorded audio, blob size:', audioBlob.size);
+    console.log('Saving recorded audio, blob size:', audioBlob.size, 'type:', audioBlob.type);
+    console.time('saveRecordedAudio'); // Start timing
 
+    // Simplify: Use the original blob directly with FormData
+    // This is the most reliable approach
     const formData = new FormData();
+
+    // Make sure we have a proper filename with extension
     formData.append('audio_data', audioBlob, 'recorded_audio.wav');
 
-    if (referenceText) {
-      formData.append('reference_text', referenceText);
-    }
+    // Add reference text if provided
+    formData.append('reference_text', referenceText || '');
 
-    console.log('Sending request to:', `${API_BASE_URL}/narration/record-reference`);
+    // Add a flag to indicate whether to perform transcription
+    // If referenceText is empty, we want to transcribe
+    const shouldTranscribe = !referenceText;
+    formData.append('transcribe', shouldTranscribe.toString());
+
+    console.log('Should transcribe:', shouldTranscribe, 'Reference text:', referenceText ? 'provided' : 'empty');
+
+    console.log('Sending FormData request with original blob');
+    console.timeLog('saveRecordedAudio', 'FormData prepared'); // Log time for preparation
 
     const response = await fetch(`${API_BASE_URL}/narration/record-reference`, {
       method: 'POST',
       body: formData
     });
+
+    console.log('Received response from server');
+    console.timeLog('saveRecordedAudio', 'Server response received'); // Log time for server response
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -112,10 +193,12 @@ export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
     }
 
     const data = await response.json();
-    console.log('Received response:', data);
+    console.log('Received response data:', data);
+    console.timeEnd('saveRecordedAudio'); // End timing
     return data;
   } catch (error) {
     console.error('Error saving recorded audio:', error);
+    console.timeEnd('saveRecordedAudio'); // End timing even on error
     throw error;
   }
 };
@@ -139,7 +222,8 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
       body: JSON.stringify({
         video_path: videoPath,
         start_time: startTime,
-        end_time: endTime
+        end_time: endTime,
+        transcribe: true  // Always request transcription for extracted segments
       })
     });
 
@@ -170,14 +254,16 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
  * @param {string} referenceAudio - Path to reference audio file
  * @param {string} referenceText - Reference text for the audio
  * @param {Array} subtitles - Array of subtitle objects
+ * @param {Object} settings - Advanced settings for narration generation
  * @returns {Promise<Object>} - Generation response
  */
-export const generateNarration = async (referenceAudio, referenceText, subtitles) => {
+export const generateNarration = async (referenceAudio, referenceText, subtitles, settings = {}) => {
   try {
     console.log('Generating narration:', {
       referenceAudio,
       referenceText,
-      subtitlesCount: subtitles.length
+      subtitlesCount: subtitles.length,
+      settings
     });
 
     const response = await fetch(`${API_BASE_URL}/narration/generate`, {
@@ -188,7 +274,8 @@ export const generateNarration = async (referenceAudio, referenceText, subtitles
       body: JSON.stringify({
         reference_audio: referenceAudio,
         reference_text: referenceText,
-        subtitles: subtitles
+        subtitles: subtitles,
+        settings: settings
       })
     });
 

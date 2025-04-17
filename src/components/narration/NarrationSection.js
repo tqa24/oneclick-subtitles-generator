@@ -23,13 +23,28 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  // Advanced settings with defaults
+  const [advancedSettings] = useState({
+    // Only include supported parameters
+    nfeStep: 32,  // Number of Function Evaluations (diffusion steps)
+    swayCoef: -1.0, // Sway Sampling Coefficient
+    cfgStrength: 2.0, // Classifier-Free Guidance Strength
+    useRandomSeed: true,
+    seed: 42,
+    removeSilence: true,
+    speechRate: 1.0,
+    sampleRate: 44100,
+    // Include other parameters that might be expected by the UI
+    audioFormat: 'wav',
+    mergeOutput: false
+  });
+
   const statusRef = useRef(null);
   const audioRef = useRef(null);
 
   // Check if narration service is available
   useEffect(() => {
     console.log('NarrationSection initial render with referenceAudio:', referenceAudio);
-    console.log('NarrationSection initial isAvailable state:', isAvailable);
 
     const checkAvailability = async () => {
       try {
@@ -39,7 +54,6 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
 
         // Always set isAvailable to true for now
         setIsAvailable(true);
-        console.log('Setting isAvailable to true');
 
         // Clear any previous errors
         setError('');
@@ -47,17 +61,14 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
         console.error('Error checking narration status:', error);
         // Still set isAvailable to true even if there's an error
         setIsAvailable(true);
-        console.log('Setting isAvailable to true despite error');
         setError('');
       }
     };
 
+    // Check availability once when component mounts or referenceAudio changes
     checkAvailability();
 
-    // Set up periodic checks
-    const intervalId = setInterval(checkAvailability, 10000); // Check every 10 seconds
-
-    return () => clearInterval(intervalId);
+    // No periodic checks to reduce server load
   }, [t, referenceAudio]);
 
   // Scroll to status when generating
@@ -111,10 +122,26 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
 
       setGenerationStatus(t('narration.generatingNarration', 'Generating narration for {{count}} subtitles...', { count: subtitlesWithIds.length }));
 
+      // Prepare advanced settings for the API
+      const apiSettings = {
+        nfeStep: advancedSettings.nfeStep,
+        swayCoef: advancedSettings.swayCoef,
+        cfgStrength: advancedSettings.cfgStrength,
+        removeSilence: advancedSettings.removeSilence,
+        speechRate: advancedSettings.speechRate
+        // Note: sampleRate is not sent to the API as it's not supported by F5-TTS
+      };
+
+      // Handle seed
+      if (!advancedSettings.useRandomSeed) {
+        apiSettings.seed = advancedSettings.seed;
+      }
+
       const result = await generateNarration(
         referenceAudio.filepath,
         referenceAudio.text || '',
-        subtitlesWithIds
+        subtitlesWithIds,
+        apiSettings
       );
 
       if (result.success) {

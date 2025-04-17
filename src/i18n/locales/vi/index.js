@@ -16,6 +16,7 @@ import download from './download.json';
 import translation from './translation.json';
 import models from './models.json';
 import promptEditor from './promptEditor.json';
+import narration from './narration.json';
 import onboarding from './onboarding.json';
 import qualitySelector from './qualitySelector.json';
 import preview from './preview.json';
@@ -55,7 +56,8 @@ const vi = {
   rulesEditor,
   fileUpload,
   subtitlesInput,
-  segmentRetry
+  segmentRetry,
+  narration
 };
 
 export default vi;

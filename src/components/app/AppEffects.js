@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { hasValidTokens } from '../../services/youtubeApiService';
 import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiButtonEffects';
+import { syncLocalStorageToServer } from '../../services/localStorageService';
 
 /**
  * Hook for managing application side effects
@@ -35,6 +36,14 @@ export const useAppEffects = (props) => {
     }, 500);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  // Sync localStorage to server on startup
+  useEffect(() => {
+    // Sync localStorage to server for use by narration service
+    syncLocalStorageToServer()
+      .then(() => console.log('localStorage synced to server successfully'))
+      .catch(error => console.error('Error syncing localStorage to server:', error));
   }, []);
 
   // Re-initialize Gemini button effects when subtitles data changes
@@ -173,6 +182,13 @@ export const useAppEffects = (props) => {
       if (event.key === 'use_optimized_preview' || !event.key) {
         const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false';
         setUseOptimizedPreview(newUseOptimizedPreview);
+      }
+
+      // Sync localStorage to server when API keys change
+      if (event.key === 'gemini_api_key' || event.key === 'gemini_model') {
+        syncLocalStorageToServer()
+          .then(() => console.log('localStorage synced to server after API key change'))
+          .catch(error => console.error('Error syncing localStorage to server:', error));
       }
 
       // Check for video analysis changes

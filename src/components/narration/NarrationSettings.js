@@ -42,7 +42,6 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
 
         // Always set service as available since we have direct implementations
         setIsServiceAvailable(true);
-        console.log('Setting isServiceAvailable to true');
 
         // Clear any previous errors
         setError('');
@@ -50,11 +49,11 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
         console.error('Error checking narration status:', error);
         // Still set service as available even if there's an error
         setIsServiceAvailable(true);
-        console.log('Setting isServiceAvailable to true despite error');
         setError('');
       }
     };
 
+    // Check availability once when component mounts
     checkAvailability();
   }, [t]);
 

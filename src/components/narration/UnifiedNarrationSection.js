@@ -8,19 +8,31 @@ import {
   getAudioUrl,
   generateNarration
 } from '../../services/narrationService';
+import { transcribeAudio } from '../../services/transcriptionService';
+import NarrationAdvancedSettings from './NarrationAdvancedSettings';
 import '../../styles/narration/narrationSection.css';
 import '../../styles/narration/narrationSettings.css';
 import '../../styles/narration/unifiedNarration.css';
+import '../../styles/narration/narrationAdvancedSettings.css';
 
 /**
  * Unified Narration Section component that combines settings and generation
  * @param {Object} props - Component props
- * @param {Array} props.subtitles - Subtitles to generate narration for
+ * @param {Array} props.subtitles - Subtitles to generate narration for (fallback, will be either translated or original)
+ * @param {Array} props.originalSubtitles - Original subtitles
+ * @param {Array} props.translatedSubtitles - Translated subtitles (optional)
  * @param {string} props.videoPath - Path to the current video (optional)
  * @param {Function} props.onReferenceAudioChange - Callback when reference audio changes
  * @returns {JSX.Element} - Rendered component
  */
-const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange, referenceAudio: initialReferenceAudio }) => {
+const UnifiedNarrationSection = ({
+  subtitles,
+  originalSubtitles,
+  translatedSubtitles,
+  videoPath,
+  onReferenceAudioChange,
+  referenceAudio: initialReferenceAudio
+}) => {
   const { t } = useTranslation();
 
   // Narration Settings state
@@ -31,6 +43,9 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
   const [isExtractingSegment, setIsExtractingSegment] = useState(false);
   const [segmentStartTime, setSegmentStartTime] = useState('');
   const [segmentEndTime, setSegmentEndTime] = useState('');
+  const [autoRecognize, setAutoRecognize] = useState(true); // Default to true
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [languageWarning, setLanguageWarning] = useState(false);
 
   // Narration Generation state
   const [isAvailable, setIsAvailable] = useState(false);
@@ -40,6 +55,32 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
   const [error, setError] = useState('');
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [subtitleSource, setSubtitleSource] = useState('original'); // 'original' or 'translated'
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [advancedSettings, setAdvancedSettings] = useState({
+    // Voice Style Controls - only speechRate is supported
+    speechRate: 1.0,
+
+    // Generation Quality Controls
+    nfeStep: '32',  // Number of Function Evaluations (diffusion steps)
+    swayCoef: -1.0, // Sway Sampling Coefficient
+    cfgStrength: 2.0, // Classifier-Free Guidance Strength
+
+    // Seed Control
+    useRandomSeed: true,
+    seed: 42,
+
+    // Audio Processing Options - only removeSilence is supported
+    removeSilence: true,
+
+    // Output Format Options
+    sampleRate: '44100',
+    audioFormat: 'wav',
+
+    // Batch Processing Options
+    batchSize: '10',
+    mergeOutput: false
+  });
 
   // Refs
   const mediaRecorderRef = useRef(null);
@@ -58,7 +99,6 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
 
         // Always set isAvailable to true for now
         setIsAvailable(true);
-        console.log('Setting isAvailable to true');
 
         // Clear any previous errors
         setError('');
@@ -66,17 +106,14 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
         console.error('Error checking narration status:', error);
         // Still set isAvailable to true even if there's an error
         setIsAvailable(true);
-        console.log('Setting isAvailable to true despite error');
         setError('');
       }
     };
 
+    // Check availability once when component mounts
     checkAvailability();
 
-    // Set up periodic checks
-    const intervalId = setInterval(checkAvailability, 10000); // Check every 10 seconds
-
-    return () => clearInterval(intervalId);
+    // No periodic checks to reduce server load
   }, [t]);
 
   // Update local state when initialReferenceAudio changes
@@ -91,6 +128,18 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
   useEffect(() => {
     setError('');
   }, [referenceAudio, referenceText, segmentStartTime, segmentEndTime]);
+
+  // Load advanced settings from localStorage
+  useEffect(() => {
+    try {
+      const savedSettings = localStorage.getItem('narration_advanced_settings');
+      if (savedSettings) {
+        setAdvancedSettings(JSON.parse(savedSettings));
+      }
+    } catch (error) {
+      console.error('Error loading narration advanced settings:', error);
+    }
+  }, []);
 
   // Scroll to status when generating
   useEffect(() => {
@@ -128,10 +177,66 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
 
     try {
       console.log('Uploading reference audio file...');
-      const result = await uploadReferenceAudio(file, referenceText);
+      let result;
+
+      // First upload the file without transcription
+      result = await uploadReferenceAudio(file, referenceText);
       console.log('Upload result:', result);
 
-      if (result.success) {
+      // If auto-recognize is enabled and upload was successful, transcribe the audio
+      if (autoRecognize && result && result.success) {
+        setIsRecognizing(true);
+        setLanguageWarning(false); // Reset language warning
+
+        try {
+          // Set a timeout to prevent waiting too long (10 seconds)
+          const recognitionTimeout = setTimeout(() => {
+            setIsRecognizing(false);
+            setError(t('narration.recognitionTimeout', 'Voice recognition is taking too long. Please try again or enter text manually.'));
+          }, 10000); // Reduced from 30s to 10s for faster feedback
+
+          // Create a blob from the file for transcription
+          console.log('Transcribing uploaded audio file');
+          try {
+            const transcriptionResult = await transcribeAudio(file);
+            console.log('Transcription result:', transcriptionResult);
+
+            // Add transcription data to the result
+            result.reference_text = transcriptionResult.text;
+            result.is_english = transcriptionResult.is_english;
+            result.language = transcriptionResult.language;
+
+            // Log the language detection result
+            console.log('Language detection result (upload):', {
+              text: transcriptionResult.text,
+              is_english: transcriptionResult.is_english,
+              language: transcriptionResult.language
+            });
+          } catch (transcriptionError) {
+            console.error('Error during file upload transcription:', transcriptionError);
+
+            // If it's an API key error, show a specific message
+            if (transcriptionError.message.includes('API key')) {
+              setError(transcriptionError.message);
+            } else {
+              // For other errors, just log it
+              console.error('Transcription error:', transcriptionError);
+            }
+          }
+
+          // Clear the timeout
+          clearTimeout(recognitionTimeout);
+
+          // Reset recognizing state
+          setIsRecognizing(false);
+        } catch (error) {
+          console.error('Error transcribing uploaded audio:', error);
+          setIsRecognizing(false);
+          // Don't throw the error, just log it and continue with the uploaded audio
+        }
+      }
+
+      if (result && result.success) {
         console.log('File uploaded successfully');
         const audioUrl = getAudioUrl(result.filename);
         console.log('Audio URL:', audioUrl);
@@ -139,13 +244,24 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
         setReferenceAudio({
           filepath: result.filepath,
           filename: result.filename,
-          url: audioUrl
+          url: audioUrl,
+          language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
         });
 
-        // Update reference text if it was empty and we got it from transcription
-        if (!referenceText && result.reference_text) {
+        // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
+        if (autoRecognize || (!referenceText && result.reference_text)) {
           console.log('Setting reference text from result:', result.reference_text);
           setReferenceText(result.reference_text);
+
+          // Check if the audio is not in English
+          if (result.is_english === false) {
+            setLanguageWarning(true);
+            console.warn(`Reference audio appears to be non-English.`);
+          } else {
+            // Make sure to reset the language warning if it's English
+            setLanguageWarning(false);
+            console.log('Reference audio is in English');
+          }
         }
 
         // Notify parent component
@@ -154,10 +270,11 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
           onReferenceAudioChange({
             filepath: result.filepath,
             filename: result.filename,
-            text: result.reference_text || referenceText
+            text: result.reference_text || referenceText,
+            language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
           });
         }
-      } else {
+      } else if (result) {
         console.error('Upload failed:', result.error);
         setError(result.error || t('narration.uploadError', 'Error uploading reference audio'));
       }
@@ -207,19 +324,96 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
         // Save the recorded audio
         try {
           console.log('Saving recorded audio, size:', audioBlob.size);
-          const result = await saveRecordedAudio(audioBlob, referenceText);
+          let result;
 
-          if (result.success) {
+          // Set recognizing state if auto-recognize is enabled
+          if (autoRecognize) {
+            setIsRecognizing(true);
+            setLanguageWarning(false); // Reset language warning
+
+            // Set a timeout to prevent waiting too long (10 seconds)
+            const recognitionTimeout = setTimeout(() => {
+              setIsRecognizing(false);
+              setError(t('narration.recognitionTimeout', 'Voice recognition is taking too long. Please try again or enter text manually.'));
+            }, 10000); // Reduced from 30s to 10s for faster feedback
+
+            try {
+              // Use direct transcription with Gemini API
+              console.log('Auto-recognize is enabled, using direct transcription with Gemini');
+
+              try {
+                // First transcribe the audio directly
+                const transcriptionResult = await transcribeAudio(audioBlob);
+                console.log('Transcription result:', transcriptionResult);
+
+                // Then save the audio file with the transcription text
+                result = await saveRecordedAudio(audioBlob, transcriptionResult.text);
+
+                // Add transcription data to the result
+                result.reference_text = transcriptionResult.text;
+                result.is_english = transcriptionResult.is_english;
+                result.language = transcriptionResult.language;
+
+                // Log the language detection result
+                console.log('Language detection result:', {
+                  text: transcriptionResult.text,
+                  is_english: transcriptionResult.is_english,
+                  language: transcriptionResult.language
+                });
+              } catch (transcriptionError) {
+                console.error('Error during transcription:', transcriptionError);
+
+                // If it's an API key error, show a specific message
+                if (transcriptionError.message.includes('API key')) {
+                  setError(transcriptionError.message);
+
+                  // Save the audio without transcription
+                  result = await saveRecordedAudio(audioBlob, '');
+                } else {
+                  // For other errors, just rethrow
+                  throw transcriptionError;
+                }
+              }
+
+              // Clear the timeout since we got a response
+              clearTimeout(recognitionTimeout);
+
+              // Reset recognizing state
+              setIsRecognizing(false);
+            } catch (error) {
+              // Clear the timeout and reset state on error
+              clearTimeout(recognitionTimeout);
+              setIsRecognizing(false);
+              throw error; // Re-throw to be caught by the outer catch block
+            }
+          } else {
+            // If auto-recognize is disabled, just save with the existing text
+            console.log('Auto-recognize is disabled, using existing text:', referenceText ? 'has text' : 'empty');
+            result = await saveRecordedAudio(audioBlob, referenceText);
+          }
+
+          if (result && result.success) {
             console.log('Audio saved successfully:', result);
             setReferenceAudio({
               filepath: result.filepath,
               filename: result.filename,
-              url: getAudioUrl(result.filename)
+              url: getAudioUrl(result.filename),
+              language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
             });
 
-            // Update reference text if it was empty and we got it from transcription
-            if (!referenceText && result.reference_text) {
+            // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
+            if (autoRecognize || (!referenceText && result.reference_text)) {
               setReferenceText(result.reference_text);
+
+              // Check if the audio is not in English
+              if (result.is_english === false) {
+                setLanguageWarning(true);
+                console.warn(`Reference audio appears to be non-English.`);
+              } else {
+                // Make sure to reset the language warning if it's English
+                setLanguageWarning(false);
+                console.log('Reference audio is in English');
+              }
             }
 
             // Notify parent component
@@ -227,10 +421,11 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
               onReferenceAudioChange({
                 filepath: result.filepath,
                 filename: result.filename,
-                text: result.reference_text || referenceText
+                text: result.reference_text || referenceText,
+                language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
               });
             }
-          } else {
+          } else if (result) {
             console.error('Server returned error:', result.error);
             setError(result.error || t('narration.recordingError', 'Error saving recorded audio'));
           }
@@ -283,18 +478,92 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
     setError('');
 
     try {
-      const result = await extractAudioSegment(videoPath, segmentStartTime, segmentEndTime);
+      let result;
 
-      if (result.success) {
+      // First extract the segment without transcription
+      result = await extractAudioSegment(videoPath, segmentStartTime, segmentEndTime);
+
+      // If auto-recognize is enabled, transcribe the extracted segment
+      if (autoRecognize && result && result.success) {
+        setIsRecognizing(true);
+        setLanguageWarning(false); // Reset language warning
+
+        // Create a blob from the extracted audio URL
+        try {
+          // Set a timeout to prevent waiting too long (10 seconds)
+          const recognitionTimeout = setTimeout(() => {
+            setIsRecognizing(false);
+            setError(t('narration.recognitionTimeout', 'Voice recognition is taking too long. Please try again or enter text manually.'));
+          }, 10000); // Reduced from 30s to 10s for faster feedback
+
+          // Fetch the audio file
+          const audioUrl = getAudioUrl(result.filename);
+          console.log('Fetching audio from URL for transcription:', audioUrl);
+          const response = await fetch(audioUrl);
+          const audioBlob = await response.blob();
+
+          // Transcribe the audio
+          console.log('Transcribing extracted audio segment');
+          try {
+            const transcriptionResult = await transcribeAudio(audioBlob);
+            console.log('Transcription result:', transcriptionResult);
+
+            // Add transcription data to the result
+            result.reference_text = transcriptionResult.text;
+            result.is_english = transcriptionResult.is_english;
+            result.language = transcriptionResult.language;
+
+            // Log the language detection result
+            console.log('Language detection result (segment):', {
+              text: transcriptionResult.text,
+              is_english: transcriptionResult.is_english,
+              language: transcriptionResult.language
+            });
+          } catch (transcriptionError) {
+            console.error('Error during segment transcription:', transcriptionError);
+
+            // If it's an API key error, show a specific message
+            if (transcriptionError.message.includes('API key')) {
+              setError(transcriptionError.message);
+            } else {
+              // For other errors, just log it
+              console.error('Transcription error:', transcriptionError);
+            }
+          }
+
+          // Clear the timeout
+          clearTimeout(recognitionTimeout);
+
+          // Reset recognizing state
+          setIsRecognizing(false);
+        } catch (error) {
+          console.error('Error transcribing extracted audio:', error);
+          setIsRecognizing(false);
+          // Don't throw the error, just log it and continue with the extracted audio
+        }
+      }
+
+      if (result && result.success) {
         setReferenceAudio({
           filepath: result.filepath,
           filename: result.filename,
-          url: getAudioUrl(result.filename)
+          url: getAudioUrl(result.filename),
+          language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
         });
 
-        // Update reference text if we got it from transcription
-        if (result.reference_text) {
+        // Update reference text if auto-recognize is enabled or we got it from transcription
+        if (autoRecognize || result.reference_text) {
           setReferenceText(result.reference_text);
+
+          // Check if the audio is not in English
+          if (result.is_english === false) {
+            setLanguageWarning(true);
+            console.warn(`Reference audio appears to be non-English.`);
+          } else {
+            // Make sure to reset the language warning if it's English
+            setLanguageWarning(false);
+            console.log('Reference audio is in English');
+          }
         }
 
         // Notify parent component
@@ -302,10 +571,11 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
           onReferenceAudioChange({
             filepath: result.filepath,
             filename: result.filename,
-            text: result.reference_text || referenceText
+            text: result.reference_text || referenceText,
+            language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
           });
         }
-      } else {
+      } else if (result) {
         setError(result.error || t('narration.extractionError', 'Error extracting audio segment'));
       }
     } catch (error) {
@@ -328,6 +598,14 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
     }
   };
 
+  // Get the appropriate subtitles based on the selected source
+  const getSelectedSubtitles = () => {
+    if (subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
+      return translatedSubtitles;
+    }
+    return originalSubtitles || subtitles;
+  };
+
   // Generate narration for all subtitles
   const handleGenerateNarration = async () => {
     if (!referenceAudio || !referenceAudio.filepath) {
@@ -335,8 +613,16 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
       return;
     }
 
-    if (!subtitles || subtitles.length === 0) {
-      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
+    // Get the appropriate subtitles based on the selected source
+    const selectedSubtitles = getSelectedSubtitles();
+
+    if (!selectedSubtitles || selectedSubtitles.length === 0) {
+      // If translated subtitles are selected but not available, show a specific error
+      if (subtitleSource === 'translated' && (!translatedSubtitles || translatedSubtitles.length === 0)) {
+        setError(t('narration.noTranslatedSubtitlesError', 'No translated subtitles available. Please translate the subtitles first or select original subtitles.'));
+      } else {
+        setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
+      }
       return;
     }
 
@@ -347,17 +633,49 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
 
     try {
       // Prepare subtitles with IDs for tracking
-      const subtitlesWithIds = subtitles.map((subtitle, index) => ({
+      const subtitlesWithIds = selectedSubtitles.map((subtitle, index) => ({
         ...subtitle,
         id: subtitle.id || index + 1
       }));
 
-      setGenerationStatus(t('narration.generatingNarration', 'Generating narration for {{count}} subtitles...', { count: subtitlesWithIds.length }));
+      // Add subtitle source to generation status message
+      const sourceText = subtitleSource === 'original' ?
+        t('narration.originalSubtitles', 'original subtitles') :
+        t('narration.translatedSubtitles', 'translated subtitles');
+
+      setGenerationStatus(
+        t('narration.generatingNarrationWithSource', 'Generating narration for {{count}} {{source}}...', {
+          count: subtitlesWithIds.length,
+          source: sourceText
+        })
+      );
+
+      // Prepare advanced settings for the API - only include supported parameters
+      const apiSettings = {
+        // Convert string values to appropriate types
+        speechRate: parseFloat(advancedSettings.speechRate),
+        nfeStep: parseInt(advancedSettings.nfeStep),
+        swayCoef: parseFloat(advancedSettings.swayCoef),
+        cfgStrength: parseFloat(advancedSettings.cfgStrength),
+        removeSilence: advancedSettings.removeSilence,
+        // Note: sampleRate is not sent to the API as it's not supported by F5-TTS
+        // It's only used in the UI for user preference
+        batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize)
+      };
+
+      // Handle seed
+      if (!advancedSettings.useRandomSeed) {
+        apiSettings.seed = advancedSettings.seed;
+      }
+
+      // Save settings to localStorage
+      localStorage.setItem('narration_advanced_settings', JSON.stringify(advancedSettings));
 
       const result = await generateNarration(
         referenceAudio.filepath,
         referenceAudio.text || referenceText,
-        subtitlesWithIds
+        subtitlesWithIds,
+        apiSettings
       );
 
       if (result.success) {
@@ -454,6 +772,34 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
           </div>
         )}
 
+        {/* Auto-Recognition Switch */}
+        <div className="auto-recognize-container">
+          <label className="auto-recognize-label">
+            <input
+              type="checkbox"
+              checked={autoRecognize}
+              onChange={(e) => setAutoRecognize(e.target.checked)}
+              disabled={isRecording || isExtractingSegment || isRecognizing}
+            />
+            {t('narration.autoRecognize', 'Auto-recognize voice')}
+          </label>
+          <div className="auto-recognize-description">
+            {t('narration.autoRecognizeDescription', 'Automatically transcribe audio after recording or uploading')}
+          </div>
+        </div>
+
+        {/* Language Warning */}
+        {languageWarning && (
+          <div className="language-warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {t('narration.nonEnglishWarning', `Warning: The reference audio appears to be non-English. F5-TTS works best with English audio.`)}
+          </div>
+        )}
+
         {/* Reference Text */}
         <div className="reference-text-container">
           <label htmlFor="reference-text">
@@ -465,7 +811,17 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
             onChange={(e) => setReferenceText(e.target.value)}
             placeholder={t('narration.referenceTextPlaceholder', 'Enter text that matches the reference audio...')}
             rows={2}
+            disabled={isRecognizing}
           />
+          {isRecognizing && (
+            <div className="recognizing-indicator">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              {t('narration.recognizing', 'Recognizing voice...')}
+            </div>
+          )}
         </div>
 
         {/* Reference Audio Controls */}
@@ -561,6 +917,66 @@ const UnifiedNarrationSection = ({ subtitles, videoPath, onReferenceAudioChange,
         <div className="narration-error">
           {error}
         </div>
+      )}
+
+      {/* Subtitle Source Selection */}
+      <div className="subtitle-source-selection">
+        <label className="source-selection-label">
+          {t('narration.subtitleSource', 'Subtitle Source')}:
+        </label>
+        <div className="source-selection-options">
+          <label className="source-option">
+            <input
+              type="radio"
+              name="subtitle-source"
+              value="original"
+              checked={subtitleSource === 'original'}
+              onChange={() => setSubtitleSource('original')}
+              disabled={isGenerating}
+            />
+            {t('narration.originalSubtitles', 'Original Subtitles')}
+          </label>
+          <label className="source-option">
+            <input
+              type="radio"
+              name="subtitle-source"
+              value="translated"
+              checked={subtitleSource === 'translated'}
+              onChange={() => setSubtitleSource('translated')}
+              disabled={isGenerating || !translatedSubtitles || translatedSubtitles.length === 0}
+            />
+            {t('narration.translatedSubtitles', 'Translated Subtitles')}
+            {(!translatedSubtitles || translatedSubtitles.length === 0) && (
+              <span className="option-unavailable">
+                {t('narration.unavailable', '(unavailable)')}
+              </span>
+            )}
+          </label>
+        </div>
+      </div>
+
+      {/* Advanced Settings Toggle */}
+      <div
+        className="advanced-settings-toggle"
+        onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+      >
+        <span className="advanced-settings-toggle-label">
+          {t('narration.advancedSettingsToggle', 'Advanced Voice & Audio Settings')}
+        </span>
+        <span className={`advanced-settings-toggle-icon ${showAdvancedSettings ? 'expanded' : ''}`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
+      </div>
+
+      {/* Advanced Settings */}
+      {showAdvancedSettings && (
+        <NarrationAdvancedSettings
+          settings={advancedSettings}
+          onSettingsChange={setAdvancedSettings}
+          disabled={isGenerating}
+        />
       )}
 
       {/* Generate Button */}
