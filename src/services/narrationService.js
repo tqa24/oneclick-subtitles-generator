@@ -250,14 +250,27 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
 };
 
 /**
- * Generate narration for subtitles
+ * Generate narration for subtitles with streaming response
  * @param {string} referenceAudio - Path to reference audio file
  * @param {string} referenceText - Reference text for the audio
  * @param {Array} subtitles - Array of subtitle objects
  * @param {Object} settings - Advanced settings for narration generation
+ * @param {Function} onProgress - Callback for progress updates
+ * @param {Function} onResult - Callback for each result
+ * @param {Function} onError - Callback for errors
+ * @param {Function} onComplete - Callback for completion
  * @returns {Promise<Object>} - Generation response
  */
-export const generateNarration = async (referenceAudio, referenceText, subtitles, settings = {}) => {
+export const generateNarration = async (
+  referenceAudio,
+  referenceText,
+  subtitles,
+  settings = {},
+  onProgress = () => {},
+  onResult = () => {},
+  onError = () => {},
+  onComplete = () => {}
+) => {
   try {
     console.log('Generating narration:', {
       referenceAudio,
@@ -266,6 +279,7 @@ export const generateNarration = async (referenceAudio, referenceText, subtitles
       settings
     });
 
+    // Create a fetch request with streaming response
     const response = await fetch(`${API_BASE_URL}/narration/generate`, {
       method: 'POST',
       headers: {
@@ -285,18 +299,139 @@ export const generateNarration = async (referenceAudio, referenceText, subtitles
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
+    // Check if the response is a stream
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error('Server returned non-JSON response:', text);
-      throw new Error('Server returned non-JSON response');
-    }
+    if (contentType && contentType.includes('text/event-stream')) {
+      // Handle streaming response
+      console.log('Received streaming response');
 
-    const data = await response.json();
-    console.log('Generation response:', data);
-    return data;
+      // Create a reader for the response body
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const results = [];
+
+      // Process the stream
+      console.log('Starting to process streaming response');
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          console.log('Stream complete');
+          break;
+        }
+
+        // Decode the chunk and add it to the buffer
+        const chunk = decoder.decode(value, { stream: true });
+        console.log(`Received chunk: ${chunk.substring(0, 50)}...`);
+        buffer += chunk;
+
+        // Process complete events in the buffer
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || ''; // Keep the last incomplete event in the buffer
+
+        console.log(`Processing ${events.length} events from buffer`);
+        if (events.length > 0) {
+          console.log(`First event: ${events[0].substring(0, 50)}...`);
+        }
+
+        for (const event of events) {
+          if (event.trim() && event.startsWith('data: ')) {
+            try {
+              // Parse the JSON data
+              let data;
+              try {
+                data = JSON.parse(event.substring(6));
+                console.log('Received event:', data.type);
+              } catch (parseError) {
+                console.error('Error parsing event data:', parseError, 'Event:', event);
+                continue;
+              }
+
+              // Handle different event types
+              if (!data || !data.type) {
+                console.error('Invalid event data:', data);
+                continue;
+              }
+
+              try {
+                switch (data.type) {
+                  case 'progress':
+                    if (data.message) {
+                      onProgress(data.message, data.current || 0, data.total || 0);
+                    }
+                    break;
+
+                  case 'result':
+                    if (data.result) {
+                      results.push(data.result);
+                      onResult(data.result, data.progress || results.length, data.total || 0);
+                    }
+                    break;
+
+                  case 'error':
+                    if (data.result) {
+                      onError(data.result);
+                    } else if (data.error) {
+                      onError(data.error);
+                      // If this is a model initialization error, stop processing
+                      if (data.error.includes('F5-TTS model initialization failed') ||
+                          data.error.includes('Error initializing F5-TTS') ||
+                          data.error.includes('Model is not available')) {
+                        console.error('Critical model error, stopping processing');
+                        return { success: false, error: data.error };
+                      }
+                    } else {
+                      onError('Unknown error occurred');
+                    }
+                    break;
+
+                  case 'complete':
+                    onComplete(data.results || results);
+                    return { success: true, results: data.results || results };
+
+                  default:
+                    console.warn('Unknown event type:', data.type);
+                }
+              } catch (eventError) {
+                console.error('Error handling event:', eventError, 'Event data:', data);
+              }
+            } catch (error) {
+              console.error('Error parsing event data:', error, 'Event:', event);
+            }
+          }
+        }
+      }
+
+      // If we get here, the stream ended without a complete event
+      onComplete(results);
+      return { success: true, results };
+    } else if (contentType && contentType.includes('application/json')) {
+      // Handle regular JSON response (fallback)
+      console.log('Received JSON response');
+      const data = await response.json();
+      console.log('Generation response:', data);
+
+      if (data.results) {
+        // Call onResult for each result
+        data.results.forEach((result, index) => {
+          onResult(result, index + 1, data.results.length);
+        });
+
+        // Call onComplete with all results
+        onComplete(data.results);
+      }
+
+      return data;
+    } else {
+      // Handle unexpected content type
+      const text = await response.text();
+      console.error('Server returned unexpected content type:', contentType, 'Response:', text);
+      throw new Error(`Unexpected content type: ${contentType}`);
+    }
   } catch (error) {
     console.error('Error generating narration:', error);
+    onError(error);
     throw error;
   }
 };

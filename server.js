@@ -380,6 +380,90 @@ app.post('/api/narration/generate', async (req, res) => {
       const narrationUrl = `http://localhost:${actualPort}/api/narration/generate`;
 
       try {
+        // Check the content type of the response to determine how to handle it
+        const headResponse = await fetch(narrationUrl, {
+          method: 'HEAD',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).catch(() => null);
+
+        // If the service supports streaming (SSE), use a pipe to forward the stream
+        const isStreamingSupported = headResponse &&
+          headResponse.headers.get('content-type') &&
+          headResponse.headers.get('content-type').includes('text/event-stream');
+
+        if (isStreamingSupported) {
+          console.log('Narration service supports streaming, forwarding stream');
+
+          // Forward the request to the F5-TTS service with streaming response
+          const streamResponse = await fetch(narrationUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'text/event-stream'
+            },
+            body: JSON.stringify({
+              reference_audio: reference_audio,
+              reference_text: reference_text,
+              subtitles: subtitles,
+              settings: req.body.settings || {}
+            })
+          });
+
+          if (!streamResponse.ok) {
+            const errorText = await streamResponse.text();
+            console.error(`Error from narration service: ${streamResponse.status} ${errorText}`);
+            throw new Error(`Error from narration service: ${streamResponse.status} ${errorText}`);
+          }
+
+          // Set up the response headers for SSE
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+
+          // Create a readable stream from the response body
+          const reader = streamResponse.body.getReader();
+
+          // Pipe the stream to the response
+          const pipe = async () => {
+            try {
+              console.log('Starting to pipe streaming response to client');
+              while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) {
+                  console.log('Stream complete');
+                  res.end();
+                  break;
+                }
+
+                // Forward the chunk to the client
+                const chunk = new TextDecoder().decode(value);
+                console.log(`Forwarding chunk: ${chunk.substring(0, 50)}...`);
+                res.write(value);
+
+                // Flush the response to ensure it's sent immediately
+                if (res.flush) {
+                  res.flush();
+                }
+              }
+            } catch (error) {
+              console.error('Error piping stream:', error);
+              res.end();
+            }
+          };
+
+          // Start piping
+          pipe();
+
+          // Return without ending the response
+          return;
+        }
+
+        // If streaming is not supported, fall back to regular JSON response
+        console.log('Narration service does not support streaming, using regular JSON response');
+
         // Forward the request to the F5-TTS service
         const response = await fetch(narrationUrl, {
           method: 'POST',

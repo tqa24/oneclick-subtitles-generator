@@ -1,0 +1,130 @@
+/* Redesigned Narration Advanced Settings - Material Design 3 */
+
+.advanced-settings {
+  padding: 1rem;
+  background-color: var(--md-surface-2);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--md-outline-variant);
+}
+
+/* Section styles */
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+/* Slider styles */
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.range-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--md-surface-variant);
+  border-radius: 2px;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px var(--md-primary-container);
+}
+
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px var(--md-primary-container);
+}
+
+.slider-value {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Number input styles */
+.number-input {
+  width: 80px;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+}
+
+/* Help text */
+.setting-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+/* Unavailable indicator */
+.unavailable-indicator {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
+/* Compact layout for settings */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}

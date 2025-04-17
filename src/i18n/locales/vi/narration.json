@@ -18,6 +18,7 @@
   "preparingGeneration": "Đang chuẩn bị tạo lồng tiếng...",
   "generatingNarration": "Đang tạo lồng tiếng cho {{count}} phụ đề...",
   "generatingNarrationWithSource": "Đang tạo lồng tiếng cho {{count}} {{source}}...",
+  "generatingProgress": "Đã tạo {{progress}} trên {{total}} lồng tiếng...",
   "generationComplete": "Tạo lồng tiếng hoàn tất",
   "results": "Lồng tiếng đã tạo",
   "play": "Phát",

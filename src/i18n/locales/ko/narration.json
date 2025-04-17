@@ -18,6 +18,7 @@
   "preparingGeneration": "나레이션 생성 준비 중...",
   "generatingNarration": "{{count}}개 자막에 대한 나레이션 생성 중...",
   "generatingNarrationWithSource": "{{count}}개 {{source}}에 대한 나레이션 생성 중...",
+  "generatingProgress": "{{total}}개 중 {{progress}}개 생성됨...",
   "generationComplete": "나레이션 생성 완료",
   "results": "생성된 나레이션",
   "play": "재생",

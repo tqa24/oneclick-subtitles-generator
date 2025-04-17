@@ -137,19 +137,63 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
         apiSettings.seed = advancedSettings.seed;
       }
 
-      const result = await generateNarration(
+      // Generate narration with streaming response
+      const tempResults = [];
+
+      // Define callbacks for the streaming response
+      const handleProgress = (message, current, total) => {
+        console.log(`Progress update: ${message}`);
+        setGenerationStatus(message);
+      };
+
+      const handleResult = (result, progress, total) => {
+        console.log(`Received result ${progress}/${total}:`, result);
+        // Add the result to the temporary results array
+        tempResults.push(result);
+        // Update the UI with the current results
+        setGenerationResults([...tempResults]);
+        // Update the status
+        setGenerationStatus(
+          t(
+            'narration.generatingProgress',
+            'Generated {{progress}} of {{total}} narrations...',
+            {
+              progress,
+              total
+            }
+          )
+        );
+      };
+
+      const handleError = (error) => {
+        console.error('Error in narration generation:', error);
+        if (typeof error === 'object' && error.error) {
+          setError(`${t('narration.generationError', 'Error generating narration')}: ${error.error}`);
+        } else if (typeof error === 'string') {
+          setError(`${t('narration.generationError', 'Error generating narration')}: ${error}`);
+        } else {
+          setError(t('narration.generationError', 'Error generating narration'));
+        }
+      };
+
+      const handleComplete = (results) => {
+        console.log('Narration generation complete:', results);
+        setGenerationStatus(t('narration.generationComplete', 'Narration generation complete'));
+        // Ensure we have the final results
+        setGenerationResults(results);
+      };
+
+      // Call the generateNarration function with callbacks
+      await generateNarration(
         referenceAudio.filepath,
         referenceAudio.text || '',
         subtitlesWithIds,
-        apiSettings
+        apiSettings,
+        handleProgress,
+        handleResult,
+        handleError,
+        handleComplete
       );
-
-      if (result.success) {
-        setGenerationResults(result.results);
-        setGenerationStatus(t('narration.generationComplete', 'Narration generation complete'));
-      } else {
-        setError(result.error || t('narration.generationError', 'Error generating narration'));
-      }
     } catch (error) {
       console.error('Error generating narration:', error);
       setError(t('narration.generationError', 'Error generating narration'));
