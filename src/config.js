@@ -13,4 +13,4 @@ export const SERVER_URL = 'http://localhost:3007'; // Changed from 3004 to match
 export const GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
 
 // Default Gemini model for transcription
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash-lite';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';

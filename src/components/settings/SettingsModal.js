@@ -35,7 +35,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Initialize from localStorage
     return localStorage.getItem('about_alternative_bg') === 'true';
   });
-  
+
   const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false); // Track if settings have been loaded
   const [geminiApiKey, setGeminiApiKey] = useState('');
@@ -54,7 +54,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Flash
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash'); // Default to Gemini 2.5 Flash
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
@@ -98,7 +98,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.0-flash',
+    videoAnalysisModel: 'gemini-2.5-flash',
     videoAnalysisTimeout: '20',
     optimizeVideos: true,
     optimizedResolution: '360p',
@@ -109,11 +109,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   useEffect(() => {
     // Set up system theme change listener
     const cleanup = setupSystemThemeListener(setTheme);
-    
+
     // Handle initial theme setup
     const savedTheme = initializeTheme();
     setTheme(savedTheme);
-    
+
     return cleanup;
   }, []);
 
