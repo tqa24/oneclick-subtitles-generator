@@ -4,6 +4,7 @@ import '../styles/SubtitleSettings.css';
 import '../styles/narration/narrationPlaybackMenuRedesign.css';
 import NarrationPlaybackMenu from './narration/NarrationPlaybackMenu';
 import SimpleNarrationMenu from './narration/SimpleNarrationMenu';
+import { SERVER_URL } from '../config';
 
 const SubtitleSettings = ({
   settings,
@@ -159,24 +160,93 @@ const SubtitleSettings = ({
 
   // Create states for the narration menu
   const [showNarrationMenu, setShowNarrationMenu] = useState(false);
-  const [narrationSource, setNarrationSource] = useState('original');
+  const [narrationSource, setNarrationSource] = useState('');
   const [narrationVolume, setNarrationVolume] = useState(0.8);
   const [videoVolume, setVideoVolume] = useState(0.3);
+  const [narrationEnabled, setNarrationEnabled] = useState(true);
+
+  // State to track narrations internally
+  const [internalOriginalNarrations, setInternalOriginalNarrations] = useState(originalNarrations || []);
+  const [internalTranslatedNarrations, setInternalTranslatedNarrations] = useState(translatedNarrations || []);
+
+  // Update internal state when props change
+  useEffect(() => {
+    if (originalNarrations && originalNarrations.length > 0) {
+      setInternalOriginalNarrations(originalNarrations);
+    }
+    if (translatedNarrations && translatedNarrations.length > 0) {
+      setInternalTranslatedNarrations(translatedNarrations);
+    }
+  }, [originalNarrations, translatedNarrations]);
+
+  // Listen for narrations-updated event
+  useEffect(() => {
+    const handleNarrationsUpdated = (event) => {
+      console.log('SubtitleSettings - Received narrations-updated event:', event.detail);
+      if (event.detail.source === 'original') {
+        setInternalOriginalNarrations(event.detail.narrations);
+      } else {
+        setInternalTranslatedNarrations(event.detail.narrations);
+      }
+    };
+
+    window.addEventListener('narrations-updated', handleNarrationsUpdated);
+
+    // Also check localStorage on mount
+    try {
+      const storedOriginal = localStorage.getItem('originalNarrations');
+      if (storedOriginal) {
+        const parsed = JSON.parse(storedOriginal);
+        if (parsed && parsed.length > 0) {
+          setInternalOriginalNarrations(parsed);
+        }
+      }
+
+      const storedTranslated = localStorage.getItem('translatedNarrations');
+      if (storedTranslated) {
+        const parsed = JSON.parse(storedTranslated);
+        if (parsed && parsed.length > 0) {
+          setInternalTranslatedNarrations(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading narrations from localStorage:', e);
+    }
+
+    return () => {
+      window.removeEventListener('narrations-updated', handleNarrationsUpdated);
+    };
+  }, []);
 
   // Check if any narrations are available
-  const hasOriginalNarrations = originalNarrations && originalNarrations.length > 0;
-  const hasTranslatedNarrations = translatedNarrations && translatedNarrations.length > 0;
+  const hasOriginalNarrations = internalOriginalNarrations.length > 0;
+  const hasTranslatedNarrations = internalTranslatedNarrations.length > 0;
   const hasAnyNarrations = hasOriginalNarrations || hasTranslatedNarrations;
+
+  // Debug narration data
+  useEffect(() => {
+    console.log('SubtitleSettings - internalOriginalNarrations:', internalOriginalNarrations);
+    console.log('SubtitleSettings - internalTranslatedNarrations:', internalTranslatedNarrations);
+    console.log('SubtitleSettings - hasOriginalNarrations:', hasOriginalNarrations);
+    console.log('SubtitleSettings - hasTranslatedNarrations:', hasTranslatedNarrations);
+    console.log('SubtitleSettings - hasAnyNarrations:', hasAnyNarrations);
+    console.log('SubtitleSettings - window.originalNarrations:', window.originalNarrations);
+    console.log('SubtitleSettings - window.translatedNarrations:', window.translatedNarrations);
+  }, [internalOriginalNarrations, internalTranslatedNarrations, hasOriginalNarrations, hasTranslatedNarrations, hasAnyNarrations]);
 
   // Set narration source based on available narrations
   useEffect(() => {
+    // If original narrations are available, set source to original
+    if (hasOriginalNarrations) {
+      setNarrationSource('original');
+    }
     // If original narrations are not available but translated narrations are, set source to translated
-    if (!hasOriginalNarrations && hasTranslatedNarrations) {
+    else if (!hasOriginalNarrations && hasTranslatedNarrations) {
       setNarrationSource('translated');
     }
-    // If translated narrations are not available but original narrations are, set source to original
-    else if (!hasTranslatedNarrations && hasOriginalNarrations) {
-      setNarrationSource('original');
+    // If no narrations are available, don't set any source
+    else {
+      setNarrationSource('');
     }
   }, [hasOriginalNarrations, hasTranslatedNarrations]);
 
@@ -208,12 +278,241 @@ const SubtitleSettings = ({
     };
   }, [showNarrationMenu]);
 
+  // Audio refs for narration playback
+  const audioRefs = useRef({});
+  const audioDurationsRef = useRef({});
+  const [currentNarration, setCurrentNarration] = useState(null);
+
   // Update video volume when it changes
   useEffect(() => {
     if (videoRef && videoRef.current) {
       videoRef.current.volume = videoVolume;
     }
   }, [videoVolume, videoRef]);
+
+  // Update all audio volumes when narration volume changes
+  useEffect(() => {
+    Object.values(audioRefs.current).forEach(audio => {
+      audio.volume = narrationVolume;
+    });
+  }, [narrationVolume]);
+
+  // Handle video timeupdate to trigger narration playback
+  useEffect(() => {
+    const handleTimeUpdate = () => {
+      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || !narrationEnabled) return;
+
+      const currentTime = videoRef.current.currentTime;
+      const activeNarrations = narrationSource === 'original' ? internalOriginalNarrations : internalTranslatedNarrations;
+
+      // Find narrations that should be playing at the current time
+      activeNarrations.forEach(narration => {
+        if (!narration.success) return;
+
+        // Debug narration success status
+        console.log('Narration success status:', narration.success);
+
+        // Debug narration structure
+        console.log('Narration object:', narration);
+
+        // Get the subtitle ID
+        const subtitleId = narration.subtitle_id;
+        console.log('Subtitle ID:', subtitleId);
+
+        // Try to find the matching subtitle from window.subtitlesData
+        let subtitleData;
+        if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
+          subtitleData = window.subtitlesData.find(sub => sub.id === subtitleId);
+          console.log('Found subtitle data from window.subtitlesData:', subtitleData);
+        }
+
+        // If not found, try to find it in the original subtitles prop
+        if (!subtitleData && window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+          subtitleData = window.originalSubtitles.find(sub => sub.id === subtitleId);
+          console.log('Found subtitle data from window.originalSubtitles:', subtitleData);
+        }
+
+        // If still not found, try to find it in the translated subtitles prop
+        if (!subtitleData && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+          subtitleData = window.translatedSubtitles.find(sub => sub.id === subtitleId);
+          console.log('Found subtitle data from window.translatedSubtitles:', subtitleData);
+        }
+
+        // If we couldn't find the subtitle data, skip this narration
+        if (!subtitleData) {
+          console.log('Could not find subtitle data for narration:', narration);
+          return;
+        }
+
+        // Get subtitle timing
+        const subtitleStart = typeof subtitleData.start === 'number' ?
+          subtitleData.start : parseFloat(subtitleData.start);
+        const subtitleEnd = typeof subtitleData.end === 'number' ?
+          subtitleData.end : parseFloat(subtitleData.end);
+
+        console.log('Subtitle timing:', subtitleStart, 'to', subtitleEnd);
+
+        // Calculate the midpoint of the subtitle
+        const subtitleMidPoint = subtitleStart + ((subtitleEnd - subtitleStart) / 2);
+
+        // Get narration duration (or use a default if not available)
+        const narrationDuration = audioDurationsRef.current[narration.subtitle_id] || 2.0;
+
+        // Calculate when to start playing to align the middle of the narration with the middle of the subtitle
+        const startPlay = subtitleMidPoint - (narrationDuration / 2);
+        const endPlay = subtitleMidPoint + (narrationDuration / 2);
+
+        // Check if current time is within the play window
+        if (currentTime >= startPlay && currentTime <= endPlay) {
+          // If we're not already playing this narration, play it
+          if (currentNarration?.id !== narration.subtitle_id) {
+            playNarration(narration, subtitleMidPoint);
+          }
+        }
+      });
+    };
+
+    // Add event listener to video
+    if (videoRef && videoRef.current && hasAnyNarrations && narrationSource !== '' && narrationEnabled) {
+      videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+    }
+
+    return () => {
+      // Clean up event listener
+      if (videoRef && videoRef.current) {
+        videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+      }
+    };
+  }, [hasAnyNarrations, narrationSource, internalOriginalNarrations, internalTranslatedNarrations, currentNarration, videoRef, narrationEnabled, narrationVolume]);
+
+  // Play a specific narration
+  const playNarration = (narration, subtitleMidPoint) => {
+    console.log('Playing narration:', narration, 'at midpoint:', subtitleMidPoint);
+
+    // Store the subtitle data with the narration for reference
+    if (!narration.subtitleData) {
+      // Try to find the matching subtitle
+      let subtitleData;
+      if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
+        subtitleData = window.subtitlesData.find(sub => sub.id === narration.subtitle_id);
+      }
+      if (!subtitleData && window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+        subtitleData = window.originalSubtitles.find(sub => sub.id === narration.subtitle_id);
+      }
+      if (!subtitleData && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+        subtitleData = window.translatedSubtitles.find(sub => sub.id === narration.subtitle_id);
+      }
+
+      if (subtitleData) {
+        narration.subtitleData = subtitleData;
+        console.log('Added subtitle data to narration:', subtitleData);
+      }
+    }
+
+    // Stop any currently playing narration
+    if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+      console.log('Stopping current narration:', currentNarration.subtitle_id);
+      audioRefs.current[currentNarration.subtitle_id].pause();
+    }
+
+    // Set the current narration
+    setCurrentNarration(narration);
+
+    // Get or create audio element for this narration
+    if (!audioRefs.current[narration.subtitle_id]) {
+      const audioUrl = `${SERVER_URL}/narration/audio/${narration.filename || 'test.wav'}`;
+      console.log('Creating new audio element for URL:', audioUrl);
+
+      const audio = new Audio(audioUrl);
+      audio.volume = narrationVolume;
+
+      // Add error handling
+      audio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        console.error('Audio error code:', audio.error?.code);
+        console.error('Audio error message:', audio.error?.message);
+      });
+
+      // Store the audio duration once it's loaded
+      audio.addEventListener('loadedmetadata', () => {
+        console.log('Audio loaded metadata, duration:', audio.duration);
+        audioDurationsRef.current[narration.subtitle_id] = audio.duration;
+      });
+
+      // Add play event listener
+      audio.addEventListener('play', () => {
+        console.log('Audio started playing');
+      });
+
+      // Add ended event listener
+      audio.addEventListener('ended', () => {
+        console.log('Audio finished playing');
+        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+          setCurrentNarration(null);
+        }
+      });
+
+      audioRefs.current[narration.subtitle_id] = audio;
+    } else {
+      console.log('Using existing audio element for narration:', narration.subtitle_id);
+    }
+
+    // Play the narration
+    const audioElement = audioRefs.current[narration.subtitle_id];
+    audioElement.volume = narrationVolume;
+    console.log('Setting audio volume to:', narrationVolume);
+
+    // If we have the subtitle midpoint and audio duration, calculate the start time
+    const audioDuration = audioDurationsRef.current[narration.subtitle_id];
+    console.log('Audio duration:', audioDuration);
+
+    if (subtitleMidPoint && audioDuration) {
+      // Calculate the time to start the audio so that its middle aligns with the subtitle midpoint
+      const videoCurrentTime = videoRef.current.currentTime;
+      const audioStartTime = (audioDuration / 2) - (subtitleMidPoint - videoCurrentTime);
+      console.log('Calculated audio start time:', audioStartTime, 'from video time:', videoCurrentTime, 'and subtitle midpoint:', subtitleMidPoint);
+
+      // Ensure the start time is within valid bounds
+      if (audioStartTime >= 0 && audioStartTime < audioDuration) {
+        audioElement.currentTime = audioStartTime;
+        console.log('Setting audio currentTime to:', audioStartTime);
+      } else {
+        audioElement.currentTime = 0;
+        console.log('Audio start time out of bounds, setting to 0');
+      }
+    } else {
+      audioElement.currentTime = 0;
+      console.log('No subtitle midpoint or audio duration, starting from beginning');
+    }
+
+    // Try to play the audio and handle any errors
+    try {
+      const playPromise = audioElement.play();
+      console.log('Audio play called');
+
+      // Modern browsers return a promise from play()
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playback started successfully');
+          })
+          .catch(error => {
+            console.error('Error playing audio:', error);
+            // Try again with user interaction
+            console.log('Adding one-time click handler to play audio');
+            const handleClick = () => {
+              audioElement.play()
+                .then(() => console.log('Audio played after user interaction'))
+                .catch(e => console.error('Still failed to play audio:', e));
+              document.removeEventListener('click', handleClick);
+            };
+            document.addEventListener('click', handleClick, { once: true });
+          });
+      }
+    } catch (error) {
+      console.error('Exception trying to play audio:', error);
+    }
+  };
 
   return (
     <div className="subtitle-settings-container">
@@ -286,7 +585,9 @@ const SubtitleSettings = ({
                       checked={narrationSource === 'original'}
                       onChange={(e) => {
                         e.stopPropagation();
-                        setNarrationSource('original');
+                        if (hasOriginalNarrations) {
+                          setNarrationSource('original');
+                        }
                       }}
                       disabled={!hasOriginalNarrations}
                     />
@@ -306,7 +607,9 @@ const SubtitleSettings = ({
                       checked={narrationSource === 'translated'}
                       onChange={(e) => {
                         e.stopPropagation();
-                        setNarrationSource('translated');
+                        if (hasTranslatedNarrations) {
+                          setNarrationSource('translated');
+                        }
                       }}
                       disabled={!hasTranslatedNarrations}
                     />
@@ -337,9 +640,49 @@ const SubtitleSettings = ({
                 </div>
               )}
 
-              {/* Volume Controls */}
+              {/* Narration Playback Toggle */}
               <div className="setting-group">
                 <label className={hasAnyNarrations ? '' : 'disabled'}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  </svg>
+                  {t('narration.narrationPlayback', 'Narration Playback')}
+                  {currentNarration && (
+                    <span className="narration-status-indicator">
+                      <span className="status-dot"></span>
+                      {t('narration.playing', 'Playing')}
+                    </span>
+                  )}
+                </label>
+                <div className="toggle-switch-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={narrationEnabled}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setNarrationEnabled(e.target.checked);
+
+                        // If disabling, stop any playing narration
+                        if (!e.target.checked && currentNarration && audioRefs.current[currentNarration.id]) {
+                          audioRefs.current[currentNarration.id].pause();
+                          setCurrentNarration(null);
+                        }
+                      }}
+                      disabled={!hasAnyNarrations}
+                    />
+                    <span className={`toggle-slider ${!hasAnyNarrations ? 'disabled' : ''}`}></span>
+                  </label>
+                  <span className="toggle-label">
+                    {narrationEnabled ? t('narration.enabled', 'Enabled') : t('narration.disabled', 'Disabled')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Volume Controls */}
+              <div className="setting-group">
+                <label className={hasAnyNarrations && narrationEnabled ? '' : 'disabled'}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -358,7 +701,7 @@ const SubtitleSettings = ({
                       setNarrationVolume(parseFloat(e.target.value));
                     }}
                     className="range-slider"
-                    disabled={!hasAnyNarrations}
+                    disabled={!hasAnyNarrations || !narrationEnabled}
                   />
                   <div className="range-value">{Math.round(narrationVolume * 100)}%</div>
                 </div>
@@ -388,6 +731,74 @@ const SubtitleSettings = ({
                   />
                   <div className="range-value">{Math.round(videoVolume * 100)}%</div>
                 </div>
+              </div>
+
+              {/* Debug section */}
+              <div className="setting-group">
+                <button
+                  className="md-filled-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Debug button clicked');
+                    console.log('Original narrations:', window.originalNarrations);
+                    console.log('Translated narrations:', window.translatedNarrations);
+                    console.log('Internal original narrations:', internalOriginalNarrations);
+                    console.log('Internal translated narrations:', internalTranslatedNarrations);
+                    console.log('Subtitles data:', window.subtitlesData);
+                    console.log('Original subtitles:', window.originalSubtitles);
+                    console.log('Translated subtitles:', window.translatedSubtitles);
+
+                    // Try to play the first narration directly
+                    if (internalOriginalNarrations && internalOriginalNarrations.length > 0) {
+                      const firstNarration = internalOriginalNarrations[0];
+                      console.log('Trying to play first narration directly:', firstNarration);
+
+                      // Create and play audio
+                      const audioUrl = `${SERVER_URL}/narration/audio/${firstNarration.filename}`;
+                      console.log('Audio URL:', audioUrl);
+
+                      const audio = new Audio(audioUrl);
+                      audio.volume = narrationVolume;
+
+                      audio.addEventListener('error', (e) => {
+                        console.error('Test audio error:', e);
+                        console.error('Test audio error code:', audio.error?.code);
+                        console.error('Test audio error message:', audio.error?.message);
+                      });
+
+                      audio.addEventListener('loadedmetadata', () => {
+                        console.log('Test audio loaded metadata, duration:', audio.duration);
+                      });
+
+                      audio.addEventListener('play', () => {
+                        console.log('Test audio started playing');
+                      });
+
+                      audio.addEventListener('ended', () => {
+                        console.log('Test audio finished playing');
+                      });
+
+                      try {
+                        const playPromise = audio.play();
+                        console.log('Test audio play called');
+
+                        if (playPromise !== undefined) {
+                          playPromise
+                            .then(() => {
+                              console.log('Test audio playback started successfully');
+                            })
+                            .catch(error => {
+                              console.error('Error playing test audio:', error);
+                            });
+                        }
+                      } catch (error) {
+                        console.error('Exception trying to play test audio:', error);
+                      }
+                    }
+                  }}
+                >
+                  Test Narration Audio
+                </button>
               </div>
             </div>
           </div>

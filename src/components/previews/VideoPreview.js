@@ -499,8 +499,48 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           translatedSubtitles={translatedSubtitles}
           targetLanguage={translatedSubtitles && translatedSubtitles.length > 0 && translatedSubtitles[0].language}
           videoRef={videoRef}
-          originalNarrations={window.originalNarrations || [{ subtitle_id: 'test', subtitle: { start: 1, end: 5 }, filename: 'test.wav', success: true, text: 'Test narration' }]}
-          translatedNarrations={window.translatedNarrations || []}
+          originalNarrations={window.originalNarrations || (() => {
+            try {
+              const stored = localStorage.getItem('originalNarrations');
+              return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+              console.error('Error parsing originalNarrations from localStorage:', e);
+              return [];
+            }
+          })()}
+          translatedNarrations={window.translatedNarrations || (() => {
+            try {
+              const stored = localStorage.getItem('translatedNarrations');
+              return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+              console.error('Error parsing translatedNarrations from localStorage:', e);
+              return [];
+            }
+          })()}
+          {...(() => {
+            // Store subtitles data in window for access by other components
+            if (subtitlesArray && subtitlesArray.length > 0) {
+              window.subtitlesData = subtitlesArray;
+              console.log('VideoPreview - Storing subtitles data in window:', subtitlesArray);
+            }
+            // Store original subtitles (same as subtitlesArray in this context)
+            if (subtitlesArray && subtitlesArray.length > 0) {
+              window.originalSubtitles = subtitlesArray;
+              console.log('VideoPreview - Storing original subtitles in window:', subtitlesArray);
+            }
+            // Store translated subtitles if available
+            if (translatedSubtitles && translatedSubtitles.length > 0) {
+              window.translatedSubtitles = translatedSubtitles;
+              console.log('VideoPreview - Storing translated subtitles in window:', translatedSubtitles);
+            }
+            return {};
+          })()}
+          /* Debug narration data */
+          {...(() => {
+            console.log('VideoPreview - window.originalNarrations:', window.originalNarrations);
+            console.log('VideoPreview - window.translatedNarrations:', window.translatedNarrations);
+            return {};
+          })()}
           getAudioUrl={(filename) => `${SERVER_URL}/narration/audio/${filename || 'test.wav'}`}
         />
       </div>

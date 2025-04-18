@@ -122,7 +122,7 @@ const CacheTab = () => {
           </button>
         </div>
         <p className="cache-description">
-          {t('settings.cacheDescription', 'Clear all cached subtitles and downloaded videos to free up space.')}
+          {t('settings.cacheDescription', 'Clear all cached subtitles, downloaded videos, and narration audio files to free up space.')}
         </p>
       </div>
 
