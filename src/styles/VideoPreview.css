@@ -90,6 +90,32 @@
   line-height: 1.4; /* Default line height, will be overridden by inline styles */
 }
 
+/* Fullscreen subtitle overlay */
+#fullscreen-subtitle-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 10%;
+  width: 80%; /* Default width, will be overridden by inline styles */
+  margin: 0 auto;
+  text-align: center;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+#fullscreen-subtitle {
+  display: inline-block;
+  background-color: rgba(0, 0, 0, 0.75); /* Default background, will be overridden by inline styles */
+  color: white; /* Default color, will be overridden by inline styles */
+  padding: 10px;
+  border-radius: 4px;
+  max-width: 100%;
+  word-wrap: break-word;
+  text-align: center;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
 /* Video quality toggle */
 .video-quality-toggle {
   position: absolute;

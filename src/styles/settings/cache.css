@@ -30,7 +30,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  margin-top: 20px;
+  margin-top: 0; /* Removed top margin since it's now the first element */
 }
 
 .empty-cache-info {
@@ -185,11 +185,11 @@
 /* Cache status message */
 .cache-status-message {
   padding: 12px 16px;
-  margin: 0;
+  margin: 20px 0 0 0; /* Added top margin since it's now below the actions */
   border-radius: var(--card-border-radius);
   font-size: var(--md-body-medium-size);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
-  height: 100%;
+  height: auto; /* Changed from 100% to auto to fit content */
 }
 
 .cache-status-message.status-success {

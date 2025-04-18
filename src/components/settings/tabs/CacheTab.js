@@ -154,6 +154,20 @@ const CacheTab = () => {
                 {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
               </p>
             </div>
+
+            <div className="cache-details-item">
+              <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
+              <p>
+                {t('settings.narrationReferenceCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationReference?.count || 0, size: cacheDetails.narrationReference?.formattedSize || '0 Bytes' })}
+              </p>
+            </div>
+
+            <div className="cache-details-item">
+              <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
+              <p>
+                {t('settings.narrationOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationOutput?.count || 0, size: cacheDetails.narrationOutput?.formattedSize || '0 Bytes' })}
+              </p>
+            </div>
           </div>
         )}
 
@@ -181,13 +195,6 @@ const CacheTab = () => {
 
       {/* Right Column */}
       <div className="cache-right-column">
-        {/* Cache status message */}
-        {cacheStatus.message && (
-          <div className={`cache-status-message status-${cacheStatus.type}`}>
-            {cacheStatus.message}
-          </div>
-        )}
-
         {/* Cache actions */}
         <div className="cache-actions">
           <button
@@ -200,6 +207,13 @@ const CacheTab = () => {
               : t('settings.clearCache', 'Clear Cache')}
           </button>
         </div>
+
+        {/* Cache status message */}
+        {cacheStatus.message && (
+          <div className={`cache-status-message status-${cacheStatus.type}`}>
+            {cacheStatus.message}
+          </div>
+        )}
       </div>
     </div>
   );
