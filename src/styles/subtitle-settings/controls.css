@@ -247,6 +247,20 @@ input:checked + .toggle-slider:before {
   transform: translateX(20px);
 }
 
+/* Ensure consistent toggle slider in reference-content-row */
+.reference-content-row .toggle-slider:before {
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--md-on-surface-variant);
+}
+
+.reference-content-row input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+  background-color: var(--md-on-primary);
+}
+
 .toggle-slider.disabled {
   opacity: 0.5;
   cursor: not-allowed;
