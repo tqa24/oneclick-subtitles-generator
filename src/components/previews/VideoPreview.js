@@ -117,6 +117,30 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       setError('');
       setOptimizedVideoInfo(null); // Reset optimized video info
 
+      // Clear narration data when video source changes
+      console.log('VideoPreview: Clearing narration data for new video source');
+      window.originalNarrations = [];
+      window.translatedNarrations = [];
+      localStorage.removeItem('originalNarrations');
+      localStorage.removeItem('translatedNarrations');
+
+      // Dispatch event to notify other components that narrations have been cleared
+      const event = new CustomEvent('narrations-updated', {
+        detail: {
+          source: 'original',
+          narrations: []
+        }
+      });
+      window.dispatchEvent(event);
+
+      const translatedEvent = new CustomEvent('narrations-updated', {
+        detail: {
+          source: 'translated',
+          narrations: []
+        }
+      });
+      window.dispatchEvent(translatedEvent);
+
       if (!videoSource) {
         // Don't show error message - SRT-only mode will be activated in App.js
         return;

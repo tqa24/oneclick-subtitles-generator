@@ -165,6 +165,11 @@ const SubtitleSettings = ({
   const [videoVolume, setVideoVolume] = useState(0.3);
   const [narrationEnabled, setNarrationEnabled] = useState(true);
 
+  // Audio refs for narration playback
+  const audioRefs = useRef({});
+  const audioDurationsRef = useRef({});
+  const [currentNarration, setCurrentNarration] = useState(null);
+
   // State to track narrations internally
   const [internalOriginalNarrations, setInternalOriginalNarrations] = useState(originalNarrations || []);
   const [internalTranslatedNarrations, setInternalTranslatedNarrations] = useState(translatedNarrations || []);
@@ -185,8 +190,31 @@ const SubtitleSettings = ({
       console.log('SubtitleSettings - Received narrations-updated event:', event.detail);
       if (event.detail.source === 'original') {
         setInternalOriginalNarrations(event.detail.narrations);
+
+        // If narrations were cleared (empty array), also clear any playing audio
+        if (event.detail.narrations.length === 0) {
+          console.log('SubtitleSettings - Original narrations cleared, stopping any playing audio');
+          // Stop any currently playing narration
+          if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+            audioRefs.current[currentNarration.subtitle_id].pause();
+            setCurrentNarration(null);
+          }
+          // Clear audio refs to prevent playing old audio
+          audioRefs.current = {};
+          audioDurationsRef.current = {};
+        }
       } else {
         setInternalTranslatedNarrations(event.detail.narrations);
+
+        // If narrations were cleared (empty array), also clear any playing audio
+        if (event.detail.narrations.length === 0 && narrationSource === 'translated') {
+          console.log('SubtitleSettings - Translated narrations cleared, stopping any playing audio');
+          // Stop any currently playing narration
+          if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+            audioRefs.current[currentNarration.subtitle_id].pause();
+            setCurrentNarration(null);
+          }
+        }
       }
     };
 
@@ -216,7 +244,7 @@ const SubtitleSettings = ({
     return () => {
       window.removeEventListener('narrations-updated', handleNarrationsUpdated);
     };
-  }, []);
+  }, [currentNarration, narrationSource]);
 
   // Check if any narrations are available
   const hasOriginalNarrations = internalOriginalNarrations.length > 0;
@@ -239,16 +267,25 @@ const SubtitleSettings = ({
     // If original narrations are available, set source to original
     if (hasOriginalNarrations) {
       setNarrationSource('original');
+      console.log('SubtitleSettings: Setting narration source to original');
     }
     // If original narrations are not available but translated narrations are, set source to translated
     else if (!hasOriginalNarrations && hasTranslatedNarrations) {
       setNarrationSource('translated');
+      console.log('SubtitleSettings: Setting narration source to translated');
     }
     // If no narrations are available, don't set any source
     else {
       setNarrationSource('');
+      console.log('SubtitleSettings: No narrations available, clearing narration source');
+
+      // Also stop any currently playing narration
+      if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+        audioRefs.current[currentNarration.subtitle_id].pause();
+        setCurrentNarration(null);
+      }
     }
-  }, [hasOriginalNarrations, hasTranslatedNarrations]);
+  }, [hasOriginalNarrations, hasTranslatedNarrations, currentNarration]);
 
   // Reference for the menu container
   const menuRef = useRef(null);
@@ -277,11 +314,6 @@ const SubtitleSettings = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showNarrationMenu]);
-
-  // Audio refs for narration playback
-  const audioRefs = useRef({});
-  const audioDurationsRef = useRef({});
-  const [currentNarration, setCurrentNarration] = useState(null);
 
   // Update video volume when it changes
   useEffect(() => {
@@ -365,7 +397,7 @@ const SubtitleSettings = ({
         // Check if current time is within the play window
         if (currentTime >= startPlay && currentTime <= endPlay) {
           // If we're not already playing this narration, play it
-          if (currentNarration?.id !== narration.subtitle_id) {
+          if (!currentNarration || currentNarration.subtitle_id !== narration.subtitle_id) {
             playNarration(narration, subtitleMidPoint);
           }
         }
@@ -665,8 +697,8 @@ const SubtitleSettings = ({
                         setNarrationEnabled(e.target.checked);
 
                         // If disabling, stop any playing narration
-                        if (!e.target.checked && currentNarration && audioRefs.current[currentNarration.id]) {
-                          audioRefs.current[currentNarration.id].pause();
+                        if (!e.target.checked && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+                          audioRefs.current[currentNarration.subtitle_id].pause();
                           setCurrentNarration(null);
                         }
                       }}
