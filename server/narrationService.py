@@ -901,15 +901,15 @@ def generate_narration():
                     if model is None:
                         raise ValueError("Model is not available for generation")
 
-                    # Handle character encoding issues
-                    try:
-                        # Try to encode the text to ASCII to check for non-ASCII characters
-                        text.encode('ascii')
-                    except UnicodeEncodeError:
-                        # If there are non-ASCII characters, replace them with their ASCII equivalents or remove them
-                        import unicodedata
-                        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
-                        logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
+                    # Log the text we're generating for
+                    logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
+
+                    # No need to clean Chinese characters as F5-TTS supports them natively
+                    # We'll only clean control characters that might cause issues
+                    import re
+                    # Remove control characters but preserve Chinese, Japanese, Korean, and other non-Latin characters
+                    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+                    logger.info(f"Final text after cleaning for subtitle {subtitle_id}: {text}")
 
                     # Force CUDA if available
                     import torch
