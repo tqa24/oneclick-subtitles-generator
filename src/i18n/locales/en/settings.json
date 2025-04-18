@@ -135,7 +135,7 @@
   "useOptimizedPreview": "Use optimized video for preview",
   "useOptimizedPreviewDescription": "Display the optimized video in the preview player. This can improve performance on slower devices.",
   "cache": "Cache",
-  "cacheDescription": "Clear all downloaded subtitles and videos to free up space.",
+  "cacheDescription": "Clear all downloaded subtitles, videos, and narration audio files to free up space.",
   "clearCache": "Clear Cache",
   "clearingCache": "Clearing cache...",
   "cacheClearedSuccess": "Cache cleared successfully!",

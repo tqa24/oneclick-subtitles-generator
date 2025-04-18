@@ -165,14 +165,45 @@ const UnifiedNarrationSection = ({
 
   // Store narration results in window object for access by other components
   useEffect(() => {
+    console.log('UnifiedNarrationSection - generationResults:', generationResults);
+    console.log('UnifiedNarrationSection - subtitleSource:', subtitleSource);
+
     if (generationResults.length > 0) {
       // Store based on subtitle source
       if (subtitleSource === 'original') {
-        window.originalNarrations = generationResults;
+        // Create a new array to ensure reference changes trigger updates
+        window.originalNarrations = [...generationResults];
+        // Also store in localStorage for more reliable access
+        try {
+          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing originalNarrations in localStorage:', e);
+        }
+        console.log('UnifiedNarrationSection - Setting window.originalNarrations:', window.originalNarrations);
       } else {
-        window.translatedNarrations = generationResults;
+        // Create a new array to ensure reference changes trigger updates
+        window.translatedNarrations = [...generationResults];
+        // Also store in localStorage for more reliable access
+        try {
+          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing translatedNarrations in localStorage:', e);
+        }
+        console.log('UnifiedNarrationSection - Setting window.translatedNarrations:', window.translatedNarrations);
       }
+
+      // Dispatch a custom event to notify other components
+      const event = new CustomEvent('narrations-updated', {
+        detail: {
+          source: subtitleSource,
+          narrations: generationResults
+        }
+      });
+      window.dispatchEvent(event);
     }
+
+    console.log('UnifiedNarrationSection - After update - window.originalNarrations:', window.originalNarrations);
+    console.log('UnifiedNarrationSection - After update - window.translatedNarrations:', window.translatedNarrations);
   }, [generationResults, subtitleSource]);
 
   // Handle audio ended event
