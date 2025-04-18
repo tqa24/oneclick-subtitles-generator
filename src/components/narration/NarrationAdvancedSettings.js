@@ -27,6 +27,11 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
     handleSettingChange(name, parseFloat(value));
   };
 
+  // Calculate slider fill percentage
+  const calculateFillPercentage = (value, min, max) => {
+    return ((value - min) / (max - min)) * 100;
+  };
+
   // Handle checkbox changes
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
@@ -52,20 +57,70 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
               <label htmlFor="speechRate">{t('narration.speechRate', 'Speed')}:</label>
             </div>
             <div className="row-content">
-              <div className="slider-container">
-                <input
-                  type="range"
-                  id="speechRate"
-                  name="speechRate"
-                  min="0.5"
-                  max="2.0"
-                  step="0.1"
-                  value={settings.speechRate || 1.0}
-                  onChange={handleSliderChange}
-                  disabled={disabled}
-                  className="range-slider"
-                />
-                <div className="slider-value">{(settings.speechRate || 1.0).toFixed(1)}x</div>
+              <div className="slider-with-value">
+                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${calculateFillPercentage(settings.speechRate || 1.0, 0.5, 2.0)}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${calculateFillPercentage(settings.speechRate || 1.0, 0.5, 2.0)}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="speechRate"
+                    name="speechRate"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={settings.speechRate || 1.0}
+                    onChange={handleSliderChange}
+                    disabled={disabled}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{(settings.speechRate || 1.0).toFixed(1)}x</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="narration-row">
+            <div className="row-label">
+              <label htmlFor="cfgStrength">{t('narration.cfgStrength', 'Similarity')}:</label>
+            </div>
+            <div className="row-content">
+              <div className="slider-with-value">
+                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${calculateFillPercentage(settings.cfgStrength || 2.0, 1.0, 5.0)}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${calculateFillPercentage(settings.cfgStrength || 2.0, 1.0, 5.0)}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="cfgStrength"
+                    name="cfgStrength"
+                    min="1.0"
+                    max="5.0"
+                    step="0.1"
+                    value={settings.cfgStrength || 2.0}
+                    onChange={handleSliderChange}
+                    disabled={disabled}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{(settings.cfgStrength || 2.0).toFixed(1)}</div>
+              </div>
+              <div className="setting-description">
+                {t('narration.cfgStrengthDesc', 'Higher values increase voice similarity')}
               </div>
             </div>
           </div>
@@ -105,49 +160,35 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
 
           <div className="narration-row">
             <div className="row-label">
-              <label htmlFor="cfgStrength">{t('narration.cfgStrength', 'Similarity')}:</label>
-            </div>
-            <div className="row-content">
-              <div className="slider-container">
-                <input
-                  type="range"
-                  id="cfgStrength"
-                  name="cfgStrength"
-                  min="1.0"
-                  max="5.0"
-                  step="0.1"
-                  value={settings.cfgStrength || 2.0}
-                  onChange={handleSliderChange}
-                  disabled={disabled}
-                  className="range-slider"
-                />
-                <div className="slider-value">{(settings.cfgStrength || 2.0).toFixed(1)}</div>
-              </div>
-              <div className="setting-description">
-                {t('narration.cfgStrengthDesc', 'Higher values increase voice similarity')}
-              </div>
-            </div>
-          </div>
-
-          <div className="narration-row">
-            <div className="row-label">
               <label htmlFor="swayCoef">{t('narration.swayCoef', 'Sway')}:</label>
             </div>
             <div className="row-content">
-              <div className="slider-container">
-                <input
-                  type="range"
-                  id="swayCoef"
-                  name="swayCoef"
-                  min="-2.0"
-                  max="2.0"
-                  step="0.1"
-                  value={settings.swayCoef || -1.0}
-                  onChange={handleSliderChange}
-                  disabled={disabled}
-                  className="range-slider"
-                />
-                <div className="slider-value">{(settings.swayCoef || -1.0).toFixed(1)}</div>
+              <div className="slider-with-value">
+                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${calculateFillPercentage(settings.swayCoef || -1.0, -2.0, 2.0)}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${calculateFillPercentage(settings.swayCoef || -1.0, -2.0, 2.0)}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="swayCoef"
+                    name="swayCoef"
+                    min="-2.0"
+                    max="2.0"
+                    step="0.1"
+                    value={settings.swayCoef || -1.0}
+                    onChange={handleSliderChange}
+                    disabled={disabled}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{(settings.swayCoef || -1.0).toFixed(1)}</div>
               </div>
               <div className="setting-description">
                 {t('narration.swayCoefDesc', 'Lower values improve quality')}
@@ -268,26 +309,17 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
             </div>
             <div className="row-content">
               <div className="radio-pill-group">
-                {['wav', 'mp3'].map((value) => (
-                  <div className="radio-pill" key={value}>
-                    <input
-                      type="radio"
-                      id={`audioFormat-${value}`}
-                      name="audioFormat"
-                      checked={settings.audioFormat === value}
-                      onChange={() => handleRadioChange('audioFormat', value)}
-                      disabled={disabled || value !== 'wav'} // Only WAV is supported for now
-                    />
-                    <label htmlFor={`audioFormat-${value}`}>
-                      {value.toUpperCase()}
-                      {value !== 'wav' && (
-                        <span className="unavailable-indicator">
-                          {t('narration.comingSoon', '(soon)')}
-                        </span>
-                      )}
-                    </label>
-                  </div>
-                ))}
+                <div className="radio-pill">
+                  <input
+                    type="radio"
+                    id="audioFormat-wav"
+                    name="audioFormat"
+                    checked={true}
+                    onChange={() => handleRadioChange('audioFormat', 'wav')}
+                    disabled={disabled}
+                  />
+                  <label htmlFor="audioFormat-wav">WAV</label>
+                </div>
               </div>
             </div>
           </div>
@@ -320,32 +352,6 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
                     </label>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="narration-row">
-            <div className="row-label">
-              <label>{t('narration.mergeOutput', 'Merge')}:</label>
-            </div>
-            <div className="row-content">
-              <div className="switch-container">
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.mergeOutput === true}
-                    onChange={(e) => handleCheckboxChange(e)}
-                    name="mergeOutput"
-                    disabled={disabled || true} // Not implemented yet
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
-                <span>
-                  {t('narration.mergeOutputDesc', 'Combine all audio')}
-                  <span className="unavailable-indicator">
-                    {t('narration.comingSoon', '(soon)')}
-                  </span>
-                </span>
               </div>
             </div>
           </div>

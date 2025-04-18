@@ -215,6 +215,23 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
   }
 };
 
+// Create a global AbortController for narration generation
+let narrationAbortController = null;
+
+/**
+ * Cancel ongoing narration generation
+ * @returns {boolean} - Whether cancellation was successful
+ */
+export const cancelNarrationGeneration = () => {
+  if (narrationAbortController) {
+    console.log('Cancelling narration generation');
+    narrationAbortController.abort();
+    narrationAbortController = null;
+    return true;
+  }
+  return false;
+};
+
 /**
  * Generate narration for subtitles with streaming response
  * @param {string} referenceAudio - Path to reference audio file
@@ -238,6 +255,10 @@ export const generateNarration = async (
   onComplete = () => {}
 ) => {
   try {
+    // Create a new AbortController for this request
+    narrationAbortController = new AbortController();
+    const signal = narrationAbortController.signal;
+
     // Create a fetch request with streaming response
     const response = await fetch(`${API_BASE_URL}/narration/generate`, {
       method: 'POST',
@@ -249,7 +270,8 @@ export const generateNarration = async (
         reference_text: referenceText,
         subtitles: subtitles,
         settings: settings
-      })
+      }),
+      signal // Add the abort signal to the fetch request
     });
 
     if (!response.ok) {
@@ -369,6 +391,18 @@ export const generateNarration = async (
       throw new Error(`Unexpected content type: ${contentType}`);
     }
   } catch (error) {
+    // Clean up the AbortController
+    narrationAbortController = null;
+
+    // Check if this is an abort error
+    if (error.name === 'AbortError') {
+      const cancelError = new Error('Narration generation cancelled by user');
+      cancelError.cancelled = true;
+      onError(cancelError);
+      return { success: false, cancelled: true, error: 'Cancelled by user' };
+    }
+
+    // Handle other errors
     onError(error);
     throw error;
   }

@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
+    "adm-zip": "^0.5.16",
     "assert": "^2.1.0",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
