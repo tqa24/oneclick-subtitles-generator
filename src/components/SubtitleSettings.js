@@ -39,22 +39,17 @@ const SubtitleSettings = ({
     }
   }, [hasTranslation, settings.showTranslatedSubtitles]);
 
-  // State for transparent background toggle
-  const [isTransparent, setIsTransparent] = useState(() => {
-    // Load transparency state from localStorage
-    const savedTransparency = localStorage.getItem('subtitle_settings_panel_transparent');
-    return savedTransparency === 'true';
-  });
-
   // Save isOpen state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('subtitle_settings_panel_open', isOpen.toString());
   }, [isOpen]);
 
-  // Save transparency state to localStorage when it changes
+  // Remove transparency mode from localStorage if it exists
   useEffect(() => {
-    localStorage.setItem('subtitle_settings_panel_transparent', isTransparent.toString());
-  }, [isTransparent]);
+    if (localStorage.getItem('subtitle_settings_panel_transparent')) {
+      localStorage.removeItem('subtitle_settings_panel_transparent');
+    }
+  }, []);
 
   const handleSettingChange = (setting, value) => {
     const updatedSettings = {
@@ -79,6 +74,10 @@ const SubtitleSettings = ({
 
     // Save the selected language to localStorage
     localStorage.setItem('subtitle_language', value);
+
+    // Log the change for debugging
+    console.log(`Subtitle language changed to: ${value}, showTranslatedSubtitles set to: ${showTranslated}`);
+    console.log('Translated subtitles available:', hasTranslation);
   };
 
   const fontOptions = [
@@ -585,7 +584,16 @@ const SubtitleSettings = ({
 
         <button
           className={`action-button subtitle-settings-toggle md-filled-tonal-button ${isOpen ? 'active' : ''}`}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            const newIsOpen = !isOpen;
+            setIsOpen(newIsOpen);
+            // Close narration menu if it's open
+            if (showNarrationMenu) {
+              console.log('Closing narration menu when opening subtitle settings');
+              setShowNarrationMenu(false);
+            }
+            console.log(`Subtitle settings menu ${newIsOpen ? 'opened' : 'closed'}`);
+          }}
           title={t('subtitleSettings.settingsTooltip', 'Customize subtitle appearance')}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -600,7 +608,14 @@ const SubtitleSettings = ({
             className={`action-button narration-settings-toggle md-filled-tonal-button ${showNarrationMenu ? 'active' : ''}`}
             onClick={(e) => {
               e.stopPropagation();
-              setShowNarrationMenu(!showNarrationMenu);
+              const newShowNarrationMenu = !showNarrationMenu;
+              setShowNarrationMenu(newShowNarrationMenu);
+              // Close subtitle settings menu if it's open and we're opening narration menu
+              if (isOpen && newShowNarrationMenu) {
+                console.log('Closing subtitle settings menu when opening narration menu');
+                setIsOpen(false);
+              }
+              console.log(`Narration menu ${newShowNarrationMenu ? 'opened' : 'closed'}`);
             }}
             title={t('narration.settingsTooltip', 'Narration Settings')}
           >
@@ -615,7 +630,7 @@ const SubtitleSettings = ({
           {/* Narration menu panel with subtitle-settings styling */}
           {showNarrationMenu && (
             <div
-              className={`subtitle-settings-panel narration-panel ${isTransparent ? 'transparent' : ''}`}
+              className="subtitle-settings-panel narration-panel"
               style={{ position: 'absolute', right: '0', top: 'calc(100% + 10px)', width: '300px', zIndex: 9999 }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -719,27 +734,39 @@ const SubtitleSettings = ({
                     </span>
                   )}
                 </label>
-                <div className="slider-container">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={narrationVolume}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setNarrationVolume(parseFloat(e.target.value));
+                <div className="slider-with-value">
+                  <div className={`custom-slider-container ${!hasAnyNarrations ? 'disabled' : ''}`}>
+                    <div className="custom-slider-track">
+                      <div
+                        className="custom-slider-fill"
+                        style={{ width: `${narrationVolume * 100}%` }}
+                      ></div>
+                      <div
+                        className="custom-slider-thumb"
+                        style={{ left: `${narrationVolume * 100}%` }}
+                      ></div>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={narrationVolume}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setNarrationVolume(parseFloat(e.target.value));
 
-                      // If setting volume to 0, stop any playing narration
-                      if (parseFloat(e.target.value) === 0 && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
-                        audioRefs.current[currentNarration.subtitle_id].pause();
-                        setCurrentNarration(null);
-                      }
-                    }}
-                    className="range-slider"
-                    disabled={!hasAnyNarrations}
-                  />
-                  <div className="range-value">{Math.round(narrationVolume * 100)}%</div>
+                        // If setting volume to 0, stop any playing narration
+                        if (parseFloat(e.target.value) === 0 && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+                          audioRefs.current[currentNarration.subtitle_id].pause();
+                          setCurrentNarration(null);
+                        }
+                      }}
+                      className="custom-slider-input"
+                      disabled={!hasAnyNarrations}
+                    />
+                  </div>
+                  <div className="slider-value-display">{Math.round(narrationVolume * 100)}%</div>
                 </div>
               </div>
 
@@ -752,20 +779,32 @@ const SubtitleSettings = ({
                   </svg>
                   {t('narration.videoVolume', 'Video Audio Volume')}
                 </label>
-                <div className="slider-container">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={videoVolume}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setVideoVolume(parseFloat(e.target.value));
-                    }}
-                    className="range-slider"
-                  />
-                  <div className="range-value">{Math.round(videoVolume * 100)}%</div>
+                <div className="slider-with-value">
+                  <div className="custom-slider-container">
+                    <div className="custom-slider-track">
+                      <div
+                        className="custom-slider-fill"
+                        style={{ width: `${videoVolume * 100}%` }}
+                      ></div>
+                      <div
+                        className="custom-slider-thumb"
+                        style={{ left: `${videoVolume * 100}%` }}
+                      ></div>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={videoVolume}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setVideoVolume(parseFloat(e.target.value));
+                      }}
+                      className="custom-slider-input"
+                    />
+                  </div>
+                  <div className="slider-value-display">{Math.round(videoVolume * 100)}%</div>
                 </div>
               </div>
 
@@ -777,30 +816,10 @@ const SubtitleSettings = ({
       </div>
 
       {isOpen && (
-        <div className={`subtitle-settings-panel ${isTransparent ? 'transparent' : ''}`}>
+        <div className="subtitle-settings-panel">
           <div className="settings-header">
             <h4>{t('subtitleSettings.title', 'Subtitle Settings')}</h4>
             <div className="settings-header-actions">
-              <button
-                className={`transparency-toggle-btn ${isTransparent ? 'active' : ''}`}
-                onClick={() => setIsTransparent(!isTransparent)}
-                title={isTransparent ? t('subtitleSettings.showBackground', 'Show Background') : t('subtitleSettings.transparentBackground', 'Transparent Background')}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  {isTransparent ? (
-                    <>
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </>
-                  ) : (
-                    <>
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </>
-                  )}
-                </svg>
-              </button>
               <button
                 className="close-settings-btn"
                 onClick={() => setIsOpen(false)}
@@ -832,16 +851,6 @@ const SubtitleSettings = ({
             </div>
 
             <hr className="settings-divider" />
-
-            {/* Column Headers - Only shown in transparent mode */}
-            {isTransparent && (
-              <>
-                <div className="column-header font-column-header">{t('subtitleSettings.fontSettings', 'Font Settings')}</div>
-                <div className="column-header text-column-header">{t('subtitleSettings.textFormatting', 'Text Formatting')}</div>
-                <div className="column-header position-column-header">{t('subtitleSettings.positionSettings', 'Position Settings')}</div>
-                <div className="column-header background-column-header">{t('subtitleSettings.backgroundSettings', 'Background Settings')}</div>
-              </>
-            )}
 
             <div className="setting-group">
               <label htmlFor="font-family">{t('subtitleSettings.font', 'Font')}</label>
@@ -876,17 +885,30 @@ const SubtitleSettings = ({
 
             <div className="setting-group">
               <label htmlFor="font-size">{t('subtitleSettings.fontSize', 'Font Size')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="font-size"
-                  min="12"
-                  max="36"
-                  step="1"
-                  value={settings.fontSize}
-                  onChange={(e) => handleSettingChange('fontSize', e.target.value)}
-                />
-                <span className="range-value">{settings.fontSize}px</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${((settings.fontSize - 12) / 24) * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${((settings.fontSize - 12) / 24) * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="font-size"
+                    min="12"
+                    max="36"
+                    step="1"
+                    value={settings.fontSize}
+                    onChange={(e) => handleSettingChange('fontSize', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.fontSize}px</div>
               </div>
             </div>
 
@@ -905,17 +927,30 @@ const SubtitleSettings = ({
 
             <div className="setting-group">
               <label htmlFor="position">{t('subtitleSettings.position', 'Y Position')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="position"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={settings.position}
-                  onChange={(e) => handleSettingChange('position', e.target.value)}
-                />
-                <span className="range-value">{settings.position}%</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${settings.position}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${settings.position}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="position"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={settings.position}
+                    onChange={(e) => handleSettingChange('position', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.position}%</div>
               </div>
               <div className="position-labels">
                 <span>{t('subtitleSettings.top', 'Top')}</span>
@@ -925,17 +960,30 @@ const SubtitleSettings = ({
 
             <div className="setting-group">
               <label htmlFor="box-width">{t('subtitleSettings.boxWidth', 'Box Width')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="box-width"
-                  min="50"
-                  max="100"
-                  step="5"
-                  value={settings.boxWidth}
-                  onChange={(e) => handleSettingChange('boxWidth', e.target.value)}
-                />
-                <span className="range-value">{settings.boxWidth}%</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${((settings.boxWidth - 50) / 50) * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${((settings.boxWidth - 50) / 50) * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="box-width"
+                    min="50"
+                    max="100"
+                    step="5"
+                    value={settings.boxWidth}
+                    onChange={(e) => handleSettingChange('boxWidth', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.boxWidth}%</div>
               </div>
             </div>
 
@@ -951,17 +999,30 @@ const SubtitleSettings = ({
 
             <div className="setting-group">
               <label htmlFor="opacity">{t('subtitleSettings.opacity', 'Opacity')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="opacity"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={settings.opacity}
-                  onChange={(e) => handleSettingChange('opacity', e.target.value)}
-                />
-                <span className="range-value">{Math.round(settings.opacity * 100)}%</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${settings.opacity * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${settings.opacity * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="opacity"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={settings.opacity}
+                    onChange={(e) => handleSettingChange('opacity', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{Math.round(settings.opacity * 100)}%</div>
               </div>
             </div>
 
@@ -1026,65 +1087,117 @@ const SubtitleSettings = ({
 
             <div className="setting-group">
               <label htmlFor="line-spacing">{t('subtitleSettings.lineSpacing', 'Line Spacing')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="line-spacing"
-                  min="1"
-                  max="2"
-                  step="0.1"
-                  value={settings.lineSpacing || '1.4'}
-                  onChange={(e) => handleSettingChange('lineSpacing', e.target.value)}
-                />
-                <span className="range-value">{settings.lineSpacing || '1.4'}</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${((settings.lineSpacing || 1.4) - 1) * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${((settings.lineSpacing || 1.4) - 1) * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="line-spacing"
+                    min="1"
+                    max="2"
+                    step="0.1"
+                    value={settings.lineSpacing || '1.4'}
+                    onChange={(e) => handleSettingChange('lineSpacing', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.lineSpacing || '1.4'}</div>
               </div>
             </div>
 
             <div className="setting-group">
               <label htmlFor="letter-spacing">{t('subtitleSettings.letterSpacing', 'Letter Spacing')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="letter-spacing"
-                  min="-1"
-                  max="5"
-                  step="0.5"
-                  value={settings.letterSpacing || '0'}
-                  onChange={(e) => handleSettingChange('letterSpacing', e.target.value)}
-                />
-                <span className="range-value">{settings.letterSpacing || '0'}px</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(parseFloat(settings.letterSpacing || 0) + 1) / 6 * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${(parseFloat(settings.letterSpacing || 0) + 1) / 6 * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="letter-spacing"
+                    min="-1"
+                    max="5"
+                    step="0.5"
+                    value={settings.letterSpacing || '0'}
+                    onChange={(e) => handleSettingChange('letterSpacing', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.letterSpacing || '0'}px</div>
               </div>
             </div>
 
             <div className="setting-group">
               <label htmlFor="background-radius">{t('subtitleSettings.backgroundRadius', 'Background Radius')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="background-radius"
-                  min="0"
-                  max="20"
-                  step="1"
-                  value={settings.backgroundRadius || '0'}
-                  onChange={(e) => handleSettingChange('backgroundRadius', e.target.value)}
-                />
-                <span className="range-value">{settings.backgroundRadius || '0'}px</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(parseFloat(settings.backgroundRadius || 0) / 20) * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${(parseFloat(settings.backgroundRadius || 0) / 20) * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="background-radius"
+                    min="0"
+                    max="20"
+                    step="1"
+                    value={settings.backgroundRadius || '0'}
+                    onChange={(e) => handleSettingChange('backgroundRadius', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.backgroundRadius || '0'}px</div>
               </div>
             </div>
 
             <div className="setting-group">
               <label htmlFor="background-padding">{t('subtitleSettings.backgroundPadding', 'Background Padding')}</label>
-              <div className="range-with-value">
-                <input
-                  type="range"
-                  id="background-padding"
-                  min="0"
-                  max="30"
-                  step="2"
-                  value={settings.backgroundPadding || '10'}
-                  onChange={(e) => handleSettingChange('backgroundPadding', e.target.value)}
-                />
-                <span className="range-value">{settings.backgroundPadding || '10'}px</span>
+              <div className="slider-with-value">
+                <div className="custom-slider-container">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(parseFloat(settings.backgroundPadding || 10) / 30) * 100}%` }}
+                    ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${(parseFloat(settings.backgroundPadding || 10) / 30) * 100}%` }}
+                    ></div>
+                  </div>
+                  <input
+                    type="range"
+                    id="background-padding"
+                    min="0"
+                    max="30"
+                    step="2"
+                    value={settings.backgroundPadding || '10'}
+                    onChange={(e) => handleSettingChange('backgroundPadding', e.target.value)}
+                    className="custom-slider-input"
+                  />
+                </div>
+                <div className="slider-value-display">{settings.backgroundPadding || '10'}px</div>
               </div>
             </div>
 

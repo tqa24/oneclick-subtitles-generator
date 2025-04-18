@@ -155,6 +155,20 @@ input:checked + .toggle-slider:before {
   transform: translateX(26px);
 }
 
+/* Ensure consistent toggle slider in reference-content-row */
+.reference-content-row .toggle-slider:before {
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--md-on-surface-variant);
+}
+
+.reference-content-row input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+  background-color: var(--md-on-primary);
+}
+
 .toggle-label {
   font-size: 0.9rem;
   color: var(--text-primary);

@@ -80,7 +80,6 @@
 }
 
 /* Header buttons */
-.transparency-toggle-btn,
 .close-settings-btn {
   display: flex;
   align-items: center;
@@ -94,21 +93,6 @@
   color: var(--md-on-surface-variant);
   padding: 0;
   transition: background-color 0.2s, color 0.2s;
-}
-
-.transparency-toggle-btn {
-  color: var(--md-on-surface-variant);
-  position: relative;
-  z-index: 10;
-}
-
-.transparency-toggle-btn:hover {
-  background-color: var(--md-surface-2);
-}
-
-.transparency-toggle-btn.active {
-  color: var(--md-primary);
-  background-color: rgba(var(--md-primary-rgb, 103, 80, 164), 0.1);
 }
 
 .close-settings-btn {

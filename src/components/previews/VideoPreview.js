@@ -311,18 +311,27 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           setCurrentTime(currentVideoTime);
           lastTimeUpdateRef.current = now;
 
+          // Determine which subtitle array to use based on settings
+          const useTranslated = subtitleSettings.showTranslatedSubtitles && translatedSubtitles && translatedSubtitles.length > 0;
+          const subtitlesToUse = useTranslated ? translatedSubtitles : subtitlesArray;
+
           // Find the current subtitle based on the video's current time
-          if (subtitlesArray && subtitlesArray.length > 0) {
-            const currentSub = subtitlesArray.find(sub => {
+          if (subtitlesToUse && subtitlesToUse.length > 0) {
+            const currentSub = subtitlesToUse.find(sub => {
               // Handle both numeric and string time formats
-              const startTime = typeof sub.start === 'number' ? sub.start : convertTimeStringToSeconds(sub.start);
-              const endTime = typeof sub.end === 'number' ? sub.end : convertTimeStringToSeconds(sub.end);
+              const startTime = typeof sub.start === 'number' ? sub.start :
+                               (typeof sub.startTime === 'string' ? convertTimeStringToSeconds(sub.startTime) :
+                               convertTimeStringToSeconds(sub.start));
+              const endTime = typeof sub.end === 'number' ? sub.end :
+                             (typeof sub.endTime === 'string' ? convertTimeStringToSeconds(sub.endTime) :
+                             convertTimeStringToSeconds(sub.end));
               return currentVideoTime >= startTime && currentVideoTime <= endTime;
             });
 
             // Update the current subtitle text
             if (currentSub) {
               setCurrentSubtitleText(currentSub.text);
+              console.log(`Showing ${useTranslated ? 'translated' : 'original'} subtitle: ${currentSub.text}`);
             } else {
               setCurrentSubtitleText('');
             }
@@ -382,7 +391,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       videoElement.removeEventListener('seeking', handleSeeking);
       videoElement.removeEventListener('seeked', handleSeeked);
     };
-  }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray]);
+  }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray, translatedSubtitles, subtitleSettings]);
 
   // Native track subtitles disabled - using only custom subtitle display
 
