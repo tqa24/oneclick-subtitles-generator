@@ -163,7 +163,6 @@ const SubtitleSettings = ({
   const [narrationSource, setNarrationSource] = useState('');
   const [narrationVolume, setNarrationVolume] = useState(0.8);
   const [videoVolume, setVideoVolume] = useState(0.3);
-  const [narrationEnabled, setNarrationEnabled] = useState(true);
 
   // Audio refs for narration playback
   const audioRefs = useRef({});
@@ -332,7 +331,7 @@ const SubtitleSettings = ({
   // Handle video timeupdate to trigger narration playback
   useEffect(() => {
     const handleTimeUpdate = () => {
-      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || !narrationEnabled) return;
+      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0) return;
 
       const currentTime = videoRef.current.currentTime;
       const activeNarrations = narrationSource === 'original' ? internalOriginalNarrations : internalTranslatedNarrations;
@@ -384,28 +383,30 @@ const SubtitleSettings = ({
 
         console.log('Subtitle timing:', subtitleStart, 'to', subtitleEnd);
 
-        // Calculate the midpoint of the subtitle
-        const subtitleMidPoint = subtitleStart + ((subtitleEnd - subtitleStart) / 2);
+        // We no longer need the subtitle midpoint since we're aligning with the start
 
         // Get narration duration (or use a default if not available)
         const narrationDuration = audioDurationsRef.current[narration.subtitle_id] || 2.0;
 
-        // Calculate when to start playing to align the middle of the narration with the middle of the subtitle
-        const startPlay = subtitleMidPoint - (narrationDuration / 2);
-        const endPlay = subtitleMidPoint + (narrationDuration / 2);
+        // Simply align the narration start with the subtitle start
+        // This is more straightforward and predictable
+        const startPlay = subtitleStart;
+        const endPlay = subtitleStart + narrationDuration;
 
         // Check if current time is within the play window
         if (currentTime >= startPlay && currentTime <= endPlay) {
+          console.log(`Current time ${currentTime} is within play window ${startPlay}-${endPlay} for subtitle ${narration.subtitle_id}`);
           // If we're not already playing this narration, play it
           if (!currentNarration || currentNarration.subtitle_id !== narration.subtitle_id) {
-            playNarration(narration, subtitleMidPoint);
+            console.log(`Starting narration for subtitle ${narration.subtitle_id} at subtitle start ${subtitleStart}`);
+            playNarration(narration);
           }
         }
       });
     };
 
     // Add event listener to video
-    if (videoRef && videoRef.current && hasAnyNarrations && narrationSource !== '' && narrationEnabled) {
+    if (videoRef && videoRef.current && hasAnyNarrations && narrationSource !== '' && narrationVolume > 0) {
       videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
     }
 
@@ -415,11 +416,11 @@ const SubtitleSettings = ({
         videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
       }
     };
-  }, [hasAnyNarrations, narrationSource, internalOriginalNarrations, internalTranslatedNarrations, currentNarration, videoRef, narrationEnabled, narrationVolume]);
+  }, [hasAnyNarrations, narrationSource, internalOriginalNarrations, internalTranslatedNarrations, currentNarration, videoRef, narrationVolume]);
 
   // Play a specific narration
-  const playNarration = (narration, subtitleMidPoint) => {
-    console.log('Playing narration:', narration, 'at midpoint:', subtitleMidPoint);
+  const playNarration = (narration) => {
+    console.log('Playing narration:', narration);
 
     // Store the subtitle data with the narration for reference
     if (!narration.subtitleData) {
@@ -498,11 +499,40 @@ const SubtitleSettings = ({
     const audioDuration = audioDurationsRef.current[narration.subtitle_id];
     console.log('Audio duration:', audioDuration);
 
-    if (subtitleMidPoint && audioDuration) {
-      // Calculate the time to start the audio so that its middle aligns with the subtitle midpoint
+    // Find the subtitle start time
+    let subtitleStart = 0;
+    if (narration.subtitleData) {
+      subtitleStart = typeof narration.subtitleData.start === 'number' ?
+        narration.subtitleData.start : parseFloat(narration.subtitleData.start);
+    } else {
+      // Try to find the subtitle data
+      let subtitleData;
+      if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
+        subtitleData = window.subtitlesData.find(sub => sub.id === narration.subtitle_id);
+      }
+      if (!subtitleData && window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+        subtitleData = window.originalSubtitles.find(sub => sub.id === narration.subtitle_id);
+      }
+      if (!subtitleData && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+        subtitleData = window.translatedSubtitles.find(sub => sub.id === narration.subtitle_id);
+      }
+
+      if (subtitleData) {
+        subtitleStart = typeof subtitleData.start === 'number' ?
+          subtitleData.start : parseFloat(subtitleData.start);
+      }
+    }
+
+    if (audioDuration) {
+      // Simply calculate how far we are from the subtitle start
       const videoCurrentTime = videoRef.current.currentTime;
-      const audioStartTime = (audioDuration / 2) - (subtitleMidPoint - videoCurrentTime);
-      console.log('Calculated audio start time:', audioStartTime, 'from video time:', videoCurrentTime, 'and subtitle midpoint:', subtitleMidPoint);
+      const timeFromSubtitleStart = videoCurrentTime - subtitleStart;
+
+      // If we're already past the subtitle start, set audio position accordingly
+      // Otherwise, start from the beginning of the audio
+      const audioStartTime = Math.max(0, timeFromSubtitleStart);
+
+      console.log('Calculated audio start time:', audioStartTime, 'from video time:', videoCurrentTime, 'and subtitle start:', subtitleStart);
 
       // Ensure the start time is within valid bounds
       if (audioStartTime >= 0 && audioStartTime < audioDuration) {
@@ -672,54 +702,22 @@ const SubtitleSettings = ({
                 </div>
               )}
 
-              {/* Narration Playback Toggle */}
+
+
+              {/* Volume Controls */}
               <div className="setting-group">
                 <label className={hasAnyNarrations ? '' : 'disabled'}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                   </svg>
-                  {t('narration.narrationPlayback', 'Narration Playback')}
+                  {t('narration.narrationVolume', 'Narration Volume')}
                   {currentNarration && (
                     <span className="narration-status-indicator">
                       <span className="status-dot"></span>
                       {t('narration.playing', 'Playing')}
                     </span>
                   )}
-                </label>
-                <div className="toggle-switch-container">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={narrationEnabled}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setNarrationEnabled(e.target.checked);
-
-                        // If disabling, stop any playing narration
-                        if (!e.target.checked && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
-                          audioRefs.current[currentNarration.subtitle_id].pause();
-                          setCurrentNarration(null);
-                        }
-                      }}
-                      disabled={!hasAnyNarrations}
-                    />
-                    <span className={`toggle-slider ${!hasAnyNarrations ? 'disabled' : ''}`}></span>
-                  </label>
-                  <span className="toggle-label">
-                    {narrationEnabled ? t('narration.enabled', 'Enabled') : t('narration.disabled', 'Disabled')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Volume Controls */}
-              <div className="setting-group">
-                <label className={hasAnyNarrations && narrationEnabled ? '' : 'disabled'}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  </svg>
-                  {t('narration.narrationVolume', 'Narration Volume')}
                 </label>
                 <div className="slider-container">
                   <input
@@ -731,9 +729,15 @@ const SubtitleSettings = ({
                     onChange={(e) => {
                       e.stopPropagation();
                       setNarrationVolume(parseFloat(e.target.value));
+
+                      // If setting volume to 0, stop any playing narration
+                      if (parseFloat(e.target.value) === 0 && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+                        audioRefs.current[currentNarration.subtitle_id].pause();
+                        setCurrentNarration(null);
+                      }
                     }}
                     className="range-slider"
-                    disabled={!hasAnyNarrations || !narrationEnabled}
+                    disabled={!hasAnyNarrations}
                   />
                   <div className="range-value">{Math.round(narrationVolume * 100)}%</div>
                 </div>
@@ -765,73 +769,7 @@ const SubtitleSettings = ({
                 </div>
               </div>
 
-              {/* Debug section */}
-              <div className="setting-group">
-                <button
-                  className="md-filled-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log('Debug button clicked');
-                    console.log('Original narrations:', window.originalNarrations);
-                    console.log('Translated narrations:', window.translatedNarrations);
-                    console.log('Internal original narrations:', internalOriginalNarrations);
-                    console.log('Internal translated narrations:', internalTranslatedNarrations);
-                    console.log('Subtitles data:', window.subtitlesData);
-                    console.log('Original subtitles:', window.originalSubtitles);
-                    console.log('Translated subtitles:', window.translatedSubtitles);
 
-                    // Try to play the first narration directly
-                    if (internalOriginalNarrations && internalOriginalNarrations.length > 0) {
-                      const firstNarration = internalOriginalNarrations[0];
-                      console.log('Trying to play first narration directly:', firstNarration);
-
-                      // Create and play audio
-                      const audioUrl = `${SERVER_URL}/narration/audio/${firstNarration.filename}`;
-                      console.log('Audio URL:', audioUrl);
-
-                      const audio = new Audio(audioUrl);
-                      audio.volume = narrationVolume;
-
-                      audio.addEventListener('error', (e) => {
-                        console.error('Test audio error:', e);
-                        console.error('Test audio error code:', audio.error?.code);
-                        console.error('Test audio error message:', audio.error?.message);
-                      });
-
-                      audio.addEventListener('loadedmetadata', () => {
-                        console.log('Test audio loaded metadata, duration:', audio.duration);
-                      });
-
-                      audio.addEventListener('play', () => {
-                        console.log('Test audio started playing');
-                      });
-
-                      audio.addEventListener('ended', () => {
-                        console.log('Test audio finished playing');
-                      });
-
-                      try {
-                        const playPromise = audio.play();
-                        console.log('Test audio play called');
-
-                        if (playPromise !== undefined) {
-                          playPromise
-                            .then(() => {
-                              console.log('Test audio playback started successfully');
-                            })
-                            .catch(error => {
-                              console.error('Error playing test audio:', error);
-                            });
-                        }
-                      } catch (error) {
-                        console.error('Exception trying to play test audio:', error);
-                      }
-                    }
-                  }}
-                >
-                  Test Narration Audio
-                </button>
-              </div>
             </div>
           </div>
         )}
