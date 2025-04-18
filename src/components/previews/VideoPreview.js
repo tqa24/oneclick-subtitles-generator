@@ -19,6 +19,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const seekLockRef = useRef(false);
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
+  const [isFullscreen, setIsFullscreen] = useState(false); // Track fullscreen state
   const [videoUrl, setVideoUrl] = useState('');
   const [optimizedVideoUrl, setOptimizedVideoUrl] = useState('');
   const [optimizedVideoInfo, setOptimizedVideoInfo] = useState(null);
@@ -332,8 +333,49 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             if (currentSub) {
               setCurrentSubtitleText(currentSub.text);
               console.log(`Showing ${useTranslated ? 'translated' : 'original'} subtitle: ${currentSub.text}`);
+
+              // Update fullscreen subtitle if in fullscreen mode
+              const container = document.getElementById('fullscreen-subtitle-overlay');
+              if (container) {
+                // Clear existing content
+                container.innerHTML = '';
+
+                // Create subtitle element
+                const subtitle = document.createElement('div');
+                subtitle.id = 'fullscreen-subtitle';
+                subtitle.textContent = currentSub.text;
+
+                // Apply styles
+                subtitle.style.display = 'inline-block';
+                subtitle.style.backgroundColor = `rgba(${parseInt(subtitleSettings.backgroundColor.slice(1, 3), 16)},
+                                               ${parseInt(subtitleSettings.backgroundColor.slice(3, 5), 16)},
+                                               ${parseInt(subtitleSettings.backgroundColor.slice(5, 7), 16)},
+                                               ${subtitleSettings.opacity || '0.7'})`;
+                subtitle.style.color = subtitleSettings.textColor || '#ffffff';
+                subtitle.style.padding = `${subtitleSettings.backgroundPadding || '10'}px`;
+                subtitle.style.borderRadius = `${subtitleSettings.backgroundRadius || '4'}px`;
+                subtitle.style.fontFamily = subtitleSettings.fontFamily || 'Arial, sans-serif';
+                subtitle.style.fontSize = `${subtitleSettings.fontSize || '24'}px`;
+                subtitle.style.fontWeight = subtitleSettings.fontWeight || '400';
+                subtitle.style.lineHeight = subtitleSettings.lineSpacing || '1.4';
+                subtitle.style.letterSpacing = `${subtitleSettings.letterSpacing || '0'}px`;
+                subtitle.style.textTransform = subtitleSettings.textTransform || 'none';
+                subtitle.style.textShadow = subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ?
+                                          '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none';
+                subtitle.style.maxWidth = '100%';
+                subtitle.style.wordWrap = 'break-word';
+
+                // Add to container
+                container.appendChild(subtitle);
+              }
             } else {
               setCurrentSubtitleText('');
+
+              // Clear fullscreen subtitle if in fullscreen mode
+              const container = document.getElementById('fullscreen-subtitle-overlay');
+              if (container) {
+                container.innerHTML = '';
+              }
             }
           }
         }
@@ -394,6 +436,76 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray, translatedSubtitles, subtitleSettings]);
 
   // Native track subtitles disabled - using only custom subtitle display
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    // Function to create and inject fullscreen subtitle container
+    const createFullscreenSubtitleContainer = () => {
+      // Check if container already exists
+      let container = document.getElementById('fullscreen-subtitle-overlay');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'fullscreen-subtitle-overlay';
+        container.style.position = 'fixed';
+        container.style.left = '0';
+        container.style.right = '0';
+        container.style.bottom = '10%';
+        container.style.width = `${subtitleSettings.boxWidth || '80'}%`;
+        container.style.margin = '0 auto';
+        container.style.textAlign = 'center';
+        container.style.zIndex = '9999';
+        container.style.pointerEvents = 'none';
+        document.body.appendChild(container);
+      }
+      return container;
+    };
+
+    // Function to handle fullscreen change events
+    const handleFullscreenChange = () => {
+      const isDocFullscreen = !!document.fullscreenElement ||
+                             !!document.webkitFullscreenElement ||
+                             !!document.mozFullScreenElement ||
+                             !!document.msFullscreenElement;
+
+      // Check if our video is the fullscreen element
+      const isVideoFullscreen = isDocFullscreen &&
+                              (document.fullscreenElement === videoElement ||
+                               document.webkitFullscreenElement === videoElement ||
+                               document.mozFullScreenElement === videoElement ||
+                               document.msFullscreenElement === videoElement);
+
+      setIsFullscreen(isVideoFullscreen);
+      console.log('Fullscreen state changed:', isVideoFullscreen);
+
+      // If entering fullscreen, create the subtitle container
+      if (isVideoFullscreen) {
+        createFullscreenSubtitleContainer();
+      } else {
+        // If exiting fullscreen, remove the subtitle container
+        const container = document.getElementById('fullscreen-subtitle-overlay');
+        if (container) {
+          document.body.removeChild(container);
+        }
+      }
+    };
+
+    // Add event listeners for all browser variants
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
