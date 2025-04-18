@@ -93,8 +93,8 @@ const VideoProcessingTab = ({
                 <option value="gemini-2.5-pro-exp-03-25">
                   {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
                 </option>
-                <option value="gemini-2.0-flash-thinking-exp-01-21">
-                  {t('settings.modelSecondBest', 'Gemini 2.0 Flash Thinking (Second best, high accuracy, slowest)')}
+                <option value="gemini-2.5-flash">
+                  {t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)')}
                 </option>
                 <option value="gemini-2.0-flash">
                   {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
@@ -132,8 +132,9 @@ const VideoProcessingTab = ({
                 className="enhanced-select"
                 disabled={!useVideoAnalysis}
               >
-                <option value="gemini-2.0-flash-lite">{t('settings.modelFlashLite', 'Gemini 2.0 Flash Lite (Faster)')}</option>
+                <option value="gemini-2.5-flash">{t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)')}</option>
                 <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
+                <option value="gemini-2.0-flash-lite">{t('settings.modelFlashLite', 'Gemini 2.0 Flash Lite (Faster)')}</option>
               </select>
             </div>
 

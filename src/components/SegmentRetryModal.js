@@ -46,12 +46,12 @@ const SegmentRetryModal = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
-      id: 'gemini-2.0-flash-thinking-exp-01-21',
-      name: t('models.gemini20FlashThinking', 'Gemini 2.0 Flash Thinking'),
-      description: t('models.highAccuracy', 'High accuracy'),
-      icon: <FiAward className="model-icon award-icon" />,
-      color: 'var(--md-secondary)',
-      bgColor: 'rgba(var(--md-secondary-rgb), 0.1)'
+      id: 'gemini-2.5-flash',
+      name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
+      description: t('models.smarterFaster', 'Smarter & faster'),
+      icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,
+      color: 'var(--md-tertiary)',
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
       id: 'gemini-2.0-flash',

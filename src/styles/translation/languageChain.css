@@ -49,8 +49,8 @@
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   border: 1px solid var(--md-primary);
-  min-width: 100px;
-  max-width: 150px;
+  min-width: 80px;
+  max-width: 120px;
   padding: 0.5rem 0.75rem;
 }
 
@@ -64,10 +64,11 @@
   background: transparent;
   border: none;
   color: inherit;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   width: 100%;
   padding: 0.25rem;
   outline: none;
+  text-overflow: ellipsis;
 }
 
 .chain-item .remove-btn {
@@ -294,7 +295,8 @@
   }
 
   .language-item {
-    min-width: 100px;
+    min-width: 70px;
+    max-width: 100px;
     padding: 0.5rem;
   }
 

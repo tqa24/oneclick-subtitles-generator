@@ -136,7 +136,7 @@
   gap: 8px;
   padding: 10px 24px;
   border: none;
-  border-radius: var(--md-shape-pill);
+  border-radius: 9999px !important; /* Force pill shape with !important */
   background-color: var(--md-primary);
   color: var(--md-on-primary);
   font-size: var(--md-label-large-size);
@@ -165,7 +165,7 @@
   background-color: transparent;
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
   pointer-events: none;
-  border-radius: var(--md-shape-pill);
+  border-radius: 9999px !important; /* Force pill shape with !important */
 }
 
 .download-btn:hover::before {

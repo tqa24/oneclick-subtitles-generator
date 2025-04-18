@@ -161,8 +161,19 @@ const LanguageChain = ({
     item.type === 'language' && item.isOriginal
   );
 
+  // Prevent form submission
+  const handleFormSubmit = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return false;
+    }
+  };
+
   return (
-    <div className="language-chain-container" ref={chainRef}>
+    <div
+      className="language-chain-container"
+      ref={chainRef}
+      onKeyDown={handleFormSubmit}>
       <div className="language-chain">
         {chainItems.map((item, index) => (
           <div
@@ -182,14 +193,23 @@ const LanguageChain = ({
                   type="text"
                   value={item.value}
                   onChange={(e) => onUpdateLanguage(item.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
                   placeholder={item.isOriginal
                     ? t('translation.originalLanguage', 'Original')
                     : t('translation.languagePlaceholder', 'Enter target language')}
                   disabled={disabled || item.isOriginal}
                 />
                 <button
+                  type="button"
                   className="remove-btn"
-                  onClick={() => onRemoveItem(item.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onRemoveItem(item.id);
+                  }}
                   disabled={disabled}
                   title={t('translation.removeLanguage', 'Remove')}
                 >
@@ -209,8 +229,12 @@ const LanguageChain = ({
                   {getDelimiterDisplay(item)}
                 </div>
                 <button
+                  type="button"
                   className="remove-btn remove-delimiter-btn"
-                  onClick={() => onRemoveItem(item.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onRemoveItem(item.id);
+                  }}
                   disabled={disabled}
                   title={t('translation.removeDelimiter', 'Remove delimiter')}
                 >
@@ -224,9 +248,13 @@ const LanguageChain = ({
                   <div className="delimiter-dropdown">
                     {delimiters.map(delimiterOption => (
                       <button
+                        type="button"
                         key={delimiterOption.id}
                         className={`delimiter-option ${item.value === delimiterOption.value ? 'active' : ''}`}
-                        onClick={() => handleDelimiterSelect(item, delimiterOption)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDelimiterSelect(item, delimiterOption);
+                        }}
                         title={t(`translation.delimiter${delimiterOption.id.charAt(0).toUpperCase() + delimiterOption.id.slice(1)}`, delimiterOption.label)}
                       >
                         {delimiterOption.label}
@@ -239,6 +267,11 @@ const LanguageChain = ({
                         type="text"
                         value={item.value}
                         onChange={(e) => handleCustomDelimiterChange(item, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         placeholder={t('translation.customDelimiterPlaceholder', 'Enter custom delimiter')}
                         disabled={disabled}
                         maxLength={10}
@@ -254,8 +287,12 @@ const LanguageChain = ({
 
       <div className="chain-actions">
         <button
+          type="button"
           className="add-chain-item-btn"
-          onClick={onAddLanguage}
+          onClick={(e) => {
+            e.preventDefault();
+            onAddLanguage();
+          }}
           disabled={disabled}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
@@ -266,8 +303,10 @@ const LanguageChain = ({
         </button>
 
         <button
+          type="button"
           className="add-chain-item-btn delimiter"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             // Add a new delimiter at the end of the chain
             const newDelimiter = {
               id: Date.now(),
@@ -286,8 +325,12 @@ const LanguageChain = ({
 
         {showOriginalOption && !hasOriginalLanguage && (
           <button
+            type="button"
             className="add-chain-item-btn original"
-            onClick={onAddOriginalLanguage}
+            onClick={(e) => {
+              e.preventDefault();
+              onAddOriginalLanguage();
+            }}
             disabled={disabled}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
