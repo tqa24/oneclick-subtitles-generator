@@ -16,6 +16,7 @@ const RULES_DIR = path.join(SUBTITLES_DIR, 'rules');
 const NARRATION_DIR = path.join(path.dirname(path.dirname(__dirname)), 'narration');
 const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
 const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');
+const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
 
 const { getFileSize, formatBytes } = require('../utils/fileUtils');
 
@@ -155,6 +156,12 @@ router.get('/cache-info', (req, res) => {
         details.narrationOutput.size += fileSize;
         details.narrationOutput.files.push({ name: file, size: fileSize });
       });
+    }
+
+    // Get narration temp directory info (we don't include it in the totals)
+    if (fs.existsSync(TEMP_AUDIO_DIR)) {
+      const tempFiles = fs.readdirSync(TEMP_AUDIO_DIR);
+      console.log(`Found ${tempFiles.length} files in temp directory`);
     }
 
     // Calculate totals
@@ -359,6 +366,31 @@ router.delete('/clear-cache', (req, res) => {
           console.error(`Error deleting file ${filePath}:`, error);
         }
       });
+    }
+
+    // Clear narration temp directory
+    if (fs.existsSync(TEMP_AUDIO_DIR)) {
+      const tempFiles = fs.readdirSync(TEMP_AUDIO_DIR);
+      tempFiles.forEach(file => {
+        const filePath = path.join(TEMP_AUDIO_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        // We don't count temp files in the details
+        console.log(`Deleting temp file: ${filePath}`);
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+      console.log(`Cleared ${tempFiles.length} files from temp directory`);
     }
 
     // Calculate totals

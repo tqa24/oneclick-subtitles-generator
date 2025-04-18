@@ -220,7 +220,9 @@ const UnifiedNarrationSection = ({
     clearReferenceAudio,
     handleGenerateNarration,
     playAudio,
-    downloadAllAudio
+    downloadAllAudio,
+    downloadAlignedAudio,
+    cancelGeneration
   } = useNarrationHandlers({
     fileInputRef,
     mediaRecorderRef,
@@ -248,8 +250,10 @@ const UnifiedNarrationSection = ({
     },
     advancedSettings,
     setIsGenerating,
+    isGenerating,
     setGenerationStatus,
     setGenerationResults,
+    generationResults,
     currentAudio,
     setCurrentAudio,
     setIsPlaying,
@@ -340,6 +344,8 @@ const UnifiedNarrationSection = ({
         referenceAudio={referenceAudio}
         generationResults={generationResults}
         downloadAllAudio={downloadAllAudio}
+        downloadAlignedAudio={downloadAlignedAudio}
+        cancelGeneration={cancelGeneration}
       />
 
       {/* Generation Status */}

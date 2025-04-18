@@ -4,7 +4,8 @@ import {
   saveRecordedAudio,
   extractAudioSegment,
   getAudioUrl,
-  generateNarration
+  generateNarration,
+  cancelNarrationGeneration
 } from '../../../services/narrationService';
 
 /**
@@ -34,8 +35,10 @@ const useNarrationHandlers = ({
   getSelectedSubtitles,
   advancedSettings,
   setIsGenerating,
+  isGenerating,
   setGenerationStatus,
   setGenerationResults,
+  generationResults,
   currentAudio,
   setCurrentAudio,
   setIsPlaying,
@@ -506,6 +509,13 @@ const useNarrationHandlers = ({
       };
 
       const handleError = (error) => {
+        // Check if this is a cancellation error
+        if (error.cancelled) {
+          setError(t('narration.generationCancelled', 'Narration generation cancelled by user'));
+          return;
+        }
+
+        // Handle other errors
         if (typeof error === 'object' && error.error) {
           setError(`${t('narration.generationError', 'Error generating narration')}: ${error.error}`);
         } else if (typeof error === 'string') {
@@ -560,10 +570,207 @@ const useNarrationHandlers = ({
   };
 
   // Download all narration audio as a zip file
-  const downloadAllAudio = () => {
-    // This would require a backend endpoint to create a zip file
-    // For now, we'll just show a message
-    alert(t('narration.downloadNotImplemented', 'Download all functionality not implemented yet'));
+  const downloadAllAudio = async () => {
+    // Check if we have any generation results
+    if (!generationResults || generationResults.length === 0) {
+      alert(t('narration.noResults', 'No narration results to download'));
+      return;
+    }
+
+    // Create a loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    loadingIndicator.style.position = 'fixed';
+    loadingIndicator.style.top = '50%';
+    loadingIndicator.style.left = '50%';
+    loadingIndicator.style.transform = 'translate(-50%, -50%)';
+    loadingIndicator.style.padding = '20px';
+    loadingIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
+    loadingIndicator.style.color = 'white';
+    loadingIndicator.style.borderRadius = '5px';
+    loadingIndicator.style.zIndex = '9999';
+    loadingIndicator.textContent = t('narration.downloading', 'Downloading audio files...');
+    document.body.appendChild(loadingIndicator);
+
+    try {
+      // Get the server URL from the narration service
+      const { SERVER_URL } = require('../../../config');
+
+      // Extract filenames from generation results
+      const filenames = generationResults.map(result => result.filename);
+      console.log('Downloading files:', filenames);
+
+      // Create a download link with the filenames as query parameters
+      const downloadUrl = `${SERVER_URL}/api/narration/download-all`;
+
+      // Use fetch API to download the file
+      console.log('Fetching:', downloadUrl);
+      const response = await fetch(downloadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filenames })
+      });
+      console.log('Response status:', response.status);
+
+      // Check if the response is successful
+      if (!response.ok) {
+        // Try to parse error message if it's JSON
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to download audio files');
+        } catch (jsonError) {
+          // If it's not JSON, use the status text
+          throw new Error(`Failed to download audio files: ${response.statusText}`);
+        }
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
+
+      // Create a temporary anchor element
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'narration_audio.zip';
+      a.target = '_blank'; // Open in a new tab to avoid redirecting
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading all audio:', error);
+      alert(t('narration.downloadError', `Error downloading audio files: ${error.message}`));
+    } finally {
+      // Remove loading indicator
+      document.body.removeChild(loadingIndicator);
+    }
+  };
+
+  // Download aligned narration audio (one file)
+  const downloadAlignedAudio = async () => {
+    // Check if we have any generation results
+    if (!generationResults || generationResults.length === 0) {
+      alert(t('narration.noResults', 'No narration results to download'));
+      return;
+    }
+
+    // Create a loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    loadingIndicator.style.position = 'fixed';
+    loadingIndicator.style.top = '50%';
+    loadingIndicator.style.left = '50%';
+    loadingIndicator.style.transform = 'translate(-50%, -50%)';
+    loadingIndicator.style.padding = '20px';
+    loadingIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
+    loadingIndicator.style.color = 'white';
+    loadingIndicator.style.borderRadius = '5px';
+    loadingIndicator.style.zIndex = '9999';
+    loadingIndicator.textContent = t('narration.downloading', 'Downloading audio file...');
+    document.body.appendChild(loadingIndicator);
+
+    try {
+      // Get the server URL from the narration service
+      const { SERVER_URL } = require('../../../config');
+
+      // Prepare the data for the aligned narration
+      // We need to include the subtitle timing information for proper alignment
+      const narrationData = generationResults.map(result => {
+        // Find the corresponding subtitle
+        const subtitle = getSelectedSubtitles().find(sub => sub.id === result.subtitle_id);
+        return {
+          filename: result.filename,
+          subtitle_id: result.subtitle_id,
+          // Include subtitle timing if available
+          start: subtitle ? subtitle.start : 0,
+          end: subtitle ? subtitle.end : 0,
+          text: subtitle ? subtitle.text : ''
+        };
+      });
+
+      // Sort by subtitle ID to ensure correct order
+      narrationData.sort((a, b) => a.subtitle_id - b.subtitle_id);
+
+      console.log('Generating aligned narration for:', narrationData);
+
+      // Create a download link
+      const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
+
+      // Use fetch API to download the file
+      console.log('Fetching:', downloadUrl);
+      const response = await fetch(downloadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ narrations: narrationData })
+      });
+      console.log('Response status:', response.status);
+
+      // Check if the response is successful
+      if (!response.ok) {
+        // Try to parse error message if it's JSON
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to download aligned audio');
+        } catch (jsonError) {
+          // If it's not JSON, use the status text
+          throw new Error(`Failed to download aligned audio: ${response.statusText}`);
+        }
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      console.log('Blob size:', blob.size);
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
+
+      // Create a temporary anchor element
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'aligned_narration.wav';
+      a.target = '_blank'; // Open in a new tab to avoid redirecting
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading aligned audio:', error);
+      alert(t('narration.downloadError', `Error downloading aligned audio file: ${error.message}`));
+    } finally {
+      // Remove loading indicator
+      document.body.removeChild(loadingIndicator);
+    }
+  };
+
+  // Cancel narration generation
+  const cancelGeneration = () => {
+    if (isGenerating) {
+      const cancelled = cancelNarrationGeneration();
+      if (cancelled) {
+        console.log('Narration generation cancelled');
+        // We don't set isGenerating to false here because the abort will trigger the error handler
+        // which will set isGenerating to false
+      } else {
+        console.log('No active narration generation to cancel');
+      }
+    }
   };
 
   return {
@@ -574,7 +781,9 @@ const useNarrationHandlers = ({
     clearReferenceAudio,
     handleGenerateNarration,
     playAudio,
-    downloadAllAudio
+    downloadAllAudio,
+    downloadAlignedAudio,
+    cancelGeneration
   };
 };
 

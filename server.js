@@ -50,6 +50,9 @@ app.use('/videos', express.static(path.join(__dirname, 'videos')));
 app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 app.use('/narration', express.static(path.join(__dirname, 'narration')));
 
+// Import adm-zip for creating zip files
+const AdmZip = require('adm-zip');
+
 // Serve narration audio files directly
 app.get('/narration/audio/:filename', (req, res) => {
   const filename = req.params.filename;
@@ -74,6 +77,172 @@ app.get('/narration/audio/:filename', (req, res) => {
   // File not found
   console.log(`Audio file not found: ${filename}`);
   res.status(404).send('Audio file not found');
+});
+
+// Download all narration audio files as a zip
+app.post('/api/narration/download-all', express.json(), (req, res) => {
+  console.log('Received download-all request');
+
+  try {
+    // Get the filenames from the request body
+    const { filenames } = req.body;
+    console.log(`Requested filenames: ${filenames ? filenames.join(', ') : 'none'}`);
+
+    if (!filenames || filenames.length === 0) {
+      console.log('No filenames provided, returning 400');
+      return res.status(400).json({ error: 'No filenames provided' });
+    }
+
+    // Create a new zip file
+    const zip = new AdmZip();
+
+    // Add each requested file to the zip
+    const addedFiles = [];
+
+    for (const filename of filenames) {
+      const filePath = path.join(OUTPUT_AUDIO_DIR, filename);
+
+      // Check if the file exists
+      if (fs.existsSync(filePath)) {
+        console.log(`Adding file to zip: ${filePath}`);
+        zip.addLocalFile(filePath);
+        addedFiles.push(filename);
+      } else {
+        console.log(`File not found: ${filePath}`);
+      }
+    }
+
+    if (addedFiles.length === 0) {
+      console.log('No files found, returning 404');
+      return res.status(404).json({ error: 'No audio files found' });
+    }
+
+    // Set the appropriate headers
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename=narration_audio.zip');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    // Send the zip file
+    const zipBuffer = zip.toBuffer();
+    console.log(`Created zip buffer with size: ${zipBuffer.length} bytes`);
+    res.send(zipBuffer);
+
+    console.log(`Sent zip file with ${addedFiles.length} audio files`);
+  } catch (error) {
+    console.error('Error creating zip file:', error);
+    res.status(500).json({ error: `Failed to create zip file: ${error.message}` });
+  }
+});
+
+// Download aligned narration audio (one file)
+app.post('/api/narration/download-aligned', express.json(), async (req, res) => {
+  console.log('Received download-aligned request');
+
+  try {
+    // Get the narration data from the request body
+    const { narrations } = req.body;
+    console.log(`Received ${narrations ? narrations.length : 0} narrations for alignment`);
+
+    if (!narrations || narrations.length === 0) {
+      console.log('No narrations provided, returning 400');
+      return res.status(400).json({ error: 'No narrations provided' });
+    }
+
+    // Sort narrations by start time to ensure correct order
+    narrations.sort((a, b) => a.start - b.start);
+
+    // Create a temporary directory for the aligned audio files
+    const tempDir = path.join(NARRATION_DIR, 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Create a list of files to concatenate
+    const filesToConcatenate = [];
+    const fileList = path.join(tempDir, 'file_list.txt');
+
+    // Check if all files exist
+    for (const narration of narrations) {
+      const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+      if (!fs.existsSync(filePath)) {
+        console.log(`File not found: ${filePath}`);
+        return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
+      }
+      filesToConcatenate.push(filePath);
+    }
+
+    // Create the output file path
+    const timestamp = Date.now();
+    const outputFilename = `aligned_narration_${timestamp}.wav`;
+    const outputPath = path.join(tempDir, outputFilename);
+
+    // Create a file list for ffmpeg
+    let fileListContent = '';
+    for (const file of filesToConcatenate) {
+      fileListContent += `file '${file.replace(/'/g, "'\\''")}'
+`;
+    }
+    fs.writeFileSync(fileList, fileListContent);
+
+    // Use ffmpeg to concatenate the files
+    const { exec } = require('child_process');
+    const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${fileList}" -c copy "${outputPath}" -y`;
+
+    console.log(`Running ffmpeg command: ${ffmpegCommand}`);
+
+    // Execute the ffmpeg command
+    await new Promise((resolve, reject) => {
+      exec(ffmpegCommand, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error executing ffmpeg: ${error.message}`);
+          console.error(`stderr: ${stderr}`);
+          reject(error);
+          return;
+        }
+        console.log(`ffmpeg stdout: ${stdout}`);
+        console.log(`ffmpeg stderr: ${stderr}`);
+        resolve();
+      });
+    });
+
+    // Check if the output file was created
+    if (!fs.existsSync(outputPath)) {
+      console.error(`Output file was not created: ${outputPath}`);
+      return res.status(500).json({ error: 'Failed to create aligned audio file' });
+    }
+
+    console.log(`Successfully created aligned audio file: ${outputPath}`);
+
+    // Set the appropriate headers
+    res.setHeader('Content-Type', 'audio/wav');
+    res.setHeader('Content-Disposition', `attachment; filename=${outputFilename}`);
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    // Send the file
+    res.sendFile(outputPath, (err) => {
+      if (err) {
+        console.error(`Error sending file: ${err.message}`);
+        // Don't send another response if headers are already sent
+        if (!res.headersSent) {
+          res.status(500).json({ error: `Failed to send audio file: ${err.message}` });
+        }
+      } else {
+        console.log(`Successfully sent aligned narration audio file`);
+
+        // Clean up the temporary files
+        try {
+          fs.unlinkSync(fileList);
+          fs.unlinkSync(outputPath);
+          console.log('Cleaned up temporary files');
+        } catch (cleanupError) {
+          console.error(`Error cleaning up temporary files: ${cleanupError.message}`);
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error creating aligned audio file:', error);
+    res.status(500).json({ error: `Failed to create aligned audio file: ${error.message}` });
+  }
 });
 
 // Test endpoint to verify server is working
@@ -197,6 +366,7 @@ app.get('/api/narration/status', async (req, res) => {
 const NARRATION_DIR = path.join(__dirname, 'narration');
 const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
 const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');
+const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
 
 if (!fs.existsSync(NARRATION_DIR)) {
   fs.mkdirSync(NARRATION_DIR, { recursive: true });
@@ -211,6 +381,11 @@ if (!fs.existsSync(REFERENCE_AUDIO_DIR)) {
 if (!fs.existsSync(OUTPUT_AUDIO_DIR)) {
   fs.mkdirSync(OUTPUT_AUDIO_DIR, { recursive: true });
   console.log(`Created output audio directory at ${OUTPUT_AUDIO_DIR}`);
+}
+
+if (!fs.existsSync(TEMP_AUDIO_DIR)) {
+  fs.mkdirSync(TEMP_AUDIO_DIR, { recursive: true });
+  console.log(`Created temp audio directory at ${TEMP_AUDIO_DIR}`);
 }
 
 // Set up multer for file uploads
@@ -554,7 +729,8 @@ app.post('/api/narration/generate', async (req, res) => {
 // Proxy narration service requests
 app.use('/api/narration', (req, res, next) => {
   // Skip endpoints we handle directly
-  if (req.url === '/status') {
+  if (req.url === '/status' || req.url === '/download-all' || req.url === '/download-aligned' ||
+      req.method === 'POST' && (req.url === '/download-all' || req.url === '/download-aligned')) {
     return next();
   }
 

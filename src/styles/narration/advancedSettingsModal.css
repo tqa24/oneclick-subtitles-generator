@@ -19,8 +19,8 @@
   border-radius: var(--md-shape-large);
   box-shadow: var(--md-elevation-level3);
   width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
+  max-width: 800px; /* Increased to accommodate more columns */
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   animation: modal-appear 0.3s var(--md-easing-emphasized);
@@ -32,14 +32,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-2);
 }
 
 .advanced-settings-modal-header h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--md-on-surface);
 }
@@ -47,16 +47,16 @@
 .advanced-settings-modal-header .close-button {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--md-on-surface-variant);
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.15rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   transition: background-color 0.2s ease;
 }
 
@@ -69,6 +69,43 @@
   padding: 0;
   overflow-y: auto;
   flex: 1;
+  /* Add scrollbar styling for better appearance */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Webkit scrollbar styling */
+.advanced-settings-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.advanced-settings-modal-content::-webkit-scrollbar-track {
+  background: var(--md-surface-1);
+  border-radius: 3px;
+}
+
+.advanced-settings-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline-variant);
+  border-radius: 3px;
+  border: 1px solid var(--md-surface-1);
+}
+
+.advanced-settings-modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-outline);
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .advanced-settings-modal-content {
+  scrollbar-color: var(--md-outline) var(--md-surface-2);
+}
+
+[data-theme="dark"] .advanced-settings-modal-content::-webkit-scrollbar-track {
+  background: var(--md-surface-2);
+}
+
+[data-theme="dark"] .advanced-settings-modal-content::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline);
+  border: 1px solid var(--md-surface-2);
 }
 
 .advanced-settings-modal-content .advanced-settings {
@@ -76,13 +113,13 @@
   border-radius: 0;
   background-color: transparent;
   margin-bottom: 0;
-  padding: 1.5rem;
+  padding: 0.75rem;
 }
 
 .advanced-settings-modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-top: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-2);
 }
@@ -128,8 +165,16 @@
     width: 95%;
     max-height: 95vh;
   }
-  
-  .advanced-settings-modal-content {
-    padding: 1rem;
+
+  .advanced-settings-modal-content .advanced-settings {
+    padding: 0.5rem;
+  }
+
+  .advanced-settings-modal-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .advanced-settings-modal-footer {
+    padding: 0.5rem 0.75rem;
   }
 }
