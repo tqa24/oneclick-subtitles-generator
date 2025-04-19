@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiMusic, FiSearch } from 'react-icons/fi';
 import '../styles/SubtitlesInputModal.css';
+import useGeniusLyrics from '../hooks/useGeniusLyrics';
 
 /**
  * Modal component for inputting subtitles without timings
@@ -15,6 +16,13 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
   const { t } = useTranslation();
   const [text, setText] = useState(initialText);
   const textareaRef = useRef(null);
+  const [showLyricsInput, setShowLyricsInput] = useState(false);
+  const [artist, setArtist] = useState('');
+  const [song, setSong] = useState('');
+  const [albumArt, setAlbumArt] = useState('');
+
+  // Use the Genius lyrics hook
+  const { lyrics, albumArtUrl, loading, error, fetchLyrics } = useGeniusLyrics();
 
   // Focus the textarea when the modal opens
   useEffect(() => {
@@ -30,6 +38,43 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
   const handleTextChange = (e) => {
     setText(e.target.value);
   };
+
+  // Handle fetching lyrics from Genius
+  const handleFetchLyrics = async () => {
+    if (!artist || !song) {
+      return;
+    }
+
+    try {
+      const result = await fetchLyrics(artist, song);
+      if (result && result.lyrics) {
+        // Process lyrics to remove Genius header and clean up
+        let processedLyrics = result.lyrics;
+
+        // Remove "Lyrics" header if present
+        processedLyrics = processedLyrics.replace(/^.*?Lyrics/i, '');
+
+        // Split into lines, filter empty ones, and rejoin
+        const lyricsLines = processedLyrics.split(/\n/).filter(line => line.trim());
+        processedLyrics = lyricsLines.join('\n');
+
+        setText(processedLyrics);
+        setAlbumArt(result.albumArtUrl || '');
+      }
+    } catch (err) {
+      console.error('Error fetching lyrics:', err);
+    }
+  };
+
+  // Update lyrics when they change
+  useEffect(() => {
+    if (lyrics) {
+      setText(lyrics);
+    }
+    if (albumArtUrl) {
+      setAlbumArt(albumArtUrl);
+    }
+  }, [lyrics, albumArtUrl]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e) => {
@@ -60,6 +105,66 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
             {t('subtitlesInput.explanation',
               'Paste your subtitles here without timings. When you generate subtitles, the system will focus on matching these texts with the audio and creating accurate timings. Each line will be treated as a separate subtitle.')}
           </p>
+
+          <div className="lyrics-autofill-toggle">
+            <button
+              className={`lyrics-toggle-button ${showLyricsInput ? 'active' : ''}`}
+              onClick={() => setShowLyricsInput(!showLyricsInput)}
+              title={t('subtitlesInput.lyricsToggle', 'Toggle lyrics search')}
+            >
+              <FiMusic /> {t('subtitlesInput.fetchLyrics', 'Fetch Song Lyrics')}
+            </button>
+          </div>
+
+          {showLyricsInput && (
+            <div className="lyrics-input-section">
+              <div className="lyrics-input-fields">
+                <div className="lyrics-input-field">
+                  <label htmlFor="artist-input">{t('subtitlesInput.artist', 'Artist:')}</label>
+                  <input
+                    id="artist-input"
+                    type="text"
+                    value={artist}
+                    onChange={(e) => setArtist(e.target.value)}
+                    placeholder={t('subtitlesInput.artistPlaceholder', 'Enter artist name')}
+                  />
+                </div>
+                <div className="lyrics-input-field">
+                  <label htmlFor="song-input">{t('subtitlesInput.song', 'Song:')}</label>
+                  <input
+                    id="song-input"
+                    type="text"
+                    value={song}
+                    onChange={(e) => setSong(e.target.value)}
+                    placeholder={t('subtitlesInput.songPlaceholder', 'Enter song title')}
+                  />
+                </div>
+                <button
+                  className="fetch-lyrics-button"
+                  onClick={handleFetchLyrics}
+                  disabled={!artist || !song || loading}
+                >
+                  {loading ? t('subtitlesInput.fetching', 'Fetching...') : (
+                    <>
+                      <FiSearch /> {t('subtitlesInput.fetch', 'Fetch')}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {error && <div className="lyrics-error">{error}</div>}
+
+              {albumArt && (
+                <div className="album-art-container">
+                  <img
+                    src={albumArt}
+                    alt="Album Art"
+                    className="album-art"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="example">
             <h3>{t('subtitlesInput.exampleTitle', 'Example:')}</h3>

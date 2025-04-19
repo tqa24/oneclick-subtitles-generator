@@ -20,6 +20,7 @@ const videoRoutes = require('./server/routes/videoRoutes');
 const subtitleRoutes = require('./server/routes/subtitleRoutes');
 const cacheRoutes = require('./server/routes/cacheRoutes');
 const updateRoutes = require('./server/routes/updateRoutes');
+const lyricsRoutes = require('./server/routes/lyricsRoutes');
 
 // Initialize Express app
 const app = express();
@@ -49,6 +50,14 @@ app.use(express.json({ limit: '500mb' }));
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
 app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 app.use('/narration', express.static(path.join(__dirname, 'narration')));
+
+// Add CORS headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  next();
+});
 
 // Import adm-zip for creating zip files
 const AdmZip = require('adm-zip');
@@ -278,6 +287,7 @@ app.use('/api', videoRoutes);
 app.use('/api', subtitleRoutes);
 app.use('/api', cacheRoutes);
 app.use('/api', updateRoutes);
+app.use('/api', lyricsRoutes);
 
 // Direct route for narration service status
 app.get('/api/narration/status', async (req, res) => {

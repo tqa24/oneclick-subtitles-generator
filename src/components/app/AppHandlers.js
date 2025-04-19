@@ -403,7 +403,7 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle saving API keys and settings
    */
-  const saveApiKeys = (geminiKey, youtubeKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
+  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -415,6 +415,12 @@ export const useAppHandlers = (appState) => {
       localStorage.setItem('youtube_api_key', youtubeKey);
     } else {
       localStorage.removeItem('youtube_api_key');
+    }
+
+    if (geniusKey) {
+      localStorage.setItem('genius_token', geniusKey);
+    } else {
+      localStorage.removeItem('genius_token');
     }
 
     // Save segment duration
@@ -461,7 +467,8 @@ export const useAppHandlers = (appState) => {
 
     appState.setApiKeysSet({
       gemini: !!geminiKey,
-      youtube: useOAuth ? hasOAuthTokens : !!youtubeKey
+      youtube: useOAuth ? hasOAuthTokens : !!youtubeKey,
+      genius: !!geniusKey
     });
 
     // Show success notification
