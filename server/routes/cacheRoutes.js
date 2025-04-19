@@ -18,6 +18,10 @@ const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
 const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');
 const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
 
+// Define paths for lyrics and album art
+const LYRICS_DIR = path.join(VIDEOS_DIR, 'lyrics');
+const ALBUM_ART_DIR = path.join(path.dirname(path.dirname(__dirname)), 'public', 'videos', 'album_art');
+
 const { getFileSize, formatBytes } = require('../utils/fileUtils');
 
 /**
@@ -32,6 +36,8 @@ router.get('/cache-info', (req, res) => {
       rules: { count: 0, size: 0, files: [] },
       narrationReference: { count: 0, size: 0, files: [] },
       narrationOutput: { count: 0, size: 0, files: [] },
+      lyrics: { count: 0, size: 0, files: [] },
+      albumArt: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -164,13 +170,55 @@ router.get('/cache-info', (req, res) => {
       console.log(`Found ${tempFiles.length} files in temp directory`);
     }
 
+    // Get lyrics directory info
+    if (fs.existsSync(LYRICS_DIR)) {
+      const lyricsFiles = fs.readdirSync(LYRICS_DIR);
+      lyricsFiles.forEach(file => {
+        const filePath = path.join(LYRICS_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.lyrics.count++;
+        details.lyrics.size += fileSize;
+        details.lyrics.files.push({ name: file, size: fileSize });
+      });
+    }
+
+    // Get album art directory info
+    if (fs.existsSync(ALBUM_ART_DIR)) {
+      const albumArtFiles = fs.readdirSync(ALBUM_ART_DIR);
+      albumArtFiles.forEach(file => {
+        const filePath = path.join(ALBUM_ART_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory in cache info: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.albumArt.count++;
+        details.albumArt.size += fileSize;
+        details.albumArt.files.push({ name: file, size: fileSize });
+      });
+    }
+
     // Calculate totals
     details.totalCount = details.subtitles.count + details.videos.count +
                          details.userSubtitles.count + details.rules.count +
-                         details.narrationReference.count + details.narrationOutput.count;
+                         details.narrationReference.count + details.narrationOutput.count +
+                         details.lyrics.count + details.albumArt.count;
     details.totalSize = details.subtitles.size + details.videos.size +
                         details.userSubtitles.size + details.rules.size +
-                        details.narrationReference.size + details.narrationOutput.size;
+                        details.narrationReference.size + details.narrationOutput.size +
+                        details.lyrics.size + details.albumArt.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
@@ -179,6 +227,8 @@ router.get('/cache-info', (req, res) => {
     details.rules.formattedSize = formatBytes(details.rules.size);
     details.narrationReference.formattedSize = formatBytes(details.narrationReference.size);
     details.narrationOutput.formattedSize = formatBytes(details.narrationOutput.size);
+    details.lyrics.formattedSize = formatBytes(details.lyrics.size);
+    details.albumArt.formattedSize = formatBytes(details.albumArt.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({
@@ -206,6 +256,8 @@ router.delete('/clear-cache', (req, res) => {
       rules: { count: 0, size: 0, files: [] },
       narrationReference: { count: 0, size: 0, files: [] },
       narrationOutput: { count: 0, size: 0, files: [] },
+      lyrics: { count: 0, size: 0, files: [] },
+      albumArt: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -393,13 +445,67 @@ router.delete('/clear-cache', (req, res) => {
       console.log(`Cleared ${tempFiles.length} files from temp directory`);
     }
 
+    // Clear lyrics directory
+    if (fs.existsSync(LYRICS_DIR)) {
+      const lyricsFiles = fs.readdirSync(LYRICS_DIR);
+      lyricsFiles.forEach(file => {
+        const filePath = path.join(LYRICS_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.lyrics.count++;
+        details.lyrics.size += fileSize;
+        details.lyrics.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Clear album art directory
+    if (fs.existsSync(ALBUM_ART_DIR)) {
+      const albumArtFiles = fs.readdirSync(ALBUM_ART_DIR);
+      albumArtFiles.forEach(file => {
+        const filePath = path.join(ALBUM_ART_DIR, file);
+        const stats = fs.statSync(filePath);
+
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        const fileSize = stats.size;
+        details.albumArt.count++;
+        details.albumArt.size += fileSize;
+        details.albumArt.files.push({ name: file, size: fileSize });
+
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error(`Error deleting file ${filePath}:`, error);
+        }
+      });
+    }
+
     // Calculate totals
     details.totalCount = details.subtitles.count + details.videos.count +
                          details.userSubtitles.count + details.rules.count +
-                         details.narrationReference.count + details.narrationOutput.count;
+                         details.narrationReference.count + details.narrationOutput.count +
+                         details.lyrics.count + details.albumArt.count;
     details.totalSize = details.subtitles.size + details.videos.size +
                         details.userSubtitles.size + details.rules.size +
-                        details.narrationReference.size + details.narrationOutput.size;
+                        details.narrationReference.size + details.narrationOutput.size +
+                        details.lyrics.size + details.albumArt.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
@@ -408,6 +514,8 @@ router.delete('/clear-cache', (req, res) => {
     details.rules.formattedSize = formatBytes(details.rules.size);
     details.narrationReference.formattedSize = formatBytes(details.narrationReference.size);
     details.narrationOutput.formattedSize = formatBytes(details.narrationOutput.size);
+    details.lyrics.formattedSize = formatBytes(details.lyrics.size);
+    details.albumArt.formattedSize = formatBytes(details.albumArt.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({
