@@ -9,7 +9,7 @@ const cheerio = require('cheerio');
 const crypto = require('crypto');
 
 // Directory for storing album art
-const ALBUM_ART_DIR = path.join(VIDEOS_DIR, 'album_art');
+const ALBUM_ART_DIR = path.join(process.cwd(), 'public', 'videos', 'album_art');
 const LYRICS_DIR = path.join(VIDEOS_DIR, 'lyrics');
 
 /**
@@ -28,11 +28,11 @@ const getLyrics = async (req, res) => {
     // Create a hash of the artist and song to use as a unique identifier
     const hash = crypto.createHash('md5').update(`${artist}_${song}`).digest('hex');
     const safeName = hash.substring(0, 10); // Use first 10 characters of hash for brevity
-    
+
     console.log(`Processing song: ${artist} - ${song} (hash: ${safeName})`);
-    
+
     const lyricsFilePath = path.join(LYRICS_DIR, `${safeName}.txt`);
-    
+
     // Ensure directories exist
     await fs.mkdir(LYRICS_DIR, { recursive: true });
     await fs.mkdir(ALBUM_ART_DIR, { recursive: true });
@@ -40,28 +40,28 @@ const getLyrics = async (req, res) => {
     // Check if we have cached lyrics and force is not true
     let cachedLyrics = null;
     let cachedAlbumArtUrl = null;
-    
+
     if (!force) {
       try {
         const lyricsExists = await fs.access(lyricsFilePath).then(() => true).catch(() => false);
 
         if (lyricsExists) {
           cachedLyrics = await fs.readFile(lyricsFilePath, 'utf-8');
-          
+
           // Check for album art with any extension
           const albumArtFiles = await fs.readdir(ALBUM_ART_DIR);
           const albumArtFile = albumArtFiles.find(file => file.startsWith(safeName + '.'));
-          
+
           if (albumArtFile) {
             cachedAlbumArtUrl = `/videos/album_art/${albumArtFile}`;
           }
-          
+
           console.log(`Using cached lyrics for ${artist} - ${song} (hash: ${safeName})`);
-          
+
           if (cachedLyrics && cachedAlbumArtUrl) {
-            return res.json({ 
-              lyrics: cachedLyrics, 
-              albumArtUrl: cachedAlbumArtUrl 
+            return res.json({
+              lyrics: cachedLyrics,
+              albumArtUrl: cachedAlbumArtUrl
             });
           }
         }
@@ -89,7 +89,7 @@ const getLyrics = async (req, res) => {
     // Search for the song on Genius
     const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${artist} ${song}`)}`;
     console.log(`Searching Genius for: ${artist} - ${song}`);
-    
+
     const searchResponse = await axios.get(searchUrl, {
       headers: {
         'Authorization': `Bearer ${geniusApiKey}`
@@ -104,7 +104,7 @@ const getLyrics = async (req, res) => {
     const hit = searchResponse.data.response.hits[0];
     const songUrl = hit.result.url;
     const albumArtUrl = hit.result.song_art_image_url || hit.result.header_image_url;
-    
+
     console.log(`Found song on Genius: ${hit.result.title} by ${hit.result.primary_artist.name}`);
     console.log(`Song URL: ${songUrl}`);
     console.log(`Album art URL: ${albumArtUrl}`);
@@ -112,20 +112,20 @@ const getLyrics = async (req, res) => {
     // Get the lyrics from the song page
     const lyricsPageResponse = await axios.get(songUrl);
     const html = lyricsPageResponse.data;
-    
+
     // Use cheerio to parse the HTML
     const $ = cheerio.load(html);
-    
+
     // Try different selectors to find lyrics
     let lyrics = '';
-    
+
     // Method 1: Look for the lyrics div
     const lyricsDiv = $('.lyrics');
     if (lyricsDiv.length > 0) {
       lyrics = lyricsDiv.text().trim();
       console.log('Found lyrics using method 1 (lyrics div)');
     }
-    
+
     // Method 2: Look for lyrics in the new Genius format
     if (!lyrics) {
       const lyricsSections = $('[data-lyrics-container="true"]');
@@ -140,7 +140,7 @@ const getLyrics = async (req, res) => {
         console.log('Found lyrics using method 2 (data-lyrics-container)');
       }
     }
-    
+
     // Method 3: Look for lyrics in another common format
     if (!lyrics) {
       const lyricsContainer = $('.song_body-lyrics');
@@ -149,7 +149,7 @@ const getLyrics = async (req, res) => {
         console.log('Found lyrics using method 3 (song_body-lyrics)');
       }
     }
-    
+
     // Method 4: Try to find any element with "lyrics" in its class
     if (!lyrics) {
       $('[class*="lyrics"], [class*="Lyrics"]').each((i, el) => {
@@ -185,7 +185,7 @@ const getLyrics = async (req, res) => {
     if (albumArtUrl) {
       try {
         console.log(`Downloading album art from ${albumArtUrl}`);
-        
+
         const imageResponse = await axios({
           method: 'get',
           url: albumArtUrl,
@@ -194,11 +194,11 @@ const getLyrics = async (req, res) => {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
           }
         });
-        
+
         // Determine the appropriate file extension based on content type
         const contentType = imageResponse.headers['content-type'];
         let extension = 'jpg'; // Default extension
-        
+
         if (contentType === 'image/png') {
           extension = 'png';
         } else if (contentType === 'image/gif') {
@@ -206,11 +206,11 @@ const getLyrics = async (req, res) => {
         } else if (contentType === 'image/webp') {
           extension = 'webp';
         }
-        
+
         // Save the album art with the appropriate extension
         const albumArtFilePath = path.join(ALBUM_ART_DIR, `${safeName}.${extension}`);
         await fs.writeFile(albumArtFilePath, Buffer.from(imageResponse.data), 'binary');
-        
+
         localAlbumArtUrl = `/videos/album_art/${safeName}.${extension}`;
         console.log(`Saved album art to ${albumArtFilePath} (${contentType}, ${imageResponse.data.length} bytes)`);
       } catch (imageError) {

@@ -48,6 +48,7 @@ app.use(express.json({ limit: '500mb' }));
 
 // Serve static directories
 app.use('/videos', express.static(path.join(__dirname, 'videos')));
+app.use('/videos/album_art', express.static(path.join(__dirname, 'videos', 'album_art')));
 app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 app.use('/narration', express.static(path.join(__dirname, 'narration')));
 
