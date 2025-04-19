@@ -47,6 +47,20 @@ const ensureDirectories = () => {
     console.log(`Created narration directory at ${NARRATION_DIR}`);
   }
 
+  // Ensure album art directory exists
+  const ALBUM_ART_DIR = path.join(VIDEOS_DIR, 'album_art');
+  if (!fs.existsSync(ALBUM_ART_DIR)) {
+    fs.mkdirSync(ALBUM_ART_DIR, { recursive: true });
+    console.log(`Created album art directory at ${ALBUM_ART_DIR}`);
+  }
+
+  // Ensure lyrics directory exists
+  const LYRICS_DIR = path.join(VIDEOS_DIR, 'lyrics');
+  if (!fs.existsSync(LYRICS_DIR)) {
+    fs.mkdirSync(LYRICS_DIR, { recursive: true });
+    console.log(`Created lyrics directory at ${LYRICS_DIR}`);
+  }
+
   // Ensure narration subdirectories exist
   const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
   const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');

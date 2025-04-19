@@ -40,8 +40,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false); // Track if settings have been loaded
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [youtubeApiKey, setYoutubeApiKey] = useState('');
+  const [geniusApiKey, setGeniusApiKey] = useState('');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showYoutubeKey, setShowYoutubeKey] = useState(false);
+  const [showGeniusKey, setShowGeniusKey] = useState(false);
   const [useOAuth, setUseOAuth] = useState(false);
   const [youtubeClientId, setYoutubeClientId] = useState('');
   const [youtubeClientSecret, setYoutubeClientSecret] = useState('');
@@ -88,6 +90,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [originalSettings, setOriginalSettings] = useState({
     geminiApiKey: '',
     youtubeApiKey: '',
+    geniusApiKey: '',
     segmentDuration: 3,
     geminiModel: 'gemini-2.0-flash',
     timeFormat: 'hms',
@@ -122,6 +125,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     const loadSettings = () => {
       const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
+      const savedGeniusKey = localStorage.getItem('genius_token') || '';
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '3');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
@@ -142,6 +146,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
       setGeminiApiKey(savedGeminiKey);
       setYoutubeApiKey(savedYoutubeKey);
+      setGeniusApiKey(savedGeniusKey);
       setSegmentDuration(savedSegmentDuration);
       setGeminiModel(savedGeminiModel);
       setTimeFormat(savedTimeFormat);
@@ -164,6 +169,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOriginalSettings({
         geminiApiKey: savedGeminiKey,
         youtubeApiKey: savedYoutubeKey,
+        geniusApiKey: savedGeniusKey,
         segmentDuration: savedSegmentDuration,
         geminiModel: savedGeminiModel,
         timeFormat: savedTimeFormat,
@@ -263,6 +269,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     const settingsChanged =
       geminiApiKey !== originalSettings.geminiApiKey ||
       youtubeApiKey !== originalSettings.youtubeApiKey ||
+      geniusApiKey !== originalSettings.geniusApiKey ||
       segmentDuration !== originalSettings.segmentDuration ||
       geminiModel !== originalSettings.geminiModel ||
       timeFormat !== originalSettings.timeFormat ||
@@ -280,7 +287,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useOptimizedPreview !== originalSettings.useOptimizedPreview;
 
     setHasChanges(settingsChanged);
-  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
+  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
       optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
@@ -290,6 +297,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Save settings to localStorage
     localStorage.setItem('segment_duration', segmentDuration.toString());
     localStorage.setItem('gemini_model', geminiModel);
+    localStorage.setItem('genius_token', geniusApiKey);
     localStorage.setItem('time_format', timeFormat);
     localStorage.setItem('show_waveform', showWaveform.toString());
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
@@ -303,12 +311,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
 
     // Notify parent component about API keys, segment duration, model, time format, and video optimization settings
-    onSave(geminiApiKey, youtubeApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview);
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview);
 
     // Update original settings to match current settings
     setOriginalSettings({
       geminiApiKey,
       youtubeApiKey,
+      geniusApiKey,
       segmentDuration,
       geminiModel,
       timeFormat,
@@ -402,10 +411,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setGeminiApiKey={setGeminiApiKey}
               youtubeApiKey={youtubeApiKey}
               setYoutubeApiKey={setYoutubeApiKey}
+              geniusApiKey={geniusApiKey}
+              setGeniusApiKey={setGeniusApiKey}
               showGeminiKey={showGeminiKey}
               setShowGeminiKey={setShowGeminiKey}
               showYoutubeKey={showYoutubeKey}
               setShowYoutubeKey={setShowYoutubeKey}
+              showGeniusKey={showGeniusKey}
+              setShowGeniusKey={setShowGeniusKey}
               useOAuth={useOAuth}
               setUseOAuth={setUseOAuth}
               youtubeClientId={youtubeClientId}

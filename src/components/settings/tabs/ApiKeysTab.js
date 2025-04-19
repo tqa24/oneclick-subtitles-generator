@@ -7,10 +7,14 @@ const ApiKeysTab = ({
   setGeminiApiKey,
   youtubeApiKey,
   setYoutubeApiKey,
+  geniusApiKey,
+  setGeniusApiKey,
   showGeminiKey,
   setShowGeminiKey,
   showYoutubeKey,
   setShowYoutubeKey,
+  showGeniusKey,
+  setShowGeniusKey,
   useOAuth,
   setUseOAuth,
   youtubeClientId,
@@ -131,6 +135,56 @@ const ApiKeysTab = ({
             <li>{t('settings.geminiStep3', 'Create a new key or select existing')}</li>
             <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
             <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
+          </ol>
+        </div>
+      </div>
+
+      <div className="api-key-input">
+        <label htmlFor="genius-api-key">
+          {t('settings.geniusApiKey', 'Genius API Key')}
+          <span className={`api-key-status ${apiKeysSet.genius ? 'set' : 'not-set'}`}>
+            {apiKeysSet.genius
+              ? t('settings.keySet', 'Set')
+              : t('settings.keyNotSet', 'Not Set')}
+          </span>
+        </label>
+
+        <div className="input-with-toggle">
+          <input
+            type={showGeniusKey ? "text" : "password"}
+            id="genius-api-key"
+            value={geniusApiKey}
+            onChange={(e) => setGeniusApiKey(e.target.value)}
+            placeholder={t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
+          />
+          <button
+            type="button"
+            className="toggle-visibility"
+            onClick={() => setShowGeniusKey(!showGeniusKey)}
+            aria-label={showGeniusKey ? t('settings.hide') : t('settings.show')}
+          >
+            {showGeniusKey ? t('settings.hide') : t('settings.show')}
+          </button>
+        </div>
+
+        <p className="api-key-help">
+          {t('settings.geniusApiKeyHelp', 'Required for lyrics fetching. Get one at')}
+          <a
+            href="https://genius.com/api-clients"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Genius API Clients
+          </a>
+        </p>
+        <div className="api-key-instructions">
+          <h4>{t('settings.getGeniusApiKey', 'Get Genius API Key')}</h4>
+          <ol>
+            <li>{t('settings.geniusStep1', 'Login to Genius')}</li>
+            <li>{t('settings.geniusStep2', 'Go to API Clients page')}</li>
+            <li>{t('settings.geniusStep3', 'Create a new API client')}</li>
+            <li>{t('settings.geniusStep4', 'Copy your Client Access Token')}</li>
+            <li>{t('settings.geniusStep5', 'Paste it into the field above')}</li>
           </ol>
         </div>
       </div>

@@ -15,7 +15,8 @@ export const useAppState = () => {
   // API Keys and authentication state
   const [apiKeysSet, setApiKeysSet] = useState({
     gemini: false,
-    youtube: false
+    youtube: false,
+    genius: false
   });
 
   // UI state
@@ -159,12 +160,14 @@ export const useAppState = () => {
   useEffect(() => {
     const geminiApiKey = localStorage.getItem('gemini_api_key');
     const youtubeApiKey = localStorage.getItem('youtube_api_key');
+    const geniusApiKey = localStorage.getItem('genius_token');
     const useOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
     const hasOAuthTokens = hasValidTokens();
 
     setApiKeysSet({
       gemini: !!geminiApiKey,
-      youtube: useOAuth ? hasOAuthTokens : !!youtubeApiKey
+      youtube: useOAuth ? hasOAuthTokens : !!youtubeApiKey,
+      genius: !!geniusApiKey
     });
 
     // Check API keys status and show message if needed
