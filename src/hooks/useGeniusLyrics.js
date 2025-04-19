@@ -9,7 +9,61 @@ const useGeniusLyrics = () => {
   const [lyrics, setLyrics] = useState('');
   const [albumArtUrl, setAlbumArtUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
   const [error, setError] = useState(null);
+
+  /**
+   * Clean lyrics by removing square-bracketed lines, blank lines, and header content
+   * @param {string} lyrics - Raw lyrics to clean
+   * @returns {Promise<string>} - Cleaned lyrics
+   */
+  const cleanLyrics = async (lyrics) => {
+    try {
+      setCleaning(true);
+
+      // Split lyrics into lines
+      const lines = lyrics.split('\n');
+
+      // Find the first line with square brackets
+      let firstBracketLineIndex = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const trimmedLine = lines[i].trim();
+        if (trimmedLine.includes('[') && trimmedLine.includes(']')) {
+          firstBracketLineIndex = i;
+          break;
+        }
+      }
+
+      // If we found a line with brackets, remove all lines before and including it
+      let startIndex = 0;
+      if (firstBracketLineIndex > 0) {
+        startIndex = firstBracketLineIndex + 1;
+      }
+
+      // Filter out lines with square brackets and empty lines
+      const cleanedLines = [];
+      for (let i = startIndex; i < lines.length; i++) {
+        const trimmedLine = lines[i].trim();
+
+        // Skip empty lines
+        if (!trimmedLine) continue;
+
+        // Skip lines that contain square brackets
+        if (trimmedLine.includes('[') && trimmedLine.includes(']')) continue;
+
+        cleanedLines.push(trimmedLine);
+      }
+
+      // Join the cleaned lines back together
+      return cleanedLines.join('\n');
+    } catch (err) {
+      console.error('Error cleaning lyrics:', err);
+      // Return original lyrics if cleaning fails
+      return lyrics;
+    } finally {
+      setCleaning(false);
+    }
+  };
 
   /**
    * Fetch lyrics from Genius API
@@ -46,11 +100,21 @@ const useGeniusLyrics = () => {
       const data = await response.json();
 
       if (data.lyrics) {
-        // Clean up the lyrics by splitting into lines and filtering empty ones
-        const lyricsText = data.lyrics;
-        setLyrics(lyricsText);
+        // First set the raw lyrics and album art
+        setLyrics(data.lyrics);
         setAlbumArtUrl(data.albumArtUrl || '');
-        return data;
+
+        // Then clean the lyrics with our local function
+        const cleanedLyrics = await cleanLyrics(data.lyrics);
+
+        // Update with cleaned lyrics
+        setLyrics(cleanedLyrics);
+
+        // Return the data with cleaned lyrics
+        return {
+          ...data,
+          lyrics: cleanedLyrics
+        };
       }
 
       return null;
@@ -74,6 +138,7 @@ const useGeniusLyrics = () => {
     lyrics,
     albumArtUrl,
     loading,
+    cleaning,
     error,
     fetchLyrics,
     clearLyrics

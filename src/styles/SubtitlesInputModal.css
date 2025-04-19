@@ -249,12 +249,10 @@
   height: 38px;
   margin-top: auto;
   align-self: flex-end;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Style for the Re-fetch button */
-.fetch-lyrics-button.refetch {
-  background-color: var(--md-tertiary-rgb, #9c27b0);
-}
+
 
 .fetch-lyrics-button:hover:not(:disabled) {
   background-color: var(--primary-color-dark);
@@ -275,6 +273,33 @@
   background-color: rgba(var(--error-color-rgb), 0.1);
   border-radius: 8px;
   border-left: 3px solid var(--error-color);
+}
+
+.lyrics-cleaning-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
+  font-size: 14px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.cleaning-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(var(--md-primary-rgb), 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .album-art-container {
