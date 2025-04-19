@@ -173,6 +173,13 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Clearfix for floating elements */
+.lyrics-input-section::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -189,6 +196,13 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+/* When album art is present, change to a 3-line layout */
+.lyrics-input-section:has(.album-art-container) .lyrics-input-fields {
+  flex-direction: column;
+  width: calc(100% - 170px); /* Leave space for album art */
+  float: left;
 }
 
 .lyrics-input-field {
@@ -237,6 +251,11 @@
   align-self: flex-end;
 }
 
+/* Style for the Re-fetch button */
+.fetch-lyrics-button.refetch {
+  background-color: var(--md-tertiary-rgb, #9c27b0);
+}
+
 .fetch-lyrics-button:hover:not(:disabled) {
   background-color: var(--primary-color-dark);
 }
@@ -263,6 +282,8 @@
   justify-content: center;
   margin-top: 16px;
   min-height: 150px;
+  float: right;
+  width: 150px;
 }
 
 .album-art {
