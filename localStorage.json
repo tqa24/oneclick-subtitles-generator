@@ -8,7 +8,6 @@
   "show_waveform": "true",
   "youtube_download_quality": "360p",
   "subtitle_settings": "{\"fontFamily\":\"Arial, sans-serif\",\"fontSize\":\"24\",\"fontWeight\":\"400\",\"position\":\"90\",\"boxWidth\":\"80\",\"backgroundColor\":\"#000000\",\"opacity\":\"0.7\",\"textColor\":\"#ffffff\",\"showTranslatedSubtitles\":true}",
-  "current_file_url": "blob:http://localhost:3008/8bdf3349-6aae-4faf-82ae-13207539fe2a",
   "time_format": "hms",
   "lastActiveTab": "file-upload",
   "translation_split_duration": "0",
@@ -29,7 +28,7 @@
   "video_analysis_model": "gemini-2.0-flash",
   "transcription_prompt": "You are an expert transcriber. Your task is to transcribe the primary spoken content in this {contentType}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text (1-2 sentences max). For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.\n\nIMPORTANT: If there is no speech or spoken content in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.",
   "use_optimized_preview": "true",
-  "preferred_language": "vi",
+  "preferred_language": "en",
   "subtitle_settings_panel_open": "false",
   "narration_advanced_settings": "{\"speechRate\":1,\"nfeStep\":\"8\",\"swayCoef\":-1,\"cfgStrength\":1,\"useRandomSeed\":true,\"seed\":42,\"removeSilence\":true,\"sampleRate\":\"44100\",\"audioFormat\":\"wav\",\"batchSize\":\"1\",\"mergeOutput\":false}",
   "use_video_analysis": "true"

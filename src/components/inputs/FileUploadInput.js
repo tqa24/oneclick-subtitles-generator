@@ -255,7 +255,6 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           <h3>{t('inputMethods.dragDropText')}</h3>
           <p>{t('inputMethods.orText')}</p>
           <p className="browse-text">{t('inputMethods.browse')}</p>
-          <p className="upload-help-text">{t('inputMethods.maxFileSize')}</p>
         </div>
       ) : (
         <div className="file-info-card">
