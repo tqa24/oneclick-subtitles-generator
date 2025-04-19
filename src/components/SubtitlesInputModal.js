@@ -20,6 +20,9 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
   const [artist, setArtist] = useState('');
   const [song, setSong] = useState('');
   const [albumArt, setAlbumArt] = useState('');
+  const [hasFetched, setHasFetched] = useState(false);
+  const [lastFetchedArtist, setLastFetchedArtist] = useState('');
+  const [lastFetchedSong, setLastFetchedSong] = useState('');
 
   // Use the Genius lyrics hook
   const { lyrics, albumArtUrl, loading, error, fetchLyrics } = useGeniusLyrics();
@@ -46,7 +49,10 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
     }
 
     try {
-      const result = await fetchLyrics(artist, song);
+      // If we're re-fetching, pass force=true to ignore cache
+      const isRefetch = hasFetched && artist === lastFetchedArtist && song === lastFetchedSong;
+      const result = await fetchLyrics(artist, song, isRefetch);
+
       if (result && result.lyrics) {
         // Process lyrics to remove Genius header and clean up
         let processedLyrics = result.lyrics;
@@ -60,6 +66,11 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
 
         setText(processedLyrics);
         setAlbumArt(result.albumArtUrl || '');
+
+        // Update fetch state
+        setHasFetched(true);
+        setLastFetchedArtist(artist);
+        setLastFetchedSong(song);
       }
     } catch (err) {
       console.error('Error fetching lyrics:', err);
@@ -106,6 +117,14 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
               'Paste your subtitles here without timings. When you generate subtitles, the system will focus on matching these texts with the audio and creating accurate timings. Each line will be treated as a separate subtitle.')}
           </p>
 
+          <div className="example">
+            <h3>{t('subtitlesInput.exampleTitle', 'Example:')}</h3>
+            <pre>
+              {t('subtitlesInput.example',
+                'Hello, welcome to our tutorial.\nToday we will learn about machine learning.\nLet\'s get started!')}
+            </pre>
+          </div>
+
           <div className="lyrics-autofill-toggle">
             <button
               className={`lyrics-toggle-button ${showLyricsInput ? 'active' : ''}`}
@@ -140,13 +159,16 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
                   />
                 </div>
                 <button
-                  className="fetch-lyrics-button"
+                  className={`fetch-lyrics-button ${hasFetched && artist === lastFetchedArtist && song === lastFetchedSong ? 'refetch' : ''}`}
                   onClick={handleFetchLyrics}
                   disabled={!artist || !song || loading}
                 >
                   {loading ? t('subtitlesInput.fetching', 'Fetching...') : (
                     <>
-                      <FiSearch /> {t('subtitlesInput.fetch', 'Fetch')}
+                      <FiSearch />
+                      {hasFetched && artist === lastFetchedArtist && song === lastFetchedSong
+                        ? t('subtitlesInput.refetch', 'Re-fetch')
+                        : t('subtitlesInput.fetch', 'Fetch')}
                     </>
                   )}
                 </button>
@@ -166,13 +188,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
             </div>
           )}
 
-          <div className="example">
-            <h3>{t('subtitlesInput.exampleTitle', 'Example:')}</h3>
-            <pre>
-              {t('subtitlesInput.example',
-                'Hello, welcome to our tutorial.\nToday we will learn about machine learning.\nLet\'s get started!')}
-            </pre>
-          </div>
+
 
           <textarea
             ref={textareaRef}
