@@ -37,15 +37,13 @@ const ButtonsContainer = ({
         disabled={isGenerating || isDownloading}
       />
 
-      {/* Add Subtitles Button - only show when we have a video source */}
-      {(selectedVideo || uploadedFile) && !isGenerating && !isDownloading && (
-        <AddSubtitlesButton
-          onSubtitlesAdd={handleUserSubtitlesAdd}
-          hasSubtitles={userProvidedSubtitles.trim() !== ''}
-          subtitlesText={userProvidedSubtitles}
-          disabled={isGenerating || isDownloading}
-        />
-      )}
+      {/* Add Subtitles Button - always visible like SrtUploadButton */}
+      <AddSubtitlesButton
+        onSubtitlesAdd={handleUserSubtitlesAdd}
+        hasSubtitles={userProvidedSubtitles.trim() !== ''}
+        subtitlesText={userProvidedSubtitles}
+        disabled={isGenerating || isDownloading}
+      />
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
       {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (

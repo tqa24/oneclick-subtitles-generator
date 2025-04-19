@@ -8,6 +8,5 @@
   "dragDropText": "비디오나 오디오를 여기에 끌어다 놓으세요",
   "orText": "또는",
   "browse": "파일 찾아보기",
-  "supportedFormats": "지원 형식: MP4, MOV, AVI, MP3, WAV, AAC, OGG",
-  "maxFileSize": "(비디오의 길이는 중요하지 않지만, 화질이 높거나 프레임 속도가 높은 비디오는 모델을 쉽게 과부하시킬 수 있습니다)"
+  "supportedFormats": "지원 형식: MP4, MOV, AVI, MP3, WAV, AAC, OGG"
 }
