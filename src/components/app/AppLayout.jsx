@@ -27,10 +27,16 @@ const AppLayout = ({
 
   // Handler for generating background image
   const handleGenerateBackground = (lyrics, albumArt, songName) => {
-    setBackgroundLyrics(lyrics);
-    setBackgroundAlbumArt(albumArt);
-    setBackgroundSongName(songName || '');
-    setShowBackgroundGenerator(true);
+    // First close the generator if it's already open to ensure a fresh start
+    setShowBackgroundGenerator(false);
+
+    // Use setTimeout to ensure state updates happen in the next render cycle
+    setTimeout(() => {
+      setBackgroundLyrics(lyrics);
+      setBackgroundAlbumArt(albumArt);
+      setBackgroundSongName(songName || '');
+      setShowBackgroundGenerator(true);
+    }, 0);
   };
 
   const {

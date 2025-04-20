@@ -1,0 +1,130 @@
+/* Fix for album art preview width issues */
+/* Standalone album art preview fix */
+div.album-art-preview {
+  width: 200px !important;
+  height: 200px !important;
+  margin: 0 auto !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: var(--md-surface-1) !important;
+  position: relative !important; /* For floating buttons */
+}
+
+div.album-art-preview img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Add floating buttons to standalone album art preview */
+div.album-art-preview .floating-download-button {
+  opacity: 0.9 !important; /* Always visible */
+}
+
+/* Album art container fixes */
+.album-art-container {
+  min-width: 200px !important;
+  width: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  grid-column: 3 / 4 !important; /* Third column */
+}
+
+/* Album art preview fixes */
+.album-art-preview {
+  width: 200px !important;
+  height: 200px !important;
+  margin: 0 auto !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.album-art-preview img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* Floating button styles */
+.album-art-preview {
+  position: relative !important;
+}
+
+.floating-upload-button,
+.floating-download-button {
+  position: absolute !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: var(--md-tertiary, #9c27b0) !important;
+  color: var(--md-on-tertiary, white) !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: var(--md-elevation-level2) !important;
+  opacity: 0.9 !important; /* Always visible */
+  z-index: 10 !important;
+}
+
+.floating-upload-button {
+  bottom: 12px !important;
+  left: 12px !important;
+}
+
+.floating-download-button {
+  bottom: 12px !important;
+  right: 12px !important;
+}
+
+/* Special case for image-preview download button */
+.image-preview .floating-download-button {
+  top: 12px !important;
+  right: 12px !important;
+  bottom: auto !important;
+  left: auto !important;
+}
+
+
+
+
+
+div.album-art-preview .floating-download-button {
+  bottom: 12px !important;
+  right: 12px !important;
+}
+
+.floating-upload-button:hover,
+.floating-download-button:hover {
+  opacity: 1 !important;
+  transform: scale(1.1) !important;
+  box-shadow: var(--md-elevation-level3) !important;
+}
+
+/* Hide the original album-art-actions */
+.album-art-actions {
+  display: none !important;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .album-art-container {
+    grid-column: 1 / -1 !important;
+    margin-top: 16px !important;
+  }
+}
+
+/* Ensure 6:4 ratio on all screen sizes */
+@media (min-width: 769px) {
+  .top-inputs-grid {
+    grid-template-columns: 6fr 4fr 200px !important; /* 6:4 ratio for lyrics:prompt */
+  }
+}
