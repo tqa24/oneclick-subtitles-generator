@@ -8,12 +8,12 @@
   "onboarding_completed": "true",
   "language_chain_items": "[{\"id\":1745145447714,\"type\":\"language\",\"value\":\"\",\"isOriginal\":false}]",
   "segment_offset_correction": "-3",
-  "settings_last_active_tab": "api-keys",
+  "settings_last_active_tab": "video-processing",
   "show_waveform": "true",
-  "youtube_api_key": "",
   "video_analysis_model": "gemini-2.0-flash",
   "time_format": "hms",
-  "cached_lyrics_artist": "비비",
+  "user_provided_subtitles": "습했던 것은 이내 메말라지고\n가벼운 것은 차츰 무거워지네\n꽃에게서 향기를, 바다에서 파도를\n나에게서 임의 이름을 떼어놓지 못하네\n소란한 대기 아래 산개한 눈설레\n범람에 지친 강이 바다로 향하네\n들판아 펼쳐져라, 산도 바위도 일어서라\n골짜기로 굽이쳐 강물도 들이쳐라\n임은 아실까? 저 숲새의 둥지가\n제 가슴에서 뽑은 깃털로 엮인 것을\n얼어버린 듯하다 터져 번지는\n눈서리 그 속에 핀 꽃\n내가 바라는 건 닿을 수 없는 꿈\n내가 부르는 건 들리지 않는 노래\n내가 원하는 건 천 번의 입맞춤이 아니라\n나로서 나인 것뿐이외다\n누구의 무엇이 아니라\n어런더런 안채에서 요란 피우던 나비 둘\n물빛 푸르러지더라도 돌아오지를 못하네\n황금 비녀 꽂아봐도 꽃술 저고리 걸쳐도\n향불 연기만 자욱하고 거울 속 난새 신세라\n거울 속 난새 신세라\n임은 아실까? 저 숲새의 둥지가\n제 가슴에서 뽑은 깃털로 엮인 것을\n얼어버린 듯하다 터져 번지는\n눈서리 그 속에 핀 꽃\n내가 토하는 건 참을 수 없는 숨\n내가 키우는 건 여물지 않는 열매\n내가 원하는 건 천 번의 입맞춤이 아니라\n나로서 나인 것뿐이외다\n누구의 무엇이 아니라, 아니라\n나로서 그저 나임을\n아니라, 아니라\n나로서 그저 나임을\n오늘 연꽃이 서리를 맞아\n붉게 떨어졌노라",
+  "cached_lyrics_artist": "심규선",
   "lastActiveTab": "file-upload",
   "gemini_api_key": "AIzaSyAm4xKOwLAkubiAjHB9Uy4QtIQGEgu2Qks",
   "optimize_videos": "true",
@@ -23,9 +23,9 @@
   "video_analysis_timeout": "20",
   "use_optimized_preview": "true",
   "subtitle_settings_panel_open": "false",
-  "cached_lyrics_song": "데레",
   "use_video_analysis": "true",
+  "cached_lyrics_song": "난설헌",
+  "preferred_language": "vi",
   "use_user_provided_subtitles": "true",
-  "selected_preset_id": "general",
-  "gemini_token": "AIzaSyAm4xKOwLAkubiAjHB9Uy4QtIQGEgu2Qks"
+  "selected_preset_id": "general"
 }

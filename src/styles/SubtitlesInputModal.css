@@ -129,10 +129,19 @@
   scrollbar-color: rgba(var(--md-primary-rgb), 0.5) rgba(var(--md-outline-variant-rgb), 0.3);
 }
 
-.explanation {
+.explanation-example-container {
+  display: flex;
+  gap: 20px;
   margin-bottom: 16px;
+  align-items: stretch;
+}
+
+.explanation {
+  flex: 4; /* 40% of the space */
   color: var(--text-color-secondary);
   line-height: 1.5;
+  display: flex;
+  align-items: center;
 }
 
 /* Lyrics autofill section */
@@ -359,10 +368,10 @@
 }
 
 .example {
+  flex: 6; /* 60% of the space */
   background-color: rgba(var(--md-primary-container-rgb), 0.1);
   padding: 16px;
   border-radius: 12px;
-  margin-bottom: 20px;
   border-left: 4px solid var(--primary-color);
   box-shadow: var(--md-elevation-level1);
 }
@@ -601,5 +610,20 @@
   .keyboard-shortcuts {
     flex-direction: column;
     gap: 8px;
+  }
+
+  /* Stack explanation and example vertically on small screens */
+  .explanation-example-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .explanation, .example {
+    flex: none;
+    width: 100%;
+  }
+
+  .explanation {
+    margin-bottom: 0;
   }
 }

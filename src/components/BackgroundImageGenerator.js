@@ -22,10 +22,16 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   const [customSongName, setCustomSongName] = useState(songName || '');
   const [autoExecutionComplete, setAutoExecutionComplete] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(!isExpanded); // Use the isExpanded prop
+  const [isGenerationInProgress, setIsGenerationInProgress] = useState(false); // Track if generation is in progress
+  const [userHasCollapsed, setUserHasCollapsed] = useState(false); // Track if user has manually collapsed
+  const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false); // Track if we should auto-generate
 
   // Use a ref to track if the auto-execution effect has already run
   // This helps prevent double execution in React StrictMode
   const autoExecutionRef = useRef(false);
+
+  // Ref for the Generate with Unique Prompts button
+  const generateWithUniquePromptsButtonRef = useRef(null);
 
   // Generate prompt using Gemini
   const generatePrompt = async () => {
@@ -35,6 +41,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     }
 
     setIsGeneratingPrompt(true);
+    setIsGenerationInProgress(true); // Set generation in progress flag
     setError('');
 
     try {
@@ -63,6 +70,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       return null;
     } finally {
       setIsGeneratingPrompt(false);
+      setIsGenerationInProgress(false); // Reset generation in progress flag
     }
   };
 
@@ -82,6 +90,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     }
 
     setIsGeneratingImage(true);
+    setIsGenerationInProgress(true); // Set generation in progress flag
     setError('');
 
     // Prepare the grid with placeholders
@@ -162,13 +171,17 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       return null;
     } finally {
       setIsGeneratingImage(false);
+      setIsGenerationInProgress(false); // Reset generation in progress flag
     }
   };
 
-  // Sync isCollapsed state with isExpanded prop
+  // Sync isCollapsed state with isExpanded prop, but respect user's manual collapse
   useEffect(() => {
-    setIsCollapsed(!isExpanded);
-  }, [isExpanded]);
+    // Only update isCollapsed if the user hasn't manually collapsed it
+    if (!userHasCollapsed) {
+      setIsCollapsed(!isExpanded);
+    }
+  }, [isExpanded, userHasCollapsed]);
 
   // Reset state when lyrics or albumArt props change
   useEffect(() => {
@@ -186,14 +199,36 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       setError('');
       setAutoExecutionComplete(false);
       autoExecutionRef.current = false; // Reset the ref to allow auto-execution
-      setIsCollapsed(false); // Expand when new content is provided
+      // Only expand if the user hasn't manually collapsed it
+      if (!userHasCollapsed) {
+        setIsCollapsed(false); // Expand when new content is provided
 
-      // Notify parent component about expansion
-      if (onExpandChange) {
-        onExpandChange(true);
+        // Notify parent component about expansion
+        if (onExpandChange) {
+          onExpandChange(true);
+        }
+
+        // Set flag to auto-generate with unique prompts
+        // This will be picked up by the effect below
+        setShouldAutoGenerate(true);
       }
     }
-  }, [lyrics, albumArt, songName, onExpandChange]);
+  }, [lyrics, albumArt, songName, onExpandChange, userHasCollapsed]);
+
+  // Effect to auto-click the Generate with Unique Prompts button
+  useEffect(() => {
+    if (shouldAutoGenerate && !isCollapsed && !isGenerationInProgress && generateWithUniquePromptsButtonRef.current) {
+      console.log('Auto-clicking Generate with Unique Prompts button');
+      // Reset the flag first to prevent multiple clicks
+      setShouldAutoGenerate(false);
+      // Simulate a click on the button
+      setTimeout(() => {
+        if (generateWithUniquePromptsButtonRef.current) {
+          generateWithUniquePromptsButtonRef.current.click();
+        }
+      }, 500); // Small delay to ensure the component is fully rendered
+    }
+  }, [shouldAutoGenerate, isCollapsed, isGenerationInProgress]);
 
   // Auto-execute prompt generation and image generation when component mounts
   // or when lyrics/albumArt change - uses the default of 4 images for new prompt
@@ -201,8 +236,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     const autoExecute = async () => {
       // Skip if we've already run this effect in the current render cycle
       // or if we don't have the necessary data or if auto-execution is already complete
-      // or if the component is collapsed
-      if (autoExecutionRef.current || autoExecutionComplete || !lyrics || !albumArt || isCollapsed) {
+      if (autoExecutionRef.current || autoExecutionComplete || !lyrics || !albumArt) {
         return;
       }
 
@@ -223,6 +257,8 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           return;
         }
 
+        // Set generation in progress flag
+        setIsGenerationInProgress(true);
         setIsGeneratingPrompt(true);
         setError('');
 
@@ -372,6 +408,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         }
 
         setIsGeneratingImage(false);
+        setIsGenerationInProgress(false); // Reset generation in progress flag
 
         console.log('Image generated successfully');
         setAutoExecutionComplete(true);
@@ -380,12 +417,14 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         setError(`Auto-execution error: ${error.message}`);
         setIsGeneratingPrompt(false);
         setIsGeneratingImage(false);
+        setIsGenerationInProgress(false); // Reset generation in progress flag
         setAutoExecutionComplete(true); // Mark as complete even on error to prevent retries
       }
     };
 
-    // Only run auto-execute when component is expanded
-    if (!isCollapsed) {
+    // Only run auto-execute when we have content and auto-execution hasn't completed
+    // Completely independent of the collapse/expand state
+    if (lyrics && albumArt && !autoExecutionComplete) {
       autoExecute();
     }
 
@@ -395,7 +434,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       // even if the effect is called multiple times due to StrictMode
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lyrics, albumArt, customLyrics, customAlbumArt, customSongName, autoExecutionComplete, isCollapsed]);
+  }, [lyrics, albumArt, customLyrics, customAlbumArt, customSongName, autoExecutionComplete]);
 
 
   // Handle file upload for custom album art
@@ -428,6 +467,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
     // Prepare the grid with placeholders
     setIsGeneratingImage(true);
+    setIsGenerationInProgress(true); // Set generation in progress flag
     setPendingImageCount(imagesToGenerate);
     setError('');
 
@@ -541,6 +581,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     } finally {
       setIsGeneratingPrompt(false);
       setIsGeneratingImage(false);
+      setIsGenerationInProgress(false); // Reset generation in progress flag
     }
   };
 
@@ -587,12 +628,32 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         <button
           className="collapse-button"
           onClick={() => {
+            // Toggle collapsed state - ONLY affects visual display, not generation
             const newCollapsedState = !isCollapsed;
             setIsCollapsed(newCollapsedState);
+
+            // Set userHasCollapsed flag when user manually collapses
+            if (newCollapsedState) {
+              setUserHasCollapsed(true);
+            } else {
+              // Reset the flag when user manually expands
+              setUserHasCollapsed(false);
+            }
+
             // Notify parent component about expansion/collapse
             if (onExpandChange) {
               onExpandChange(!newCollapsedState);
             }
+
+            // Log the current state for debugging
+            console.log('Collapse button clicked. New state:', {
+              isCollapsed: newCollapsedState,
+              userHasCollapsed: newCollapsedState, // Will be set to this value
+              isGenerationInProgress,
+              isGeneratingPrompt,
+              isGeneratingImage,
+              autoExecutionComplete
+            });
           }}
           title={isCollapsed ? t('backgroundGenerator.expand', 'Expand') : t('backgroundGenerator.collapse', 'Collapse')}
         >
@@ -795,6 +856,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
                 <div className="generate-button-group">
                   <button
+                    ref={generateWithUniquePromptsButtonRef}
                     className={`generate-button new-prompt-button ${isGeneratingPrompt || isGeneratingImage ? 'loading' : ''}`}
                     onClick={() => generateWithNewPrompt()}
                     disabled={isGeneratingPrompt || isGeneratingImage || !customLyrics.trim() || !customAlbumArt}
