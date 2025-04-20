@@ -11,4 +11,7 @@ router.post('/generate-prompt', geminiImageController.generatePrompt);
 // Generate background image
 router.post('/generate-image', geminiImageController.generateImage);
 
+// Get current prompts
+router.get('/get-prompts', geminiImageController.getPrompts);
+
 module.exports = router;
