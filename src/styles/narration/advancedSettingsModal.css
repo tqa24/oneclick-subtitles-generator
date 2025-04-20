@@ -16,7 +16,7 @@
 
 .advanced-settings-modal {
   background-color: var(--md-surface-1);
-  border-radius: var(--md-shape-large);
+  border-radius: 24px;
   box-shadow: var(--md-elevation-level3);
   width: 90%;
   max-width: 800px; /* Increased to accommodate more columns */
@@ -24,7 +24,7 @@
   display: flex;
   flex-direction: column;
   animation: modal-appear 0.3s var(--md-easing-emphasized);
-  border: 1px solid var(--md-outline-variant);
+  border: none;
   overflow: hidden;
 }
 
@@ -32,9 +32,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--md-outline-variant);
+  padding: 1rem 1.5rem;
+  border-bottom: none;
   background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings-modal-header h3 {
@@ -119,9 +120,10 @@
 .advanced-settings-modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 0.75rem 1rem;
-  border-top: 1px solid var(--md-outline-variant);
+  padding: 1rem 1.5rem;
+  border-top: none;
   background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Advanced Settings Button */

@@ -392,31 +392,35 @@
 .subtitles-input-modal-content textarea {
   width: 100%;
   min-height: 200px;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--md-outline-variant);
-  background-color: var(--md-surface-1);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid transparent; /* Transparent border for focus state */
+  background-color: var(--md-surface-2);
   color: var(--text-color);
   font-family: monospace;
   font-size: 14px;
   line-height: 1.5;
-  resize: vertical;
+  resize: none; /* Remove resize handle */
   transition: all 0.2s ease;
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: rgba(var(--md-primary-rgb), 0.4) rgba(var(--md-outline-variant-rgb), 0.2); /* Firefox */
+  overflow: auto; /* Ensure scrollbar is contained */
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Light theme textarea styling */
 [data-theme="light"] .subtitles-input-modal-content textarea {
   background-color: var(--md-surface);
-  border: 1px solid var(--md-outline);
+  border: none;
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Dark theme textarea styling */
 [data-theme="dark"] .subtitles-input-modal-content textarea {
   background-color: rgba(var(--md-surface-variant-rgb), 0.3);
   backdrop-filter: blur(2px);
-  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.7);
+  border: none;
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Custom scrollbar for textarea in Webkit browsers */
@@ -426,12 +430,13 @@
 
 .subtitles-input-modal-content textarea::-webkit-scrollbar-track {
   background: rgba(var(--md-outline-variant-rgb), 0.2);
-  border-radius: 10px;
+  border-radius: 8px;
+  margin: 4px; /* Add margin to ensure scrollbar respects rounded corners */
 }
 
 .subtitles-input-modal-content textarea::-webkit-scrollbar-thumb {
   background: rgba(var(--md-primary-rgb), 0.4);
-  border-radius: 10px;
+  border-radius: 8px;
   transition: background 0.2s ease;
 }
 
@@ -458,20 +463,25 @@
 
 .subtitles-input-modal-content textarea:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+  box-shadow: var(--md-elevation-level2);
+  border: 2px solid var(--primary-color);
+  padding: 15px; /* Adjust padding to maintain the same size */
 }
 
 /* Light theme focus state */
 [data-theme="light"] .subtitles-input-modal-content textarea:focus {
   background-color: var(--md-surface-1);
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.15);
+  box-shadow: var(--md-elevation-level2);
+  border: 2px solid var(--primary-color);
+  padding: 15px; /* Adjust padding to maintain the same size */
 }
 
 /* Dark theme focus state */
 [data-theme="dark"] .subtitles-input-modal-content textarea:focus {
   background-color: rgba(var(--md-surface-variant-rgb), 0.4);
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.25);
+  box-shadow: var(--md-elevation-level2);
+  border: 2px solid var(--primary-color);
+  padding: 15px; /* Adjust padding to maintain the same size */
 }
 
 .keyboard-shortcuts {

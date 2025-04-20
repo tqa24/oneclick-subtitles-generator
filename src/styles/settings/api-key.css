@@ -64,6 +64,66 @@
   box-shadow: var(--md-elevation-level2);
 }
 
+/* Custom API key input that avoids password fields entirely */
+.custom-api-key-input {
+  display: flex;
+  position: relative;
+}
+
+.custom-input-field {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  font-family: 'Roboto Mono', monospace;
+  font-size: var(--md-body-medium-size);
+  width: 100%;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  min-height: 48px;
+  cursor: text;
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-input-field:hover {
+  border-color: var(--md-primary-container);
+  background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.editable-key-field {
+  outline: none;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.editable-key-field:focus {
+  outline: none;
+}
+
+.masked-key-field {
+  letter-spacing: 2px;
+}
+
+.key-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .input-with-toggle input:hover {
   border-color: var(--md-primary-container);
   background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);

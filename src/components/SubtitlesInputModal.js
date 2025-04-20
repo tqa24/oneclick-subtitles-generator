@@ -104,8 +104,16 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
 
           {showBackgroundPrompt && albumArt && (
             <div className="background-prompt-message" onClick={() => {
+              console.log('Background prompt message clicked');
+              console.log('onGenerateBackground exists:', !!onGenerateBackground);
+              console.log('albumArt:', albumArt);
+              console.log('songName:', songName);
+
               onSave(text);
-              onGenerateBackground(text, albumArt, songName);
+              if (onGenerateBackground) {
+                console.log('Calling onGenerateBackground');
+                onGenerateBackground(text, albumArt, songName);
+              }
             }}>
               <FiImage />
               <span>{t('subtitlesInput.generateBackground', 'Do you want to generate background image inspired from this album art and lyrics?')}</span>

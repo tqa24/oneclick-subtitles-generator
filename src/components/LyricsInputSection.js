@@ -77,6 +77,7 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
             onChange={(e) => setArtist(e.target.value)}
             onKeyDown={preventSubmit}
             placeholder={t('subtitlesInput.artistPlaceholder', 'Enter artist name')}
+            autoComplete="off"
           />
         </div>
         <div className="lyrics-input-field">
@@ -88,6 +89,7 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
             onChange={(e) => setSong(e.target.value)}
             onKeyDown={preventSubmit}
             placeholder={t('subtitlesInput.songPlaceholder', 'Enter song title')}
+            autoComplete="off"
           />
         </div>
         <div

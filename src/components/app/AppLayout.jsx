@@ -27,16 +27,24 @@ const AppLayout = ({
 
   // Handler for generating background image
   const handleGenerateBackground = (lyrics, albumArt, songName) => {
-    // First close the generator if it's already open to ensure a fresh start
-    setShowBackgroundGenerator(false);
+    console.log('handleGenerateBackground called with:', { lyrics, albumArt, songName });
 
-    // Use setTimeout to ensure state updates happen in the next render cycle
+    // Set the state variables immediately
+    setBackgroundLyrics(lyrics);
+    setBackgroundAlbumArt(albumArt);
+    setBackgroundSongName(songName || '');
+    setShowBackgroundGenerator(true); // This will expand the component
+
+    // Scroll to the BackgroundImageGenerator after it's rendered
     setTimeout(() => {
-      setBackgroundLyrics(lyrics);
-      setBackgroundAlbumArt(albumArt);
-      setBackgroundSongName(songName || '');
-      setShowBackgroundGenerator(true);
-    }, 0);
+      const backgroundGenerator = document.querySelector('.background-generator-container');
+      if (backgroundGenerator) {
+        console.log('Scrolling to BackgroundImageGenerator');
+        backgroundGenerator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        console.log('BackgroundImageGenerator not found in DOM');
+      }
+    }, 500); // Increased timeout to ensure component is rendered
   };
 
   const {
@@ -205,15 +213,6 @@ const AppLayout = ({
               onGenerateBackground={handleGenerateBackground}
             />
 
-            {showBackgroundGenerator && (
-              <BackgroundImageGenerator
-                lyrics={backgroundLyrics}
-                albumArt={backgroundAlbumArt}
-                songName={backgroundSongName}
-                onClose={() => setShowBackgroundGenerator(false)}
-              />
-            )}
-
             <OutputContainer
               status={status}
               subtitlesData={subtitlesData}
@@ -242,6 +241,15 @@ const AppLayout = ({
               onGenerateBackground={handleGenerateBackground}
             />
           </div>
+
+          {/* Background Image Generator - Always visible but collapsed at page start */}
+          <BackgroundImageGenerator
+            lyrics={backgroundLyrics}
+            albumArt={backgroundAlbumArt}
+            songName={backgroundSongName}
+            isExpanded={showBackgroundGenerator}
+            onExpandChange={(expanded) => setShowBackgroundGenerator(expanded)}
+          />
         </main>
       )}
 
