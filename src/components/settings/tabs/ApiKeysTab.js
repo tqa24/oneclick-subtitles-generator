@@ -106,6 +106,7 @@ const ApiKeysTab = ({
             value={geminiApiKey}
             onChange={(e) => setGeminiApiKey(e.target.value)}
             placeholder={t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
+            autoComplete="new-password"
           />
           <button
             type="button"
@@ -156,6 +157,7 @@ const ApiKeysTab = ({
             value={geniusApiKey}
             onChange={(e) => setGeniusApiKey(e.target.value)}
             placeholder={t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
+            autoComplete="new-password"
           />
           <button
             type="button"
@@ -243,6 +245,7 @@ const ApiKeysTab = ({
                 value={youtubeApiKey}
                 onChange={(e) => setYoutubeApiKey(e.target.value)}
                 placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -307,6 +310,7 @@ const ApiKeysTab = ({
                     value={youtubeClientId}
                     onChange={(e) => setYoutubeClientId(e.target.value)}
                     placeholder={t('settings.clientIdPlaceholder', 'Enter your OAuth Client ID')}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -328,6 +332,7 @@ const ApiKeysTab = ({
                     value={youtubeClientSecret}
                     onChange={(e) => setYoutubeClientSecret(e.target.value)}
                     placeholder={t('settings.clientSecretPlaceholder', 'Enter your OAuth Client Secret')}
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 import useGeniusLyrics from '../hooks/useGeniusLyrics';
@@ -10,6 +10,24 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
   const { t } = useTranslation();
   const [artist, setArtist] = useState('');
   const [song, setSong] = useState('');
+
+  // Load cached values when component mounts
+  useEffect(() => {
+    const cachedArtist = localStorage.getItem('cached_lyrics_artist');
+    const cachedSong = localStorage.getItem('cached_lyrics_song');
+
+    if (cachedArtist) setArtist(cachedArtist);
+    if (cachedSong) setSong(cachedSong);
+  }, []);
+
+  // Save values to localStorage when they change
+  useEffect(() => {
+    if (artist) localStorage.setItem('cached_lyrics_artist', artist);
+  }, [artist]);
+
+  useEffect(() => {
+    if (song) localStorage.setItem('cached_lyrics_song', song);
+  }, [song]);
 
 
   // Use the Genius lyrics hook
