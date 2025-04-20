@@ -33,7 +33,7 @@ const ReferenceAudioSection = ({
   return (
     <div className="narration-row reference-audio-row">
       <div className="row-label">
-        <label>{t('narration.referenceAudio', 'Reference Audio')}:</label>
+        <label>{t('narration.referenceAudio', 'Văn bản tham chiếu')}:</label>
       </div>
       <div className="row-content">
         <div className="reference-audio-container">

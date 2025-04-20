@@ -24,7 +24,6 @@
   color: var(--text-primary);
   margin: 0 0 0.5rem 0;
   padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--md-outline-variant);
 }
 
 /* Custom slider styles - Compact */

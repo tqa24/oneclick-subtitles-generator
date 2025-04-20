@@ -1,8 +1,17 @@
 {
   "title": "Tạo lồng tiếng",
   "description": "Tạo âm thanh lồng tiếng từ phụ đề của bạn bằng giọng tham chiếu.",
-  "referenceAudio": "Âm thanh tham chiếu",
+  "referenceAudio": "Văn bản tham chiếu",
   "referenceText": "Văn bản tham chiếu",
+  "audioControls": "Âm thanh tham chiếu",
+  "autoRecognize": "Tự động nhận diện giọng nói",
+  "autoRecognizeDescription": "Tự động phiên âm âm thanh sau khi ghi âm hoặc tải lên",
+  "settings": "Cài đặt lồng tiếng",
+  "settingsTooltip": "Cài đặt lồng tiếng",
+  "toggleSettings": "Cài đặt lồng tiếng",
+  "playbackTitle": "Lồng tiếng",
+  "narrationVolume": "Âm lượng lồng tiếng",
+  "playing": "Đang phát",
   "referenceTextPlaceholder": "Nhập văn bản khớp với âm thanh tham chiếu...",
   "clearReference": "Xóa âm thanh tham chiếu",
   "audioNotSupported": "Trình duyệt của bạn không hỗ trợ phần tử âm thanh.",
@@ -46,7 +55,7 @@
   "translatedSubtitles": "Phụ đề đã dịch",
   "unavailable": "(không khả dụng)",
 
-  "advancedSettingsToggle": "Cài đặt nâng cao cho giọng nói & âm thanh",
+  "advancedSettingsToggle": "Cài đặt nâng cao cho giọng nói",
   "advancedSettings": "Cài đặt nâng cao",
 
   "voiceStyle": "Kiểu giọng nói",
@@ -64,6 +73,7 @@
   "swayCoefDesc": "Giá trị thấp hơn cải thiện chất lượng",
   "cfgStrength": "Độ giống giọng",
   "cfgStrengthDesc": "Giá trị cao hơn tăng độ giống giọng",
+  "higherValuesImproveQuality": "Giá trị cao hơn cải thiện chất lượng nhưng mất nhiều thời gian hơn",
 
   "seedControl": "Kiểm soát Seed",
   "useRandomSeed": "Dùng Seed ngẫu nhiên",
@@ -71,6 +81,7 @@
 
   "audioProcessing": "Xử lý âm thanh",
   "removeSilence": "Loại bỏ khoảng lặng",
+  "removeSilenceDesc": "Loại bỏ khoảng lặng",
 
   "outputFormat": "Định dạng đầu ra",
   "format": "Định dạng",
@@ -81,7 +92,7 @@
   "sampleRate": "Tần số lấy mẫu",
 
   "batchProcessing": "Xử lý hàng loạt",
-  "batchSize": "Kích thước lô",
+  "batchSize": "Batch Size",
   "all": "Tất cả",
   "mergeOutput": "Gộp tất cả các tập tin âm thanh"
 }

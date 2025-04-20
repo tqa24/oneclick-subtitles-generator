@@ -28,8 +28,29 @@ const AdvancedSettingsToggle = ({
       </div>
       <div className="row-content">
         <button
-          className="pill-button secondary advanced-settings-button"
+          className="pill-button advanced-settings-button"
           onClick={openModal}
+          style={{
+            backgroundColor: 'rgba(var(--md-tertiary-rgb), 0.1)',
+            color: 'var(--md-tertiary)',
+            border: '1px solid rgba(var(--md-tertiary-rgb), 0.2)',
+            boxShadow: 'var(--md-elevation-level1)',
+            transition: 'all var(--md-duration-medium2) var(--md-easing-standard)'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--md-tertiary-container)';
+            e.currentTarget.style.color = 'var(--md-on-tertiary-container)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = 'var(--md-elevation-level2)';
+            e.currentTarget.style.borderColor = 'transparent';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(var(--md-tertiary-rgb), 0.1)';
+            e.currentTarget.style.color = 'var(--md-tertiary)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'var(--md-elevation-level1)';
+            e.currentTarget.style.borderColor = 'rgba(var(--md-tertiary-rgb), 0.2)';
+          }}
         >
           <span className="advanced-settings-button-label">
             {t('narration.advancedSettingsToggle', 'Voice & Audio Settings')}

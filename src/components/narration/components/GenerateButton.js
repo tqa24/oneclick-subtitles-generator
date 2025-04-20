@@ -26,9 +26,6 @@ const GenerateButton = ({
 
   return (
     <div className="narration-row generate-button-row">
-      <div className="row-label">
-        <label>{t('narration.generate', 'Generate')}:</label>
-      </div>
       <div className="row-content">
         <div className="pill-button-group">
           {isGenerating ? (

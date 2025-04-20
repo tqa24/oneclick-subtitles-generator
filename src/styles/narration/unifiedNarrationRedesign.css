@@ -7,7 +7,13 @@
   background-color: var(--md-surface-1);
   border-radius: 24px;
   box-shadow: var(--md-elevation-level2);
-  border: none;
+  border: 1px solid var(--md-outline-variant);
+}
+
+/* Ensure all textareas in narration section have rounded corners */
+.narration-section textarea {
+  border-radius: 20px !important;
+  resize: none !important;
 }
 
 /* Header styles */
@@ -122,9 +128,9 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: var(--md-surface-3);
-  color: var(--md-on-surface);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  background-color: rgba(var(--md-surface-variant-rgb), 0.5);
+  color: var(--md-on-surface-variant);
   border: 1px solid transparent;
   height: 36px; /* Consistent height for all pill buttons */
   box-sizing: border-box; /* Include padding and border in height calculation */
@@ -132,56 +138,67 @@
 }
 
 .pill-button:hover {
-  background-color: var(--md-surface-4);
+  background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .pill-button:active {
-  transform: translateY(1px);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .pill-button.primary {
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border: 1px solid rgba(var(--md-primary-rgb), 0.2);
 }
 
 .pill-button.primary:hover {
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: transparent;
 }
 
 .pill-button.secondary {
-  background-color: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
+  border: 1px solid rgba(var(--md-secondary-rgb), 0.2);
 }
 
 .pill-button.secondary:hover {
-  background-color: var(--md-secondary);
-  color: var(--md-on-secondary);
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: transparent;
 }
 
 .pill-button.error {
-  background-color: var(--md-error-container);
-  color: var(--md-on-error-container);
+  background-color: rgba(var(--md-error-rgb), 0.1);
+  color: var(--md-error);
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
 }
 
 .pill-button.error:hover {
-  background-color: var(--md-error);
-  color: var(--md-on-error);
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: transparent;
 }
 
 .pill-button:disabled {
-  opacity: 0.6;
+  opacity: 0.38;
   cursor: not-allowed;
-  background-color: var(--md-surface-2);
+  background-color: var(--md-surface-1);
   color: var(--md-on-surface-variant);
   border-color: var(--md-outline-variant);
+  box-shadow: none;
 }
 
 .pill-button:disabled:hover {
   box-shadow: none;
   transform: none;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
 }
 
 /* Pill button group */
@@ -189,6 +206,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+/* Generate button row without label */
+.generate-button-row {
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+.generate-button-row .row-content {
+  justify-content: flex-start;
 }
 
 /* Audio controls container */
@@ -288,7 +315,8 @@
   z-index: 2;
   flex-shrink: 0;
   align-self: flex-start;
-  margin-top: 0.5rem; /* Align with textarea */
+  margin-top: 16px; /* Match the padding in BackgroundImageGenerator */
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Help icon container */
@@ -390,34 +418,121 @@ input:focus + .toggle-slider {
   position: relative;
   flex: 1;
   min-width: 0; /* Prevent flex item from overflowing */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Add a subtle animation when the text area is being edited */
+.reference-text-container:has(.reference-text:focus) {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
 }
 
 /* Reference text */
 .reference-text {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 20px !important; /* More rounded corners with !important */
   border: 1px solid transparent;
-  background-color: var(--md-surface-1);
+  background-color: var(--md-surface-2);
   color: var(--md-on-surface);
   font-size: 0.95rem;
-  resize: none;
+  resize: none !important; /* Explicitly disable resize with !important */
   min-height: 60px;
+  flex: 1;
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
+  font-family: var(--md-sys-typescale-body-medium-font-family, 'Roboto', sans-serif);
+  line-height: 1.5;
+  overflow: auto; /* Add scrollbar when needed */
+  appearance: none; /* Remove browser styling */
+  -webkit-appearance: none; /* Safari and Chrome */
+  -moz-appearance: none; /* Firefox */
 }
 
 .reference-text:focus {
   outline: none;
-  border-color: var(--md-primary);
   box-shadow: var(--md-elevation-level2);
   border: 2px solid var(--primary-color);
-  padding: calc(0.75rem - 1px); /* Adjust padding to maintain the same size */
+  padding: 15px; /* Adjust padding to maintain the same size */
+  border-radius: 20px; /* Keep the same border radius */
 }
 
 .reference-text:disabled {
   background-color: var(--md-surface-2);
   cursor: not-allowed;
+  border-radius: 20px !important;
+}
+
+/* Custom scrollbar for reference text */
+.reference-text {
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.reference-text::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.reference-text::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px;
+  border-radius: 8px;
+}
+
+.reference-text::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.3);
+  border-radius: 8px;
+}
+
+.reference-text::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.5);
+}
+
+/* Dark mode specific scrollbar styles */
+[data-theme="dark"] .reference-text::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .reference-text::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Style for text area with content */
+.reference-text:not(:placeholder-shown) {
+  border-color: transparent;
+  height: auto !important;
+  min-height: 80px !important; /* Slightly taller when it has content */
+  border-radius: 20px !important;
+}
+
+/* Override any inline styles */
+.reference-text {
+  height: auto !important; /* Override any inline height */
+  min-height: 60px !important; /* Ensure minimum height */
+}
+
+/* Style for empty text area */
+.reference-text:placeholder-shown {
+  height: auto !important;
+  min-height: 60px !important;
+  border-radius: 20px !important;
+}
+
+/* Additional style to completely remove resize handle and ensure rounded corners */
+textarea.reference-text {
+  resize: none !important;
+  border-radius: 20px !important;
+  -webkit-border-radius: 20px !important;
+  -moz-border-radius: 20px !important;
+}
+
+/* Hide the resize handle in WebKit browsers */
+textarea.reference-text::-webkit-resizer {
+  display: none !important;
 }
 
 /* Recognizing indicator */
@@ -461,27 +576,46 @@ input:focus + .toggle-slider {
   align-items: center;
   padding: 0.5rem 1rem;
   border-radius: 24px;
-  background-color: var(--md-surface-3);
-  color: var(--md-on-surface);
-  border: 1px solid transparent;
+  background-color: rgba(var(--md-surface-variant-rgb), 0.5);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
 }
 
+.radio-pill label:hover {
+  background-color: var(--md-surface-2);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
 .radio-pill input[type="radio"]:checked + label {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border-color: rgba(var(--md-primary-rgb), 0.3);
+}
+
+.radio-pill input[type="radio"]:checked + label:hover {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
-  border-color: var(--md-primary);
+  border-color: transparent;
 }
 
 .radio-pill input[type="radio"]:disabled + label {
-  opacity: 0.6;
+  opacity: 0.38;
   cursor: not-allowed;
-  background-color: var(--md-surface-2);
+  background-color: var(--md-surface-1);
   color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+}
+
+.radio-pill input[type="radio"]:disabled + label:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Reference audio container */
@@ -504,6 +638,7 @@ input:focus + .toggle-slider {
   gap: 1rem;
   box-sizing: border-box;
   width: 100%;
+  height: 100%;
 }
 
 /* Improve reference audio row styling */
@@ -801,4 +936,13 @@ input:focus + .toggle-slider {
   }
 
 
+}
+
+/* Add styles for the unavailable indicator */
+.unavailable-indicator {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--md-outline);
+  opacity: 0.8;
+  font-style: italic;
 }

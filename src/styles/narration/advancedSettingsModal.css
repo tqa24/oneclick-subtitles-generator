@@ -6,25 +6,25 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
 .advanced-settings-modal {
   background-color: var(--md-surface-1);
-  border-radius: 24px;
-  box-shadow: var(--md-elevation-level3);
+  border-radius: 28px;
+  box-shadow: var(--md-elevation-level4);
   width: 90%;
   max-width: 800px; /* Increased to accommodate more columns */
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  animation: modal-appear 0.3s var(--md-easing-emphasized);
-  border: none;
+  animation: modal-appear 0.4s var(--md-easing-emphasized);
+  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
   overflow: hidden;
 }
 
@@ -32,22 +32,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: none;
-  background-color: var(--md-surface-2);
-  box-shadow: var(--md-elevation-level1);
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
+  background-color: var(--md-surface-1);
 }
 
 .advanced-settings-modal-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 500;
   color: var(--md-on-surface);
+  letter-spacing: 0.25px;
 }
 
 .advanced-settings-modal-header .close-button {
-  background: none;
-  border: none;
+  background: rgba(var(--md-surface-variant-rgb), 0.5);
+  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
   font-size: 1.25rem;
   color: var(--md-on-surface-variant);
   cursor: pointer;
@@ -56,14 +56,22 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  transition: background-color 0.2s ease;
+  width: 32px;
+  height: 32px;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings-modal-header .close-button:hover {
   background-color: var(--md-surface-3);
   color: var(--md-on-surface);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.advanced-settings-modal-header .close-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings-modal-content {
@@ -120,10 +128,9 @@
 .advanced-settings-modal-footer {
   display: flex;
   justify-content: flex-end;
-  padding: 1rem 1.5rem;
-  border-top: none;
-  background-color: var(--md-surface-2);
-  box-shadow: var(--md-elevation-level1);
+  padding: 1.25rem 1.75rem;
+  border-top: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
+  background-color: var(--md-surface-1);
 }
 
 /* Advanced Settings Button */
@@ -132,17 +139,27 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background-color: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
-  border: none;
+  background-color: rgba(var(--md-tertiary-rgb), 0.1);
+  color: var(--md-tertiary);
+  border: 1px solid rgba(var(--md-tertiary-rgb), 0.2);
   border-radius: 24px;
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.2s ease;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings-button:hover {
-  background-color: color-mix(in srgb, var(--md-secondary-container), var(--md-on-secondary-container) 10%);
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
+}
+
+.advanced-settings-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings-button svg {
@@ -153,11 +170,13 @@
 @keyframes modal-appear {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
