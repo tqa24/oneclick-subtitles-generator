@@ -631,7 +631,7 @@ const SubtitleSettings = ({
           {showNarrationMenu && (
             <div
               className="subtitle-settings-panel narration-panel"
-              style={{ position: 'absolute', right: '0', top: 'calc(100% + 10px)', width: '300px', zIndex: 9999 }}
+              style={{ position: 'absolute', right: '0', top: 'calc(100%)', right: '-10px', height: '505px', width: '320px', zIndex: 9999 }}
               onClick={(e) => e.stopPropagation()}
             >
             <div className="settings-header">
@@ -651,7 +651,7 @@ const SubtitleSettings = ({
 
             <div className="settings-content">
               {/* Narration Source Selection */}
-              <div className="setting-group">
+              <div className="setting-group subtitle-language-group">
                 <label>{t('narration.narrationSource', 'Source')}</label>
                 <div className="radio-pill-group">
                   <div className="radio-pill">
@@ -722,17 +722,21 @@ const SubtitleSettings = ({
               {/* Volume Controls */}
               <div className="setting-group">
                 <label className={hasAnyNarrations ? '' : 'disabled'}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  </svg>
-                  {t('narration.narrationVolume', 'Narration Volume')}
-                  {currentNarration && (
-                    <span className="narration-status-indicator">
-                      <span className="status-dot"></span>
-                      {t('narration.playing', 'Playing')}
+                  <span className="icon-label-container">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    </svg>
+                    <span>
+                      {t('narration.narrationVolume', 'Narration Volume')}
+                      {currentNarration && (
+                        <span className="narration-status-indicator">
+                          <span className="status-dot"></span>
+                          {t('narration.playing', 'Playing')}
+                        </span>
+                      )}
                     </span>
-                  )}
+                  </span>
                 </label>
                 <div className="slider-with-value">
                   <div className={`custom-slider-container ${!hasAnyNarrations ? 'disabled' : ''}`}>
@@ -772,12 +776,14 @@ const SubtitleSettings = ({
 
               <div className="setting-group">
                 <label>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                  </svg>
-                  {t('narration.videoVolume', 'Video Audio Volume')}
+                  <span className="icon-label-container">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <span>{t('narration.videoVolume', 'Video Audio Volume')}</span>
+                  </span>
                 </label>
                 <div className="slider-with-value">
                   <div className="custom-slider-container">
@@ -1202,14 +1208,19 @@ const SubtitleSettings = ({
             </div>
 
             <div className="setting-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={settings.textShadow === 'true' || settings.textShadow === true}
-                  onChange={(e) => handleSettingChange('textShadow', e.target.checked)}
-                />
-                <span>{t('subtitleSettings.textShadow', 'Text Shadow')}</span>
-              </label>
+              <label>{t('subtitleSettings.textShadow', 'Text Shadow')}</label>
+              <div className="toggle-switch-container">
+                <label className="toggle-switch" htmlFor="text-shadow">
+                  <input
+                    type="checkbox"
+                    id="text-shadow"
+                    checked={settings.textShadow === 'true' || settings.textShadow === true}
+                    onChange={(e) => handleSettingChange('textShadow', e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+                <span className="toggle-label">{settings.textShadow === 'true' || settings.textShadow === true ? t('common.on', 'On') : t('common.off', 'Off')}</span>
+              </div>
             </div>
 
             <button

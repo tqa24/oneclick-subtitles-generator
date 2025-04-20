@@ -36,7 +36,7 @@ const ModelDropdown = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
-      id: 'gemini-2.5-flash',
+      id: 'gemini-2.5-flash-preview-04-17',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
       description: t('models.smarterFaster', 'Smarter & faster'),
       icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,

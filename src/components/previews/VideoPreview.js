@@ -716,33 +716,31 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         ) : (
           videoUrl ? (
             <div className="native-video-container">
-              {/* Video quality toggle - always show when video is available */}
-              <div className="video-quality-toggle" title={!optimizedVideoUrl ? t('preview.noOptimizedVersion', 'No optimized version available. Process the video with optimization enabled to create one.') : t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
-                <label className="toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={useOptimizedPreview}
-                    onChange={(e) => {
-                      const newValue = e.target.checked;
-                      setUseOptimizedPreview(newValue);
-                      localStorage.setItem('use_optimized_preview', newValue.toString());
-                    }}
-                    disabled={!optimizedVideoUrl}
-                  />
-                  <span className={`toggle-slider ${!optimizedVideoUrl ? 'disabled' : ''}`}></span>
-                </label>
-                <span className="toggle-label">
-                  {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
-                  {!optimizedVideoUrl && (
-                    <span className="toggle-unavailable"> ({t('preview.unavailable', 'unavailable')})</span>
-                  )}
-                </span>
-                {useOptimizedPreview && optimizedVideoInfo && (
-                  <span className="quality-info">
-                    {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
+              {/* Video quality toggle - only show when optimized video is available */}
+              {optimizedVideoUrl && (
+                <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={useOptimizedPreview}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+                        setUseOptimizedPreview(newValue);
+                        localStorage.setItem('use_optimized_preview', newValue.toString());
+                      }}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
                   </span>
-                )}
-              </div>
+                  {useOptimizedPreview && optimizedVideoInfo && (
+                    <span className="quality-info">
+                      {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
+                    </span>
+                  )}
+                </div>
+              )}
               <video
                 ref={videoRef}
                 controls
