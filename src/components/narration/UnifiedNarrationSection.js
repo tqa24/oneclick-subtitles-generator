@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  checkNarrationStatus,
+  checkNarrationStatusWithRetry,
   getAudioUrl
 } from '../../services/narrationService';
 import NarrationAdvancedSettings from './NarrationAdvancedSettings'; // Redesigned component
@@ -95,13 +95,14 @@ const UnifiedNarrationSection = ({
   const statusRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Check if narration service is available
+  // Check if narration service is available with multiple attempts
   useEffect(() => {
     const checkAvailability = async () => {
       try {
-        console.log('Checking narration service availability');
-        const status = await checkNarrationStatus();
-        console.log('Narration service status:', status);
+        console.log('Checking narration service availability with multiple attempts');
+        // Use 20 attempts with 5-second intervals
+        const status = await checkNarrationStatusWithRetry(20, 5000);
+        console.log('Final narration service status:', status);
 
         // Set availability based on the actual status
         setIsAvailable(status.available);
@@ -116,7 +117,7 @@ const UnifiedNarrationSection = ({
       } catch (error) {
         // Service is not available if there's an error
         setIsAvailable(false);
-        setError("Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh");
+        setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
       }
     };
 
@@ -290,7 +291,7 @@ const UnifiedNarrationSection = ({
             </svg>
           </div>
           <div className="message">
-            {error || "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh"}
+            {error || t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.")}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  checkNarrationStatus,
+  checkNarrationStatusWithRetry,
   uploadReferenceAudio,
   saveRecordedAudio,
   extractAudioSegment,
@@ -32,24 +32,30 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
 
-  // Check if narration service is available
+  // Check if narration service is available with multiple attempts
   useEffect(() => {
     const checkAvailability = async () => {
       try {
-        console.log('Checking narration service availability');
-        const status = await checkNarrationStatus();
-        console.log('Narration service status:', status);
+        console.log('Checking narration service availability with multiple attempts');
+        // Use 20 attempts with 5-second intervals
+        const status = await checkNarrationStatusWithRetry(20, 5000);
+        console.log('Final narration service status:', status);
 
-        // Always set service as available since we have direct implementations
-        setIsServiceAvailable(true);
+        // Set availability based on the actual status
+        setIsServiceAvailable(status.available);
 
-        // Clear any previous errors
-        setError('');
+        // Set error message if service is not available
+        if (!status.available && status.message) {
+          setError(status.message);
+        } else {
+          // Clear any previous errors
+          setError('');
+        }
       } catch (error) {
         console.error('Error checking narration status:', error);
-        // Still set service as available even if there's an error
-        setIsServiceAvailable(true);
-        setError('');
+        // Service is not available if there's an error
+        setIsServiceAvailable(false);
+        setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
       }
     };
 
