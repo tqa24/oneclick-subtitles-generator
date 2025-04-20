@@ -66,7 +66,31 @@ const AdvancedSettingsModal = ({
           />
         </div>
         <div className="advanced-settings-modal-footer">
-          <button className="pill-button primary" onClick={onClose}>
+          <button
+            className="pill-button primary"
+            onClick={onClose}
+            style={{
+              backgroundColor: 'rgba(var(--md-primary-rgb), 0.1)',
+              color: 'var(--md-primary)',
+              border: '1px solid rgba(var(--md-primary-rgb), 0.2)',
+              boxShadow: 'var(--md-elevation-level1)',
+              transition: 'all var(--md-duration-medium2) var(--md-easing-standard)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--md-primary-container)';
+              e.currentTarget.style.color = 'var(--md-on-primary-container)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = 'var(--md-elevation-level2)';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(var(--md-primary-rgb), 0.1)';
+              e.currentTarget.style.color = 'var(--md-primary)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'var(--md-elevation-level1)';
+              e.currentTarget.style.borderColor = 'rgba(var(--md-primary-rgb), 0.2)';
+            }}
+          >
             {t('common.done', 'Done')}
           </button>
         </div>

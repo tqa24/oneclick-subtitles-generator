@@ -224,9 +224,22 @@
   transition: background-color 0.2s ease;
 }
 
+/* Dark mode specific styling for enable-api-link */
+[data-theme="dark"] .enable-api-link {
+  background-color: var(--md-primary-container, #1f1f1f);
+  color: var(--md-on-primary-container, #d7e3ff) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .enable-api-link:hover {
   background-color: var(--primary-dark-color, #3367d6);
   text-decoration: none !important;
+}
+
+[data-theme="dark"] .enable-api-link:hover {
+  background-color: var(--md-primary, #6750a4);
+  color: var(--md-on-primary, #ffffff) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
 .api-warning {

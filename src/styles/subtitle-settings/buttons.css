@@ -13,33 +13,38 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  border: none;
+  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
   border-radius: var(--md-shape-pill); /* Pill shape */
-  background-color: var(--md-surface-2);
-  color: var(--text-primary);
+  background-color: rgba(var(--md-surface-variant-rgb), 0.5);
+  color: var(--md-on-surface-variant);
   font-size: var(--md-label-large-size, 0.9rem);
   font-weight: var(--md-label-large-weight, 500);
   letter-spacing: 0.1px;
   cursor: pointer;
-  transition: background-color 0.2s var(--md-easing-standard),
-              transform 0.1s var(--md-easing-standard),
-              box-shadow 0.2s var(--md-easing-standard);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
 }
 
 .action-button:hover:not(:disabled) {
-  background-color: var(--md-surface-3);
+  background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+  border-color: transparent;
 }
 
 .action-button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
 }
 
 .action-button:disabled {
   opacity: 0.38; /* Material Design disabled state opacity */
   cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  transform: none;
+  box-shadow: none;
+  border-color: var(--md-outline-variant);
 }
 
 .action-button svg {
@@ -47,36 +52,60 @@
   stroke-width: 2px;
 }
 
-/* Material Design filled tonal button styles */
+/* Material Design filled tonal button styles with softer colors */
 .subtitle-settings-toggle.md-filled-tonal-button {
-  background-color: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
+  border: 1px solid rgba(var(--md-secondary-rgb), 0.3);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .subtitle-settings-toggle.md-filled-tonal-button:hover {
-  background-color: color-mix(in srgb, var(--md-secondary-container), rgba(0, 0, 0, var(--md-state-hover-opacity)));
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
+}
+
+.subtitle-settings-toggle.md-filled-tonal-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .subtitle-settings-toggle.md-filled-tonal-button.active {
-  background-color: var(--md-secondary);
-  color: var(--md-on-secondary);
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
   box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
 }
 
-/* Narration settings button styles */
+/* Narration settings button styles with softer colors */
 .narration-settings-toggle.md-filled-tonal-button {
-  background-color: var(--md-tertiary-container);
-  color: var(--md-on-tertiary-container);
+  color: var(--md-tertiary);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .narration-settings-toggle.md-filled-tonal-button:hover {
-  background-color: color-mix(in srgb, var(--md-tertiary-container), rgba(0, 0, 0, var(--md-state-hover-opacity)));
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
+}
+
+.narration-settings-toggle.md-filled-tonal-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .narration-settings-toggle.md-filled-tonal-button.active {
-  background-color: var(--md-tertiary);
-  color: var(--md-on-tertiary);
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
   box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
 }
 
 /* Header buttons */

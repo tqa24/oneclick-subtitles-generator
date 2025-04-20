@@ -6,27 +6,17 @@
   display: inline-block;
 }
 
-/* Narration settings toggle button */
+/* Narration settings toggle button - Base styles only */
+/* Specific colors and borders are handled in buttons.css */
 .narration-settings-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
   border-radius: var(--md-shape-pill);
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  border: none;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.2s ease;
-  box-shadow: var(--md-elevation-level1);
-}
-
-.narration-settings-toggle:hover {
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
-  box-shadow: var(--md-elevation-level2);
 }
 
 /* Active state styling is handled by the buttons.css file */

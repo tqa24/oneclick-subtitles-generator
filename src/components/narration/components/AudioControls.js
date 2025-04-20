@@ -30,7 +30,7 @@ const AudioControls = ({
   return (
     <div className="narration-row audio-controls-row">
       <div className="row-label">
-        <label>{t('narration.audioControls', 'Audio Controls')}:</label>
+        <label>{t('narration.audioControls', 'Âm thanh tham chiếu')}:</label>
       </div>
       <div className="row-content">
         <div className="audio-controls-container">

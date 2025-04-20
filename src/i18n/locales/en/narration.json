@@ -3,6 +3,7 @@
   "description": "Generate spoken audio from your subtitles using the reference voice.",
   "referenceAudio": "Reference Audio",
   "referenceText": "Reference Text",
+  "audioControls": "Audio Controls",
   "referenceTextPlaceholder": "Enter text that matches the reference audio...",
   "clearReference": "Clear reference audio",
   "audioNotSupported": "Your browser does not support the audio element.",

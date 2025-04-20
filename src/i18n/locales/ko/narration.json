@@ -3,6 +3,7 @@
   "description": "레퍼런스 음성을 사용하여 자막에서 음성 오디오를 생성합니다.",
   "referenceAudio": "레퍼런스 오디오",
   "referenceText": "레퍼런스 텍스트",
+  "audioControls": "오디오 컨트롤",
   "referenceTextPlaceholder": "레퍼런스 오디오와 일치하는 텍스트를 입력하세요...",
   "clearReference": "레퍼런스 오디오 지우기",
   "audioNotSupported": "브라우저가 오디오 요소를 지원하지 않습니다.",

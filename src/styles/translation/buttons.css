@@ -15,37 +15,51 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
   white-space: nowrap;
-}
-
-.translate-button {
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
+  box-shadow: var(--md-elevation-level1);
   border: none;
 }
 
+.translate-button {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
 .translate-button:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .translate-button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
-.translate-button:disabled {
-  opacity: 0.7;
+.translate-button:disabled,
+.download-translation-button:disabled,
+.reset-translation-button:disabled,
+.download-process-button:disabled,
+.cancel-translation-button:disabled {
+  opacity: 0.38;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Format button style */
 .translate-button.format-button {
-  background-color: var(--md-tertiary);
-  color: var(--md-on-tertiary);
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
 }
 
 .translate-button.format-button:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--md-tertiary), black 10%);
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .translation-actions {
@@ -63,66 +77,87 @@
 }
 
 .download-translation-button {
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  border: none;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
 }
 
 .download-translation-button:hover {
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .download-translation-button.json {
-  background-color: var(--md-tertiary-container, #e8def8);
-  color: var(--md-on-tertiary-container, #1d192b);
+  background-color: rgba(var(--md-tertiary-rgb), 0.1);
+  color: var(--md-tertiary);
 }
 
 .download-translation-button.txt {
-  background-color: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
 }
 
 .download-translation-button.json:hover {
-  background-color: var(--md-tertiary, #6750a4);
-  color: var(--md-on-tertiary, #ffffff);
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.download-translation-button.txt:hover {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .reset-translation-button {
-  background-color: var(--md-surface-2);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: none;
 }
 
 .reset-translation-button:hover {
-  background-color: var(--md-surface-3);
+  background-color: var(--md-surface-2);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .cancel-translation-button {
-  background-color: var(--md-error);
-  color: var(--md-on-error);
-  border: none;
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
   margin-left: 0.75rem;
 }
 
 .cancel-translation-button:hover {
-  background-color: color-mix(in srgb, var(--md-error), black 10%);
+  background-color: var(--md-error);
+  color: var(--md-on-error);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .cancel-translation-button:active {
-  transform: scale(0.98);
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .download-process-button {
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
-  border: none;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
 }
 
 .download-process-button:hover {
-  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level2);
+}
+
+.download-process-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .loading-spinner {
