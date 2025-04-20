@@ -1,0 +1,19 @@
+{
+  "title": "Background Image Generator",
+  "lyrics": "Lyrics",
+  "lyricsPlaceholder": "Enter lyrics here...",
+  "songName": "Song Name",
+  "songNamePlaceholder": "Enter song name (optional)",
+  "albumArt": "Album Art",
+  "noAlbumArt": "No album art",
+  "uploadAlbumArt": "Upload Album Art",
+  "prompt": "Generated Prompt",
+  "promptPlaceholder": "Generated prompt will appear here...",
+  "generatePrompt": "Generate Prompt",
+  "generatingPrompt": "Generating...",
+  "generatedImage": "Generated Image",
+  "noGeneratedImage": "No image generated yet",
+  "generateImage": "Generate Image",
+  "generatingImage": "Generating...",
+  "downloadImage": "Download"
+}

@@ -293,7 +293,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
 
   // Handle save button click
-  const handleSave = () => {
+  const handleSave = async () => {
     // Save settings to localStorage
     localStorage.setItem('segment_duration', segmentDuration.toString());
     localStorage.setItem('gemini_model', geminiModel);
@@ -309,6 +309,39 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
+    localStorage.setItem('gemini_api_key', geminiApiKey);
+    localStorage.setItem('youtube_api_key', youtubeApiKey);
+
+    // Save localStorage data to server
+    try {
+      // Collect all localStorage data
+      const localStorageData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        localStorageData[key] = localStorage.getItem(key);
+      }
+
+      // Add specific keys for the server
+      localStorageData.gemini_token = geminiApiKey;
+      localStorageData.genius_token = geniusApiKey;
+
+      // Send to server
+      const response = await fetch('http://127.0.0.1:3007/api/save-local-storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(localStorageData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings to server');
+      }
+
+      console.log('Settings saved to server successfully');
+    } catch (error) {
+      console.error('Error saving settings to server:', error);
+    }
 
     // Notify parent component about API keys, segment duration, model, time format, and video optimization settings
     onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview);

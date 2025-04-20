@@ -28,7 +28,8 @@ const ButtonsContainer = ({
   selectedVideo,
   uploadedFile,
   isSrtOnlyMode,
-  t
+  t,
+  onGenerateBackground
 }) => {
   return (
     <div className="buttons-container">
@@ -43,6 +44,7 @@ const ButtonsContainer = ({
         hasSubtitles={userProvidedSubtitles.trim() !== ''}
         subtitlesText={userProvidedSubtitles}
         disabled={isGenerating || isDownloading}
+        onGenerateBackground={onGenerateBackground}
       />
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}

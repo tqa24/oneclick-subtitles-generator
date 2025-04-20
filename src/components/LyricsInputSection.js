@@ -31,8 +31,8 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
       const result = await fetchLyrics(artist, song, false);
 
       if (result && result.lyrics) {
-        // Pass only the lyrics to the parent component
-        onLyricsReceived(result.lyrics);
+        // Pass the lyrics, album art, and song name to the parent component
+        onLyricsReceived(result.lyrics, result.albumArtUrl || '', song);
       }
     } catch (err) {
       console.error('Error fetching lyrics:', err);

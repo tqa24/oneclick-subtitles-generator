@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiMusic } from 'react-icons/fi';
+import { FiX, FiMusic, FiImage } from 'react-icons/fi';
 import '../styles/SubtitlesInputModal.css';
 import LyricsInputSection from './LyricsInputSection';
 
@@ -12,11 +12,14 @@ import LyricsInputSection from './LyricsInputSection';
  * @param {Function} props.onClose - Function called when modal is closed
  * @returns {JSX.Element} - Rendered component
  */
-const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
+const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBackground }) => {
   const { t } = useTranslation();
   const [text, setText] = useState(initialText);
   const textareaRef = useRef(null);
   const [showLyricsInput, setShowLyricsInput] = useState(false);
+  const [albumArt, setAlbumArt] = useState('');
+  const [showBackgroundPrompt, setShowBackgroundPrompt] = useState(false);
+  const [songName, setSongName] = useState('');
 
 
 
@@ -36,8 +39,11 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
   };
 
   // Handle receiving lyrics from the LyricsInputSection component
-  const handleLyricsReceived = (lyrics) => {
+  const handleLyricsReceived = (lyrics, albumArtUrl, songTitle) => {
     setText(lyrics);
+    setAlbumArt(albumArtUrl);
+    setSongName(songTitle || '');
+    setShowBackgroundPrompt(true);
   };
 
 
@@ -95,6 +101,16 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose }) => {
           )}
 
 
+
+          {showBackgroundPrompt && albumArt && (
+            <div className="background-prompt-message" onClick={() => {
+              onSave(text);
+              onGenerateBackground(text, albumArt, songName);
+            }}>
+              <FiImage />
+              <span>{t('subtitlesInput.generateBackground', 'Do you want to generate background image inspired from this album art and lyrics?')}</span>
+            </div>
+          )}
 
           <textarea
             ref={textareaRef}
