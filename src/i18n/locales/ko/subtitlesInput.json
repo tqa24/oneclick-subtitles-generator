@@ -11,5 +11,15 @@
   "save": "자막 저장",
   "addSubtitles": "자막 추가",
   "editSubtitles": "제공된 자막 편집",
-  "subtitlesAdded": "자막 추가됨"
+  "subtitlesAdded": "자막 추가됨",
+  "generateBackground": "이 앨범 아트와 가사에서 영감을 받은 배경 이미지를 생성하시겠습니까?",
+  "lyricsToggle": "가사 검색 전환",
+  "fetchLyrics": "노래 가사 가져오기",
+  "artist": "아티스트:",
+  "artistPlaceholder": "아티스트 이름 입력",
+  "song": "노래:",
+  "songPlaceholder": "노래 제목 입력",
+  "fetch": "가져오기",
+  "fetching": "가져오는 중...",
+  "cleaning": "가사 정리 중..."
 }

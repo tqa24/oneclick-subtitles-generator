@@ -73,17 +73,19 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
         </div>
 
         <div className="subtitles-input-modal-content">
-          <p className="explanation">
-            {t('subtitlesInput.explanation',
-              'Paste your subtitles here without timings. When you generate subtitles, the system will focus on matching these texts with the audio and creating accurate timings. Each line will be treated as a separate subtitle.')}
-          </p>
+          <div className="explanation-example-container">
+            <div className="explanation">
+              {t('subtitlesInput.explanation',
+                'Paste your subtitles here without timings. When you generate subtitles, the system will focus on matching these texts with the audio and creating accurate timings. Each line will be treated as a separate subtitle.')}
+            </div>
 
-          <div className="example">
-            <h3>{t('subtitlesInput.exampleTitle', 'Example:')}</h3>
-            <pre>
-              {t('subtitlesInput.example',
-                'Hello, welcome to our tutorial.\nToday we will learn about machine learning.\nLet\'s get started!')}
-            </pre>
+            <div className="example">
+              <h3>{t('subtitlesInput.exampleTitle', 'Example:')}</h3>
+              <pre>
+                {t('subtitlesInput.example',
+                  'Hello, welcome to our tutorial.\nToday we will learn about machine learning.\nLet\'s get started!')}
+              </pre>
+            </div>
           </div>
 
           <div className="lyrics-autofill-toggle">

@@ -17,6 +17,7 @@ import translation from './translation.json';
 import models from './models.json';
 import promptEditor from './promptEditor.json';
 import narration from './narration.json';
+import backgroundGenerator from './backgroundGenerator.json';
 import onboarding from './onboarding.json';
 import qualitySelector from './qualitySelector.json';
 import preview from './preview.json';
@@ -57,7 +58,8 @@ const vi = {
   fileUpload,
   subtitlesInput,
   segmentRetry,
-  narration
+  narration,
+  backgroundGenerator
 };
 
 export default vi;

@@ -375,19 +375,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     onClose();
   };
 
-  // State to delay rendering of sensitive fields
-  const [renderSensitiveFields, setRenderSensitiveFields] = useState(false);
-
-  // Use effect to delay rendering of sensitive fields
-  useEffect(() => {
-    // Delay rendering of sensitive fields to prevent autofill
-    const timer = setTimeout(() => {
-      setRenderSensitiveFields(true);
-    }, 300); // Longer delay to ensure browser doesn't try to autofill
-
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="settings-modal-overlay">
       <div className="settings-modal" noValidate data-no-autofill>
@@ -452,43 +439,34 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         <div className="settings-content">
           {/* API Keys Tab Content */}
           <div className={`settings-tab-content ${activeTab === 'api-keys' ? 'active' : ''}`}>
-            {/* Only render API keys tab after delay to prevent autofill */}
-            {(renderSensitiveFields || activeTab !== 'api-keys') && (
-              <ApiKeysTab
-                geminiApiKey={geminiApiKey}
-                setGeminiApiKey={setGeminiApiKey}
-                youtubeApiKey={youtubeApiKey}
-                setYoutubeApiKey={setYoutubeApiKey}
-                geniusApiKey={geniusApiKey}
-                setGeniusApiKey={setGeniusApiKey}
-                showGeminiKey={showGeminiKey}
-                setShowGeminiKey={setShowGeminiKey}
-                showYoutubeKey={showYoutubeKey}
-                setShowYoutubeKey={setShowYoutubeKey}
-                showGeniusKey={showGeniusKey}
-                setShowGeniusKey={setShowGeniusKey}
-                useOAuth={useOAuth}
-                setUseOAuth={setUseOAuth}
-                youtubeClientId={youtubeClientId}
-                setYoutubeClientId={setYoutubeClientId}
-                youtubeClientSecret={youtubeClientSecret}
-                setYoutubeClientSecret={setYoutubeClientSecret}
-                showClientId={showClientId}
-                setShowClientId={setShowClientId}
-                showClientSecret={showClientSecret}
-                setShowClientSecret={setShowClientSecret}
-                isAuthenticated={isAuthenticated}
-                setIsAuthenticated={setIsAuthenticated}
-                apiKeysSet={apiKeysSet}
-                setApiKeysSet={setApiKeysSet}
-              />
-            )}
-            {!renderSensitiveFields && activeTab === 'api-keys' && (
-              <div className="loading-placeholder">
-                <div className="loading-spinner"></div>
-                <p>Loading settings...</p>
-              </div>
-            )}
+            <ApiKeysTab
+              geminiApiKey={geminiApiKey}
+              setGeminiApiKey={setGeminiApiKey}
+              youtubeApiKey={youtubeApiKey}
+              setYoutubeApiKey={setYoutubeApiKey}
+              geniusApiKey={geniusApiKey}
+              setGeniusApiKey={setGeniusApiKey}
+              showGeminiKey={showGeminiKey}
+              setShowGeminiKey={setShowGeminiKey}
+              showYoutubeKey={showYoutubeKey}
+              setShowYoutubeKey={setShowYoutubeKey}
+              showGeniusKey={showGeniusKey}
+              setShowGeniusKey={setShowGeniusKey}
+              useOAuth={useOAuth}
+              setUseOAuth={setUseOAuth}
+              youtubeClientId={youtubeClientId}
+              setYoutubeClientId={setYoutubeClientId}
+              youtubeClientSecret={youtubeClientSecret}
+              setYoutubeClientSecret={setYoutubeClientSecret}
+              showClientId={showClientId}
+              setShowClientId={setShowClientId}
+              showClientSecret={showClientSecret}
+              setShowClientSecret={setShowClientSecret}
+              isAuthenticated={isAuthenticated}
+              setIsAuthenticated={setIsAuthenticated}
+              apiKeysSet={apiKeysSet}
+              setApiKeysSet={setApiKeysSet}
+            />
           </div>
 
           {/* Video Processing Tab Content */}

@@ -11,5 +11,15 @@
   "save": "Lưu Phụ Đề",
   "addSubtitles": "Thêm phụ đề",
   "editSubtitles": "Chỉnh sửa phụ đề đã cung cấp",
-  "subtitlesAdded": "Đã thêm phụ đề"
+  "subtitlesAdded": "Đã thêm phụ đề",
+  "generateBackground": "Bạn có muốn tạo hình nền được lấy cảm hứng từ ảnh bìa album và lời bài hát này không?",
+  "lyricsToggle": "Chuyển đổi tìm kiếm lời bài hát",
+  "fetchLyrics": "Lấy lời bài hát",
+  "artist": "Nghệ sĩ:",
+  "artistPlaceholder": "Nhập tên nghệ sĩ",
+  "song": "Bài hát:",
+  "songPlaceholder": "Nhập tên bài hát",
+  "fetch": "Lấy",
+  "fetching": "Đang lấy...",
+  "cleaning": "Đang làm sạch lời bài hát..."
 }
