@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import '../styles/BackgroundImageGenerator.css';
+import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
 
 /**
  * Component for generating background images based on lyrics and album art
@@ -624,7 +625,10 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   return (
     <div className={`background-generator-container ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="background-generator-header">
-        <h2>{t('backgroundGenerator.title', 'Background Image Generator')}</h2>
+        <div className="header-left">
+          <h2>{t('backgroundGenerator.title', 'Background Image Generator')}</h2>
+          <BackgroundPromptEditorButton />
+        </div>
         <button
           className="collapse-button"
           onClick={() => {

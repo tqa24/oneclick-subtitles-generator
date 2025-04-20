@@ -312,7 +312,6 @@
   border: 1px solid var(--md-outline-variant);
   /* Ensure it's clickable */
   position: relative;
-  z-index: 2;
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 16px; /* Match the padding in BackgroundImageGenerator */

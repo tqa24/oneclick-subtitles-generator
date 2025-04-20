@@ -311,7 +311,30 @@ const generateImage = async (req, res) => {
   }
 };
 
+/**
+ * Get the current prompts used for image generation
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+const getPrompts = (req, res) => {
+  try {
+    // Return the current prompts
+    res.json({
+      promptOne: `song title: \${songName || 'Unknown Song'}
+
+\${lyrics}
+
+generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`,
+      promptTwo: `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`
+    });
+  } catch (error) {
+    console.error('Error getting prompts:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   generatePrompt,
-  generateImage
+  generateImage,
+  getPrompts
 };

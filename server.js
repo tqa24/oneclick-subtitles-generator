@@ -22,6 +22,7 @@ const cacheRoutes = require('./server/routes/cacheRoutes');
 const updateRoutes = require('./server/routes/updateRoutes');
 const lyricsRoutes = require('./server/routes/lyricsRoutes');
 const geminiImageRoutes = require('./server/routes/geminiImageRoutes');
+const settingsRoutes = require('./server/routes/settingsRoutes');
 
 // Initialize Express app
 const app = express();
@@ -292,6 +293,7 @@ app.use('/api', subtitleRoutes);
 app.use('/api', cacheRoutes);
 app.use('/api', updateRoutes);
 app.use('/api', lyricsRoutes);
+app.use('/api', settingsRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 
 // Direct route for narration service status
