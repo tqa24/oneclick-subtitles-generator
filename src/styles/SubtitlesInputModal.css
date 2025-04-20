@@ -201,7 +201,7 @@
 /* When album art is present, change to a 3-line layout */
 .lyrics-input-section:has(.album-art-container) .lyrics-input-fields {
   flex-direction: column;
-  width: calc(100% - 170px); /* Leave space for album art */
+  width: calc(100% - 210px); /* Leave space for album art */
   float: left;
 }
 

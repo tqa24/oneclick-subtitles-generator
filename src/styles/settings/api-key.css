@@ -121,6 +121,7 @@
   background-color: var(--background-secondary);
   border-radius: 6px;
   transition: background-color var(--transition-speed);
+  border-bottom: 1px solid var(--border-color);;
 }
 
 .api-key-instructions h4 {
