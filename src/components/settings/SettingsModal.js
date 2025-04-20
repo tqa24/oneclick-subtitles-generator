@@ -56,7 +56,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash'); // Default to Gemini 2.5 Flash
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-preview-04-17'); // Default to Gemini 2.5 Flash
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
@@ -101,7 +101,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.5-flash',
+    videoAnalysisModel: 'gemini-2.5-flash-preview-04-17',
     videoAnalysisTimeout: '20',
     optimizeVideos: true,
     optimizedResolution: '360p',
