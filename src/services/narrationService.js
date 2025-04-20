@@ -74,7 +74,83 @@ const blobToBase64 = (blob) => {
 console.log('Narration service using API_BASE_URL:', API_BASE_URL);
 
 /**
- * Check if the narration service is available
+ * Check if the narration service is available with multiple attempts
+ * @param {number} maxAttempts - Maximum number of attempts
+ * @param {number} delayMs - Delay between attempts in milliseconds
+ * @returns {Promise<Object>} - Status response
+ */
+export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 5000) => {
+  console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}/${maxAttempts} to check narration service status`);
+
+      const response = await fetch(`${API_BASE_URL}/narration/status`);
+
+      if (!response.ok) {
+        console.log(`Server returned ${response.status} on attempt ${attempt}/${maxAttempts}`);
+        if (attempt < maxAttempts) {
+          console.log(`Waiting ${delayMs}ms before next attempt...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          continue;
+        }
+
+        // Using hardcoded Vietnamese message here because i18n context is not available in this service
+        // This message matches the translation key 'serviceUnavailableMessage'
+        return {
+          available: false,
+          error: `Server returned ${response.status}`,
+          message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        };
+      }
+
+      const data = await response.json();
+
+      if (data.available) {
+        console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}!`);
+        return data;
+      }
+
+      console.log(`Service responded but not available on attempt ${attempt}/${maxAttempts}`);
+
+      if (attempt < maxAttempts) {
+        console.log(`Waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        // Using hardcoded Vietnamese message here because i18n context is not available in this service
+        // This message matches the translation key 'serviceUnavailableMessage'
+        data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
+        return data;
+      }
+    } catch (error) {
+      console.log(`Error checking narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
+
+      if (attempt < maxAttempts) {
+        console.log(`Waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        // Using hardcoded Vietnamese message here because i18n context is not available in this service
+        // This message matches the translation key 'serviceUnavailableMessage'
+        return {
+          available: false,
+          error: error.message,
+          message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        };
+      }
+    }
+  }
+
+  // If we get here, all attempts failed
+  return {
+    available: false,
+    error: "All attempts to check narration service failed",
+    message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+  };
+};
+
+/**
+ * Check if the narration service is available (simple version without retries)
  * @returns {Promise<Object>} - Status response
  */
 export const checkNarrationStatus = async () => {
@@ -82,23 +158,29 @@ export const checkNarrationStatus = async () => {
     const response = await fetch(`${API_BASE_URL}/narration/status`);
 
     if (!response.ok) {
+      // Using hardcoded Vietnamese message here because i18n context is not available in this service
+      // This message matches the translation key 'serviceUnavailableMessage'
       return {
         available: false,
         error: `Server returned ${response.status}`,
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh"
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
       };
     }
 
     const data = await response.json();
     if (!data.available) {
-      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh";
+      // Using hardcoded Vietnamese message here because i18n context is not available in this service
+      // This message matches the translation key 'serviceUnavailableMessage'
+      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
     }
     return data;
   } catch (error) {
+    // Using hardcoded Vietnamese message here because i18n context is not available in this service
+    // This message matches the translation key 'serviceUnavailableMessage'
     return {
       available: false,
       error: error.message,
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh"
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
     };
   }
 };
@@ -300,6 +382,8 @@ export const generateNarration = async (
     await clearNarrationOutput();
 
     // Initial progress message for waking up the server - only on first run
+    // Using hardcoded Vietnamese messages here because i18n context is not available in this service
+    // These messages match the translation keys 'initializingService' and 'preparingNarration'
     if (!narrationServiceInitialized) {
       onProgress("Đang đánh thức server thuyết minh cho lần đầu chạy...");
     } else {

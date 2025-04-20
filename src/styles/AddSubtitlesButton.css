@@ -61,7 +61,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: var(--md-tertiary);

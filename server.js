@@ -310,8 +310,8 @@ app.post('/api/narration/clear-output', (req, res) => {
 // Direct route for narration service status
 app.get('/api/narration/status', async (req, res) => {
   // Check the narration service with multiple attempts
-  // For the status endpoint, use fewer attempts with shorter delays to be responsive
-  const serviceStatus = await checkNarrationService(3, 1000);
+  // Use 20 attempts with 5-second intervals for consistency
+  const serviceStatus = await checkNarrationService(20, 5000);
 
   // Store the status for other parts of the application
   req.app.set('narrationServiceRunning', serviceStatus.available);
@@ -707,9 +707,9 @@ app.use('/api/narration', async (req, res, next) => {
   // We now handle record-reference and upload-reference in their own routes above
 
   // Check if the narration service is available with multiple attempts
-  // For proxy middleware, use fewer attempts with shorter delays to be responsive
+  // Use 20 attempts with 5-second intervals for consistency
   console.log('Proxy checking narration service...');
-  const serviceStatus = await checkNarrationService(3, 1000);
+  const serviceStatus = await checkNarrationService(20, 5000);
   const serviceRunning = serviceStatus.available;
 
   if (!serviceRunning) {

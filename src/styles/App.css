@@ -91,7 +91,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   cursor: pointer;
   transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
               background-color var(--md-duration-medium2) var(--md-easing-standard),
@@ -136,7 +136,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   letter-spacing: 0.5px;
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);
@@ -268,7 +268,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   letter-spacing: 0.5px;
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);
