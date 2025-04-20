@@ -54,13 +54,34 @@ function startNarrationService() {
       console.log(`Created output audio directory at ${outputDir}`);
     }
 
-    // Check for CUDA support 
+    // Check for CUDA support
     try {
       console.log('Checking for CUDA support...');
-      const checkCudaCmd = `${UV_EXECUTABLE} run -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA device count: {torch.cuda.device_count() if torch.cuda.is_available() else 0}'); print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"`;
+      // Create a temporary Python script to check CUDA
+      const fs = require('fs');
+      const os = require('os');
+      const tempFile = path.join(os.tmpdir(), 'check_cuda.py');
+
+      const pythonCode = `
+import torch
+print(f'CUDA available: {torch.cuda.is_available()}')
+print(f'CUDA device count: {torch.cuda.device_count() if torch.cuda.is_available() else 0}')
+print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"}')
+`;
+
+      fs.writeFileSync(tempFile, pythonCode);
+
+      const checkCudaCmd = `${UV_EXECUTABLE} run ${tempFile}`;
       const cudaCheck = require('child_process').execSync(checkCudaCmd, { encoding: 'utf8' });
       console.log(`CUDA check results: ${cudaCheck.trim()}`);
-      
+
+      // Clean up the temporary file
+      try {
+        fs.unlinkSync(tempFile);
+      } catch (cleanupError) {
+        console.warn(`Warning: Unable to delete temporary file: ${cleanupError.message}`);
+      }
+
       // If CUDA is not available, print a warning
       if (!cudaCheck.includes('CUDA available: True')) {
         console.warn('WARNING: CUDA is not available. The narration service will run on CPU, which is much slower.');

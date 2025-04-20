@@ -296,86 +296,34 @@ app.use('/api', lyricsRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 
+// Endpoint to clear narration output files
+app.post('/api/narration/clear-output', (req, res) => {
+  try {
+    clearNarrationOutputFiles();
+    res.json({ success: true, message: 'Narration output files cleared successfully' });
+  } catch (error) {
+    console.error('Error clearing narration output files:', error);
+    res.status(500).json({ success: false, error: 'Failed to clear narration output files' });
+  }
+});
+
 // Direct route for narration service status
 app.get('/api/narration/status', async (req, res) => {
-  // Check if we've already checked for the narration service recently
-  const lastCheckTime = req.app.get('lastNarrationServiceCheck') || 0;
-  const now = Date.now();
-  const checkInterval = 30000; // 30 seconds - increased from 5s to reduce frequent checks
+  // Check the narration service with multiple attempts
+  // For the status endpoint, use fewer attempts with shorter delays to be responsive
+  const serviceStatus = await checkNarrationService(3, 1000);
 
-  // Only check for the actual service if we haven't checked recently
-  if (now - lastCheckTime > checkInterval) {
-    // Update the last check time
-    req.app.set('lastNarrationServiceCheck', now);
-
-    // Try to read the port from the file
-    let actualServiceRunning = false;
-    let actualPort = null;
-    let deviceInfo = null;
-
-    const portFilePath = path.join(__dirname, 'narration_port.txt');
-    if (fs.existsSync(portFilePath)) {
-      try {
-        const portFromFile = parseInt(fs.readFileSync(portFilePath, 'utf8').trim());
-        console.log(`Found narration port from file: ${portFromFile}`);
-
-        // Check if the service is running on this port
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 500);
-
-          const response = await fetch(`http://localhost:${portFromFile}/api/narration/status`, {
-            signal: controller.signal
-          });
-
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            const statusData = await response.json();
-            actualServiceRunning = statusData.available;
-            actualPort = portFromFile;
-            deviceInfo = statusData.device || 'cpu'; // Get device info from the actual service
-            console.log(`Actual narration service is running on port ${portFromFile}, device: ${deviceInfo}`);
-
-            // Update the stored values
-            req.app.set('narrationServiceDevice', deviceInfo);
-
-            if (statusData.gpu_info) {
-              console.log('GPU info:', JSON.stringify(statusData.gpu_info));
-              req.app.set('narrationServiceGpuInfo', statusData.gpu_info);
-            }
-          }
-        } catch (error) {
-          console.log(`Narration service not running on port ${portFromFile} from file`);
-        }
-      } catch (error) {
-        console.error(`Error reading port from file: ${error.message}`);
-      }
-    } else {
-      console.log('No narration_port.txt file found, will use direct implementation');
-    }
-
-    // Store the actual port in the app for use by the proxy middleware
-    if (actualPort) {
-      req.app.set('narrationActualPort', actualPort);
-      req.app.set('narrationServiceRunning', actualServiceRunning);
-    } else {
-      req.app.set('narrationServiceRunning', false);
-    }
-  }
-
-  // Get the stored values
-  const actualPort = req.app.get('narrationActualPort');
-  const actualServiceRunning = req.app.get('narrationServiceRunning') || false;
-  const deviceInfo = req.app.get('narrationServiceDevice') || 'cpu';
-  const gpuInfo = req.app.get('narrationServiceGpuInfo') || {};
+  // Store the status for other parts of the application
+  req.app.set('narrationServiceRunning', serviceStatus.available);
+  req.app.set('narrationServiceDevice', serviceStatus.device);
+  req.app.set('narrationServiceGpuInfo', serviceStatus.gpu_info);
 
   res.json({
-    available: true,
-    device: deviceInfo, // Use the actual device info from the service
-    source: actualServiceRunning ? 'actual' : 'direct',
-    actualPort: actualPort,
-    gpu_info: gpuInfo
+    available: serviceStatus.available,
+    device: serviceStatus.device,
+    source: serviceStatus.available ? 'actual' : 'none',
+    actualPort: NARRATION_PORT,
+    gpu_info: serviceStatus.gpu_info
   });
 });
 
@@ -384,6 +332,87 @@ const NARRATION_DIR = path.join(__dirname, 'narration');
 const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
 const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');
 const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
+
+// Function to check if the narration service is running with multiple attempts
+const checkNarrationService = async (maxAttempts = 20, delayMs = 5000) => {
+  console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
+  console.log(`This may take some time on first run as the Python server needs to initialize...`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`Attempt ${attempt}/${maxAttempts} to connect to narration service at http://localhost:${NARRATION_PORT}/api/narration/status`);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const response = await fetch(`http://localhost:${NARRATION_PORT}/api/narration/status`, {
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const statusData = await response.json();
+        if (statusData.available) {
+          console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}! Device: ${statusData.device}`);
+          return {
+            available: true,
+            device: statusData.device || 'cpu',
+            gpu_info: statusData.gpu_info || {}
+          };
+        }
+      }
+
+      // If we reach here, the service is not available yet
+      if (attempt < maxAttempts) {
+        console.log(`Narration service not available on attempt ${attempt}/${maxAttempts}, waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        console.log(`Error connecting to narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
+        console.log(`Waiting ${delayMs}ms before next attempt...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        console.log(`Failed to connect to narration service after ${maxAttempts} attempts: ${error.message}`);
+      }
+    }
+  }
+
+  console.log(`Narration service not available after ${maxAttempts} attempts`);
+  return { available: false, device: 'none', gpu_info: {} };
+};
+
+// Function to clear narration output files
+const clearNarrationOutputFiles = () => {
+  console.log('Clearing all narration output files for fresh generation');
+  if (fs.existsSync(OUTPUT_AUDIO_DIR)) {
+    const outputFiles = fs.readdirSync(OUTPUT_AUDIO_DIR);
+    let deletedCount = 0;
+
+    outputFiles.forEach(file => {
+      const filePath = path.join(OUTPUT_AUDIO_DIR, file);
+      try {
+        const stats = fs.statSync(filePath);
+        // Skip directories
+        if (stats.isDirectory()) {
+          console.log(`Skipping directory: ${filePath}`);
+          return;
+        }
+
+        // Delete the file
+        fs.unlinkSync(filePath);
+        deletedCount++;
+      } catch (error) {
+        console.error(`Error deleting file ${filePath}:`, error);
+      }
+    });
+
+    console.log(`Cleared ${deletedCount} narration output files`);
+  } else {
+    console.log('Narration output directory does not exist');
+  }
+};
 
 if (!fs.existsSync(NARRATION_DIR)) {
   fs.mkdirSync(NARRATION_DIR, { recursive: true });
@@ -409,8 +438,7 @@ if (!fs.existsSync(TEMP_AUDIO_DIR)) {
 const multer = require('multer');
 const upload = multer({ dest: REFERENCE_AUDIO_DIR });
 
-// Set up uuid for generating unique IDs
-const { v4: uuidv4 } = require('uuid');
+// No need for a global uuid import as we require it directly in the functions
 
 // Implementation of record-reference endpoint that forwards to Python narration service
 app.post('/api/narration/record-reference', (req, res) => {
@@ -432,8 +460,7 @@ app.post('/api/narration/record-reference', (req, res) => {
 
     try {
       // Generate a unique filename
-      const uuid = require('uuid');
-      const unique_id = uuid.v4();
+      const unique_id = require('uuid').v4();
       const filename = `recorded_${unique_id}.wav`;
       const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
@@ -443,15 +470,8 @@ app.post('/api/narration/record-reference', (req, res) => {
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';
 
-      // Get the cached narration service status
-      const serviceRunning = req.app.get('narrationServiceRunning') || false;
-      const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
-
-      console.log(`Using cached narration service status: running=${serviceRunning}, port=${actualPort}`);
-
-      // Skip forwarding to narration service for transcription
       // We're now handling transcription directly in the frontend
-      console.log('Using direct implementation for record-reference (transcription handled in frontend)');
+      console.log('Transcription is handled in frontend');
 
       // Return success response
       res.json({
@@ -488,8 +508,7 @@ app.post('/api/narration/upload-reference', (req, res) => {
 
     try {
       // Generate a unique filename
-      const uuid = require('uuid');
-      const unique_id = uuid.v4();
+      const unique_id = require('uuid').v4();
       const filename = `uploaded_${unique_id}.wav`;
       const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
@@ -499,15 +518,8 @@ app.post('/api/narration/upload-reference', (req, res) => {
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';
 
-      // Get the cached narration service status
-      const serviceRunning = req.app.get('narrationServiceRunning') || false;
-      const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
-
-      console.log(`Using cached narration service status: running=${serviceRunning}, port=${actualPort}`);
-
-      // Skip forwarding to narration service for transcription
       // We're now handling transcription directly in the frontend
-      console.log('Using direct implementation for upload-reference (transcription handled in frontend)');
+      console.log('Transcription is handled in frontend');
 
       // Return success response
       res.json({
@@ -528,6 +540,9 @@ app.post('/api/narration/upload-reference', (req, res) => {
 app.post('/api/narration/generate', async (req, res) => {
   console.log('Received generate request');
 
+  // Clear all existing narration output files for fresh generation
+  clearNarrationOutputFiles();
+
   try {
     const { reference_audio, reference_text, subtitles } = req.body;
 
@@ -535,36 +550,14 @@ app.post('/api/narration/generate', async (req, res) => {
     console.log(`Reference audio: ${reference_audio}`);
     console.log(`Reference text: ${reference_text}`);
 
-    // Get the cached narration service status
-    // Force serviceRunning to true to use the actual service
-    const serviceRunning = true;
-    const actualPort = req.app.get('narrationActualPort') || NARRATION_PORT;
+    // Check the narration service with multiple attempts
+    // For generation, use more attempts with longer delays to ensure we connect
+    console.log('Checking narration service before generating...');
+    const serviceStatus = await checkNarrationService(20, 5000);
+    const serviceRunning = serviceStatus.available;
+    const actualPort = NARRATION_PORT; // Always use the configured port
 
-    console.log(`Using narration service on port=${actualPort}`);
-
-    // If we don't have a cached status, check it now
-    if (serviceRunning === undefined) {
-      try {
-        // Try to connect to the narration service
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 500);
-
-        const statusResponse = await fetch(`http://localhost:${actualPort}/api/narration/status`, {
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (statusResponse.ok) {
-          const statusData = await statusResponse.json();
-          req.app.set('narrationServiceRunning', statusData.available);
-          console.log(`Narration service status check: available=${statusData.available}`);
-        }
-      } catch (error) {
-        console.log(`Narration service not running on port ${actualPort}: ${error.message}`);
-        req.app.set('narrationServiceRunning', false);
-      }
-    }
+    console.log(`Narration service check complete: available=${serviceRunning}, device=${serviceStatus.device}`);
 
     if (serviceRunning) {
       // Use the actual narration service
@@ -683,59 +676,19 @@ app.post('/api/narration/generate', async (req, res) => {
         return res.json(result);
       } catch (error) {
         console.error(`Error using actual narration service: ${error.message}`);
-        console.log('Falling back to direct implementation');
-        // Fall through to direct implementation
+        // No fallback - require the narration service
+        return res.status(503).json({
+          success: false,
+          error: `Error connecting to narration service: ${error.message}. Please restart the application with npm run dev:cuda.`
+        });
       }
     }
 
-    // Direct implementation (fallback)
-    console.log('Using direct implementation for narration generation');
-
-    // Create mock results for each subtitle
-    const results = [];
-
-    for (const subtitle of subtitles) {
-      // Generate a unique filename
-      const unique_id = uuidv4();
-      const filename = `narration_${subtitle.id}_${unique_id}.wav`;
-      const filepath = path.join(OUTPUT_AUDIO_DIR, filename);
-
-      // Create a simple WAV file
-      // This is a very basic WAV file with minimal header and some silence
-      const buffer = Buffer.alloc(44 + 1000);
-
-      // WAV header
-      buffer.write('RIFF', 0);                      // ChunkID
-      buffer.writeUInt32LE(36 + 1000, 4);           // ChunkSize
-      buffer.write('WAVE', 8);                      // Format
-      buffer.write('fmt ', 12);                     // Subchunk1ID
-      buffer.writeUInt32LE(16, 16);                 // Subchunk1Size
-      buffer.writeUInt16LE(1, 20);                  // AudioFormat (PCM)
-      buffer.writeUInt16LE(1, 22);                  // NumChannels (Mono)
-      buffer.writeUInt32LE(44100, 24);              // SampleRate
-      buffer.writeUInt32LE(44100 * 1 * 2, 28);      // ByteRate
-      buffer.writeUInt16LE(1 * 2, 32);              // BlockAlign
-      buffer.writeUInt16LE(16, 34);                 // BitsPerSample
-      buffer.write('data', 36);                     // Subchunk2ID
-      buffer.writeUInt32LE(1000, 40);               // Subchunk2Size
-
-      // Write the file
-      fs.writeFileSync(filepath, buffer);
-
-      // Add the result
-      results.push({
-        subtitle_id: subtitle.id,
-        text: subtitle.text,
-        audio_path: filepath,
-        filename: filename,
-        success: true
-      });
-    }
-
-    // Return success response
-    return res.json({
-      success: true,
-      results: results
+    // No direct implementation fallback - require the narration service
+    console.log('Narration service is required but not available');
+    return res.status(503).json({
+      success: false,
+      error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
     });
   } catch (error) {
     console.error('Error generating narration:', error);
@@ -744,7 +697,7 @@ app.post('/api/narration/generate', async (req, res) => {
 });
 
 // Proxy narration service requests
-app.use('/api/narration', (req, res, next) => {
+app.use('/api/narration', async (req, res, next) => {
   // Skip endpoints we handle directly
   if (req.url === '/status' || req.url === '/download-all' || req.url === '/download-aligned' ||
       req.method === 'POST' && (req.url === '/download-all' || req.url === '/download-aligned')) {
@@ -753,12 +706,17 @@ app.use('/api/narration', (req, res, next) => {
 
   // We now handle record-reference and upload-reference in their own routes above
 
-  // Check if the narration service is available
-  if (!narrationServiceAvailable) {
+  // Check if the narration service is available with multiple attempts
+  // For proxy middleware, use fewer attempts with shorter delays to be responsive
+  console.log('Proxy checking narration service...');
+  const serviceStatus = await checkNarrationService(3, 1000);
+  const serviceRunning = serviceStatus.available;
+
+  if (!serviceRunning) {
     console.log(`Narration service not available, returning fallback response for ${req.url}`);
     return res.status(503).json({
       success: false,
-      error: 'Narration service is not available. Please check if F5-TTS is installed correctly.'
+      error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
     });
   }
 
@@ -911,25 +869,36 @@ app.use('/api/narration', (req, res, next) => {
     });
 });
 
-// Start the narration service
+// Start the narration service only if running with dev:cuda
 let narrationProcess;
-// Always set narrationServiceAvailable to true to force using the actual service
-let narrationServiceAvailable = true;
 
-try {
-  narrationProcess = startNarrationService();
+// Check if we're running with npm run dev:cuda by looking at the environment variable
+const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
 
-  // Always set the narration service as running in the app
-  console.log('Setting narration service as running');
-  app.set('narrationServiceRunning', true);
-  app.set('narrationActualPort', NARRATION_PORT);
-} catch (error) {
-  console.error('Failed to start narration service:', error);
-  console.log('Still using actual narration service');
+if (isDevCuda) {
+  console.log('Running with npm run dev:cuda - starting Python narration service');
+  try {
+    narrationProcess = startNarrationService();
 
-  // Still set the narration service as running in the app
-  app.set('narrationServiceRunning', true);
-  app.set('narrationActualPort', NARRATION_PORT);
+    // Set the narration service as running in the app
+    console.log('Setting narration service as running');
+    app.set('narrationServiceRunning', true);
+    app.set('narrationActualPort', NARRATION_PORT);
+  } catch (error) {
+    console.error('Failed to start narration service:', error);
+    console.log('Setting narration service as not available');
+
+    // Set the narration service as not running in the app
+    app.set('narrationServiceRunning', false);
+    app.set('narrationActualPort', null);
+  }
+} else {
+  console.log('Running with npm run dev - NOT starting Python narration service');
+  console.log('To start with Python narration service, use: npm run dev:cuda');
+
+  // Set the narration service as not running in the app
+  app.set('narrationServiceRunning', false);
+  app.set('narrationActualPort', null);
 }
 
 // Start the server
