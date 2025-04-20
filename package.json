@@ -26,6 +26,7 @@
     "install:all:uv": "npm install && node setup-narration-uv.js"
   },
   "dependencies": {
+    "@google/genai": "^0.9.0",
     "@react-oauth/google": "^0.12.1",
     "adm-zip": "^0.5.16",
     "assert": "^2.1.0",
@@ -38,6 +39,7 @@
     "express": "^4.18.2",
     "genius-lyrics": "^4.4.7",
     "googleapis": "^148.0.0",
+    "http-proxy-middleware": "^3.0.5",
     "https-browserify": "^1.0.0",
     "i18next": "^23.8.0",
     "multer": "^1.4.5-lts.2",

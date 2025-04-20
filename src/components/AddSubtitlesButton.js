@@ -17,7 +17,8 @@ const AddSubtitlesButton = ({
   onSubtitlesAdd,
   hasSubtitles = false,
   subtitlesText = '',
-  disabled = false
+  disabled = false,
+  onGenerateBackground
 }) => {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
@@ -132,6 +133,7 @@ const AddSubtitlesButton = ({
           initialText={subtitlesText}
           onSave={handleSaveSubtitles}
           onClose={handleCloseModal}
+          onGenerateBackground={onGenerateBackground}
         />
       )}
     </>

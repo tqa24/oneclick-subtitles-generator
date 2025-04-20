@@ -11,5 +11,6 @@
   "save": "Save Subtitles",
   "addSubtitles": "Add subtitles",
   "editSubtitles": "Edit provided subtitles",
-  "subtitlesAdded": "Subtitles added"
+  "subtitlesAdded": "Subtitles added",
+  "generateBackground": "Do you want to generate background image inspired from this album art and lyrics?"
 }

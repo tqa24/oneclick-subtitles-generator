@@ -21,6 +21,7 @@ const subtitleRoutes = require('./server/routes/subtitleRoutes');
 const cacheRoutes = require('./server/routes/cacheRoutes');
 const updateRoutes = require('./server/routes/updateRoutes');
 const lyricsRoutes = require('./server/routes/lyricsRoutes');
+const geminiImageRoutes = require('./server/routes/geminiImageRoutes');
 
 // Initialize Express app
 const app = express();
@@ -51,6 +52,8 @@ app.use('/videos', express.static(path.join(__dirname, 'videos')));
 app.use('/videos/album_art', express.static(path.join(__dirname, 'videos', 'album_art')));
 app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
 app.use('/narration', express.static(path.join(__dirname, 'narration')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public', 'videos', 'album_art')));
 
 // Add CORS headers to all responses
 app.use((req, res, next) => {
@@ -289,6 +292,7 @@ app.use('/api', subtitleRoutes);
 app.use('/api', cacheRoutes);
 app.use('/api', updateRoutes);
 app.use('/api', lyricsRoutes);
+app.use('/api/gemini', geminiImageRoutes);
 
 // Direct route for narration service status
 app.get('/api/narration/status', async (req, res) => {

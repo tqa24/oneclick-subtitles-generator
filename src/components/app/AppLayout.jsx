@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../Header';
 import InputMethods from '../InputMethods';
 import OutputContainer from '../OutputContainer';
@@ -8,6 +8,7 @@ import TranslationWarningToast from '../TranslationWarningToast';
 import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
 import ServerConnectionOverlay from '../ServerConnectionOverlay';
+import BackgroundImageGenerator from '../BackgroundImageGenerator';
 
 /**
  * Main application layout component
@@ -18,6 +19,20 @@ const AppLayout = ({
   modalHandlers,
   t
 }) => {
+  // State for background image generator
+  const [showBackgroundGenerator, setShowBackgroundGenerator] = useState(false);
+  const [backgroundLyrics, setBackgroundLyrics] = useState('');
+  const [backgroundAlbumArt, setBackgroundAlbumArt] = useState('');
+  const [backgroundSongName, setBackgroundSongName] = useState('');
+
+  // Handler for generating background image
+  const handleGenerateBackground = (lyrics, albumArt, songName) => {
+    setBackgroundLyrics(lyrics);
+    setBackgroundAlbumArt(albumArt);
+    setBackgroundSongName(songName || '');
+    setShowBackgroundGenerator(true);
+  };
+
   const {
     showSettings, setShowSettings,
     activeTab,
@@ -181,7 +196,17 @@ const AppLayout = ({
               uploadedFile={uploadedFile}
               isSrtOnlyMode={isSrtOnlyMode}
               t={t}
+              onGenerateBackground={handleGenerateBackground}
             />
+
+            {showBackgroundGenerator && (
+              <BackgroundImageGenerator
+                lyrics={backgroundLyrics}
+                albumArt={backgroundAlbumArt}
+                songName={backgroundSongName}
+                onClose={() => setShowBackgroundGenerator(false)}
+              />
+            )}
 
             <OutputContainer
               status={status}
@@ -203,7 +228,12 @@ const AppLayout = ({
               isSrtOnlyMode={isSrtOnlyMode}
               onViewRules={handleViewRules}
               userProvidedSubtitles={userProvidedSubtitles}
-              onUserSubtitlesAdd={handleUserSubtitlesAdd}
+              onUserSubtitlesAdd={(text) => {
+                handleUserSubtitlesAdd(text);
+                // Close background generator if open
+                setShowBackgroundGenerator(false);
+              }}
+              onGenerateBackground={handleGenerateBackground}
             />
           </div>
         </main>

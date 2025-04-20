@@ -29,6 +29,7 @@ import download from './download.json';
 import subtitlesInput from './subtitlesInput.json';
 import segmentRetry from './segmentRetry.json';
 import narration from './narration.json';
+import backgroundGenerator from './backgroundGenerator.json';
 
 // Combine all translations
 const enTranslations = {
@@ -60,7 +61,8 @@ const enTranslations = {
   download,
   subtitlesInput,
   segmentRetry,
-  narration
+  narration,
+  backgroundGenerator
 };
 
 export default enTranslations;

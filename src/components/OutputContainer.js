@@ -29,7 +29,8 @@ const OutputContainer = ({
   isSrtOnlyMode = false,
   onViewRules,
   userProvidedSubtitles = '',
-  onUserSubtitlesAdd
+  onUserSubtitlesAdd,
+  onGenerateBackground
 }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
