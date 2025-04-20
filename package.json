@@ -22,7 +22,7 @@
     "install:all": "npm install && node setup-narration.js",
     "setup:f5tts": "node setup-f5tts.js",
     "python:start:cuda": "uv run -- python server/narrationApp.py",
-    "dev:cuda": "concurrently \"npm run start\" \"npm run server:start\" \"npm run python:start:cuda\"",
+    "dev:cuda": "cross-env START_PYTHON_SERVER=true concurrently \"npm run start\" \"npm run server:start\"",
     "install:all:uv": "npm install && node setup-narration-uv.js"
   },
   "dependencies": {
@@ -63,7 +63,8 @@
     "ytdl-core": "npm:@distube/ytdl-core@^4.16.8"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3"
   },
   "eslintConfig": {
     "extends": [

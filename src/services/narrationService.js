@@ -82,13 +82,24 @@ export const checkNarrationStatus = async () => {
     const response = await fetch(`${API_BASE_URL}/narration/status`);
 
     if (!response.ok) {
-      return { available: false, error: `Server returned ${response.status}` };
+      return {
+        available: false,
+        error: `Server returned ${response.status}`,
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh"
+      };
     }
 
     const data = await response.json();
+    if (!data.available) {
+      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh";
+    }
     return data;
   } catch (error) {
-    return { available: false, error: error.message };
+    return {
+      available: false,
+      error: error.message,
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh"
+    };
   }
 };
 
@@ -218,6 +229,9 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
 // Create a global AbortController for narration generation
 let narrationAbortController = null;
 
+// Flag to track if the narration service has been initialized
+let narrationServiceInitialized = false;
+
 /**
  * Cancel ongoing narration generation
  * @returns {boolean} - Whether cancellation was successful
@@ -230,6 +244,33 @@ export const cancelNarrationGeneration = () => {
     return true;
   }
   return false;
+};
+
+/**
+ * Clear all narration output files for fresh generation
+ * @returns {Promise<boolean>} - Whether clearing was successful
+ */
+export const clearNarrationOutput = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/clear-output`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to clear narration output: ${response.status}`);
+      return false;
+    }
+
+    const data = await response.json();
+    console.log('Cleared narration output files:', data.message);
+    return true;
+  } catch (error) {
+    console.error('Error clearing narration output:', error);
+    return false;
+  }
 };
 
 /**
@@ -255,6 +296,15 @@ export const generateNarration = async (
   onComplete = () => {}
 ) => {
   try {
+    // Clear all narration output files before generating new ones
+    await clearNarrationOutput();
+
+    // Initial progress message for waking up the server - only on first run
+    if (!narrationServiceInitialized) {
+      onProgress("Đang đánh thức server thuyết minh cho lần đầu chạy...");
+    } else {
+      onProgress("Đang chuẩn bị tạo thuyết minh...");
+    }
     // Create a new AbortController for this request
     narrationAbortController = new AbortController();
     const signal = narrationAbortController.signal;
@@ -354,6 +404,8 @@ export const generateNarration = async (
                     break;
 
                   case 'complete':
+                    // Mark the narration service as initialized
+                    narrationServiceInitialized = true;
                     onComplete(data.results || results);
                     return { success: true, results: data.results || results };
                 }
@@ -379,6 +431,9 @@ export const generateNarration = async (
         data.results.forEach((result, index) => {
           onResult(result, index + 1, data.results.length);
         });
+
+        // Mark the narration service as initialized
+        narrationServiceInitialized = true;
 
         // Call onComplete with all results
         onComplete(data.results);

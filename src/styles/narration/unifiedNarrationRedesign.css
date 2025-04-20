@@ -10,6 +10,36 @@
   border: 1px solid var(--md-outline-variant);
 }
 
+/* Unavailable narration section */
+.narration-section.unavailable {
+  opacity: 0.8;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-error-container);
+}
+
+/* Unavailable message styling */
+.narration-unavailable-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: rgba(var(--md-error-rgb), 0.08);
+  border-radius: 16px;
+  margin-top: 1rem;
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
+}
+
+.narration-unavailable-message .warning-icon {
+  flex-shrink: 0;
+  color: var(--md-error);
+}
+
+.narration-unavailable-message .message {
+  font-size: 1rem;
+  color: var(--md-error);
+  font-weight: 500;
+}
+
 /* Ensure all textareas in narration section have rounded corners */
 .narration-section textarea {
   border-radius: 20px !important;
