@@ -8,6 +8,7 @@ import TranslationSection from './translation';
 import { UnifiedNarrationSection } from './narration';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
 import AddSubtitlesButton from './AddSubtitlesButton';
+// BackgroundImageGenerator moved back to AppLayout
 
 const OutputContainer = ({
   status,
@@ -79,6 +80,8 @@ const OutputContainer = ({
     })) || [];
   };
 
+  // Background Image Generator functionality moved back to AppLayout
+
   // When subtitles are loaded from cache, they should be considered as the source of truth
   // This ensures that saved edits are properly loaded when the page is reloaded
 
@@ -124,6 +127,8 @@ const OutputContainer = ({
   useEffect(() => {
     setEditedLyrics(null);
   }, [subtitlesData]);
+
+  // Background Image Generator functionality moved back to AppLayout
 
   // Don't render anything if there's no content to show
   if (!status?.message && !subtitlesData) {
@@ -250,6 +255,8 @@ const OutputContainer = ({
               onReferenceAudioChange={setReferenceAudio}
             />
           </>
+
+          {/* Background Image Generator moved back to AppLayout */}
         </>
       )}
     </div>

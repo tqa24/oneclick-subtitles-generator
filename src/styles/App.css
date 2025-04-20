@@ -22,6 +22,8 @@
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Material Design 3 container with enhanced styling */

@@ -5,9 +5,9 @@
   margin-top: 2rem;
   padding: 1.5rem;
   background-color: var(--md-surface-1);
-  border-radius: var(--card-border-radius);
-  box-shadow: var(--md-elevation-level1);
-  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  box-shadow: var(--md-elevation-level2);
+  border: none;
 }
 
 /* Header styles */
@@ -125,14 +125,16 @@
   transition: all 0.2s ease;
   background-color: var(--md-surface-3);
   color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid transparent;
   height: 36px; /* Consistent height for all pill buttons */
   box-sizing: border-box; /* Include padding and border in height calculation */
+  box-shadow: var(--md-elevation-level1);
 }
 
 .pill-button:hover {
   background-color: var(--md-surface-4);
-  box-shadow: var(--md-elevation-level1);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
 }
 
 .pill-button:active {
@@ -394,20 +396,23 @@ input:focus + .toggle-slider {
 .reference-text {
   width: 100%;
   padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  border: 1px solid transparent;
   background-color: var(--md-surface-1);
   color: var(--md-on-surface);
   font-size: 0.95rem;
-  resize: vertical;
+  resize: none;
   min-height: 60px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
 }
 
 .reference-text:focus {
   outline: none;
   border-color: var(--md-primary);
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+  box-shadow: var(--md-elevation-level2);
+  border: 2px solid var(--primary-color);
+  padding: calc(0.75rem - 1px); /* Adjust padding to maintain the same size */
 }
 
 .reference-text:disabled {
@@ -458,11 +463,12 @@ input:focus + .toggle-slider {
   border-radius: 24px;
   background-color: var(--md-surface-3);
   color: var(--md-on-surface);
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid transparent;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
 }
 
 .radio-pill input[type="radio"]:checked + label {
@@ -484,8 +490,9 @@ input:focus + .toggle-slider {
   width: 100%;
   padding: 1rem;
   background-color: var(--md-surface-2);
-  border-radius: 12px;
-  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  border: none;
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Reference content row */
@@ -507,35 +514,32 @@ input:focus + .toggle-slider {
 /* Status messages */
 .status-message {
   padding: 0.75rem 1rem;
-  border-radius: 8px;
+  border-radius: 16px;
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  box-shadow: var(--md-elevation-level1);
 }
 
 .status-message.info {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
-  border-left: 4px solid var(--md-primary);
 }
 
 .status-message.warning {
   background-color: var(--md-tertiary-container);
   color: var(--md-on-tertiary-container);
-  border-left: 4px solid var(--md-tertiary);
 }
 
 .status-message.error {
   background-color: var(--md-error-container);
   color: var(--md-on-error-container);
-  border-left: 4px solid var(--md-error);
 }
 
 .status-message.success {
   background-color: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
-  border-left: 4px solid var(--md-secondary);
 }
 
 /* Status message success inside reference-audio-container */

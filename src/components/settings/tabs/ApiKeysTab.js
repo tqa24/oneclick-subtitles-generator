@@ -2,6 +2,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
 
+// Prevent form submission on Enter key
+const preventSubmit = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    return false;
+  }
+};
+
 const ApiKeysTab = ({
   geminiApiKey,
   setGeminiApiKey,
@@ -99,15 +107,39 @@ const ApiKeysTab = ({
           </span>
         </label>
 
-        <div className="input-with-toggle">
-          <input
-            type={showGeminiKey ? "text" : "password"}
-            id="gemini-api-key"
-            value={geminiApiKey}
-            onChange={(e) => setGeminiApiKey(e.target.value)}
-            placeholder={t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
-            autoComplete="new-password"
-          />
+        {/* Custom non-password input implementation for Gemini */}
+        <div className="custom-api-key-input">
+          <div
+            className="custom-input-field"
+            onClick={() => document.getElementById('gemini-key-display').focus()}
+          >
+            {showGeminiKey ? (
+              <div
+                id="gemini-key-display"
+                className="editable-key-field"
+                contentEditable="true"
+                onInput={(e) => setGeminiApiKey(e.currentTarget.textContent || '')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+                suppressContentEditableWarning={true}
+              >
+                {geminiApiKey}
+              </div>
+            ) : (
+              <div className="masked-key-field">
+                {geminiApiKey ? '•'.repeat(Math.min(geminiApiKey.length, 24)) : ''}
+              </div>
+            )}
+            {!geminiApiKey && !showGeminiKey && (
+              <div className="key-placeholder">
+                {t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="toggle-visibility"
@@ -150,15 +182,39 @@ const ApiKeysTab = ({
           </span>
         </label>
 
-        <div className="input-with-toggle">
-          <input
-            type={showGeniusKey ? "text" : "password"}
-            id="genius-api-key"
-            value={geniusApiKey}
-            onChange={(e) => setGeniusApiKey(e.target.value)}
-            placeholder={t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
-            autoComplete="new-password"
-          />
+        {/* Custom non-password input implementation */}
+        <div className="custom-api-key-input">
+          <div
+            className="custom-input-field"
+            onClick={() => document.getElementById('genius-key-display').focus()}
+          >
+            {showGeniusKey ? (
+              <div
+                id="genius-key-display"
+                className="editable-key-field"
+                contentEditable="true"
+                onInput={(e) => setGeniusApiKey(e.currentTarget.textContent || '')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+                suppressContentEditableWarning={true}
+              >
+                {geniusApiKey}
+              </div>
+            ) : (
+              <div className="masked-key-field">
+                {geniusApiKey ? '•'.repeat(Math.min(geniusApiKey.length, 24)) : ''}
+              </div>
+            )}
+            {!geniusApiKey && !showGeniusKey && (
+              <div className="key-placeholder">
+                {t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="toggle-visibility"
@@ -238,15 +294,39 @@ const ApiKeysTab = ({
                   : t('settings.keyNotSet', 'Not Set')}
               </span>
             </label>
-            <div className="input-with-toggle">
-              <input
-                type={showYoutubeKey ? "text" : "password"}
-                id="youtube-api-key"
-                value={youtubeApiKey}
-                onChange={(e) => setYoutubeApiKey(e.target.value)}
-                placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
-                autoComplete="new-password"
-              />
+            {/* Custom non-password input implementation for YouTube */}
+            <div className="custom-api-key-input">
+              <div
+                className="custom-input-field"
+                onClick={() => document.getElementById('youtube-key-display').focus()}
+              >
+                {showYoutubeKey ? (
+                  <div
+                    id="youtube-key-display"
+                    className="editable-key-field"
+                    contentEditable="true"
+                    onInput={(e) => setYoutubeApiKey(e.currentTarget.textContent || '')}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    suppressContentEditableWarning={true}
+                  >
+                    {youtubeApiKey}
+                  </div>
+                ) : (
+                  <div className="masked-key-field">
+                    {youtubeApiKey ? '•'.repeat(Math.min(youtubeApiKey.length, 24)) : ''}
+                  </div>
+                )}
+                {!youtubeApiKey && !showYoutubeKey && (
+                  <div className="key-placeholder">
+                    {t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 className="toggle-visibility"
@@ -303,15 +383,39 @@ const ApiKeysTab = ({
             <div className="oauth-client-inputs">
               <div className="oauth-input-group">
                 <label htmlFor="youtube-client-id">{t('settings.clientId', 'Client ID')}</label>
-                <div className="input-with-toggle">
-                  <input
-                    type={showClientId ? "text" : "password"}
-                    id="youtube-client-id"
-                    value={youtubeClientId}
-                    onChange={(e) => setYoutubeClientId(e.target.value)}
-                    placeholder={t('settings.clientIdPlaceholder', 'Enter your OAuth Client ID')}
-                    autoComplete="new-password"
-                  />
+                {/* Custom non-password input implementation for Client ID */}
+                <div className="custom-api-key-input">
+                  <div
+                    className="custom-input-field"
+                    onClick={() => document.getElementById('client-id-display').focus()}
+                  >
+                    {showClientId ? (
+                      <div
+                        id="client-id-display"
+                        className="editable-key-field"
+                        contentEditable="true"
+                        onInput={(e) => setYoutubeClientId(e.currentTarget.textContent || '')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        suppressContentEditableWarning={true}
+                      >
+                        {youtubeClientId}
+                      </div>
+                    ) : (
+                      <div className="masked-key-field">
+                        {youtubeClientId ? '•'.repeat(Math.min(youtubeClientId.length, 24)) : ''}
+                      </div>
+                    )}
+                    {!youtubeClientId && !showClientId && (
+                      <div className="key-placeholder">
+                        {t('settings.clientIdPlaceholder', 'Enter your OAuth Client ID')}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="toggle-visibility"
@@ -325,15 +429,39 @@ const ApiKeysTab = ({
 
               <div className="oauth-input-group">
                 <label htmlFor="youtube-client-secret">{t('settings.clientSecret', 'Client Secret')}</label>
-                <div className="input-with-toggle">
-                  <input
-                    type={showClientSecret ? "text" : "password"}
-                    id="youtube-client-secret"
-                    value={youtubeClientSecret}
-                    onChange={(e) => setYoutubeClientSecret(e.target.value)}
-                    placeholder={t('settings.clientSecretPlaceholder', 'Enter your OAuth Client Secret')}
-                    autoComplete="new-password"
-                  />
+                {/* Custom non-password input implementation for Client Secret */}
+                <div className="custom-api-key-input">
+                  <div
+                    className="custom-input-field"
+                    onClick={() => document.getElementById('client-secret-display').focus()}
+                  >
+                    {showClientSecret ? (
+                      <div
+                        id="client-secret-display"
+                        className="editable-key-field"
+                        contentEditable="true"
+                        onInput={(e) => setYoutubeClientSecret(e.currentTarget.textContent || '')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        suppressContentEditableWarning={true}
+                      >
+                        {youtubeClientSecret}
+                      </div>
+                    ) : (
+                      <div className="masked-key-field">
+                        {youtubeClientSecret ? '•'.repeat(Math.min(youtubeClientSecret.length, 24)) : ''}
+                      </div>
+                    )}
+                    {!youtubeClientSecret && !showClientSecret && (
+                      <div className="key-placeholder">
+                        {t('settings.clientSecretPlaceholder', 'Enter your OAuth Client Secret')}
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="toggle-visibility"

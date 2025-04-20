@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle } from 'react-icons/fi';
+import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import '../styles/BackgroundImageGenerator.css';
 
 /**
  * Component for generating background images based on lyrics and album art
  */
-const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
+const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = false, onExpandChange }) => {
   const { t } = useTranslation();
   const [customLyrics, setCustomLyrics] = useState(lyrics || '');
   const [customAlbumArt, setCustomAlbumArt] = useState(albumArt || '');
@@ -21,6 +21,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
   const [error, setError] = useState('');
   const [customSongName, setCustomSongName] = useState(songName || '');
   const [autoExecutionComplete, setAutoExecutionComplete] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(!isExpanded); // Use the isExpanded prop
 
   // Use a ref to track if the auto-execution effect has already run
   // This helps prevent double execution in React StrictMode
@@ -164,6 +165,11 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
     }
   };
 
+  // Sync isCollapsed state with isExpanded prop
+  useEffect(() => {
+    setIsCollapsed(!isExpanded);
+  }, [isExpanded]);
+
   // Reset state when lyrics or albumArt props change
   useEffect(() => {
     if (lyrics && albumArt) {
@@ -180,8 +186,14 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
       setError('');
       setAutoExecutionComplete(false);
       autoExecutionRef.current = false; // Reset the ref to allow auto-execution
+      setIsCollapsed(false); // Expand when new content is provided
+
+      // Notify parent component about expansion
+      if (onExpandChange) {
+        onExpandChange(true);
+      }
     }
-  }, [lyrics, albumArt, songName]);
+  }, [lyrics, albumArt, songName, onExpandChange]);
 
   // Auto-execute prompt generation and image generation when component mounts
   // or when lyrics/albumArt change - uses the default of 4 images for new prompt
@@ -189,7 +201,8 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
     const autoExecute = async () => {
       // Skip if we've already run this effect in the current render cycle
       // or if we don't have the necessary data or if auto-execution is already complete
-      if (autoExecutionRef.current || !lyrics || !albumArt || autoExecutionComplete) {
+      // or if the component is collapsed
+      if (autoExecutionRef.current || autoExecutionComplete || !lyrics || !albumArt || isCollapsed) {
         return;
       }
 
@@ -239,7 +252,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
 
         console.log('Prompt generated successfully:', generatedPromptText);
 
-        // Now generate multiple images directly without waiting for state updates
+        // Now generate multiple images, each with its own prompt
         setIsGeneratingImage(true);
 
         // Prepare the grid with placeholders
@@ -250,24 +263,69 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
         const placeholders = Array(imagesToGenerate).fill(null).map((_, index) => ({
           url: null,
           timestamp: new Date().getTime() + index,
-          prompt: generatedPromptText,
+          prompt: index === 0 ? generatedPromptText : '', // First image uses the already generated prompt
           isLoading: true
         }));
 
         setGeneratedImages(placeholders);
 
-        // Generate each image one by one
+        // Generate each image with its own unique prompt
         const newImages = [...placeholders];
 
         for (let i = 0; i < imagesToGenerate; i++) {
           try {
+            let currentPrompt;
+
+            // For the first image, use the already generated prompt
+            // For subsequent images, generate a new prompt
+            if (i === 0) {
+              currentPrompt = generatedPromptText;
+            } else {
+              // Generate a new prompt for this image
+              setIsGeneratingPrompt(true);
+              console.log(`Auto-execution: Generating prompt for image ${i+1}/${imagesToGenerate}`);
+
+              const promptResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-prompt', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  lyrics: customLyrics,
+                  songName: customSongName || songName || 'Unknown Song'
+                }),
+              });
+
+              if (!promptResponse.ok) {
+                const errorData = await promptResponse.json();
+                throw new Error(errorData.error || 'Failed to generate prompt');
+              }
+
+              const promptData = await promptResponse.json();
+              currentPrompt = promptData.prompt;
+
+              // Update the prompt in the UI for the latest generated prompt
+              setGeneratedPrompt(currentPrompt);
+              setIsGeneratingPrompt(false);
+
+              // Update the placeholder with the new prompt
+              newImages[i] = {
+                ...newImages[i],
+                prompt: currentPrompt
+              };
+              setGeneratedImages([...newImages]);
+            }
+
+            // Generate image with the prompt
+            console.log(`Auto-execution: Generating image ${i+1}/${imagesToGenerate} with prompt: ${currentPrompt.substring(0, 50)}...`);
+
             const imageResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-image', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                prompt: generatedPromptText, // Use the prompt directly
+                prompt: currentPrompt,
                 albumArtUrl: customAlbumArt
               }),
             });
@@ -284,7 +342,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
             newImages[i] = {
               url: imageUrl,
               timestamp: new Date().getTime(),
-              prompt: generatedPromptText,
+              prompt: currentPrompt,
               isLoading: false
             };
 
@@ -326,7 +384,10 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
       }
     };
 
-    autoExecute();
+    // Only run auto-execute when component is expanded
+    if (!isCollapsed) {
+      autoExecute();
+    }
 
     // Cleanup function to reset the ref when the component unmounts
     return () => {
@@ -334,7 +395,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
       // even if the effect is called multiple times due to StrictMode
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lyrics, albumArt, customLyrics, customAlbumArt, customSongName, autoExecutionComplete]);
+  }, [lyrics, albumArt, customLyrics, customAlbumArt, customSongName, autoExecutionComplete, isCollapsed]);
 
 
   // Handle file upload for custom album art
@@ -363,12 +424,123 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
       return;
     }
 
-    // First generate a new prompt
-    const newPrompt = await generatePrompt();
+    const imagesToGenerate = count || newPromptImageCount;
 
-    // If prompt generation was successful, generate images with it
-    if (newPrompt) {
-      await generateImage(newPrompt, count || newPromptImageCount);
+    // Prepare the grid with placeholders
+    setIsGeneratingImage(true);
+    setPendingImageCount(imagesToGenerate);
+    setError('');
+
+    // Create placeholder array
+    const placeholders = Array(imagesToGenerate).fill(null).map((_, index) => ({
+      url: null,
+      timestamp: new Date().getTime() + index,
+      prompt: '',  // Will be filled with a unique prompt for each image
+      isLoading: true
+    }));
+
+    setGeneratedImages(placeholders);
+
+    try {
+      // Generate each image with its own unique prompt
+      const newImages = [...placeholders];
+
+      for (let i = 0; i < imagesToGenerate; i++) {
+        try {
+          // Generate a new prompt for each image
+          setIsGeneratingPrompt(true);
+          console.log(`Generating prompt for image ${i+1}/${imagesToGenerate}`);
+
+          const promptResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-prompt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              lyrics: customLyrics,
+              songName: customSongName || songName || 'Unknown Song'
+            }),
+          });
+
+          if (!promptResponse.ok) {
+            const errorData = await promptResponse.json();
+            throw new Error(errorData.error || 'Failed to generate prompt');
+          }
+
+          const promptData = await promptResponse.json();
+          const uniquePrompt = promptData.prompt;
+
+          // Update the prompt in the UI for the latest generated prompt
+          setGeneratedPrompt(uniquePrompt);
+          setIsGeneratingPrompt(false);
+
+          // Update the placeholder with the new prompt
+          newImages[i] = {
+            ...newImages[i],
+            prompt: uniquePrompt
+          };
+          setGeneratedImages([...newImages]);
+
+          // Generate image with the unique prompt
+          console.log(`Generating image ${i+1}/${imagesToGenerate} with prompt: ${uniquePrompt.substring(0, 50)}...`);
+
+          const imageResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: uniquePrompt,
+              albumArtUrl: customAlbumArt
+            }),
+          });
+
+          if (!imageResponse.ok) {
+            const errorData = await imageResponse.json();
+            throw new Error(errorData.error || 'Failed to generate image');
+          }
+
+          const imageData = await imageResponse.json();
+          const imageUrl = `data:${imageData.mime_type};base64,${imageData.data}`;
+
+          // Update this specific image in the array
+          newImages[i] = {
+            url: imageUrl,
+            timestamp: new Date().getTime(),
+            prompt: uniquePrompt,
+            isLoading: false
+          };
+
+          // Update the state with the progress
+          setGeneratedImages([...newImages]);
+
+          // Also update the single image view for backward compatibility
+          if (i === 0) {
+            setGeneratedImage(imageUrl);
+          }
+
+          // Decrease pending count
+          setPendingImageCount(prev => prev - 1);
+        } catch (err) {
+          // Mark this image as failed
+          newImages[i] = {
+            url: null,
+            timestamp: new Date().getTime(),
+            prompt: newImages[i].prompt || 'Failed to generate prompt',
+            isLoading: false,
+            error: err.message
+          };
+          setGeneratedImages([...newImages]);
+          setPendingImageCount(prev => prev - 1);
+          console.error(`Error generating image ${i+1}:`, err);
+        }
+      }
+    } catch (err) {
+      setError(`Error in multi-prompt generation: ${err.message}`);
+      console.error('Error in multi-prompt generation process:', err);
+    } finally {
+      setIsGeneratingPrompt(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -409,17 +581,35 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
   };
 
   return (
-    <div className="background-generator-container">
+    <div className={`background-generator-container ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="background-generator-header">
         <h2>{t('backgroundGenerator.title', 'Background Image Generator')}</h2>
-        <button className="close-button" onClick={onClose}>
-          <FiX />
+        <button
+          className="collapse-button"
+          onClick={() => {
+            const newCollapsedState = !isCollapsed;
+            setIsCollapsed(newCollapsedState);
+            // Notify parent component about expansion/collapse
+            if (onExpandChange) {
+              onExpandChange(!newCollapsedState);
+            }
+          }}
+          title={isCollapsed ? t('backgroundGenerator.expand', 'Expand') : t('backgroundGenerator.collapse', 'Collapse')}
+        >
+          {isCollapsed ? <FiChevronDown /> : <FiChevronUp />}
         </button>
       </div>
 
-      <div className="background-generator-content">
-        {/* First row: Lyrics input on left, song name and prompt in middle, album art on right */}
-        <div className="content-grid top-inputs-grid">
+      {isCollapsed ? (
+        <div className="background-generator-collapsed-content">
+          <p className="helper-message">
+            {t('backgroundGenerator.helperMessage', 'You can use your custom lyrics and album art here or press "Thêm phụ đề" and fetch from Genius')}
+          </p>
+        </div>
+      ) : (
+        <div className="background-generator-content">
+          {/* First row: Lyrics input on left, song name and prompt in middle, album art on right */}
+          <div className="content-grid top-inputs-grid">
           {/* Lyrics input */}
           <div className="lyrics-input-container">
             <textarea
@@ -441,6 +631,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                   value={customSongName}
                   onChange={(e) => setCustomSongName(e.target.value)}
                   placeholder={t('backgroundGenerator.songNamePlaceholder', 'Enter song name (optional)')}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -568,6 +759,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     className={`generate-button ${isGeneratingImage ? 'loading' : ''}`}
                     onClick={() => generateImage()}
                     disabled={isGeneratingImage || isGeneratingPrompt || !generatedPrompt.trim() || !customAlbumArt}
+                    title={t('backgroundGenerator.generateImageTooltip', 'Generate images using the same prompt')}
                   >
                     {isGeneratingImage ? (
                       <span className="loading-spinner"></span>
@@ -577,7 +769,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     <span>
                       {isGeneratingImage
                         ? t('backgroundGenerator.generatingImage', 'Generating...')
-                        : t('backgroundGenerator.generateImage', 'Generate')}
+                        : t('backgroundGenerator.generateImage', 'Generate with Same Prompt')}
                     </span>
                   </button>
 
@@ -586,13 +778,19 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     value={regularImageCount}
                     onChange={(e) => handleRegularImageCountChange(e.target.value)}
                     disabled={isGeneratingImage || isGeneratingPrompt}
+                    title={t('backgroundGenerator.samePromptCountTooltip', 'Number of images to generate using the same prompt')}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                       <option key={num} value={num}>{num}</option>
                     ))}
                   </select>
 
-                  <span className="dropdown-label">{t('backgroundGenerator.images', 'images')}</span>
+                  <span
+                    className="dropdown-label"
+                    title={t('backgroundGenerator.samePromptCountTooltip', 'Number of images to generate using the same prompt')}
+                  >
+                    {t('backgroundGenerator.images', 'images')}
+                  </span>
                 </div>
 
                 <div className="generate-button-group">
@@ -600,6 +798,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     className={`generate-button new-prompt-button ${isGeneratingPrompt || isGeneratingImage ? 'loading' : ''}`}
                     onClick={() => generateWithNewPrompt()}
                     disabled={isGeneratingPrompt || isGeneratingImage || !customLyrics.trim() || !customAlbumArt}
+                    title={t('backgroundGenerator.generateWithNewPromptTooltip', 'Generates a unique prompt for each image')}
                   >
                     {isGeneratingPrompt || isGeneratingImage ? (
                       <span className="loading-spinner"></span>
@@ -609,7 +808,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     <span>
                       {isGeneratingPrompt || isGeneratingImage
                         ? t('backgroundGenerator.generatingWithNewPrompt', 'Generating...')
-                        : t('backgroundGenerator.generateWithNewPrompt', 'Generate with New Prompt')}
+                        : t('backgroundGenerator.generateWithNewPrompt', 'Generate with Unique Prompts')}
                     </span>
                   </button>
 
@@ -618,13 +817,19 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
                     value={newPromptImageCount}
                     onChange={(e) => handleNewPromptImageCountChange(e.target.value)}
                     disabled={isGeneratingImage || isGeneratingPrompt}
+                    title={t('backgroundGenerator.uniquePromptCountTooltip', 'Number of images to generate, each with a unique prompt')}
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                       <option key={num} value={num}>{num}</option>
                     ))}
                   </select>
 
-                  <span className="dropdown-label">{t('backgroundGenerator.images', 'images')}</span>
+                  <span
+                    className="dropdown-label"
+                    title={t('backgroundGenerator.uniquePromptCountTooltip', 'Number of images to generate, each with a unique prompt')}
+                  >
+                    {t('backgroundGenerator.uniqueImages', 'unique images')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -700,7 +905,8 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, onClose }) => {
             <span>{error}</span>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

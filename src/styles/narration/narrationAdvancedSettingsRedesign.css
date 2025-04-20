@@ -1,11 +1,12 @@
 /* Redesigned Narration Advanced Settings - Material Design 3 - Compact Version */
 
 .advanced-settings {
-  padding: 0.5rem;
+  padding: 1rem;
   background-color: var(--md-surface-2);
-  border-radius: 8px;
+  border-radius: 16px;
   margin-bottom: 1rem;
-  border: 1px solid var(--md-outline-variant);
+  border: none;
+  box-shadow: var(--md-elevation-level1);
 }
 
 /* Section styles */
@@ -234,10 +235,11 @@
   font-size: 0.75rem;
   border-radius: 12px;
   background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
   color: var(--text-primary);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .advanced-settings .radio-pill input[type="radio"]:checked + label {

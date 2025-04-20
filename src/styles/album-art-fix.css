@@ -4,14 +4,15 @@ div.album-art-preview {
   width: 200px !important;
   height: 200px !important;
   margin: 0 auto !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: 20px !important;
   overflow: hidden !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: var(--md-surface-1) !important;
+  background-color: var(--md-surface-2) !important;
   position: relative !important; /* For floating buttons */
+  box-shadow: var(--md-elevation-level2) !important;
+  transition: all 0.2s ease !important;
 }
 
 div.album-art-preview img {
@@ -42,6 +43,11 @@ div.album-art-preview .floating-download-button {
   margin: 0 auto !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  border-radius: 20px !important;
+  box-shadow: var(--md-elevation-level2) !important;
+  background-color: var(--md-surface-2) !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
 }
 
 .album-art-preview img {
@@ -59,8 +65,8 @@ div.album-art-preview .floating-download-button {
 .floating-upload-button,
 .floating-download-button {
   position: absolute !important;
-  width: 36px !important;
-  height: 36px !important;
+  width: 42px !important;
+  height: 42px !important;
   border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;

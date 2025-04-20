@@ -129,12 +129,15 @@ const AddSubtitlesButton = ({
       </div>
 
       {showModal && (
-        <SubtitlesInputModal
-          initialText={subtitlesText}
-          onSave={handleSaveSubtitles}
-          onClose={handleCloseModal}
-          onGenerateBackground={onGenerateBackground}
-        />
+        <>
+          {console.log('AddSubtitlesButton: onGenerateBackground exists:', !!onGenerateBackground)}
+          <SubtitlesInputModal
+            initialText={subtitlesText}
+            onSave={handleSaveSubtitles}
+            onClose={handleCloseModal}
+            onGenerateBackground={onGenerateBackground}
+          />
+        </>
       )}
     </>
   );
