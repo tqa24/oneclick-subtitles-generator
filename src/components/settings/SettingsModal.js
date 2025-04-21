@@ -50,7 +50,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showClientId, setShowClientId] = useState(false);
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [segmentDuration, setSegmentDuration] = useState(3); // Default to 3 minutes
+  const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
@@ -91,7 +91,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     geminiApiKey: '',
     youtubeApiKey: '',
     geniusApiKey: '',
-    segmentDuration: 3,
+    segmentDuration: 5,
     geminiModel: 'gemini-2.0-flash',
     timeFormat: 'hms',
     showWaveform: true,
@@ -126,7 +126,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
       const savedGeniusKey = localStorage.getItem('genius_token') || '';
-      const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '3');
+      const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set

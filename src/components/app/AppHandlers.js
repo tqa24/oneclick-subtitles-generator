@@ -387,7 +387,7 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle saving API keys and settings
    */
-  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 3, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
+  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 5, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
