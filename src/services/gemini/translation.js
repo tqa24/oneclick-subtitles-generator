@@ -7,7 +7,7 @@ import i18n from '../../i18n/i18n';
 import { createTranslationSchema, addResponseSchema } from '../../utils/schemaUtils';
 import { getDefaultTranslationPrompt } from './promptManagement';
 import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
-import { createRequestController, removeRequestController } from './requestManagement';
+import { createRequestController, removeRequestController, abortAllRequests, getProcessingForceStopped } from './requestManagement';
 
 /**
  * Translate subtitles to different language(s) while preserving timing
@@ -811,6 +811,12 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
     // Translate each chunk
     const translatedChunks = [];
     for (let i = 0; i < chunks.length; i++) {
+        // Check if processing has been force stopped
+        if (getProcessingForceStopped()) {
+            console.log('Translation was cancelled, stopping chunk processing');
+            throw new Error('Translation request was aborted');
+        }
+
         const chunk = chunks[i];
         console.log(`Translating chunk ${i + 1}/${chunks.length} with ${chunk.length} subtitles`);
 
@@ -832,6 +838,12 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
 
+            // Check if processing has been force stopped before retrying
+            if (getProcessingForceStopped()) {
+                console.log('Translation was cancelled, stopping chunk processing during retry');
+                throw new Error('Translation request was aborted');
+            }
+
             // If this is a count mismatch error, try one more time with a simplified prompt
             if (error.message && error.message.includes('received') && error.message.includes('expected')) {
                 try {
@@ -846,6 +858,11 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
                     translatedChunks.push(translatedChunk);
                     continue;
                 } catch (retryError) {
+                    // Check if this is an abort error
+                    if (retryError.name === 'AbortError' || retryError.message.includes('aborted')) {
+                        console.log('Retry was aborted, stopping chunk processing');
+                        throw retryError; // Re-throw to stop the entire process
+                    }
                     console.error(`Retry for chunk ${i + 1} also failed:`, retryError);
                 }
             }
@@ -1068,11 +1085,11 @@ const formatSubtitlesWithChain = (subtitles, chainItems) => {
 // Function to cancel translation
 const cancelTranslation = () => {
     console.log('Cancelling translation...');
-    const controllers = createRequestController();
-    for (const controller of controllers) {
-        controller.abort();
-    }
-    removeRequestController();
+    // Use the abortAllRequests function from requestManagement.js
+    // This will abort all active controllers and set the processingForceStopped flag
+    const aborted = abortAllRequests();
+    console.log(`Translation cancellation ${aborted ? 'successful' : 'had no active requests to cancel'}`);
+    return aborted;
 };
 
 // Export the functions
