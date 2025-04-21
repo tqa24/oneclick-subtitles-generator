@@ -37,8 +37,8 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
     const checkAvailability = async () => {
       try {
         console.log('Checking narration service availability with multiple attempts');
-        // Use 20 attempts with 5-second intervals
-        const status = await checkNarrationStatusWithRetry(20, 5000);
+        // Use 20 attempts with 10-second intervals and enable quiet mode
+        const status = await checkNarrationStatusWithRetry(20, 10000, true);
         console.log('Final narration service status:', status);
 
         // Set availability based on the actual status

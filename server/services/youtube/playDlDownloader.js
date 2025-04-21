@@ -138,22 +138,24 @@ async function downloadWithPlayDl(videoURL, outputPath, quality = '360p') {
           }
         });
 
-        // First, look for 360p formats that already have audio
+        // First, look for ANY formats that have both video and audio
         const formatsWithAudio = ytdlInfo.formats.filter(format =>
           format.hasVideo &&
           format.hasAudio &&
-          format.height === 360 &&
           format.container === 'mp4'
         );
 
+        // Sort by height (highest quality first)
+        formatsWithAudio.sort((a, b) => (b.height || 0) - (a.height || 0));
+
         if (formatsWithAudio.length > 0) {
-          console.log(`[QUALITY DEBUG] Found ${formatsWithAudio.length} 360p formats with audio`);
+          console.log(`[QUALITY DEBUG] Found ${formatsWithAudio.length} formats with audio`);
 
           return new Promise((resolve, reject) => {
             try {
               // Use the first format that has both video and audio
               const selectedFormat = formatsWithAudio[0];
-              console.log(`[QUALITY DEBUG] Using 360p format with audio: ${selectedFormat.qualityLabel}`);
+              console.log(`[QUALITY DEBUG] Using format with audio: ${selectedFormat.qualityLabel}, Height: ${selectedFormat.height}`);
 
               // Create the stream with the specific format
               const videoStream = ytdl(videoURL, { format: selectedFormat });
@@ -161,7 +163,7 @@ async function downloadWithPlayDl(videoURL, outputPath, quality = '360p') {
 
               // Set up event handlers
               writeStream.on('finish', () => {
-                console.log(`ytdl-core direct download successful for 360p with audio: ${outputPath}`);
+                console.log(`ytdl-core direct download successful with audio: ${outputPath}`);
                 resolve(true);
               });
 
@@ -183,21 +185,24 @@ async function downloadWithPlayDl(videoURL, outputPath, quality = '360p') {
             }
           });
         } else {
-          console.log(`[QUALITY DEBUG] No 360p formats with audio found, falling back to filter approach`);
+          console.log(`[QUALITY DEBUG] No formats with audio found, falling back to filter approach`);
 
           return new Promise((resolve, reject) => {
             try {
               // Create a ytdl stream with specific options for 360p
               const ytdlOptions = {
                 filter: format => {
-                  return format.container === 'mp4' &&
-                         format.hasVideo &&
-                         format.height >= 360 &&
-                         format.height <= 480;
+                  // First priority: any format with both video and audio
+                  if (format.container === 'mp4' && format.hasVideo && format.hasAudio) {
+                    return true;
+                  }
+
+                  // Second priority: any video format
+                  return format.container === 'mp4' && format.hasVideo;
                 }
               };
 
-              console.log(`[QUALITY DEBUG] Using specific ytdl-core filter for 360p`);
+              console.log(`[QUALITY DEBUG] Using specific ytdl-core filter to prioritize audio`);
 
               // Create the stream
               const videoStream = ytdl(videoURL, ytdlOptions);
@@ -205,7 +210,7 @@ async function downloadWithPlayDl(videoURL, outputPath, quality = '360p') {
 
               // Set up event handlers
               writeStream.on('finish', () => {
-                console.log(`ytdl-core direct download successful for 360p: ${outputPath}`);
+                console.log(`ytdl-core direct download successful: ${outputPath}`);
                 resolve(true);
               });
 
@@ -233,17 +238,15 @@ async function downloadWithPlayDl(videoURL, outputPath, quality = '360p') {
       }
 
       // If we get here, the direct ytdl-core approach failed
-      // We'll skip the downloadAndMerge approach for 360p since we want to prioritize formats with audio
+      // We'll skip the downloadAndMerge approach since we want to prioritize formats with audio
       // and only use downloadAndMerge as a last resort
-      console.log(`[QUALITY DEBUG] Direct ytdl-core approach failed, skipping downloadAndMerge for 360p and trying play-dl`);
+      console.log(`[QUALITY DEBUG] Direct ytdl-core approach failed, trying play-dl with audio priority`);
 
-      // If we get here, the ytdl-core approach failed, so use play-dl with a specific quality
-      // For 360p, we want to make sure we get a format with audio
+      // If we get here, the ytdl-core approach failed, so use play-dl with audio priority
       streamOptions = {
-        quality: 360,
         filter: 'audioandvideo' // This ensures we get a format with both audio and video
       };
-      console.log(`[QUALITY DEBUG] Using quality: 360 with audioandvideo filter for play-dl`);
+      console.log(`[QUALITY DEBUG] Using audioandvideo filter for play-dl to prioritize formats with audio`);
     } else if (quality === '144p' || quality === '240p') {
       // For low qualities, force the lowest possible quality
       streamOptions = { quality: 'lowest' };

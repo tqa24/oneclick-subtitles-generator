@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { FiClock, FiSearch, FiX } from 'react-icons/fi';
 import { searchYouTubeVideos, isOAuthEnabled, hasValidTokens } from '../../services/youtubeApiService';
 import { addSearchQueryToHistory, getSearchQueryHistory, clearSearchQueryHistory, formatTimestamp } from '../../utils/historyUtils';
-import QualitySelector from './QualitySelector';
 
 const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, setSelectedVideo, className }) => {
   const { t } = useTranslation();
@@ -180,13 +179,9 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
     // Clear any existing file URLs when selecting a YouTube video
     localStorage.removeItem('current_file_url');
 
-    // Get the default quality from localStorage
-    const quality = localStorage.getItem('youtube_download_quality') || '360p';
-
-    // Add quality to the video object
+    // Set the selected video
     setSelectedVideo({
-      ...video,
-      quality
+      ...video
     });
   };
 
@@ -313,18 +308,7 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
                 </div>
               </div>
 
-              {/* Show quality selector for selected video */}
-              {selectedVideo?.id === video.id && (
-                <QualitySelector
-                  onChange={(quality) => {
-                    // Update the selected video with the quality
-                    setSelectedVideo(prev => ({
-                      ...prev,
-                      quality
-                    }));
-                  }}
-                />
-              )}
+
             </div>
           ))
         )}

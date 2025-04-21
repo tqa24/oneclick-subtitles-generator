@@ -310,8 +310,8 @@ app.post('/api/narration/clear-output', (req, res) => {
 // Direct route for narration service status
 app.get('/api/narration/status', async (req, res) => {
   // Check the narration service with multiple attempts
-  // Use 20 attempts with 5-second intervals for consistency
-  const serviceStatus = await checkNarrationService(20, 5000);
+  // Use 20 attempts with 10-second intervals for consistency
+  const serviceStatus = await checkNarrationService(20, 10000);
 
   // Store the status for other parts of the application
   req.app.set('narrationServiceRunning', serviceStatus.available);
@@ -334,7 +334,7 @@ const OUTPUT_AUDIO_DIR = path.join(NARRATION_DIR, 'output');
 const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
 
 // Function to check if the narration service is running with multiple attempts
-const checkNarrationService = async (maxAttempts = 20, delayMs = 5000) => {
+const checkNarrationService = async (maxAttempts = 20, delayMs = 10000) => {
   console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
   console.log(`This may take some time on first run as the Python server needs to initialize...`);
 
@@ -553,7 +553,7 @@ app.post('/api/narration/generate', async (req, res) => {
     // Check the narration service with multiple attempts
     // For generation, use more attempts with longer delays to ensure we connect
     console.log('Checking narration service before generating...');
-    const serviceStatus = await checkNarrationService(20, 5000);
+    const serviceStatus = await checkNarrationService(20, 10000);
     const serviceRunning = serviceStatus.available;
     const actualPort = NARRATION_PORT; // Always use the configured port
 
@@ -707,9 +707,9 @@ app.use('/api/narration', async (req, res, next) => {
   // We now handle record-reference and upload-reference in their own routes above
 
   // Check if the narration service is available with multiple attempts
-  // Use 20 attempts with 5-second intervals for consistency
+  // Use 20 attempts with 10-second intervals for consistency
   console.log('Proxy checking narration service...');
-  const serviceStatus = await checkNarrationService(20, 5000);
+  const serviceStatus = await checkNarrationService(20, 10000);
   const serviceRunning = serviceStatus.available;
 
   if (!serviceRunning) {

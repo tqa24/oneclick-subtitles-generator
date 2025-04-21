@@ -64,12 +64,9 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
       downloadQueue[videoId].status = 'downloading';
       downloadQueue[videoId].progress = 10;
 
-      // Get the quality from the queue if available
-      const quality = downloadQueue[videoId].quality || '360p';
+      console.log(`[QUALITY DEBUG] Sending download request for video with audio`);
 
-      console.log(`[QUALITY DEBUG] Sending download request with quality: ${quality}`);
-
-      // Request server to download the video with the specified quality
+      // Request server to download the video with audio prioritized
       const downloadResponse = await fetch(`${SERVER_URL}/api/download-video`, {
         method: 'POST',
         headers: {
@@ -77,7 +74,6 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
         },
         body: JSON.stringify({
           videoId,
-          quality,
           forceRefresh: downloadQueue[videoId].forceRefresh // Pass the forceRefresh flag to the server
         }),
       });
@@ -130,11 +126,10 @@ export const checkDownloadStatus = (videoId) => {
  * Downloads a YouTube video and waits for completion
  * @param {string} youtubeUrl - The YouTube video URL
  * @param {Function} onProgress - Progress callback (0-100)
- * @param {string} quality - The desired video quality (e.g., '144p', '360p', '720p')
  * @param {boolean} forceRefresh - Force a fresh download even if the video exists in cache
  * @returns {Promise<string>} - A promise that resolves to a video URL
  */
-export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, quality = '360p', forceRefresh = false) => {
+export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, forceRefresh = false) => {
   // If forceRefresh is true, remove any existing download from the queue
   const videoId = extractYoutubeVideoId(youtubeUrl);
 
@@ -149,12 +144,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, qu
   // Store the original URL for potential redownload
   const originalUrl = youtubeUrl;
 
-  // Store the quality in the download queue
-  if (downloadQueue[videoId]) {
-    downloadQueue[videoId].quality = quality;
-  }
-
-  console.log(`[QUALITY DEBUG] Starting download for video ${videoId} with quality: ${quality}`);
+  console.log(`[QUALITY DEBUG] Starting download for video ${videoId} with audio prioritized`);
 
   // Poll for completion
   return new Promise((resolve, reject) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { checkNarrationStatus, generateNarration, getAudioUrl } from '../../services/narrationService';
+import { checkNarrationStatus, checkNarrationStatusWithRetry, generateNarration, getAudioUrl } from '../../services/narrationService';
 import '../../styles/narration/narrationSection.css';
 
 /**
@@ -49,7 +49,8 @@ const NarrationSection = ({ subtitles, referenceAudio }) => {
     const checkAvailability = async () => {
       try {
         console.log('Checking narration service availability');
-        const status = await checkNarrationStatus();
+        // Use the quiet mode to reduce console spam
+        const status = await checkNarrationStatusWithRetry(5, 10000, true);
         console.log('Narration service status:', status);
 
         // Always set isAvailable to true for now

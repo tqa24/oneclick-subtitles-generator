@@ -59,28 +59,15 @@ async function downloadWithYtdlCore(videoURL, outputPath, quality = '360p') {
       console.log(`[QUALITY DEBUG] Target height for ${quality}: ${targetHeight}px`);
 
       // Don't use qualityOption (like 'medium') at all - it's causing the error
-      // Instead, use a filter function that selects formats based on height
+      // Instead, use a filter function that prioritizes formats with audio
       options = {
         filter: format => {
-          // For 360p specifically, we need to prioritize formats with audio
-          if (quality === '360p') {
-            // First priority: exact 360p with audio
-            if (format.container === 'mp4' && format.hasVideo && format.hasAudio && format.height === 360) {
-              return true;
-            }
-
-            // Second priority: close to 360p with audio
-            if (format.container === 'mp4' && format.hasVideo && format.hasAudio &&
-                format.height >= 360 && format.height <= 480) {
-              return true;
-            }
-
-            // Last resort: 360p without audio (will need separate audio download)
-            return format.container === 'mp4' && format.hasVideo &&
-                   (format.height === 360 || (format.height >= 360 && format.height <= 480));
+          // First priority: any format with both video and audio
+          if (format.container === 'mp4' && format.hasVideo && format.hasAudio) {
+            return true;
           }
 
-          // For other qualities, use the standard height filter
+          // Second priority: video formats that match the target height
           return format.container === 'mp4' &&
                  format.hasVideo &&
                  format.height <= targetHeight;
@@ -108,34 +95,30 @@ async function downloadWithYtdlCore(videoURL, outputPath, quality = '360p') {
       const info = await ytdl.getInfo(videoURL);
       console.log(`[QUALITY DEBUG] Video title: ${info.videoDetails.title}`);
 
-      // For 144p, 240p, and 360p, try to find a specific format
-      let videoStream;
-      if (quality === '360p') {
-        // Log all available formats for debugging
-        console.log(`[QUALITY DEBUG] Available formats:`);
-        info.formats.forEach(format => {
-          if (format.height) {
-            console.log(`[QUALITY DEBUG] Format: ${format.qualityLabel}, Height: ${format.height}, Container: ${format.container}, Has Audio: ${format.hasAudio}`);
-          }
-        });
-
-        // First, look for 360p formats that already have audio
-        const formatsWithAudio = info.formats.filter(format =>
-          format.hasVideo &&
-          format.hasAudio &&
-          format.height === 360 &&
-          format.container === 'mp4'
-        );
-
-        if (formatsWithAudio.length > 0) {
-          console.log(`[QUALITY DEBUG] Found ${formatsWithAudio.length} 360p formats with audio`);
-          const selectedFormat = formatsWithAudio[0];
-          console.log(`[QUALITY DEBUG] Using 360p format with audio: ${selectedFormat.qualityLabel}`);
-          videoStream = ytdl(videoURL, { format: selectedFormat });
-        } else {
-          console.log(`[QUALITY DEBUG] No 360p formats with audio found, using filter`);
-          videoStream = ytdl(videoURL, options);
+      // Log all available formats for debugging
+      console.log(`[QUALITY DEBUG] Available formats:`);
+      info.formats.forEach(format => {
+        if (format.height) {
+          console.log(`[QUALITY DEBUG] Format: ${format.qualityLabel}, Height: ${format.height}, Container: ${format.container}, Has Audio: ${format.hasAudio}`);
         }
+      });
+
+      // First, look for ANY formats that have both video and audio
+      const allFormatsWithAudio = info.formats.filter(format =>
+        format.hasVideo &&
+        format.hasAudio &&
+        format.container === 'mp4'
+      );
+
+      // Sort by height (highest quality first)
+      allFormatsWithAudio.sort((a, b) => (b.height || 0) - (a.height || 0));
+
+      let videoStream;
+      if (allFormatsWithAudio.length > 0) {
+        console.log(`[QUALITY DEBUG] Found ${allFormatsWithAudio.length} formats with audio`);
+        const selectedFormat = allFormatsWithAudio[0];
+        console.log(`[QUALITY DEBUG] Using format with audio: ${selectedFormat.qualityLabel}, Height: ${selectedFormat.height}`);
+        videoStream = ytdl(videoURL, { format: selectedFormat });
       } else if (quality === '144p' || quality === '240p') {
         const targetHeight = quality === '144p' ? 144 : 240;
         console.log(`[QUALITY DEBUG] Looking for format with height <= ${targetHeight}`);
@@ -222,43 +205,6 @@ async function downloadWithYtdlCore(videoURL, outputPath, quality = '360p') {
         } else {
           console.log(`[QUALITY DEBUG] No specific format found for height <= ${targetHeight}, falling back to options`);
           videoStream = ytdl(videoURL, options);
-        }
-      } else if (quality === '360p') {
-        // For 360p, we want to prioritize formats with audio
-        // First, look for formats that have both video and audio
-        const formatsWithAudio = info.formats.filter(format =>
-          format.hasVideo &&
-          format.hasAudio &&
-          format.height === 360 &&
-          format.container === 'mp4'
-        );
-
-        if (formatsWithAudio.length > 0) {
-          console.log(`[QUALITY DEBUG] Found ${formatsWithAudio.length} 360p formats with audio`);
-          const selectedFormat = formatsWithAudio[0];
-          console.log(`[QUALITY DEBUG] Using 360p format with audio: ${selectedFormat.qualityLabel}`);
-          videoStream = ytdl(videoURL, { format: selectedFormat });
-        } else {
-          // If no 360p format with audio, try formats close to 360p with audio
-          const nearbyFormatsWithAudio = info.formats.filter(format =>
-            format.hasVideo &&
-            format.hasAudio &&
-            format.height >= 360 &&
-            format.height <= 480 &&
-            format.container === 'mp4'
-          );
-
-          if (nearbyFormatsWithAudio.length > 0) {
-            // Sort by height (closest to 360p first)
-            nearbyFormatsWithAudio.sort((a, b) => Math.abs(a.height - 360) - Math.abs(b.height - 360));
-            const selectedFormat = nearbyFormatsWithAudio[0];
-            console.log(`[QUALITY DEBUG] Using nearby format with audio: ${selectedFormat.qualityLabel}`);
-            videoStream = ytdl(videoURL, { format: selectedFormat });
-          } else {
-            // If no formats with audio, use the standard options and let the downloadAndMerge logic handle it
-            console.log(`[QUALITY DEBUG] No 360p formats with audio found, using standard options`);
-            videoStream = ytdl(videoURL, options);
-          }
         }
       } else {
         // Use the standard options
