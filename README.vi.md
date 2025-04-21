@@ -1,50 +1,17 @@
 # Phần Mềm Tạo Phụ Đề Tự Động
 
-Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video bằng công nghệ AI Gemini của Google.
+Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video, audio, dịch SRT, thuyết minh, tạo hình nền, phù hợp với người dùng phổ thông.
 
 ## Hướng Dẫn Cài Đặt Nhanh
 
 ### Cài Đặt Trên Windows
 
-#### 1. Chuẩn Bị
+- Vào mục Release tải về OSG_all_in_one.bat
 
-- Tải và giải nén zip từ GitHub
-- Mở PowerShell với quyền Administrator (Windows + X, chọn PowerShell Admin)
+- Mở bằng quyền admin và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng thuyết minh)
 
-#### 2. Cài Đặt 
+### Cập Nhật hoặc Chạy Ứng Dụng
 
-```powershell
-# Cài đặt Chocolatey, FFmpeg, Node.js và Cho phép chạy script
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-choco install ffmpeg -y
-winget install OpenJS.NodeJS.LTS
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+- Mở OSG_all_in_one.bat bằng quyền admin và làm theo hướng dẫn.
 
-
-```
-
-Đóng và mở lại PowerShell sau khi cài đặt Node.js.
-
-### Cài Đặt Trên macOS
-
-```bash
-# Cài đặt Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Cài đặt Node.js và FFmpeg
-brew install node ffmpeg
-# Cài đặt uv
-curl -fsSL https://astral.sh/uv/install.sh | sh
-```
-
-### Cài Đặt Ứng Dụng
-
-```bash
-cd đường-dẫn-đến-thư-mục-giải-nén
-npm run install:all
-npm run dev:cuda
-```
-
-Trình duyệt sẽ tự động mở tại http://localhost:3005
-
+- Trình duyệt sẽ tự động mở tại http://localhost:3005
