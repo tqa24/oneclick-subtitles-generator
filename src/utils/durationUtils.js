@@ -7,10 +7,10 @@
  * @returns {number} - Segment duration in minutes
  */
 export const getSegmentDurationMinutes = () => {
-    const savedDuration = parseInt(localStorage.getItem('segment_duration') || '3');
+    const savedDuration = parseInt(localStorage.getItem('segment_duration') || '5');
     // Ensure the value is one of the allowed options: 1, 2, 3, 5, 10, 15, 20, 30, 45
     const allowedDurations = [1, 2, 3, 5, 10, 15, 20, 30, 45];
-    return allowedDurations.includes(savedDuration) ? savedDuration : 3;
+    return allowedDurations.includes(savedDuration) ? savedDuration : 5;
 };
 
 /**
