@@ -91,18 +91,27 @@ const saveUserPromptPresetsImpl = (presets) => {
 };
 
 const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, options = {}) => {
-    // Get custom prompt from localStorage or use default
-    const customPrompt = localStorage.getItem('transcription_prompt');
+    // First check if there's a session-specific prompt (from video analysis)
+    // This allows using the recommended preset for the current session only
+    const sessionPrompt = sessionStorage.getItem('current_session_prompt');
+
+    // If no session prompt, get custom prompt from localStorage or use default
+    const customPrompt = sessionPrompt || localStorage.getItem('transcription_prompt');
 
     // Get the transcription rules if available
     const transcriptionRules = getTranscriptionRules();
 
-    // Base prompt (either custom or default)
+    // Base prompt (either session-specific, custom, or default)
     let basePrompt;
     if (customPrompt && customPrompt.trim() !== '') {
         basePrompt = customPrompt.replace('{contentType}', contentType);
     } else {
         basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+    }
+
+    // Log which prompt is being used
+    if (sessionPrompt) {
+        console.log('Using session-specific prompt from video analysis');
     }
 
     // If we have user-provided subtitles, replace the entire prompt with a simplified version
