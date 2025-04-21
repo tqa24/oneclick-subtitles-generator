@@ -85,7 +85,18 @@ const LyricsDisplay = ({
   videoTitle = 'subtitles' // Video title for download filenames
 }) => {
   const { t } = useTranslation();
-  const [zoom, setZoom] = useState(1);
+  // Initialize zoom with a function that calculates the minimum zoom based on duration
+  const [zoom, setZoom] = useState(() => {
+    // Try to get the duration from the video element if it exists
+    const videoElement = document.querySelector('video');
+    if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
+      // Calculate minimum zoom based on duration
+      const minZoom = videoElement.duration <= 300 ? 1 : videoElement.duration / 300;
+      return minZoom;
+    }
+    // Default to 1 if we can't determine the duration yet
+    return 1;
+  });
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const rowHeights = useRef({});
@@ -134,6 +145,20 @@ const LyricsDisplay = ({
       listRef.current.resetAfterIndex(0);
     }
   }, [matchedLyrics]);
+
+  // Update zoom level when duration changes
+  useEffect(() => {
+    if (duration) {
+      // Calculate minimum zoom based on duration
+      const minZoom = duration <= 300 ? 1 : duration / 300;
+
+      // Only update if the current zoom is less than the minimum
+      if (zoom < minZoom) {
+        console.log(`Updating zoom from ${zoom} to minimum ${minZoom} based on duration ${duration}`);
+        setZoom(minZoom);
+      }
+    }
+  }, [duration, zoom]);
 
   // Listen for changes to the show_waveform setting in localStorage
   useEffect(() => {

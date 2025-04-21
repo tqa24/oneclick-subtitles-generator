@@ -57,15 +57,13 @@ const LyricsHeader = ({
     }
   }, [zoom, setZoom]);
 
-  // Set initial zoom level when component mounts
+  // Update durationRef when video metadata is loaded
   useEffect(() => {
     const videoElement = document.querySelector('video');
     if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
       durationRef.current = videoElement.duration;
-      const minZoom = calculateMinZoom(durationRef.current);
-      setZoom(minZoom);
     }
-  }, [setZoom]);
+  }, []);
 
   return (
     <div className="combined-controls">
