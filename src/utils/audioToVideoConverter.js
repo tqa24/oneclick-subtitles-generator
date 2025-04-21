@@ -3,6 +3,37 @@
  */
 
 /**
+ * Generate a hash for an audio file to use for caching
+ * @param {File} audioFile - The audio file to hash
+ * @returns {Promise<string>} - A promise that resolves to the hash
+ */
+const generateAudioHash = async (audioFile) => {
+    try {
+        // Read the first 1MB of the file for hashing
+        const maxBytes = 1024 * 1024; // 1MB
+        const chunk = audioFile.slice(0, Math.min(maxBytes, audioFile.size));
+        const arrayBuffer = await chunk.arrayBuffer();
+
+        // Create a hash of the chunk + file metadata
+        const hashBuffer = await crypto.subtle.digest(
+            'SHA-256',
+            new Uint8Array([...new Uint8Array(arrayBuffer), ...new TextEncoder().encode(`${audioFile.name}_${audioFile.size}`)])
+        );
+
+        // Convert hash to hex string
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Return first 10 characters of hash for brevity
+        return hashHex.substring(0, 10);
+    } catch (error) {
+        console.error('Error generating audio hash:', error);
+        // Fallback to a simple hash based on file properties
+        return `${audioFile.name.replace(/[^a-z0-9]/gi, '')}_${audioFile.size}`.substring(0, 10);
+    }
+};
+
+/**
  * Convert an audio file to video by sending it to the server for conversion
  * @param {File} audioFile - The audio file to convert
  * @param {Function} onStatusUpdate - Optional callback for status updates
@@ -25,6 +56,38 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
     try {
         console.log(`Converting audio file to video: ${audioFile.name}`);
         console.log(`Audio file type: ${audioFile.type}, size: ${audioFile.size} bytes`);
+
+        // Generate a hash for the audio file
+        const audioHash = await generateAudioHash(audioFile);
+        console.log(`Generated audio hash: ${audioHash}`);
+
+        // Check if we already have a converted version of this audio file
+        const checkResponse = await fetch(`http://localhost:3007/api/converted-audio-exists/${audioHash}`);
+        const checkResult = await checkResponse.json();
+
+        if (checkResult.exists) {
+            console.log(`Found existing converted video for audio hash ${audioHash}`);
+
+            // Fetch the existing converted video
+            const videoUrl = `http://localhost:3007${checkResult.video}`;
+            const videoResponse = await fetch(videoUrl);
+            const videoBlob = await videoResponse.blob();
+
+            // Create a File object from the blob
+            const videoFile = new File(
+                [videoBlob],
+                audioFile.name.replace(/\.(mp3|wav|ogg|aac)$/i, '.mp4'),
+                { type: 'video/mp4' }
+            );
+
+            console.log(`Using cached converted video: ${videoFile.name}`);
+            console.log(`Video file type: ${videoFile.type}, size: ${videoFile.size} bytes`);
+
+            return videoFile;
+        }
+
+        // No cached version found, proceed with conversion
+        console.log(`No cached version found for audio hash ${audioHash}, converting...`);
 
         // Call the server endpoint to convert audio to video
         const response = await fetch('http://localhost:3007/api/convert-audio-to-video', {
