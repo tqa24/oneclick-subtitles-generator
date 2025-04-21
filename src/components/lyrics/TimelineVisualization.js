@@ -46,7 +46,20 @@ const TimelineVisualization = ({
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
   const animationFrameRef = useRef(null);
+  // Initialize currentZoomRef with the correct zoom level
   const currentZoomRef = useRef(zoom);
+
+  // Update currentZoomRef immediately when zoom prop changes
+  useEffect(() => {
+    // Ensure we respect the minimum zoom level
+    if (duration) {
+      const minZoom = calculateMinZoom(duration);
+      const effectiveZoom = Math.max(minZoom, zoom);
+      currentZoomRef.current = effectiveZoom;
+    } else {
+      currentZoomRef.current = zoom;
+    }
+  }, [zoom, duration]);
   const autoScrollRef = useRef(null);
   const isScrollingRef = useRef(false);
   const canvasWidthRef = useRef(0);

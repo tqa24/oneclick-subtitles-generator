@@ -124,6 +124,11 @@ export const animateZoom = (
   const minZoom = calculateMinZoom(timelineEnd);
   const effectiveTargetZoom = Math.max(minZoom, targetZoom);
 
+  // Log the zoom adjustment if it's different from the target
+  if (effectiveTargetZoom !== targetZoom) {
+    console.log(`Adjusting zoom from ${targetZoom} to minimum ${effectiveTargetZoom}`);
+  }
+
   // Let getVisibleTimeRange recalculate panOffset to center on playhead
   currentZoomRef.current = effectiveTargetZoom;
   drawTimeline();
