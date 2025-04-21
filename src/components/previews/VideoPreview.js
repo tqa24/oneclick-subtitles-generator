@@ -119,7 +119,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       setOptimizedVideoInfo(null); // Reset optimized video info
 
       // Clear narration data when video source changes
-      console.log('VideoPreview: Clearing narration data for new video source');
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('VideoPreview: Clearing narration data for new video source');
+      }
       window.originalNarrations = [];
       window.translatedNarrations = [];
       localStorage.removeItem('originalNarrations');
@@ -147,11 +150,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         return;
       }
 
-      console.log('VideoPreview: Loading new video source:', videoSource);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('VideoPreview: Loading new video source:', videoSource);
+      }
 
       // If it's a blob URL (from file upload), use it directly
       if (videoSource.startsWith('blob:')) {
-        console.log('Loading file URL:', videoSource);
+        // Only log in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Loading file URL:', videoSource);
+        }
         setVideoUrl(videoSource);
 
         // Check if we have an optimized version in localStorage
@@ -165,7 +174,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               // by comparing the timestamp in the URL or filename
               videoSource.includes(splitResult.originalMedia.split('/').pop().split('.')[0])) {
 
-            console.log('Found matching optimized video:', splitResult.optimized);
+            // Only log in development mode
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Found matching optimized video:', splitResult.optimized);
+            }
             setOptimizedVideoUrl(`${SERVER_URL}${splitResult.optimized.video}`);
 
             // Store the optimization info
@@ -176,7 +188,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               height: splitResult.optimized.height
             });
           } else {
-            console.log('No matching optimized video found for current source');
+            // Only log in development mode
+            if (process.env.NODE_ENV === 'development') {
+              console.log('No matching optimized video found for current source');
+            }
             setOptimizedVideoUrl('');
             setOptimizedVideoInfo(null);
           }
@@ -267,7 +282,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     // Event handlers
     const handleMetadataLoaded = () => {
-      console.log('Video metadata loaded successfully for:', videoUrl);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Video metadata loaded successfully for:', videoUrl);
+      }
       setIsLoaded(true);
       setDuration(videoElement.duration);
       setError(''); // Clear any previous errors
@@ -332,7 +350,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             // Update the current subtitle text
             if (currentSub) {
               setCurrentSubtitleText(currentSub.text);
-              console.log(`Showing ${useTranslated ? 'translated' : 'original'} subtitle: ${currentSub.text}`);
+              // Only log in development mode and throttle to avoid excessive logging
+              if (process.env.NODE_ENV === 'development') {
+                // Store the last logged subtitle to avoid logging the same one repeatedly
+                if (!window._lastLoggedSubtitle || window._lastLoggedSubtitle !== currentSub.text) {
+                  console.log(`Showing ${useTranslated ? 'translated' : 'original'} subtitle: ${currentSub.text}`);
+                  window._lastLoggedSubtitle = currentSub.text;
+                }
+              }
 
               // Update fullscreen subtitle if in fullscreen mode
               const container = document.getElementById('fullscreen-subtitle-overlay');
@@ -486,7 +511,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                document.msFullscreenElement === videoElement);
 
       setIsFullscreen(isVideoFullscreen);
-      console.log('Fullscreen state changed:', isVideoFullscreen);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fullscreen state changed:', isVideoFullscreen);
+      }
 
       // If entering fullscreen, create the subtitle container
       if (isVideoFullscreen) {
@@ -674,24 +702,30 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             // Store subtitles data in window for access by other components
             if (subtitlesArray && subtitlesArray.length > 0) {
               window.subtitlesData = subtitlesArray;
-              console.log('VideoPreview - Storing subtitles data in window:', subtitlesArray);
+              // Only log in development mode
+              if (process.env.NODE_ENV === 'development' && !window._loggedSubtitlesData) {
+                console.log('VideoPreview - Storing subtitles data in window');
+                window._loggedSubtitlesData = true;
+              }
             }
             // Store original subtitles (same as subtitlesArray in this context)
             if (subtitlesArray && subtitlesArray.length > 0) {
               window.originalSubtitles = subtitlesArray;
-              console.log('VideoPreview - Storing original subtitles in window:', subtitlesArray);
+              // Only log in development mode
+              if (process.env.NODE_ENV === 'development' && !window._loggedOriginalSubtitles) {
+                console.log('VideoPreview - Storing original subtitles in window');
+                window._loggedOriginalSubtitles = true;
+              }
             }
             // Store translated subtitles if available
             if (translatedSubtitles && translatedSubtitles.length > 0) {
               window.translatedSubtitles = translatedSubtitles;
-              console.log('VideoPreview - Storing translated subtitles in window:', translatedSubtitles);
+              // Only log in development mode
+              if (process.env.NODE_ENV === 'development' && !window._loggedTranslatedSubtitles) {
+                console.log('VideoPreview - Storing translated subtitles in window');
+                window._loggedTranslatedSubtitles = true;
+              }
             }
-            return {};
-          })()}
-          /* Debug narration data */
-          {...(() => {
-            console.log('VideoPreview - window.originalNarrations:', window.originalNarrations);
-            console.log('VideoPreview - window.translatedNarrations:', window.translatedNarrations);
             return {};
           })()}
           getAudioUrl={(filename) => `${SERVER_URL}/narration/audio/${filename || 'test.wav'}`}
