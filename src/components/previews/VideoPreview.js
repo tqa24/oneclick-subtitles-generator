@@ -343,7 +343,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 // Create subtitle element
                 const subtitle = document.createElement('div');
                 subtitle.id = 'fullscreen-subtitle';
-                subtitle.textContent = currentSub.text;
+
+                // Handle newlines by splitting the text and adding <br> tags
+                const lines = currentSub.text.split('\n');
+                lines.forEach((line, index) => {
+                  if (index > 0) {
+                    subtitle.appendChild(document.createElement('br'));
+                  }
+                  subtitle.appendChild(document.createTextNode(line));
+                });
 
                 // Apply styles
                 subtitle.style.display = 'inline-block';
@@ -363,7 +371,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 subtitle.style.textShadow = subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ?
                                           '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none';
                 subtitle.style.maxWidth = '100%';
-                subtitle.style.wordWrap = 'break-word';
+                subtitle.style.overflowWrap = 'break-word';
 
                 // Add to container
                 container.appendChild(subtitle);
@@ -833,7 +841,16 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
               {/* Custom subtitle display */}
               <div className="custom-subtitle-container" style={{ width: `${subtitleSettings.boxWidth || '80'}%` }}>
-                {currentSubtitleText && <div className="custom-subtitle">{currentSubtitleText}</div>}
+                {currentSubtitleText && (
+                  <div className="custom-subtitle">
+                    {currentSubtitleText.split('\n').map((line, index) => (
+                      <React.Fragment key={index}>
+                        {index > 0 && <br />}
+                        {line}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : (

@@ -47,7 +47,14 @@ const TranslationPreview = ({ translatedSubtitles, targetLanguages }) => {
                   <span className="preview-time">
                     {startTimeDisplay || '00:00:00.000'} → {endTimeDisplay || '00:00:05.000'}
                   </span>
-                  <span className="preview-text">{subtitle.text}</span>
+                  <span className="preview-text">
+                    {subtitle.text.split('\n').map((line, lineIndex) => (
+                      <React.Fragment key={lineIndex}>
+                        {lineIndex > 0 && <br />}
+                        {line}
+                      </React.Fragment>
+                    ))}
+                  </span>
                 </div>
               );
             })}

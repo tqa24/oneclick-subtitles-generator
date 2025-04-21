@@ -385,7 +385,14 @@ const LyricItem = ({
                 if (!isEditing) {
                   onLyricClick(lyric.start);
                 }
-              }}>{lyric.text}</span>
+              }}>
+                {lyric.text.split('\n').map((line, lineIndex) => (
+                  <React.Fragment key={lineIndex}>
+                    {lineIndex > 0 && <br />}
+                    {line}
+                  </React.Fragment>
+                ))}
+              </span>
             )}
           </div>
 

@@ -13,7 +13,7 @@ const SubtitlesPreview = ({ subtitles }) => {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     const milliseconds = Math.floor((timeInSeconds % 1) * 1000);
-    
+
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
   };
 
@@ -24,7 +24,14 @@ const SubtitlesPreview = ({ subtitles }) => {
           <div className="subtitle-timing">
             {formatTimeForDisplay(subtitle.start)} → {formatTimeForDisplay(subtitle.end)}
           </div>
-          <div className="subtitle-text">{subtitle.text}</div>
+          <div className="subtitle-text">
+            {subtitle.text.split('\n').map((line, lineIndex) => (
+              <React.Fragment key={lineIndex}>
+                {lineIndex > 0 && <br />}
+                {line}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       ))}
     </div>
