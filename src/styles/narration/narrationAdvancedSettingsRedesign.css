@@ -36,71 +36,19 @@
   height: 32px;
 }
 
-.custom-slider-container {
-  position: relative;
-  flex: 1;
+/* Use the main custom-slider styles but override height for compact version */
+.advanced-settings .custom-slider-container {
   height: 32px;
-  display: flex;
-  align-items: center;
 }
 
-.custom-slider-track {
-  position: absolute;
-  width: 100%;
+.advanced-settings .custom-slider-track {
   height: 3px;
-  background-color: var(--md-outline-variant);
   border-radius: 1.5px;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
-.custom-slider-fill {
-  position: absolute;
-  height: 100%;
-  background-color: var(--md-primary);
-  border-radius: 1.5px 0 0 1.5px;
-  left: 0;
-}
-
-.custom-slider-thumb {
-  position: absolute;
+.advanced-settings .custom-slider-thumb {
   width: 14px;
   height: 14px;
-  background-color: var(--md-primary);
-  border-radius: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: var(--md-elevation-level1);
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.custom-slider-thumb:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.custom-slider-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-}
-
-/* Disabled state */
-.custom-slider-container.disabled .custom-slider-track,
-.custom-slider-container.disabled .custom-slider-fill,
-.custom-slider-container.disabled .custom-slider-thumb {
-  opacity: 0.5;
-}
-
-.custom-slider-container.disabled .custom-slider-input {
-  cursor: not-allowed;
 }
 
 /* Slider value display */

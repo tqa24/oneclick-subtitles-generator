@@ -8,6 +8,7 @@
 @import './inputs.css';
 @import './delimiters.css';
 @import './slider.css';
+@import './slider-fixes.css'; /* Import slider fixes */
 @import './buttons.css';
 @import './preview.css';
 @import './status.css';

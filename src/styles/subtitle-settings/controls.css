@@ -266,6 +266,11 @@ input:checked + .toggle-slider:before {
   cursor: not-allowed;
 }
 
+/* Fix for ghost duplicate effect in disabled sliders */
+.subtitle-settings-panel .custom-slider-container.disabled {
+  pointer-events: none;
+}
+
 .toggle-label {
   font-size: var(--md-body-medium-size, 0.9rem);
   color: var(--md-on-surface);
