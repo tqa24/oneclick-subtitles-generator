@@ -82,6 +82,7 @@
   "swayCoefDesc": "Giá trị thấp hơn cải thiện chất lượng",
   "cfgStrength": "Độ giống giọng",
   "cfgStrengthDesc": "Giá trị cao hơn tăng độ giống giọng",
+  "nfeStepDesc": "Giá trị cao hơn cải thiện chất lượng nhưng mất nhiều thời gian hơn",
   "higherValuesImproveQuality": "Giá trị cao hơn cải thiện chất lượng nhưng mất nhiều thời gian hơn",
 
   "seedControl": "Kiểm soát Seed",
@@ -102,6 +103,7 @@
 
   "batchProcessing": "Xử lý hàng loạt",
   "batchSize": "Batch Size",
+  "batchSizeDesc": "Đặt giá trị nhỏ hơn nếu GPU của bạn không thể xử lý",
   "all": "Tất cả",
   "mergeOutput": "Gộp tất cả các tập tin âm thanh"
 }
