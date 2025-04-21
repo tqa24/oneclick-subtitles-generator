@@ -451,6 +451,57 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
 });
 
 /**
+ * GET /api/converted-audio-exists/:audioHash - Check if a converted audio file exists
+ */
+router.get('/converted-audio-exists/:audioHash', (req, res) => {
+  const { audioHash } = req.params;
+
+  // Look for any files that match the pattern converted_<audioHash>_*.mp4
+  const files = fs.readdirSync(VIDEOS_DIR);
+  const convertedFile = files.find(file => file.startsWith(`converted_${audioHash}_`) && file.endsWith('.mp4'));
+
+  if (convertedFile) {
+    const videoPath = path.join(VIDEOS_DIR, convertedFile);
+    const stats = fs.statSync(videoPath);
+
+    // Get video metadata using ffprobe
+    const { getMediaDuration } = require('../services/videoProcessing/durationUtils');
+
+    // Get the duration asynchronously and then respond
+    getMediaDuration(videoPath)
+      .then(duration => {
+        res.json({
+          exists: true,
+          video: `/videos/${convertedFile}`,
+          width: 256,  // Default values for converted audio files
+          height: 144,
+          fps: 15,
+          duration: duration,
+          resolution: '144p',
+          size: stats.size,
+          createdAt: stats.birthtime
+        });
+      })
+      .catch(error => {
+        console.error(`[CONVERTED-AUDIO-EXISTS] Error getting duration for ${videoPath}:`, error);
+        // Still return that the file exists, just without duration
+        res.json({
+          exists: true,
+          video: `/videos/${convertedFile}`,
+          width: 256,
+          height: 144,
+          fps: 15,
+          resolution: '144p',
+          size: stats.size,
+          createdAt: stats.birthtime
+        });
+      });
+  } else {
+    res.json({ exists: false });
+  }
+});
+
+/**
  * POST /api/convert-audio-to-video - Convert an audio file to a video file
  */
 router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/*' }), async (req, res) => {
@@ -461,8 +512,44 @@ router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/
     // Generate a unique filename for the audio file
     const timestamp = Date.now();
     const fileExtension = contentType.split('/')[1] || 'mp3';
+
+    // Generate a hash of the audio content for caching purposes
+    const crypto = require('crypto');
+    const audioHash = crypto.createHash('md5').update(req.body).digest('hex').substring(0, 10);
+
+    // Check if we already have a converted file for this audio
+    const files = fs.readdirSync(VIDEOS_DIR);
+    const existingConvertedFile = files.find(file => file.startsWith(`converted_${audioHash}_`) && file.endsWith('.mp4'));
+
+    if (existingConvertedFile) {
+      console.log(`[CONVERT-AUDIO] Found existing converted file for audio hash ${audioHash}: ${existingConvertedFile}`);
+      const videoPath = path.join(VIDEOS_DIR, existingConvertedFile);
+
+      try {
+        // Get video metadata
+        const { getMediaDuration } = require('../services/videoProcessing/durationUtils');
+        const duration = await getMediaDuration(videoPath);
+
+        // Return the existing converted file
+        return res.json({
+          success: true,
+          video: `/videos/${existingConvertedFile}`,
+          width: 256,
+          height: 144,
+          fps: 15,
+          duration: duration,
+          resolution: '144p',
+          message: 'Using cached converted video',
+          cached: true
+        });
+      } catch (error) {
+        console.error(`[CONVERT-AUDIO] Error getting metadata for existing converted file: ${error.message}`);
+        // Continue with new conversion as fallback
+      }
+    }
+
     const audioFilename = `audio_${timestamp}.${fileExtension}`;
-    const videoFilename = `converted_${timestamp}.mp4`;
+    const videoFilename = `converted_${audioHash}_${timestamp}.mp4`;
     const audioPath = path.join(VIDEOS_DIR, audioFilename);
     const videoPath = path.join(VIDEOS_DIR, videoFilename);
 

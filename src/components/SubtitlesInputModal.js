@@ -63,8 +63,8 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
   };
 
   return (
-    <div className="subtitles-input-modal-overlay" onClick={onClose}>
-      <div className="subtitles-input-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="subtitles-input-modal-overlay">
+      <div className="subtitles-input-modal">
         <div className="subtitles-input-modal-header">
           <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
           <button className="close-button" onClick={onClose}>
