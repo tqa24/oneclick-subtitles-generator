@@ -274,13 +274,8 @@ const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLang
             exampleJson += '\n    {\n      "language": "' + lang + '",\n      "texts": [';
 
             // Use all subtitle lines as examples
-            for (let i = 0; i < Math.min(3, subtitleLines.length); i++) {
-                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, '\"') + '", "translated": "[Translation in ' + lang + ']" }' + (i < Math.min(3, subtitleLines.length) - 1 ? ',' : '');
-            }
-
-            // If there are more lines, add ellipsis
-            if (subtitleLines.length > 3) {
-                exampleJson += ',\n        ...';
+            for (let i = 0; i < subtitleLines.length; i++) {
+                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, '\"') + '", "translated": "[Translation in ' + lang + ']" }' + (i < subtitleLines.length - 1 ? ',' : '');
             }
 
             exampleJson += '\n      ]\n    }' + (langIndex < targetLanguage.length - 1 ? ',' : '');
