@@ -353,6 +353,9 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
                   </div>
                 ))}
               </div>
+              <div className="setting-description">
+                {t('narration.batchSizeDesc', 'Set this smaller if your GPU cannot handle')}
+              </div>
             </div>
           </div>
         </div>

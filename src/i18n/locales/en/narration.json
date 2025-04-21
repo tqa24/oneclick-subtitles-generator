@@ -70,6 +70,7 @@
     "balanced": "Balanced (32)",
     "highQuality": "High Quality (64)"
   },
+  "nfeStepDesc": "Higher values improve quality but take longer",
   "swayCoef": "Sway Sampling",
   "swayCoefDesc": "Lower values improve quality",
   "cfgStrength": "Voice Similarity",
@@ -92,6 +93,7 @@
 
   "batchProcessing": "Batch Processing",
   "batchSize": "Batch Size",
+  "batchSizeDesc": "Set this smaller if your GPU cannot handle",
   "all": "All",
   "mergeOutput": "Merge All Audio Files"
 }
