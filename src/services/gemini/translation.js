@@ -421,45 +421,15 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
                                     console.log(`Subtitle ${i+1} translation map:`, translationMap);
 
-                                    // Build the formatted text by walking through the chain
-                                    let formattedText = '';
+                                    // For chain-based formatting, we'll store the translation map for each subtitle
+                                    // This allows us to access translations for each language in the final formatting step
 
-                                    for (let j = 0; j < chainItems.length; j++) {
-                                        const item = chainItems[j];
-                                        console.log(`Processing chain item ${j}:`, item);
+                                    // Store the translation map for this subtitle
+                                    // We'll use this in the final formatting step to get the correct translation for each language
+                                    combinedTranslations.push(translationMap);
 
-                                        if (item.type === 'language') {
-                                            if (item.isOriginal) {
-                                                // Add the original text
-                                                formattedText += originalText;
-                                                console.log(`Added original text: ${originalText}`);
-                                            } else {
-                                                // Find the translation for this language
-                                                const langName = item.value;
-                                                // Try to find the closest matching language
-                                                const matchingLang = languages.find(l =>
-                                                    l.toLowerCase().includes(langName.toLowerCase()) ||
-                                                    langName.toLowerCase().includes(l.toLowerCase())
-                                                );
-
-                                                if (matchingLang && translationMap[matchingLang]) {
-                                                    formattedText += translationMap[matchingLang];
-                                                    console.log(`Added translation for ${langName}: ${translationMap[matchingLang]}`);
-                                                } else {
-                                                    // If no matching translation found, use the language name as placeholder
-                                                    formattedText += langName;
-                                                    console.log(`No translation found for ${langName}, using as placeholder`);
-                                                }
-                                            }
-                                        } else if (item.type === 'delimiter') {
-                                            // Add the delimiter directly
-                                            formattedText += item.value || '';
-                                            console.log(`Added delimiter: ${item.value || ''}`);
-                                        }
-                                    }
-
-                                    console.log(`Subtitle ${i+1} formatted text:`, formattedText);
-                                    combinedTranslations.push(formattedText);
+                                    // Log what we're storing for debugging
+                                    console.log(`Storing translation map for subtitle ${i+1}:`, translationMap);
                                 }
                             } else {
                                 // Traditional formatting (without chain items)
@@ -640,13 +610,120 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
         // Create translated subtitles by combining original timing with translated text
         const translatedSubtitles = subtitles.map((originalSub, index) => {
+            // Get the translated text or translation map for this subtitle
+            const translationData = translatedTexts[index];
+
+            // Check if we have a translation map (from chain-based formatting) or just a string
+            const isTranslationMap = translationData && typeof translationData === 'object' && !Array.isArray(translationData);
+
+            // Default to original text if no translation is available
+            let finalText = isTranslationMap ? '' : (translationData || originalSub.text);
+
+            // Apply language chain formatting if chain items are provided
+            if (chainItems && chainItems.length > 0) {
+                console.log(`Applying language chain format to subtitle ${index + 1}`);
+
+                // If we have a translation map, use it to get translations for each language
+                if (isTranslationMap) {
+                    console.log(`Using translation map for subtitle ${index + 1}:`, translationData);
+
+                    // Build the formatted text by walking through the chain
+                    let formattedText = '';
+
+                    for (let j = 0; j < chainItems.length; j++) {
+                        const item = chainItems[j];
+                        console.log(`Processing chain item ${j}:`, item);
+
+                        if (item.type === 'language') {
+                            if (item.isOriginal) {
+                                // Add the original text
+                                formattedText += originalSub.text;
+                                console.log(`Added original text: ${originalSub.text}`);
+                            } else {
+                                // Get the language name
+                                const langName = item.value;
+
+                                // Try to find a matching language in the translation map
+                                // First try exact match, then case-insensitive match, then partial match
+                                let matchedTranslation = null;
+
+                                // Try exact match
+                                if (translationData[langName]) {
+                                    matchedTranslation = translationData[langName];
+                                } else {
+                                    // Try case-insensitive match
+                                    const langKey = Object.keys(translationData).find(key =>
+                                        key.toLowerCase() === langName.toLowerCase());
+
+                                    if (langKey) {
+                                        matchedTranslation = translationData[langKey];
+                                    } else {
+                                        // Try partial match
+                                        const partialLangKey = Object.keys(translationData).find(key =>
+                                            key.toLowerCase().includes(langName.toLowerCase()) ||
+                                            langName.toLowerCase().includes(key.toLowerCase()));
+
+                                        if (partialLangKey) {
+                                            matchedTranslation = translationData[partialLangKey];
+                                        }
+                                    }
+                                }
+
+                                if (matchedTranslation) {
+                                    formattedText += matchedTranslation;
+                                    console.log(`Added translation for ${langName}: ${matchedTranslation}`);
+                                } else {
+                                    // If no matching translation found, use the language name as placeholder
+                                    formattedText += langName;
+                                    console.log(`No translation found for ${langName}, using as placeholder`);
+                                }
+                            }
+                        } else if (item.type === 'delimiter') {
+                            // Add the delimiter directly
+                            formattedText += item.value || '';
+                            console.log(`Added delimiter: ${item.value || ''}`);
+                        }
+                    }
+
+                    finalText = formattedText;
+                } else {
+                    // If we don't have a translation map, use the old approach with just the translated text
+                    let formattedText = '';
+
+                    for (let j = 0; j < chainItems.length; j++) {
+                        const item = chainItems[j];
+                        console.log(`Processing chain item ${j}:`, item);
+
+                        if (item.type === 'language') {
+                            if (item.isOriginal) {
+                                // Add the original text
+                                formattedText += originalSub.text;
+                                console.log(`Added original text: ${originalSub.text}`);
+                            } else {
+                                // Add the translated text
+                                formattedText += finalText;
+                                console.log(`Added translated text: ${finalText}`);
+                            }
+                        } else if (item.type === 'delimiter') {
+                            // Add the delimiter directly
+                            formattedText += item.value || '';
+                            console.log(`Added delimiter: ${item.value || ''}`);
+                        }
+                    }
+
+                    finalText = formattedText;
+                }
+
+                console.log(`Final formatted text: ${finalText}`);
+            }
+
             return {
                 id: originalSub.id || index + 1,
                 start: originalSub.start,
                 end: originalSub.end,
                 startTime: originalSub.startTime,
                 endTime: originalSub.endTime,
-                text: translatedTexts[index] || originalSub.text, // Fallback to original text if no translation
+                text: finalText,
                 originalId: originalSub.id || index + 1,
                 language: Array.isArray(targetLanguage) ? getLanguageCode(targetLanguage[0]) : getLanguageCode(targetLanguage)
             };
@@ -774,11 +851,67 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
             }
 
             // If all retries fail, add the original subtitles to maintain the structure
-            translatedChunks.push(chunk.map(sub => ({
-                ...sub,
-                text: `[Translation failed] ${sub.text}`,
-                language: getLanguageCode(targetLanguage)
-            })));
+            translatedChunks.push(chunk.map(sub => {
+                // Get the original text with a failure indicator
+                const translatedText = `[Translation failed] ${sub.text}`;
+
+                // For chain-based formatting, create a translation map with failure indicators
+                let finalText = translatedText;
+
+                // Apply language chain formatting if chain items are provided
+                if (chainItems && chainItems.length > 0) {
+                    console.log(`Applying language chain format to failed subtitle`);
+
+                    // Create a translation map for failed translations
+                    // This will map each non-original language in the chain to a failure message
+                    const translationMap = {
+                        'original': sub.text
+                    };
+
+                    // Add failure messages for each non-original language in the chain
+                    const targetLanguages = chainItems
+                        .filter(item => item.type === 'language' && !item.isOriginal)
+                        .map(item => item.value);
+
+                    targetLanguages.forEach(lang => {
+                        if (lang && lang.trim() !== '') {
+                            translationMap[lang] = `[Translation failed] ${sub.text}`;
+                        }
+                    });
+
+                    // Build the formatted text by walking through the chain
+                    let formattedText = '';
+
+                    for (let j = 0; j < chainItems.length; j++) {
+                        const item = chainItems[j];
+
+                        if (item.type === 'language') {
+                            if (item.isOriginal) {
+                                // Add the original text
+                                formattedText += sub.text;
+                            } else {
+                                // Get the language name
+                                const langName = item.value;
+
+                                // Get the failure message for this language
+                                const failureMessage = translationMap[langName] || `[Translation failed] ${sub.text}`;
+                                formattedText += failureMessage;
+                            }
+                        } else if (item.type === 'delimiter') {
+                            // Add the delimiter directly
+                            formattedText += item.value || '';
+                        }
+                    }
+
+                    finalText = formattedText;
+                }
+
+                return {
+                    ...sub,
+                    text: finalText,
+                    language: getLanguageCode(targetLanguage)
+                };
+            }));
         }
     }
 
