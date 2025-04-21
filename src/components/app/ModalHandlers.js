@@ -25,15 +25,18 @@ export const useModalHandlers = (appState) => {
 
   /**
    * Handle using the recommended preset from video analysis
+   * This will use the recommended preset for the current session only,
+   * without changing the user's chosen preset in settings
    */
   const handleUseRecommendedPreset = (presetId) => {
     console.log('handleUseRecommendedPreset called with presetId:', presetId);
     // Find the preset
     const preset = PROMPT_PRESETS.find(p => p.id === presetId);
     if (preset) {
-      // Save the preset to localStorage
-      localStorage.setItem('transcription_prompt', preset.prompt);
-      localStorage.setItem('selected_preset', presetId);
+      // Store the preset for the current session only
+      // Use sessionStorage instead of localStorage to avoid changing the user's settings
+      sessionStorage.setItem('current_session_prompt', preset.prompt);
+      sessionStorage.setItem('current_session_preset_id', presetId);
 
       // Save the transcription rules
       if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
@@ -73,9 +76,15 @@ export const useModalHandlers = (appState) => {
 
   /**
    * Handle using the default preset from settings
+   * This will use the user's chosen preset from settings
    */
   const handleUseDefaultPreset = () => {
     console.log('handleUseDefaultPreset called');
+
+    // Clear any session-specific prompt to ensure we use the user's chosen preset
+    sessionStorage.removeItem('current_session_prompt');
+    sessionStorage.removeItem('current_session_preset_id');
+    console.log('Cleared session-specific prompt to use default preset from settings');
 
     // Update status to indicate we're moving forward
     setStatus({
