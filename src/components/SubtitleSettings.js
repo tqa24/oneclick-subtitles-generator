@@ -739,37 +739,51 @@ const SubtitleSettings = ({
                   </span>
                 </label>
                 <div className="slider-with-value">
-                  <div className={`custom-slider-container ${!hasAnyNarrations ? 'disabled' : ''}`}>
-                    <div className="custom-slider-track">
-                      <div
-                        className="custom-slider-fill"
-                        style={{ width: `${narrationVolume * 100}%` }}
-                      ></div>
-                      <div
-                        className="custom-slider-thumb"
-                        style={{ left: `${narrationVolume * 100}%` }}
-                      ></div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={narrationVolume}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setNarrationVolume(parseFloat(e.target.value));
+                  {hasAnyNarrations ? (
+                    <div className="custom-slider-container">
+                      <div className="custom-slider-track">
+                        <div
+                          className="custom-slider-fill"
+                          style={{ width: `${narrationVolume * 100}%` }}
+                        ></div>
+                        <div
+                          className="custom-slider-thumb"
+                          style={{ left: `${narrationVolume * 100}%` }}
+                        ></div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={narrationVolume}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setNarrationVolume(parseFloat(e.target.value));
 
-                        // If setting volume to 0, stop any playing narration
-                        if (parseFloat(e.target.value) === 0 && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
-                          audioRefs.current[currentNarration.subtitle_id].pause();
-                          setCurrentNarration(null);
-                        }
-                      }}
-                      className="custom-slider-input"
-                      disabled={!hasAnyNarrations}
-                    />
-                  </div>
+                          // If setting volume to 0, stop any playing narration
+                          if (parseFloat(e.target.value) === 0 && currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+                            audioRefs.current[currentNarration.subtitle_id].pause();
+                            setCurrentNarration(null);
+                          }
+                        }}
+                        className="custom-slider-input"
+                      />
+                    </div>
+                  ) : (
+                    <div className="custom-slider-container disabled">
+                      <div className="custom-slider-track">
+                        <div
+                          className="custom-slider-fill"
+                          style={{ width: `${narrationVolume * 100}%` }}
+                        ></div>
+                        <div
+                          className="custom-slider-thumb"
+                          style={{ left: `${narrationVolume * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                   <div className="slider-value-display">{Math.round(narrationVolume * 100)}%</div>
                 </div>
               </div>
@@ -786,7 +800,7 @@ const SubtitleSettings = ({
                   </span>
                 </label>
                 <div className="slider-with-value">
-                  <div className="custom-slider-container">
+                  <div className="custom-slider-container video-volume-slider">
                     <div className="custom-slider-track">
                       <div
                         className="custom-slider-fill"

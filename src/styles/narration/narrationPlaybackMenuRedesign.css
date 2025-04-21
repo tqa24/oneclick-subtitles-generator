@@ -134,6 +134,24 @@ input:disabled {
   cursor: not-allowed;
 }
 
+/* Fix for ghost duplicate effect in disabled sliders in narration panel */
+.subtitle-settings-panel.narration-panel .custom-slider-container.disabled {
+  pointer-events: none;
+  background: none;
+}
+
+.subtitle-settings-panel.narration-panel .custom-slider-container.disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.1);
+  z-index: 1;
+  border-radius: 4px;
+}
+
 .range-slider {
   flex: 1;
   height: 6px;

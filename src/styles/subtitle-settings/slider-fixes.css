@@ -1,0 +1,42 @@
+/* Fixes for slider ghost duplicate effect in subtitle settings */
+
+/* Fix for disabled sliders in narration panel */
+.subtitle-settings-panel.narration-panel .slider-with-value .custom-slider-container.disabled {
+  position: relative;
+  overflow: hidden;
+  background: none;
+}
+
+/* Add a semi-transparent overlay to prevent ghost effect */
+.subtitle-settings-panel.narration-panel .slider-with-value .custom-slider-container.disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Ensure the input is completely hidden in disabled state */
+.subtitle-settings-panel.narration-panel .slider-with-value .custom-slider-container.disabled .custom-slider-input {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Ensure the thumb doesn't create ghost effect */
+.subtitle-settings-panel.narration-panel .slider-with-value .custom-slider-container.disabled .custom-slider-thumb {
+  box-shadow: none;
+}
+
+/* Additional fix for ghost duplicate effect */
+.subtitle-settings-panel.narration-panel .slider-with-value .custom-slider-container.disabled {
+  filter: grayscale(30%);
+}
+
+/* Ensure video volume slider doesn't have ghost effect */
+.video-volume-slider {
+  z-index: 1;
+}

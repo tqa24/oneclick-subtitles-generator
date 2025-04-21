@@ -58,21 +58,37 @@
 }
 
 /* Disabled state */
-.custom-slider-container.disabled .custom-slider-track {
-  opacity: 0.5;
+.custom-slider-container.disabled {
+  pointer-events: none;
+  position: relative;
 }
 
-.custom-slider-container.disabled .custom-slider-fill {
+/* Fix for ghost duplicate effect */
+.custom-slider-container.disabled::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  z-index: 2;
+}
+
+.custom-slider-container.disabled .custom-slider-track,
+.custom-slider-container.disabled .custom-slider-fill,
+.custom-slider-container.disabled .custom-slider-thumb {
   opacity: 0.5;
 }
 
 .custom-slider-container.disabled .custom-slider-thumb {
-  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .custom-slider-container.disabled .custom-slider-input {
   cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0;
 }
 
 /* Slider value display */

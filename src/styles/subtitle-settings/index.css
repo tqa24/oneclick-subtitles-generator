@@ -9,3 +9,4 @@
 @import './controls.css';
 @import './font-options.css';
 @import './responsive.css';
+@import './slider-fixes.css'; /* Import slider fixes */
