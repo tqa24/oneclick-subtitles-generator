@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { FiClock, FiX } from 'react-icons/fi';
 import { addYoutubeUrlToHistory, getYoutubeUrlHistory, clearYoutubeUrlHistory, formatTimestamp } from '../../utils/historyUtils';
 import { getVideoDetails } from '../../services/youtubeApiService';
-import QualitySelector from './QualitySelector';
 
 const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   const { t } = useTranslation();
@@ -254,16 +253,7 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             </div>
           </div>
 
-          {/* Quality selector */}
-          <QualitySelector
-            onChange={(quality) => {
-              // Update the selected video with the quality
-              setSelectedVideo(prev => ({
-                ...prev,
-                quality
-              }));
-            }}
-          />
+
         </>
       )}
     </div>

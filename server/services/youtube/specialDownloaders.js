@@ -8,15 +8,15 @@ const ytdl = require('ytdl-core');
 const { downloadAndMerge } = require('./downloadUtils');
 
 /**
- * Special function to download 360p videos with audio
- * This function prioritizes formats that have both video and audio
+ * Special function to download videos with audio
+ * This function prioritizes formats that have both video and audio, regardless of resolution
  * @param {string} videoURL - YouTube video URL
  * @param {string} outputPath - Path to save the video
  * @returns {Promise<boolean>} - Success status
  */
-async function download360pWithAudio(videoURL, outputPath) {
+async function downloadWithAudio(videoURL, outputPath) {
   try {
-    console.log(`[QUALITY DEBUG] Attempting to download 360p video with audio...`);
+    console.log(`[QUALITY DEBUG] Attempting to download video with audio...`);
 
     // Get video info
     const info = await ytdl.getInfo(videoURL);
@@ -29,22 +29,24 @@ async function download360pWithAudio(videoURL, outputPath) {
       }
     });
 
-    // First, look for 360p formats that already have audio
-    const formatsWithAudio = info.formats.filter(format =>
+    // First, look for ANY formats that have both video and audio
+    const allFormatsWithAudio = info.formats.filter(format =>
       format.hasVideo &&
       format.hasAudio &&
-      format.height === 360 &&
       format.container === 'mp4'
     );
 
-    if (formatsWithAudio.length > 0) {
-      console.log(`[QUALITY DEBUG] Found ${formatsWithAudio.length} 360p formats with audio`);
+    if (allFormatsWithAudio.length > 0) {
+      // Sort by height (highest quality first)
+      allFormatsWithAudio.sort((a, b) => (b.height || 0) - (a.height || 0));
+
+      console.log(`[QUALITY DEBUG] Found ${allFormatsWithAudio.length} formats with audio`);
 
       return new Promise((resolve, reject) => {
         try {
           // Use the first format that has both video and audio
-          const selectedFormat = formatsWithAudio[0];
-          console.log(`[QUALITY DEBUG] Using 360p format with audio: ${selectedFormat.qualityLabel}`);
+          const selectedFormat = allFormatsWithAudio[0];
+          console.log(`[QUALITY DEBUG] Using format with audio: ${selectedFormat.qualityLabel}, Height: ${selectedFormat.height}`);
 
           // Create the stream with the specific format
           const videoStream = ytdl(videoURL, { format: selectedFormat });
@@ -52,7 +54,7 @@ async function download360pWithAudio(videoURL, outputPath) {
 
           // Set up event handlers
           writeStream.on('finish', () => {
-            console.log(`[QUALITY DEBUG] 360p download with audio successful: ${outputPath}`);
+            console.log(`[QUALITY DEBUG] Download with audio successful: ${outputPath}`);
             resolve(true);
           });
 
@@ -69,66 +71,13 @@ async function download360pWithAudio(videoURL, outputPath) {
           // Log progress
           videoStream.on('progress', (chunkLength, downloaded, total) => {
             const percent = downloaded / total * 100;
-            console.log(`[QUALITY DEBUG] 360p download progress: ${percent.toFixed(2)}%`);
+            console.log(`[QUALITY DEBUG] Download progress: ${percent.toFixed(2)}%`);
           });
 
           // Pipe the stream to the file
           videoStream.pipe(writeStream);
         } catch (err) {
-          console.error(`[QUALITY DEBUG] Error setting up 360p download: ${err.message}`);
-          reject(err);
-        }
-      });
-    }
-
-    // If no exact 360p formats with audio, try nearby resolutions
-    const nearbyFormatsWithAudio = info.formats.filter(format =>
-      format.hasVideo &&
-      format.hasAudio &&
-      format.height >= 360 &&
-      format.height <= 480 &&
-      format.container === 'mp4'
-    );
-
-    if (nearbyFormatsWithAudio.length > 0) {
-      // Sort by height (closest to 360p first)
-      nearbyFormatsWithAudio.sort((a, b) => Math.abs(a.height - 360) - Math.abs(b.height - 360));
-
-      return new Promise((resolve, reject) => {
-        try {
-          const selectedFormat = nearbyFormatsWithAudio[0];
-          console.log(`[QUALITY DEBUG] Using nearby format with audio: ${selectedFormat.qualityLabel}`);
-
-          // Create the stream with the specific format
-          const videoStream = ytdl(videoURL, { format: selectedFormat });
-          const writeStream = fs.createWriteStream(outputPath);
-
-          // Set up event handlers
-          writeStream.on('finish', () => {
-            console.log(`[QUALITY DEBUG] Nearby resolution download with audio successful: ${outputPath}`);
-            resolve(true);
-          });
-
-          writeStream.on('error', (err) => {
-            console.error(`[QUALITY DEBUG] Write stream error: ${err.message}`);
-            reject(err);
-          });
-
-          videoStream.on('error', (err) => {
-            console.error(`[QUALITY DEBUG] Video stream error: ${err.message}`);
-            reject(err);
-          });
-
-          // Log progress
-          videoStream.on('progress', (chunkLength, downloaded, total) => {
-            const percent = downloaded / total * 100;
-            console.log(`[QUALITY DEBUG] Nearby resolution download progress: ${percent.toFixed(2)}%`);
-          });
-
-          // Pipe the stream to the file
-          videoStream.pipe(writeStream);
-        } catch (err) {
-          console.error(`[QUALITY DEBUG] Error setting up nearby resolution download: ${err.message}`);
+          console.error(`[QUALITY DEBUG] Error setting up download: ${err.message}`);
           reject(err);
         }
       });
@@ -140,13 +89,11 @@ async function download360pWithAudio(videoURL, outputPath) {
     // Find the best video format
     const videoFormats = info.formats.filter(format =>
       format.hasVideo &&
-      format.height &&
-      format.height >= 360 &&
-      format.height <= 480
+      format.height
     );
 
-    // Sort by height (closest to 360p first)
-    videoFormats.sort((a, b) => Math.abs(a.height - 360) - Math.abs(b.height - 360));
+    // Sort by height (highest quality first)
+    videoFormats.sort((a, b) => (b.height || 0) - (a.height || 0));
 
     if (videoFormats.length > 0) {
       // Find the best audio format
@@ -164,16 +111,16 @@ async function download360pWithAudio(videoURL, outputPath) {
         const downloadSuccess = await downloadAndMerge(videoURL, outputPath, videoFormats[0], audioFormats[0]);
 
         if (downloadSuccess) {
-          console.log(`[QUALITY DEBUG] Successfully downloaded and merged video and audio for 360p`);
+          console.log(`[QUALITY DEBUG] Successfully downloaded and merged video and audio`);
           return true;
         }
       }
     }
 
-    console.log(`[QUALITY DEBUG] All 360p special methods failed, falling back to standard methods...`);
+    console.log(`[QUALITY DEBUG] All special methods failed, falling back to standard methods...`);
     return false;
   } catch (error) {
-    console.error(`[QUALITY DEBUG] Error in download360pWithAudio: ${error.message}`);
+    console.error(`[QUALITY DEBUG] Error in downloadWithAudio: ${error.message}`);
     return false;
   }
 }
@@ -327,6 +274,6 @@ async function downloadWithDirectStream(videoURL, outputPath, quality = '360p') 
 }
 
 module.exports = {
-  download360pWithAudio,
+  downloadWithAudio,
   downloadWithDirectStream
 };

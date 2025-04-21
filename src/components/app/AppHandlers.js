@@ -179,16 +179,8 @@ export const useAppHandlers = (appState) => {
         setIsDownloading(true);
         setDownloadProgress(0);
 
-        // Check if quality is not 360p to show a warning about audio stitching
-        const selectedQuality = selectedVideo.quality || '360p';
-        if (selectedQuality !== '360p') {
-          setStatus({
-            message: t('output.audioStitchingWarning', 'Downloading video... Note: For qualities other than 360p, audio stitching is required which may take a long time, especially for videos over 1 hour.'),
-            type: 'warning'
-          });
-        } else {
-          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
-        }
+        // Set status to downloading
+        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
         // Extract video ID and set it as current download
         const videoId = extractYoutubeVideoId(selectedVideo.url);
@@ -283,16 +275,8 @@ export const useAppHandlers = (appState) => {
         setIsDownloading(true);
         setDownloadProgress(0);
 
-        // Check if quality is not 360p to show a warning about audio stitching
-        const selectedQuality = selectedVideo.quality || '360p';
-        if (selectedQuality !== '360p') {
-          setStatus({
-            message: t('output.audioStitchingWarning', 'Downloading video... Note: For qualities other than 360p, audio stitching is required which may take a long time, especially for videos over 1 hour.'),
-            type: 'warning'
-          });
-        } else {
-          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
-        }
+        // Set status to downloading
+        setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
         // Create a wrapper function that includes the additional parameters
         const prepareVideoWrapper = async (file) => {

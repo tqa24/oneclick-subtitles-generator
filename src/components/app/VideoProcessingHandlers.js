@@ -133,8 +133,7 @@ export const downloadAndPrepareYouTubeVideo = async (
       selectedVideo.url,
       (progress) => {
         setDownloadProgress(progress);
-      },
-      selectedVideo.quality || '360p' // Use the selected quality or default to 360p
+      }
     );
 
     // Clear the current download ID when done

@@ -9,6 +9,8 @@ import { API_BASE_URL, SERVER_URL } from '../config';
  * @param {Blob} blob - The blob to convert
  * @returns {Promise<string>} - Base64 string
  */
+// This function is currently unused but kept for future reference
+/*
 const blobToBase64 = (blob) => {
   return new Promise((resolve, reject) => {
     if (!blob || blob.size === 0) {
@@ -69,6 +71,7 @@ const blobToBase64 = (blob) => {
     }
   });
 };
+*/
 
 // Log the API_BASE_URL for debugging
 console.log('Narration service using API_BASE_URL:', API_BASE_URL);
@@ -77,21 +80,52 @@ console.log('Narration service using API_BASE_URL:', API_BASE_URL);
  * Check if the narration service is available with multiple attempts
  * @param {number} maxAttempts - Maximum number of attempts
  * @param {number} delayMs - Delay between attempts in milliseconds
+ * @param {boolean} quietMode - If true, reduces console logging
  * @returns {Promise<Object>} - Status response
  */
-export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 5000) => {
-  console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
+export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 10000, quietMode = false) => {
+  if (!quietMode) {
+    console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
+  }
 
+  // First, check if the Express server is available
+  try {
+    const healthResponse = await fetch(`${API_BASE_URL}/health`);
+    if (!healthResponse.ok) {
+      // If the Express server is not available, don't even try to check narration service
+      return {
+        available: false,
+        error: "Express server is not available",
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      };
+    }
+  } catch (error) {
+    // Express server is not available
+    return {
+      available: false,
+      error: "Express server is not available",
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+    };
+  }
+
+  // Now check the narration service
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`Attempt ${attempt}/${maxAttempts} to check narration service status`);
+      if (!quietMode) {
+        console.log(`Attempt ${attempt}/${maxAttempts} to check narration service status`);
+      }
 
       const response = await fetch(`${API_BASE_URL}/narration/status`);
 
       if (!response.ok) {
-        console.log(`Server returned ${response.status} on attempt ${attempt}/${maxAttempts}`);
+        if (!quietMode) {
+          console.log(`Server returned ${response.status} on attempt ${attempt}/${maxAttempts}`);
+        }
+
         if (attempt < maxAttempts) {
-          console.log(`Waiting ${delayMs}ms before next attempt...`);
+          if (!quietMode) {
+            console.log(`Waiting ${delayMs}ms before next attempt...`);
+          }
           await new Promise(resolve => setTimeout(resolve, delayMs));
           continue;
         }
@@ -108,14 +142,20 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
       const data = await response.json();
 
       if (data.available) {
-        console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}!`);
+        if (!quietMode) {
+          console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}!`);
+        }
         return data;
       }
 
-      console.log(`Service responded but not available on attempt ${attempt}/${maxAttempts}`);
+      if (!quietMode) {
+        console.log(`Service responded but not available on attempt ${attempt}/${maxAttempts}`);
+      }
 
       if (attempt < maxAttempts) {
-        console.log(`Waiting ${delayMs}ms before next attempt...`);
+        if (!quietMode) {
+          console.log(`Waiting ${delayMs}ms before next attempt...`);
+        }
         await new Promise(resolve => setTimeout(resolve, delayMs));
       } else {
         // Using hardcoded Vietnamese message here because i18n context is not available in this service
@@ -124,10 +164,14 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
         return data;
       }
     } catch (error) {
-      console.log(`Error checking narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
+      if (!quietMode) {
+        console.log(`Error checking narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
+      }
 
       if (attempt < maxAttempts) {
-        console.log(`Waiting ${delayMs}ms before next attempt...`);
+        if (!quietMode) {
+          console.log(`Waiting ${delayMs}ms before next attempt...`);
+        }
         await new Promise(resolve => setTimeout(resolve, delayMs));
       } else {
         // Using hardcoded Vietnamese message here because i18n context is not available in this service
@@ -154,6 +198,27 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
  * @returns {Promise<Object>} - Status response
  */
 export const checkNarrationStatus = async () => {
+  // First, check if the Express server is available
+  try {
+    const healthResponse = await fetch(`${API_BASE_URL}/health`);
+    if (!healthResponse.ok) {
+      // If the Express server is not available, don't even try to check narration service
+      return {
+        available: false,
+        error: "Express server is not available",
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      };
+    }
+  } catch (error) {
+    // Express server is not available
+    return {
+      available: false,
+      error: "Express server is not available",
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+    };
+  }
+
+  // Now check the narration service
   try {
     const response = await fetch(`${API_BASE_URL}/narration/status`);
 
@@ -212,7 +277,7 @@ export const uploadReferenceAudio = async (file, referenceText = '') => {
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
+      await response.text(); // Read the response body to avoid memory leaks
       throw new Error('Server returned non-JSON response');
     }
 
@@ -257,7 +322,7 @@ export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
+      await response.text(); // Read the response body to avoid memory leaks
       throw new Error('Server returned non-JSON response');
     }
 
@@ -297,7 +362,7 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
+      await response.text(); // Read the response body to avoid memory leaks
       throw new Error('Server returned non-JSON response');
     }
 
@@ -526,7 +591,7 @@ export const generateNarration = async (
       return data;
     } else {
       // Handle unexpected content type
-      const text = await response.text();
+      await response.text(); // Read the response body to avoid memory leaks
       throw new Error(`Unexpected content type: ${contentType}`);
     }
   } catch (error) {

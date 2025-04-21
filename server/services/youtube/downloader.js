@@ -8,19 +8,19 @@ const { VIDEOS_DIR } = require('../../config');
 const { getVideoInfo } = require('./infoUtils');
 const { downloadWithYtdlCore } = require('./ytdlDownloader');
 const { downloadWithPlayDl } = require('./playDlDownloader');
-const { download360pWithAudio, downloadWithDirectStream } = require('./specialDownloaders');
+const { downloadWithAudio, downloadWithDirectStream } = require('./specialDownloaders');
 
 /**
  * Download YouTube video using multiple methods with fallbacks
+ * Always prioritizes formats with audio
  * @param {string} videoId - YouTube video ID
- * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadYouTubeVideo(videoId, quality = '360p') {
+async function downloadYouTubeVideo(videoId) {
   const videoURL = `https://www.youtube.com/watch?v=${videoId}`;
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
-  console.log(`[QUALITY DEBUG] Downloading YouTube video: ${videoId} with quality: ${quality}`);
+  console.log(`[QUALITY DEBUG] Downloading YouTube video: ${videoId} with audio prioritized`);
 
   // Get video info first
   let videoInfo;
@@ -32,26 +32,24 @@ async function downloadYouTubeVideo(videoId, quality = '360p') {
     videoInfo = { title: `YouTube Video ${videoId}` };
   }
 
-  // Special handling for 360p to ensure we get audio
-  if (quality === '360p') {
-    try {
-      console.log(`[QUALITY DEBUG] Using special 360p download method to ensure audio...`);
-      const success = await download360pWithAudio(videoURL, outputPath);
+  // Always try to get a format with audio first
+  try {
+    console.log(`[QUALITY DEBUG] Using special download method to ensure audio...`);
+    const success = await downloadWithAudio(videoURL, outputPath);
 
-      if (success) {
-        console.log(`Successfully downloaded 360p video with audio`);
-        return {
-          success: true,
-          path: outputPath,
-          message: `Video downloaded successfully with 360p special method`,
-          title: videoInfo.title,
-          method: '360p-special'
-        };
-      }
-    } catch (error) {
-      console.error(`Error with special 360p download: ${error.message}`);
-      console.log(`Falling back to standard methods...`);
+    if (success) {
+      console.log(`Successfully downloaded video with audio`);
+      return {
+        success: true,
+        path: outputPath,
+        message: `Video downloaded successfully with audio`,
+        title: videoInfo.title,
+        method: 'audio-prioritized'
+      };
     }
+  } catch (error) {
+    console.error(`Error with audio-prioritized download: ${error.message}`);
+    console.log(`Falling back to standard methods...`);
   }
 
   // Try multiple download methods in sequence
@@ -66,7 +64,9 @@ async function downloadYouTubeVideo(videoId, quality = '360p') {
   for (const method of methods) {
     try {
       console.log(`Attempting to download with ${method.name}...`);
-      const result = await method.fn(videoURL, outputPath, quality);
+      // Always pass '360p' as the quality parameter to ensure consistent behavior
+      // The actual format selection is done in the download functions to prioritize audio
+      const result = await method.fn(videoURL, outputPath, '360p');
       console.log(`Successfully downloaded video with ${method.name}`);
 
       return {
