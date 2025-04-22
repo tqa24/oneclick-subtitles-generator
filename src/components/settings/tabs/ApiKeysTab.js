@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
 
@@ -39,6 +39,44 @@ const ApiKeysTab = ({
   setApiKeysSet
 }) => {
   const { t } = useTranslation();
+
+  // Refs for editable fields
+  const geminiKeyRef = useRef(null);
+  const geniusKeyRef = useRef(null);
+  const youtubeKeyRef = useRef(null);
+  const clientIdRef = useRef(null);
+  const clientSecretRef = useRef(null);
+
+  // Focus effects for editable fields
+  useEffect(() => {
+    if (showGeminiKey && geminiKeyRef.current) {
+      geminiKeyRef.current.focus();
+    }
+  }, [showGeminiKey]);
+
+  useEffect(() => {
+    if (showGeniusKey && geniusKeyRef.current) {
+      geniusKeyRef.current.focus();
+    }
+  }, [showGeniusKey]);
+
+  useEffect(() => {
+    if (showYoutubeKey && youtubeKeyRef.current) {
+      youtubeKeyRef.current.focus();
+    }
+  }, [showYoutubeKey]);
+
+  useEffect(() => {
+    if (showClientId && clientIdRef.current) {
+      clientIdRef.current.focus();
+    }
+  }, [showClientId]);
+
+  useEffect(() => {
+    if (showClientSecret && clientSecretRef.current) {
+      clientSecretRef.current.focus();
+    }
+  }, [showClientSecret]);
 
   // Handle YouTube OAuth authentication
   const handleOAuthAuthentication = () => {
@@ -111,7 +149,7 @@ const ApiKeysTab = ({
         <div className="custom-api-key-input">
           <div
             className="custom-input-field"
-            onClick={() => document.getElementById('gemini-key-display').focus()}
+            onClick={() => setShowGeminiKey(true)}
           >
             {showGeminiKey ? (
               <div
@@ -126,6 +164,7 @@ const ApiKeysTab = ({
                   }
                 }}
                 suppressContentEditableWarning={true}
+                ref={geminiKeyRef}
               >
                 {geminiApiKey}
               </div>
@@ -186,7 +225,7 @@ const ApiKeysTab = ({
         <div className="custom-api-key-input">
           <div
             className="custom-input-field"
-            onClick={() => document.getElementById('genius-key-display').focus()}
+            onClick={() => setShowGeniusKey(true)}
           >
             {showGeniusKey ? (
               <div
@@ -201,6 +240,7 @@ const ApiKeysTab = ({
                   }
                 }}
                 suppressContentEditableWarning={true}
+                ref={geniusKeyRef}
               >
                 {geniusApiKey}
               </div>
@@ -298,7 +338,7 @@ const ApiKeysTab = ({
             <div className="custom-api-key-input">
               <div
                 className="custom-input-field"
-                onClick={() => document.getElementById('youtube-key-display').focus()}
+                onClick={() => setShowYoutubeKey(true)}
               >
                 {showYoutubeKey ? (
                   <div
@@ -313,6 +353,7 @@ const ApiKeysTab = ({
                       }
                     }}
                     suppressContentEditableWarning={true}
+                    ref={youtubeKeyRef}
                   >
                     {youtubeApiKey}
                   </div>
@@ -387,7 +428,7 @@ const ApiKeysTab = ({
                 <div className="custom-api-key-input">
                   <div
                     className="custom-input-field"
-                    onClick={() => document.getElementById('client-id-display').focus()}
+                    onClick={() => setShowClientId(true)}
                   >
                     {showClientId ? (
                       <div
@@ -402,6 +443,7 @@ const ApiKeysTab = ({
                           }
                         }}
                         suppressContentEditableWarning={true}
+                        ref={clientIdRef}
                       >
                         {youtubeClientId}
                       </div>
@@ -433,7 +475,7 @@ const ApiKeysTab = ({
                 <div className="custom-api-key-input">
                   <div
                     className="custom-input-field"
-                    onClick={() => document.getElementById('client-secret-display').focus()}
+                    onClick={() => setShowClientSecret(true)}
                   >
                     {showClientSecret ? (
                       <div
@@ -448,6 +490,7 @@ const ApiKeysTab = ({
                           }
                         }}
                         suppressContentEditableWarning={true}
+                        ref={clientSecretRef}
                       >
                         {youtubeClientSecret}
                       </div>
