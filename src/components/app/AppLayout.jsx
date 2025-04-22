@@ -7,7 +7,6 @@ import SettingsModal from '../settings/SettingsModal';
 import TranslationWarningToast from '../TranslationWarningToast';
 import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
-import ServerConnectionOverlay from '../ServerConnectionOverlay';
 import BackgroundImageGenerator from '../BackgroundImageGenerator';
 
 /**
@@ -311,9 +310,6 @@ const AppLayout = ({
 
       {/* Toast for translation warnings */}
       <TranslationWarningToast />
-
-      {/* Server connection overlay - make sure the URL matches your server */}
-      <ServerConnectionOverlay serverUrl="http://localhost:3007" />
     </>
   );
 };
