@@ -6,16 +6,5 @@
   "close": "Close",
   "on": "On",
   "off": "Off",
-  "note": "Note",
-  "serverConnection": {
-    "title": "Server Connection Error",
-    "message": "Cannot connect to the server. Please check if the server is running properly.",
-    "howToFix": "How to fix this:",
-    "step1": "Make sure the server application is running",
-    "step2": "Check if the server is running at",
-    "step3": "Restart the server application if needed",
-    "retry": "Retry Connection",
-    "checking": "Checking...",
-    "retryCount": "Retry attempts: {{count}}"
-  }
+  "note": "Note"
 }
