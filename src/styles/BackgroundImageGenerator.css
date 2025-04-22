@@ -405,6 +405,12 @@
   gap: 12px;
 }
 
+.image-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .header-download-button {
   display: flex;
   align-items: center;
@@ -426,6 +432,31 @@
 
 .header-download-button:hover {
   background-color: color-mix(in srgb, var(--md-tertiary, #9c27b0), rgba(255, 255, 255, 0.1));
+  box-shadow: var(--md-elevation-level3);
+  transform: translateY(-1px);
+}
+
+.header-action-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background-color: var(--md-error, #f44336);
+  color: var(--md-on-error, white);
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 36px;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+  box-shadow: var(--md-elevation-level2);
+}
+
+.header-action-button:hover {
+  background-color: color-mix(in srgb, var(--md-error, #f44336), rgba(255, 255, 255, 0.1));
   box-shadow: var(--md-elevation-level3);
   transform: translateY(-1px);
 }
@@ -805,6 +836,15 @@
   .image-title-container {
     width: 100%;
     justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .image-header-buttons {
+    width: 100%;
+    display: flex;
+    gap: 8px;
   }
 
   .prompt-header .generate-button,

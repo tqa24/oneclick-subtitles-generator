@@ -13,7 +13,16 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   const [customAlbumArt, setCustomAlbumArt] = useState(albumArt || '');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [generatedImage, setGeneratedImage] = useState('');
-  const [generatedImages, setGeneratedImages] = useState([]);
+  // Initialize generatedImages from localStorage if available
+  const [generatedImages, setGeneratedImages] = useState(() => {
+    try {
+      const savedImages = localStorage.getItem('background_generated_images');
+      return savedImages ? JSON.parse(savedImages) : [];
+    } catch (error) {
+      console.error('Error loading generated images from localStorage:', error);
+      return [];
+    }
+  });
   const [regularImageCount, setRegularImageCount] = useState(1);
   const [newPromptImageCount, setNewPromptImageCount] = useState(4); // Default to 4 for new prompt
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
@@ -184,22 +193,44 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     }
   }, [isExpanded, userHasCollapsed]);
 
-  // Reset state when lyrics or albumArt props change
+  // Save generated images to localStorage whenever they change
+  useEffect(() => {
+    if (generatedImages.length > 0) {
+      try {
+        localStorage.setItem('background_generated_images', JSON.stringify(generatedImages));
+        console.log('Saved generated images to localStorage:', generatedImages.length);
+      } catch (error) {
+        console.error('Error saving generated images to localStorage:', error);
+      }
+    }
+  }, [generatedImages]);
+
+  // Update state when lyrics or albumArt props change, but preserve generated images
   useEffect(() => {
     if (lyrics && albumArt) {
-      // Reset all state to ensure fresh content
+      // Check if the lyrics and albumArt are different from the current ones
+      const lyricsChanged = lyrics !== customLyrics;
+      const albumArtChanged = albumArt !== customAlbumArt;
+      const songNameChanged = (songName || '') !== customSongName;
+
+      // Update the custom values
       setCustomLyrics(lyrics);
       setCustomAlbumArt(albumArt);
       setCustomSongName(songName || '');
-      setGeneratedPrompt('');
-      setGeneratedImage('');
-      setGeneratedImages([]);
-      setRegularImageCount(1); // Reset to default of 1 image for regular generation
-      setNewPromptImageCount(4); // Keep default of 4 images for new prompt
-      setPendingImageCount(0);
-      setError('');
-      setAutoExecutionComplete(false);
-      autoExecutionRef.current = false; // Reset the ref to allow auto-execution
+
+      // Only reset generated content if the source content has changed
+      if (lyricsChanged || albumArtChanged || songNameChanged) {
+        console.log('Source content changed, resetting generated content');
+        setGeneratedPrompt('');
+        setGeneratedImage('');
+        // Don't reset generatedImages to preserve them across UI changes
+        // setGeneratedImages([]);
+        setPendingImageCount(0);
+        setError('');
+        setAutoExecutionComplete(false);
+        autoExecutionRef.current = false; // Reset the ref to allow auto-execution
+      }
+
       // Only expand if the user hasn't manually collapsed it
       if (!userHasCollapsed) {
         setIsCollapsed(false); // Expand when new content is provided
@@ -209,25 +240,19 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           onExpandChange(true);
         }
 
-        // Set flag to auto-generate with unique prompts
-        // This will be picked up by the effect below
-        setShouldAutoGenerate(true);
+        // No longer setting shouldAutoGenerate flag to prevent auto-generation
+        // setShouldAutoGenerate(true); - removed to prevent auto-generation
       }
     }
-  }, [lyrics, albumArt, songName, onExpandChange, userHasCollapsed]);
+  }, [lyrics, albumArt, songName, onExpandChange, userHasCollapsed, customLyrics, customAlbumArt, customSongName]);
 
-  // Effect to auto-click the Generate with Unique Prompts button
+  // Effect to handle the shouldAutoGenerate flag (auto-click functionality removed)
   useEffect(() => {
-    if (shouldAutoGenerate && !isCollapsed && !isGenerationInProgress && generateWithUniquePromptsButtonRef.current) {
-      console.log('Auto-clicking Generate with Unique Prompts button');
-      // Reset the flag first to prevent multiple clicks
+    if (shouldAutoGenerate && !isCollapsed && !isGenerationInProgress) {
+      console.log('Background generator ready - auto-click functionality removed');
+      // Reset the flag to prevent multiple executions
       setShouldAutoGenerate(false);
-      // Simulate a click on the button
-      setTimeout(() => {
-        if (generateWithUniquePromptsButtonRef.current) {
-          generateWithUniquePromptsButtonRef.current.click();
-        }
-      }, 500); // Small delay to ensure the component is fully rendered
+      // No longer auto-clicking the button
     }
   }, [shouldAutoGenerate, isCollapsed, isGenerationInProgress]);
 
@@ -423,11 +448,10 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       }
     };
 
-    // Only run auto-execute when we have content and auto-execution hasn't completed
-    // Completely independent of the collapse/expand state
-    if (lyrics && albumArt && !autoExecutionComplete) {
-      autoExecute();
-    }
+    // Disabled auto-execution to prevent automatic generation when component is expanded
+    // if (lyrics && albumArt && !autoExecutionComplete) {
+    //   autoExecute();
+    // }
 
     // Cleanup function to reset the ref when the component unmounts
     return () => {
@@ -622,6 +646,14 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     });
   };
 
+  // Clear all generated images
+  const clearGeneratedImages = () => {
+    setGeneratedImages([]);
+    setGeneratedImage('');
+    localStorage.removeItem('background_generated_images');
+    console.log('Cleared all generated images');
+  };
+
   return (
     <div className={`background-generator-container ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="background-generator-header">
@@ -811,12 +843,20 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
             <div className="image-section-header">
               <div className="image-title-container">
                 <h3>{t('backgroundGenerator.generatedImage', 'Generated Image')}</h3>
-                {generatedImages.length > 1 && (
-                  <button className="header-download-button" onClick={downloadAllImages} title={t('backgroundGenerator.downloadAllImages', 'Download All Images')}>
-                    <FiDownload size={16} />
-                    <span>{t('backgroundGenerator.downloadAllImages', 'Download All')}</span>
-                  </button>
-                )}
+                <div className="image-header-buttons">
+                  {generatedImages.length > 0 && (
+                    <button className="header-action-button" onClick={clearGeneratedImages} title={t('backgroundGenerator.clearImages', 'Clear All Images')}>
+                      <FiX size={16} />
+                      <span>{t('backgroundGenerator.clearImages', 'Clear All')}</span>
+                    </button>
+                  )}
+                  {generatedImages.length > 1 && (
+                    <button className="header-download-button" onClick={downloadAllImages} title={t('backgroundGenerator.downloadAllImages', 'Download All Images')}>
+                      <FiDownload size={16} />
+                      <span>{t('backgroundGenerator.downloadAllImages', 'Download All')}</span>
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="image-header-actions">
                 <div className="generate-button-group">
