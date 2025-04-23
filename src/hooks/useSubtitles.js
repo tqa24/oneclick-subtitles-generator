@@ -377,9 +377,44 @@ export const useSubtitles = (t) => {
     const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
         // Extract options
         const { userProvidedSubtitles, modelId } = options;
-        // Initialize subtitlesData to empty array if it's null
-        // This happens when using the strong model where we process segments one by one
-        const currentSubtitles = subtitlesData || [];
+
+        // Get the most up-to-date subtitles data
+        // This is important because the subtitles might have been saved just before this function is called
+        let currentSubtitles;
+
+        // Try to get the current cache ID
+        const currentVideoUrl = localStorage.getItem('current_youtube_url');
+        const currentFileUrl = localStorage.getItem('current_file_url');
+        let cacheId = null;
+
+        if (currentVideoUrl) {
+            // For YouTube videos
+            cacheId = extractYoutubeVideoId(currentVideoUrl);
+        } else if (currentFileUrl) {
+            // For uploaded files, the cacheId is already stored
+            cacheId = localStorage.getItem('current_file_cache_id');
+        }
+
+        if (cacheId) {
+            try {
+                // Try to get the latest subtitles from cache
+                const cachedSubtitles = await checkCachedSubtitles(cacheId);
+                if (cachedSubtitles) {
+                    console.log('Using latest subtitles from cache for segment retry');
+                    currentSubtitles = cachedSubtitles;
+                } else {
+                    // Fall back to current state if cache retrieval fails
+                    currentSubtitles = subtitlesData || [];
+                }
+            } catch (error) {
+                console.error('Error getting latest subtitles from cache:', error);
+                // Fall back to current state
+                currentSubtitles = subtitlesData || [];
+            }
+        } else {
+            // If no cache ID, use current state
+            currentSubtitles = subtitlesData || [];
+        }
 
         // Reset the force stop flag when retrying a segment
         setProcessingForceStopped(false);
