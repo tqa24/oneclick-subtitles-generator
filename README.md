@@ -79,11 +79,30 @@ A web application for generating timed subtitles for videos using Google's Gemin
 - [Python](https://www.python.org/) (v3.10 or higher, required for F5-TTS narration feature)
 - [uv](https://github.com/astral-sh/uv) (required for F5-TTS installation)
 
-### Windows Installation
+### Cross-Platform Installation
 
-#### Easy Installation (using winget)
+#### Option 1: Using the All-in-One Script (Recommended)
 
-##### Install FFmpeg:
+##### Windows:
+1. Download the `OSG_all_in_one_1.3.bat` file from the Releases page
+2. Run the batch file with administrator privileges
+3. Follow the on-screen instructions
+
+##### macOS and Ubuntu:
+1. Download the `OSG_all_in_one.sh` file from the Releases page
+2. Open Terminal and navigate to the download location
+3. Make the script executable and run it:
+   ```bash
+   chmod +x OSG_all_in_one.sh
+   ./OSG_all_in_one.sh
+   ```
+4. Follow the on-screen menu options
+
+#### Option 2: Manual Installation
+
+##### Windows Installation (using winget)
+
+###### Install FFmpeg:
 ```powershell
 winget install --id Gyan.FFmpeg -e --source winget --accept-package-agreements --accept-source-agreements
 ```
@@ -93,7 +112,7 @@ Verify installation: Open a NEW PowerShell or Command Prompt window and run:
 ffmpeg -version
 ```
 
-##### Install Node.js:
+###### Install Node.js:
 ```powershell
 winget install --id OpenJS.NodeJS -e --source winget --accept-package-agreements --accept-source-agreements
 ```
@@ -105,20 +124,36 @@ node -v
 npm -v
 ```
 
-### macOS Installation
-
-#### Using Homebrew (Recommended)
+##### macOS Installation (using Homebrew)
 
 Homebrew is a package manager for macOS that makes it easy to install software.
 
-##### Install Homebrew (if not already installed):
+###### Install Homebrew (if not already installed):
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-##### Install Node.js:
+###### Install Node.js and FFmpeg:
 ```bash
-brew install node
+brew install node ffmpeg
+```
+
+Verify installation:
+```bash
+node -v
+npm -v
+ffmpeg -version
+```
+
+##### Ubuntu Installation (using apt)
+
+###### Install Node.js:
+```bash
+# Add NodeSource repository
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+
+# Install Node.js
+sudo apt install -y nodejs
 ```
 
 Verify installation:
@@ -127,9 +162,9 @@ node -v
 npm -v
 ```
 
-##### Install FFmpeg:
+###### Install FFmpeg:
 ```bash
-brew install ffmpeg
+sudo apt install -y ffmpeg
 ```
 
 Verify installation:
@@ -137,29 +172,15 @@ Verify installation:
 ffmpeg -version
 ```
 
-#### Manual Installation
+###### Install uv:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-##### Install Node.js:
-1. Download the macOS installer from [Node.js website](https://nodejs.org/)
-2. Choose the LTS (Long Term Support) version
-3. Run the installer and follow the instructions
-4. Verify installation by opening Terminal and running:
-   ```bash
-   node -v
-   npm -v
-   ```
-
-##### Install FFmpeg:
-1. Download FFmpeg from [FFmpeg website](https://ffmpeg.org/download.html)
-2. Extract the downloaded file
-3. Move the FFmpeg binary to a directory in your PATH, for example:
-   ```bash
-   sudo mv ffmpeg /usr/local/bin/
-   ```
-4. Verify installation:
-   ```bash
-   ffmpeg -version
-   ```
+Verify installation:
+```bash
+uv --version
+```
 
 ## Installation
 
@@ -203,12 +224,38 @@ For more details on the F5-TTS integration, see [F5-TTS-README.md](F5-TTS-README
 
 ## Running the Application
 
-### On Windows and macOS
+### Option 1: Using the All-in-One Script (Recommended)
+
+#### Windows:
+- Run the `OSG_all_in_one_1.3.bat` file and select option 4 or 5 from the menu
+
+#### macOS and Ubuntu:
+- Run the `OSG_all_in_one.sh` file and select option 4 or 5 from the menu
+
+### Option 2: Using the setup-and-run script
+
+#### Windows:
+- Run `setup-and-run.bat`
+
+#### macOS and Ubuntu:
+- Make the script executable and run it:
+  ```bash
+  chmod +x setup-and-run.sh
+  ./setup-and-run.sh
+  ```
+
+### Option 3: Manual Start
 
 To start the frontend + server concurrently:
 
 ```bash
 npm run dev
+```
+
+To start with narration service (requires GPU):
+
+```bash
+npm run dev:cuda
 ```
 
 This will launch the application in your default web browser.
@@ -233,6 +280,24 @@ This will launch the application in your default web browser.
   which ffmpeg
   ```
   If not found, reinstall using Homebrew: `brew reinstall ffmpeg`
+
+#### Common Issues on Ubuntu
+
+- **Permission Issues**: If you encounter permission errors, run:
+  ```bash
+  sudo chown -R $(whoami) ./node_modules
+  chmod -R 755 ./node_modules
+  ```
+
+- **GPU Detection**: If your GPU is not being detected, ensure you have the appropriate drivers installed:
+  - For NVIDIA: `sudo apt install nvidia-driver-XXX` (replace XXX with the appropriate version)
+  - For AMD: Install ROCm following the [official instructions](https://rocm.docs.amd.com/en/latest/deploy/linux/quick_start.html)
+
+- **Python Version**: Ensure you have Python 3.10 or higher installed:
+  ```bash
+  python3 --version
+  ```
+  If not, install it: `sudo apt install python3.10`
 
 
 ## How to Use
