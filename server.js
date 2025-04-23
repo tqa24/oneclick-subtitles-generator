@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { safeMoveFileSync } = require('./server/utils/fileOperations');
 
 // Import configuration
 const { PORT, CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, ensureDirectories } = require('./server/config');
@@ -464,8 +465,8 @@ app.post('/api/narration/record-reference', (req, res) => {
       const filename = `recorded_${unique_id}.wav`;
       const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
-      // Rename the uploaded file
-      fs.renameSync(req.file.path, filepath);
+      // Copy the file instead of renaming to avoid EPERM errors on Windows
+      safeMoveFileSync(req.file.path, filepath);
 
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';
@@ -512,8 +513,8 @@ app.post('/api/narration/upload-reference', (req, res) => {
       const filename = `uploaded_${unique_id}.wav`;
       const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
-      // Rename the uploaded file
-      fs.renameSync(req.file.path, filepath);
+      // Copy the file instead of renaming to avoid EPERM errors on Windows
+      safeMoveFileSync(req.file.path, filepath);
 
       // Get reference text if provided
       const reference_text = req.body.reference_text || '';

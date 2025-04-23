@@ -6,6 +6,7 @@ const fs = require('fs');
 const https = require('https');
 const ytdl = require('ytdl-core');
 const { downloadAndMerge } = require('./downloadUtils');
+const { safeMoveFile } = require('../../utils/fileOperations');
 
 /**
  * Special function to download videos with audio
@@ -200,16 +201,16 @@ async function downloadWithDirectStream(videoURL, outputPath, quality = '360p') 
 
       // Set up event handlers
       writeStream.on('finish', () => {
-        // Rename the temp file to the final output path
-        fs.rename(tempFilePath, outputPath, (err) => {
-          if (err) {
-            console.error('Error renaming temp file:', err);
+        // Use copy-then-delete instead of rename to avoid EPERM errors on Windows
+        safeMoveFile(tempFilePath, outputPath)
+          .then(() => {
+            console.log(`Direct stream download successful: ${outputPath}`);
+            resolve(true);
+          })
+          .catch((err) => {
+            console.error('Error moving temp file:', err);
             reject(err);
-            return;
-          }
-          console.log(`Direct stream download successful: ${outputPath}`);
-          resolve(true);
-        });
+          });
       });
 
       writeStream.on('error', (err) => {
