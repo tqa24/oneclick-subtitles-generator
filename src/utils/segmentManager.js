@@ -97,6 +97,7 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
         console.log(`Segment ${segmentIndex + 1} time range: ${segmentStartTime}s to ${segmentEndTime}s`);
         console.log(`Combined ${filteredSubtitles.length} existing subtitles with ${newSegmentSubtitles.length} new subtitles from segment ${segmentIndex + 1}`);
         console.log(`Total subtitles after combining: ${updatedSubtitles.length}`);
+
         return updatedSubtitles;
     } catch (error) {
         console.error(`Error retrying segment ${segmentIndex + 1}:`, error);

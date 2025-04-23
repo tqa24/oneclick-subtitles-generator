@@ -439,6 +439,12 @@ const LyricsDisplay = ({
         if (onSaveSubtitles) {
           onSaveSubtitles(lyrics);
         }
+
+        // Dispatch a custom event to notify that subtitles have been saved
+        // This is used by the segment retry functionality
+        window.dispatchEvent(new CustomEvent('subtitles-saved', {
+          detail: { success: true }
+        }));
       } else {
         console.error('Failed to save subtitles:', result.error);
       }
