@@ -451,6 +451,227 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
 });
 
 /**
+ * POST /api/extract-audio - Extract audio from a video file path
+ */
+router.post('/extract-audio', async (req, res) => {
+  try {
+    const { videoPath } = req.body;
+    // Get filename from query parameter or body
+    const filename = req.query.filename || req.body.filename || 'audio';
+
+    if (!videoPath) {
+      return res.status(400).json({ error: 'Video path is required' });
+    }
+
+    // Determine if the path is a URL or a local path
+    const isUrl = videoPath.startsWith('http');
+
+    // Skip blob URLs - they should use the /extract-audio-from-blob endpoint
+    if (videoPath.startsWith('blob:')) {
+      return res.status(400).json({ error: 'Blob URLs are not supported by this endpoint. Use /extract-audio-from-blob instead.' });
+    }
+
+    // Resolve the actual file path
+    let actualVideoPath;
+
+    console.log('Processing video path:', videoPath);
+
+    if (isUrl) {
+      // Extract the filename from the URL
+      const urlParts = videoPath.split('/');
+      const filename = urlParts[urlParts.length - 1];
+      actualVideoPath = path.join(VIDEOS_DIR, filename);
+      console.log('URL detected, resolved to:', actualVideoPath);
+    } else {
+      // If it's a relative path like /videos/filename.mp4
+      const relativePath = videoPath.startsWith('/') ? videoPath.substring(1) : videoPath;
+      const pathParts = relativePath.split('/');
+      const filename = pathParts[pathParts.length - 1];
+      actualVideoPath = path.join(VIDEOS_DIR, filename);
+      console.log('Relative path detected, resolved to:', actualVideoPath);
+    }
+
+    // If the file doesn't exist, try to extract the filename from the path and look for it directly
+    if (!fs.existsSync(actualVideoPath)) {
+      console.log('File not found at resolved path, trying alternative methods');
+
+      // Try to get just the filename without query parameters
+      const filenameWithoutQuery = videoPath.split('?')[0].split('/').pop();
+      const alternativePath = path.join(VIDEOS_DIR, filenameWithoutQuery);
+      console.log('Trying alternative path:', alternativePath);
+
+      if (fs.existsSync(alternativePath)) {
+        actualVideoPath = alternativePath;
+        console.log('Found file at alternative path:', actualVideoPath);
+      } else {
+        // List all files in the videos directory to help with debugging
+        console.log('Available files in videos directory:');
+        const files = fs.readdirSync(VIDEOS_DIR);
+        files.forEach(file => console.log(`- ${file}`));
+      }
+    }
+
+    // Check if the video file exists
+    if (!fs.existsSync(actualVideoPath)) {
+      return res.status(404).json({ error: 'Video file not found' });
+    }
+
+    // Generate a unique filename for the audio
+    const timestamp = Date.now();
+    const audioFilename = `audio_${timestamp}.mp3`;
+    const audioPath = path.join(VIDEOS_DIR, audioFilename);
+
+    // Use ffmpeg to extract audio
+    const { spawn } = require('child_process');
+    const ffmpegProcess = spawn('ffmpeg', [
+      '-i', actualVideoPath,
+      '-vn',  // No video
+      '-acodec', 'libmp3lame',  // MP3 codec
+      '-q:a', '2',  // Quality (0-9, lower is better)
+      '-y',  // Overwrite output file
+      audioPath
+    ]);
+
+    // Handle process completion
+    ffmpegProcess.on('close', (code) => {
+      if (code === 0) {
+        // Success
+        console.log(`Audio extracted successfully: ${audioPath}`);
+
+        // Set the Content-Disposition header to force download with the provided filename
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.mp3"`);
+        res.setHeader('Content-Type', 'audio/mpeg');
+
+        // Stream the file directly instead of returning a URL
+        const fileStream = fs.createReadStream(audioPath);
+        fileStream.pipe(res);
+      } else {
+        // Error
+        console.error(`Error extracting audio: ffmpeg process exited with code ${code}`);
+        res.status(500).json({
+          success: false,
+          error: 'Failed to extract audio'
+        });
+      }
+    });
+
+    // Handle process error
+    ffmpegProcess.on('error', (err) => {
+      console.error('Error spawning ffmpeg process:', err);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start audio extraction process'
+      });
+    });
+  } catch (error) {
+    console.error('Error extracting audio:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to extract audio'
+    });
+  }
+});
+
+/**
+ * POST /api/extract-audio-from-blob - Extract audio from a video blob
+ * This endpoint accepts the actual video data as a binary file
+ */
+router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*' }), async (req, res) => {
+  try {
+    console.log('Received blob data for audio extraction');
+
+    // Get filename from query parameter
+    const filename = req.query.filename || 'audio';
+
+    // Generate unique filenames for the temporary video and the output audio
+    const timestamp = Date.now();
+    const videoFilename = `temp_video_${timestamp}.mp4`;
+    const audioFilename = `audio_${timestamp}.mp3`;
+    const videoPath = path.join(VIDEOS_DIR, videoFilename);
+    const audioPath = path.join(VIDEOS_DIR, audioFilename);
+
+    // Save the uploaded video data to a temporary file
+    fs.writeFileSync(videoPath, req.body);
+    console.log(`Temporary video saved to: ${videoPath}`);
+
+    // Use ffmpeg to extract audio
+    const { spawn } = require('child_process');
+    const ffmpegProcess = spawn('ffmpeg', [
+      '-i', videoPath,
+      '-vn',  // No video
+      '-acodec', 'libmp3lame',  // MP3 codec
+      '-q:a', '2',  // Quality (0-9, lower is better)
+      '-y',  // Overwrite output file
+      audioPath
+    ]);
+
+    // Handle process completion
+    ffmpegProcess.on('close', (code) => {
+      if (code === 0) {
+        // Success
+        console.log(`Audio extracted successfully: ${audioPath}`);
+
+        // Clean up the temporary video file
+        try {
+          fs.unlinkSync(videoPath);
+          console.log(`Temporary video file deleted: ${videoPath}`);
+        } catch (err) {
+          console.error(`Error deleting temporary video file: ${err.message}`);
+        }
+
+        // Set the Content-Disposition header to force download with the provided filename
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.mp3"`);
+        res.setHeader('Content-Type', 'audio/mpeg');
+
+        // Stream the file directly instead of returning a URL
+        const fileStream = fs.createReadStream(audioPath);
+        fileStream.pipe(res);
+      } else {
+        // Error
+        console.error(`Error extracting audio: ffmpeg process exited with code ${code}`);
+
+        // Clean up the temporary video file
+        try {
+          fs.unlinkSync(videoPath);
+          console.log(`Temporary video file deleted: ${videoPath}`);
+        } catch (err) {
+          console.error(`Error deleting temporary video file: ${err.message}`);
+        }
+
+        res.status(500).json({
+          success: false,
+          error: 'Failed to extract audio'
+        });
+      }
+    });
+
+    // Handle process error
+    ffmpegProcess.on('error', (err) => {
+      console.error('Error spawning ffmpeg process:', err);
+
+      // Clean up the temporary video file
+      try {
+        fs.unlinkSync(videoPath);
+        console.log(`Temporary video file deleted: ${videoPath}`);
+      } catch (deleteErr) {
+        console.error(`Error deleting temporary video file: ${deleteErr.message}`);
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start audio extraction process'
+      });
+    });
+  } catch (error) {
+    console.error('Error extracting audio from blob:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to extract audio from blob'
+    });
+  }
+});
+
+/**
  * GET /api/converted-audio-exists/:audioHash - Check if a converted audio file exists
  */
 router.get('/converted-audio-exists/:audioHash', (req, res) => {

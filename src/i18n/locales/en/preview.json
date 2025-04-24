@@ -4,5 +4,8 @@
   "originalQuality": "Original Quality",
   "noOptimizedVersion": "No optimized version available. Process the video with optimization enabled to create one.",
   "unavailable": "unavailable",
-  "downloading": "Downloading video..."
+  "downloading": "Downloading video...",
+  "downloadAudio": "Download Audio",
+  "downloadingAudio": "Downloading...",
+  "audioExtractionError": "Failed to extract audio from video. Please try again."
 }
