@@ -111,6 +111,13 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 
+ECHO Installing yt-dlp for YouTube video downloads...
+npm run install:yt-dlp
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
+    ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
+)
+
 ECHO Cai dat hoan tat. Dang khoi chay ung dung voi CUDA...
 ECHO (Requires NVIDIA GPU and CUDA Toolkit installed separately)
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
@@ -149,6 +156,13 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed during 'npm install'. Check messages above.
     POPD
     GOTO ErrorOccurred
+)
+
+ECHO Installing yt-dlp for YouTube video downloads...
+npm run install:yt-dlp
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
+    ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
 )
 
 ECHO Cai dat hoan tat. Dang khoi chay ung dung...
