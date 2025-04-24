@@ -26,7 +26,7 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
   const { userProvidedSubtitles } = options;
   const isAudio = mediaFile.type.startsWith('audio/');
   const mediaType = isAudio ? 'audio' : 'video';
-  
+
   // Get video optimization settings from localStorage
   const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
   const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
@@ -120,15 +120,15 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
     setSubtitlesCacheId(cacheId);
     console.log('Set cache ID for current video:', cacheId);
   }
-  
+
   // Set processing flag to indicate we're working on a video
   localStorage.setItem('video_processing_in_progress', 'true');
   console.log('Set video_processing_in_progress flag to true');
-  
+
   // Determine if this is a video or audio file based on MIME type
   const isAudio = mediaFile.type.startsWith('audio/');
   const mediaType = isAudio ? 'audio' : 'video';
-  
+
   // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
   const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
   const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
@@ -349,7 +349,10 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
         if (data.exists && !userProvidedSubtitles) {
           // Only use cache if we don't have user-provided subtitles
           console.log(`Loaded cached subtitles for segment ${i+1}`);
-          updateSegmentStatus(i, 'cached', t('output.loadedFromCache', 'Loaded from cache'));
+
+          // Make sure to pass the translation function properly
+          // This is the key fix for the internationalization issue
+          updateSegmentStatus(i, 'cached', t('output.loadedFromCache', 'Loaded from cache'), timeRange);
 
           // Return the cached subtitles with adjusted timestamps
           return data.subtitles.map(subtitle => ({
@@ -363,11 +366,11 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
 
         // If not cached, process the segment
         updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'), timeRange);
-        
+
         // Determine if this is a video or audio file
         const isAudio = mediaFile.type.startsWith('audio/');
         const mediaType = isAudio ? 'audio' : 'video';
-        
+
         // Pass userProvidedSubtitles to processSegment if available
         if (userProvidedSubtitles) {
           console.log(`Using user-provided subtitles for segment ${segmentIndex+1} in parallel processing`);

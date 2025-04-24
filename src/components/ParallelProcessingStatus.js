@@ -56,7 +56,10 @@ const ParallelProcessingStatus = ({
   if (!segments || segments.length === 0) {
     return (
       <div className={`status ${statusType}`}>
-        {overallStatus}
+        {/* Ensure the overall status is properly translated */}
+        {overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+         overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+         overallStatus}
       </div>
     );
   }
@@ -75,7 +78,10 @@ const ParallelProcessingStatus = ({
   return (
     <div className="parallel-processing-container">
       <div className={`status ${statusType}`}>
-        {overallStatus}
+        {/* Ensure the overall status is properly translated */}
+        {overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+         overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+         overallStatus}
       </div>
 
       {/* Segment Retry Modal */}

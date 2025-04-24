@@ -17,6 +17,9 @@ export const createSegmentStatusUpdater = (segmentStatusArray, t) => {
    * @param {string} timeRange - Time range for the segment
    */
   return (index, status, message, timeRange = null) => {
+    // Make sure we have a valid translation function
+    const translate = typeof t === 'function' ? t : (key, defaultValue) => defaultValue;
+
     // Update the status array
     segmentStatusArray[index] = {
       index,
@@ -24,11 +27,12 @@ export const createSegmentStatusUpdater = (segmentStatusArray, t) => {
       message,
       timeRange,
       // Use simple status indicators without segment numbers
-      shortMessage: status === 'loading' ? t('output.processing') :
-                   status === 'success' ? t('output.done') :
-                   status === 'error' ? t('output.failed') :
-                   status === 'cached' ? t('output.cached') :
-                   status === 'pending' ? t('output.pending') : ''
+      shortMessage: status === 'loading' ? translate('output.processing', 'Processing') :
+                   status === 'success' ? translate('output.done', 'Done') :
+                   status === 'error' ? translate('output.failed', 'Failed') :
+                   status === 'cached' ? translate('output.cached', 'Cached') :
+                   status === 'pending' ? translate('output.pending', 'Pending') :
+                   status === 'retrying' ? translate('output.retrying', 'Retrying...') : ''
     };
 
     // Dispatch event to update UI

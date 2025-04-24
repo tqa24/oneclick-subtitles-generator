@@ -15,7 +15,8 @@ const SERVER_URL = 'http://localhost:3007'; // Changed from 3004 to match server
  */
 export const uploadAndSplitVideo = async (videoFile, segmentDuration = 600, onProgress = () => {}) => {
   try {
-    onProgress(10, 'Uploading video to server...');
+    // Use translation key for uploading message
+    onProgress(10, 'output.uploadingVideoToServer', 'Uploading video to server...');
 
     // Create URL with query parameter for segment duration
     const url = `${SERVER_URL}/api/upload-and-split-video?segmentDuration=${segmentDuration}`;
@@ -53,12 +54,14 @@ export const uploadAndSplitVideo = async (videoFile, segmentDuration = 600, onPr
       throw new Error(errorMessage);
     }
 
-    onProgress(50, 'Video uploaded, processing segments...');
+    // Use translation key for uploaded message
+    onProgress(50, 'output.videoUploaded', 'Video uploaded, processing segments...');
 
     const data = await response.json();
     console.log('Video uploaded and split into segments:', data);
 
-    onProgress(100, 'Video segments ready');
+    // Use translation key for segments ready message
+    onProgress(100, 'output.videoSegmentsReady', 'Video segments ready');
 
     return {
       success: true,

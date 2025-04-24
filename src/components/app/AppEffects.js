@@ -309,10 +309,15 @@ export const useAppEffects = (props) => {
   // Effect to detect when subtitles are loaded from cache and prepare video for segments
   useEffect(() => {
     // Check if subtitles were loaded from cache
-    if (status?.message && status.type === 'success' &&
-        (status.message.includes('cache') || status.message.includes('bộ nhớ đệm')) &&
-        subtitlesData) {
+    // Look for both the translation key and common text patterns in different languages
+    const isCacheLoadMessage =
+      (status?.translationKey === 'output.subtitlesLoadedFromCache') ||
+      (status?.message && status.type === 'success' &&
+       (status.message.includes('cache') ||
+        status.message.includes('bộ nhớ đệm') ||
+        status.message.includes('캐시')));
 
+    if (isCacheLoadMessage && subtitlesData) {
       // For file upload tab
       if (uploadedFile) {
         console.log('Subtitles loaded from cache, preparing video for segments...');

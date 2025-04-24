@@ -75,5 +75,14 @@
   "srtOnlyModeInfo": "Working with SRT file only. No video source available.",
   "srtOnlyModeHint": "You can still edit, translate, and download the subtitles.",
   "processingWithCustomSubtitles": "Processing video with your provided subtitles...",
-  "analyzingVideo": "Analyzing video content..."
+  "analyzingVideo": "Analyzing video content...",
+  "uploadingVideoToServer": "Uploading video to server...",
+  "uploadingAudioToServer": "Uploading audio to server...",
+  "videoUploaded": "Video uploaded, processing segments...",
+  "audioUploaded": "Audio uploaded, processing segments...",
+  "videoSegmentsReady": "Video segments ready",
+  "audioSegmentsReady": "Audio segments ready",
+  "retrying": "Retrying...",
+  "ready": "Ready",
+  "segmentReady": "Ready for processing"
 }
