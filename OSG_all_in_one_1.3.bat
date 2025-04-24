@@ -46,14 +46,14 @@ ECHO ======================================================
 ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat voi Tinh nang Tuong thuat (Cai dat sach)
+ECHO   1. Cai dat voi Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
 ECHO      (Luu y: Co the ton nhieu dung luong luu tru hon)
-ECHO   2. Cai dat khong co Tinh nang Tuong thuat (Cai dat sach)
+ECHO   2. Cai dat khong co Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
 ECHO.
 ECHO BAO TRI / SU DUNG:
 ECHO   3. Cap nhat Ung dung (git pull)
 ECHO   4. Chay Ung dung (npm run dev)
-ECHO   5. Chay Ung dung voi Tuong thuat (npm run dev:cuda) (Yeu cau NVIDIA GPU ^& CUDA)
+ECHO   5. Chay Ung dung voi Tuong thuat (npm run dev:cuda)
 ECHO.
 ECHO GO CAI DAT:
 ECHO   6. Go cai dat Ung dung (Xoa thu muc du an)
@@ -393,26 +393,22 @@ EXIT /B 0
 :: End of InstallPrerequisites Subroutine
 
 REM ==============================================================================
-:: Subroutine: Clean Install - Removes existing project folder
+:: Subroutine: Clean Install - Removes existing project folder (Modified: No Confirmation)
 :CleanInstall
 SET "FOLDER_TO_CLEAN=%~1"
 ECHO Dang kiem tra thu muc hien co: %FOLDER_TO_CLEAN%
 IF EXIST "%FOLDER_TO_CLEAN%" (
-    ECHO CANH BAO: Tim thay thu muc du an hien co. No se bi XOA de cai dat sach.
-    SET /P "CONFIRM_DELETE=Ban co chac chan muon xoa "%FOLDER_TO_CLEAN%"? (c/k): "
-    IF /I NOT "%CONFIRM_DELETE%"=="c" (
-        ECHO Dang huy cai dat.
-        EXIT /B 1
-    )
+    ECHO CANH BAO: Tim thay thu muc du an hien co. No se bi XOA de thuc hien cai dat sach.
     ECHO Dang xoa thu muc hien co: %FOLDER_TO_CLEAN%...
     RMDIR /S /Q "%FOLDER_TO_CLEAN%"
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO LOI: Khong the xoa thu muc hien co. Kiem tra quyen hoac tap tin co dang duoc su dung khong.
+        ECHO LOI: Khong the xoa thu muc hien co "%FOLDER_TO_CLEAN%".
+        ECHO Kiem tra quyen hoac xem co tap tin/thu muc nao dang duoc su dung khong.
         EXIT /B 1
     )
     ECHO Thu muc da duoc xoa thanh cong.
 ) ELSE (
-    ECHO Khong tim thay thu muc hien co. Tiep tuc voi sao chep.
+    ECHO Khong tim thay thu muc hien co "%FOLDER_TO_CLEAN%". Tiep tuc voi viec sao chep kho moi.
 )
 EXIT /B 0
 :: End of CleanInstall Subroutine
