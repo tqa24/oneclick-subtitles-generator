@@ -84,9 +84,35 @@ A web application for generating timed subtitles for videos using Google's Gemin
 #### Option 1: Using the All-in-One Script (Recommended)
 
 ##### Windows:
-1. Download the `OSG_all_in_one_1.3.bat` file from the Releases page
-2. Run the batch file with administrator privileges
-3. Follow the on-screen instructions
+1. Install Node.js LTS, FFmpeg, Git, and uv:
+   ```
+   winget install --id OpenJS.NodeJS.LTS
+   winget install --id Gyan.FFmpeg
+   winget install --id Git.Git
+   irm https://astral.sh/uv/install.ps1 | iex
+   ```
+
+2. Clone and set up the repository:
+   ```
+   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
+   cd oneclick-subtitles-generator
+   npm install
+   npm run install:yt-dlp
+   ```
+
+3. Optional: Install F5-TTS for narration features:
+   ```
+   npm run install:all
+   ```
+
+4. Run the application:
+   ```
+   npm run dev
+   ```
+   or with narration (requires GPU):
+   ```
+   npm run dev:cuda
+   ```
 
 ##### macOS and Ubuntu:
 1. Download the `OSG_all_in_one.sh` file from the Releases page
@@ -224,10 +250,17 @@ For more details on the F5-TTS integration, see [F5-TTS-README.md](F5-TTS-README
 
 ## Running the Application
 
-### Option 1: Using the All-in-One Script (Recommended)
+### Option 1: Manual Start
 
 #### Windows:
-- Run the `OSG_all_in_one_1.3.bat` file and select option 4 or 5 from the menu
+- Navigate to the project directory
+- Update and run:
+  ```
+  git pull
+  npm install
+  npm run dev
+  ```
+  or with narration: `npm run dev:cuda`
 
 #### macOS and Ubuntu:
 - Run the `OSG_all_in_one.sh` file and select option 4 or 5 from the menu
