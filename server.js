@@ -49,13 +49,21 @@ app.use('/api/health', (req, res, next) => {
 // Configure JSON body parser with increased limit for base64 encoded files
 app.use(express.json({ limit: '500mb' }));
 
-// Serve static directories
-app.use('/videos', express.static(path.join(__dirname, 'videos')));
-app.use('/videos/album_art', express.static(path.join(__dirname, 'videos', 'album_art')));
-app.use('/subtitles', express.static(path.join(__dirname, 'subtitles')));
-app.use('/narration', express.static(path.join(__dirname, 'narration')));
-app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public', 'videos', 'album_art')));
+// Serve static directories with CORS headers
+const staticOptions = {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  }
+};
+
+app.use('/videos', express.static(path.join(__dirname, 'videos'), staticOptions));
+app.use('/videos/album_art', express.static(path.join(__dirname, 'videos', 'album_art'), staticOptions));
+app.use('/subtitles', express.static(path.join(__dirname, 'subtitles'), staticOptions));
+app.use('/narration', express.static(path.join(__dirname, 'narration'), staticOptions));
+app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
+app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public', 'videos', 'album_art'), staticOptions));
 
 // Add CORS headers to all responses
 app.use((req, res, next) => {

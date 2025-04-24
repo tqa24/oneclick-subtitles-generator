@@ -4,5 +4,8 @@
   "originalQuality": "Chất lượng gốc",
   "noOptimizedVersion": "Không có phiên bản tối ưu. Xử lý video với tối ưu hóa được bật để tạo một phiên bản.",
   "unavailable": "không khả dụng",
-  "downloading": "Đang tải video..."
+  "downloading": "Đang tải video...",
+  "downloadAudio": "Tải Audio",
+  "downloadingAudio": "Đang tải...",
+  "audioExtractionError": "Không thể trích xuất âm thanh từ video. Vui lòng thử lại."
 }

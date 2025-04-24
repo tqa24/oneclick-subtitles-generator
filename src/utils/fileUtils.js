@@ -1,3 +1,6 @@
+// Import SERVER_URL from config
+import { SERVER_URL } from '../config';
+
 /**
  * Parse time string (00:00:00,000 or 00:00:00.000) to seconds
  * @param {string} timeString - Time string in format 00:00:00,000 or 00:00:00.000
@@ -266,4 +269,115 @@ export const fileToBase64 = (file) => {
       reject(error);
     };
   });
+};
+
+/**
+ * Extract audio from a video and download it
+ * @param {string} videoPath - Path to the video file
+ * @param {string} filename - Name of the file to download (without extension)
+ * @returns {Promise<boolean>} - Promise resolving to success status
+ */
+export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => {
+  try {
+    console.log('Extracting audio from video:', videoPath);
+
+    // Create a download link element that we'll use later
+    const a = document.createElement('a');
+    document.body.appendChild(a);
+    a.style.display = 'none';
+
+    // Handle blob URLs differently - we need to fetch the blob and send the actual data
+    if (videoPath.startsWith('blob:')) {
+      console.log('Blob URL detected, fetching blob data...');
+
+      try {
+        // Fetch the blob data
+        const videoBlob = await fetch(videoPath).then(r => r.blob());
+        console.log('Blob fetched successfully, size:', videoBlob.size);
+
+        // Create a form for the file upload
+        const formData = new FormData();
+        formData.append('video', videoBlob, 'video.mp4');
+
+        // Open the URL in a new tab/window to trigger the download
+        const downloadUrl = `${SERVER_URL}/api/extract-audio-from-blob?filename=${encodeURIComponent(filename)}`;
+
+        // Use fetch with blob to download directly
+        const response = await fetch(`${SERVER_URL}/api/extract-audio-from-blob`, {
+          method: 'POST',
+          body: videoBlob,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+
+        // Get the blob from the response
+        const audioBlob = await response.blob();
+
+        // Create a URL for the blob
+        const blobUrl = URL.createObjectURL(audioBlob);
+
+        // Set up the download
+        a.href = blobUrl;
+        a.download = `${filename}.mp3`;
+        a.click();
+
+        // Clean up
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          document.body.removeChild(a);
+        }, 100);
+
+        return true;
+      } catch (blobError) {
+        console.error('Error processing blob:', blobError);
+        throw new Error('Failed to process video data from blob URL');
+      }
+    } else {
+      // For regular URLs, use a direct download approach
+      try {
+        // Open the URL in a new tab/window to trigger the download
+        const downloadUrl = `${SERVER_URL}/api/extract-audio?videoPath=${encodeURIComponent(videoPath)}&filename=${encodeURIComponent(filename)}`;
+
+        // Use fetch to download directly
+        const response = await fetch(downloadUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ videoPath }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+
+        // Get the blob from the response
+        const audioBlob = await response.blob();
+
+        // Create a URL for the blob
+        const blobUrl = URL.createObjectURL(audioBlob);
+
+        // Set up the download
+        a.href = blobUrl;
+        a.download = `${filename}.mp3`;
+        a.click();
+
+        // Clean up
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          document.body.removeChild(a);
+        }, 100);
+
+        return true;
+      } catch (downloadError) {
+        console.error('Error downloading audio:', downloadError);
+        throw new Error(`Failed to download audio: ${downloadError.message}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting audio:', error);
+    return false;
+  }
 };

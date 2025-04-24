@@ -7,6 +7,7 @@ import {
 } from '../../utils/videoDownloader';
 import { renderSubtitlesToVideo, downloadVideo } from '../../utils/videoUtils';
 import { convertTimeStringToSeconds } from '../../utils/vttUtils';
+import { extractAndDownloadAudio } from '../../utils/fileUtils';
 import SubtitleSettings from '../SubtitleSettings';
 // Narration settings now integrated into the translation section
 import '../../styles/VideoPreview.css';
@@ -26,6 +27,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isAudioDownloading, setIsAudioDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [videoId, setVideoId] = useState(null);
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
@@ -781,6 +783,59 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
                     </span>
                   )}
+                </div>
+              )}
+
+              {/* Download audio button - only show when video is loaded */}
+              {isLoaded && (
+                <div className="download-audio-button">
+                  <button
+                    disabled={isAudioDownloading}
+                    className={isAudioDownloading ? 'downloading' : ''}
+                    onClick={async () => {
+                      if (isAudioDownloading) return; // Prevent multiple clicks
+
+                      // Get video title or use default
+                      const videoTitle = videoSource?.title || 'audio';
+                      // Use the current video URL (optimized or original)
+                      const currentVideoUrl = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
+
+                      // Show loading state
+                      setError('');
+                      setIsAudioDownloading(true);
+
+                      console.log('Current video URL:', currentVideoUrl);
+
+                      // Extract and download audio - our utility function now handles blob URLs properly
+                      const success = await extractAndDownloadAudio(currentVideoUrl, videoTitle);
+
+                      // Reset loading state
+                      setIsAudioDownloading(false);
+
+                      // Show error if failed
+                      if (!success) {
+                        setError(t('preview.audioExtractionError', 'Failed to extract audio from video. Please try again.'));
+
+                        // Clear error after 5 seconds
+                        setTimeout(() => {
+                          setError('');
+                        }, 5000);
+                      }
+                    }}
+                  >
+                    {isAudioDownloading ? (
+                      // Material Design loading spinner
+                      <svg className="spinner" width="24" height="24" viewBox="0 0 24 24">
+                        <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
+                      </svg>
+                    ) : (
+                      // Material Design download icon
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                      </svg>
+                    )}
+                    <span className="button-text">{isAudioDownloading ? t('preview.downloadingAudio', 'Downloading audio...') : t('preview.downloadAudio', 'Download Audio')}</span>
+                  </button>
                 </div>
               )}
               <video
