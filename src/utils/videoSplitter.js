@@ -22,7 +22,12 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const isAudio = mediaFile.type.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';
 
-    onProgress(10, `Uploading ${mediaType} to server...`);
+    // Use the translation key for the uploading message
+    const uploadingKey = isAudio ? 'output.uploadingAudioToServer' : 'output.uploadingVideoToServer';
+    const uploadingDefaultMsg = isAudio ? 'Uploading audio to server...' : 'Uploading video to server...';
+
+    // The onProgress function should handle translation, but we provide both the key and default message
+    onProgress(10, uploadingKey, uploadingDefaultMsg);
 
     // Generate a unique ID for this media file
     const mediaId = `${mediaType}_${Date.now()}_${mediaFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -71,12 +76,20 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
       throw new Error(errorMessage);
     }
 
-    onProgress(80, `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments, processing...`);
+    // Use the translation key for the uploaded message
+    const uploadedKey = isAudio ? 'output.audioUploaded' : 'output.videoUploaded';
+    const uploadedDefaultMsg = isAudio ? 'Audio uploaded, processing segments...' : 'Video uploaded, processing segments...';
+
+    onProgress(80, uploadedKey, uploadedDefaultMsg);
 
     const data = await response.json();
     console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, data);
 
-    onProgress(100, `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} segments ready`);
+    // Use the translation key for the segments ready message
+    const readyKey = isAudio ? 'output.audioSegmentsReady' : 'output.videoSegmentsReady';
+    const readyDefaultMsg = isAudio ? 'Audio segments ready' : 'Video segments ready';
+
+    onProgress(100, readyKey, readyDefaultMsg);
 
     // Log the actual segment durations for debugging
     if (data.segments && data.segments.length > 0) {

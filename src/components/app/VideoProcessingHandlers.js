@@ -32,9 +32,14 @@ export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegm
     const splitResult = await splitVideoOnServer(
       videoFile,
       getMaxSegmentDurationSeconds(),
-      (progress, message) => {
+      (progress, messageKey, defaultMessage) => {
+        // Handle translation keys properly
+        const translatedMessage = messageKey && messageKey.startsWith('output.')
+          ? t(messageKey, defaultMessage)
+          : (defaultMessage || messageKey);
+
         setStatus({
-          message: `${message} (${progress}%)`,
+          message: `${translatedMessage} (${progress}%)`,
           type: 'loading'
         });
       },

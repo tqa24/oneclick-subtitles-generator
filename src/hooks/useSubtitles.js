@@ -134,7 +134,12 @@ export const useSubtitles = (t) => {
                 const cachedSubtitles = await checkCachedSubtitles(cacheId);
                 if (cachedSubtitles) {
                     setSubtitlesData(cachedSubtitles);
-                    setStatus({ message: t('output.subtitlesLoadedFromCache'), type: 'success' });
+                    // Use the translation key directly to ensure it's properly translated
+                    setStatus({
+                        message: t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!'),
+                        type: 'success',
+                        translationKey: 'output.subtitlesLoadedFromCache' // Add a translation key for reference
+                    });
                     setIsGenerating(false);
                     return true;
                 }

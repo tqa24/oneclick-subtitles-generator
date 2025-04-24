@@ -144,7 +144,12 @@ const OutputContainer = ({
         segmentsStatus.length > 0 && (!activeTab.includes('youtube') || subtitlesData) ? (
           <ParallelProcessingStatus
             segments={segmentsStatus}
-            overallStatus={status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')}
+            overallStatus={
+              // Translate common status messages that might be hardcoded
+              status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+              status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+              status.message || t('output.segmentsReady', 'Video segments are ready for processing!')
+            }
             statusType={status?.type || 'success'}
             onRetrySegment={(segmentIndex, _, options) => {
               onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
@@ -160,7 +165,12 @@ const OutputContainer = ({
             onViewRules={onViewRules}
           />
         ) : (
-          <div className={`status ${status.type}`}>{status.message}</div>
+          <div className={`status ${status.type}`}>
+            {/* Translate common status messages that might be hardcoded */}
+            {status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+             status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+             status.message}
+          </div>
         )
       )}
 

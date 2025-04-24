@@ -79,5 +79,14 @@
   "optimizingVideo": "Đang tối ưu hóa video để xử lý... (Thời gian xử lý tuỳ theo độ dài video và cấu hình máy)",
   "processingAudio": "Đang xử lý âm thanh...",
   "optimizationFailed": "Tối ưu hóa video thất bại, sử dụng video gốc.",
-  "processingOptimizedVideo": "Đang xử lý video đã tối ưu hóa..."
+  "processingOptimizedVideo": "Đang xử lý video đã tối ưu hóa...",
+  "uploadingVideoToServer": "Đang tải video lên máy chủ...",
+  "uploadingAudioToServer": "Đang tải âm thanh lên máy chủ...",
+  "videoUploaded": "Đã tải video lên, đang xử lý các phần...",
+  "audioUploaded": "Đã tải âm thanh lên, đang xử lý các phần...",
+  "videoSegmentsReady": "Các phần video đã sẵn sàng",
+  "audioSegmentsReady": "Các phần âm thanh đã sẵn sàng",
+  "retrying": "Đang thử lại...",
+  "ready": "Sẵn sàng",
+  "segmentReady": "Sẵn sàng để xử lý"
 }
