@@ -8,64 +8,57 @@ import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
 
 // Default transcription prompts
 export const PROMPT_PRESETS = [
-    {
-        id: 'general',
-        title: 'General purpose',
-        prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.
-
+{
+id: 'general',
+title: 'General purpose',
+prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the transcription into VERY SHORT segments. Focus on natural pauses, breath breaks, and short phrases. Aim for segments that are typically only a few words long. Do NOT create long segments covering multiple sentences.** Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.
 IMPORTANT: If there is no speech or spoken content in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'extract-text',
-        title: 'Extract text',
-        prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text. For example: [00m30s000ms - 00m35s500ms] This text appeared on screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.
-
+},
+{
+id: 'extract-text',
+title: 'Extract text',
+prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text. For example: [00m30s000ms - 00m35s500ms] This text appeared on screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Each entry MUST represent a single, distinct piece of text that appears/disappears. Keep the text per entry AS SHORT AS POSSIBLE, reflecting only what appears at that specific moment. If text elements change or update, create a new entry.** Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.
 IMPORTANT: If there is no visible text in the video, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'focus-spoken-words',
-        title: 'Focus on Spoken Words',
-        prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words. For example: [00m30s000ms - 00m35s500ms] This is the spoken dialogue. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.
-
+},
+{
+id: 'focus-spoken-words',
+title: 'Focus on Spoken Words',
+prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words. For example: [00m30s000ms - 00m35s500ms] This is the spoken dialogue. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the transcription into VERY SHORT segments. Focus intently on natural pauses, breath breaks, and very short phrases. Aim for segments containing only a few words each. Avoid long sentences or combining multiple phrases into one segment.** Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.
 IMPORTANT: If there is no spoken dialogue in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'focus-lyrics',
-        title: 'Focus on Lyrics',
-        prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics. For example: [00m45s100ms - 00m50s250ms] These are the lyrics being sung. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.
-
+},
+{
+id: 'focus-lyrics',
+title: 'Focus on Lyrics',
+prompt: `Focus exclusively on the song lyrics sung in this ${'{contentType}'}. Transcribe ONLY the audible lyrics. Explicitly ignore any spoken words (dialogue, narration), background music without vocals, on-screen text, and non-lyrical sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics. For example: [00m45s100ms - 00m50s250ms] These are the lyrics being sung. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break lyrics into VERY SHORT segments, ideally reflecting individual sung phrases or even sub-phrases. Aim for segments of only a few words based on musical phrasing and pauses. Do not transcribe long lines.** Return ONLY the formatted transcript lines of lyrics, with no extra text, headers, or explanations.
 IMPORTANT: If there are no sung lyrics in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'describe-video',
-        title: 'Describe video',
-        prompt: `Describe the significant visual events, actions, and scene changes occurring in this ${'{contentType}'} in chronological order. Focus solely on what is visually happening on screen. Format the output as a descriptive log. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Visual description. For example: [00m30s000ms - 00m35s500ms] A person walks across the screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted descriptions with their timestamps. Do not include any audio transcription, headers, or other commentary.
-
+},
+{
+id: 'describe-video',
+title: 'Describe video',
+prompt: `Describe the significant visual events, actions, and scene changes occurring in this ${'{contentType}'} in chronological order. Focus solely on what is visually happening on screen. Format the output as a descriptive log. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Visual description. For example: [00m30s000ms - 00m35s500ms] A person walks across the screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Descriptions MUST be VERY concise and tied to specific, brief visual moments or changes. Break down actions into their smallest distinct parts. For example, instead of 'Man walks to the door and opens it', use two lines: '[...] Man walks to door.' and '[...] Man opens door.' Aim for minimal words per entry.** Return ONLY the formatted descriptions with their timestamps. Do not include any audio transcription, headers, or other commentary.
 IMPORTANT: If the video is blank or has no significant visual content, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'translate-vietnamese',
-        title: 'Translate directly',
-        prompt: `Identify the spoken language(s) in this ${'{contentType}'} and translate the speech directly into TARGET_LANGUAGE. If multiple languages are spoken, translate all spoken segments into TARGET_LANGUAGE. Format the output as a sequential transcript of the translation. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] translated text. For example: [00m30s000ms - 00m35s500ms] This is the translated text. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). Return ONLY the formatted translation lines with timestamps. Do not include the original language transcription, headers, or any other text.
-
+},
+{
+id: 'translate-directly',
+title: 'Translate directly',
+prompt: `Identify the spoken language(s) in this ${'{contentType}'} and translate the speech directly into TARGET_LANGUAGE. If multiple languages are spoken, translate all spoken segments into TARGET_LANGUAGE. Format the output as a sequential transcript of the translation. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] translated text. For example: [00m30s000ms - 00m35s500ms] This is the translated text. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the translation into VERY SHORT segments. Aim for translated segments that reflect natural, short spoken phrases, ideally only a few words long. Do NOT create long segments covering multiple original sentences or ideas.** Return ONLY the formatted translation lines with timestamps. Do not include the original language transcription, headers, or any other text.
 IMPORTANT: If there is no speech in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-    },
-    {
-        id: 'chaptering',
-        title: 'Chaptering',
-        prompt: `You are an expert content analyst. Your task is to analyze this ${'{contentType}'} and identify distinct chapters or thematic segments based on major topic shifts or significant changes in activity/scene. Format the output as a sequential list, with each chapter on a new line. Each line MUST strictly follow the format: [HH:MM:SS] Chapter Title (5-7 words max) :: Chapter Summary (1-2 sentences). Use the specific timestamp format [HH:MM:SS] (hours, minutes, seconds) representing the chapter's start time. Use ' :: ' (space, two colons, space) as the separator between the title and the summary.
-
+},
+{
+// Chaptering prompt remains unchanged as requested
+id: 'chaptering',
+title: 'Chaptering',
+prompt: `You are an expert content analyst. Your task is to analyze this ${'{contentType}'} and identify distinct chapters or thematic segments based on major topic shifts or significant changes in activity/scene. Format the output as a sequential list, with each chapter on a new line. Each line MUST strictly follow the format: [HH:MM:SS] Chapter Title (5-7 words max) :: Chapter Summary (1-2 sentences). Use the specific timestamp format [HH:MM:SS] (hours, minutes, seconds) representing the chapter's start time. Use ' :: ' (space, two colons, space) as the separator between the title and the summary.
 Example of two chapter lines:
 [00:05:15] Introduction to Topic :: This chapter introduces the main subject discussed and sets the stage for later details.
 [00:15:30] Exploring Detail A :: The speaker dives into the first major detail, providing supporting examples.
-
 Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences). Focus on major segmentation points. Return ONLY the formatted chapter lines following this exact single-line structure. Do not include any introductory text, concluding remarks, blank lines, lists, or any other text or formatting.`
-    },
-    {
-        id: 'diarize-speakers',
-        title: 'Identify Speakers',
-        prompt: `You are an expert transcriber capable of speaker identification (diarization). Your task is to transcribe the spoken content in this ${'{contentType}'} AND identify who is speaking for each segment. Assign generic labels like 'Speaker 1', 'Speaker 2', etc., consistently throughout the transcript if specific names are not clearly identifiable or mentioned. Format the output as a sequential transcript. Each line MUST strictly follow the format: Speaker Label [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. Example: Speaker 1 [0m5s123ms - 0m10s456ms] This is what the first speaker said. Each entry must represent a continuous segment from a single speaker. Return ONLY the formatted speaker transcript lines following this exact structure. Do not include headers, speaker inventories, introductions, summaries, or any other text or formatting.`
-    }
+},
+{
+id: 'diarize-speakers',
+title: 'Identify Speakers',
+prompt: `You are an expert transcriber capable of speaker identification (diarization). Your task is to transcribe the spoken content in this ${'{contentType}'} AND identify who is speaking for each segment. Assign generic labels like 'Speaker 1', 'Speaker 2', etc., consistently throughout the transcript if specific names are not clearly identifiable or mentioned. Format the output as a sequential transcript. Each line MUST strictly follow the format: Speaker Label [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. Example: Speaker 1 [0m5s123ms - 0m10s456ms] This is what the first speaker said. Each entry must represent a continuous segment from a single speaker. **CRITICAL: Within each speaker's turn, break the transcription into VERY SHORT segments. Focus intensely on natural pauses, breath breaks, and short phrases. Aim for segments containing only a few words each. Do NOT combine multiple phrases or sentences into one long segment.** Return ONLY the formatted speaker transcript lines following this exact structure. Do not include headers, speaker inventories, introductions, summaries, or any other text or formatting.`
+}
 ];
 
 // Default transcription prompt that will be used if no custom prompt is set
