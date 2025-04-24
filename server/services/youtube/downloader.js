@@ -9,6 +9,7 @@ const { getVideoInfo } = require('./infoUtils');
 const { downloadWithYtdlCore } = require('./ytdlDownloader');
 const { downloadWithPlayDl } = require('./playDlDownloader');
 const { downloadWithAudio, downloadWithDirectStream } = require('./specialDownloaders');
+const { downloadWithYtdlp } = require('./ytdlpDownloader');
 
 /**
  * Download YouTube video using multiple methods with fallbacks
@@ -54,6 +55,7 @@ async function downloadYouTubeVideo(videoId) {
 
   // Try multiple download methods in sequence
   const methods = [
+    { name: 'yt-dlp', fn: downloadWithYtdlp }, // yt-dlp as first priority
     { name: 'ytdl-core', fn: downloadWithYtdlCore },
     { name: 'play-dl', fn: downloadWithPlayDl },
     { name: 'direct-stream', fn: downloadWithDirectStream }
