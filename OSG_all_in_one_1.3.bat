@@ -47,7 +47,7 @@ ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
 ECHO   1. Cai dat voi Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
-ECHO      (Luu y: Co the ton nhieu dung luong luu tru hon)
+ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
 ECHO   2. Cai dat khong co Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
 ECHO.
 ECHO BAO TRI / SU DUNG:
