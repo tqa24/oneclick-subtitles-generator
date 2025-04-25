@@ -1,0 +1,529 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FiClock, FiX } from 'react-icons/fi';
+import { 
+  addYoutubeUrlToHistory, 
+  getYoutubeUrlHistory, 
+  addAllSitesUrlToHistory, 
+  getAllSitesUrlHistory,
+  formatTimestamp 
+} from '../../utils/historyUtils';
+import { getVideoDetails } from '../../services/youtubeApiService';
+
+// Helper functions for Douyin URL history
+const getDouyinUrlHistory = () => {
+  try {
+    const history = JSON.parse(localStorage.getItem('douyin_url_history') || '[]');
+    return Array.isArray(history) ? history : [];
+  } catch (error) {
+    console.error('Error parsing Douyin URL history:', error);
+    return [];
+  }
+};
+
+const addDouyinUrlToHistory = (video) => {
+  try {
+    if (!video || !video.id || !video.url) return;
+
+    const history = getDouyinUrlHistory();
+
+    // Check if this URL is already in history
+    const existingIndex = history.findIndex(item => item.id === video.id);
+
+    // If it exists, remove it (we'll add it to the top)
+    if (existingIndex !== -1) {
+      history.splice(existingIndex, 1);
+    }
+
+    // Add to the beginning of the array
+    history.unshift({
+      id: video.id,
+      url: video.url,
+      title: video.title || 'Douyin Video',
+      timestamp: Date.now()
+    });
+
+    // Keep only the most recent 20 items
+    const trimmedHistory = history.slice(0, 20);
+
+    // Save back to localStorage
+    localStorage.setItem('douyin_url_history', JSON.stringify(trimmedHistory));
+  } catch (error) {
+    console.error('Error saving Douyin URL to history:', error);
+  }
+};
+
+const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
+  const { t } = useTranslation();
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [urlType, setUrlType] = useState(''); // 'youtube', 'douyin', or 'all-sites'
+  const historyDropdownRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedVideo) {
+      setVideoTitle(selectedVideo.title || 'Video');
+      setUrlType(selectedVideo.source);
+
+      // Add to history based on source
+      if (selectedVideo.id && selectedVideo.url) {
+        if (selectedVideo.source === 'youtube') {
+          addYoutubeUrlToHistory(selectedVideo);
+        } else if (selectedVideo.source === 'douyin') {
+          addDouyinUrlToHistory(selectedVideo);
+        } else if (selectedVideo.source === 'all-sites') {
+          addAllSitesUrlToHistory(selectedVideo);
+        }
+        
+        // Refresh history list
+        loadHistory();
+      }
+    }
+  }, [selectedVideo]);
+
+  // Load combined history on component mount
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  // Load combined history from all sources
+  const loadHistory = () => {
+    const youtubeHistory = getYoutubeUrlHistory().map(item => ({ ...item, source: 'youtube' }));
+    const douyinHistory = getDouyinUrlHistory().map(item => ({ ...item, source: 'douyin' }));
+    const allSitesHistory = getAllSitesUrlHistory().map(item => ({ ...item, source: 'all-sites' }));
+    
+    // Combine and sort by timestamp (newest first)
+    const combinedHistory = [...youtubeHistory, ...douyinHistory, ...allSitesHistory]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 20); // Keep only the most recent 20 items
+    
+    setHistory(combinedHistory);
+  };
+
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        historyDropdownRef.current &&
+        !historyDropdownRef.current.contains(event.target) &&
+        !event.target.closest('.history-button')
+      ) {
+        setShowHistory(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // URL validation functions
+  const isValidYoutubeUrl = (url) => {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S*)?$/;
+    return youtubeRegex.test(url);
+  };
+
+  const isValidDouyinUrl = (url) => {
+    const douyinRegex = /^(https?:\/\/)?(www\.|v\.)?douyin\.com\/(video\/\d+|[a-zA-Z0-9]+\/?)/;
+    return douyinRegex.test(url);
+  };
+
+  const isValidUrl = (url) => {
+    if (!url) return false;
+
+    // First, check if it's a valid URL format
+    try {
+      new URL(url);
+    } catch (e) {
+      return false;
+    }
+
+    // Then check if it has a domain name
+    const domainRegex = /^https?:\/\/([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]*[a-z0-9])?/i;
+    return domainRegex.test(url);
+  };
+
+  // ID extraction functions
+  const extractYoutubeVideoId = (url) => {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  const extractDouyinVideoId = (url) => {
+    // Extract ID from full URL format: https://www.douyin.com/video/7123456789012345678
+    const fullUrlMatch = url.match(/douyin\.com\/video\/(\d+)/);
+    if (fullUrlMatch && fullUrlMatch[1]) {
+      return fullUrlMatch[1];
+    }
+
+    // Extract ID from short URL format: https://v.douyin.com/ABC123/
+    const shortUrlMatch = url.match(/v\.douyin\.com\/([a-zA-Z0-9]+)/);
+    if (shortUrlMatch && shortUrlMatch[1]) {
+      return shortUrlMatch[1];
+    }
+
+    return null;
+  };
+
+  const generateAllSitesVideoId = (url) => {
+    // Generate a unique ID based on the URL
+    try {
+      // First, try to create a more reliable ID
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname.replace('www.', '');
+      const path = urlObj.pathname.replace(/\//g, '_');
+      
+      // Create a base ID from domain and path
+      const baseId = `${domain}${path}`.replace(/[^a-zA-Z0-9]/g, '_');
+      
+      // Add a timestamp to ensure uniqueness
+      const timestamp = Date.now();
+      
+      // Combine everything into a valid ID
+      return `site_${baseId}_${timestamp}`;
+    } catch (error) {
+      console.error('Error generating video ID:', error);
+      // Fallback to a simpler ID generation
+      const timestamp = Date.now();
+      return `site_${timestamp}`;
+    }
+  };
+
+  // Fetch YouTube video title
+  const fetchYoutubeVideoTitle = async (videoId) => {
+    try {
+      // Use the YouTube API service to get video details
+      const videoDetails = await getVideoDetails(videoId);
+      return videoDetails ? videoDetails.title : null;
+    } catch (error) {
+      console.error('Error fetching video title:', error);
+      return null;
+    }
+  };
+
+  const handleUrlChange = async (e) => {
+    const inputUrl = e.target.value.trim();
+    setUrl(inputUrl);
+    setError(''); // Clear any previous errors
+
+    if (!inputUrl) {
+      setSelectedVideo(null);
+      setUrlType('');
+      return;
+    }
+
+    localStorage.removeItem('current_file_url');
+
+    // Check for YouTube URL first
+    if (isValidYoutubeUrl(inputUrl)) {
+      setUrlType('youtube');
+      const videoId = extractYoutubeVideoId(inputUrl);
+      if (videoId) {
+        const title = await fetchYoutubeVideoTitle(videoId) || 'YouTube Video';
+        setSelectedVideo({
+          id: videoId,
+          url: inputUrl,
+          source: 'youtube',
+          title: title,
+          thumbnail: `https://img.youtube.com/vi/${videoId}/0.jpg`
+        });
+      }
+      return;
+    }
+
+    // Check for Douyin URL next
+    if (isValidDouyinUrl(inputUrl)) {
+      setUrlType('douyin');
+      const videoId = extractDouyinVideoId(inputUrl);
+      if (videoId) {
+        setSelectedVideo({
+          id: videoId,
+          url: inputUrl,
+          source: 'douyin',
+          title: 'Douyin Video', // Default title
+          thumbnail: '' // No thumbnail available initially
+        });
+      }
+      return;
+    }
+
+    // If not YouTube or Douyin, check if it's a valid URL for all-sites
+    if (isValidUrl(inputUrl)) {
+      setUrlType('all-sites');
+      try {
+        const videoId = generateAllSitesVideoId(inputUrl);
+        const hostname = new URL(inputUrl).hostname;
+        const siteName = hostname.replace(/^www\./, '');
+
+        setSelectedVideo({
+          id: videoId,
+          url: inputUrl,
+          source: 'all-sites',
+          title: `Video from ${siteName}`,
+          thumbnail: '', // No thumbnail available initially
+          type: 'video/mp4' // Explicitly set the type
+        });
+
+        // Set video title for display
+        setVideoTitle(`Video from ${siteName}`);
+      } catch (error) {
+        console.error('Error setting up video:', error);
+        setError(t('unifiedUrlInput.invalidUrl', 'Invalid URL format. Please enter a valid URL.'));
+        setSelectedVideo(null);
+        setUrlType('');
+      }
+      return;
+    }
+
+    // If we get here, the URL is not valid for any of our supported formats
+    setError(t('unifiedUrlInput.invalidUrl', 'Invalid URL format. Please enter a valid URL.'));
+    setSelectedVideo(null);
+    setUrlType('');
+  };
+
+  // Toggle history dropdown
+  const toggleHistory = () => {
+    setShowHistory(prev => !prev);
+  };
+
+  // Handle selecting a video from history
+  const handleSelectFromHistory = (historyItem) => {
+    setUrl(historyItem.url);
+    setSelectedVideo({
+      id: historyItem.id,
+      url: historyItem.url,
+      source: historyItem.source,
+      title: historyItem.title,
+      thumbnail: historyItem.thumbnail || ''
+    });
+    setUrlType(historyItem.source);
+    setShowHistory(false);
+  };
+
+  // Get the appropriate icon based on URL type
+  const getUrlIcon = () => {
+    switch (urlType) {
+      case 'youtube':
+        return (
+          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
+            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
+          </svg>
+        );
+      case 'douyin':
+        return (
+          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        );
+      case 'all-sites':
+        return (
+          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+            <path d="M21 2H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path>
+            <path d="M7 10.5v3"></path>
+            <path d="M12 10.5v3"></path>
+            <path d="M17 10.5v3"></path>
+            <path d="M5 14h14"></path>
+          </svg>
+        );
+      default:
+        return (
+          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        );
+    }
+  };
+
+  // Get the appropriate placeholder text based on URL type
+  const getPlaceholderText = () => {
+    switch (urlType) {
+      case 'youtube':
+        return t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., youtube.com/watch?v=...)');
+      case 'douyin':
+        return t('douyinUrlInput.placeholder', 'Enter Douyin URL (e.g., douyin.com/video/...)');
+      case 'all-sites':
+        return t('allSitesUrlInput.placeholder', 'Enter any video URL (e.g., tiktok.com, dailymotion.com, etc.)');
+      default:
+        return t('unifiedUrlInput.placeholder', 'Enter any video URL (YouTube, Douyin, TikTok, etc.)');
+    }
+  };
+
+  // Render the appropriate video preview based on URL type
+  const renderVideoPreview = () => {
+    if (!selectedVideo || !selectedVideo.id) return null;
+
+    switch (selectedVideo.source) {
+      case 'youtube':
+        return (
+          <div className="selected-video-preview">
+            <img
+              src={`https://img.youtube.com/vi/${selectedVideo.id}/0.jpg`}
+              alt={videoTitle}
+              className="thumbnail"
+            />
+            <div className="video-info">
+              <h3 className="video-title">{videoTitle}</h3>
+              <p className="video-id">{t('youtubeUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+            </div>
+          </div>
+        );
+      case 'douyin':
+        return (
+          <div className="selected-video-preview">
+            <div className="video-info">
+              <h3 className="video-title">{videoTitle}</h3>
+              <p className="video-id">{t('douyinUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+            </div>
+          </div>
+        );
+      case 'all-sites':
+        return (
+          <div className="selected-video-preview">
+            <div className="video-info">
+              <h3 className="video-title">{videoTitle}</h3>
+              <p className="video-url">{t('allSitesUrlInput.url', 'URL:')} <span className="video-url-value">{url}</span></p>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Render examples based on URL type
+  const renderExamples = () => {
+    if (selectedVideo && selectedVideo.id) return null;
+
+    return (
+      <div className="url-examples">
+        <h4>{t('unifiedUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
+        <div className="examples-grid">
+          <div className="example-section">
+            <h5>{t('unifiedUrlInput.youtubeTitle', 'YouTube:')}</h5>
+            <ul>
+              <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
+              <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
+            </ul>
+          </div>
+          <div className="example-section">
+            <h5>{t('unifiedUrlInput.douyinTitle', 'Douyin:')}</h5>
+            <ul>
+              <li>{t('douyinUrlInput.example1', 'https://www.douyin.com/video/7123456789012345678')}</li>
+              <li>{t('douyinUrlInput.example2', 'https://v.douyin.com/ABC123/')}</li>
+            </ul>
+          </div>
+          <div className="example-section">
+            <h5>{t('unifiedUrlInput.otherSitesTitle', 'Other Sites:')}</h5>
+            <ul>
+              <li>{t('allSitesUrlInput.example1', 'tiktok.com')}</li>
+              <li>{t('allSitesUrlInput.example2', 'vimeo.com')}</li>
+              <li>{t('allSitesUrlInput.example3', 'dailymotion.com')}</li>
+              <li>{t('allSitesUrlInput.example4', 'facebook.com')}</li>
+            </ul>
+            <p className="yt-dlp-note">{t('allSitesUrlInput.ytDlpNote', 'Powered by yt-dlp which supports 1000+ sites')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className={`unified-url-input ${className || ''}`}>
+      <div className="url-input-wrapper">
+        {getUrlIcon()}
+        <input
+          type="text"
+          value={url}
+          onChange={handleUrlChange}
+          placeholder={getPlaceholderText()}
+          className={`url-field ${error ? 'error-input' : ''}`}
+          ref={inputRef}
+        />
+
+        {/* History button */}
+        {history.length > 0 && (
+          <button
+            type="button"
+            className="history-button"
+            onClick={toggleHistory}
+            aria-label={t('common.history', 'History')}
+            title={t('common.history', 'History')}
+          >
+            <FiClock size={18} />
+          </button>
+        )}
+
+        {url && (
+          <button
+            type="button"
+            className="clear-url-btn"
+            onClick={() => {
+              setUrl('');
+              setSelectedVideo(null);
+              setError('');
+              setUrlType('');
+            }}
+            aria-label="Clear input"
+          >
+            <FiX size={18} />
+          </button>
+        )}
+      </div>
+
+      {error && <div className="error-message">{error}</div>}
+
+      {/* History dropdown */}
+      {showHistory && history.length > 0 && (
+        <div className="history-dropdown" ref={historyDropdownRef}>
+          <div className="history-header">
+            <h4 className="history-title">{t('common.recentVideos', 'Recent Videos')}</h4>
+          </div>
+          <div className="history-list">
+            {history.map((item, index) => (
+              <div
+                key={`${item.id}-${index}`}
+                className="history-item"
+                onClick={() => handleSelectFromHistory(item)}
+              >
+                <div className="history-item-content">
+                  {item.source === 'youtube' && item.thumbnail && (
+                    <img
+                      src={item.thumbnail}
+                      alt={item.title}
+                      className="history-thumbnail"
+                      onError={(e) => {
+                        e.target.src = `https://img.youtube.com/vi/${item.id}/0.jpg`;
+                      }}
+                    />
+                  )}
+                  <div className="history-item-info">
+                    <div className="history-item-title">{item.title || 'Video'}</div>
+                    <div className="history-item-meta">
+                      <span className="history-item-source">{item.source}</span>
+                      <span className="history-item-time">{formatTimestamp(item.timestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {renderVideoPreview()}
+      {renderExamples()}
+    </div>
+  );
+};
+
+export default UnifiedUrlInput;

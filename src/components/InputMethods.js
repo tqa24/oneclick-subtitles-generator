@@ -5,6 +5,7 @@ import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
 import DouyinUrlInput from './inputs/DouyinUrlInput';
 import AllSitesUrlInput from './inputs/AllSitesUrlInput';
+import UnifiedUrlInput from './inputs/UnifiedUrlInput';
 import '../styles/InputMethods.css';
 
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
@@ -12,25 +13,14 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
 
   const renderInputMethod = () => {
     switch (activeTab) {
-      case 'all-sites-url':
-        return <AllSitesUrlInput
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
-      case 'youtube-url':
-        return <YoutubeUrlInput
-          onVideoSelect={onVideoSelect}
+      case 'unified-url':
+        return <UnifiedUrlInput
           selectedVideo={selectedVideo}
           setSelectedVideo={setSelectedVideo}
         />;
       case 'youtube-search':
         return <YoutubeSearchInput
           apiKeysSet={apiKeysSet}
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
-      case 'douyin-url':
-        return <DouyinUrlInput
           selectedVideo={selectedVideo}
           setSelectedVideo={setSelectedVideo}
         />;
@@ -42,6 +32,23 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           className="tab-content"
           isSrtOnlyMode={isSrtOnlyMode}
           setIsSrtOnlyMode={setIsSrtOnlyMode}
+        />;
+      // Keep the old tabs for backward compatibility, but they won't be shown in the UI
+      case 'all-sites-url':
+        return <AllSitesUrlInput
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+        />;
+      case 'youtube-url':
+        return <YoutubeUrlInput
+          onVideoSelect={onVideoSelect}
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+        />;
+      case 'douyin-url':
+        return <DouyinUrlInput
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
         />;
       default:
         return null;
@@ -57,28 +64,15 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
 
         <div className="input-tabs">
           <button
-            className={`tab-btn ${activeTab === 'all-sites-url' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all-sites-url')}
+            className={`tab-btn ${activeTab === 'unified-url' ? 'active' : ''}`}
+            onClick={() => setActiveTab('unified-url')}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M21 2H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path>
-              <path d="M7 10.5v3"></path>
-              <path d="M12 10.5v3"></path>
-              <path d="M17 10.5v3"></path>
-              <path d="M5 14h14"></path>
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
             </svg>
-            {t('inputMethods.allSitesUrl', 'All Sites URL')}
-          </button>
-
-          <button
-            className={`tab-btn ${activeTab === 'youtube-url' ? 'active' : ''}`}
-            onClick={() => setActiveTab('youtube-url')}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M12 19c-2.3 0-6.4-.2-8.1-.6-.7-.2-1.2-.7-1.4-1.4-.3-1.1-.5-3.4-.5-5s.2-3.9.5-5c.2-.7.7-1.2 1.4-1.4C5.6 5.2 9.7 5 12 5s6.4.2 8.1.6c.7.2 1.2.7 1.4 1.4.3 1.1.5 3.4.5 5s-.2 3.9-.5 5c-.2.7-.7 1.2-1.4 1.4-1.7.4-5.8.6-8.1.6z" />
-              <polygon points="10 15 15 12 10 9 10 15" />
-            </svg>
-            {t('inputMethods.youtubeUrl', 'YouTube URL')}
+            {t('inputMethods.unifiedUrl', 'Video URL')}
           </button>
 
           <button
@@ -90,17 +84,6 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             {t('inputMethods.youtubeSearch', 'Search YouTube')}
-          </button>
-
-          <button
-            className={`tab-btn ${activeTab === 'douyin-url' ? 'active' : ''}`}
-            onClick={() => setActiveTab('douyin-url')}
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-            {t('inputMethods.douyinUrl', 'Douyin URL')}
           </button>
 
           <button

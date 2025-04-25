@@ -9,6 +9,7 @@ import errors from './errors.json';
 import theme from './theme.json';
 import language from './language.json';
 import youtubeUrlInput from './youtubeUrlInput.json';
+import unifiedUrlInput from './unifiedUrlInput.json';
 import youtube from './youtube.json';
 import subtitleSettings from './subtitleSettings.json';
 import videoPreview from './videoPreview.json';
@@ -41,6 +42,7 @@ const vi = {
   theme,
   language,
   youtubeUrlInput,
+  unifiedUrlInput,
   youtube,
   subtitleSettings,
   videoPreview,
