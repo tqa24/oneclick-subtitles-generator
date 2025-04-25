@@ -29,8 +29,41 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     // The onProgress function should handle translation, but we provide both the key and default message
     onProgress(10, uploadingKey, uploadingDefaultMsg);
 
-    // Generate a unique ID for this media file
-    const mediaId = `${mediaType}_${Date.now()}_${mediaFile.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    // Validate the media file
+    if (!mediaFile || !mediaFile.size) {
+      throw new Error('Invalid media file: File is empty or undefined');
+    }
+
+    // Check if the file size is reasonable
+    if (mediaFile.size < 100 * 1024) { // Less than 100KB
+      throw new Error(`Media file is too small (${mediaFile.size} bytes), likely not a valid file`);
+    }
+
+    // Ensure the file has a name
+    const fileName = mediaFile.name || `${mediaType}_${Date.now()}.${mediaType === 'audio' ? 'mp3' : 'mp4'}`;
+
+    // Log the file details
+    console.log(`Splitting media file: ${fileName}, size: ${mediaFile.size} bytes, type: ${mediaFile.type || 'unknown'}`);
+
+    // Check if the file name contains a site_ prefix, which means it's from the all-sites downloader
+    let mediaId;
+    if (fileName.includes('site_')) {
+      // Extract the site ID from the filename (without the .mp4 extension)
+      const siteIdMatch = fileName.match(/site_[a-zA-Z0-9_]+/);
+      if (siteIdMatch) {
+        // Use the site ID as the media ID to maintain consistency
+        mediaId = siteIdMatch[0];
+        console.log(`Using site ID from filename as media ID: ${mediaId}`);
+      } else {
+        // Generate a unique ID for this media file
+        mediaId = `${mediaType}_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        console.log(`Generated new media ID: ${mediaId}`);
+      }
+    } else {
+      // Generate a unique ID for this media file
+      mediaId = `${mediaType}_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      console.log(`Generated new media ID: ${mediaId}`);
+    }
 
     // Get video optimization settings from options
     // IMPORTANT: Set optimizeVideos to false by default since we're already optimizing in the optimize-video endpoint
@@ -43,7 +76,7 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}&optimizeVideos=${optimizeVideosStr}&optimizedResolution=${optimizedResolution}`;
 
     console.log(`Calling split-video endpoint with optimizeVideos=${optimizeVideosStr} (should be 'false' to avoid duplication)`);
-    console.log(`File being sent: ${mediaFile.name}, size: ${mediaFile.size} bytes, type: ${mediaFile.type}`);
+    console.log(`File being sent: ${fileName}, size: ${mediaFile.size} bytes, type: ${mediaFile.type || 'video/mp4'}`);
 
     // Upload the media file
     const response = await fetch(url, {

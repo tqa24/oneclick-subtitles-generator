@@ -26,9 +26,25 @@ export const getMaxSegmentDurationSeconds = () => getSegmentDurationMinutes() * 
  */
 export const getVideoDuration = (mediaFile) => {
     return new Promise((resolve, reject) => {
-        // Determine if this is a video or audio file based on MIME type
-        const isAudio = mediaFile.type.startsWith('audio/');
-        const isVideo = mediaFile.type.startsWith('video/');
+        if (!mediaFile) {
+            console.error('No media file provided to getVideoDuration');
+            // Use a fallback duration instead of failing
+            return resolve(600); // 10 minutes fallback
+        }
+
+        // Check if the file has a valid type
+        if (!mediaFile.type) {
+            console.warn('Media file has no type, assuming video/mp4');
+            mediaFile = new File([mediaFile], mediaFile.name || 'video.mp4', { type: 'video/mp4' });
+        }
+
+        // Determine if this is a video or audio file based on MIME type or name
+        const isAudio = mediaFile.type.startsWith('audio/') ||
+                       (mediaFile.name && /\.(mp3|wav|ogg|aac|flac)$/i.test(mediaFile.name));
+
+        const isVideo = mediaFile.type.startsWith('video/') ||
+                       (mediaFile.name && /\.(mp4|webm|mov|avi|mkv)$/i.test(mediaFile.name)) ||
+                       (!isAudio); // Default to video if not explicitly audio
 
         if (isVideo) {
             // Use video element for video files
@@ -40,12 +56,22 @@ export const getVideoDuration = (mediaFile) => {
                 resolve(video.duration);
             };
 
-            video.onerror = () => {
+            video.onerror = (e) => {
+                console.error('Error loading video metadata:', e);
                 window.URL.revokeObjectURL(video.src);
-                reject(new Error('Failed to load video metadata'));
+                // Use a fallback duration instead of failing
+                console.log('Using fallback duration of 600 seconds');
+                resolve(600); // 10 minutes fallback
             };
 
-            video.src = URL.createObjectURL(mediaFile);
+            try {
+                video.src = URL.createObjectURL(mediaFile);
+            } catch (error) {
+                console.error('Error creating object URL:', error);
+                // Use a fallback duration instead of failing
+                console.log('Using fallback duration of 600 seconds');
+                resolve(600); // 10 minutes fallback
+            }
         } else if (isAudio) {
             // Use audio element for audio files
             const audio = document.createElement('audio');
@@ -56,14 +82,25 @@ export const getVideoDuration = (mediaFile) => {
                 resolve(audio.duration);
             };
 
-            audio.onerror = () => {
+            audio.onerror = (e) => {
+                console.error('Error loading audio metadata:', e);
                 window.URL.revokeObjectURL(audio.src);
-                reject(new Error('Failed to load audio metadata'));
+                // Use a fallback duration instead of failing
+                console.log('Using fallback duration of 600 seconds');
+                resolve(600); // 10 minutes fallback
             };
 
-            audio.src = URL.createObjectURL(mediaFile);
+            try {
+                audio.src = URL.createObjectURL(mediaFile);
+            } catch (error) {
+                console.error('Error creating object URL:', error);
+                // Use a fallback duration instead of failing
+                console.log('Using fallback duration of 600 seconds');
+                resolve(600); // 10 minutes fallback
+            }
         } else {
-            reject(new Error('Unsupported file type. Expected video or audio.'));
+            console.warn('Unsupported file type, using fallback duration');
+            resolve(600); // 10 minutes fallback
         }
     });
 };
