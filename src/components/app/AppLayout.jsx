@@ -8,6 +8,7 @@ import TranslationWarningToast from '../TranslationWarningToast';
 import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
 import BackgroundImageGenerator from '../BackgroundImageGenerator';
+import FloatingScrollbar from '../FloatingScrollbar';
 
 /**
  * Main application layout component
@@ -310,6 +311,9 @@ const AppLayout = ({
 
       {/* Toast for translation warnings */}
       <TranslationWarningToast />
+
+      {/* Floating scrollbar component */}
+      <FloatingScrollbar />
     </>
   );
 };
