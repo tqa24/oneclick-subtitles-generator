@@ -46,14 +46,14 @@ ECHO ======================================================
 ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat voi Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
+ECHO   1. Cai dat voi Tinh nang Thuyet minh (Cai dat sach - XOA thu muc cu neu co)
 ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
-ECHO   2. Cai dat khong co Tinh nang Tuong thuat (Cai dat sach - XOA thu muc cu neu co)
+ECHO   2. Cai dat khong co Tinh nang Thuyet minh (Cai dat sach - XOA thu muc cu neu co)
 ECHO.
 ECHO BAO TRI / SU DUNG:
 ECHO   3. Cap nhat Ung dung (git pull)
 ECHO   4. Chay Ung dung (npm run dev)
-ECHO   5. Chay Ung dung voi Tuong thuat (npm run dev:cuda)
+ECHO   5. Chay Ung dung voi Thuyet minh (npm run dev:cuda)
 ECHO.
 ECHO GO CAI DAT:
 ECHO   6. Go cai dat Ung dung (Xoa thu muc du an)
@@ -79,7 +79,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat voi Tinh nang Tuong thuat (Cai dat sach) ***
+ECHO *** Tuy chon 1: Cai dat voi Tinh nang Thuyet minh (Cai dat sach) ***
 ECHO *** (Luu y: Co the ton nhieu dung luong luu tru hon) ***
 
 CALL :InstallPrerequisites
@@ -127,7 +127,7 @@ GOTO EndScript
 
 REM ==============================================================================
 :InstallNoNarration
-ECHO *** Tuy chon 2: Cai dat khong co Tinh nang Tuong thuat (Cai dat sach) ***
+ECHO *** Tuy chon 2: Cai dat khong co Tinh nang Thuyet minh (Cai dat sach) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -249,7 +249,7 @@ GOTO EndScript
 
 REM ==============================================================================
 :RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Tuong thuat (CUDA) ***
+ECHO *** Tuy chon 5: Chay Ung dung voi Thuyet minh (CUDA) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
