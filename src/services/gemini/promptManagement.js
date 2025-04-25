@@ -11,7 +11,7 @@ export const PROMPT_PRESETS = [
 {
 id: 'general',
 title: 'General purpose',
-prompt: `You are an expert transcriber. Your task is to transcribe the primary spoken content in this ${'{contentType}'}. Ignore non-essential background noise and periods of silence. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the transcription into VERY SHORT segments. Focus on natural pauses, breath breaks, and short phrases. Aim for segments that are typically only a few words long. Do NOT create long segments covering multiple sentences.** Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.
+prompt: `You are an expert transcriber. Your task is to transcribe every possible spoken content in this ${'{contentType}'}. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text. For example: [00m30s000ms - 00m35s500ms] This is the transcribed speech. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the transcription into VERY SHORT segments. Focus on natural pauses, breath breaks, and short phrases. Aim for segments that are typically only a few words long. Do NOT create long segments covering multiple sentences.** Return ONLY the formatted transcript lines. Do not include any headers, summaries, introductions, or any other text whatsoever.
 IMPORTANT: If there is no speech or spoken content in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
 },
 {
@@ -19,12 +19,6 @@ id: 'extract-text',
 title: 'Extract text',
 prompt: `Your task is to extract only the visible text and/or hardcoded subtitles appearing on screen within this ${'{contentType}'}. Completely ignore all audio content. Format the output as a sequential transcript showing exactly when the text appears and disappears. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Extracted on-screen text. For example: [00m30s000ms - 00m35s500ms] This text appeared on screen. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Each entry MUST represent a single, distinct piece of text that appears/disappears. Keep the text per entry AS SHORT AS POSSIBLE, reflecting only what appears at that specific moment. If text elements change or update, create a new entry.** Return ONLY the formatted text entries with their timestamps. Provide absolutely no other text, headers, or explanations.
 IMPORTANT: If there is no visible text in the video, return an empty array []. Do not return timestamps with empty text or placeholder text.`
-},
-{
-id: 'focus-spoken-words',
-title: 'Focus on Spoken Words',
-prompt: `Focus exclusively on the spoken words (dialogue, narration) in this ${'{contentType}'}. Transcribe ONLY the audible speech. Explicitly ignore any song lyrics, background music, on-screen text, and non-speech sounds. Format the output as a sequential transcript. Each line MUST strictly follow the format: [MMmSSsNNNms - MMmSSsNNNms] Transcribed spoken words. For example: [00m30s000ms - 00m35s500ms] This is the spoken dialogue. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms). **CRITICAL: Break the transcription into VERY SHORT segments. Focus intently on natural pauses, breath breaks, and very short phrases. Aim for segments containing only a few words each. Avoid long sentences or combining multiple phrases into one segment.** Return ONLY the formatted transcript lines of spoken words, with no extra text, headers, or explanations.
-IMPORTANT: If there is no spoken dialogue in the audio, return an empty array []. Do not return timestamps with empty text or placeholder text.`
 },
 {
 id: 'focus-lyrics',

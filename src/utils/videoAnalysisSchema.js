@@ -15,7 +15,7 @@ export const createVideoAnalysisSchema = () => {
         properties: {
           id: {
             type: "string",
-            description: "ID of the recommended preset (e.g., 'general', 'focus-spoken-words', 'focus-lyrics', etc.)"
+            description: "ID of the recommended preset (e.g., 'general', 'focus-lyrics', etc.)"
           },
           reason: {
             type: "string",

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import YoutubeUrlInput from './inputs/YoutubeUrlInput';
 import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
+import DouyinUrlInput from './inputs/DouyinUrlInput';
 import '../styles/InputMethods.css';
 
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
@@ -19,6 +20,11 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
       case 'youtube-search':
         return <YoutubeSearchInput
           apiKeysSet={apiKeysSet}
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+        />;
+      case 'douyin-url':
+        return <DouyinUrlInput
           selectedVideo={selectedVideo}
           setSelectedVideo={setSelectedVideo}
         />;
@@ -64,6 +70,17 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             {t('inputMethods.youtubeSearch', 'Search YouTube')}
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'douyin-url' ? 'active' : ''}`}
+            onClick={() => setActiveTab('douyin-url')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            {t('inputMethods.douyinUrl', 'Douyin URL')}
           </button>
 
           <button

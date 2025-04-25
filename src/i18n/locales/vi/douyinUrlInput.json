@@ -1,0 +1,14 @@
+{
+  "placeholder": "Nhập URL Douyin (ví dụ: douyin.com/video/...)",
+  "examplesTitle": "Các định dạng URL được hỗ trợ:",
+  "example1": "https://www.douyin.com/video/7123456789012345678",
+  "example2": "https://v.douyin.com/ABC123/",
+  "example3": "douyin.com/video/7123456789012345678",
+  "videoId": "ID Video:",
+  "invalidUrl": "Định dạng URL Douyin không hợp lệ. Vui lòng kiểm tra các ví dụ bên dưới.",
+  "downloadError": "Lỗi tải video: {{message}}",
+  "regionRestricted": "Video này bị giới hạn khu vực và không có sẵn ở vị trí của bạn.",
+  "privateVideo": "Video này là riêng tư hoặc đã bị xóa.",
+  "regionWarningTitle": "⚠️ Cảnh báo giới hạn khu vực",
+  "regionWarningText": "Video Douyin chỉ có thể truy cập từ Trung Quốc. Bạn có thể cần sử dụng VPN với máy chủ ở Trung Quốc để tải video Douyin."
+}

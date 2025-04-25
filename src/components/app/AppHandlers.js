@@ -1,6 +1,7 @@
 import { parseSrtContent } from '../../utils/srtParser';
 import { resetGeminiButtonState } from '../../utils/geminiButtonEffects';
 import { cancelYoutubeVideoDownload, extractYoutubeVideoId } from '../../utils/videoDownloader';
+import { cancelDouyinVideoDownload, extractDouyinVideoId } from '../../utils/douyinDownloader';
 import { prepareVideoForSegments, downloadAndPrepareYouTubeVideo } from './VideoProcessingHandlers';
 import { hasValidTokens } from '../../services/youtubeApiService';
 
@@ -50,6 +51,8 @@ export const useAppHandlers = (appState) => {
     if (activeTab === 'youtube-url') {
       return selectedVideo !== null;
     } else if (activeTab === 'youtube-search') {
+      return selectedVideo !== null;
+    } else if (activeTab === 'douyin-url') {
       return selectedVideo !== null;
     } else if (activeTab === 'file-upload') {
       return uploadedFile !== null;
@@ -172,8 +175,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube tabs, download the video first and switch to upload tab
-    if (activeTab.includes('youtube') && selectedVideo) {
+    // For YouTube or Douyin tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -268,8 +271,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube tabs, download the video first and switch to upload tab
-    if (activeTab.includes('youtube') && selectedVideo) {
+    // For YouTube or Douyin tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -351,8 +354,14 @@ export const useAppHandlers = (appState) => {
    */
   const handleCancelDownload = () => {
     if (currentDownloadId) {
-      // Cancel the download
-      cancelYoutubeVideoDownload(currentDownloadId);
+      // Check if it's a Douyin or YouTube download
+      if (activeTab === 'douyin-url') {
+        // Cancel Douyin download
+        cancelDouyinVideoDownload(currentDownloadId);
+      } else {
+        // Default to YouTube download
+        cancelYoutubeVideoDownload(currentDownloadId);
+      }
 
       // Reset states
       setIsDownloading(false);

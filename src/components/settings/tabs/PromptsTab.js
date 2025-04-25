@@ -71,7 +71,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
               <h3>
                 {viewingPreset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
                  viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                 viewingPreset.id === 'focus-spoken-words' && t('settings.presetFocusSpokenWords', 'Focus on Spoken Words') ||
                  viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                  viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
                  viewingPreset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
@@ -152,7 +151,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                 <h5 className="preset-title">
                   {preset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
                    preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                   preset.id === 'focus-spoken-words' && t('settings.presetFocusSpokenWords', 'Focus on Spoken Words') ||
                    preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                    preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
                    preset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
