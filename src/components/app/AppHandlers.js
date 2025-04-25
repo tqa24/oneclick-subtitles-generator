@@ -49,7 +49,9 @@ export const useAppHandlers = (appState) => {
     }
 
     // Otherwise, check for video/audio sources
-    if (activeTab === 'youtube-url') {
+    if (activeTab === 'unified-url') {
+      return selectedVideo !== null;
+    } else if (activeTab === 'youtube-url') {
       return selectedVideo !== null;
     } else if (activeTab === 'youtube-search') {
       return selectedVideo !== null;
@@ -178,8 +180,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube, Douyin, or All Sites tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url') && selectedVideo) {
+    // For YouTube, Douyin, All Sites, or Unified URL tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url' || activeTab === 'unified-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -192,7 +194,7 @@ export const useAppHandlers = (appState) => {
         let videoId;
         if (selectedVideo.source === 'douyin') {
           videoId = extractDouyinVideoId(selectedVideo.url);
-        } else if (selectedVideo.source === 'all-sites-url') {
+        } else if (selectedVideo.source === 'all-sites' || selectedVideo.source === 'all-sites-url') {
           videoId = selectedVideo.id;
         } else {
           videoId = extractYoutubeVideoId(selectedVideo.url);
@@ -301,8 +303,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube, Douyin, or All Sites tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url') && selectedVideo) {
+    // For YouTube, Douyin, All Sites, or Unified URL tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url' || activeTab === 'unified-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -407,10 +409,10 @@ export const useAppHandlers = (appState) => {
   const handleCancelDownload = () => {
     if (currentDownloadId) {
       // Check the source of the download
-      if (activeTab === 'douyin-url') {
+      if (activeTab === 'douyin-url' || (activeTab === 'unified-url' && selectedVideo?.source === 'douyin')) {
         // Cancel Douyin download
         cancelDouyinVideoDownload(currentDownloadId);
-      } else if (activeTab === 'all-sites-url') {
+      } else if (activeTab === 'all-sites-url' || (activeTab === 'unified-url' && selectedVideo?.source === 'all-sites')) {
         // Cancel generic URL download
         cancelGenericVideoDownload(currentDownloadId);
       } else {

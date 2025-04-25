@@ -1,0 +1,11 @@
+{
+  "placeholder": "비디오 URL 입력 (YouTube, Douyin, TikTok 등)",
+  "invalidUrl": "URL 형식이 잘못되었습니다. 유효한 URL을 입력해 주세요.",
+  "examplesTitle": "지원되는 URL 형식:",
+  "youtubeTitle": "YouTube:",
+  "douyinTitle": "Douyin:",
+  "otherSitesTitle": "기타 사이트:",
+  "ytDlpNote": "yt-dlp로 구동되며 1000개 이상의 사이트 지원",
+  "url": "URL:",
+  "videoId": "비디오 ID:"
+}

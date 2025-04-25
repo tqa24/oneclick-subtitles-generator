@@ -21,7 +21,7 @@ export const useAppState = () => {
 
   // UI state
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState(localStorage.getItem('lastActiveTab') || 'all-sites-url');
+  const [activeTab, setActiveTab] = useState(localStorage.getItem('lastActiveTab') || 'unified-url');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
   const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');

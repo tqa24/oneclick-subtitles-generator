@@ -13,6 +13,7 @@ import theme from './theme.json';
 import language from './language.json';
 import youtube from './youtube.json';
 import youtubeUrlInput from './youtubeUrlInput.json';
+import unifiedUrlInput from './unifiedUrlInput.json';
 import timeline from './timeline.json';
 import subtitleSettings from './subtitleSettings.json';
 import onboarding from './onboarding.json';
@@ -46,6 +47,7 @@ const enTranslations = {
   language,
   youtube,
   youtubeUrlInput,
+  unifiedUrlInput,
   timeline,
   subtitleSettings,
   onboarding,
