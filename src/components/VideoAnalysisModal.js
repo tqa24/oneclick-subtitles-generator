@@ -108,8 +108,6 @@ const VideoAnalysisModal = ({
         return t('settings.presetGeneralPurpose', 'General purpose');
       case 'extract-text':
         return t('settings.presetExtractText', 'Extract text');
-      case 'focus-spoken-words':
-        return t('settings.presetFocusSpokenWords', 'Focus on Spoken Words');
       case 'focus-lyrics':
         return t('settings.presetFocusLyrics', 'Focus on Lyrics');
       case 'describe-video':

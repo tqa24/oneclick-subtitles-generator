@@ -1,6 +1,7 @@
 import { getVideoDuration, getMaxSegmentDurationSeconds } from '../../utils/durationUtils';
 import { splitVideoOnServer } from '../../utils/videoSplitter';
 import { extractYoutubeVideoId, downloadYoutubeVideo } from '../../utils/videoDownloader';
+import { extractDouyinVideoId, downloadDouyinVideo } from '../../utils/douyinDownloader';
 
 /**
  * Prepare video for segment processing by optimizing and splitting
@@ -103,8 +104,8 @@ export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegm
 };
 
 /**
- * Download a YouTube video and prepare it for segment processing
- * This is used when subtitles are loaded from cache for a YouTube video
+ * Download a YouTube or Douyin video and prepare it for segment processing
+ * This is used when subtitles are loaded from cache for a video
  */
 export const downloadAndPrepareYouTubeVideo = async (
   selectedVideo,
@@ -119,7 +120,7 @@ export const downloadAndPrepareYouTubeVideo = async (
   t = (key, defaultValue) => defaultValue
 ) => {
   if (!selectedVideo) {
-    console.error('No YouTube video selected');
+    console.error('No video selected');
     return;
   }
 
@@ -129,17 +130,34 @@ export const downloadAndPrepareYouTubeVideo = async (
     setDownloadProgress(0);
     setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
-    // Download the YouTube video with the selected quality
-    // Extract video ID and set it as current download
-    const videoId = extractYoutubeVideoId(selectedVideo.url);
-    setCurrentDownloadId(videoId);
+    let videoId;
+    let videoUrl;
 
-    const videoUrl = await downloadYoutubeVideo(
-      selectedVideo.url,
-      (progress) => {
-        setDownloadProgress(progress);
-      }
-    );
+    // Check if it's a Douyin or YouTube URL
+    if (selectedVideo.source === 'douyin') {
+      // Extract Douyin video ID and set it as current download
+      videoId = extractDouyinVideoId(selectedVideo.url);
+      setCurrentDownloadId(videoId);
+
+      videoUrl = await downloadDouyinVideo(
+        selectedVideo.url,
+        (progress) => {
+          setDownloadProgress(progress);
+        }
+      );
+    } else {
+      // Default to YouTube
+      // Extract video ID and set it as current download
+      videoId = extractYoutubeVideoId(selectedVideo.url);
+      setCurrentDownloadId(videoId);
+
+      videoUrl = await downloadYoutubeVideo(
+        selectedVideo.url,
+        (progress) => {
+          setDownloadProgress(progress);
+        }
+      );
+    }
 
     // Clear the current download ID when done
     setCurrentDownloadId(null);

@@ -126,7 +126,6 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
 
 1. The most suitable transcription preset for this content from the following options:
    - general: General purpose transcription
-   - focus-spoken-words: Focus on spoken words (for interviews, podcasts, etc.)
    - focus-lyrics: Focus on lyrics (for music videos, songs)
    - extract-text: Extract visible text (for presentations, tutorials with text)
    - describe-video: Describe video content (for visual content description)
