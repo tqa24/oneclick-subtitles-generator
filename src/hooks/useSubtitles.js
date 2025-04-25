@@ -473,6 +473,41 @@ export const useSubtitles = (t) => {
             // Update the subtitles data with the new results
             setSubtitlesData(updatedSubtitles);
 
+            // Trigger auto-save after segment subtitles arrive
+            // Find the save button
+            const saveButton = document.querySelector('.lyrics-save-btn');
+            if (saveButton) {
+                console.log('Auto-saving after segment subtitles arrived');
+
+                // Create a promise to track when the save is complete
+                const savePromise = new Promise((resolve) => {
+                    // Create a one-time event listener for the save completion
+                    const handleSaveComplete = (event) => {
+                        console.log('Save completed after segment subtitles arrived');
+                        resolve();
+                        // Remove the event listener
+                        window.removeEventListener('subtitles-saved', handleSaveComplete);
+                    };
+
+                    // Listen for a custom event that will be dispatched when save is complete
+                    window.addEventListener('subtitles-saved', handleSaveComplete, { once: true });
+
+                    // Click the save button to trigger the save
+                    saveButton.click();
+
+                    // Set a timeout in case the event never fires
+                    setTimeout(() => {
+                        window.removeEventListener('subtitles-saved', handleSaveComplete);
+                        resolve();
+                    }, 2000);
+                });
+
+                // Wait for the save to complete
+                await savePromise;
+            } else {
+                console.warn('Could not find save button to auto-save after segment subtitles arrived');
+            }
+
             // Show a brief success message
             // Check if we're generating a new segment or retrying an existing one
             const isGenerating = !subtitlesData || subtitlesData.length === 0;

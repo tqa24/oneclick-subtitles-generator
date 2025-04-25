@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiClock, FiX } from 'react-icons/fi';
+import { formatTimestamp } from '../../utils/historyUtils';
 
 // Helper functions for Douyin URL history
 const getDouyinUrlHistory = () => {
@@ -43,6 +44,10 @@ const addDouyinUrlToHistory = (video) => {
   } catch (error) {
     console.error('Error saving Douyin URL to history:', error);
   }
+};
+
+const clearDouyinUrlHistory = () => {
+  localStorage.removeItem('douyin_url_history');
 };
 
 const DouyinUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
@@ -162,10 +167,11 @@ const DouyinUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     setShowHistory(false);
   };
 
-  // Format date for history items
-  const formatDate = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  // Clear history
+  const handleClearHistory = (e) => {
+    e.stopPropagation();
+    clearDouyinUrlHistory();
+    setHistory([]);
   };
 
   return (
@@ -211,25 +217,41 @@ const DouyinUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             <FiX size={18} />
           </button>
         )}
-      </div>
 
-      {/* History dropdown */}
-      {showHistory && (
-        <div className="history-dropdown" ref={historyDropdownRef}>
-          <h4>{t('common.history', 'History')}</h4>
-          <ul>
-            {history.map((item, index) => (
-              <li key={index} onClick={() => handleSelectFromHistory(item)}>
-                <div className="history-item">
-                  <div className="history-title">{item.title || 'Douyin Video'}</div>
-                  <div className="history-url">{item.url}</div>
-                  <div className="history-date">{formatDate(item.timestamp)}</div>
+        {/* History dropdown */}
+        {showHistory && history.length > 0 && (
+          <div className="history-dropdown" ref={historyDropdownRef}>
+            <div className="history-header">
+              <h4 className="history-title">{t('youtube.recentVideos', 'Recent Videos')}</h4>
+              <button
+                className="clear-history-btn"
+                onClick={handleClearHistory}
+              >
+                {t('common.clearAll', 'Clear All')}
+              </button>
+            </div>
+            <div className="history-list">
+              {history.map((item, index) => (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="history-item"
+                  onClick={() => handleSelectFromHistory(item)}
+                >
+                  <div className="history-item-content">
+                    <div className="history-item-info">
+                      <div className="history-item-title">{item.title || 'Douyin Video'}</div>
+                      <div className="history-item-meta">
+                        <span className="history-item-id">{item.id}</span>
+                        <span className="history-item-time">{formatTimestamp(item.timestamp)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {error && <div className="error-message">{error}</div>}
 
@@ -244,23 +266,7 @@ const DouyinUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
         </>
       )}
 
-      {/* Warning message about regional restrictions */}
-      <div className="region-warning" style={{
-        backgroundColor: '#fff3cd',
-        color: '#856404',
-        padding: '10px 15px',
-        borderRadius: '4px',
-        marginTop: '15px',
-        marginBottom: '15px',
-        border: '1px solid #ffeeba'
-      }}>
-        <h4 style={{ margin: '0 0 8px 0' }}>
-          {t('douyinUrlInput.regionWarningTitle', '⚠️ Regional Restriction Warning')}
-        </h4>
-        <p style={{ margin: '0 0 8px 0' }}>
-          {t('douyinUrlInput.regionWarningText', 'Douyin videos are only accessible from within China. You may need to use a VPN with a Chinese server to download Douyin videos.')}
-        </p>
-      </div>
+
 
       {/* Examples section */}
       <div className="url-examples">
