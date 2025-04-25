@@ -1,6 +1,5 @@
 /**
- * YouTube downloader using yt-dlp command line tool as a fallback method
- * This is used when other JavaScript-based methods fail
+ * YouTube downloader using yt-dlp command line tool
  */
 
 const { spawn } = require('child_process');
@@ -18,7 +17,7 @@ const { safeMoveFile } = require('../../utils/fileOperations');
  */
 async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
   return new Promise((resolve, reject) => {
-    console.log(`[QUALITY DEBUG] Attempting to download with yt-dlp fallback method...`);
+    console.log(`[QUALITY DEBUG] Attempting to download with yt-dlp...`);
 
     // Convert quality string to resolution for yt-dlp
     let resolution;

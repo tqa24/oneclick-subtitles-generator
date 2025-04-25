@@ -431,7 +431,7 @@ SOFTWARE.
 - Internationalization with [i18next](https://www.i18next.com/)
 - Video processing with [FFmpeg](https://ffmpeg.org/)
 - Timeline visualization using HTML5 Canvas
-- YouTube integration with [@distube/ytdl-core](https://github.com/distubejs/ytdl-core) for serverless video downloading
+- YouTube video downloading with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 - SRT subtitle format parsing and generation
 - Icons from [Heroicons](https://heroicons.com/)
 - Virtualization with [react-window](https://github.com/bvaughn/react-window)
