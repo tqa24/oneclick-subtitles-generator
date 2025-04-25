@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiClock, FiX } from 'react-icons/fi';
-import { 
-  addYoutubeUrlToHistory, 
-  getYoutubeUrlHistory, 
-  addAllSitesUrlToHistory, 
+import {
+  addYoutubeUrlToHistory,
+  getYoutubeUrlHistory,
+  addAllSitesUrlToHistory,
   getAllSitesUrlHistory,
-  formatTimestamp 
+  formatTimestamp
 } from '../../utils/historyUtils';
 import { getVideoDetails } from '../../services/youtubeApiService';
 
@@ -78,7 +78,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
         } else if (selectedVideo.source === 'all-sites') {
           addAllSitesUrlToHistory(selectedVideo);
         }
-        
+
         // Refresh history list
         loadHistory();
       }
@@ -95,12 +95,12 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     const youtubeHistory = getYoutubeUrlHistory().map(item => ({ ...item, source: 'youtube' }));
     const douyinHistory = getDouyinUrlHistory().map(item => ({ ...item, source: 'douyin' }));
     const allSitesHistory = getAllSitesUrlHistory().map(item => ({ ...item, source: 'all-sites' }));
-    
+
     // Combine and sort by timestamp (newest first)
     const combinedHistory = [...youtubeHistory, ...douyinHistory, ...allSitesHistory]
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 20); // Keep only the most recent 20 items
-    
+
     setHistory(combinedHistory);
   };
 
@@ -178,13 +178,13 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       const urlObj = new URL(url);
       const domain = urlObj.hostname.replace('www.', '');
       const path = urlObj.pathname.replace(/\//g, '_');
-      
+
       // Create a base ID from domain and path
       const baseId = `${domain}${path}`.replace(/[^a-zA-Z0-9]/g, '_');
-      
+
       // Add a timestamp to ensure uniqueness
       const timestamp = Date.now();
-      
+
       // Combine everything into a valid ID
       return `site_${baseId}_${timestamp}`;
     } catch (error) {
@@ -406,32 +406,22 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
 
     return (
       <div className="url-examples">
-        <h4>{t('unifiedUrlInput.examplesTitle', 'Supported URL formats:')}</h4>
-        <div className="examples-grid">
-          <div className="example-section">
-            <h5>{t('unifiedUrlInput.youtubeTitle', 'YouTube:')}</h5>
-            <ul>
-              <li>{t('youtubeUrlInput.example1', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')}</li>
-              <li>{t('youtubeUrlInput.example2', 'https://youtu.be/dQw4w9WgXcQ')}</li>
-            </ul>
-          </div>
-          <div className="example-section">
-            <h5>{t('unifiedUrlInput.douyinTitle', 'Douyin:')}</h5>
-            <ul>
-              <li>{t('douyinUrlInput.example1', 'https://www.douyin.com/video/7123456789012345678')}</li>
-              <li>{t('douyinUrlInput.example2', 'https://v.douyin.com/ABC123/')}</li>
-            </ul>
-          </div>
-          <div className="example-section">
-            <h5>{t('unifiedUrlInput.otherSitesTitle', 'Other Sites:')}</h5>
-            <ul>
-              <li>{t('allSitesUrlInput.example1', 'tiktok.com')}</li>
-              <li>{t('allSitesUrlInput.example2', 'vimeo.com')}</li>
-              <li>{t('allSitesUrlInput.example3', 'dailymotion.com')}</li>
-              <li>{t('allSitesUrlInput.example4', 'facebook.com')}</li>
-            </ul>
-            <p className="yt-dlp-note">{t('allSitesUrlInput.ytDlpNote', 'Powered by yt-dlp which supports 1000+ sites')}</p>
-          </div>
+        <div className="site-chips">
+          <div className="site-chip">youtube.com</div>
+          <div className="site-chip">tiktok.com</div>
+          <div className="site-chip">vimeo.com</div>
+          <div className="site-chip">facebook.com</div>
+          <div className="site-chip">instagram.com</div>
+          <div className="site-chip">twitter.com</div>
+          <div className="site-chip">dailymotion.com</div>
+          <div className="site-chip">twitch.tv</div>
+          <div className="site-chip">bilibili.com</div>
+          <div className="site-chip">douyin.com</div>
+          <div className="site-chip">reddit.com</div>
+          <div className="site-chip">soundcloud.com</div>
+          <div className="site-chip">linkedin.com</div>
+          <div className="site-chip">pinterest.com</div>
+          <div className="site-chip more-sites-chip">và hàng trăm website khác...</div>
         </div>
       </div>
     );
@@ -440,7 +430,6 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   return (
     <div className={`unified-url-input ${className || ''}`}>
       <div className="url-input-wrapper">
-        {getUrlIcon()}
         <input
           type="text"
           value={url}
@@ -449,6 +438,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
           className={`url-field ${error ? 'error-input' : ''}`}
           ref={inputRef}
         />
+        {getUrlIcon()}
 
         {/* History button */}
         {history.length > 0 && (
@@ -483,42 +473,44 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       {error && <div className="error-message">{error}</div>}
 
       {/* History dropdown */}
-      {showHistory && history.length > 0 && (
-        <div className="history-dropdown" ref={historyDropdownRef}>
-          <div className="history-header">
-            <h4 className="history-title">{t('common.recentVideos', 'Recent Videos')}</h4>
-          </div>
-          <div className="history-list">
-            {history.map((item, index) => (
-              <div
-                key={`${item.id}-${index}`}
-                className="history-item"
-                onClick={() => handleSelectFromHistory(item)}
-              >
-                <div className="history-item-content">
-                  {item.source === 'youtube' && item.thumbnail && (
-                    <img
-                      src={item.thumbnail}
-                      alt={item.title}
-                      className="history-thumbnail"
-                      onError={(e) => {
-                        e.target.src = `https://img.youtube.com/vi/${item.id}/0.jpg`;
-                      }}
-                    />
-                  )}
-                  <div className="history-item-info">
-                    <div className="history-item-title">{item.title || 'Video'}</div>
-                    <div className="history-item-meta">
-                      <span className="history-item-source">{item.source}</span>
-                      <span className="history-item-time">{formatTimestamp(item.timestamp)}</span>
+      <div className="history-dropdown-container">
+        {showHistory && history.length > 0 && (
+          <div className="history-dropdown" ref={historyDropdownRef}>
+            <div className="history-header">
+              <h4 className="history-title">{t('common.recentVideos', 'Recent Videos')}</h4>
+            </div>
+            <div className="history-list">
+              {history.map((item, index) => (
+                <div
+                  key={`${item.id}-${index}`}
+                  className="history-item"
+                  onClick={() => handleSelectFromHistory(item)}
+                >
+                  <div className="history-item-content">
+                    {item.source === 'youtube' && item.thumbnail && (
+                      <img
+                        src={item.thumbnail}
+                        alt={item.title}
+                        className="history-thumbnail"
+                        onError={(e) => {
+                          e.target.src = `https://img.youtube.com/vi/${item.id}/0.jpg`;
+                        }}
+                      />
+                    )}
+                    <div className="history-item-info">
+                      <div className="history-item-title">{item.title || 'Video'}</div>
+                      <div className="history-item-meta">
+                        <span className="history-item-source">{item.source}</span>
+                        <span className="history-item-time">{formatTimestamp(item.timestamp)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {renderVideoPreview()}
       {renderExamples()}
