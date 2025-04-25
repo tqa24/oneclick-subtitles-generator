@@ -1,0 +1,94 @@
+/**
+ * API routes for generic video URL operations using yt-dlp
+ */
+
+const express = require('express');
+const router = express.Router();
+const fs = require('fs');
+const path = require('path');
+const { VIDEOS_DIR } = require('../config');
+const { downloadVideoWithRetry } = require('../services/allSites/downloader');
+
+/**
+ * POST /api/download-generic-video - Download a video from any supported site
+ */
+router.post('/download-generic-video', async (req, res) => {
+  const { videoId, url } = req.body;
+
+  console.log(`Received download request for generic video URL: ${url}, ID: ${videoId}`);
+
+  if (!videoId || !url) {
+    return res.status(400).json({ error: 'Video ID and URL are required' });
+  }
+
+  const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+
+  // Check if video already exists
+  if (fs.existsSync(videoPath)) {
+    return res.json({
+      success: true,
+      message: 'Video already downloaded',
+      url: `/videos/${videoId}.mp4`
+    });
+  }
+
+  try {
+    // Download the video using yt-dlp with retry and fallback
+    const result = await downloadVideoWithRetry(videoId, url);
+
+    // Check if the file was created successfully
+    if (fs.existsSync(videoPath)) {
+      console.log(`Video downloaded successfully: ${videoId}.mp4 using method: ${result.method}`);
+      return res.json({
+        success: true,
+        message: result.message || 'Video downloaded successfully',
+        url: `/videos/${videoId}.mp4`,
+        method: result.method
+      });
+    } else {
+      throw new Error('Download completed but video file was not found');
+    }
+  } catch (error) {
+    console.error('Error downloading video:', error);
+
+    // Clean up any partial file
+    try {
+      if (fs.existsSync(videoPath)) {
+        fs.unlinkSync(videoPath);
+      }
+      const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    } catch (e) {
+      console.error('Error cleaning up incomplete file:', e);
+    }
+
+    return res.status(500).json({
+      error: 'Failed to download video',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/cancel-generic-download/:videoId - Cancel an ongoing generic video download
+ */
+router.post('/cancel-generic-download/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  console.log(`Received request to cancel download for video ID: ${videoId}`);
+
+  // Currently, we don't have a way to cancel an ongoing yt-dlp process
+  // But we can return success to let the client know we received the request
+  return res.json({
+    success: true,
+    message: 'Cancel request received'
+  });
+});
+
+module.exports = router;

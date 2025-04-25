@@ -226,6 +226,15 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     const filename = `${mediaId}.${fileExtension}`;
     const mediaPath = path.join(VIDEOS_DIR, filename);
 
+    // Check if the file size is reasonable
+    if (req.body.length < 100 * 1024) { // Less than 100KB
+      console.error(`[SPLIT-VIDEO] File is too small (${req.body.length} bytes), likely not a valid ${mediaType}`);
+      return res.status(400).json({
+        success: false,
+        error: `File is too small (${req.body.length} bytes), likely not a valid ${mediaType}`
+      });
+    }
+
     // Save the uploaded media file
     fs.writeFileSync(mediaPath, req.body);
     console.log(`[SPLIT-VIDEO] ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} saved to ${mediaPath}`);

@@ -25,6 +25,7 @@ const lyricsRoutes = require('./server/routes/lyricsRoutes');
 const geminiImageRoutes = require('./server/routes/geminiImageRoutes');
 const settingsRoutes = require('./server/routes/settingsRoutes');
 const douyinRoutes = require('./server/routes/douyinRoutes');
+const allSitesRoutes = require('./server/routes/allSitesRoutes');
 
 // Initialize Express app
 const app = express();
@@ -305,6 +306,7 @@ app.use('/api', updateRoutes);
 app.use('/api', lyricsRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', douyinRoutes);
+app.use('/api', allSitesRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 
 // Endpoint to clear narration output files

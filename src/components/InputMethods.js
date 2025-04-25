@@ -4,6 +4,7 @@ import YoutubeUrlInput from './inputs/YoutubeUrlInput';
 import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
 import DouyinUrlInput from './inputs/DouyinUrlInput';
+import AllSitesUrlInput from './inputs/AllSitesUrlInput';
 import '../styles/InputMethods.css';
 
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
@@ -11,6 +12,11 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
 
   const renderInputMethod = () => {
     switch (activeTab) {
+      case 'all-sites-url':
+        return <AllSitesUrlInput
+          selectedVideo={selectedVideo}
+          setSelectedVideo={setSelectedVideo}
+        />;
       case 'youtube-url':
         return <YoutubeUrlInput
           onVideoSelect={onVideoSelect}
@@ -50,6 +56,20 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         </h2>
 
         <div className="input-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'all-sites-url' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all-sites-url')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M21 2H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path>
+              <path d="M7 10.5v3"></path>
+              <path d="M12 10.5v3"></path>
+              <path d="M17 10.5v3"></path>
+              <path d="M5 14h14"></path>
+            </svg>
+            {t('inputMethods.allSitesUrl', 'All Sites URL')}
+          </button>
+
           <button
             className={`tab-btn ${activeTab === 'youtube-url' ? 'active' : ''}`}
             onClick={() => setActiveTab('youtube-url')}

@@ -2,6 +2,7 @@ import { parseSrtContent } from '../../utils/srtParser';
 import { resetGeminiButtonState } from '../../utils/geminiButtonEffects';
 import { cancelYoutubeVideoDownload, extractYoutubeVideoId } from '../../utils/videoDownloader';
 import { cancelDouyinVideoDownload, extractDouyinVideoId } from '../../utils/douyinDownloader';
+import { cancelGenericVideoDownload } from '../../utils/allSitesDownloader';
 import { prepareVideoForSegments, downloadAndPrepareYouTubeVideo } from './VideoProcessingHandlers';
 import { hasValidTokens } from '../../services/youtubeApiService';
 
@@ -53,6 +54,8 @@ export const useAppHandlers = (appState) => {
     } else if (activeTab === 'youtube-search') {
       return selectedVideo !== null;
     } else if (activeTab === 'douyin-url') {
+      return selectedVideo !== null;
+    } else if (activeTab === 'all-sites-url') {
       return selectedVideo !== null;
     } else if (activeTab === 'file-upload') {
       return uploadedFile !== null;
@@ -175,8 +178,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube or Douyin tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url') && selectedVideo) {
+    // For YouTube, Douyin, or All Sites tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -186,7 +189,14 @@ export const useAppHandlers = (appState) => {
         setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
 
         // Extract video ID and set it as current download
-        const videoId = extractYoutubeVideoId(selectedVideo.url);
+        let videoId;
+        if (selectedVideo.source === 'douyin') {
+          videoId = extractDouyinVideoId(selectedVideo.url);
+        } else if (selectedVideo.source === 'all-sites-url') {
+          videoId = selectedVideo.id;
+        } else {
+          videoId = extractYoutubeVideoId(selectedVideo.url);
+        }
         setCurrentDownloadId(videoId);
 
         // Create a wrapper function that includes the additional parameters
@@ -221,6 +231,16 @@ export const useAppHandlers = (appState) => {
           console.log('Using user-provided subtitles for generation');
         }
 
+        // Check if we have a valid input file
+        if (!input) {
+          console.error('No valid input file available after download');
+          setStatus({
+            message: t('errors.noValidInput', 'No valid input file available. Please try again or use a different video.'),
+            type: 'error'
+          });
+          return;
+        }
+
         // Start generating subtitles with the downloaded file
         await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
       } catch (error) {
@@ -242,6 +262,16 @@ export const useAppHandlers = (appState) => {
       if (useUserProvidedSubtitles && userProvidedSubtitles) {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
         console.log('Using user-provided subtitles for generation');
+      }
+
+      // Check if we have a valid input file
+      if (!input) {
+        console.error('No valid input file available');
+        setStatus({
+          message: t('errors.noValidInput', 'No valid input file available. Please try again or upload a different file.'),
+          type: 'error'
+        });
+        return;
       }
 
       await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
@@ -271,8 +301,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube or Douyin tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url') && selectedVideo) {
+    // For YouTube, Douyin, or All Sites tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -313,6 +343,18 @@ export const useAppHandlers = (appState) => {
           console.log('Using user-provided subtitles for retry generation');
         }
 
+        // Check if we have a valid input file
+        if (!input) {
+          console.error('No valid input file available after download');
+          setStatus({
+            message: t('errors.noValidInput', 'No valid input file available. Please try again or use a different video.'),
+            type: 'error'
+          });
+          // Reset retrying state
+          setIsRetrying(false);
+          return;
+        }
+
         // Start generating subtitles with the downloaded file
         await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
       } catch (error) {
@@ -339,6 +381,16 @@ export const useAppHandlers = (appState) => {
           console.log('Using user-provided subtitles for retry generation');
         }
 
+        // Check if we have a valid input file
+        if (!input) {
+          console.error('No valid input file available');
+          setStatus({
+            message: t('errors.noValidInput', 'No valid input file available. Please try again or upload a different file.'),
+            type: 'error'
+          });
+          return;
+        }
+
         await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
       } finally {
         // Reset retrying state regardless of success or failure
@@ -354,10 +406,13 @@ export const useAppHandlers = (appState) => {
    */
   const handleCancelDownload = () => {
     if (currentDownloadId) {
-      // Check if it's a Douyin or YouTube download
+      // Check the source of the download
       if (activeTab === 'douyin-url') {
         // Cancel Douyin download
         cancelDouyinVideoDownload(currentDownloadId);
+      } else if (activeTab === 'all-sites-url') {
+        // Cancel generic URL download
+        cancelGenericVideoDownload(currentDownloadId);
       } else {
         // Default to YouTube download
         cancelYoutubeVideoDownload(currentDownloadId);
