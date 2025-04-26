@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../../../services/geminiService';
 import ContentTypeFloatingCard from '../utils/ContentTypeFloatingCard';
 
@@ -61,11 +62,15 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
 
   return (
     <div className="settings-section prompts-section">
-      <h3>{t('settings.prompts', 'Prompts')}</h3>
 
-      {/* Preset Viewing Modal */}
-      {viewingPreset && (
-        <div className="preset-view-modal">
+      {/* Preset Viewing Modal - Using Portal to render at root level */}
+      {viewingPreset && createPortal(
+        <div className="preset-view-modal" onClick={(e) => {
+          // Close when clicking outside the content
+          if (e.target.className === 'preset-view-modal') {
+            setViewingPreset(null);
+          }
+        }}>
           <div className="preset-view-content">
             <div className="preset-view-header">
               <h3>
@@ -133,7 +138,8 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Prompt Presets */}
@@ -280,9 +286,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
 
       {/* Current Prompt Editor */}
       <div className="transcription-prompt-setting">
-        <label htmlFor="transcription-prompt">
-          {t('settings.transcriptionPrompt', 'Transcription Prompt')}
-        </label>
+        <h4>{t('settings.transcriptionPrompt', 'Transcription Prompt')}</h4>
         <p className="setting-description">
           {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder (shown as a floating icon) will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
         </p>

@@ -18,7 +18,7 @@
 .settings-modal {
   background-color: var(--background-primary);
   border-radius: var(--modal-border-radius);
-  max-width: 900px; /* Increased from 600px to 900px */
+  max-width: 1200px; /* Increased from 600px to 900px */
   width: 90%;
   max-height: 90vh; /* Use max-height instead of fixed height */
   display: flex;

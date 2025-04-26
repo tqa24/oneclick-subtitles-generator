@@ -19,7 +19,7 @@
   border-radius: 28px;
   box-shadow: var(--md-elevation-level4);
   width: 90%;
-  max-width: 800px; /* Increased to accommodate more columns */
+  max-width: 1000px; /* Increased to accommodate more columns */
   max-height: 85vh;
   display: flex;
   flex-direction: column;

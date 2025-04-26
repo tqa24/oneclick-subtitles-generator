@@ -133,196 +133,199 @@ const ApiKeysTab = ({
 
   return (
     <div className="settings-section api-key-section">
-      <h3>{t('settings.apiKeys', 'API Keys')}</h3>
+      {/* Grid layout for API keys */}
+      <div className="api-keys-grid">
+        {/* Gemini API Key - First column */}
+        <div className="api-key-input">
+          <label htmlFor="gemini-api-key">
+            {t('settings.geminiApiKey', 'Gemini API Key')}
+            <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
+              {apiKeysSet.gemini
+                ? t('settings.keySet', 'Set')
+                : t('settings.keyNotSet', 'Not Set')}
+            </span>
+          </label>
 
-      <div className="api-key-input">
-        <label htmlFor="gemini-api-key">
-          {t('settings.geminiApiKey', 'Gemini API Key')}
-          <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
-            {apiKeysSet.gemini
-              ? t('settings.keySet', 'Set')
-              : t('settings.keyNotSet', 'Not Set')}
-          </span>
-        </label>
-
-        {/* Custom non-password input implementation for Gemini */}
-        <div className="custom-api-key-input">
-          <div
-            className="custom-input-field"
-            onClick={() => setShowGeminiKey(true)}
-          >
-            {showGeminiKey ? (
-              <div
-                id="gemini-key-display"
-                className="editable-key-field"
-                contentEditable="true"
-                onInput={(e) => setGeminiApiKey(e.currentTarget.textContent || '')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
-                suppressContentEditableWarning={true}
-                ref={geminiKeyRef}
-              >
-                {geminiApiKey}
-              </div>
-            ) : (
-              <div className="masked-key-field">
-                {geminiApiKey ? '•'.repeat(Math.min(geminiApiKey.length, 24)) : ''}
-              </div>
-            )}
-            {!geminiApiKey && !showGeminiKey && (
-              <div className="key-placeholder">
-                {t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            className="toggle-visibility"
-            onClick={() => setShowGeminiKey(!showGeminiKey)}
-            aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
-          >
-            {showGeminiKey ? t('settings.hide') : t('settings.show')}
-          </button>
-        </div>
-
-        <p className="api-key-help">
-          {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')}
-          <a
-            href="https://aistudio.google.com/app/apikey"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Google AI Studio
-          </a>
-        </p>
-        <div className="api-key-instructions">
-          <h4>{t('settings.getApiKey', 'Get Gemini API Key')}</h4>
-          <ol>
-            <li>{t('settings.geminiStep1', 'Login to Google AI Studio')}</li>
-            <li>{t('settings.geminiStep2', 'Click \'Get API Key\'')}</li>
-            <li>{t('settings.geminiStep3', 'Create a new key or select existing')}</li>
-            <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
-            <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
-          </ol>
-        </div>
-      </div>
-
-      <div className="api-key-input">
-        <label htmlFor="genius-api-key">
-          {t('settings.geniusApiKey', 'Genius API Key')}
-          <span className={`api-key-status ${apiKeysSet.genius ? 'set' : 'not-set'}`}>
-            {apiKeysSet.genius
-              ? t('settings.keySet', 'Set')
-              : t('settings.keyNotSet', 'Not Set')}
-          </span>
-        </label>
-
-        {/* Custom non-password input implementation */}
-        <div className="custom-api-key-input">
-          <div
-            className="custom-input-field"
-            onClick={() => setShowGeniusKey(true)}
-          >
-            {showGeniusKey ? (
-              <div
-                id="genius-key-display"
-                className="editable-key-field"
-                contentEditable="true"
-                onInput={(e) => setGeniusApiKey(e.currentTarget.textContent || '')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
-                suppressContentEditableWarning={true}
-                ref={geniusKeyRef}
-              >
-                {geniusApiKey}
-              </div>
-            ) : (
-              <div className="masked-key-field">
-                {geniusApiKey ? '•'.repeat(Math.min(geniusApiKey.length, 24)) : ''}
-              </div>
-            )}
-            {!geniusApiKey && !showGeniusKey && (
-              <div className="key-placeholder">
-                {t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            className="toggle-visibility"
-            onClick={() => setShowGeniusKey(!showGeniusKey)}
-            aria-label={showGeniusKey ? t('settings.hide') : t('settings.show')}
-          >
-            {showGeniusKey ? t('settings.hide') : t('settings.show')}
-          </button>
-        </div>
-
-        <p className="api-key-help">
-          {t('settings.geniusApiKeyHelp', 'Required for lyrics fetching. Get one at')}
-          <a
-            href="https://genius.com/api-clients"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Genius API Clients
-          </a>
-        </p>
-        <div className="api-key-instructions">
-          <h4>{t('settings.getGeniusApiKey', 'Get Genius API Key')}</h4>
-          <ol>
-            <li>{t('settings.geniusStep1', 'Login to Genius')}</li>
-            <li>{t('settings.geniusStep2', 'Go to API Clients page')}</li>
-            <li>{t('settings.geniusStep3', 'Create a new API client')}</li>
-            <li>{t('settings.geniusStep4', 'Copy your Client Access Token')}</li>
-            <li>{t('settings.geniusStep5', 'Paste it into the field above')}</li>
-          </ol>
-        </div>
-      </div>
-
-      <div className="api-key-input">
-        <div className="auth-method-toggle">
-          <label className="auth-method-label">{t('settings.youtubeAuthMethod', 'YouTube Authentication Method')}</label>
-          <div className="auth-toggle-buttons">
-            <button
-              className={`auth-toggle-btn ${!useOAuth ? 'active' : ''}`}
-              onClick={() => {
-                setUseOAuth(false);
-                localStorage.setItem('use_youtube_oauth', 'false');
-                console.log('Set OAuth to false');
-                // Update apiKeysSet to reflect the API key method
-                setApiKeysSet(prevState => ({
-                  ...prevState,
-                  youtube: !!youtubeApiKey
-                }));
-              }}
+          {/* Custom non-password input implementation for Gemini */}
+          <div className="custom-api-key-input">
+            <div
+              className="custom-input-field"
+              onClick={() => setShowGeminiKey(true)}
             >
-              {t('settings.apiKeyMethod', 'API Key')}
-            </button>
+              {showGeminiKey ? (
+                <div
+                  id="gemini-key-display"
+                  className="editable-key-field"
+                  contentEditable="true"
+                  onInput={(e) => setGeminiApiKey(e.currentTarget.textContent || '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  suppressContentEditableWarning={true}
+                  ref={geminiKeyRef}
+                >
+                  {geminiApiKey}
+                </div>
+              ) : (
+                <div className="masked-key-field">
+                  {geminiApiKey ? '•'.repeat(Math.min(geminiApiKey.length, 24)) : ''}
+                </div>
+              )}
+              {!geminiApiKey && !showGeminiKey && (
+                <div className="key-placeholder">
+                  {t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
+                </div>
+              )}
+            </div>
             <button
-              className={`auth-toggle-btn ${useOAuth ? 'active' : ''}`}
-              onClick={() => {
-                setUseOAuth(true);
-                localStorage.setItem('use_youtube_oauth', 'true');
-                console.log('Set OAuth to true');
-                // Update apiKeysSet to reflect the OAuth method
-                setApiKeysSet(prevState => ({
-                  ...prevState,
-                  youtube: isAuthenticated
-                }));
-              }}
+              type="button"
+              className="toggle-visibility"
+              onClick={() => setShowGeminiKey(!showGeminiKey)}
+              aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
             >
-              {t('settings.oauthMethod', 'OAuth 2.0')}
+              {showGeminiKey ? t('settings.hide') : t('settings.show')}
             </button>
           </div>
+
+          <p className="api-key-help">
+            {t('settings.geminiApiKeyHelp', 'Required for all functions. Get one at')}
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google AI Studio
+            </a>
+          </p>
+          <div className="api-key-instructions">
+            <h4>{t('settings.getApiKey', 'Get Gemini API Key')}</h4>
+            <ol>
+              <li>{t('settings.geminiStep1', 'Login to Google AI Studio')}</li>
+              <li>{t('settings.geminiStep2', 'Click \'Get API Key\'')}</li>
+              <li>{t('settings.geminiStep3', 'Create a new key or select existing')}</li>
+              <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
+              <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
+            </ol>
+          </div>
         </div>
+
+        {/* Genius API Key - Second column */}
+        <div className="api-key-input">
+          <label htmlFor="genius-api-key">
+            {t('settings.geniusApiKey', 'Genius API Key')}
+            <span className={`api-key-status ${apiKeysSet.genius ? 'set' : 'not-set'}`}>
+              {apiKeysSet.genius
+                ? t('settings.keySet', 'Set')
+                : t('settings.keyNotSet', 'Not Set')}
+            </span>
+          </label>
+
+          {/* Custom non-password input implementation */}
+          <div className="custom-api-key-input">
+            <div
+              className="custom-input-field"
+              onClick={() => setShowGeniusKey(true)}
+            >
+              {showGeniusKey ? (
+                <div
+                  id="genius-key-display"
+                  className="editable-key-field"
+                  contentEditable="true"
+                  onInput={(e) => setGeniusApiKey(e.currentTarget.textContent || '')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  suppressContentEditableWarning={true}
+                  ref={geniusKeyRef}
+                >
+                  {geniusApiKey}
+                </div>
+              ) : (
+                <div className="masked-key-field">
+                  {geniusApiKey ? '•'.repeat(Math.min(geniusApiKey.length, 24)) : ''}
+                </div>
+              )}
+              {!geniusApiKey && !showGeniusKey && (
+                <div className="key-placeholder">
+                  {t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="toggle-visibility"
+              onClick={() => setShowGeniusKey(!showGeniusKey)}
+              aria-label={showGeniusKey ? t('settings.hide') : t('settings.show')}
+            >
+              {showGeniusKey ? t('settings.hide') : t('settings.show')}
+            </button>
+          </div>
+
+          <p className="api-key-help">
+            {t('settings.geniusApiKeyHelp', 'Required for lyrics fetching. Get one at')}
+            <a
+              href="https://genius.com/api-clients"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Genius API Clients
+            </a>
+          </p>
+          <div className="api-key-instructions">
+            <h4>{t('settings.getGeniusApiKey', 'Get Genius API Key')}</h4>
+            <ol>
+              <li>{t('settings.geniusStep1', 'Login to Genius')}</li>
+              <li>{t('settings.geniusStep2', 'Go to API Clients page')}</li>
+              <li>{t('settings.geniusStep3', 'Create a new API client')}</li>
+              <li>{t('settings.geniusStep4', 'Copy your Client Access Token')}</li>
+              <li>{t('settings.geniusStep5', 'Paste it into the field above')}</li>
+            </ol>
+          </div>
+        </div>
+
+        {/* YouTube API Key - Full width on second row */}
+        <div className="api-key-input full-width">
+          <div className="auth-method-toggle">
+            <label className="auth-method-label">{t('settings.youtubeAuthMethod', 'YouTube Authentication Method')}</label>
+            <div className="auth-toggle-buttons">
+              <button
+                className={`auth-toggle-btn ${!useOAuth ? 'active' : ''}`}
+                onClick={() => {
+                  setUseOAuth(false);
+                  localStorage.setItem('use_youtube_oauth', 'false');
+                  console.log('Set OAuth to false');
+                  // Update apiKeysSet to reflect the API key method
+                  setApiKeysSet(prevState => ({
+                    ...prevState,
+                    youtube: !!youtubeApiKey
+                  }));
+                }}
+              >
+                {t('settings.apiKeyMethod', 'API Key')}
+              </button>
+              <button
+                className={`auth-toggle-btn ${useOAuth ? 'active' : ''}`}
+                onClick={() => {
+                  setUseOAuth(true);
+                  localStorage.setItem('use_youtube_oauth', 'true');
+                  console.log('Set OAuth to true');
+                  // Update apiKeysSet to reflect the OAuth method
+                  setApiKeysSet(prevState => ({
+                    ...prevState,
+                    youtube: isAuthenticated
+                  }));
+                }}
+              >
+                {t('settings.oauthMethod', 'OAuth 2.0')}
+              </button>
+            </div>
+          </div>
 
         {!useOAuth ? (
           <>
@@ -604,6 +607,7 @@ const ApiKeysTab = ({
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
