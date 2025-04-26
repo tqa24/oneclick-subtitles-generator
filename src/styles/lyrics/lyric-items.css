@@ -235,7 +235,7 @@
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--md-shape-small);
   background-color: var(--md-surface-1);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: var(--md-body-small-size); /* Larger font size */
   font-weight: 500; /* Medium weight for better visibility */
   cursor: grab;

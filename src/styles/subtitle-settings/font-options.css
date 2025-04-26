@@ -107,9 +107,10 @@ select option:focus {
 
 /* Multilingual and other fonts */
 .font-select option[value*="Noto Sans"] { font-family: 'Noto Sans', sans-serif; }
-.font-select option[value*="Roboto"] { font-family: 'Roboto', sans-serif; }
+
 .font-select option[value*="Arial Unicode"] { font-family: 'Arial Unicode MS', sans-serif; }
 .font-select option[value*="Source Sans Pro"] { font-family: 'Source Sans Pro', sans-serif; }
 .font-select option[value*="Open Sans"] { font-family: 'Open Sans', sans-serif; }
 .font-select option[value*="Noto Serif"] { font-family: 'Noto Serif', serif; }
 .font-select option[value*="Nanum Gothic Coding"] { font-family: 'Nanum Gothic Coding', monospace; }
+.font-select option[value*="JetBrains Mono"] { font-family: 'JetBrains Mono', monospace; }

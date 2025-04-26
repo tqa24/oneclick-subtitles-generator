@@ -18,7 +18,7 @@
   font-size: var(--md-label-large-size); /* Match factory-reset-btn font size */
   line-height: var(--md-label-large-height); /* Match factory-reset-btn line height */
   font-weight: var(--md-label-large-weight); /* Match factory-reset-btn font weight */
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
   padding: 10px 24px; /* Match factory-reset-btn padding */
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   position: relative;
@@ -107,7 +107,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
 }
 
 /* Arrow icon animation */
@@ -184,7 +184,7 @@
   font-size: var(--md-label-medium-size);
   font-weight: 500;
   color: var(--md-on-surface-variant);
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
 }
 
 .language-options {
@@ -204,7 +204,7 @@
   cursor: pointer;
   text-align: left;
   color: var(--md-on-surface);
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
   position: relative;
   overflow: hidden;
@@ -300,14 +300,14 @@
 .language-name {
   font-size: var(--md-label-medium-size);
   line-height: 1.2;
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
 }
 
 .language-native {
   font-size: var(--md-label-small-size);
   color: var(--md-on-surface-variant);
   opacity: 0.8;
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
 }
 
 .language-selected-icon {

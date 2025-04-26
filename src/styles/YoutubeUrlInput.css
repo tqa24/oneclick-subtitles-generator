@@ -104,7 +104,6 @@
 }
 
 .video-id-value {
-  font-family: monospace;
   color: var(--primary-color);
   margin-left: 0.5rem;
 }
@@ -179,7 +178,6 @@
 .youtube-instructions-col ul li {
   margin-bottom: 0.4rem;
   color: var(--text-secondary);
-  font-family: monospace;
   font-size: 0.85rem;
   word-break: break-all;
   line-height: 1.3;

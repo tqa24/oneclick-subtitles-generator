@@ -115,7 +115,6 @@
   background-color: var(--background-tertiary);
   padding: 4px 8px;
   border-radius: 4px;
-  font-family: monospace;
   margin: 5px 0;
   word-break: break-all;
   color: var(--primary-color);

@@ -19,6 +19,7 @@
   background-color: var(--md-surface-2);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
+  font-family: 'Open Sans', sans-serif;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -33,6 +34,7 @@
 .model-dropdown-btn.active-dropdown-btn {
   background-color: var(--md-surface-3);
   box-shadow: var(--md-elevation-level2);
+  font-family: 'Open Sans', sans-serif;
 }
 
 /* Selected model display */
@@ -85,6 +87,7 @@
 .model-options-list {
   max-height: 300px;
   overflow-y: auto;
+  font-family: 'Open Sans', sans-serif;
 }
 
 /* Individual model option button */
@@ -190,7 +193,7 @@
   .model-options-dropdown {
     width: 220px;
   }
-  
+
   .model-name {
     max-width: 80px;
   }

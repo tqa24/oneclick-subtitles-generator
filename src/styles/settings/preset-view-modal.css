@@ -100,7 +100,6 @@
 .preset-full-text {
   margin: 0;
   white-space: pre-wrap;
-  font-family: monospace;
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--text-primary);

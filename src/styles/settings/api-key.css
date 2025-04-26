@@ -48,7 +48,7 @@
   padding: 0.75rem 1rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--md-shape-pill);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: var(--md-body-medium-size);
   width: 100%;
   background-color: var(--md-surface-1);
@@ -75,7 +75,7 @@
   padding: 0.75rem 1rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--md-shape-pill);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: var(--md-body-medium-size);
   width: 100%;
   background-color: var(--md-surface-1);
@@ -144,7 +144,7 @@
   color: var(--md-on-surface-variant);
   padding: 0 1rem;
   font-size: var(--md-label-small-size);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: 'Open Sans', 'Segoe UI', sans-serif;
   font-weight: 500;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   display: flex;

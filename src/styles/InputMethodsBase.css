@@ -43,6 +43,7 @@
   border: none;
   background: none;
   color: var(--text-secondary);
+  font-family: 'Open Sans', sans-serif;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -112,6 +113,7 @@
   border-radius: 8px;
   background-color: var(--primary-color);
   color: white;
+  font-family: 'Open Sans', sans-serif;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;

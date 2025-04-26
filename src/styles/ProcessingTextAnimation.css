@@ -6,6 +6,14 @@
   position: relative;
 }
 
+/* Ensure buttons-container processing text uses title font */
+.buttons-container .processing-text-container,
+.buttons-container .processing-text,
+.buttons-container .processing-dots,
+.buttons-container .processing-gemini-icon {
+  font-family: var(--font-title);
+}
+
 /* Dots animation for the ellipsis */
 .processing-dots {
   display: inline-block;
