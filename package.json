@@ -24,7 +24,10 @@
     "setup:f5tts": "node setup-f5tts.js",
     "python:start:cuda": "uv run -- python server/narrationApp.py",
     "dev:cuda": "cross-env START_PYTHON_SERVER=true concurrently \"npm run start\" \"npm run server:start\"",
-    "install:all:uv": "npm install && node setup-narration-uv.js && node install-yt-dlp.js"
+    "install:all:uv": "npm install && node setup-narration-uv.js && node install-yt-dlp.js",
+    "python:start:uv": "uv run -- python server/narrationApp.py",
+    "dev:uv": "concurrently \"npm run start\" \"npm run server:start\" \"npm run python:start:uv\"",
+    "setup:narration:uv": "node setup-narration.js"
   },
   "dependencies": {
     "@google/genai": "^0.9.0",

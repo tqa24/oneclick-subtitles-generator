@@ -165,7 +165,6 @@
 .delimiter-option[title*="Square"],
 .delimiter-option[title*="Curly"],
 .delimiter-option[title*="Angle"] {
-  font-family: monospace;
   font-weight: bold;
 }
 
@@ -197,7 +196,6 @@
   background-color: var(--md-surface-1);
   color: var(--md-on-surface);
   font-size: 0.9rem;
-  font-family: monospace;
 }
 
 /* Add buttons */
@@ -205,6 +203,7 @@
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  /* Font family inherited from global styles */
 }
 
 .add-chain-item-btn {

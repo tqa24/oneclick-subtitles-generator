@@ -142,7 +142,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: 'Open Sans', 'Segoe UI', sans-serif;
   cursor: pointer;
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
               transform var(--md-duration-medium2) var(--md-easing-emphasized),

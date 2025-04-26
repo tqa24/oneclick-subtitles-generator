@@ -25,6 +25,7 @@
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
   color: var(--text-secondary);
+  font-family: 'Open Sans', sans-serif;
   font-size: var(--md-label-large-size);
   font-weight: 500;
   cursor: pointer;

@@ -1,0 +1,49 @@
+/* Font overrides to ensure Open Sans is used throughout the application */
+
+/* Apply Open Sans to all elements by default */
+* {
+  font-family: var(--font-primary);
+}
+
+/* Specific overrides for components that might have their own font settings */
+.MuiTypography-root,
+.MuiButton-root,
+.MuiInputBase-root,
+.MuiFormLabel-root,
+.MuiMenuItem-root,
+.MuiListItemText-root,
+.MuiChip-root,
+.MuiTab-root,
+.MuiAlert-root,
+.MuiTooltip-root,
+.MuiSnackbarContent-root,
+.MuiDialogTitle-root,
+.MuiDialogContent-root,
+.MuiDialogContentText-root,
+.MuiDialogActions-root {
+  font-family: var(--font-primary) !important;
+}
+
+/* Preserve title fonts */
+h1, h2, h3, h4, h5, h6,
+.MuiTypography-h1,
+.MuiTypography-h2,
+.MuiTypography-h3,
+.MuiTypography-h4,
+.MuiTypography-h5,
+.MuiTypography-h6,
+.buttons-container button,
+.buttons-container .gemini-icon-container,
+.buttons-container .processing-text-container,
+.buttons-container .processing-text,
+.buttons-container .processing-gemini-icon {
+  font-family: var(--font-title);
+}
+
+/* Preserve code fonts */
+code, pre,
+.MuiTypography-code,
+.code-block,
+.code-inline {
+  font-family: var(--font-code);
+}

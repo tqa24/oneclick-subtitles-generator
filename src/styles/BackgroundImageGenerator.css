@@ -7,7 +7,7 @@
   margin: 20px auto 40px auto; /* Increased bottom margin */
   overflow: hidden;
   animation: fade-in 0.3s ease-out;
-  font-family: 'Roboto', sans-serif;
+  /* Font family inherited from global styles */
   position: relative;
   scroll-margin-top: 20px; /* For smooth scrolling */
 }
@@ -392,6 +392,7 @@
   align-items: center;
   margin-top: 8px;
   margin-bottom: 8px;
+  /* Font family inherited from global styles */
 }
 
 .prompt-header h3,
@@ -428,6 +429,7 @@
   white-space: nowrap;
   letter-spacing: 0.1px;
   box-shadow: var(--md-elevation-level2);
+  /* Font family inherited from global styles */
 }
 
 .header-download-button:hover {
@@ -453,6 +455,7 @@
   white-space: nowrap;
   letter-spacing: 0.1px;
   box-shadow: var(--md-elevation-level2);
+  /* Font family inherited from global styles */
 }
 
 .header-action-button:hover {
@@ -488,6 +491,7 @@
   border: none;
   box-shadow: var(--md-elevation-level1);
   transition: all 0.2s ease;
+  /* Font family inherited from global styles */
 }
 
 .image-count-dropdown:focus {
@@ -499,6 +503,7 @@
   font-size: 14px;
   color: var(--text-color-secondary);
   white-space: nowrap;
+  font-family: 'Open Sans', sans-serif;
 }
 
 .prompt-container {
@@ -538,6 +543,7 @@
   white-space: nowrap;
   letter-spacing: 0.1px;
   box-shadow: var(--md-elevation-level2);
+  font-family: 'Open Sans', sans-serif;
 }
 
 .prompt-header .generate-button {
@@ -547,6 +553,7 @@
 .new-prompt-button {
   background-color: var(--md-secondary, #03a9f4);
   color: var(--md-on-secondary, white);
+  font-family: 'Open Sans', sans-serif;
 }
 
 .new-prompt-button:hover:not(:disabled) {

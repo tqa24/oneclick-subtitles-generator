@@ -201,7 +201,7 @@
   font-weight: 600; /* Bolder text */
   color: var(--md-on-primary-container);
   text-align: center;
-  font-family: 'Roboto Mono', monospace; /* Monospace font for better readability */
+  font-family: 'JetBrains Mono', monospace; /* Monospace font for better readability */
   user-select: none; /* Prevent text selection */
   padding: 4px 8px;
   border-radius: var(--md-shape-small);

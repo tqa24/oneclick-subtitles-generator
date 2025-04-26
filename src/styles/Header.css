@@ -19,7 +19,7 @@
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
   background-clip: text;
   -webkit-background-clip: text;
-  font-family: 'Be Vietnam Pro', 'Noto Sans Vietnamese', 'Lexend', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-title);
   letter-spacing: -0.25px;
   transition: transform 0.3s ease;
   cursor: pointer; /* Indicate it's clickable */
@@ -58,7 +58,7 @@
   font-size: var(--md-label-medium-size);
   line-height: var(--md-label-medium-height);
   font-weight: 500; /* Medium weight for consistency */
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
   padding: 8px 32px 8px 16px;
   transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
               color var(--md-duration-medium2) var(--md-easing-standard),
@@ -177,7 +177,7 @@
   font-size: var(--md-label-medium-size);
   line-height: var(--md-label-medium-height);
   font-weight: 500; /* Medium weight for consistency */
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Consistent font family */
+  /* Font family inherited from global styles */
   height: 40px; /* Fixed height for consistency */
   position: relative;
   overflow: hidden;

@@ -19,7 +19,6 @@
 /* Additional styles specific to error status in output container */
 .status.error {
   white-space: pre-wrap;
-  font-family: monospace;
   max-height: 400px;
   overflow-y: auto;
 }

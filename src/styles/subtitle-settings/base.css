@@ -3,7 +3,7 @@
 .subtitle-settings-container {
   display: flex;
   align-items: center;
-  font-family: 'Roboto', 'Poppins', sans-serif;
+  /* Font family inherited from global styles */
   position: relative; /* Add position relative for absolute positioning of children */
 }
 
