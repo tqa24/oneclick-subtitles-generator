@@ -7,8 +7,21 @@
   color: var(--text-primary);
 }
 
+/* Grid layout for API key inputs */
+.api-keys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
 .api-key-input {
   margin-bottom: 1.5rem;
+}
+
+/* Make YouTube section span full width */
+.api-key-input.full-width {
+  grid-column: 1 / -1;
 }
 
 .api-key-input label {
