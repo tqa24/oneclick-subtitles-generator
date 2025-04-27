@@ -10,7 +10,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   display: flex;
@@ -51,7 +51,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   display: flex;
@@ -92,7 +92,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   margin-top: 0;
@@ -153,7 +153,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   position: relative;
@@ -205,7 +205,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);

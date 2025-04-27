@@ -19,7 +19,7 @@
   border-radius: 28px;
   box-shadow: var(--md-elevation-level4);
   width: 90%;
-  max-width: 800px; /* Increased to accommodate more columns */
+  max-width: 1000px; /* Increased to accommodate more columns */
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -147,6 +147,10 @@
   font-weight: 500;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
+}
+
+.advanced-settings-button-label {
+  font-family: 'Open Sans', sans-serif;
 }
 
 .advanced-settings-button:hover {

@@ -273,6 +273,7 @@ input:focus {
   border: 1px dashed var(--md-outline);
   border-radius: 20px;
   padding: 8px 16px;
+  font-family: 'Open Sans', sans-serif;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -291,6 +292,7 @@ input:focus {
   padding: 16px 24px;
   border-top: 1px solid var(--md-surface-variant);
   background-color: var(--md-surface-container);
+  font-family: 'Open Sans', sans-serif;
 }
 
 .cancel-button {

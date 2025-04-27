@@ -26,6 +26,7 @@
   border-top-right-radius: 12px;
   background: transparent;
   color: var(--md-on-surface-variant);
+  font-family: 'Open Sans', sans-serif;
   font-weight: 500;
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);

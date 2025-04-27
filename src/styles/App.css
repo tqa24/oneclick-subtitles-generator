@@ -68,6 +68,15 @@
   /* Removed margin-bottom as spacing is handled by parent container */
 }
 
+/* Ensure all text inside buttons-container buttons uses the title font */
+.buttons-container button *,
+.buttons-container button span,
+.buttons-container .processing-text-container,
+.buttons-container .processing-text,
+.buttons-container .processing-dots {
+  font-family: var(--font-title) !important;
+}
+
 /* Adjust SRT upload button in buttons container */
 .buttons-container .srt-upload-button-container {
   display: flex;
@@ -91,7 +100,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
               background-color var(--md-duration-medium2) var(--md-easing-standard),
@@ -136,7 +145,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-title);
   letter-spacing: 0.5px;
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);
@@ -268,7 +277,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-title);
   letter-spacing: 0.5px;
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);

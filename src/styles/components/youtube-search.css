@@ -235,7 +235,6 @@
 }
 
 .video-id-value {
-  font-family: monospace;
   background-color: var(--background-tertiary);
   padding: 0.2rem 0.4rem;
   border-radius: 4px;

@@ -28,7 +28,6 @@ const VideoProcessingTab = ({
 
   return (
     <div className="settings-section video-processing-section">
-      <h3>{t('settings.videoProcessing', 'Video Processing')}</h3>
 
       {/* Grid layout for settings cards */}
       <div className="video-processing-grid">

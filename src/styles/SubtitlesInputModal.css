@@ -391,7 +391,6 @@
 
 .example pre {
   margin: 0;
-  font-family: monospace;
   white-space: pre-wrap;
   color: var(--text-color-secondary);
   font-size: 13px;
@@ -406,7 +405,6 @@
   border: 1px solid transparent; /* Transparent border for focus state */
   background-color: var(--md-surface-2);
   color: var(--text-color);
-  font-family: monospace;
   font-size: 14px;
   line-height: 1.5;
   resize: none; /* Remove resize handle */
@@ -507,7 +505,6 @@
   border-radius: 4px;
   box-shadow: var(--md-elevation-level1);
   padding: 3px 6px;
-  font-family: monospace;
   font-size: 11px;
   color: var(--md-on-surface);
 }

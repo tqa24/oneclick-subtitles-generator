@@ -265,6 +265,7 @@
   gap: 0.75rem;
   align-items: center;
   height: 42px; /* Match the height of narration-row */
+  /* Font family inherited from global styles */
 }
 
 /* Audio preview */
@@ -472,7 +473,7 @@ input:focus + .toggle-slider {
   flex: 1;
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
-  font-family: var(--md-sys-typescale-body-medium-font-family, 'Roboto', sans-serif);
+  font-family: var(--font-primary);
   line-height: 1.5;
   overflow: auto; /* Add scrollbar when needed */
   appearance: none; /* Remove browser styling */

@@ -112,7 +112,6 @@
 
 .url-examples li {
   margin-bottom: 0.3rem;
-  font-family: monospace;
   font-size: 0.9rem;
   color: var(--text-secondary);
   transition: color var(--transition-speed);

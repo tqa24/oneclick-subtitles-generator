@@ -16,7 +16,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
               background-color var(--md-duration-medium2) var(--md-easing-standard),
@@ -26,6 +26,12 @@
   position: relative;
   overflow: hidden;
   height: 52px; /* Match the height of other buttons */
+}
+
+/* Ensure all text inside the button uses the title font */
+.srt-upload-button *,
+.srt-upload-button span {
+  font-family: var(--font-title) !important;
 }
 
 /* State layer for hover effect */

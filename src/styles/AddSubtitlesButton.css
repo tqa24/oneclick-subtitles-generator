@@ -61,7 +61,7 @@
   font-size: var(--md-label-large-size);
   line-height: var(--md-label-large-height);
   font-weight: var(--md-label-large-weight);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: var(--md-tertiary);
@@ -71,6 +71,12 @@
   margin-left: 10px;
   height: 40px;
   overflow: hidden;
+}
+
+/* Ensure all text inside the button uses the title font */
+.add-subtitles-button *,
+.add-subtitles-button span {
+  font-family: var(--font-title) !important;
 }
 
 /* Style when in the buttons-container */
