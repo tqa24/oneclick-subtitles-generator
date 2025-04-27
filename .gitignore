@@ -78,3 +78,5 @@ latest.yml
 F5-TTS/
 localStorage.json
 tiktokdien/
+run-app-with-narration-uv.bat
+run-narration-service-uv.bat

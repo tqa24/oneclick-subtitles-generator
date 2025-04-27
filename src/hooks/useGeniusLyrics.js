@@ -24,7 +24,30 @@ const useGeniusLyrics = () => {
       // Split lyrics into lines
       const lines = lyrics.split('\n');
 
-      // Find the first line with square brackets
+      // Initialize startIndex
+      let startIndex = 0;
+
+      // Check if the first line contains "Lyrics" and modify it to keep the content after "Lyrics"
+      if (lines.length > 0) {
+        const line = lines[0];
+        const lyricsIndex = line.indexOf("Lyrics");
+
+        if (lyricsIndex !== -1) {
+          // Found "Lyrics" in the first line
+          // Keep only the content after "Lyrics"
+          const contentAfterLyrics = line.substring(lyricsIndex + "Lyrics".length).trim();
+
+          // Replace the first line with just the content after "Lyrics"
+          if (contentAfterLyrics) {
+            lines[0] = contentAfterLyrics;
+          } else {
+            // If there's nothing after "Lyrics", remove this line
+            lines.splice(0, 1);
+          }
+        }
+      }
+
+      // Now find the first line with square brackets in the modified lines array
       let firstBracketLineIndex = -1;
       for (let i = 0; i < lines.length; i++) {
         const trimmedLine = lines[i].trim();
@@ -34,10 +57,13 @@ const useGeniusLyrics = () => {
         }
       }
 
-      // If we found a line with brackets, remove all lines before and including it
-      let startIndex = 0;
+      // If we found a line with brackets, update the start index
       if (firstBracketLineIndex > 0) {
         startIndex = firstBracketLineIndex + 1;
+      } else if (firstBracketLineIndex === 0) {
+        startIndex = 1;
+      } else {
+        startIndex = 0;
       }
 
       // Filter out lines with square brackets and empty lines
