@@ -233,5 +233,12 @@
   "modelManagement.modelDownloading": "Đã bắt đầu tải xuống mô hình. Bạn có thể đóng hộp thoại này và kiểm tra trạng thái trong tab quản lý mô hình.",
   "modelManagement.downloading": "Đang tải xuống",
   "modelManagement.downloadFailed": "Tải xuống thất bại",
-  "modelManagement.ongoingDownloads": "Đang tải xuống"
+  "modelManagement.ongoingDownloads": "Đang tải xuống",
+  "modelManagement.availableModels": "Mô hình có sẵn",
+  "modelManagement.addCustomModel": "Thêm mô hình tùy chỉnh",
+  "modelManagement.addNewCustomModel": "Thêm mô hình tùy chỉnh mới",
+  "modelManagement.addingCustomModel": "Đang thêm mô hình tùy chỉnh...",
+  "modelManagement.download": "Tải xuống",
+  "modelManagement.downloadModel": "Tải xuống mô hình này",
+  "modelManagement.by": "bởi"
 }

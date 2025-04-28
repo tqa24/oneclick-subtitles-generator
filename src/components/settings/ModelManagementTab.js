@@ -22,7 +22,8 @@ import {
   Paper,
   Alert,
   Snackbar,
-  LinearProgress
+  LinearProgress,
+  Divider
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,6 +32,7 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ErrorIcon from '@mui/icons-material/Error';
 import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus } from '../../services/modelService';
+import ModelList from './ModelList';
 
 // Component to display download status
 const DownloadStatus = ({ status }) => {
@@ -347,7 +349,7 @@ const ModelManagementTab = () => {
         {t('settings.modelManagement.title')}
       </Typography>
 
-      <Typography variant="body2" color="textSecondary" paragraph>
+      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
         {t('settings.modelManagement.description')}
       </Typography>
 
@@ -356,6 +358,14 @@ const ModelManagementTab = () => {
           {error}
         </Alert>
       )}
+
+      {/* Model List Component */}
+      <ModelList
+        onModelAdded={fetchModels}
+        downloadingModels={downloads}
+      />
+
+      <Divider sx={{ my: 4 }} />
 
       {/* Display ongoing downloads */}
       {Object.keys(downloads).length > 0 && (
@@ -487,14 +497,14 @@ const ModelManagementTab = () => {
             onClick={handleOpenAddDialog}
             disabled={loading}
           >
-            {t('settings.modelManagement.addModel')}
+            {t('settings.modelManagement.addCustomModel')}
           </Button>
         </Box>
       </Paper>
 
       {/* Add Model Dialog */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{t('settings.modelManagement.addNewModel')}</DialogTitle>
+        <DialogTitle>{t('settings.modelManagement.addNewCustomModel')}</DialogTitle>
         <DialogContent>
           <FormControl component="fieldset" sx={{ mb: 2, mt: 1 }}>
             <Typography variant="subtitle2" gutterBottom>
@@ -610,8 +620,8 @@ const ModelManagementTab = () => {
             startIcon={addingModel ? <CircularProgress size={20} /> : null}
           >
             {addingModel
-              ? t('settings.modelManagement.addingModel')
-              : t('settings.modelManagement.addModel')
+              ? t('settings.modelManagement.addingCustomModel')
+              : t('settings.modelManagement.addCustomModel')
             }
           </Button>
         </DialogActions>

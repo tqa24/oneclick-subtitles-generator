@@ -225,5 +225,12 @@
   "modelManagement.modelDownloading": "Model download started. You can close this dialog and check the status in the model management tab.",
   "modelManagement.downloading": "Downloading",
   "modelManagement.downloadFailed": "Download failed",
-  "modelManagement.ongoingDownloads": "Ongoing Downloads"
+  "modelManagement.ongoingDownloads": "Ongoing Downloads",
+  "modelManagement.availableModels": "Available Models",
+  "modelManagement.addCustomModel": "Add Custom Model",
+  "modelManagement.addNewCustomModel": "Add New Custom Model",
+  "modelManagement.addingCustomModel": "Adding Custom Model...",
+  "modelManagement.download": "Download",
+  "modelManagement.downloadModel": "Download this model",
+  "modelManagement.by": "by"
 }
