@@ -4,7 +4,11 @@ import logging
 import shutil
 import requests
 import time
+import threading
 from pathlib import Path
+
+# Dictionary to track download threads and cancellation flags
+download_threads = {}
 from huggingface_hub import hf_hub_download
 from huggingFaceCache import list_huggingface_cache_models, delete_huggingface_cache_model
 
@@ -44,6 +48,50 @@ def initialize_registry():
             registry["downloads"] = {}
             with open(MODELS_REGISTRY_FILE, 'w') as f:
                 json.dump(registry, f, indent=2)
+
+        # Check if F5-TTS v1 Base model is in the registry
+        # This is the default model that's always available
+        f5tts_base_exists = False
+        for model in registry["models"]:
+            if model["id"] == "f5tts-v1-base":
+                f5tts_base_exists = True
+                break
+
+        # Add F5-TTS v1 Base model if it's not in the registry
+        if not f5tts_base_exists:
+            # Add a simple entry for the default model without trying to find it in cache
+            # Since we know the narration service can use it regardless
+            registry["models"].append({
+                "id": "f5tts-v1-base",
+                "name": "F5-TTS v1 Base",
+                "repo_id": "SWivid/F5-TTS",
+                "model_path": "default",  # Special marker to indicate this is the default model
+                "vocab_path": "default",  # Special marker to indicate this is the default model
+                "config": {
+                    "dim": 1024,
+                    "depth": 22,
+                    "heads": 16,
+                    "ff_mult": 2,
+                    "text_dim": 512,
+                    "conv_layers": 4
+                },
+                "source": "default",
+                "language": "en",
+                "languages": ["en", "zh"],
+                "is_symlink": False,
+                "original_model_file": None,
+                "original_vocab_file": None
+            })
+
+            # If no active model is set, set this as active
+            if registry["active_model"] is None:
+                registry["active_model"] = "f5tts-v1-base"
+
+            # Save the updated registry
+            with open(MODELS_REGISTRY_FILE, 'w') as f:
+                json.dump(registry, f, indent=2)
+
+            logger.info("Added F5-TTS v1 Base model to registry as the default model")
 
     except Exception as e:
         logger.error(f"Error reading registry: {e}")
@@ -222,6 +270,52 @@ def remove_download_status(model_id):
         logger.error(f"Error removing download status for model {model_id}: {e}")
         return False
 
+def cancel_download(model_id):
+    """
+    Cancel an ongoing model download.
+
+    Args:
+        model_id (str): ID of the model download to cancel
+
+    Returns:
+        bool: True if cancellation was successful, False otherwise
+    """
+    try:
+        # Check if the model is in the download_threads dictionary
+        if model_id in download_threads:
+            logger.info(f"Cancelling download for model {model_id}")
+
+            # Set the cancellation flag to True
+            download_threads[model_id]["cancel"] = True
+
+            # Update the download status to 'cancelled'
+            update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+
+            # Remove from download_threads after a short delay
+            def cleanup_thread():
+                time.sleep(2)
+                if model_id in download_threads:
+                    del download_threads[model_id]
+
+            cleanup = threading.Thread(target=cleanup_thread)
+            cleanup.daemon = True
+            cleanup.start()
+
+            return True
+        else:
+            # Check if there's a download status for this model
+            registry = get_registry()
+            if model_id in registry.get("downloads", {}):
+                # Update the status to cancelled
+                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                return True
+            else:
+                logger.warning(f"No active download found for model {model_id}")
+                return False
+    except Exception as e:
+        logger.error(f"Error cancelling download for model {model_id}: {e}")
+        return False
+
 def get_active_model():
     """Get the currently active model."""
     registry = get_registry()
@@ -276,6 +370,10 @@ def delete_model(model_id, delete_cache=False):
         model_id (str): ID of the model to delete
         delete_cache (bool): Whether to also delete the model from Hugging Face cache
     """
+    # Prevent deletion of the default F5-TTS v1 Base model
+    if model_id == 'f5tts-v1-base':
+        return False, "Cannot delete the default F5-TTS v1 Base model as it is required by the system"
+
     registry = get_registry()
 
     # Check if model exists
@@ -361,13 +459,20 @@ def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_i
     # Update download status to 'downloading'
     update_download_status(model_id, 'downloading')
 
+    # Create a cancellation flag
+    download_threads[model_id] = {"cancel": False, "thread": None}
+
     # Start download in a separate thread
-    import threading
     thread = threading.Thread(
         target=_download_model_from_hf_thread,
         args=(repo_id, model_path, vocab_path, config, model_id, language_codes)
     )
     thread.daemon = True
+
+    # Store the thread in the dictionary
+    download_threads[model_id]["thread"] = thread
+
+    # Start the thread
     thread.start()
 
     return True, f"Model download started for {model_id}", model_id
@@ -431,6 +536,12 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
                 while progress < 95:
                     time.sleep(1)  # Update every second
 
+                    # Check if download has been cancelled
+                    if model_id in download_threads and download_threads[model_id]["cancel"]:
+                        logger.info(f"Download cancelled for model {model_id}")
+                        update_download_status(model_id, 'cancelled', progress, "Download cancelled by user")
+                        return  # Exit the thread
+
                     # Calculate elapsed time
                     elapsed = time.time() - start_time
 
@@ -465,26 +576,48 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
         except Exception as e:
             logger.warning(f"Failed to set up progress monitoring: {e}")
 
-        # Download the model file directly to the Hugging Face cache
-        model_file = hf_hub_download(
-            repo_id=repo_id,
-            filename=model_path,
-            resume_download=True,
-            force_download=False
-        )
-        # Don't override progress here, let the monitoring thread handle it
-        logger.info(f"Model file downloaded: {model_file}")
+        # Check if download has been cancelled before starting actual download
+        if model_id in download_threads and download_threads[model_id]["cancel"]:
+            logger.info(f"Download cancelled for model {model_id} before starting actual download")
+            update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+            return  # Exit the thread
 
-        # Download vocab file directly to the Hugging Face cache
-        logger.info(f"Downloading vocab from {repo_id}/{vocab_path}")
-        vocab_file = hf_hub_download(
-            repo_id=repo_id,
-            filename=vocab_path,
-            resume_download=True,
-            force_download=False
-        )
-        # Don't override progress here, let the monitoring thread handle it
-        logger.info(f"Vocab file downloaded: {vocab_file}")
+        try:
+            # Download the model file directly to the Hugging Face cache
+            model_file = hf_hub_download(
+                repo_id=repo_id,
+                filename=model_path,
+                resume_download=True,
+                force_download=False
+            )
+            # Don't override progress here, let the monitoring thread handle it
+            logger.info(f"Model file downloaded: {model_file}")
+
+            # Check if download has been cancelled after model download
+            if model_id in download_threads and download_threads[model_id]["cancel"]:
+                logger.info(f"Download cancelled for model {model_id} after model file download")
+                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                return  # Exit the thread
+
+            # Download vocab file directly to the Hugging Face cache
+            logger.info(f"Downloading vocab from {repo_id}/{vocab_path}")
+            vocab_file = hf_hub_download(
+                repo_id=repo_id,
+                filename=vocab_path,
+                resume_download=True,
+                force_download=False
+            )
+            # Don't override progress here, let the monitoring thread handle it
+            logger.info(f"Vocab file downloaded: {vocab_file}")
+        except Exception as e:
+            logger.error(f"Error during download: {e}")
+            if model_id in download_threads and download_threads[model_id]["cancel"]:
+                # If cancelled, report as cancelled instead of failed
+                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                return
+            else:
+                # Otherwise, re-raise the exception to be caught by the outer try-except
+                raise
 
         # Set language information
         primary_language = "unknown"
@@ -612,13 +745,20 @@ def download_model_from_url(model_url, vocab_url=None, config=None, model_id=Non
     # Update download status to 'downloading'
     update_download_status(model_id, 'downloading')
 
+    # Create a cancellation flag
+    download_threads[model_id] = {"cancel": False, "thread": None}
+
     # Start download in a separate thread
-    import threading
     thread = threading.Thread(
         target=_download_model_from_url_thread,
         args=(model_url, vocab_url, config, model_id, language_codes)
     )
     thread.daemon = True
+
+    # Store the thread in the dictionary
+    download_threads[model_id]["thread"] = thread
+
+    # Start the thread
     thread.start()
 
     return True, f"Model download started for {model_id}", model_id

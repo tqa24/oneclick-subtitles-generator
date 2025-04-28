@@ -40,7 +40,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StorageIcon from '@mui/icons-material/Storage';
 import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
-import ModelList from './ModelList';
+import ModelList, { LANGUAGE_NAMES, LANGUAGE_COLORS } from './ModelList';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
 
@@ -71,6 +71,7 @@ const ModelManagementTab = () => {
   const [editModelForm, setEditModelForm] = useState({
     name: '',
     language: '',
+    languageCodes: [''],
     config: ''
   });
   const [addingModel, setAddingModel] = useState(false);
@@ -350,9 +351,20 @@ const ModelManagementTab = () => {
   // Handle opening edit dialog
   const handleOpenEditDialog = async (model) => {
     setModelToEdit(model);
+    // Ensure we have a valid languageCodes array
+    let languageCodes = [];
+    if (Array.isArray(model.languages) && model.languages.length > 0) {
+      languageCodes = [...model.languages];
+    } else if (model.language) {
+      languageCodes = [model.language];
+    } else {
+      languageCodes = [''];
+    }
+
     setEditModelForm({
       name: model.name || '',
       language: model.language || '',
+      languageCodes: languageCodes,
       config: model.config ? JSON.stringify(model.config, null, 2) : ''
     });
 
@@ -393,10 +405,14 @@ const ModelManagementTab = () => {
         }
       }
 
+      // Ensure languageCodes is an array
+      const languageCodes = Array.isArray(editModelForm.languageCodes) ? editModelForm.languageCodes : [''];
+
       // Prepare model data
       const modelInfo = {
         name: editModelForm.name,
-        language: editModelForm.language,
+        language: languageCodes[0] || '', // Set primary language to first language code
+        languages: languageCodes.filter(code => code.trim() !== ''), // Include all language codes
         config: configObj
       };
 
@@ -590,15 +606,18 @@ const ModelManagementTab = () => {
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title={t('settings.modelManagement.deleteModel')}>
-                      <IconButton
-                        edge="end"
-                        aria-label="delete"
-                        onClick={() => handleOpenDeleteDialog(model)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+                    {/* Hide delete button for F5-TTS v1 Base model */}
+                    {model.id !== 'f5tts-v1-base' && (
+                      <Tooltip title={t('settings.modelManagement.deleteModel')}>
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={() => handleOpenDeleteDialog(model)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 }
               >
@@ -643,7 +662,25 @@ const ModelManagementTab = () => {
                       <Typography variant="body2" color="textSecondary">
                         {t('settings.modelManagement.source')}: {model.source}
                       </Typography>
-                      {model.language && model.language !== 'unknown' && (
+                      {/* Display all supported languages if available */}
+                      {model.languages && model.languages.length > 0 ? (
+                        <Box>
+                          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                            {t('settings.modelManagement.language')}:
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {model.languages.map(lang => (
+                              <Chip
+                                key={lang}
+                                label={LANGUAGE_NAMES[lang] || lang}
+                                size="small"
+                                color={LANGUAGE_COLORS[lang] || 'default'}
+                                sx={{ mr: 0.5, mb: 0.5 }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      ) : model.language && model.language !== 'unknown' && (
                         <Typography variant="body2" color="textSecondary">
                           {t('settings.modelManagement.language')}: {model.language}
                         </Typography>
@@ -996,17 +1033,63 @@ const ModelManagementTab = () => {
             sx={{ mb: 2 }}
           />
 
-          <TextField
-            margin="dense"
-            name="language"
-            label={t('settings.modelManagement.languageCode')}
-            type="text"
-            fullWidth
-            value={editModelForm.language}
-            onChange={(e) => setEditModelForm(prev => ({ ...prev, language: e.target.value }))}
-            helperText={t('settings.modelManagement.languageCodeHelp')}
-            sx={{ mb: 2 }}
-          />
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              {t('settings.modelManagement.languageCodes')}
+            </Typography>
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+              {t('settings.modelManagement.languageCodesHelp')}
+            </Typography>
+
+            {(editModelForm.languageCodes || []).map((code, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <TextField
+                  margin="dense"
+                  name={`languageCode-${index}`}
+                  label={t('settings.modelManagement.languageCode')}
+                  type="text"
+                  fullWidth
+                  value={code}
+                  onChange={(e) => {
+                    const newCodes = [...(editModelForm.languageCodes || [''])];
+                    newCodes[index] = e.target.value;
+                    setEditModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                  }}
+                  sx={{ mr: 1 }}
+                />
+
+                {/* Remove button for all except the first language code */}
+                {index > 0 && (
+                  <IconButton
+                    onClick={() => {
+                      const newCodes = [...(editModelForm.languageCodes || [])];
+                      newCodes.splice(index, 1);
+                      setEditModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                    }}
+                    color="error"
+                    size="small"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+
+            {/* Add language code button */}
+            <Button
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditModelForm(prev => ({
+                  ...prev,
+                  languageCodes: [...(prev.languageCodes || []), '']
+                }));
+              }}
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              {t('settings.modelManagement.addLanguageCode')}
+            </Button>
+          </Box>
 
           <TextField
             margin="dense"
@@ -1021,38 +1104,30 @@ const ModelManagementTab = () => {
             sx={{ mb: 2 }}
           />
 
-          {/* Display storage information */}
-          {modelToEdit && modelStorageInfo[modelToEdit.id] && (
+          {/* Display storage information only for symlinked models */}
+          {modelToEdit && modelStorageInfo[modelToEdit.id] && modelStorageInfo[modelToEdit.id].is_symlink && (
             <Box sx={{ mt: 2, mb: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
                 {t('settings.modelManagement.storageInformation')}
               </Typography>
 
-              {modelStorageInfo[modelToEdit.id].is_symlink ? (
-                <Alert severity="info" sx={{ mb: 1 }}>
-                  {t('settings.modelManagement.usingSymlinks')}
-                </Alert>
-              ) : (
-                <Alert severity="warning" sx={{ mb: 1 }}>
-                  {t('settings.modelManagement.notUsingSymlinks')}
-                </Alert>
-              )}
+              <Alert severity="info" sx={{ mb: 1 }}>
+                {t('settings.modelManagement.usingSymlinks')}
+              </Alert>
 
-              {modelStorageInfo[modelToEdit.id].is_symlink && (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  {t('settings.modelManagement.originalFiles')}:
-                  <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
-                    <Box component="li">
-                      {modelStorageInfo[modelToEdit.id].original_model_file}
-                    </Box>
-                    {modelStorageInfo[modelToEdit.id].original_vocab_file && (
-                      <Box component="li">
-                        {modelStorageInfo[modelToEdit.id].original_vocab_file}
-                      </Box>
-                    )}
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                {t('settings.modelManagement.originalFiles')}:
+                <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
+                  <Box component="li">
+                    {modelStorageInfo[modelToEdit.id].original_model_file}
                   </Box>
-                </Typography>
-              )}
+                  {modelStorageInfo[modelToEdit.id].original_vocab_file && (
+                    <Box component="li">
+                      {modelStorageInfo[modelToEdit.id].original_vocab_file}
+                    </Box>
+                  )}
+                </Box>
+              </Typography>
             </Box>
           )}
         </DialogContent>

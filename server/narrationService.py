@@ -8,7 +8,7 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks
+from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks, initialize_registry
 
 # Set up logging with UTF-8 encoding
 import sys
@@ -400,25 +400,36 @@ try:
         active_model = next(model for model in model_registry["models"] if model["id"] == active_model_id)
         logger.info(f"Using custom model: {active_model['id']}")
 
-        # Initialize with custom model paths
-        model_path = active_model.get("model_path")
-        vocab_path = active_model.get("vocab_path")
-        config = active_model.get("config", {})
+        # Check if this is the default model with special markers
+        if active_model.get("source") == "default" or active_model.get("model_path") == "default":
+            logger.info("Active model is the default model, initializing without paths")
+            tts_model = F5TTS(device=device)
+        else:
+            # Initialize with custom model paths
+            model_path = active_model.get("model_path")
+            vocab_path = active_model.get("vocab_path")
+            config = active_model.get("config", {})
 
-        logger.info(f"Initializing F5-TTS with custom model: {model_path}")
-        # Only pass parameters that F5TTS actually accepts
-        # The architecture parameters in config are not used directly by the constructor
-        # They might be used internally by the model after loading
-        logger.info(f"Model config (not passed to constructor): {config}")
-        tts_model = F5TTS(
-            device=device,
-            ckpt_file=model_path,
-            vocab_file=vocab_path
-        )
+            logger.info(f"Initializing F5-TTS with custom model: {model_path}")
+            # Only pass parameters that F5TTS actually accepts
+            # The architecture parameters in config are not used directly by the constructor
+            # They might be used internally by the model after loading
+            logger.info(f"Model config (not passed to constructor): {config}")
+            tts_model = F5TTS(
+                device=device,
+                ckpt_file=model_path,
+                vocab_file=vocab_path
+            )
     else:
         # Use default model
         logger.info(f"Using default F5-TTS model")
         tts_model = F5TTS(device=device)
+
+        # Check if the default model is in the registry, but only do this once
+        if not hasattr(get_status, 'default_model_checked'):
+            initialize_registry()
+            get_status.default_model_checked = True
+            logger.info("Default model registry check completed")
 
     # Verify the device being used
     if hasattr(tts_model, 'device'):
@@ -1061,25 +1072,35 @@ def generate_narration():
                 active_model = next(model for model in model_registry["models"] if model["id"] == active_model_id)
                 logger.info(f"Using custom model for generation: {active_model['id']}")
 
-                # Initialize with custom model paths
-                model_path = active_model.get("model_path")
-                vocab_path = active_model.get("vocab_path")
-                config = active_model.get("config", {})
+                # Check if this is the default model with special markers
+                if active_model.get("source") == "default" or active_model.get("model_path") == "default":
+                    logger.info("Active model is the default model, initializing without paths")
+                    request_model = F5TTS(device=current_device)
+                else:
+                    # Initialize with custom model paths
+                    model_path = active_model.get("model_path")
+                    vocab_path = active_model.get("vocab_path")
+                    config = active_model.get("config", {})
 
-                logger.info(f"Initializing F5-TTS with custom model: {model_path}")
-                # Only pass parameters that F5TTS actually accepts
-                # The architecture parameters in config are not used directly by the constructor
-                # They might be used internally by the model after loading
-                logger.info(f"Model config (not passed to constructor): {config}")
-                request_model = F5TTS(
-                    device=current_device,
-                    ckpt_file=model_path,
-                    vocab_file=vocab_path
-                )
+                    logger.info(f"Initializing F5-TTS with custom model: {model_path}")
+                    # Only pass parameters that F5TTS actually accepts
+                    # The architecture parameters in config are not used directly by the constructor
+                    # They might be used internally by the model after loading
+                    logger.info(f"Model config (not passed to constructor): {config}")
+                    request_model = F5TTS(
+                        device=current_device,
+                        ckpt_file=model_path,
+                        vocab_file=vocab_path
+                    )
             else:
                 # Use default model
                 logger.info(f"Using default F5-TTS model for generation")
                 request_model = F5TTS(device=current_device)
+
+                # Make sure the default model is in the registry, but don't log repeatedly
+                if not hasattr(get_status, 'default_model_checked'):
+                    initialize_registry()
+                    get_status.default_model_checked = True
 
             # Log the device being used
             logger.info(f"New F5TTS instance created with device: {current_device}")

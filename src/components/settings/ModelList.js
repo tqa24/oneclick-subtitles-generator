@@ -282,7 +282,20 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
       </Typography>
 
       <Grid container spacing={2}>
-        {AVAILABLE_MODELS.filter(model => !installedModelIds.includes(model.id)).map((model) => (
+        {AVAILABLE_MODELS.filter(model => {
+          // Always filter out models that are already installed
+          if (installedModelIds.includes(model.id)) {
+            return false;
+          }
+
+          // Special case: F5-TTS v1 Base should not be shown in available models
+          // if there are no installed models, as it's the default model
+          if (model.id === 'f5tts-v1-base' && installedModelIds.length === 0) {
+            return false;
+          }
+
+          return true;
+        }).map((model) => (
           <Grid item xs={12} sm={6} md={4} key={model.id}>
             <Paper
               elevation={1}
@@ -352,4 +365,5 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
   );
 };
 
+export { LANGUAGE_NAMES, LANGUAGE_COLORS, AVAILABLE_MODELS };
 export default ModelList;
