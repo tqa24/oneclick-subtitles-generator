@@ -106,8 +106,8 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
    */
   const handleModelSelect = (modelId) => {
     setSelectedModel(modelId);
-    // We don't save to localStorage here to avoid affecting the global setting
-    // This way, the model selection is only for this translation
+    // Save to localStorage to persist the user's choice across page refreshes
+    localStorage.setItem('gemini_model', modelId);
   };
 
   /**
