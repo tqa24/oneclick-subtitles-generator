@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
 import { checkModelAvailabilityForLanguage, getAvailableModels } from '../../../services/modelAvailabilityService';
 import '../../../styles/narration/modelDropdown.css';
+import '../../../styles/narration/languageBadges.css';
 
 /**
  * Subtitle Source Selection component
@@ -51,7 +52,7 @@ const SubtitleSourceSelection = ({
         setIsLoadingModels(false);
       }
     };
-
+    
     loadModels();
   }, []);
 
@@ -91,13 +92,20 @@ const SubtitleSourceSelection = ({
           // Clear any previous errors
           setModelError(null);
 
+          // Get all language codes to check (primary + secondary)
+          const languagesToCheck = result.isMultiLanguage && 
+            Array.isArray(result.secondaryLanguages) && 
+            result.secondaryLanguages.length > 0
+              ? result.secondaryLanguages
+              : result.languageCode;
+          
           // First use the fallback function to get a suggested model
-          const suggestedModelId = getNarrationModelForLanguage(result.languageCode);
+          const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
 
           // Then check if a model is actually available for this language
           setIsCheckingModel(true);
           try {
-            const modelAvailability = await checkModelAvailabilityForLanguage(result.languageCode);
+            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
@@ -139,13 +147,20 @@ const SubtitleSourceSelection = ({
           // Clear any previous errors
           setModelError(null);
 
+          // Get all language codes to check (primary + secondary)
+          const languagesToCheck = result.isMultiLanguage && 
+            Array.isArray(result.secondaryLanguages) && 
+            result.secondaryLanguages.length > 0
+              ? result.secondaryLanguages
+              : result.languageCode;
+          
           // First use the fallback function to get a suggested model
-          const suggestedModelId = getNarrationModelForLanguage(result.languageCode);
+          const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
 
           // Then check if a model is actually available for this language
           setIsCheckingModel(true);
           try {
-            const modelAvailability = await checkModelAvailabilityForLanguage(result.languageCode);
+            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
@@ -214,7 +229,14 @@ const SubtitleSourceSelection = ({
 
         // If we have original language info, update the model
         if (originalLanguage) {
-          const modelId = getNarrationModelForLanguage(originalLanguage.languageCode);
+          // Get all language codes to check (primary + secondary)
+          const languagesToCheck = originalLanguage.isMultiLanguage && 
+            Array.isArray(originalLanguage.secondaryLanguages) && 
+            originalLanguage.secondaryLanguages.length > 0
+              ? originalLanguage.secondaryLanguages
+              : originalLanguage.languageCode;
+          
+          const modelId = getNarrationModelForLanguage(languagesToCheck);
           setSelectedModel(modelId);
 
           // Call the callback with the detected language and model
@@ -277,7 +299,13 @@ const SubtitleSourceSelection = ({
 
           try {
             // Check if a model is available for this language
-            const modelAvailability = await checkModelAvailabilityForLanguage(originalLanguage.languageCode);
+            const languagesToCheck = originalLanguage.isMultiLanguage &&
+              Array.isArray(originalLanguage.secondaryLanguages) &&
+              originalLanguage.secondaryLanguages.length > 0
+                ? originalLanguage.secondaryLanguages
+                : originalLanguage.languageCode;
+
+            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
@@ -322,7 +350,13 @@ const SubtitleSourceSelection = ({
 
           try {
             // Check if a model is available for this language
-            const modelAvailability = await checkModelAvailabilityForLanguage(translatedLanguage.languageCode);
+            const languagesToCheck = translatedLanguage.isMultiLanguage &&
+              Array.isArray(translatedLanguage.secondaryLanguages) &&
+              translatedLanguage.secondaryLanguages.length > 0
+                ? translatedLanguage.secondaryLanguages
+                : translatedLanguage.languageCode;
+
+            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
@@ -361,15 +395,43 @@ const SubtitleSourceSelection = ({
     }
   };
 
-  // Helper to render language badge
+  // Helper to render language badges
   const renderLanguageBadge = (language) => {
     if (!language) return null;
 
+    // If it's a multi-language text, show badges for all detected languages
+    if (language.isMultiLanguage && Array.isArray(language.secondaryLanguages) && language.secondaryLanguages.length > 0) {
+      return (
+        <div className="language-badge-container">
+          {language.secondaryLanguages.map((langCode, index) => (
+            <span key={index} className="language-badge multi">
+              {langCode.toUpperCase()}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    // Otherwise, just show the primary language
     return (
-      <span className={`language-badge ${language.isMultiLanguage ? 'multi' : ''}`}>
+      <span className="language-badge">
         {language.languageCode.toUpperCase()}
       </span>
     );
+  };
+  
+  // Helper to render model languages in dropdown
+  const renderModelLanguages = (model) => {
+    // If model has multiple languages
+    if (Array.isArray(model.languages) && model.languages.length > 0) {
+      return `(${model.languages.map(lang => lang.toUpperCase()).join(', ')})`;
+    }
+    // If model has a single language
+    else if (model.language) {
+      return `(${model.language.toUpperCase()})`;
+    }
+    // If no language information is available
+    return '';
   };
 
   return (
@@ -465,18 +527,28 @@ const SubtitleSourceSelection = ({
                       <optgroup label={t('narration.matchingLanguageModels', 'Matching Language')}>
                         {availableModels
                           .filter(model => {
-                            const currentLanguage = subtitleSource === 'original'
-                              ? originalLanguage?.languageCode
-                              : translatedLanguage?.languageCode;
+                            const currentLanguageObj = subtitleSource === 'original'
+                              ? originalLanguage
+                              : translatedLanguage;
 
-                            return currentLanguage && (
-                              model.language === currentLanguage ||
-                              (Array.isArray(model.languages) && model.languages.includes(currentLanguage))
+                            if (!currentLanguageObj) return false;
+
+                            // Get all language codes to check (primary + secondary)
+                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                              currentLanguageObj.secondaryLanguages.length > 0
+                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                : [currentLanguageObj.languageCode]; // Just use primary language
+
+                            // Check if model supports any of the detected languages
+                            return languagesToCheck.some(langCode =>
+                              model.language === langCode ||
+                              (Array.isArray(model.languages) && model.languages.includes(langCode))
                             );
                           })
                           .map(model => (
                             <option key={model.id} value={model.id}>
-                              {model.id} {model.language ? `(${model.language.toUpperCase()})` : ''}
+                              {model.id} {renderModelLanguages(model)}
                             </option>
                           ))
                         }
@@ -486,18 +558,28 @@ const SubtitleSourceSelection = ({
                       <optgroup label={t('narration.otherModels', 'Other Models')}>
                         {availableModels
                           .filter(model => {
-                            const currentLanguage = subtitleSource === 'original'
-                              ? originalLanguage?.languageCode
-                              : translatedLanguage?.languageCode;
+                            const currentLanguageObj = subtitleSource === 'original'
+                              ? originalLanguage
+                              : translatedLanguage;
 
-                            return !currentLanguage || (
-                              model.language !== currentLanguage &&
-                              !(Array.isArray(model.languages) && model.languages.includes(currentLanguage))
+                            if (!currentLanguageObj) return true;
+
+                            // Get all language codes to check (primary + secondary)
+                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                              currentLanguageObj.secondaryLanguages.length > 0
+                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                : [currentLanguageObj.languageCode]; // Just use primary language
+
+                            // Check if model does NOT support any of the detected languages
+                            return !languagesToCheck.some(langCode =>
+                              model.language === langCode ||
+                              (Array.isArray(model.languages) && model.languages.includes(langCode))
                             );
                           })
                           .map(model => (
                             <option key={model.id} value={model.id}>
-                              {model.id} {model.language ? `(${model.language.toUpperCase()})` : ''}
+                              {model.id} {renderModelLanguages(model)}
                             </option>
                           ))
                         }

@@ -38,7 +38,10 @@ export const detectSubtitleLanguage = async (subtitles, source = 'original', mod
         const detectionPrompt = `
 Please analyze the following text and determine its language.
 Return the ISO 639-1 language code, full language name, and whether it contains multiple languages.
-If it contains multiple languages, list the secondary language codes.
+If it contains multiple languages:
+1. Set isMultiLanguage to true
+2. Set languageCode to the primary/dominant language code
+3. Include all detected language codes in the secondaryLanguages array (including the primary language)
 
 Text to analyze:
 """
@@ -167,12 +170,28 @@ Respond with structured data only.
 /**
  * Get appropriate narration model for a language
  * This is a synchronous fallback function that doesn't check actual availability
- * @param {string} languageCode - ISO 639-1 language code
+ * @param {string|Array} languageCode - ISO 639-1 language code or array of codes
  * @returns {string} - Model ID for the language
  */
 export const getNarrationModelForLanguage = (languageCode) => {
     // Default to base model
     let modelId = 'f5tts-v1-base';
+
+    // If we have an array of language codes, use the first one that has a specific model
+    if (Array.isArray(languageCode) && languageCode.length > 0) {
+        // Priority languages that have specific models
+        const priorityLanguages = ['vi', 'zh', 'en', 'ko', 'ja'];
+
+        // Try to find a priority language in the array
+        for (const lang of priorityLanguages) {
+            if (languageCode.includes(lang)) {
+                return getNarrationModelForLanguage(lang);
+            }
+        }
+
+        // If no priority language found, use the first language in the array
+        return getNarrationModelForLanguage(languageCode[0]);
+    }
 
     // Map language codes to appropriate models
     // This is a simplified mapping that doesn't check actual availability
