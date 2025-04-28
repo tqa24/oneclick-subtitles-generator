@@ -8,7 +8,7 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status
+from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks
 
 # Set up logging with UTF-8 encoding
 import sys
@@ -406,11 +406,14 @@ try:
         config = active_model.get("config", {})
 
         logger.info(f"Initializing F5-TTS with custom model: {model_path}")
+        # Only pass parameters that F5TTS actually accepts
+        # The architecture parameters in config are not used directly by the constructor
+        # They might be used internally by the model after loading
+        logger.info(f"Model config (not passed to constructor): {config}")
         tts_model = F5TTS(
             device=device,
             ckpt_file=model_path,
-            vocab_file=vocab_path,
-            **config
+            vocab_file=vocab_path
         )
     else:
         # Use default model
@@ -516,7 +519,8 @@ def get_status():
 @narration_bp.route('/models', methods=['GET'])
 def list_models():
     """Get list of available models"""
-    models = get_models()
+    include_cache = request.args.get('include_cache', 'false').lower() == 'true'
+    models = get_models(include_cache)
     return jsonify(models)
 
 @narration_bp.route('/models/active', methods=['GET'])
@@ -554,11 +558,14 @@ def set_current_model():
                 config = active_model.get("config", {})
 
                 logger.info(f"Reinitializing F5-TTS with model: {model_path}")
+                # Only pass parameters that F5TTS actually accepts
+                # The architecture parameters in config are not used directly by the constructor
+                # They might be used internally by the model after loading
+                logger.info(f"Model config (not passed to constructor): {config}")
                 tts_model = F5TTS(
                     device=device,
                     ckpt_file=model_path,
-                    vocab_file=vocab_path,
-                    **config
+                    vocab_file=vocab_path
                 )
 
                 logger.info(f"Model reinitialized successfully: {model_id}")
@@ -597,8 +604,11 @@ def add_new_model():
         if not repo_id or not model_path:
             return jsonify({'error': 'Invalid Hugging Face URL format'}), 400
 
+        # Get language codes if provided
+        language_codes = data.get('languageCodes', [])
+
         # Download the model
-        success, message, model_id = download_model_from_hf(repo_id, model_path, vocab_path, config, model_id)
+        success, message, model_id = download_model_from_hf(repo_id, model_path, vocab_path, config, model_id, language_codes)
 
     elif source_type == 'url':
         # Handle direct URL model
@@ -610,8 +620,11 @@ def add_new_model():
         if not model_url:
             return jsonify({'error': 'No model_url provided'}), 400
 
+        # Get language codes if provided
+        language_codes = data.get('languageCodes', [])
+
         # Download the model
-        success, message, model_id = download_model_from_url(model_url, vocab_url, config, model_id)
+        success, message, model_id = download_model_from_url(model_url, vocab_url, config, model_id, language_codes)
 
     else:
         return jsonify({'error': f'Invalid source_type: {source_type}'}), 400
@@ -631,9 +644,13 @@ def get_model_download_status(model_id):
     status = get_download_status(model_id)
 
     if status:
+        # Return the status directly, not nested under 'status'
         return jsonify({
             'model_id': model_id,
-            'status': status
+            'status': status['status'],
+            'progress': status['progress'],
+            'error': status['error'] if 'error' in status else None,
+            'timestamp': status['timestamp']
         })
     else:
         return jsonify({
@@ -644,12 +661,40 @@ def get_model_download_status(model_id):
 @narration_bp.route('/models/<model_id>', methods=['DELETE'])
 def remove_model(model_id):
     """Delete a model"""
-    success, message = delete_model(model_id)
+    delete_cache = request.args.get('delete_cache', 'false').lower() == 'true'
+    success, message = delete_model(model_id, delete_cache)
 
     if success:
         return jsonify({'success': True, 'message': message})
     else:
         return jsonify({'error': message}), 400
+
+@narration_bp.route('/models/<model_id>', methods=['PUT'])
+def update_model(model_id):
+    """Update model information"""
+    data = request.json
+
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    success, message = update_model_info(model_id, data)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'error': message}), 400
+
+@narration_bp.route('/models/<model_id>/storage', methods=['GET'])
+def get_model_storage_info(model_id):
+    """Get information about how a model is stored (symlink or copy)"""
+    is_symlink, original_model_file, original_vocab_file = is_model_using_symlinks(model_id)
+
+    return jsonify({
+        'model_id': model_id,
+        'is_symlink': is_symlink,
+        'original_model_file': original_model_file,
+        'original_vocab_file': original_vocab_file
+    })
 
 @narration_bp.route('/upload-reference', methods=['POST'])
 def upload_reference_audio():
@@ -1022,11 +1067,14 @@ def generate_narration():
                 config = active_model.get("config", {})
 
                 logger.info(f"Initializing F5-TTS with custom model: {model_path}")
+                # Only pass parameters that F5TTS actually accepts
+                # The architecture parameters in config are not used directly by the constructor
+                # They might be used internally by the model after loading
+                logger.info(f"Model config (not passed to constructor): {config}")
                 request_model = F5TTS(
                     device=current_device,
                     ckpt_file=model_path,
-                    vocab_file=vocab_path,
-                    **config
+                    vocab_file=vocab_path
                 )
             else:
                 # Use default model

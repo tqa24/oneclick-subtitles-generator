@@ -5,6 +5,40 @@
 import { createVideoAnalysisSchema } from './videoAnalysisSchema';
 
 /**
+ * Creates a schema for language detection
+ * @returns {Object} Schema for language detection
+ */
+export const createLanguageDetectionSchema = () => {
+    return {
+        type: "object",
+        properties: {
+            languageCode: {
+                type: "string",
+                description: "ISO 639-1 language code (e.g., 'en', 'vi', 'ko', 'zh', etc.)"
+            },
+            languageName: {
+                type: "string",
+                description: "Full language name in English (e.g., 'English', 'Vietnamese', 'Korean', 'Chinese')"
+            },
+            isMultiLanguage: {
+                type: "boolean",
+                description: "Whether the text contains multiple languages"
+            },
+            secondaryLanguages: {
+                type: "array",
+                items: {
+                    type: "string",
+                    description: "ISO 639-1 language codes of secondary languages if multi-language"
+                },
+                description: "Secondary language codes if multi-language is true"
+            }
+        },
+        required: ["languageCode", "languageName", "isMultiLanguage"],
+        propertyOrdering: ["languageCode", "languageName", "isMultiLanguage", "secondaryLanguages"]
+    };
+};
+
+/**
  * Creates a schema for subtitle transcription
  * @param {boolean} isUserProvided - Whether the subtitles are user-provided
  * @returns {Object} Schema for subtitle transcription

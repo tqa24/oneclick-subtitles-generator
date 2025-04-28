@@ -162,8 +162,8 @@ const AVAILABLE_MODELS = [
     name: 'F5-TTS Base Spanish',
     languages: ['es'],
     author: 'jpgallegoar',
-    modelUrl: 'hf://jpgallegoar/F5-Spanish/model.safetensors',
-    vocabUrl: 'hf://jpgallegoar/F5-Spanish/vocab.txt',
+    modelUrl: 'https://huggingface.co/jpgallegoar/F5-Spanish/blob/main/model_1200000.safetensors',
+    vocabUrl: 'https://huggingface.co/jpgallegoar/F5-Spanish/blob/main/vocab.txt',
     config: {
       dim: 1024,
       depth: 22,
@@ -181,8 +181,8 @@ const AVAILABLE_MODELS = [
     name: 'EraX Smile UnixSex F5',
     languages: ['vi'],
     author: 'EraX',
-    modelUrl: 'custom://EraX-Smile-UnixSex-F5/model_42000.safetensors',
-    vocabUrl: 'custom://EraX-Smile-UnixSex-F5/vocab.txt',
+    modelUrl: 'https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/blob/main/models/model_42000.safetensors',
+    vocabUrl: 'https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/blob/main/models/vocab.txt',
     config: {
       dim: 1024,
       depth: 22,
@@ -224,25 +224,31 @@ const LANGUAGE_COLORS = {
   'vi': 'secondary'
 };
 
-const ModelList = ({ onModelAdded, downloadingModels = {} }) => {
+const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = React.useState({});
+
+  // Create a list of installed model IDs for filtering
+  const installedModelIds = React.useMemo(() => {
+    return installedModels.map(model => model.id);
+  }, [installedModels]);
 
   const handleDownload = async (model) => {
     try {
       setDownloading(prev => ({ ...prev, [model.id]: true }));
-      
+
       // Prepare model data for API
       const modelData = {
         modelUrl: model.modelUrl,
         vocabUrl: model.vocabUrl,
         modelId: model.id,
+        languageCodes: model.languages, // Include language codes
         config: model.config
       };
-      
+
       // Call API to add model
       const response = await addModelFromHuggingFace(modelData);
-      
+
       if (response.success) {
         // Notify parent component
         if (onModelAdded) {
@@ -274,16 +280,16 @@ const ModelList = ({ onModelAdded, downloadingModels = {} }) => {
       <Typography variant="h6" gutterBottom>
         {t('settings.modelManagement.availableModels')}
       </Typography>
-      
+
       <Grid container spacing={2}>
-        {AVAILABLE_MODELS.map((model) => (
+        {AVAILABLE_MODELS.filter(model => !installedModelIds.includes(model.id)).map((model) => (
           <Grid item xs={12} sm={6} md={4} key={model.id}>
-            <Paper 
-              elevation={1} 
-              sx={{ 
-                p: 2, 
-                height: '100%', 
-                display: 'flex', 
+            <Paper
+              elevation={1}
+              sx={{
+                p: 2,
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
                 position: 'relative'
               }}
@@ -291,14 +297,14 @@ const ModelList = ({ onModelAdded, downloadingModels = {} }) => {
               <Typography variant="subtitle1" gutterBottom>
                 {model.name}
               </Typography>
-              
+
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 {t('settings.modelManagement.by')} {model.author}
               </Typography>
-              
+
               <Box sx={{ mb: 2, mt: 1 }}>
                 {model.languages.map(lang => (
-                  <Chip 
+                  <Chip
                     key={lang}
                     label={LANGUAGE_NAMES[lang] || lang}
                     size="small"
@@ -307,22 +313,22 @@ const ModelList = ({ onModelAdded, downloadingModels = {} }) => {
                   />
                 ))}
               </Box>
-              
+
               <Box sx={{ mt: 'auto' }}>
                 <Tooltip title={t('settings.modelManagement.downloadModel')}>
                   <span>
                     <Button
                       variant="outlined"
                       color="primary"
-                      startIcon={isDownloading(model.id) ? 
-                        <CircularProgress size={20} /> : 
+                      startIcon={isDownloading(model.id) ?
+                        <CircularProgress size={20} /> :
                         <DownloadIcon />
                       }
                       onClick={() => handleDownload(model)}
                       disabled={isDownloading(model.id)}
                       fullWidth
                     >
-                      {isDownloading(model.id) 
+                      {isDownloading(model.id)
                         ? `${t('settings.modelManagement.downloading')} (${getDownloadProgress(model.id)}%)`
                         : t('settings.modelManagement.download')
                       }
@@ -333,6 +339,14 @@ const ModelList = ({ onModelAdded, downloadingModels = {} }) => {
             </Paper>
           </Grid>
         ))}
+
+        {AVAILABLE_MODELS.filter(model => !installedModelIds.includes(model.id)).length === 0 && (
+          <Grid item xs={12}>
+            <Typography variant="body2" color="textSecondary" sx={{ p: 2, textAlign: 'center' }}>
+              {t('settings.modelManagement.allModelsInstalled')}
+            </Typography>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

@@ -5,11 +5,13 @@ import { API_BASE_URL } from '../config';
 
 /**
  * Get list of available models
+ * @param {boolean} includeCache - Whether to include models from Hugging Face cache
  * @returns {Promise<Object>} - List of models and active model
  */
-export const getModels = async () => {
+export const getModels = async (includeCache = false) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/narration/models`);
+    const url = `${API_BASE_URL}/narration/models${includeCache ? '?include_cache=true' : ''}`;
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }
@@ -81,6 +83,7 @@ export const addModelFromHuggingFace = async (modelData) => {
         model_url: modelData.modelUrl,
         vocab_url: modelData.vocabUrl,
         model_id: modelData.modelId,
+        languageCodes: modelData.languageCodes || [],
         config: modelData.config || {},
       }),
     });
@@ -114,6 +117,7 @@ export const addModelFromUrl = async (modelData) => {
         model_url: modelData.modelUrl,
         vocab_url: modelData.vocabUrl,
         model_id: modelData.modelId,
+        languageCodes: modelData.languageCodes || [],
         config: modelData.config || {},
       }),
     });
@@ -157,11 +161,13 @@ export const getModelDownloadStatus = async (modelId) => {
 /**
  * Delete a model
  * @param {string} modelId - Model ID to delete
+ * @param {boolean} deleteCache - Whether to also delete the model from Hugging Face cache
  * @returns {Promise<Object>} - Response from server
  */
-export const deleteModel = async (modelId) => {
+export const deleteModel = async (modelId, deleteCache = false) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/narration/models/${modelId}`, {
+    const url = `${API_BASE_URL}/narration/models/${modelId}${deleteCache ? '?delete_cache=true' : ''}`;
+    const response = await fetch(url, {
       method: 'DELETE',
     });
 
@@ -173,6 +179,55 @@ export const deleteModel = async (modelId) => {
     return await response.json();
   } catch (error) {
     console.error('Error deleting model:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update model information
+ * @param {string} modelId - Model ID to update
+ * @param {Object} modelInfo - New model information
+ * @returns {Promise<Object>} - Response from server
+ */
+export const updateModelInfo = async (modelId, modelInfo) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/models/${modelId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(modelInfo),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server returned ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating model info:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get model storage information (whether it's using symbolic links)
+ * @param {string} modelId - Model ID to check
+ * @returns {Promise<Object>} - Storage information
+ */
+export const getModelStorageInfo = async (modelId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/models/${modelId}/storage`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server returned ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting model storage info:', error);
     throw error;
   }
 };

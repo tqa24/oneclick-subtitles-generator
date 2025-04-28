@@ -22,8 +22,13 @@ import {
   Paper,
   Alert,
   Snackbar,
-  LinearProgress,
-  Divider
+  Divider,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  Grid
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,59 +36,45 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ErrorIcon from '@mui/icons-material/Error';
-import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus } from '../../services/modelService';
+import EditIcon from '@mui/icons-material/Edit';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import StorageIcon from '@mui/icons-material/Storage';
+import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
 import ModelList from './ModelList';
 
-// Component to display download status
-const DownloadStatus = ({ status }) => {
-  const { t } = useTranslation();
-
-  if (!status) return null;
-
-  if (status.status === 'downloading') {
-    return (
-      <Box sx={{ width: '100%', mt: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-          <CloudDownloadIcon color="primary" fontSize="small" sx={{ mr: 1 }} />
-          <Typography variant="body2" color="primary">
-            {t('settings.modelManagement.downloading')} ({status.progress}%)
-          </Typography>
-        </Box>
-        <LinearProgress variant="determinate" value={status.progress} />
-      </Box>
-    );
-  } else if (status.status === 'failed') {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-        <ErrorIcon color="error" fontSize="small" sx={{ mr: 1 }} />
-        <Typography variant="body2" color="error">
-          {t('settings.modelManagement.downloadFailed')}: {status.error}
-        </Typography>
-      </Box>
-    );
-  }
-
-  return null;
-};
+// We're using inline status display instead of a component to avoid DOM nesting issues
 
 const ModelManagementTab = () => {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
+  const [cacheModels, setCacheModels] = useState([]);
   const [activeModel, setActiveModelState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [modelToDelete, setModelToDelete] = useState(null);
+  const [modelToEdit, setModelToEdit] = useState(null);
+  const [deleteFromCache, setDeleteFromCache] = useState(false);
+  const [showCacheModels, setShowCacheModels] = useState(false);
+  const [modelStorageInfo, setModelStorageInfo] = useState({});
   const [addModelForm, setAddModelForm] = useState({
     sourceType: 'huggingface',
     modelUrl: '',
     vocabUrl: '',
     modelId: '',
+    languageCodes: [''],
     showAdvanced: false,
     config: ''
   });
+  const [editModelForm, setEditModelForm] = useState({
+    name: '',
+    language: '',
+    config: ''
+  });
   const [addingModel, setAddingModel] = useState(false);
+  const [editingModel, setEditingModel] = useState(false);
   const [downloads, setDownloads] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -93,8 +84,8 @@ const ModelManagementTab = () => {
 
   // Fetch models on component mount
   useEffect(() => {
-    fetchModels();
-  }, []);
+    fetchModels(showCacheModels);
+  }, [showCacheModels]);
 
   // Set up polling for download status
   useEffect(() => {
@@ -116,12 +107,25 @@ const ModelManagementTab = () => {
               // Update download status
               setDownloads(prev => ({
                 ...prev,
-                [modelId]: statusData.status
+                [modelId]: {
+                  status: statusData.status,
+                  progress: statusData.progress,
+                  error: statusData.error
+                }
               }));
 
-              // If download is complete, refresh models
-              if (statusData.status.status === 'completed') {
+              // If download is complete, refresh models and remove from downloads state after a delay
+              if (statusData.status === 'completed') {
                 fetchModels();
+
+                // Remove the completed download from state after a short delay
+                setTimeout(() => {
+                  setDownloads(prev => {
+                    const newDownloads = { ...prev };
+                    delete newDownloads[modelId];
+                    return newDownloads;
+                  });
+                }, 3000); // 3 second delay to show completion
               }
             }
           } catch (err) {
@@ -138,12 +142,17 @@ const ModelManagementTab = () => {
   }, [downloads]);
 
   // Fetch models from API
-  const fetchModels = async () => {
+  const fetchModels = async (includeCacheModels = false) => {
     try {
       setLoading(true);
-      const data = await getModels();
+      const data = await getModels(includeCacheModels);
       setModels(data.models || []);
       setActiveModelState(data.active_model);
+
+      // Update cache models if included
+      if (includeCacheModels && data.cache_models) {
+        setCacheModels(data.cache_models);
+      }
 
       // Update downloads state with server data
       if (data.downloads) {
@@ -189,6 +198,7 @@ const ModelManagementTab = () => {
       modelUrl: '',
       vocabUrl: '',
       modelId: '',
+      languageCodes: [''],
       showAdvanced: false,
       config: ''
     });
@@ -245,6 +255,7 @@ const ModelManagementTab = () => {
         modelUrl: addModelForm.modelUrl,
         vocabUrl: addModelForm.vocabUrl,
         modelId: addModelForm.modelId,
+        languageCodes: addModelForm.languageCodes.filter(code => code.trim() !== ''),
         config: configObj
       };
 
@@ -296,6 +307,7 @@ const ModelManagementTab = () => {
   // Handle opening delete confirmation dialog
   const handleOpenDeleteDialog = (model) => {
     setModelToDelete(model);
+    setDeleteFromCache(false); // Reset delete from cache option
     setOpenDeleteDialog(true);
   };
 
@@ -311,11 +323,11 @@ const ModelManagementTab = () => {
 
     try {
       setLoading(true);
-      await deleteModel(modelToDelete.id);
+      await deleteModel(modelToDelete.id, deleteFromCache);
 
       // Close dialog and refresh models
       handleCloseDeleteDialog();
-      await fetchModels();
+      await fetchModels(showCacheModels);
 
       // Show success message
       setSnackbar({
@@ -333,6 +345,89 @@ const ModelManagementTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle opening edit dialog
+  const handleOpenEditDialog = async (model) => {
+    setModelToEdit(model);
+    setEditModelForm({
+      name: model.name || '',
+      language: model.language || '',
+      config: model.config ? JSON.stringify(model.config, null, 2) : ''
+    });
+
+    // Fetch storage information for this model
+    try {
+      const storageInfo = await getModelStorageInfo(model.id);
+      setModelStorageInfo(prevState => ({
+        ...prevState,
+        [model.id]: storageInfo
+      }));
+    } catch (error) {
+      console.error('Error fetching model storage info:', error);
+    }
+
+    setOpenEditDialog(true);
+  };
+
+  // Handle closing edit dialog
+  const handleCloseEditDialog = () => {
+    setOpenEditDialog(false);
+    setModelToEdit(null);
+  };
+
+  // Handle editing a model
+  const handleEditModel = async () => {
+    if (!modelToEdit) return;
+
+    try {
+      setEditingModel(true);
+
+      // Parse config if provided
+      let configObj = {};
+      if (editModelForm.config) {
+        try {
+          configObj = JSON.parse(editModelForm.config);
+        } catch (err) {
+          throw new Error(t('settings.modelManagement.invalidConfigFormat'));
+        }
+      }
+
+      // Prepare model data
+      const modelInfo = {
+        name: editModelForm.name,
+        language: editModelForm.language,
+        config: configObj
+      };
+
+      // Update model
+      await updateModelInfo(modelToEdit.id, modelInfo);
+
+      // Close dialog and refresh models
+      handleCloseEditDialog();
+      await fetchModels(showCacheModels);
+
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: t('settings.modelManagement.modelUpdatedSuccess'),
+        severity: 'success'
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to update model');
+      setSnackbar({
+        open: true,
+        message: err.message || t('settings.modelManagement.errorUpdatingModel'),
+        severity: 'error'
+      });
+    } finally {
+      setEditingModel(false);
+    }
+  };
+
+  // Toggle showing cache models
+  const toggleCacheModels = () => {
+    setShowCacheModels(prev => !prev);
   };
 
   // Handle closing snackbar
@@ -363,6 +458,7 @@ const ModelManagementTab = () => {
       <ModelList
         onModelAdded={fetchModels}
         downloadingModels={downloads}
+        installedModels={models}
       />
 
       <Divider sx={{ my: 4 }} />
@@ -390,7 +486,44 @@ const ModelManagementTab = () => {
                       </Typography>
                     }
                     secondary={
-                      <DownloadStatus status={status} />
+                      <Box>
+                        <Box className="download-status-wrapper" sx={{ display: 'flex', alignItems: 'center' }}>
+                          {status.status === 'downloading' ? (
+                            <React.Fragment>
+                              <CloudDownloadIcon fontSize="small" sx={{ mr: 0.5 }} />
+                              <Typography component="span" variant="body2">
+                                {t('settings.modelManagement.downloading')} ({status.progress.toFixed(1)}%)
+                              </Typography>
+                            </React.Fragment>
+                          ) : status.status === 'completed' ? (
+                            <React.Fragment>
+                              <CheckCircleIcon fontSize="small" sx={{ mr: 0.5, color: 'success.main' }} />
+                              <Typography component="span" variant="body2" sx={{ color: 'success.main' }}>
+                                {t('settings.modelManagement.downloadComplete')}
+                              </Typography>
+                            </React.Fragment>
+                          ) : status.status === 'failed' ? (
+                            <React.Fragment>
+                              <ErrorIcon fontSize="small" sx={{ mr: 0.5 }} />
+                              <Typography component="span" variant="body2">
+                                {t('settings.modelManagement.downloadFailed')}: {status.error}
+                              </Typography>
+                            </React.Fragment>
+                          ) : null}
+                        </Box>
+                        {(status.status === 'downloading' || status.status === 'completed') && (
+                          <Box sx={{ height: '4px', borderRadius: '2px', backgroundColor: '#e0e0e0', mt: 0.5 }}>
+                            <Box
+                              sx={{
+                                height: '100%',
+                                width: status.status === 'completed' ? '100%' : `${status.progress}%`,
+                                borderRadius: '2px',
+                                backgroundColor: status.status === 'completed' ? '#4caf50' : '#1976d2'
+                              }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
                     }
                   />
                 </ListItem>
@@ -399,6 +532,34 @@ const ModelManagementTab = () => {
           </List>
         </Paper>
       )}
+
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6">
+          {t('settings.modelManagement.modelManagement')}
+        </Typography>
+        <Box>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={toggleCacheModels}
+            startIcon={<StorageIcon />}
+            sx={{ mr: 2 }}
+          >
+            {showCacheModels
+              ? t('settings.modelManagement.hideCacheModels')
+              : t('settings.modelManagement.showCacheModels')}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleOpenAddDialog}
+            disabled={loading}
+          >
+            {t('settings.modelManagement.addCustomModel')}
+          </Button>
+        </Box>
+      </Box>
 
       <Paper elevation={1} sx={{ mb: 3, p: 2 }}>
         <Typography variant="subtitle1" gutterBottom>
@@ -419,18 +580,25 @@ const ModelManagementTab = () => {
               <ListItem
                 key={model.id}
                 secondaryAction={
-                  <Box>
-                    {model.id !== activeModel && (
-                      <Tooltip title={t('settings.modelManagement.deleteModel')}>
-                        <IconButton
-                          edge="end"
-                          aria-label="delete"
-                          onClick={() => handleOpenDeleteDialog(model)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                  <Box sx={{ display: 'flex' }}>
+                    <Tooltip title={t('settings.modelManagement.editModel')}>
+                      <IconButton
+                        edge="end"
+                        aria-label="edit"
+                        onClick={() => handleOpenEditDialog(model)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t('settings.modelManagement.deleteModel')}>
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        onClick={() => handleOpenDeleteDialog(model)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
                   </Box>
                 }
               >
@@ -450,11 +618,13 @@ const ModelManagementTab = () => {
                           <RadioButtonUncheckedIcon />
                         )}
                       </IconButton>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: model.id === activeModel ? 'bold' : 'normal' }}
-                      >
-                        {model.name}
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography
+                          variant="body1"
+                          sx={{ fontWeight: model.id === activeModel ? 'bold' : 'normal' }}
+                        >
+                          {model.name}
+                        </Typography>
                         {model.id === activeModel && (
                           <Typography
                             component="span"
@@ -465,7 +635,7 @@ const ModelManagementTab = () => {
                             ({t('settings.modelManagement.active')})
                           </Typography>
                         )}
-                      </Typography>
+                      </Box>
                     </Box>
                   }
                   secondary={
@@ -480,7 +650,18 @@ const ModelManagementTab = () => {
                       )}
 
                       {/* Show download status if this model is being downloaded */}
-                      {downloads[model.id] && <DownloadStatus status={downloads[model.id]} />}
+                      {downloads[model.id] && downloads[model.id].status === 'downloading' && (
+                        <span style={{ color: '#1976d2', display: 'flex', alignItems: 'center', marginTop: '4px' }}>
+                          <CloudDownloadIcon fontSize="small" style={{ marginRight: '4px' }} />
+                          {t('settings.modelManagement.downloading')} ({downloads[model.id].progress.toFixed(1)}%)
+                        </span>
+                      )}
+                      {downloads[model.id] && downloads[model.id].status === 'failed' && (
+                        <span style={{ color: '#d32f2f', display: 'flex', alignItems: 'center', marginTop: '4px' }}>
+                          <ErrorIcon fontSize="small" style={{ marginRight: '4px' }} />
+                          {t('settings.modelManagement.downloadFailed')}: {downloads[model.id].error}
+                        </span>
+                      )}
                     </Box>
                   }
                 />
@@ -489,18 +670,76 @@ const ModelManagementTab = () => {
           </List>
         )}
 
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAddDialog}
-            disabled={loading}
-          >
-            {t('settings.modelManagement.addCustomModel')}
-          </Button>
-        </Box>
+
       </Paper>
+
+      {/* Hugging Face Cache Models */}
+      {showCacheModels && (
+        <Paper elevation={1} sx={{ mb: 3, p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            {t('settings.modelManagement.cacheModels')}
+          </Typography>
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : cacheModels.length === 0 ? (
+            <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
+              {t('settings.modelManagement.noCacheModels')}
+            </Typography>
+          ) : (
+            <List>
+              {cacheModels.map((model) => (
+                <Accordion key={model.id} sx={{ mb: 1 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Grid container alignItems="center">
+                      <Grid item xs={8}>
+                        <Typography variant="subtitle2">
+                          {model.id}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          {t('settings.modelManagement.size')}: {(model.size / (1024 * 1024)).toFixed(2)} MB
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={4} sx={{ textAlign: 'right' }}>
+                        <Chip
+                          label={model.org}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ mr: 1 }}
+                        />
+                      </Grid>
+                    </Grid>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography variant="subtitle2" gutterBottom>
+                      {t('settings.modelManagement.snapshots')}:
+                    </Typography>
+                    {model.snapshots && model.snapshots.length > 0 ? (
+                      <List dense>
+                        {model.snapshots.map((snapshot) => (
+                          <ListItem key={snapshot.hash}>
+                            <ListItemText
+                              primary={snapshot.hash}
+                              secondary={`${t('settings.modelManagement.size')}: ${(snapshot.size / (1024 * 1024)).toFixed(2)} MB`}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        {t('settings.modelManagement.noSnapshots')}
+                      </Typography>
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </List>
+          )}
+        </Paper>
+      )}
 
       {/* Add Model Dialog */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="md" fullWidth>
@@ -581,6 +820,64 @@ const ModelManagementTab = () => {
             sx={{ mb: 2 }}
           />
 
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              {t('settings.modelManagement.languageCodes')}
+            </Typography>
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+              {t('settings.modelManagement.languageCodesHelp')}
+            </Typography>
+
+            {addModelForm.languageCodes.map((code, index) => (
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <TextField
+                  margin="dense"
+                  name={`languageCode-${index}`}
+                  label={t('settings.modelManagement.languageCode')}
+                  type="text"
+                  fullWidth
+                  value={code}
+                  onChange={(e) => {
+                    const newCodes = [...addModelForm.languageCodes];
+                    newCodes[index] = e.target.value;
+                    setAddModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                  }}
+                  sx={{ mr: 1 }}
+                />
+
+                {/* Remove button for all except the first language code */}
+                {index > 0 && (
+                  <IconButton
+                    onClick={() => {
+                      const newCodes = [...addModelForm.languageCodes];
+                      newCodes.splice(index, 1);
+                      setAddModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                    }}
+                    color="error"
+                    size="small"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            ))}
+
+            {/* Add language code button */}
+            <Button
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setAddModelForm(prev => ({
+                  ...prev,
+                  languageCodes: [...prev.languageCodes, '']
+                }));
+              }}
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              {t('settings.modelManagement.addLanguageCode')}
+            </Button>
+          </Box>
+
           <Button
             onClick={toggleAdvancedOptions}
             variant="text"
@@ -636,6 +933,34 @@ const ModelManagementTab = () => {
               modelName: modelToDelete?.name || ''
             })}
           </Typography>
+
+          {modelToDelete?.id === activeModel && (
+            <Alert severity="warning" sx={{ mt: 2, mb: 1 }}>
+              {t('settings.modelManagement.deleteActiveModelWarning')}
+            </Alert>
+          )}
+
+          {modelToDelete?.repo_id && (
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={deleteFromCache}
+                  onChange={(e) => setDeleteFromCache(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={t('settings.modelManagement.deleteFromCache')}
+              sx={{ mt: 2, display: 'block' }}
+            />
+          )}
+
+          {deleteFromCache && modelToDelete?.repo_id && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {t('settings.modelManagement.deleteFromCacheWarning', {
+                repoId: modelToDelete.repo_id
+              })}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDeleteDialog} disabled={loading}>
@@ -651,6 +976,100 @@ const ModelManagementTab = () => {
             {loading
               ? t('settings.modelManagement.deleting')
               : t('settings.modelManagement.delete')
+            }
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Model Dialog */}
+      <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="md" fullWidth>
+        <DialogTitle>{t('settings.modelManagement.editModel')}</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            name="name"
+            label={t('settings.modelManagement.modelName')}
+            type="text"
+            fullWidth
+            value={editModelForm.name}
+            onChange={(e) => setEditModelForm(prev => ({ ...prev, name: e.target.value }))}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            margin="dense"
+            name="language"
+            label={t('settings.modelManagement.languageCode')}
+            type="text"
+            fullWidth
+            value={editModelForm.language}
+            onChange={(e) => setEditModelForm(prev => ({ ...prev, language: e.target.value }))}
+            helperText={t('settings.modelManagement.languageCodeHelp')}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            margin="dense"
+            name="config"
+            label={t('settings.modelManagement.modelConfig')}
+            multiline
+            rows={4}
+            fullWidth
+            value={editModelForm.config}
+            onChange={(e) => setEditModelForm(prev => ({ ...prev, config: e.target.value }))}
+            helperText={t('settings.modelManagement.modelConfigHelp')}
+            sx={{ mb: 2 }}
+          />
+
+          {/* Display storage information */}
+          {modelToEdit && modelStorageInfo[modelToEdit.id] && (
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                {t('settings.modelManagement.storageInformation')}
+              </Typography>
+
+              {modelStorageInfo[modelToEdit.id].is_symlink ? (
+                <Alert severity="info" sx={{ mb: 1 }}>
+                  {t('settings.modelManagement.usingSymlinks')}
+                </Alert>
+              ) : (
+                <Alert severity="warning" sx={{ mb: 1 }}>
+                  {t('settings.modelManagement.notUsingSymlinks')}
+                </Alert>
+              )}
+
+              {modelStorageInfo[modelToEdit.id].is_symlink && (
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  {t('settings.modelManagement.originalFiles')}:
+                  <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
+                    <Box component="li">
+                      {modelStorageInfo[modelToEdit.id].original_model_file}
+                    </Box>
+                    {modelStorageInfo[modelToEdit.id].original_vocab_file && (
+                      <Box component="li">
+                        {modelStorageInfo[modelToEdit.id].original_vocab_file}
+                      </Box>
+                    )}
+                  </Box>
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditDialog} disabled={editingModel}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={handleEditModel}
+            color="primary"
+            variant="contained"
+            disabled={editingModel}
+            startIcon={editingModel ? <CircularProgress size={20} /> : null}
+          >
+            {editingModel
+              ? t('settings.modelManagement.updating')
+              : t('settings.modelManagement.update')
             }
           </Button>
         </DialogActions>

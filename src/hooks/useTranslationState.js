@@ -174,6 +174,14 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         onTranslationComplete(result);
       }
 
+      // Dispatch a custom event to notify other components that translation is complete
+      window.dispatchEvent(new CustomEvent('translation-complete', {
+        detail: {
+          translatedSubtitles: result
+        }
+      }));
+      console.log('Dispatched translation-complete event');
+
       // Save the split duration setting to localStorage
       localStorage.setItem('translation_split_duration', splitDuration.toString());
     } catch (err) {
@@ -211,6 +219,14 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     if (onTranslationComplete) {
       onTranslationComplete(null);
     }
+
+    // Dispatch a custom event to notify other components that translation has been reset
+    window.dispatchEvent(new CustomEvent('translation-reset', {
+      detail: {
+        translatedSubtitles: null
+      }
+    }));
+    console.log('Dispatched translation-reset event');
   };
 
   /**

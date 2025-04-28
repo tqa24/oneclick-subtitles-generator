@@ -46,6 +46,11 @@
   "originalSubtitles": "원본 자막",
   "translatedSubtitles": "번역된 자막",
   "unavailable": "(사용 불가)",
+  "detectingLanguage": "언어 감지 중...",
+  "narrationModel": "나레이션 모델",
+  "noSourceSelectedError": "자막 소스를 선택하세요 (원본 또는 번역)",
+  "checkingModelAvailability": "모델 가용성 확인 중...",
+  "modelNotAvailableError": "선택한 내레이션 모델 \"{{modelId}}\"을(를) 사용할 수 없습니다. 설정의 모델 관리 탭에서 다운로드하세요.",
 
   "advancedSettingsToggle": "고급 음성 및 오디오 설정",
   "advancedSettings": "고급 설정",
