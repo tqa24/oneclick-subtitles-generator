@@ -67,7 +67,7 @@
   "narrationModel": "Mô hình thuyết minh",
   "noSourceSelectedError": "Vui lòng chọn nguồn phụ đề (Gốc hoặc Đã dịch)",
   "checkingModelAvailability": "Đang kiểm tra mô hình...",
-  "modelNotAvailableError": "Mô hình thuyết minh \"{{modelId}}\" không khả dụng. Vui lòng tải xuống từ tab Quản lý Mô hình trong Cài đặt.",
+  "modelNotAvailableError": "Vui lòng tải ít nhất một mô hình hỗ trợ {{language}} từ tab Quản lý Mô hình thuyết minh trong Cài đặt.",
 
   "advancedSettingsToggle": "Cài đặt nâng cao cho giọng nói",
   "advancedSettings": "Cài đặt nâng cao",

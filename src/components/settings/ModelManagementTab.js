@@ -40,7 +40,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StorageIcon from '@mui/icons-material/Storage';
 import CancelIcon from '@mui/icons-material/Cancel';
-import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
+import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
+import { invalidateModelsCache } from '../../services/modelAvailabilityService';
 import ModelList, { LANGUAGE_NAMES, LANGUAGE_COLORS } from './ModelList';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
@@ -106,7 +107,17 @@ const ModelManagementTab = () => {
           try {
             const statusData = await getModelDownloadStatus(modelId);
 
-            if (statusData.status) {
+            if (statusData.status === null) {
+              // If status is null, it means the download is no longer tracked by the server
+              // This could happen if the download completed and the server removed the status
+              // Refresh models and remove from downloads state
+              fetchModels();
+              setDownloads(prev => {
+                const newDownloads = { ...prev };
+                delete newDownloads[modelId];
+                return newDownloads;
+              });
+            } else if (statusData.status) {
               // Update download status
               setDownloads(prev => ({
                 ...prev,
@@ -119,6 +130,7 @@ const ModelManagementTab = () => {
 
               // If download is complete, refresh models and remove from downloads state after a delay
               if (statusData.status === 'completed') {
+                // Refresh models immediately to show the new model in the installed section
                 fetchModels();
 
                 // Remove the completed download from state after a short delay
@@ -128,7 +140,7 @@ const ModelManagementTab = () => {
                     delete newDownloads[modelId];
                     return newDownloads;
                   });
-                }, 3000); // 3 second delay to show completion
+                }, 1000); // 1 second delay to show completion
               }
             }
           } catch (err) {
@@ -162,6 +174,9 @@ const ModelManagementTab = () => {
         setDownloads(data.downloads);
       }
 
+      // Invalidate the models cache to notify other components
+      invalidateModelsCache();
+
       setError(null);
     } catch (err) {
       setError(err.message || 'Failed to fetch models');
@@ -171,28 +186,7 @@ const ModelManagementTab = () => {
     }
   };
 
-  // Handle setting active model
-  const handleSetActiveModel = async (modelId) => {
-    try {
-      setLoading(true);
-      await setActiveModel(modelId);
-      setActiveModelState(modelId);
-      setSnackbar({
-        open: true,
-        message: t('settings.modelManagement.activeModelSet'),
-        severity: 'success'
-      });
-    } catch (err) {
-      setError(err.message || 'Failed to set active model');
-      setSnackbar({
-        open: true,
-        message: err.message || t('settings.modelManagement.errorSettingActiveModel'),
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // We no longer set an active model - models are loaded on-demand when generating narration
 
   // Handle opening add model dialog
   const handleOpenAddDialog = () => {
@@ -589,36 +583,12 @@ const ModelManagementTab = () => {
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <IconButton
-                        edge="start"
-                        aria-label="select model"
-                        onClick={() => handleSetActiveModel(model.id)}
-                        disabled={model.id === activeModel}
-                        sx={{ mr: 1, p: 0.5 }}
-                      >
-                        {model.id === activeModel ? (
-                          <CheckCircleIcon color="primary" />
-                        ) : (
-                          <RadioButtonUncheckedIcon />
-                        )}
-                      </IconButton>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Typography
                           variant="body1"
-                          sx={{ fontWeight: model.id === activeModel ? 'bold' : 'normal' }}
                         >
                           {model.name}
                         </Typography>
-                        {model.id === activeModel && (
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            color="primary"
-                            sx={{ ml: 1 }}
-                          >
-                            ({t('settings.modelManagement.active')})
-                          </Typography>
-                        )}
                       </Box>
                     </Box>
                   }
@@ -936,11 +906,7 @@ const ModelManagementTab = () => {
             })}
           </Typography>
 
-          {modelToDelete?.id === activeModel && (
-            <Alert severity="warning" sx={{ mt: 2, mb: 1 }}>
-              {t('settings.modelManagement.deleteActiveModelWarning')}
-            </Alert>
-          )}
+          {/* We no longer have active models, so no warning needed */}
 
           {modelToDelete?.repo_id && (
             <Alert severity="info" sx={{ mt: 2 }}>

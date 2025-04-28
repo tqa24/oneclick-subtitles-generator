@@ -61,7 +61,7 @@ const UnifiedNarrationSection = ({
   const [error, setError] = useState('');
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [subtitleSource, setSubtitleSource] = useState(''); // No default selection, will be set when user clicks
+  const [subtitleSource, setSubtitleSource] = useState(null); // No default selection, will be set when user clicks
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);
@@ -150,10 +150,8 @@ const UnifiedNarrationSection = ({
         setSelectedNarrationModel(modelId);
         setModelAvailabilityError(modelError);
 
-        // If we have a source, set it
-        if (source) {
-          setSubtitleSource(source);
-        }
+        // We no longer automatically set the subtitle source
+        // Let the user explicitly select it
       }
     } catch (error) {
       // Silently fail if data can't be loaded
@@ -413,6 +411,7 @@ const UnifiedNarrationSection = ({
         downloadAllAudio={downloadAllAudio}
         downloadAlignedAudio={downloadAlignedAudio}
         cancelGeneration={cancelGeneration}
+        subtitleSource={subtitleSource}
       />
 
       {/* Generation Status */}

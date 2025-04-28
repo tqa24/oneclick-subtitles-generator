@@ -8,6 +8,9 @@ let modelsCache = null;
 let lastFetchTime = 0;
 const CACHE_DURATION = 60000; // 1 minute cache
 
+// Custom event for model list changes
+export const MODEL_LIST_CHANGED_EVENT = 'model-list-changed';
+
 /**
  * Get all available models with cache
  * @returns {Promise<Object>} - List of models and active model
@@ -79,7 +82,8 @@ export const checkModelAvailabilityForLanguage = async (languageCode) => {
       return {
         available: false,
         modelId: null,
-        error: `No narration model available for any of the detected languages: ${languageCode.join(', ')}`
+        error: `No narration model available for any of the detected languages: ${languageCode.join(', ')}`,
+        languageCodes: languageCode
       };
     }
 
@@ -93,7 +97,8 @@ export const checkModelAvailabilityForLanguage = async (languageCode) => {
       return {
         available: false,
         modelId: null,
-        error: `No narration model available for ${languageCode} language`
+        error: `No narration model available for ${languageCode} language`,
+        languageCode: languageCode
       };
     }
 
@@ -141,4 +146,18 @@ export const isModelAvailable = async (modelId) => {
     console.error('Error checking if model is available:', error);
     return false;
   }
+};
+
+/**
+ * Invalidate the models cache and notify listeners
+ * Call this function whenever models are added or removed
+ */
+export const invalidateModelsCache = () => {
+  console.log('Invalidating models cache and notifying listeners');
+  modelsCache = null;
+  lastFetchTime = 0;
+
+  // Dispatch a custom event to notify components that the model list has changed
+  const event = new CustomEvent(MODEL_LIST_CHANGED_EVENT);
+  window.dispatchEvent(event);
 };

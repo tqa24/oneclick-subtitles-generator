@@ -59,7 +59,7 @@
   "narrationModel": "Narration Model",
   "noSourceSelectedError": "Please select a subtitle source (Original or Translated)",
   "checkingModelAvailability": "Checking model availability...",
-  "modelNotAvailableError": "The selected narration model \"{{modelId}}\" is not available. Please download it from the Model Management tab in Settings.",
+  "modelNotAvailableError": "Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.",
 
   "advancedSettingsToggle": "Advanced Voice & Audio Settings",
   "advancedSettings": "Advanced Settings",

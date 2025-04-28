@@ -453,7 +453,20 @@ const useNarrationHandlers = ({
       // Check if the model is available
       const modelAvailable = await isModelAvailable(modelId);
       if (!modelAvailable) {
-        setError(t('narration.modelNotAvailableError', 'The selected narration model "{{modelId}}" is not available. Please download it from the Model Management tab in Settings.', { modelId }));
+        // Get the language from the selected subtitles
+        const subtitles = getSelectedSubtitles();
+        let language = 'unknown';
+
+        if (subtitles && subtitles.length > 0) {
+          // Try to determine the language from the subtitles
+          if (subtitleSource === 'original' && originalLanguage) {
+            language = originalLanguage.languageName || originalLanguage.languageCode;
+          } else if (subtitleSource === 'translated' && translatedLanguage) {
+            language = translatedLanguage.languageName || translatedLanguage.languageCode;
+          }
+        }
+
+        setError(t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language }));
         return;
       }
     } catch (error) {

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
-import { checkModelAvailabilityForLanguage, getAvailableModels } from '../../../services/modelAvailabilityService';
+import {
+  checkModelAvailabilityForLanguage,
+  getAvailableModels,
+  MODEL_LIST_CHANGED_EVENT
+} from '../../../services/modelAvailabilityService';
 import '../../../styles/narration/modelDropdown.css';
 import '../../../styles/narration/languageBadges.css';
 
@@ -52,8 +56,23 @@ const SubtitleSourceSelection = ({
         setIsLoadingModels(false);
       }
     };
-    
+
+    // Load models initially
     loadModels();
+
+    // Listen for model list changes
+    const handleModelListChanged = () => {
+      console.log('Model list changed event received, reloading models');
+      loadModels();
+    };
+
+    // Add event listener
+    window.addEventListener(MODEL_LIST_CHANGED_EVENT, handleModelListChanged);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener(MODEL_LIST_CHANGED_EVENT, handleModelListChanged);
+    };
   }, []);
 
   // Detect changes in translated subtitles
@@ -93,12 +112,12 @@ const SubtitleSourceSelection = ({
           setModelError(null);
 
           // Get all language codes to check (primary + secondary)
-          const languagesToCheck = result.isMultiLanguage && 
-            Array.isArray(result.secondaryLanguages) && 
+          const languagesToCheck = result.isMultiLanguage &&
+            Array.isArray(result.secondaryLanguages) &&
             result.secondaryLanguages.length > 0
               ? result.secondaryLanguages
               : result.languageCode;
-          
+
           // First use the fallback function to get a suggested model
           const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
 
@@ -118,12 +137,15 @@ const SubtitleSourceSelection = ({
               }
             } else {
               // No model available, show error and use fallback
-              setModelError(modelAvailability.error);
+              // Use a more user-friendly error message with language name
+              const languageName = result.languageName || result.languageCode;
+              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
+              setModelError(customError);
               setSelectedModel(suggestedModelId);
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, suggestedModelId, modelAvailability.error);
+                onLanguageDetected(source, result, suggestedModelId, customError);
               }
             }
           } catch (error) {
@@ -148,12 +170,12 @@ const SubtitleSourceSelection = ({
           setModelError(null);
 
           // Get all language codes to check (primary + secondary)
-          const languagesToCheck = result.isMultiLanguage && 
-            Array.isArray(result.secondaryLanguages) && 
+          const languagesToCheck = result.isMultiLanguage &&
+            Array.isArray(result.secondaryLanguages) &&
             result.secondaryLanguages.length > 0
               ? result.secondaryLanguages
               : result.languageCode;
-          
+
           // First use the fallback function to get a suggested model
           const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
 
@@ -173,12 +195,15 @@ const SubtitleSourceSelection = ({
               }
             } else {
               // No model available, show error and use fallback
-              setModelError(modelAvailability.error);
+              // Use a more user-friendly error message with language name
+              const languageName = result.languageName || result.languageCode;
+              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
+              setModelError(customError);
               setSelectedModel(suggestedModelId);
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, suggestedModelId, modelAvailability.error);
+                onLanguageDetected(source, result, suggestedModelId, customError);
               }
             }
           } catch (error) {
@@ -230,12 +255,12 @@ const SubtitleSourceSelection = ({
         // If we have original language info, update the model
         if (originalLanguage) {
           // Get all language codes to check (primary + secondary)
-          const languagesToCheck = originalLanguage.isMultiLanguage && 
-            Array.isArray(originalLanguage.secondaryLanguages) && 
+          const languagesToCheck = originalLanguage.isMultiLanguage &&
+            Array.isArray(originalLanguage.secondaryLanguages) &&
             originalLanguage.secondaryLanguages.length > 0
               ? originalLanguage.secondaryLanguages
               : originalLanguage.languageCode;
-          
+
           const modelId = getNarrationModelForLanguage(languagesToCheck);
           setSelectedModel(modelId);
 
@@ -262,7 +287,7 @@ const SubtitleSourceSelection = ({
       window.removeEventListener('translation-complete', handleTranslationComplete);
       window.removeEventListener('translation-reset', handleTranslationReset);
     };
-  }, [subtitleSource, onLanguageDetected, translatedSubtitles]);
+  }, [subtitleSource, onLanguageDetected, translatedSubtitles, t]);
 
   // Handle model selection change
   const handleModelChange = (event) => {
@@ -319,12 +344,16 @@ const SubtitleSourceSelection = ({
             } else {
               // No model available, show error and use fallback
               const fallbackModelId = getNarrationModelForLanguage(originalLanguage.languageCode);
-              setModelError(modelAvailability.error);
+
+              // Use a more user-friendly error message with language name
+              const languageName = originalLanguage.languageName || originalLanguage.languageCode;
+              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
+              setModelError(customError);
               setSelectedModel(fallbackModelId);
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected('original', originalLanguage, fallbackModelId, modelAvailability.error);
+                onLanguageDetected('original', originalLanguage, fallbackModelId, customError);
               }
             }
           } catch (error) {
@@ -370,12 +399,16 @@ const SubtitleSourceSelection = ({
             } else {
               // No model available, show error and use fallback
               const fallbackModelId = getNarrationModelForLanguage(translatedLanguage.languageCode);
-              setModelError(modelAvailability.error);
+
+              // Use a more user-friendly error message with language name
+              const languageName = translatedLanguage.languageName || translatedLanguage.languageCode;
+              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
+              setModelError(customError);
               setSelectedModel(fallbackModelId);
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected('translated', translatedLanguage, fallbackModelId, modelAvailability.error);
+                onLanguageDetected('translated', translatedLanguage, fallbackModelId, customError);
               }
             }
           } catch (error) {
@@ -419,7 +452,7 @@ const SubtitleSourceSelection = ({
       </span>
     );
   };
-  
+
   // Helper to render model languages in dropdown
   const renderModelLanguages = (model) => {
     // If model has multiple languages

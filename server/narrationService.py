@@ -366,7 +366,7 @@ def process_base64_audio_reference():
         logger.error(f"Error in process_base64_audio_reference: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Initialize F5-TTS
+# Initialize F5-TTS device settings only
 try:
     import torch
     from f5_tts.api import F5TTS
@@ -390,85 +390,25 @@ try:
 
     logger.info(f"Using device: {device}")
 
-    # Get active model from registry
-    active_model_id = get_active_model()
-    model_registry = get_models()
+    # Initialize registry to ensure default model is registered
+    initialize_registry()
+    logger.info("Model registry initialized")
 
-    # Initialize F5-TTS model
-    if active_model_id and any(model["id"] == active_model_id for model in model_registry["models"]):
-        # Get the active model info
-        active_model = next(model for model in model_registry["models"] if model["id"] == active_model_id)
-        logger.info(f"Using custom model: {active_model['id']}")
+    # We don't load any model at startup - models will be loaded on-demand
+    tts_model = None
 
-        # Check if this is the default model with special markers
-        if active_model.get("source") == "default" or active_model.get("model_path") == "default":
-            logger.info("Active model is the default model, initializing without paths")
-            tts_model = F5TTS(device=device)
-        else:
-            # Initialize with custom model paths
-            model_path = active_model.get("model_path")
-            vocab_path = active_model.get("vocab_path")
-            config = active_model.get("config", {})
-
-            logger.info(f"Initializing F5-TTS with custom model: {model_path}")
-            # Only pass parameters that F5TTS actually accepts
-            # The architecture parameters in config are not used directly by the constructor
-            # They might be used internally by the model after loading
-            logger.info(f"Model config (not passed to constructor): {config}")
-            tts_model = F5TTS(
-                device=device,
-                ckpt_file=model_path,
-                vocab_file=vocab_path
-            )
-    else:
-        # Use default model
-        logger.info(f"Using default F5-TTS model")
-        tts_model = F5TTS(device=device)
-
-        # Check if the default model is in the registry, but only do this once
-        if not hasattr(get_status, 'default_model_checked'):
-            initialize_registry()
-            get_status.default_model_checked = True
-            logger.info("Default model registry check completed")
-
-    # Verify the device being used
-    if hasattr(tts_model, 'device'):
-        logger.info(f"F5-TTS model device: {tts_model.device}")
-    elif hasattr(tts_model, 'model') and hasattr(tts_model.model, 'device'):
-        logger.info(f"F5-TTS model device: {tts_model.model.device}")
-
-    # Force all model components to the correct device if possible
-    if cuda_available and hasattr(tts_model, 'to_device'):
-        tts_model.to_device(device)
-        logger.info("Explicitly moved model to CUDA device")
-    elif cuda_available and hasattr(tts_model, 'model') and hasattr(tts_model.model, 'to'):
-        tts_model.model.to(device)
-        logger.info("Explicitly moved model to CUDA device")
-
-    # Additional check to ensure CUDA is being used if available
-    if cuda_available:
-        cuda_in_use = False
-        if hasattr(tts_model, 'device') and 'cuda' in str(tts_model.device):
-            cuda_in_use = True
-        elif hasattr(tts_model, 'model') and hasattr(tts_model.model, 'device') and 'cuda' in str(tts_model.model.device):
-            cuda_in_use = True
-
-        if not cuda_in_use:
-            logger.warning("Model may not be using CUDA despite CUDA being available!")
-        else:
-            logger.info("Confirmed model is using CUDA device")
-
-    logger.info("F5-TTS model initialized successfully")
+    # Set flag to indicate F5-TTS is available
     HAS_F5TTS = True
     INIT_ERROR = None
+    logger.info("F5-TTS device settings initialized successfully")
 except ImportError as e:
     logger.warning(f"F5-TTS not found. Narration features will be disabled. Error: {e}")
     HAS_F5TTS = False
     INIT_ERROR = f"F5-TTS not found: {str(e)}"
 except Exception as e:
-    logger.error(f"Error initializing F5-TTS: {e}")
+    logger.error(f"Error initializing F5-TTS device settings: {e}")
     HAS_F5TTS = False
-    INIT_ERROR = f"Error initializing F5-TTS: {str(e)}"
+    INIT_ERROR = f"Error initializing F5-TTS device settings: {str(e)}"
 
 @narration_bp.route('/status', methods=['GET'])
 def get_status():
@@ -552,41 +492,9 @@ def set_current_model():
     success, message = set_active_model(model_id)
 
     if success:
-        # Reinitialize the model
-        global tts_model, HAS_F5TTS, INIT_ERROR
-        try:
-            import torch
-            from f5_tts.api import F5TTS
-
-            # Get the active model info
-            model_registry = get_models()
-            active_model = next((model for model in model_registry["models"] if model["id"] == model_id), None)
-
-            if active_model:
-                # Initialize with custom model paths
-                model_path = active_model.get("model_path")
-                vocab_path = active_model.get("vocab_path")
-                config = active_model.get("config", {})
-
-                logger.info(f"Reinitializing F5-TTS with model: {model_path}")
-                # Only pass parameters that F5TTS actually accepts
-                # The architecture parameters in config are not used directly by the constructor
-                # They might be used internally by the model after loading
-                logger.info(f"Model config (not passed to constructor): {config}")
-                tts_model = F5TTS(
-                    device=device,
-                    ckpt_file=model_path,
-                    vocab_file=vocab_path
-                )
-
-                logger.info(f"Model reinitialized successfully: {model_id}")
-                return jsonify({'success': True, 'message': f'Active model set to {model_id} and model reinitialized'})
-            else:
-                return jsonify({'error': f'Model {model_id} not found in registry'}), 404
-
-        except Exception as e:
-            logger.error(f"Error reinitializing model: {e}")
-            return jsonify({'error': f'Error reinitializing model: {str(e)}'}), 500
+        # We no longer load the model immediately - it will be loaded on-demand
+        logger.info(f"Active model set to {model_id} (will be loaded on-demand when needed)")
+        return jsonify({'success': True, 'message': f'Active model set to {model_id} (will be loaded on-demand when needed)'})
     else:
         return jsonify({'error': message}), 400
 
@@ -1079,30 +987,29 @@ def generate_narration():
         request_model = None
 
         try:
-            # Get active model from registry
-            active_model_id = get_active_model()
+            # Get model registry
             model_registry = get_models()
 
-            # Initialize a new model instance for this specific request
-            if active_model_id and any(model["id"] == active_model_id for model in model_registry["models"]):
-                # Get the active model info
-                active_model = next(model for model in model_registry["models"] if model["id"] == active_model_id)
-                logger.info(f"Using custom model for generation: {active_model['id']}")
+            # Check if a specific model ID was provided in the request
+            model_id = settings.get('modelId')
+
+            if model_id and any(model["id"] == model_id for model in model_registry["models"]):
+                # Get the requested model info
+                requested_model = next(model for model in model_registry["models"] if model["id"] == model_id)
+                logger.info(f"Using requested model for generation: {requested_model['id']}")
 
                 # Check if this is the default model with special markers
-                if active_model.get("source") == "default" or active_model.get("model_path") == "default":
-                    logger.info("Active model is the default model, initializing without paths")
+                if requested_model.get("source") == "default" or requested_model.get("model_path") == "default":
+                    logger.info("Requested model is the default model, initializing without paths")
                     request_model = F5TTS(device=current_device)
                 else:
                     # Initialize with custom model paths
-                    model_path = active_model.get("model_path")
-                    vocab_path = active_model.get("vocab_path")
-                    config = active_model.get("config", {})
+                    model_path = requested_model.get("model_path")
+                    vocab_path = requested_model.get("vocab_path")
+                    config = requested_model.get("config", {})
 
-                    logger.info(f"Initializing F5-TTS with custom model: {model_path}")
+                    logger.info(f"Initializing F5-TTS with requested model: {model_path}")
                     # Only pass parameters that F5TTS actually accepts
-                    # The architecture parameters in config are not used directly by the constructor
-                    # They might be used internally by the model after loading
                     logger.info(f"Model config (not passed to constructor): {config}")
                     request_model = F5TTS(
                         device=current_device,
@@ -1110,11 +1017,12 @@ def generate_narration():
                         vocab_file=vocab_path
                     )
             else:
-                # Use default model
-                logger.info(f"Using default F5-TTS model for generation")
+                # If no specific model was requested or the requested model doesn't exist,
+                # fall back to the default model
+                logger.info(f"No specific model requested or model not found, using default F5-TTS model")
                 request_model = F5TTS(device=current_device)
 
-                # Make sure the default model is in the registry, but don't log repeatedly
+                # Make sure the default model is in the registry
                 if not hasattr(get_status, 'default_model_checked'):
                     initialize_registry()
                     get_status.default_model_checked = True

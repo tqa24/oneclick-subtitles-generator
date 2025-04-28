@@ -14,6 +14,7 @@ import {
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { addModelFromHuggingFace, cancelModelDownload } from '../../services/modelService';
+import { invalidateModelsCache } from '../../services/modelAvailabilityService';
 
 // List of available models from F5-TTS SHARED.md
 const AVAILABLE_MODELS = [
@@ -237,6 +238,12 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
 
   const handleDownload = async (model) => {
     try {
+      // Check if the model is already installed
+      if (isModelInstalled(model.id)) {
+        console.log(`Model ${model.id} is already installed, skipping download`);
+        return;
+      }
+
       setDownloading(prev => ({ ...prev, [model.id]: true }));
 
       // Prepare model data for API
@@ -252,6 +259,9 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
       const response = await addModelFromHuggingFace(modelData);
 
       if (response.success) {
+        // Invalidate the models cache to notify other components
+        invalidateModelsCache();
+
         // Notify parent component
         if (onModelAdded) {
           onModelAdded(response.model_id);
@@ -278,6 +288,10 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
           delete newState[modelId];
           return newState;
         });
+
+        // Invalidate the models cache to notify other components
+        invalidateModelsCache();
+
         // Notify parent component to refresh the model list
         if (onModelAdded) {
           onModelAdded();
@@ -301,6 +315,11 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
     return 0;
   };
 
+  // Check if a model is already installed
+  const isModelInstalled = (modelId) => {
+    return installedModelIds.includes(modelId);
+  };
+
   return (
     <Box sx={{ mt: 2 }}>
       <Typography variant="h6" gutterBottom>
@@ -310,7 +329,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
       <Grid container spacing={2}>
         {AVAILABLE_MODELS.filter(model => {
           // Always filter out models that are already installed
-          if (installedModelIds.includes(model.id)) {
+          if (isModelInstalled(model.id)) {
             return false;
           }
 
@@ -395,7 +414,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
           </Grid>
         ))}
 
-        {AVAILABLE_MODELS.filter(model => !installedModelIds.includes(model.id)).length === 0 && (
+        {AVAILABLE_MODELS.filter(model => !isModelInstalled(model.id)).length === 0 && (
           <Grid item xs={12}>
             <Typography variant="body2" color="textSecondary" sx={{ p: 2, textAlign: 'center' }}>
               {t('settings.modelManagement.allModelsInstalled')}
