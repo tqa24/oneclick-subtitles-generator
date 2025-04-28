@@ -243,6 +243,7 @@
   "modelManagement.errorUpdatingModel": "Error updating model",
   "modelManagement.deleteFromCache": "Also delete from Hugging Face cache",
   "modelManagement.deleteFromCacheWarning": "This will permanently delete the model files from your Hugging Face cache directory (C:\\Users\\<username>\\.cache\\huggingface\\hub). This affects the repository: {{repoId}}",
+  "modelManagement.deleteFromCacheInfo": "The model files will also be deleted from your Hugging Face cache directory to free up disk space. This affects the repository: {{repoId}}",
   "modelManagement.showCacheModels": "Show Cache Models",
   "modelManagement.hideCacheModels": "Hide Cache Models",
   "modelManagement.cacheModels": "Hugging Face Cache Models",

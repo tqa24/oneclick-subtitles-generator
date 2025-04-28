@@ -39,7 +39,8 @@ import ErrorIcon from '@mui/icons-material/Error';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StorageIcon from '@mui/icons-material/Storage';
-import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { getModels, setActiveModel, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
 import ModelList, { LANGUAGE_NAMES, LANGUAGE_COLORS } from './ModelList';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
@@ -100,7 +101,8 @@ const ModelManagementTab = () => {
         const downloadInfo = downloads[modelId];
 
         // Only check status for downloads in progress
-        if (downloadInfo.status === 'downloading') {
+        // Skip cancelled downloads
+        if (downloadInfo.status === 'downloading' && downloadInfo.status !== 'cancelled') {
           try {
             const statusData = await getModelDownloadStatus(modelId);
 
@@ -308,7 +310,7 @@ const ModelManagementTab = () => {
   // Handle opening delete confirmation dialog
   const handleOpenDeleteDialog = (model) => {
     setModelToDelete(model);
-    setDeleteFromCache(false); // Reset delete from cache option
+    setDeleteFromCache(true); // Always delete from cache
     setOpenDeleteDialog(true);
   };
 
@@ -446,6 +448,39 @@ const ModelManagementTab = () => {
     setShowCacheModels(prev => !prev);
   };
 
+  // Handle cancelling a model download
+  const handleCancelDownload = async (modelId) => {
+    try {
+      const response = await cancelModelDownload(modelId);
+
+      if (response.success) {
+        // Show success message
+        setSnackbar({
+          open: true,
+          message: t('settings.modelManagement.downloadCancelled', 'Download cancelled successfully'),
+          severity: 'success'
+        });
+
+        // Remove from downloads state immediately
+        setDownloads(prev => {
+          const newDownloads = { ...prev };
+          delete newDownloads[modelId];
+          return newDownloads;
+        });
+
+        // Refresh models
+        await fetchModels(showCacheModels);
+      }
+    } catch (error) {
+      console.error('Error cancelling model download:', error);
+      setSnackbar({
+        open: true,
+        message: error.message || t('settings.modelManagement.errorCancellingDownload', 'Error cancelling download'),
+        severity: 'error'
+      });
+    }
+  };
+
   // Handle closing snackbar
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({
@@ -478,76 +513,6 @@ const ModelManagementTab = () => {
       />
 
       <Divider sx={{ my: 4 }} />
-
-      {/* Display ongoing downloads */}
-      {Object.keys(downloads).length > 0 && (
-        <Paper elevation={1} sx={{ mb: 3, p: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            {t('settings.modelManagement.ongoingDownloads')}
-          </Typography>
-
-          <List>
-            {Object.entries(downloads).map(([modelId, status]) => {
-              // Skip completed downloads that are already in the models list
-              if (status.status === 'completed' && models.some(m => m.id === modelId)) {
-                return null;
-              }
-
-              return (
-                <ListItem key={modelId}>
-                  <ListItemText
-                    primary={
-                      <Typography variant="body1">
-                        {modelId.replace('_', ' ')}
-                      </Typography>
-                    }
-                    secondary={
-                      <Box>
-                        <Box className="download-status-wrapper" sx={{ display: 'flex', alignItems: 'center' }}>
-                          {status.status === 'downloading' ? (
-                            <React.Fragment>
-                              <CloudDownloadIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              <Typography component="span" variant="body2">
-                                {t('settings.modelManagement.downloading')} ({status.progress.toFixed(1)}%)
-                              </Typography>
-                            </React.Fragment>
-                          ) : status.status === 'completed' ? (
-                            <React.Fragment>
-                              <CheckCircleIcon fontSize="small" sx={{ mr: 0.5, color: 'success.main' }} />
-                              <Typography component="span" variant="body2" sx={{ color: 'success.main' }}>
-                                {t('settings.modelManagement.downloadComplete')}
-                              </Typography>
-                            </React.Fragment>
-                          ) : status.status === 'failed' ? (
-                            <React.Fragment>
-                              <ErrorIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              <Typography component="span" variant="body2">
-                                {t('settings.modelManagement.downloadFailed')}: {status.error}
-                              </Typography>
-                            </React.Fragment>
-                          ) : null}
-                        </Box>
-                        {(status.status === 'downloading' || status.status === 'completed') && (
-                          <Box sx={{ height: '4px', borderRadius: '2px', backgroundColor: '#e0e0e0', mt: 0.5 }}>
-                            <Box
-                              sx={{
-                                height: '100%',
-                                width: status.status === 'completed' ? '100%' : `${status.progress}%`,
-                                borderRadius: '2px',
-                                backgroundColor: status.status === 'completed' ? '#4caf50' : '#1976d2'
-                              }}
-                            />
-                          </Box>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
-        </Paper>
-      )}
 
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6">
@@ -978,22 +943,8 @@ const ModelManagementTab = () => {
           )}
 
           {modelToDelete?.repo_id && (
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={deleteFromCache}
-                  onChange={(e) => setDeleteFromCache(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={t('settings.modelManagement.deleteFromCache')}
-              sx={{ mt: 2, display: 'block' }}
-            />
-          )}
-
-          {deleteFromCache && modelToDelete?.repo_id && (
-            <Alert severity="warning" sx={{ mt: 1 }}>
-              {t('settings.modelManagement.deleteFromCacheWarning', {
+            <Alert severity="info" sx={{ mt: 2 }}>
+              {t('settings.modelManagement.deleteFromCacheInfo', {
                 repoId: modelToDelete.repo_id
               })}
             </Alert>

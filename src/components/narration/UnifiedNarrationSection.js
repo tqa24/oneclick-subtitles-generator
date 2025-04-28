@@ -295,7 +295,8 @@ const UnifiedNarrationSection = ({
     t,
     subtitleSource,
     translatedSubtitles,
-    isPlaying
+    isPlaying,
+    selectedNarrationModel
   });
 
   // If service is unavailable, show a simple message with the Vietnamese text

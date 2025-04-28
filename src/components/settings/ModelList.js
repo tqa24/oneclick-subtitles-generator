@@ -8,10 +8,12 @@ import {
   Grid,
   Chip,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
-import { addModelFromHuggingFace } from '../../services/modelService';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { addModelFromHuggingFace, cancelModelDownload } from '../../services/modelService';
 
 // List of available models from F5-TTS SHARED.md
 const AVAILABLE_MODELS = [
@@ -262,6 +264,30 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
     }
   };
 
+  // Handle cancelling a model download
+  const handleCancelDownload = async (modelId) => {
+    try {
+      // Call API to cancel download
+      const response = await cancelModelDownload(modelId);
+
+      if (response.success) {
+        console.log(`Download cancelled for model ${modelId}`);
+        // Remove from local downloading state
+        setDownloading(prev => {
+          const newState = { ...prev };
+          delete newState[modelId];
+          return newState;
+        });
+        // Notify parent component to refresh the model list
+        if (onModelAdded) {
+          onModelAdded();
+        }
+      }
+    } catch (error) {
+      console.error('Error cancelling model download:', error);
+    }
+  };
+
   // Check if a model is currently downloading
   const isDownloading = (modelId) => {
     return downloading[modelId] || (downloadingModels[modelId] && downloadingModels[modelId].status === 'downloading');
@@ -328,26 +354,42 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
               </Box>
 
               <Box sx={{ mt: 'auto' }}>
-                <Tooltip title={t('settings.modelManagement.downloadModel')}>
-                  <span>
+                {isDownloading(model.id) ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Button
                       variant="outlined"
                       color="primary"
-                      startIcon={isDownloading(model.id) ?
-                        <CircularProgress size={20} /> :
-                        <DownloadIcon />
-                      }
-                      onClick={() => handleDownload(model)}
-                      disabled={isDownloading(model.id)}
-                      fullWidth
+                      startIcon={<CircularProgress size={20} />}
+                      disabled
+                      sx={{ flexGrow: 1 }}
                     >
-                      {isDownloading(model.id)
-                        ? `${t('settings.modelManagement.downloading')} (${getDownloadProgress(model.id)}%)`
-                        : t('settings.modelManagement.download')
-                      }
+                      {`${t('settings.modelManagement.downloading')} (${getDownloadProgress(model.id).toFixed(1)}%)`}
                     </Button>
-                  </span>
-                </Tooltip>
+                    <Tooltip title={t('settings.modelManagement.cancelDownload', 'Cancel Download')}>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleCancelDownload(model.id)}
+                        sx={{ ml: 1 }}
+                      >
+                        <CancelIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                ) : (
+                  <Tooltip title={t('settings.modelManagement.downloadModel')}>
+                    <span>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => handleDownload(model)}
+                        fullWidth
+                      >
+                        {t('settings.modelManagement.download')}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
               </Box>
             </Paper>
           </Grid>

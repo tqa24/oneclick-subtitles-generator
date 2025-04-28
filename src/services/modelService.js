@@ -231,3 +231,26 @@ export const getModelStorageInfo = async (modelId) => {
     throw error;
   }
 };
+
+/**
+ * Cancel an ongoing model download
+ * @param {string} modelId - Model ID to cancel download for
+ * @returns {Promise<Object>} - Response from server
+ */
+export const cancelModelDownload = async (modelId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/models/cancel-download/${modelId}`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Server returned ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error cancelling model download:', error);
+    throw error;
+  }
+};

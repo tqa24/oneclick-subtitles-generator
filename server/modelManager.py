@@ -218,19 +218,27 @@ def update_download_status(model_id, status, progress=0, error=None):
     """Update the download status of a model."""
     registry = get_registry()
 
-    # If status is 'completed', ensure progress is 100%
+    # If status is 'completed', ensure progress is 100% and remove it immediately
     if status == 'completed':
         progress = 100
+        # Log the completion with 100%
+        logger.info(f"Download completed for {model_id}: 100.0%")
+        # Remove the download status immediately
+        remove_download_status(model_id)
+        return True
+    else:
+        # Round progress to 1 decimal place
+        progress = round(progress, 1)
 
-    registry["downloads"][model_id] = {
-        "status": status,  # 'downloading', 'completed', 'failed'
-        "progress": progress,
-        "error": error,
-        "timestamp": time.time()
-    }
+        registry["downloads"][model_id] = {
+            "status": status,  # 'downloading', 'completed', 'failed'
+            "progress": progress,
+            "error": error,
+            "timestamp": time.time()
+        }
 
     # Log the status update
-    logger.info(f"Updated download status for {model_id}: status={status}, progress={progress}%")
+    logger.info(f"Updated download status for {model_id}: status={status}, progress={progress:.1f}%")
 
     # Make sure to save the registry
     if not save_registry(registry):
@@ -288,8 +296,8 @@ def cancel_download(model_id):
             # Set the cancellation flag to True
             download_threads[model_id]["cancel"] = True
 
-            # Update the download status to 'cancelled'
-            update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+            # Remove from download status immediately without adding a 'cancelled' entry
+            remove_download_status(model_id)
 
             # Remove from download_threads after a short delay
             def cleanup_thread():
@@ -306,8 +314,8 @@ def cancel_download(model_id):
             # Check if there's a download status for this model
             registry = get_registry()
             if model_id in registry.get("downloads", {}):
-                # Update the status to cancelled
-                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                # Remove from download status immediately without adding a 'cancelled' entry
+                remove_download_status(model_id)
                 return True
             else:
                 logger.warning(f"No active download found for model {model_id}")
@@ -539,8 +547,15 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
                     # Check if download has been cancelled
                     if model_id in download_threads and download_threads[model_id]["cancel"]:
                         logger.info(f"Download cancelled for model {model_id}")
-                        update_download_status(model_id, 'cancelled', progress, "Download cancelled by user")
+                        # Don't add to registry at all for cancelled downloads
+                        remove_download_status(model_id)
                         return  # Exit the thread
+
+                    # Check if the download is already complete
+                    registry = get_registry()
+                    if model_id not in registry.get("downloads", {}):
+                        logger.info("Download already completed, no need to update status")
+                        return
 
                     # Calculate elapsed time
                     elapsed = time.time() - start_time
@@ -564,6 +579,12 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
                     # Just rely on the timer-based approach
                     pass
 
+                # Check if the download is already complete
+                registry = get_registry()
+                if model_id not in registry.get("downloads", {}):
+                    logger.info("Download already completed, no need to update status")
+                    return
+
                 # Set to 95% when we exit the loop
                 update_download_status(model_id, 'downloading', 95)
                 logger.info("Download monitoring complete")
@@ -579,7 +600,8 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
         # Check if download has been cancelled before starting actual download
         if model_id in download_threads and download_threads[model_id]["cancel"]:
             logger.info(f"Download cancelled for model {model_id} before starting actual download")
-            update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+            # Don't add to registry at all for cancelled downloads
+            remove_download_status(model_id)
             return  # Exit the thread
 
         try:
@@ -596,7 +618,8 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
             # Check if download has been cancelled after model download
             if model_id in download_threads and download_threads[model_id]["cancel"]:
                 logger.info(f"Download cancelled for model {model_id} after model file download")
-                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                # Don't add to registry at all for cancelled downloads
+                remove_download_status(model_id)
                 return  # Exit the thread
 
             # Download vocab file directly to the Hugging Face cache
@@ -612,8 +635,8 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
         except Exception as e:
             logger.error(f"Error during download: {e}")
             if model_id in download_threads and download_threads[model_id]["cancel"]:
-                # If cancelled, report as cancelled instead of failed
-                update_download_status(model_id, 'cancelled', 0, "Download cancelled by user")
+                # If cancelled, don't add to registry at all
+                remove_download_status(model_id)
                 return
             else:
                 # Otherwise, re-raise the exception to be caught by the outer try-except

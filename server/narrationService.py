@@ -8,7 +8,7 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks, initialize_registry
+from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks, initialize_registry, cancel_download
 
 # Set up logging with UTF-8 encoding
 import sys
@@ -706,6 +706,23 @@ def get_model_storage_info(model_id):
         'original_model_file': original_model_file,
         'original_vocab_file': original_vocab_file
     })
+
+@narration_bp.route('/models/cancel-download/<model_id>', methods=['POST'])
+def cancel_model_download(model_id):
+    """Cancel an ongoing model download"""
+    logger.info(f"Received request to cancel download for model: {model_id}")
+
+    success = cancel_download(model_id)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'Download cancelled for model {model_id}'
+        })
+    else:
+        return jsonify({
+            'error': f'No active download found for model {model_id}'
+        }), 404
 
 @narration_bp.route('/upload-reference', methods=['POST'])
 def upload_reference_audio():

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
-import { checkModelAvailabilityForLanguage } from '../../../services/modelAvailabilityService';
+import { checkModelAvailabilityForLanguage, getAvailableModels } from '../../../services/modelAvailabilityService';
+import '../../../styles/narration/modelDropdown.css';
 
 /**
  * Subtitle Source Selection component
@@ -33,6 +34,26 @@ const SubtitleSourceSelection = ({
   const [selectedModel, setSelectedModel] = useState(null);
   const [modelError, setModelError] = useState(null);
   const [isCheckingModel, setIsCheckingModel] = useState(false);
+  const [availableModels, setAvailableModels] = useState([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
+  // Load available models
+  useEffect(() => {
+    const loadModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const { models } = await getAvailableModels();
+        setAvailableModels(models || []);
+      } catch (error) {
+        console.error('Error loading models:', error);
+        setAvailableModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    loadModels();
+  }, []);
 
   // Detect changes in translated subtitles
   useEffect(() => {
@@ -220,6 +241,20 @@ const SubtitleSourceSelection = ({
       window.removeEventListener('translation-reset', handleTranslationReset);
     };
   }, [subtitleSource, onLanguageDetected, translatedSubtitles]);
+
+  // Handle model selection change
+  const handleModelChange = (event) => {
+    const newModelId = event.target.value;
+    setSelectedModel(newModelId);
+
+    // Call the callback with the updated model
+    if (onLanguageDetected) {
+      const currentLanguage = subtitleSource === 'original' ? originalLanguage : translatedLanguage;
+      if (currentLanguage) {
+        onLanguageDetected(subtitleSource, currentLanguage, newModelId);
+      }
+    }
+  };
 
   // Handle subtitle source change
   const handleSourceChange = async (source) => {
@@ -411,7 +446,69 @@ const SubtitleSourceSelection = ({
           {selectedModel && (subtitleSource === 'original' ? originalLanguage : translatedLanguage) && !isCheckingModel && (
             <div className="selected-model">
               <span className="model-label">{t('narration.narrationModel', 'Narration Model')}:</span>
-              <span className="model-value">{selectedModel}</span>
+
+              {isLoadingModels ? (
+                <span className="loading-animation">
+                  <span className="spinner-circle"></span>
+                  {t('narration.loadingModels', 'Loading models...')}
+                </span>
+              ) : (
+                <select
+                  className="model-dropdown"
+                  value={selectedModel}
+                  onChange={handleModelChange}
+                  disabled={isGenerating}
+                >
+                  {availableModels.length > 0 ? (
+                    <>
+                      {/* Group 1: Models matching the detected language */}
+                      <optgroup label={t('narration.matchingLanguageModels', 'Matching Language')}>
+                        {availableModels
+                          .filter(model => {
+                            const currentLanguage = subtitleSource === 'original'
+                              ? originalLanguage?.languageCode
+                              : translatedLanguage?.languageCode;
+
+                            return currentLanguage && (
+                              model.language === currentLanguage ||
+                              (Array.isArray(model.languages) && model.languages.includes(currentLanguage))
+                            );
+                          })
+                          .map(model => (
+                            <option key={model.id} value={model.id}>
+                              {model.id} {model.language ? `(${model.language.toUpperCase()})` : ''}
+                            </option>
+                          ))
+                        }
+                      </optgroup>
+
+                      {/* Group 2: All other models */}
+                      <optgroup label={t('narration.otherModels', 'Other Models')}>
+                        {availableModels
+                          .filter(model => {
+                            const currentLanguage = subtitleSource === 'original'
+                              ? originalLanguage?.languageCode
+                              : translatedLanguage?.languageCode;
+
+                            return !currentLanguage || (
+                              model.language !== currentLanguage &&
+                              !(Array.isArray(model.languages) && model.languages.includes(currentLanguage))
+                            );
+                          })
+                          .map(model => (
+                            <option key={model.id} value={model.id}>
+                              {model.id} {model.language ? `(${model.language.toUpperCase()})` : ''}
+                            </option>
+                          ))
+                        }
+                      </optgroup>
+                    </>
+                  ) : (
+                    <option value={selectedModel}>{selectedModel}</option>
+                  )}
+                </select>
+              )}
+
               {modelError && (
                 <span className="model-error">
                   <span className="error-icon">⚠️</span>

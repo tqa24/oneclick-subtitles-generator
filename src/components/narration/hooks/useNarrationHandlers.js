@@ -47,7 +47,8 @@ const useNarrationHandlers = ({
   t,
   subtitleSource,
   translatedSubtitles,
-  isPlaying
+  isPlaying,
+  selectedNarrationModel
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {
@@ -446,8 +447,8 @@ const useNarrationHandlers = ({
 
     // Check if the selected model is available
     try {
-      // Get the model ID from the advanced settings or use the default
-      const modelId = advancedSettings.modelId || 'f5tts-v1-base';
+      // Get the model ID from the selectedNarrationModel prop or use the default
+      const modelId = selectedNarrationModel || 'f5tts-v1-base';
 
       // Check if the model is available
       const modelAvailable = await isModelAvailable(modelId);
@@ -494,7 +495,9 @@ const useNarrationHandlers = ({
         removeSilence: advancedSettings.removeSilence,
         // Note: sampleRate is not sent to the API as it's not supported by F5-TTS
         // It's only used in the UI for user preference
-        batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize)
+        batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize),
+        // Include the selected model ID
+        modelId: selectedNarrationModel
       };
 
       // Handle seed
