@@ -75,6 +75,57 @@ latest.yml
 .npm/
 .eslintcache
 
+# F5-TTS and models
 F5-TTS/
+models/
+models/*/
+models/f5_tts/
+*.safetensors
+*.pt
+*.bin
+*.onnx
+
+# Local storage and config
 localStorage.json
 tiktokdien/
+
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Package files
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Downloaded videos
+*.mp4
+*.webm
+*.mkv
+*.avi
+*.mov
+*.flv
+*.wmv
+*.m4a
+*.mp3
+*.wav
+!src/assets/*.mp3
+!src/assets/*.wav
