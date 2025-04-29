@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import YoutubeUrlInput from './inputs/YoutubeUrlInput';
 import YoutubeSearchInput from './inputs/YoutubeSearchInput';
@@ -6,10 +6,32 @@ import FileUploadInput from './inputs/FileUploadInput';
 import DouyinUrlInput from './inputs/DouyinUrlInput';
 import AllSitesUrlInput from './inputs/AllSitesUrlInput';
 import UnifiedUrlInput from './inputs/UnifiedUrlInput';
+import { initTabPillAnimation } from '../utils/tabPillAnimation';
 import '../styles/InputMethods.css';
 
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
+  const tabsRef = useRef(null);
+
+  // Initialize pill position on component mount
+  useEffect(() => {
+    if (tabsRef.current) {
+      // Small delay to ensure the DOM is fully rendered
+      setTimeout(() => {
+        initTabPillAnimation('.input-tabs');
+      }, 50);
+    }
+  }, []);
+
+  // Update pill position when active tab changes
+  useEffect(() => {
+    if (tabsRef.current) {
+      // Small delay to ensure the active class is applied
+      setTimeout(() => {
+        initTabPillAnimation('.input-tabs');
+      }, 10);
+    }
+  }, [activeTab]);
 
   const renderInputMethod = () => {
     switch (activeTab) {
@@ -62,7 +84,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           {t('inputMethods.title', 'Select Video Source')}
         </h2>
 
-        <div className="input-tabs">
+        <div className="input-tabs" ref={tabsRef}>
           <button
             className={`tab-btn ${activeTab === 'unified-url' ? 'active' : ''}`}
             onClick={() => setActiveTab('unified-url')}

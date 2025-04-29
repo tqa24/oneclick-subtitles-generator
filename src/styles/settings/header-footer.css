@@ -15,6 +15,7 @@
   font-size: 1.5rem;
   color: var(--text-primary);
   transition: color var(--transition-speed);
+  min-width: 120px; /* Ensure the title can shrink */
 }
 
 .close-btn {

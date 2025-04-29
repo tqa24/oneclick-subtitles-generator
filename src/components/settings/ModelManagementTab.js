@@ -420,7 +420,6 @@ const ModelManagementTab = () => {
 
   return (
     <div className="model-management-section" id="model-management">
-      <h4>{t('settings.modelManagement.title')}</h4>
       <p className="model-management-description">
         {t('settings.modelManagement.description')}
       </p>
@@ -440,10 +439,6 @@ const ModelManagementTab = () => {
       />
 
       <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
-
-      <div className="section-header">
-        <h4>{t('settings.modelManagement.modelManagement')}</h4>
-      </div>
 
       <div className="section-header">
         <h4>{t('settings.modelManagement.installedModels')}</h4>

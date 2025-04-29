@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { hasValidTokens } from '../../services/youtubeApiService';
 import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiButtonEffects';
 import { syncLocalStorageToServer } from '../../services/localStorageService';
+import initTabPillAnimation from '../../utils/tabPillAnimation';
 
 /**
  * Hook for managing application side effects
@@ -28,11 +29,15 @@ export const useAppEffects = (props) => {
     t
   } = props;
 
-  // Initialize Gemini button effects after component mounts
+  // Initialize UI effects after component mounts
   useEffect(() => {
     // Small delay to ensure DOM is fully rendered
     const timer = setTimeout(() => {
+      // Initialize Gemini button effects
       initGeminiButtonEffects();
+
+      // Initialize tab pill sliding animation
+      initTabPillAnimation();
     }, 500);
 
     return () => clearTimeout(timer);

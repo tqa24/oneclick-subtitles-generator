@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/SettingsModal.css';
 import '../../styles/settings/checkbox-fix.css';
@@ -20,6 +20,7 @@ import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon
 
 // Import theme utilities
 import { toggleTheme as toggleThemeUtil, getThemeIcon, getThemeLabel, initializeTheme, setupSystemThemeListener } from './utils/themeUtils';
+import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
 
 const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
@@ -27,6 +28,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Load last active tab from localStorage or default to 'api-keys'
     return localStorage.getItem('settings_last_active_tab') || 'api-keys';
   });
+
+  // Reference to the tabs container
+  const tabsRef = useRef(null);
 
   // Theme state
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
@@ -36,6 +40,26 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Initialize from localStorage
     return localStorage.getItem('about_alternative_bg') === 'true';
   });
+
+  // Initialize pill position on component mount
+  useEffect(() => {
+    if (tabsRef.current) {
+      // Small delay to ensure the DOM is fully rendered
+      setTimeout(() => {
+        initSettingsTabPillAnimation('.settings-tabs');
+      }, 50);
+    }
+  }, []);
+
+  // Update pill position when active tab changes
+  useEffect(() => {
+    if (tabsRef.current) {
+      // Small delay to ensure the active class is applied
+      setTimeout(() => {
+        initSettingsTabPillAnimation('.settings-tabs');
+      }, 10);
+    }
+  }, [activeTab]);
 
   const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false); // Track if settings have been loaded
@@ -383,7 +407,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           <h2>{t('settings.title', 'Settings')}</h2>
 
           {/* Tab Navigation */}
-          <div className="settings-tabs">
+          <div className="settings-tabs" ref={tabsRef}>
             <button
               className={`settings-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
               onClick={() => setActiveTab('api-keys')}
