@@ -303,6 +303,15 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                             console.error('Supported audio formats: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac');
                             console.error('File type used:', input.type);
                         }
+
+                        // Check for overload errors (503 status code)
+                        if (errorData.error.code === 503 ||
+                            errorData.error.status === 'UNAVAILABLE' ||
+                            errorData.error.message.includes('overloaded')) {
+                            const overloadError = new Error(`API error: ${errorData.error.message || response.statusText}`);
+                            overloadError.isOverloaded = true;
+                            throw overloadError;
+                        }
                     }
 
                     throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
@@ -310,10 +319,28 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     console.error('Error parsing Gemini API error response as JSON:', jsonError);
                     const errorText = await responseClone.text();
                     console.error('Raw error response:', errorText);
+
+                    // Check for 503 status code directly
+                    if (response.status === 503) {
+                        console.log('Detected 503 Service Unavailable error - model overloaded');
+                        const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                        overloadError.isOverloaded = true;
+                        throw overloadError;
+                    }
+
                     throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                 }
             } catch (error) {
                 console.error('Error handling Gemini API error response:', error);
+
+                // Check for 503 status code directly
+                if (response.status === 503) {
+                    console.log('Detected 503 Service Unavailable error - model overloaded');
+                    const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                    overloadError.isOverloaded = true;
+                    throw overloadError;
+                }
+
                 throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
             }
         }
@@ -354,6 +381,21 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             throw new Error('Request was aborted');
         } else {
             console.error('Error calling Gemini API:', error);
+
+            // Check for overload errors in the error message
+            if (error.message && (
+                error.message.includes('503') ||
+                error.message.includes('Service Unavailable') ||
+                error.message.includes('overloaded') ||
+                error.message.includes('UNAVAILABLE')
+            )) {
+                console.log('Detected overload error in message:', error.message);
+                if (!error.isOverloaded) {
+                    error.isOverloaded = true;
+                    console.log('Marked error as overloaded');
+                }
+            }
+
             // Remove this controller from the map on error
             if (requestId) {
                 removeRequestController(requestId);

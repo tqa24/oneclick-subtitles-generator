@@ -57,6 +57,7 @@
   "processing": "Processing",
   "done": "Done",
   "failed": "Failed",
+  "overloaded": "Overloaded",
   "cached": "Cached",
   "pending": "Pending",
   "generateSegment": "Generate",

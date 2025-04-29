@@ -57,6 +57,7 @@
   "processing": "Đang xử lý",
   "done": "Hoàn thành",
   "failed": "Thất bại",
+  "overloaded": "Quá tải",
   "cached": "Đã lưu trữ",
   "pending": "Đang chờ",
   "generateSegment": "Tạo",

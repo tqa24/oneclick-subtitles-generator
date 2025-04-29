@@ -54,6 +54,10 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
             console.log(`Using user-provided subtitles for segment ${segmentIndex + 1}`);
             console.log('User-provided subtitles content:', userProvidedSubtitles);
         }
+
+        // Log the model being used for this segment
+        console.log(`Using model ${modelId || 'default'} for segment ${segmentIndex + 1}`);
+
         const newSegmentSubtitles = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType, { userProvidedSubtitles, modelId });
 
         // Update status to show success
@@ -97,6 +101,15 @@ export const retrySegmentProcessing = async (segmentIndex, segments, currentSubt
         console.log(`Segment ${segmentIndex + 1} time range: ${segmentStartTime}s to ${segmentEndTime}s`);
         console.log(`Combined ${filteredSubtitles.length} existing subtitles with ${newSegmentSubtitles.length} new subtitles from segment ${segmentIndex + 1}`);
         console.log(`Total subtitles after combining: ${updatedSubtitles.length}`);
+
+        // Store the updated subtitles in localStorage to ensure they're not overwritten
+        try {
+            // Save to localStorage as a backup to prevent race conditions
+            localStorage.setItem('latest_segment_subtitles', JSON.stringify(updatedSubtitles));
+            console.log(`Saved ${updatedSubtitles.length} subtitles to localStorage as latest_segment_subtitles`);
+        } catch (e) {
+            console.error('Error saving latest subtitles to localStorage:', e);
+        }
 
         return updatedSubtitles;
     } catch (error) {

@@ -404,6 +404,23 @@ const LyricsDisplay = ({
         return;
       }
 
+      // Check if we have latest segment subtitles in localStorage
+      let subtitlesToSave = lyrics;
+      try {
+        const latestSubtitles = localStorage.getItem('latest_segment_subtitles');
+        if (latestSubtitles) {
+          const parsedSubtitles = JSON.parse(latestSubtitles);
+          if (Array.isArray(parsedSubtitles) && parsedSubtitles.length > 0) {
+            console.log(`Found ${parsedSubtitles.length} subtitles in localStorage, using these for saving`);
+            subtitlesToSave = parsedSubtitles;
+            // Clear the localStorage entry to avoid using it again
+            localStorage.removeItem('latest_segment_subtitles');
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing latest subtitles from localStorage:', e);
+      }
+
       // Save to cache
       const response = await fetch('http://localhost:3007/api/save-subtitles', {
         method: 'POST',
@@ -412,7 +429,7 @@ const LyricsDisplay = ({
         },
         body: JSON.stringify({
           cacheId,
-          subtitles: lyrics
+          subtitles: subtitlesToSave
         })
       });
 
@@ -437,7 +454,7 @@ const LyricsDisplay = ({
 
         // Call the callback if provided to update parent component state
         if (onSaveSubtitles) {
-          onSaveSubtitles(lyrics);
+          onSaveSubtitles(subtitlesToSave);
         }
 
         // Dispatch a custom event to notify that subtitles have been saved

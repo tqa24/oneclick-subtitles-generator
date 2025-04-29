@@ -67,7 +67,7 @@ const AppLayout = ({
     showRulesEditor, setShowRulesEditor,
     userProvidedSubtitles,
     useUserProvidedSubtitles,
-    transcriptionRules, setTranscriptionRulesState,
+    transcriptionRules,
     subtitlesData, setSubtitlesData,
     status,
     timeFormat,
@@ -99,7 +99,7 @@ const AppLayout = ({
     handleAbortVideoAnalysis
   } = modalHandlers;
 
-  // Handler for generating a specific segment (for strong model)
+  // Handler for generating a specific segment
   const handleGenerateSegment = async (segmentIndex, segments) => {
     if (!segments || !segments[segmentIndex]) {
       console.error('No segment found at index', segmentIndex);

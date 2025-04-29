@@ -381,7 +381,7 @@ export const useSubtitles = (t) => {
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
         // Extract options
-        const { userProvidedSubtitles, modelId } = options;
+        const { userProvidedSubtitles } = options;
 
         // Get the most up-to-date subtitles data
         // This is important because the subtitles might have been saved just before this function is called
@@ -445,13 +445,7 @@ export const useSubtitles = (t) => {
         const event = new CustomEvent('segmentStatusUpdate', { detail: [retryingStatus] });
         window.dispatchEvent(event);
 
-        // Save the current model if we're using a different one for this retry
-        let currentModel = null;
-        if (modelId) {
-            console.log(`Using model ${modelId} for segment ${segmentIndex} retry`);
-            currentModel = localStorage.getItem('gemini_model');
-            localStorage.setItem('gemini_model', modelId);
-        }
+        // No need to save/restore model since we're not changing it
 
         try {
             // Retry processing the specific segment
@@ -467,11 +461,19 @@ export const useSubtitles = (t) => {
                 },
                 t,
                 mediaType,
-                { userProvidedSubtitles, modelId }
+                { userProvidedSubtitles }
             );
 
             // Update the subtitles data with the new results
             setSubtitlesData(updatedSubtitles);
+
+            // Store the updated subtitles in localStorage to ensure they're not overwritten
+            try {
+                localStorage.setItem('latest_segment_subtitles', JSON.stringify(updatedSubtitles));
+                console.log(`Saved ${updatedSubtitles.length} subtitles to localStorage from useSubtitles`);
+            } catch (e) {
+                console.error('Error saving latest subtitles to localStorage:', e);
+            }
 
             // Trigger auto-save after segment subtitles arrive
             // Find the save button
@@ -482,7 +484,7 @@ export const useSubtitles = (t) => {
                 // Create a promise to track when the save is complete
                 const savePromise = new Promise((resolve) => {
                     // Create a one-time event listener for the save completion
-                    const handleSaveComplete = (event) => {
+                    const handleSaveComplete = () => {
                         console.log('Save completed after segment subtitles arrived');
                         resolve();
                         // Remove the event listener
@@ -540,12 +542,6 @@ export const useSubtitles = (t) => {
         } finally {
             // Remove this segment from the retrying list
             setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
-
-            // Restore the original model if we changed it
-            if (modelId && currentModel) {
-                console.log(`Restoring original model ${currentModel} after segment ${segmentIndex} retry`);
-                localStorage.setItem('gemini_model', currentModel);
-            }
         }
     }, [subtitlesData, t]);
 

@@ -7,6 +7,7 @@ import { fetchSegment } from '../utils/videoSplitter';
 import { parseRawTextManually } from '../utils/subtitle';
 import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
 import { API_BASE_URL } from '../config';
+import { getMaxSegmentDurationSeconds } from '../utils/durationUtils';
 
 /**
  * Process a single media segment (video or audio)
@@ -85,8 +86,54 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             });
             success = true;
         } catch (error) {
-            retryCount++;
-            console.error(`Error processing segment ${segmentIndex+1}, attempt ${retryCount}:`, error);
+            console.error(`Error processing segment ${segmentIndex+1}, attempt ${retryCount+1}:`, error);
+
+            // Log the error message and status code for debugging
+            console.log(`Error message: "${error.message}"`);
+            console.log(`Error has isOverloaded flag: ${error.isOverloaded ? 'yes' : 'no'}`);
+
+            // More aggressive detection of overload errors
+            const isOverloadError =
+                error.isOverloaded ||
+                (error.message && (
+                    error.message.includes('503') ||
+                    error.message.includes('Service Unavailable') ||
+                    error.message.includes('overloaded') ||
+                    error.message.includes('UNAVAILABLE') ||
+                    error.message.includes('Status code: 503')
+                ));
+
+            if (isOverloadError) {
+                console.log('Model overload detected, stopping retries for this segment');
+
+                // Update segment status to show "Quá tải" instead of "Thất bại"
+                // Get the time range for this segment
+                const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
+                const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
+                const endTime = startTime + segmentDuration;
+
+                // Format time range for display
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = Math.floor(seconds % 60);
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+                const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+
+                // Update segment status with the time range
+                updateSegmentStatus(
+                    segmentIndex,
+                    'overloaded',
+                    t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.'),
+                    t,
+                    timeRange
+                );
+
+                // If we hit an overload error, stop retrying and throw the error
+                const overloadError = new Error(`Segment ${segmentIndex+1}: ${t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.')}`);
+                overloadError.isOverloaded = true;
+                throw overloadError;
+            }
 
             // Check if this is an empty response (empty JSON array)
             if (error.message && error.message.includes('Unrecognized subtitle format') &&
@@ -94,15 +141,6 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 console.log('Empty JSON array response detected, returning empty subtitles');
                 // Return empty array instead of retrying
                 return [];
-            }
-
-            // Check for 503 error
-            if (error.message && (
-                (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
-                error.message.includes('The model is overloaded')
-            )) {
-                // If we hit a 503 error, throw it with segment information
-                throw new Error(`Segment ${segmentIndex+1}: ${t('errors.geminiOverloaded')}`);
             }
 
             // Check for token limit error
@@ -141,6 +179,9 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             } catch (parseError) {
                 console.error('Error parsing error message:', parseError);
             }
+
+            // Increment retry count
+            retryCount++;
 
             if (retryCount >= maxRetries) {
                 throw new Error(`Failed to process segment ${segmentIndex+1} after ${maxRetries} attempts`);
@@ -233,7 +274,20 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
  */
 export const updateSegmentStatus = (index, status, message, t, timeRange = null) => {
     // Make sure we have a valid translation function
-    const translate = typeof t === 'function' ? t : (key, defaultValue) => defaultValue;
+    const translate = typeof t === 'function' ? t : (_, defaultValue) => defaultValue;
+
+    // Log the status update for debugging
+    console.log(`Updating segment ${index+1} status to: ${status}, message: ${message}, timeRange: ${timeRange}`);
+
+    // Debug translation
+    if (status === 'overloaded') {
+        const translatedText = translate('output.overloaded', 'Overloaded');
+        console.log(`Translation for 'output.overloaded': "${translatedText}"`);
+
+        // Check if we're getting the Vietnamese translation
+        const viText = translate('output.failed', 'Failed');
+        console.log(`Translation for 'output.failed' (for comparison): "${viText}"`);
+    }
 
     // Create the status object
     const segmentStatus = {
@@ -244,6 +298,7 @@ export const updateSegmentStatus = (index, status, message, t, timeRange = null)
         shortMessage: status === 'loading' ? translate('output.processing', 'Processing') :
                      status === 'success' ? translate('output.done', 'Done') :
                      status === 'error' ? translate('output.failed', 'Failed') :
+                     status === 'overloaded' ? translate('output.overloaded', 'Overloaded') :
                      status === 'cached' ? translate('output.cached', 'Cached') :
                      status === 'pending' ? translate('output.pending', 'Pending') :
                      status === 'retrying' ? translate('output.retrying', 'Retrying...') : ''

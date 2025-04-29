@@ -57,6 +57,7 @@
   "processing": "처리 중",
   "done": "완료",
   "failed": "실패",
+  "overloaded": "과부하",
   "cached": "캐시됨",
   "pending": "대기 중",
   "generateSegment": "생성",

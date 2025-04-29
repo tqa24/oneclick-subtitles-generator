@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/ParallelProcessingStatus.css';
 import { FiRefreshCw, FiFileText } from 'react-icons/fi';
@@ -29,7 +29,14 @@ const ParallelProcessingStatus = ({
   onViewRules,
   userProvidedSubtitles = ''
  }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Debug translations
+  console.log(`Current language: ${i18n.language}`);
+  console.log(`Translation for 'output.overloaded': "${t('output.overloaded')}"`);
+  console.log(`Translation for 'output.failed': "${t('output.failed')}"`);
+  console.log(`Translation for 'output.done': "${t('output.done')}"`);
+
   const [rulesAvailable, setRulesAvailable] = useState(false);
   const [showRetryModal, setShowRetryModal] = useState(false);
   const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(null);
@@ -120,7 +127,11 @@ const ParallelProcessingStatus = ({
               <span className="segment-number">{index + 1}</span>
               <span className="segment-indicator"></span>
               <div className="segment-info">
-                <span className="segment-message">{segment.shortMessage || segment.status}</span>
+                <span className="segment-message">
+                  {segment.status === 'overloaded'
+                    ? t('output.overloaded')
+                    : (segment.shortMessage || t(`output.${segment.status}`, segment.status))}
+                </span>
                 {segment.timeRange && (
                   <span className="segment-time-range">{segment.timeRange}</span>
                 )}
@@ -140,8 +151,8 @@ const ParallelProcessingStatus = ({
                 </button>
               )}
 
-              {/* Show retry button for completed segments that aren't currently being retried */}
-              {(segment.status === 'success' || segment.status === 'error') && !retryingSegments.includes(index) && onRetryWithModel && (
+              {/* Show retry button for completed or overloaded segments that aren't currently being retried */}
+              {(segment.status === 'success' || segment.status === 'error' || segment.status === 'overloaded') && !retryingSegments.includes(index) && onRetryWithModel && (
                 <div className="model-retry-dropdown-container">
                   {/* Retry button - opens the modal directly */}
                   <div

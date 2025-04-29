@@ -129,10 +129,9 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
   const isAudio = mediaFile.type.startsWith('audio/');
   const mediaType = isAudio ? 'audio' : 'video';
 
-  // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
+  // Get the current model (for logging purposes)
   const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-  const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
-  const isUsingStrongModel = strongModels.includes(currentModel);
+  console.log(`Using model: ${currentModel}`);
 
   // Create an array to track segment status
   const segmentStatusArray = [];
@@ -184,8 +183,6 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
     const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
     // For videos and audio files, optimize and analyze before splitting
-    let analysisResult = null;
-    let userChoice = null;
     let optimizedFile = mediaFile;
 
     // Always process audio files through the optimize-video endpoint
@@ -213,8 +210,15 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
         if (useVideoAnalysis) {
           // Analyze the video and wait for user choice
           const analysisData = await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
-          analysisResult = analysisData.analysisResult;
-          userChoice = analysisData.userChoice;
+          // Store analysis results (not used currently, but keeping for future use)
+          const analysisResult = analysisData.analysisResult;
+          const userChoice = analysisData.userChoice;
+
+          // Log analysis results
+          console.log('Video analysis completed:', {
+            analysisResult: analysisResult ? 'received' : 'not available',
+            userChoice: userChoice ? 'received' : 'not available'
+          });
 
           // Update status message to indicate we're moving to the next step
           onStatusUpdate({
@@ -278,31 +282,7 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
     });
     window.dispatchEvent(segmentsEvent);
 
-    // For strong model (Gemini 2.5 Pro), show warning and don't process automatically
-    if (isUsingStrongModel) {
-      onStatusUpdate({
-        message: t('output.strongModelWarning', 'You are choosing an easily overloaded model, please process each segment one by one'),
-        type: 'warning'
-      });
-
-      // Initialize all segments as pending but don't process them
-      segments.forEach((segment, i) => {
-        // Calculate time range for this segment
-        const startTime = segment.startTime !== undefined ? segment.startTime : i * getMaxSegmentDurationSeconds();
-        const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
-        const endTime = startTime + segmentDuration;
-        const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-        updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
-      });
-
-      // Create an empty array for subtitles that will be filled as segments are processed
-      // We return an empty array but segments will be processed one by one on demand
-      // and combined in the retrySegmentProcessing function
-      return [];
-    }
-
-    // For other models, process in parallel as usual
+    // Process all segments in parallel
     onStatusUpdate({
       message: t('output.processingInParallel', 'Processing in parallel...'),
       type: 'loading'
@@ -389,7 +369,20 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
         return result;
       } catch (error) {
         console.error(`Error processing segment ${i+1}:`, error);
-        updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'), timeRange);
+        // Check if this is an overload error
+        if (error.isOverloaded || (error.message && (
+            error.message.includes('503') ||
+            error.message.includes('Service Unavailable') ||
+            error.message.includes('overloaded') ||
+            error.message.includes('UNAVAILABLE') ||
+            error.message.includes('Status code: 503')
+        ))) {
+            console.log(`Segment ${i+1} failed due to model overload, marking as overloaded`);
+            // Make sure to pass the timeRange parameter
+            updateSegmentStatus(i, 'overloaded', t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.'), t, timeRange);
+        } else {
+            updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'), t, timeRange);
+        }
         throw error; // Re-throw to be caught by Promise.allSettled
       }
     });
