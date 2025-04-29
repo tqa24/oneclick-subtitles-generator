@@ -8,9 +8,18 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
+from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks, initialize_registry, cancel_download
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Set up logging with UTF-8 encoding
+import sys
+import codecs
+
+# Force UTF-8 encoding for stdout and stderr
+sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', encoding='utf-8')
 logger = logging.getLogger(__name__)
 
 # Create blueprint
@@ -357,7 +366,7 @@ def process_base64_audio_reference():
         logger.error(f"Error in process_base64_audio_reference: {e}")
         return jsonify({'error': str(e)}), 500
 
-# Initialize F5-TTS
+# Initialize F5-TTS device settings only
 try:
     import torch
     from f5_tts.api import F5TTS
@@ -381,49 +390,25 @@ try:
 
     logger.info(f"Using device: {device}")
 
-    # Initialize F5-TTS model
-    logger.info(f"Initializing F5-TTS model with device={device}")
-    # Force model to use CUDA by moving all tensors to CUDA device
-    tts_model = F5TTS(device=device)
+    # Initialize registry to ensure default model is registered
+    initialize_registry()
+    logger.info("Model registry initialized")
 
-    # Verify the device being used
-    if hasattr(tts_model, 'device'):
-        logger.info(f"F5-TTS model device: {tts_model.device}")
-    elif hasattr(tts_model, 'model') and hasattr(tts_model.model, 'device'):
-        logger.info(f"F5-TTS model device: {tts_model.model.device}")
+    # We don't load any model at startup - models will be loaded on-demand
+    tts_model = None
 
-    # Force all model components to the correct device if possible
-    if cuda_available and hasattr(tts_model, 'to_device'):
-        tts_model.to_device(device)
-        logger.info("Explicitly moved model to CUDA device")
-    elif cuda_available and hasattr(tts_model, 'model') and hasattr(tts_model.model, 'to'):
-        tts_model.model.to(device)
-        logger.info("Explicitly moved model to CUDA device")
-
-    # Additional check to ensure CUDA is being used if available
-    if cuda_available:
-        cuda_in_use = False
-        if hasattr(tts_model, 'device') and 'cuda' in str(tts_model.device):
-            cuda_in_use = True
-        elif hasattr(tts_model, 'model') and hasattr(tts_model.model, 'device') and 'cuda' in str(tts_model.model.device):
-            cuda_in_use = True
-
-        if not cuda_in_use:
-            logger.warning("Model may not be using CUDA despite CUDA being available!")
-        else:
-            logger.info("Confirmed model is using CUDA device")
-
-    logger.info("F5-TTS model initialized successfully")
+    # Set flag to indicate F5-TTS is available
     HAS_F5TTS = True
     INIT_ERROR = None
+    logger.info("F5-TTS device settings initialized successfully")
 except ImportError as e:
     logger.warning(f"F5-TTS not found. Narration features will be disabled. Error: {e}")
     HAS_F5TTS = False
     INIT_ERROR = f"F5-TTS not found: {str(e)}"
 except Exception as e:
-    logger.error(f"Error initializing F5-TTS: {e}")
+    logger.error(f"Error initializing F5-TTS device settings: {e}")
     HAS_F5TTS = False
-    INIT_ERROR = f"Error initializing F5-TTS: {str(e)}"
+    INIT_ERROR = f"Error initializing F5-TTS device settings: {str(e)}"
 
 @narration_bp.route('/status', methods=['GET'])
 def get_status():
@@ -470,13 +455,182 @@ def get_status():
         except Exception as e:
             gpu_info = {'cuda_available': False, 'error': str(e)}
 
+    # Get model info
+    model_info = get_models()
+
     return jsonify({
         'available': HAS_F5TTS,
         'device': runtime_device if HAS_F5TTS else None,
         'error': INIT_ERROR,
         'gpu_info': gpu_info,
-        'source': 'direct'
+        'source': 'direct',
+        'models': model_info
     })
+
+@narration_bp.route('/models', methods=['GET'])
+def list_models():
+    """Get list of available models"""
+    include_cache = request.args.get('include_cache', 'false').lower() == 'true'
+    models = get_models(include_cache)
+    return jsonify(models)
+
+@narration_bp.route('/models/active', methods=['GET'])
+def get_current_model():
+    """Get the currently active model"""
+    active_model_id = get_active_model()
+    return jsonify({'active_model': active_model_id})
+
+@narration_bp.route('/models/active', methods=['POST'])
+def set_current_model():
+    """Set the active model"""
+    data = request.json
+    model_id = data.get('model_id')
+
+    if not model_id:
+        return jsonify({'error': 'No model_id provided'}), 400
+
+    success, message = set_active_model(model_id)
+
+    if success:
+        # We no longer load the model immediately - it will be loaded on-demand
+        logger.info(f"Active model set to {model_id} (will be loaded on-demand when needed)")
+        return jsonify({'success': True, 'message': f'Active model set to {model_id} (will be loaded on-demand when needed)'})
+    else:
+        return jsonify({'error': message}), 400
+
+@narration_bp.route('/models', methods=['POST'])
+def add_new_model():
+    """Add a new model"""
+    data = request.json
+
+    # Check if we're adding from Hugging Face or direct URL
+    source_type = data.get('source_type', 'huggingface')
+
+    if source_type == 'huggingface':
+        # Handle Hugging Face model
+        model_url = data.get('model_url')
+        vocab_url = data.get('vocab_url')
+        config = data.get('config', {})
+        model_id = data.get('model_id')
+
+        if not model_url:
+            return jsonify({'error': 'No model_url provided'}), 400
+
+        # Parse URLs if they're in hf:// format
+        repo_id, model_path = parse_hf_url(model_url)
+        _, vocab_path = parse_hf_url(vocab_url) if vocab_url else (None, None)
+
+        if not repo_id or not model_path:
+            return jsonify({'error': 'Invalid Hugging Face URL format'}), 400
+
+        # Get language codes if provided
+        language_codes = data.get('languageCodes', [])
+
+        # Download the model
+        success, message, model_id = download_model_from_hf(repo_id, model_path, vocab_path, config, model_id, language_codes)
+
+    elif source_type == 'url':
+        # Handle direct URL model
+        model_url = data.get('model_url')
+        vocab_url = data.get('vocab_url')
+        config = data.get('config', {})
+        model_id = data.get('model_id')
+
+        if not model_url:
+            return jsonify({'error': 'No model_url provided'}), 400
+
+        # Get language codes if provided
+        language_codes = data.get('languageCodes', [])
+
+        # Download the model
+        success, message, model_id = download_model_from_url(model_url, vocab_url, config, model_id, language_codes)
+
+    else:
+        return jsonify({'error': f'Invalid source_type: {source_type}'}), 400
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': message,
+            'model_id': model_id
+        })
+    else:
+        return jsonify({'error': message}), 400
+
+@narration_bp.route('/models/download-status/<model_id>', methods=['GET'])
+def get_model_download_status(model_id):
+    """Get the download status of a model"""
+    status = get_download_status(model_id)
+
+    if status:
+        # Return the status directly, not nested under 'status'
+        return jsonify({
+            'model_id': model_id,
+            'status': status['status'],
+            'progress': status['progress'],
+            'error': status['error'] if 'error' in status else None,
+            'timestamp': status['timestamp']
+        })
+    else:
+        return jsonify({
+            'model_id': model_id,
+            'status': None
+        }), 404
+
+@narration_bp.route('/models/<model_id>', methods=['DELETE'])
+def remove_model(model_id):
+    """Delete a model"""
+    delete_cache = request.args.get('delete_cache', 'false').lower() == 'true'
+    success, message = delete_model(model_id, delete_cache)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'error': message}), 400
+
+@narration_bp.route('/models/<model_id>', methods=['PUT'])
+def update_model(model_id):
+    """Update model information"""
+    data = request.json
+
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    success, message = update_model_info(model_id, data)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'error': message}), 400
+
+@narration_bp.route('/models/<model_id>/storage', methods=['GET'])
+def get_model_storage_info(model_id):
+    """Get information about how a model is stored (symlink or copy)"""
+    is_symlink, original_model_file, original_vocab_file = is_model_using_symlinks(model_id)
+
+    return jsonify({
+        'model_id': model_id,
+        'is_symlink': is_symlink,
+        'original_model_file': original_model_file,
+        'original_vocab_file': original_vocab_file
+    })
+
+@narration_bp.route('/models/cancel-download/<model_id>', methods=['POST'])
+def cancel_model_download(model_id):
+    """Cancel an ongoing model download"""
+    logger.info(f"Received request to cancel download for model: {model_id}")
+
+    success = cancel_download(model_id)
+
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'Download cancelled for model {model_id}'
+        })
+    else:
+        return jsonify({
+            'error': f'No active download found for model {model_id}'
+        }), 404
 
 @narration_bp.route('/upload-reference', methods=['POST'])
 def upload_reference_audio():
@@ -833,8 +987,46 @@ def generate_narration():
         request_model = None
 
         try:
-            # Initialize a new model instance for this specific request
-            request_model = F5TTS(device=current_device)
+            # Get model registry
+            model_registry = get_models()
+
+            # Check if a specific model ID was provided in the request
+            model_id = settings.get('modelId')
+
+            if model_id and any(model["id"] == model_id for model in model_registry["models"]):
+                # Get the requested model info
+                requested_model = next(model for model in model_registry["models"] if model["id"] == model_id)
+                logger.info(f"Using requested model for generation: {requested_model['id']}")
+
+                # Check if this is the default model with special markers
+                if requested_model.get("source") == "default" or requested_model.get("model_path") == "default":
+                    logger.info("Requested model is the default model, initializing without paths")
+                    request_model = F5TTS(device=current_device)
+                else:
+                    # Initialize with custom model paths
+                    model_path = requested_model.get("model_path")
+                    vocab_path = requested_model.get("vocab_path")
+                    config = requested_model.get("config", {})
+
+                    logger.info(f"Initializing F5-TTS with requested model: {model_path}")
+                    # Only pass parameters that F5TTS actually accepts
+                    logger.info(f"Model config (not passed to constructor): {config}")
+                    request_model = F5TTS(
+                        device=current_device,
+                        ckpt_file=model_path,
+                        vocab_file=vocab_path
+                    )
+            else:
+                # If no specific model was requested or the requested model doesn't exist,
+                # fall back to the default model
+                logger.info(f"No specific model requested or model not found, using default F5-TTS model")
+                request_model = F5TTS(device=current_device)
+
+                # Make sure the default model is in the registry
+                if not hasattr(get_status, 'default_model_checked'):
+                    initialize_registry()
+                    get_status.default_model_checked = True
+
             # Log the device being used
             logger.info(f"New F5TTS instance created with device: {current_device}")
 
@@ -851,15 +1043,26 @@ def generate_narration():
         model_for_generator = request_model
 
         # Use Flask's streaming response to send results incrementally
-        def generate_narration_stream(model=model_for_generator):
+        def generate_narration_stream(model=model_for_generator, ref_text=reference_text, ref_audio=reference_audio):
             # Initialize results list
             results = []
+            # Store reference text locally to avoid scope issues
+            reference_text = ref_text
 
             # Check if the model was successfully created
             if model is None:
                 error_msg = "F5-TTS model initialization failed"
                 logger.error(error_msg)
-                yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
+
+                # Ensure proper UTF-8 encoding in JSON
+                error_data = {'type': 'error', 'error': error_msg}
+                try:
+                    json_data = json.dumps(error_data, ensure_ascii=False)
+                    yield f"data: {json_data}\n\n"
+                except UnicodeEncodeError as ue:
+                    logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                    json_data = json.dumps(error_data)
+                    yield f"data: {json_data}\n\n"
                 return
 
             # Process each subtitle one by one
@@ -876,8 +1079,16 @@ def generate_narration():
                         'skipped': True
                     }
                     results.append(result)
+
                     # Send the current result as a JSON string followed by a special delimiter
-                    yield f"data: {json.dumps({'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)})}\n\n"
+                    skip_data = {'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)}
+                    try:
+                        json_data = json.dumps(skip_data, ensure_ascii=False)
+                        yield f"data: {json_data}\n\n"
+                    except UnicodeEncodeError as ue:
+                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                        json_data = json.dumps(skip_data)
+                        yield f"data: {json_data}\n\n"
                     continue
 
                 # Generate a unique filename for this subtitle
@@ -888,12 +1099,21 @@ def generate_narration():
                 # Send progress update with more detailed message
                 progress_message = f'Generating narration for subtitle {subtitle_id} ({len(results) + 1}/{len(subtitles)})'
                 logger.info(progress_message)
-                yield f"data: {json.dumps({'type': 'progress', 'message': progress_message, 'current': len(results) + 1, 'total': len(subtitles)})}\n\n"
+
+                # Ensure proper UTF-8 encoding in JSON
+                progress_data = {'type': 'progress', 'message': progress_message, 'current': len(results) + 1, 'total': len(subtitles)}
+                try:
+                    json_data = json.dumps(progress_data, ensure_ascii=False)
+                    yield f"data: {json_data}\n\n"
+                except UnicodeEncodeError as ue:
+                    logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                    json_data = json.dumps(progress_data)
+                    yield f"data: {json_data}\n\n"
 
                 try:
                     # Generate narration and save to file
                     logger.info(f"Generating narration for subtitle {subtitle_id} using device: {current_device}")
-                    logger.info(f"Using reference audio: {reference_audio}")
+                    logger.info(f"Using reference audio: {ref_audio}")
                     logger.info(f"Using reference text: {reference_text}")
                     logger.info(f"Generating for text: {text}")
 
@@ -904,12 +1124,27 @@ def generate_narration():
                     # Log the text we're generating for
                     logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
 
-                    # No need to clean Chinese characters as F5-TTS supports them natively
+                    # No need to clean Unicode characters as F5-TTS should support them
                     # We'll only clean control characters that might cause issues
                     import re
-                    # Remove control characters but preserve Chinese, Japanese, Korean, and other non-Latin characters
+                    # Remove control characters but preserve Unicode characters (including Vietnamese)
                     text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
-                    logger.info(f"Final text after cleaning for subtitle {subtitle_id}: {text}")
+
+                    # Ensure text is properly encoded as UTF-8
+                    if isinstance(text, str):
+                        text_bytes = text.encode('utf-8')
+                        text = text_bytes.decode('utf-8')
+
+                    # Log text in a way that won't cause encoding issues
+                    try:
+                        logger.info(f"Final text after cleaning for subtitle {subtitle_id}: {text}")
+                    except UnicodeEncodeError:
+                        logger.info(f"Final text after cleaning for subtitle {subtitle_id}: [Contains special characters]")
+
+                    # Ensure reference text is properly encoded as UTF-8
+                    if isinstance(reference_text, str):
+                        reference_text_bytes = reference_text.encode('utf-8')
+                        reference_text = reference_text_bytes.decode('utf-8')
 
                     # Force CUDA if available
                     import torch
@@ -917,8 +1152,61 @@ def generate_narration():
                         logger.info(f"Using CUDA for subtitle {subtitle_id} generation")
                         with torch.cuda.device(0):
                             # Use the model instance with supported settings
+                            try:
+                                # Try to log the text we're generating (safely)
+                                try:
+                                    logger.info(f"Generating with text: {text}")
+                                except UnicodeEncodeError:
+                                    logger.info("Generating with text containing special characters")
+
+                                model.infer(
+                                    ref_file=ref_audio,
+                                    ref_text=reference_text,
+                                    gen_text=text,
+                                    file_wave=output_path,
+                                    remove_silence=remove_silence,
+                                    speed=speed,
+                                    nfe_step=nfe_step,
+                                    sway_sampling_coef=sway_coef,
+                                    cfg_strength=cfg_strength,
+                                    seed=seed
+                                )
+                            except UnicodeEncodeError as ue:
+                                # If we get a Unicode error, try with a different encoding approach
+                                logger.warning(f"Unicode error: {ue}. Trying with explicit encoding.")
+
+                                # Convert to bytes and back with explicit UTF-8 encoding
+                                if isinstance(text, str):
+                                    text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+
+                                if isinstance(reference_text, str):
+                                    reference_text = reference_text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+
+                                # Try again with the cleaned text
+                                model.infer(
+                                    ref_file=ref_audio,
+                                    ref_text=reference_text,
+                                    gen_text=text,
+                                    file_wave=output_path,
+                                    remove_silence=remove_silence,
+                                    speed=speed,
+                                    nfe_step=nfe_step,
+                                    sway_sampling_coef=sway_coef,
+                                    cfg_strength=cfg_strength,
+                                    seed=seed
+                                )
+                    else:
+                        logger.warning(f"CUDA not available for subtitle {subtitle_id} generation, using CPU")
+                        # Use the model instance with supported settings
+                        try:
+                            # Try to log the text we're generating (safely)
+                            try:
+                                logger.info(f"Generating with text: {text}")
+                            except UnicodeEncodeError:
+                                logger.info("Generating with text containing special characters")
+
                             model.infer(
-                                ref_file=reference_audio,
+                                ref_file=ref_audio,
                                 ref_text=reference_text,
                                 gen_text=text,
                                 file_wave=output_path,
@@ -929,21 +1217,30 @@ def generate_narration():
                                 cfg_strength=cfg_strength,
                                 seed=seed
                             )
-                    else:
-                        logger.warning(f"CUDA not available for subtitle {subtitle_id} generation, using CPU")
-                        # Use the model instance with supported settings
-                        model.infer(
-                            ref_file=reference_audio,
-                            ref_text=reference_text,
-                            gen_text=text,
-                            file_wave=output_path,
-                            remove_silence=remove_silence,
-                            speed=speed,
-                            nfe_step=nfe_step,
-                            sway_sampling_coef=sway_coef,
-                            cfg_strength=cfg_strength,
-                            seed=seed
-                        )
+                        except UnicodeEncodeError as ue:
+                            # If we get a Unicode error, try with a different encoding approach
+                            logger.warning(f"Unicode error: {ue}. Trying with explicit encoding.")
+
+                            # Convert to bytes and back with explicit UTF-8 encoding
+                            if isinstance(text, str):
+                                text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+
+                            if isinstance(reference_text, str):
+                                reference_text = reference_text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+
+                            # Try again with the cleaned text
+                            model.infer(
+                                ref_file=ref_audio,
+                                ref_text=reference_text,
+                                gen_text=text,
+                                file_wave=output_path,
+                                remove_silence=remove_silence,
+                                speed=speed,
+                                nfe_step=nfe_step,
+                                sway_sampling_coef=sway_coef,
+                                cfg_strength=cfg_strength,
+                                seed=seed
+                            )
                     logger.info(f"Successfully generated narration for subtitle {subtitle_id}")
 
                     # Create result object
@@ -959,7 +1256,15 @@ def generate_narration():
                     # Send the current result as a JSON string followed by a special delimiter
                     result_data = {'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)}
                     logger.info(f"Sending result for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
-                    yield f"data: {json.dumps(result_data)}\n\n"
+
+                    # Ensure proper UTF-8 encoding in JSON
+                    try:
+                        json_data = json.dumps(result_data, ensure_ascii=False)
+                        yield f"data: {json_data}\n\n"
+                    except UnicodeEncodeError as ue:
+                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                        json_data = json.dumps(result_data)
+                        yield f"data: {json_data}\n\n"
 
                     # Free memory after each generation
                     try:
@@ -987,7 +1292,15 @@ def generate_narration():
                     # Send the error result
                     error_data = {'type': 'error', 'result': result, 'progress': len(results), 'total': len(subtitles)}
                     logger.info(f"Sending error for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
-                    yield f"data: {json.dumps(error_data)}\n\n"
+
+                    # Ensure proper UTF-8 encoding in JSON
+                    try:
+                        json_data = json.dumps(error_data, ensure_ascii=False)
+                        yield f"data: {json_data}\n\n"
+                    except UnicodeEncodeError as ue:
+                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                        json_data = json.dumps(error_data)
+                        yield f"data: {json_data}\n\n"
 
             # Clean up the model to free memory if it exists
             try:
@@ -995,6 +1308,8 @@ def generate_narration():
                 import gc
                 gc.collect()
 
+                # Import torch here to avoid scope issues
+                import torch
                 if torch.cuda.is_available():
                     # Empty CUDA cache
                     torch.cuda.empty_cache()
@@ -1009,12 +1324,27 @@ def generate_narration():
             # Send final completion message
             complete_data = {'type': 'complete', 'results': results, 'total': len(results)}
             logger.info(f"Sending completion message with {len(results)} results")
-            yield f"data: {json.dumps(complete_data)}\n\n"
+
+            # Ensure proper UTF-8 encoding in JSON
+            try:
+                json_data = json.dumps(complete_data, ensure_ascii=False)
+                yield f"data: {json_data}\n\n"
+            except UnicodeEncodeError as ue:
+                logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
+                json_data = json.dumps(complete_data)
+                yield f"data: {json_data}\n\n"
 
         # Return a streaming response with error handling
         try:
-            # Pass the model explicitly to the generator function
-            return Response(generate_narration_stream(model=model_for_generator), mimetype='text/event-stream')
+            # Pass the model and reference text explicitly to the generator function
+            return Response(
+                generate_narration_stream(
+                    model=model_for_generator,
+                    ref_text=reference_text,
+                    ref_audio=reference_audio
+                ),
+                mimetype='text/event-stream'
+            )
         except Exception as e:
             logger.error(f"Unexpected error in streaming response: {e}")
             return jsonify({'error': f'Unexpected error: {str(e)}'}), 500

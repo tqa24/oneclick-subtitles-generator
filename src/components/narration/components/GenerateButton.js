@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
  * @param {Function} props.downloadAllAudio - Function to download all audio
  * @param {Function} props.downloadAlignedAudio - Function to download aligned audio
  * @param {Function} props.cancelGeneration - Function to cancel narration generation
+ * @param {string|null} props.subtitleSource - The selected subtitle source
  * @returns {JSX.Element} - Rendered component
  */
 const GenerateButton = ({
@@ -20,7 +21,8 @@ const GenerateButton = ({
   generationResults,
   downloadAllAudio,
   downloadAlignedAudio,
-  cancelGeneration
+  cancelGeneration,
+  subtitleSource
 }) => {
   const { t } = useTranslation();
 
@@ -43,7 +45,8 @@ const GenerateButton = ({
             <button
               className="pill-button primary generate-btn"
               onClick={handleGenerateNarration}
-              disabled={!referenceAudio}
+              disabled={!referenceAudio || !subtitleSource}
+              title={!subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') : ''}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 5.14v14l11-7-11-7z" />

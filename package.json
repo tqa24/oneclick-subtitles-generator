@@ -31,7 +31,11 @@
     "setup:narration:uv": "node setup-narration.js"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@google/genai": "^0.9.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
     "@react-oauth/google": "^0.12.1",
     "adm-zip": "^0.5.16",
     "assert": "^2.1.0",

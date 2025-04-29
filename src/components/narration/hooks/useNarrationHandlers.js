@@ -7,6 +7,7 @@ import {
   generateNarration,
   cancelNarrationGeneration
 } from '../../../services/narrationService';
+import { isModelAvailable } from '../../../services/modelAvailabilityService';
 
 /**
  * Custom hook for narration handlers
@@ -46,7 +47,8 @@ const useNarrationHandlers = ({
   t,
   subtitleSource,
   translatedSubtitles,
-  isPlaying
+  isPlaying,
+  selectedNarrationModel
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {
@@ -424,6 +426,12 @@ const useNarrationHandlers = ({
       return;
     }
 
+    // Check if a subtitle source has been selected
+    if (!subtitleSource) {
+      setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
+      return;
+    }
+
     // Get the appropriate subtitles based on the selected source
     const selectedSubtitles = getSelectedSubtitles();
 
@@ -435,6 +443,35 @@ const useNarrationHandlers = ({
         setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
       }
       return;
+    }
+
+    // Check if the selected model is available
+    try {
+      // Get the model ID from the selectedNarrationModel prop or use the default
+      const modelId = selectedNarrationModel || 'f5tts-v1-base';
+
+      // Check if the model is available
+      const modelAvailable = await isModelAvailable(modelId);
+      if (!modelAvailable) {
+        // Get the language from the selected subtitles
+        const subtitles = getSelectedSubtitles();
+        let language = 'unknown';
+
+        if (subtitles && subtitles.length > 0) {
+          // Try to determine the language from the subtitles
+          if (subtitleSource === 'original' && originalLanguage) {
+            language = originalLanguage.languageName || originalLanguage.languageCode;
+          } else if (subtitleSource === 'translated' && translatedLanguage) {
+            language = translatedLanguage.languageName || translatedLanguage.languageCode;
+          }
+        }
+
+        setError(t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language }));
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking model availability:', error);
+      // Continue anyway, the server will handle the error if the model is not available
     }
 
     setIsGenerating(true);
@@ -471,7 +508,9 @@ const useNarrationHandlers = ({
         removeSilence: advancedSettings.removeSilence,
         // Note: sampleRate is not sent to the API as it's not supported by F5-TTS
         // It's only used in the UI for user preference
-        batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize)
+        batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize),
+        // Include the selected model ID
+        modelId: selectedNarrationModel
       };
 
       // Handle seed

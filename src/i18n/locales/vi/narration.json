@@ -63,6 +63,11 @@
   "originalSubtitles": "Phụ đề gốc",
   "translatedSubtitles": "Phụ đề đã dịch",
   "unavailable": "(không khả dụng)",
+  "detectingLanguage": "Đang phát hiện ngôn ngữ...",
+  "narrationModel": "Mô hình thuyết minh",
+  "noSourceSelectedError": "Vui lòng chọn nguồn phụ đề (Gốc hoặc Đã dịch)",
+  "checkingModelAvailability": "Đang kiểm tra mô hình...",
+  "modelNotAvailableError": "Vui lòng tải ít nhất một mô hình hỗ trợ {{language}} từ tab Quản lý Mô hình thuyết minh trong Cài đặt.",
 
   "advancedSettingsToggle": "Cài đặt nâng cao cho giọng nói",
   "advancedSettings": "Cài đặt nâng cao",

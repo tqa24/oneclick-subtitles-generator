@@ -13,9 +13,10 @@ import VideoProcessingTab from './tabs/VideoProcessingTab';
 import PromptsTab from './tabs/PromptsTab';
 import CacheTab from './tabs/CacheTab';
 import AboutTab from './tabs/AboutTab';
+import ModelManagementTab from './ModelManagementTab';
 
 // Import icons
-import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon } from './icons/TabIcons';
+import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
 
 // Import theme utilities
 import { toggleTheme as toggleThemeUtil, getThemeIcon, getThemeLabel, initializeTheme, setupSystemThemeListener } from './utils/themeUtils';
@@ -412,6 +413,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               {t('settings.cache', 'Cache')}
             </button>
             <button
+              className={`settings-tab ${activeTab === 'model-management' ? 'active' : ''}`}
+              onClick={() => setActiveTab('model-management')}
+            >
+              <ModelIcon />
+              {t('settings.modelManagement', 'Narration Models')}
+            </button>
+            <button
               className={`settings-tab ${activeTab === 'about' ? 'active' : ''}`}
               onClick={() => {
                 // Toggle the background when clicking on the About tab
@@ -506,6 +514,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           {/* Cache Management Tab Content */}
           <div className={`settings-tab-content ${activeTab === 'cache' ? 'active' : ''}`}>
             <CacheTab />
+          </div>
+
+          {/* Model Management Tab Content */}
+          <div className={`settings-tab-content ${activeTab === 'model-management' ? 'active' : ''}`}>
+            <ModelManagementTab />
           </div>
 
           {/* About Tab Content */}

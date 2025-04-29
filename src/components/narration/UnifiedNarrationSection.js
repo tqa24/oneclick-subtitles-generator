@@ -61,8 +61,11 @@ const UnifiedNarrationSection = ({
   const [error, setError] = useState('');
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [subtitleSource, setSubtitleSource] = useState('original'); // 'original' or 'translated'
+  const [subtitleSource, setSubtitleSource] = useState(null); // No default selection, will be set when user clicks
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [detectedLanguage, setDetectedLanguage] = useState(null);
+  const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);
+  const [modelAvailabilityError, setModelAvailabilityError] = useState(null);
   const [advancedSettings, setAdvancedSettings] = useState({
     // Voice Style Controls - only speechRate is supported
     speechRate: 1.0,
@@ -132,6 +135,29 @@ const UnifiedNarrationSection = ({
       setReferenceText(initialReferenceAudio.text || '');
     }
   }, [initialReferenceAudio]);
+
+  // Try to load previously detected language from localStorage
+  useEffect(() => {
+    try {
+      const savedLanguageData = localStorage.getItem('detected_language');
+      if (savedLanguageData) {
+        const { source, language, modelId, modelError } = JSON.parse(savedLanguageData);
+        console.log(`Loaded previously detected language for ${source}: ${language.languageCode}`);
+        if (modelError) {
+          console.warn(`Loaded model availability error: ${modelError}`);
+        }
+        setDetectedLanguage(language);
+        setSelectedNarrationModel(modelId);
+        setModelAvailabilityError(modelError);
+
+        // We no longer automatically set the subtitle source
+        // Let the user explicitly select it
+      }
+    } catch (error) {
+      // Silently fail if data can't be loaded
+      console.error('Error loading detected language from localStorage:', error);
+    }
+  }, []);
 
   // Reset error when inputs change
   useEffect(() => {
@@ -267,7 +293,8 @@ const UnifiedNarrationSection = ({
     t,
     subtitleSource,
     translatedSubtitles,
-    isPlaying
+    isPlaying,
+    selectedNarrationModel
   });
 
   // If service is unavailable, show a simple message with the Vietnamese text
@@ -342,6 +369,30 @@ const UnifiedNarrationSection = ({
         setSubtitleSource={setSubtitleSource}
         isGenerating={isGenerating}
         translatedSubtitles={translatedSubtitles}
+        originalSubtitles={originalSubtitles || subtitles}
+        onLanguageDetected={(source, language, modelId, modelError) => {
+          console.log(`Language detected for ${source}: ${language.languageCode} (${language.languageName})`);
+          console.log(`Selected narration model: ${modelId}`);
+          if (modelError) {
+            console.warn(`Model availability error: ${modelError}`);
+          }
+
+          setDetectedLanguage(language);
+          setSelectedNarrationModel(modelId);
+          setModelAvailabilityError(modelError);
+
+          // Store in localStorage for persistence
+          try {
+            localStorage.setItem('detected_language', JSON.stringify({
+              source,
+              language,
+              modelId,
+              modelError
+            }));
+          } catch (e) {
+            console.error('Error storing detected language in localStorage:', e);
+          }
+        }}
       />
 
       {/* Advanced Settings Toggle */}
@@ -360,6 +411,7 @@ const UnifiedNarrationSection = ({
         downloadAllAudio={downloadAllAudio}
         downloadAlignedAudio={downloadAlignedAudio}
         cancelGeneration={cancelGeneration}
+        subtitleSource={subtitleSource}
       />
 
       {/* Generation Status */}

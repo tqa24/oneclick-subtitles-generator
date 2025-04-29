@@ -1,0 +1,105 @@
+/* Narration model dropdown container */
+.narration-model-dropdown-container {
+  position: relative;
+  display: inline-block;
+  z-index: 1000;
+}
+
+/* When dropdown is open, ensure container has higher z-index */
+.narration-model-dropdown-container.dropdown-open {
+  z-index: 99999; /* High z-index to ensure it appears above other elements */
+}
+
+/* Narration model dropdown button */
+.narration-model-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 21px;
+  background-color: var(--md-surface-3);
+  border: 1px solid var(--md-outline-variant);
+  color: var(--text-primary);
+  font-family: 'Open Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  white-space: nowrap;
+  width: 100%;
+  max-width: 400px;
+}
+
+.narration-model-dropdown-btn:hover:not(:disabled) {
+  background-color: var(--md-surface-4);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+.narration-model-dropdown-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.narration-model-dropdown-btn .dropdown-icon.active {
+  transform: rotate(180deg);
+}
+
+/* Model group label */
+.model-group-label {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  background-color: var(--md-surface-2);
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+/* Loading animation inside dropdown */
+.dropdown-loading {
+  padding: 12px 16px;
+  justify-content: center;
+}
+
+/* Error message styling */
+.model-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  color: var(--error-color);
+  font-size: 0.85rem;
+}
+
+.model-error-standalone {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  color: var(--error-color);
+  font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .narration-model-dropdown-container {
+    width: 100%;
+  }
+
+  .narration-model-dropdown-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .model-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

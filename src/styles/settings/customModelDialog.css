@@ -1,0 +1,480 @@
+/* Custom Model Dialog Styles - Without using MUI */
+
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Extremely high z-index to ensure it's above everything */
+  backdrop-filter: blur(3px);
+  /* Ensure it's at the root level */
+  isolation: isolate;
+}
+
+.custom-modal {
+  background-color: var(--md-surface-1);
+  border-radius: 32px;
+  box-shadow: var(--md-elevation-level3);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-appear 0.3s ease-out;
+}
+
+/* Specific adjustments for light theme */
+[data-theme="light"] .custom-modal {
+  background-color: var(--md-surface);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme specific styling */
+[data-theme="dark"] .custom-modal {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-2);
+}
+
+/* Light theme header styling */
+[data-theme="light"] .custom-modal-header {
+  background-color: var(--md-surface-1);
+  border-bottom: 1px solid var(--md-outline);
+}
+
+.custom-modal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(var(--md-outline-variant-rgb), 0.3);
+  color: var(--text-primary);
+}
+
+.custom-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--md-primary-rgb), 0.4) rgba(var(--md-outline-variant-rgb), 0.2);
+}
+
+.custom-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-modal-content::-webkit-scrollbar-track {
+  background: rgba(var(--md-outline-variant-rgb), 0.2);
+  border-radius: 10px;
+}
+
+.custom-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb), 0.4);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.custom-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb), 0.6);
+}
+
+/* Dark theme scrollbar adjustments */
+[data-theme="dark"] .custom-modal-content::-webkit-scrollbar-track {
+  background: rgba(var(--md-outline-variant-rgb), 0.3);
+}
+
+[data-theme="dark"] .custom-modal-content::-webkit-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb), 0.5);
+}
+
+[data-theme="dark"] .custom-modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb), 0.7);
+}
+
+[data-theme="dark"] .custom-modal-content {
+  scrollbar-color: rgba(var(--md-primary-rgb), 0.5) rgba(var(--md-outline-variant-rgb), 0.3);
+}
+
+.custom-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-2);
+}
+
+/* Light theme footer styling */
+[data-theme="light"] .custom-modal-footer {
+  background-color: var(--md-surface-1);
+  border-top: 1px solid var(--md-outline);
+}
+
+/* Explanation text */
+.explanation {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Delete confirmation text */
+.delete-confirmation-text {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+/* Form fields */
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.form-field input,
+.form-field textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 100px; /* Pill shape */
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-field textarea {
+  border-radius: 16px; /* Not pill shape for textarea */
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+  outline: none;
+}
+
+/* Input with icon */
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.input-with-icon svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+.input-with-icon input {
+  padding-left: 40px;
+}
+
+.helper-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Radio group styling */
+.radio-group {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--md-primary);
+}
+
+.radio-option label {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Language codes section */
+.language-codes-section {
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 24px;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.section-header svg {
+  color: var(--md-primary);
+  font-size: 20px;
+}
+
+.language-codes-section h5 {
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.language-codes-container {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.language-code-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  height: 36px; /* Match the height of the add button */
+}
+
+.language-code-field input {
+  width: 80px; /* Smaller width to save space */
+  flex: 0 0 auto;
+  height: 36px; /* Match the height of the add button */
+  box-sizing: border-box;
+  padding: 0 12px; /* Adjust padding to maintain consistent height */
+}
+
+/* Add language button */
+.add-language-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 12px;
+  border-radius: 100px; /* Fully rounded pill shape */
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  margin: 0;
+  height: 36px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.add-language-btn:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete button in language code field */
+.language-code-field .delete-model-btn {
+  padding: 0;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--error-color);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.language-code-field .delete-model-btn:hover {
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Advanced options toggle */
+.advanced-options-toggle {
+  background: none;
+  border: none;
+  color: var(--md-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  text-decoration: none;
+  border-radius: 100px;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.advanced-options-toggle:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+}
+
+/* Button styles */
+.cancel-btn, .confirm-btn, .delete-btn {
+  padding: 8px 24px;
+  border-radius: 100px; /* Fully rounded pill shape */
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 100px;
+  height: 40px;
+}
+
+.cancel-btn {
+  background-color: transparent;
+  color: var(--md-primary);
+  border: none;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+}
+
+.confirm-btn {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  border: none;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+}
+
+.delete-btn {
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--error-color), black 10%);
+}
+
+/* Disabled button styles */
+.cancel-btn:disabled,
+.confirm-btn:disabled,
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Storage info section */
+.storage-info .model-source {
+  font-weight: 500;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.file-list {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.file-list li {
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .radio-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

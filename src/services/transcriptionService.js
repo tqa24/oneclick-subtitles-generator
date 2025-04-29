@@ -2,7 +2,8 @@
  * Transcription service for voice recognition using Gemini API
  */
 
-import { GEMINI_API_KEY } from '../config';
+// Import the API base URL but not the API key
+import { API_BASE_URL } from '../config';
 
 /**
  * Convert a Blob to base64 string
@@ -160,17 +161,20 @@ export const transcribeAudio = async (audioBlob) => {
 
     console.log('Sending transcription request to Gemini API');
 
+    // Get API key dynamically from localStorage
+    const geminiApiKey = localStorage.getItem('gemini_api_key');
+
     // Check if API key is available
-    if (!GEMINI_API_KEY) {
+    if (!geminiApiKey) {
       console.error('Gemini API key is missing. Please set it in the settings.');
       throw new Error('Gemini API key is missing. Please go to Settings > API Keys to set your Gemini API key.');
     }
 
-    console.log('Using Gemini API key:', GEMINI_API_KEY ? `${GEMINI_API_KEY.substring(0, 4)}...` : 'Not set');
+    console.log('Using Gemini API key:', geminiApiKey ? `${geminiApiKey.substring(0, 4)}...` : 'Not set');
 
     // Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${requestData.model}:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${requestData.model}:generateContent?key=${geminiApiKey}`,
       {
         method: 'POST',
         headers: {
