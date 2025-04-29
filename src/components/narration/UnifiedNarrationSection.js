@@ -66,6 +66,8 @@ const UnifiedNarrationSection = ({
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);
   const [modelAvailabilityError, setModelAvailabilityError] = useState(null);
+  const [originalLanguage, setOriginalLanguage] = useState(null);
+  const [translatedLanguage, setTranslatedLanguage] = useState(null);
   const [advancedSettings, setAdvancedSettings] = useState({
     // Voice Style Controls - only speechRate is supported
     speechRate: 1.0,
@@ -294,7 +296,9 @@ const UnifiedNarrationSection = ({
     subtitleSource,
     translatedSubtitles,
     isPlaying,
-    selectedNarrationModel
+    selectedNarrationModel,
+    originalLanguage,
+    translatedLanguage
   });
 
   // If service is unavailable, show a simple message with the Vietnamese text
@@ -370,6 +374,10 @@ const UnifiedNarrationSection = ({
         isGenerating={isGenerating}
         translatedSubtitles={translatedSubtitles}
         originalSubtitles={originalSubtitles || subtitles}
+        originalLanguage={originalLanguage}
+        translatedLanguage={translatedLanguage}
+        setOriginalLanguage={setOriginalLanguage}
+        setTranslatedLanguage={setTranslatedLanguage}
         onLanguageDetected={(source, language, modelId, modelError) => {
           console.log(`Language detected for ${source}: ${language.languageCode} (${language.languageName})`);
           console.log(`Selected narration model: ${modelId}`);
@@ -380,6 +388,13 @@ const UnifiedNarrationSection = ({
           setDetectedLanguage(language);
           setSelectedNarrationModel(modelId);
           setModelAvailabilityError(modelError);
+
+          // Update the appropriate language state
+          if (source === 'original') {
+            setOriginalLanguage(language);
+          } else if (source === 'translated') {
+            setTranslatedLanguage(language);
+          }
 
           // Store in localStorage for persistence
           try {

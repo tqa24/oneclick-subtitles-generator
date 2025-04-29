@@ -48,7 +48,9 @@ const useNarrationHandlers = ({
   subtitleSource,
   translatedSubtitles,
   isPlaying,
-  selectedNarrationModel
+  selectedNarrationModel,
+  originalLanguage,
+  translatedLanguage
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {

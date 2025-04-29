@@ -20,6 +20,10 @@ import '../../../styles/ModelDropdown.css';
  * @param {boolean} props.isGenerating - Whether generation is in progress
  * @param {Array} props.translatedSubtitles - Translated subtitles
  * @param {Array} props.originalSubtitles - Original subtitles
+ * @param {Object} props.originalLanguage - Original language information
+ * @param {Object} props.translatedLanguage - Translated language information
+ * @param {Function} props.setOriginalLanguage - Function to set original language
+ * @param {Function} props.setTranslatedLanguage - Function to set translated language
  * @param {Function} props.onLanguageDetected - Callback when language is detected
  * @returns {JSX.Element} - Rendered component
  */
@@ -29,6 +33,10 @@ const SubtitleSourceSelection = ({
   isGenerating,
   translatedSubtitles,
   originalSubtitles,
+  originalLanguage,
+  translatedLanguage,
+  setOriginalLanguage,
+  setTranslatedLanguage,
   onLanguageDetected
 }) => {
   const { t } = useTranslation();
@@ -37,8 +45,6 @@ const SubtitleSourceSelection = ({
   // State for language detection
   const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
   const [isDetectingTranslated, setIsDetectingTranslated] = useState(false);
-  const [originalLanguage, setOriginalLanguage] = useState(null);
-  const [translatedLanguage, setTranslatedLanguage] = useState(null);
   const [selectedModel, setSelectedModel] = useState(null);
   const [modelError, setModelError] = useState(null);
   const [isCheckingModel, setIsCheckingModel] = useState(false);
