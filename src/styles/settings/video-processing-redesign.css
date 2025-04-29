@@ -81,7 +81,7 @@
   background-color: var(--md-primary);
 }
 
-.settings-card.model-card::before {
+.settings-card.ai-model-card::before {
   background-color: var(--md-secondary);
 }
 

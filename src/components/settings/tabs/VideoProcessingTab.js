@@ -67,8 +67,8 @@ const VideoProcessingTab = ({
           </div>
         </div>
 
-        {/* Model Card */}
-        <div className="settings-card model-card">
+        {/* AI Model Card */}
+        <div className="settings-card ai-model-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
               <ModelIcon />
