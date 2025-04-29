@@ -521,13 +521,29 @@ def add_new_model():
         _, vocab_path = parse_hf_url(vocab_url) if vocab_url else (None, None)
 
         if not repo_id or not model_path:
-            return jsonify({'error': 'Invalid Hugging Face URL format'}), 400
+            logger.error(f"Failed to parse Hugging Face URL: model_url={model_url}, vocab_url={vocab_url}")
+            return jsonify({
+                'error': 'Invalid Hugging Face URL format. Please check the URL format in ModelList.js.',
+                'model_url': model_url,
+                'vocab_url': vocab_url
+            }), 400
+
+        logger.info(f"Successfully parsed URLs: repo_id={repo_id}, model_path={model_path}, vocab_path={vocab_path}")
 
         # Get language codes if provided
         language_codes = data.get('languageCodes', [])
 
         # Download the model
         success, message, model_id = download_model_from_hf(repo_id, model_path, vocab_path, config, model_id, language_codes)
+
+        # If the download failed due to a private repository, provide a helpful message
+        if not success and "private repository" in message:
+            logger.error(f"Failed to download private repository: {repo_id}")
+            return jsonify({
+                'error': message,
+                'private_repo': True,
+                'repo_id': repo_id
+            }), 401  # Use 401 Unauthorized status code
 
     elif source_type == 'url':
         # Handle direct URL model

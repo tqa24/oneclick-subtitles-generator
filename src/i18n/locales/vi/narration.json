@@ -1,6 +1,6 @@
 {
   "title": "Tạo thuyết minh",
-  "description": "Tạo âm thanh thuyết minh từ phụ đề của bạn bằng giọng tham chiếu. (Hỗ trợ hiện tại - Ngôn ngữ dùng tham chiếu: Tiếng Anh. Ngôn ngữ đầu ra: Tiếng Anh, Tiếng Trung.)",
+  "description": "Tạo âm thanh thuyết minh từ phụ đề của bạn bằng giọng tham chiếu.",
   "referenceAudio": "Văn bản tham chiếu",
   "referenceText": "Văn bản tham chiếu",
   "audioControls": "Âm thanh tham chiếu",

@@ -508,7 +508,6 @@ const ModelManagementTab = () => {
                   title={t('settings.modelManagement.editModel', 'Edit model information')}
                 >
                   <EditIcon fontSize="small" />
-                  {t('settings.modelManagement.edit', 'Edit')}
                 </button>
 
                 {/* Hide delete button for F5-TTS v1 Base model */}

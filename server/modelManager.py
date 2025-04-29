@@ -16,6 +16,13 @@ from huggingFaceCache import list_huggingface_cache_models, delete_huggingface_c
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Note on language detection:
+# This module uses a flexible approach to detect language codes from model IDs and URLs.
+# Instead of using a hardcoded list of language codes, it uses regex patterns to find
+# common language code formats (like 'en', 'zh', etc.) in model IDs and URLs.
+# This allows for better compatibility with the frontend's language list in ModelList.js
+# and avoids mismatches when new models are added.
+
 # Define constants
 MODELS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'models', 'f5_tts')
 MODELS_REGISTRY_FILE = os.path.join(MODELS_DIR, 'models_registry.json')
@@ -280,7 +287,7 @@ def remove_download_status(model_id):
 
 def cancel_download(model_id):
     """
-    Cancel an ongoing model download.
+    Cancel an ongoing model download and delete the model folder from the Hugging Face cache.
 
     Args:
         model_id (str): ID of the model download to cancel
@@ -299,6 +306,54 @@ def cancel_download(model_id):
             # Remove from download status immediately without adding a 'cancelled' entry
             remove_download_status(model_id)
 
+            # Delete the model folder from the Hugging Face cache
+            try:
+                # Get the Hugging Face cache location
+                try:
+                    # Try the newer API first
+                    try:
+                        from huggingface_hub import get_cache_dir
+                        hf_cache_dir = get_cache_dir()
+                        logger.info(f"Using get_cache_dir(): {hf_cache_dir}")
+                    except (ImportError, AttributeError):
+                        # Fall back to older approach
+                        home_dir = os.path.expanduser("~")
+                        hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+                        logger.info(f"Using default cache path: {hf_cache_dir}")
+                except Exception as e:
+                    logger.error(f"Error getting Hugging Face cache directory: {e}")
+                    raise
+
+                # Check for model in the custom_models directory
+                custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
+                if os.path.exists(custom_cache_dir):
+                    logger.info(f"Deleting custom model directory: {custom_cache_dir}")
+                    shutil.rmtree(custom_cache_dir)
+                    logger.info(f"Successfully deleted custom model directory: {custom_cache_dir}")
+
+                # Also check for model in the hub directory
+                # For repository-based models, we need to use the delete_huggingface_cache_model function
+                registry = get_registry()
+                for download_info in registry.get("downloads", {}).values():
+                    if download_info.get("model_id") == model_id:
+                        repo_id = download_info.get("repo_id")
+                        if repo_id:
+                            logger.info(f"Model {model_id} is from repository {repo_id}")
+                            try:
+                                # Import the function to delete from Hugging Face cache
+                                from huggingFaceCache import delete_huggingface_cache_model
+                                success, message = delete_huggingface_cache_model(repo_id)
+                                if success:
+                                    logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
+                                else:
+                                    logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
+                            except Exception as e:
+                                logger.error(f"Error deleting model from Hugging Face cache: {e}")
+
+            except Exception as e:
+                logger.error(f"Error deleting model folder from cache: {e}")
+                # Continue with cancellation even if folder deletion fails
+
             # Remove from download_threads after a short delay
             def cleanup_thread():
                 time.sleep(2)
@@ -316,6 +371,50 @@ def cancel_download(model_id):
             if model_id in registry.get("downloads", {}):
                 # Remove from download status immediately without adding a 'cancelled' entry
                 remove_download_status(model_id)
+
+                # Try to delete the model folder from the Hugging Face cache
+                try:
+                    # Get the Hugging Face cache location
+                    try:
+                        # Try the newer API first
+                        try:
+                            from huggingface_hub import get_cache_dir
+                            hf_cache_dir = get_cache_dir()
+                        except (ImportError, AttributeError):
+                            # Fall back to older approach
+                            home_dir = os.path.expanduser("~")
+                            hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+                    except Exception as e:
+                        logger.error(f"Error getting Hugging Face cache directory: {e}")
+                        raise
+
+                    # Check for model in the custom_models directory
+                    custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
+                    if os.path.exists(custom_cache_dir):
+                        logger.info(f"Deleting custom model directory: {custom_cache_dir}")
+                        shutil.rmtree(custom_cache_dir)
+                        logger.info(f"Successfully deleted custom model directory: {custom_cache_dir}")
+
+                    # Also check for repository-based models
+                    download_info = registry.get("downloads", {}).get(model_id, {})
+                    repo_id = download_info.get("repo_id")
+                    if repo_id:
+                        logger.info(f"Model {model_id} is from repository {repo_id}")
+                        try:
+                            # Import the function to delete from Hugging Face cache
+                            from huggingFaceCache import delete_huggingface_cache_model
+                            success, message = delete_huggingface_cache_model(repo_id)
+                            if success:
+                                logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
+                            else:
+                                logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
+                        except Exception as e:
+                            logger.error(f"Error deleting model from Hugging Face cache: {e}")
+
+                except Exception as e:
+                    logger.error(f"Error deleting model folder from cache: {e}")
+                    # Continue with cancellation even if folder deletion fails
+
                 return True
             else:
                 logger.warning(f"No active download found for model {model_id}")
@@ -425,12 +524,29 @@ def delete_model(model_id, delete_cache=False):
         elif model_to_delete.get("source") == "url":
             # For URL-based models, try to delete the custom model directory in the cache
             try:
-                from huggingface_hub.constants import HF_CACHE_HOME
-                custom_cache_dir = os.path.join(HF_CACHE_HOME, "custom_models", model_id)
+                # Get the Hugging Face cache location
+                try:
+                    # Try the newer API first
+                    try:
+                        from huggingface_hub import get_cache_dir
+                        hf_cache_dir = get_cache_dir()
+                    except (ImportError, AttributeError):
+                        # Fall back to older approach
+                        home_dir = os.path.expanduser("~")
+                        hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+                except Exception as e:
+                    logger.error(f"Error getting Hugging Face cache directory: {e}")
+                    raise
+
+                custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
+                logger.info(f"Checking for custom model directory at: {custom_cache_dir}")
+
                 if os.path.exists(custom_cache_dir):
                     shutil.rmtree(custom_cache_dir)
                     logger.info(f"Deleted custom model from Hugging Face cache: {custom_cache_dir}")
                     cache_deletion_result = f"Deleted custom model from Hugging Face cache"
+                else:
+                    logger.info(f"Custom model directory not found at: {custom_cache_dir}")
             except Exception as e:
                 logger.error(f"Error deleting custom model from Hugging Face cache: {e}")
                 cache_deletion_result = f"Note: Error deleting custom model from Hugging Face cache: {str(e)}"
@@ -442,6 +558,8 @@ def delete_model(model_id, delete_cache=False):
         return True, success_message
     else:
         return False, "Failed to save registry"
+
+# Function removed since we're only using public repositories
 
 def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_id=None, language_codes=None):
     """
@@ -458,6 +576,37 @@ def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_i
     Returns:
         tuple: (success, message, model_id)
     """
+    # Log the huggingface_hub version and available functions for debugging
+    try:
+        import huggingface_hub
+        import inspect
+
+        # Log version
+        try:
+            logger.info(f"Using huggingface_hub version: {huggingface_hub.__version__}")
+        except AttributeError:
+            logger.warning("Could not determine huggingface_hub version")
+
+        # Log available functions to help with debugging
+        try:
+            functions = [name for name, obj in inspect.getmembers(huggingface_hub)
+                        if inspect.isfunction(obj)]
+            logger.info(f"Available huggingface_hub functions: {', '.join(functions[:10])}...")
+
+            # Check if specific functions exist
+            has_get_cache_dir = hasattr(huggingface_hub, 'get_cache_dir')
+            has_hf_hub_download = hasattr(huggingface_hub, 'hf_hub_download')
+            logger.info(f"Has get_cache_dir: {has_get_cache_dir}, Has hf_hub_download: {has_hf_hub_download}")
+        except Exception as e:
+            logger.warning(f"Error inspecting huggingface_hub: {e}")
+    except ImportError:
+        logger.warning("huggingface_hub module not found")
+
+    # Log that we're proceeding with the download
+    logger.info(f"Proceeding with download from repository: {repo_id}")
+
+    # Log the input parameters
+    logger.info(f"Download request: repo_id={repo_id}, model_path={model_path}, vocab_path={vocab_path}, model_id={model_id}")
     # Generate model ID if not provided
     if model_id is None:
         model_id = repo_id.split('/')[-1]
@@ -506,96 +655,40 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
         logger.info(f"Downloading model from {repo_id}/{model_path}")
         update_download_status(model_id, 'downloading', 0)
 
-        # We'll use a custom approach to track progress
-        import threading
+        # Import necessary modules for download
         import time
         import os
-        import requests
-        import random
-        from huggingface_hub.constants import HUGGINGFACE_CO_URL_TEMPLATE
-        from huggingface_hub.utils import build_hf_headers
-        from huggingface_hub import hf_hub_url
 
-        # We'll use estimated sizes for F5-TTS models since getting exact sizes can be complex
-        logger.info("Using estimated sizes for progress tracking")
-        model_size = 1500 * 1024 * 1024  # 1.5 GB typical model size
-        vocab_size = 1 * 1024 * 1024     # 1 MB typical vocab size
-        total_size = model_size + vocab_size
-        logger.info(f"Estimated sizes - Model: {model_size / (1024 * 1024):.2f} MB, Vocab: {vocab_size / (1024 * 1024):.2f} MB")
+        # Log that we're starting the actual download
+        logger.info("Starting actual download from Hugging Face Hub")
 
-        # We'll skip trying to find the exact cache paths since it's complex and version-dependent
-        # Instead, we'll just simulate the download progress
+        # Get the Hugging Face cache location
+        # Handle different versions of huggingface_hub
         try:
-            # Just log that we're using a simulated approach
-            logger.info("Using simulated progress tracking for Hugging Face download")
+            # Try the newer API first
+            try:
+                from huggingface_hub import get_cache_dir
+                hf_cache_dir = get_cache_dir()
+                logger.info(f"Using get_cache_dir(): {hf_cache_dir}")
+            except (ImportError, AttributeError):
+                # Fall back to older approach
+                import os
+                home_dir = os.path.expanduser("~")
+                hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+                logger.info(f"Using default cache path: {hf_cache_dir}")
 
-            # Instead of trying to monitor the cache files directly, which can be complex,
-            # we'll use a simpler approach with a timer-based progress simulation
-            def simulate_download_progress():
-                # Start with 0% progress
-                progress = 0
-
-                # We'll simulate progress over approximately 2-3 minutes
-                # This is a fallback since we can't reliably track the actual download
-                start_time = time.time()
-                estimated_download_time = 180  # 3 minutes
-
-                # Simulate progress until we reach 95%
-                while progress < 95:
-                    time.sleep(1)  # Update every second
-
-                    # Check if download has been cancelled
-                    if model_id in download_threads and download_threads[model_id]["cancel"]:
-                        logger.info(f"Download cancelled for model {model_id}")
-                        # Don't add to registry at all for cancelled downloads
-                        remove_download_status(model_id)
-                        return  # Exit the thread
-
-                    # Check if the download is already complete
-                    registry = get_registry()
-                    if model_id not in registry.get("downloads", {}):
-                        logger.info("Download already completed, no need to update status")
-                        return
-
-                    # Calculate elapsed time
-                    elapsed = time.time() - start_time
-
-                    # Calculate progress based on elapsed time
-                    # Use a curve that starts fast and slows down
-                    progress = min(95, (elapsed / estimated_download_time) * 100)
-
-                    # Add some randomness to make it look more realistic
-                    progress += random.uniform(-1, 1)
-                    progress = max(0, min(95, progress))
-
-                    # Update status
-                    update_download_status(model_id, 'downloading', progress)
-
-                    # Log progress occasionally
-                    if int(progress) % 10 == 0:
-                        logger.info(f"Download progress (estimated): {progress:.1f}%")
-
-                    # We can't easily check if the download is complete since we don't know the exact paths
-                    # Just rely on the timer-based approach
-                    pass
-
-                # Check if the download is already complete
-                registry = get_registry()
-                if model_id not in registry.get("downloads", {}):
-                    logger.info("Download already completed, no need to update status")
-                    return
-
-                # Set to 95% when we exit the loop
-                update_download_status(model_id, 'downloading', 95)
-                logger.info("Download monitoring complete")
-
-            # Start monitoring thread
-            monitor_thread = threading.Thread(target=simulate_download_progress)
-            monitor_thread.daemon = True
-            monitor_thread.start()
-
+            # Make sure the directory exists
+            os.makedirs(hf_cache_dir, exist_ok=True)
         except Exception as e:
-            logger.warning(f"Failed to set up progress monitoring: {e}")
+            logger.error(f"Error getting Hugging Face cache directory: {e}")
+            raise
+
+        # Set initial progress
+        update_download_status(model_id, 'downloading', 10)
+
+        # We'll use a simple approach with fixed progress points
+        # This will allow us to see any errors more clearly
+        logger.info(f"Downloading model from {repo_id}/{model_path} - starting at 10%")
 
         # Check if download has been cancelled before starting actual download
         if model_id in download_threads and download_threads[model_id]["cancel"]:
@@ -606,37 +699,151 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
 
         try:
             # Download the model file directly to the Hugging Face cache
-            model_file = hf_hub_download(
-                repo_id=repo_id,
-                filename=model_path,
-                resume_download=True,
-                force_download=False
-            )
-            # Don't override progress here, let the monitoring thread handle it
-            logger.info(f"Model file downloaded: {model_file}")
+            logger.info(f"Starting download of model file from {repo_id}/{model_path}")
+            update_download_status(model_id, 'downloading', 20)
+
+            try:
+                # Check if we need to use a token for authentication
+                token = os.environ.get('HF_TOKEN')
+                if token:
+                    logger.info(f"Using Hugging Face token from environment variable for authentication")
+                else:
+                    logger.info(f"No Hugging Face token found, attempting anonymous download")
+
+                # Use the correct parameters for the version of huggingface_hub
+                try:
+                    # Try with newer parameters first
+                    model_file = hf_hub_download(
+                        repo_id=repo_id,
+                        filename=model_path,
+                        resume_download=True,
+                        force_download=False,
+                        token=token
+                    )
+                    logger.info(f"Successfully downloaded model file with token: {model_file}")
+                except (TypeError, Exception) as e:
+                    logger.warning(f"Error with initial download parameters: {e}, trying alternative parameters")
+                    try:
+                        # Fall back to older parameters if needed
+                        model_file = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=model_path,
+                            token=token
+                        )
+                        logger.info(f"Successfully downloaded model file with fallback parameters: {model_file}")
+                    except Exception as e2:
+                        logger.error(f"Error downloading model file with fallback parameters: {e2}")
+                        raise
+                update_download_status(model_id, 'downloading', 60)
+                logger.info(f"Model file downloaded successfully to: {model_file}")
+
+                # Verify the file exists
+                if not os.path.exists(model_file):
+                    raise FileNotFoundError(f"Downloaded model file not found at {model_file}")
+
+                # Log file size
+                file_size = os.path.getsize(model_file) / (1024 * 1024)  # Size in MB
+                logger.info(f"Model file size: {file_size:.2f} MB")
+            except Exception as e:
+                logger.error(f"Error downloading model file: {e}")
+                raise
 
             # Check if download has been cancelled after model download
             if model_id in download_threads and download_threads[model_id]["cancel"]:
                 logger.info(f"Download cancelled for model {model_id} after model file download")
+
+                # Try to delete the downloaded model file
+                try:
+                    if os.path.exists(model_file):
+                        logger.info(f"Deleting downloaded model file: {model_file}")
+                        os.remove(model_file)
+                        logger.info(f"Successfully deleted model file: {model_file}")
+                except Exception as e:
+                    logger.error(f"Error deleting model file: {e}")
+
+                # Try to delete the entire model from the Hugging Face cache
+                try:
+                    # Import the function to delete from Hugging Face cache
+                    from huggingFaceCache import delete_huggingface_cache_model
+                    success, message = delete_huggingface_cache_model(repo_id)
+                    if success:
+                        logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
+                    else:
+                        logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
+                except Exception as e:
+                    logger.error(f"Error deleting model from Hugging Face cache: {e}")
+
                 # Don't add to registry at all for cancelled downloads
                 remove_download_status(model_id)
                 return  # Exit the thread
 
             # Download vocab file directly to the Hugging Face cache
-            logger.info(f"Downloading vocab from {repo_id}/{vocab_path}")
-            vocab_file = hf_hub_download(
-                repo_id=repo_id,
-                filename=vocab_path,
-                resume_download=True,
-                force_download=False
-            )
-            # Don't override progress here, let the monitoring thread handle it
-            logger.info(f"Vocab file downloaded: {vocab_file}")
+            logger.info(f"Starting download of vocab file from {repo_id}/{vocab_path}")
+            update_download_status(model_id, 'downloading', 70)
+
+            try:
+                # Check if we need to use a token for authentication
+                token = os.environ.get('HF_TOKEN')
+                if token:
+                    logger.info(f"Using Hugging Face token from environment variable for authentication")
+                else:
+                    logger.info(f"No Hugging Face token found, attempting anonymous download")
+
+                # Use the correct parameters for the version of huggingface_hub
+                try:
+                    # Try with newer parameters first
+                    vocab_file = hf_hub_download(
+                        repo_id=repo_id,
+                        filename=vocab_path,
+                        resume_download=True,
+                        force_download=False,
+                        token=token
+                    )
+                    logger.info(f"Successfully downloaded vocab file with token: {vocab_file}")
+                except (TypeError, Exception) as e:
+                    logger.warning(f"Error with initial vocab download parameters: {e}, trying alternative parameters")
+                    try:
+                        # Fall back to older parameters if needed
+                        vocab_file = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=vocab_path,
+                            token=token
+                        )
+                        logger.info(f"Successfully downloaded vocab file with fallback parameters: {vocab_file}")
+                    except Exception as e2:
+                        logger.error(f"Error downloading vocab file with fallback parameters: {e2}")
+                        raise
+                update_download_status(model_id, 'downloading', 90)
+                logger.info(f"Vocab file downloaded successfully to: {vocab_file}")
+
+                # Verify the file exists
+                if not os.path.exists(vocab_file):
+                    raise FileNotFoundError(f"Downloaded vocab file not found at {vocab_file}")
+
+                # Log file size
+                file_size = os.path.getsize(vocab_file) / (1024 * 1024)  # Size in MB
+                logger.info(f"Vocab file size: {file_size:.2f} MB")
+            except Exception as e:
+                logger.error(f"Error downloading vocab file: {e}")
+                raise
         except Exception as e:
             logger.error(f"Error during download: {e}")
             if model_id in download_threads and download_threads[model_id]["cancel"]:
                 # If cancelled, don't add to registry at all
                 remove_download_status(model_id)
+
+                # Try to delete the entire model from the Hugging Face cache
+                try:
+                    # Import the function to delete from Hugging Face cache
+                    from huggingFaceCache import delete_huggingface_cache_model
+                    success, message = delete_huggingface_cache_model(repo_id)
+                    if success:
+                        logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
+                    else:
+                        logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
+                except Exception as e2:
+                    logger.error(f"Error deleting model from Hugging Face cache: {e2}")
+
                 return
             else:
                 # Otherwise, re-raise the exception to be caught by the outer try-except
@@ -653,27 +860,46 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
             logger.info(f"Using provided language codes: {language_codes}")
         else:
             # Try to determine language from model ID or repo ID
-            # Check if any known language code is in the model ID or repo ID
-            known_languages = ["zh", "en", "fi", "fr", "hi", "it", "ja", "ru", "es", "vi"]
+            # Use a more flexible approach to detect language codes
             model_id_lower = model_id.lower()
             repo_id_lower = repo_id.lower()
 
-            # Check for language codes in model ID
-            for lang in known_languages:
-                if f"-{lang}" in model_id_lower or f"_{lang}" in model_id_lower or model_id_lower.endswith(lang):
-                    supported_languages.append(lang)
-                    primary_language = lang
-                    logger.info(f"Detected language from model ID: {lang}")
-                    break
+            # Common language codes that might be found in model IDs or repo IDs
+            # This is just a fallback - the preferred method is to provide language codes explicitly
+            # We don't limit to a fixed list, but we'll check for common patterns
+
+            # Check for language codes in model ID using common patterns
+            # Look for patterns like "model-en", "model_en", "model-en-us", etc.
+            import re
+
+            # Pattern to match language codes in model ID
+            # This looks for 2-letter codes that are either:
+            # 1. At the end of the string
+            # 2. Followed by a hyphen and more text (like en-us)
+            # 3. Preceded by a hyphen or underscore
+            lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
+
+            # Find all matches in model ID
+            matches = re.findall(lang_pattern, model_id_lower)
+            if matches:
+                # Use the first match as primary language
+                primary_language = matches[0]
+                supported_languages = list(set(matches))  # Remove duplicates
+                logger.info(f"Detected languages from model ID: {supported_languages}")
 
             # If not found in model ID, check repo ID
             if not supported_languages:
-                for lang in known_languages:
-                    if lang in repo_id_lower:
-                        supported_languages.append(lang)
-                        primary_language = lang
-                        logger.info(f"Detected language from repo ID: {lang}")
-                        break
+                matches = re.findall(lang_pattern, repo_id_lower)
+                if matches:
+                    primary_language = matches[0]
+                    supported_languages = list(set(matches))  # Remove duplicates
+                    logger.info(f"Detected languages from repo ID: {supported_languages}")
+
+            # If still no languages detected, default to "en" as a fallback
+            if not supported_languages:
+                logger.info("No language detected, defaulting to 'en'")
+                primary_language = "en"
+                supported_languages = ["en"]
 
         # Create model info that points directly to the Hugging Face cache files
         model_info = {
@@ -690,6 +916,9 @@ def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None,
             "original_model_file": None,
             "original_vocab_file": None
         }
+
+        # Log the model info for debugging
+        logger.info(f"Model info prepared: id={model_id}, model_path={model_file}, vocab_path={vocab_file}")
 
         # Set progress to 99% before adding to registry
         update_download_status(model_id, 'downloading', 99)
@@ -721,16 +950,25 @@ def parse_hf_url(url):
 
     Examples:
     - hf://SWivid/F5-TTS/F5TTS_v1_Base/model_1250000.safetensors
+    - hf://erax-ai/EraX-Smile-UnixSex-F5/models/model_42000.safetensors
     - https://huggingface.co/SWivid/F5-TTS/blob/main/F5TTS_v1_Base/model_1250000.safetensors
 
     Returns:
         tuple: (repo_id, file_path)
     """
+    logger.info(f"Parsing Hugging Face URL: {url}")
+
+    if not url:
+        logger.error("Empty URL provided to parse_hf_url")
+        return None, None
+
     if url.startswith('hf://'):
         # Format: hf://repo_id/file_path
         parts = url[5:].split('/', 1)
         if len(parts) == 2:
-            return parts[0], parts[1]
+            repo_id, file_path = parts
+            logger.info(f"Parsed hf:// URL - repo_id: {repo_id}, file_path: {file_path}")
+            return repo_id, file_path
 
     elif 'huggingface.co' in url:
         # Format: https://huggingface.co/repo_id/blob/branch/file_path
@@ -742,9 +980,24 @@ def parse_hf_url(url):
                 repo_id, file_path = path.split('/blob/', 1)
                 # Remove branch name
                 if '/' in file_path:
-                    branch, file_path = file_path.split('/', 1)
+                    # Split by first slash to remove branch name
+                    _, file_path = file_path.split('/', 1)
+                    logger.info(f"Parsed huggingface.co URL - repo_id: {repo_id}, file_path: {file_path}")
                     return repo_id, file_path
 
+            # Handle direct resolve URLs (no blob)
+            # Format: https://huggingface.co/repo_id/resolve/main/file_path
+            elif '/resolve/' in path:
+                repo_id, file_path = path.split('/resolve/', 1)
+                # Remove branch name
+                if '/' in file_path:
+                    # Split by first slash to remove branch name
+                    _, file_path = file_path.split('/', 1)
+                    logger.info(f"Parsed huggingface.co resolve URL - repo_id: {repo_id}, file_path: {file_path}")
+                    return repo_id, file_path
+
+    # If we get here, the URL format wasn't recognized
+    logger.error(f"Failed to parse Hugging Face URL: {url}")
     return None, None
 
 def download_model_from_url(model_url, vocab_url=None, config=None, model_id=None, language_codes=None):
@@ -800,19 +1053,47 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
     # Import required modules
     import os
     import requests
-    from huggingface_hub.constants import HF_CACHE_HOME
+    import re
 
     try:
+        # Get the Hugging Face cache location
+        # Handle different versions of huggingface_hub
+        try:
+            # Try the newer API first
+            try:
+                from huggingface_hub import get_cache_dir
+                hf_cache_dir = get_cache_dir()
+                logger.info(f"Using get_cache_dir(): {hf_cache_dir}")
+            except (ImportError, AttributeError):
+                # Fall back to older approach
+                import os
+                home_dir = os.path.expanduser("~")
+                hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+                logger.info(f"Using default cache path: {hf_cache_dir}")
+
+            # Make sure the directory exists
+            os.makedirs(hf_cache_dir, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Error getting Hugging Face cache directory: {e}")
+            raise
+
         # Create a directory in the Hugging Face cache for this model
-        cache_dir = os.path.join(HF_CACHE_HOME, "custom_models", model_id)
+        cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
+        logger.info(f"Creating custom model directory at: {cache_dir}")
         os.makedirs(cache_dir, exist_ok=True)
+
+        # Verify the directory was created
+        if not os.path.exists(cache_dir):
+            raise IOError(f"Failed to create cache directory at {cache_dir}")
+        else:
+            logger.info(f"Cache directory created/exists: {cache_dir}")
 
         # Download model file directly to the Hugging Face cache
         logger.info(f"Downloading model from {model_url}")
         model_filename = os.path.basename(model_url)
         cache_model_path = os.path.join(cache_dir, model_filename)
+        logger.info(f"Model will be saved to: {cache_model_path}")
 
-        # We'll use a simpler approach with direct progress tracking
         # Start with 0% progress
         update_download_status(model_id, 'downloading', 0)
         logger.info("Starting download with direct progress tracking")
@@ -842,6 +1123,33 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
         # Download with progress tracking
         with open(cache_model_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=chunk_size):
+                # Check if download has been cancelled
+                if model_id in download_threads and download_threads[model_id]["cancel"]:
+                    logger.info(f"Download cancelled for model {model_id} during model file download")
+                    f.close()
+
+                    # Delete the partially downloaded file
+                    try:
+                        if os.path.exists(cache_model_path):
+                            logger.info(f"Deleting partially downloaded model file: {cache_model_path}")
+                            os.remove(cache_model_path)
+                            logger.info(f"Successfully deleted model file: {cache_model_path}")
+                    except Exception as e:
+                        logger.error(f"Error deleting model file: {e}")
+
+                    # Delete the model directory
+                    try:
+                        if os.path.exists(cache_dir):
+                            logger.info(f"Deleting model directory: {cache_dir}")
+                            shutil.rmtree(cache_dir)
+                            logger.info(f"Successfully deleted model directory: {cache_dir}")
+                    except Exception as e:
+                        logger.error(f"Error deleting model directory: {e}")
+
+                    # Don't add to registry at all for cancelled downloads
+                    remove_download_status(model_id)
+                    return  # Exit the thread
+
                 f.write(chunk)
                 downloaded_size += len(chunk)
 
@@ -861,6 +1169,32 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
         logger.info(f"Model file downloaded: {cache_model_path}")
         update_download_status(model_id, 'downloading', 90)
+
+        # Check if download has been cancelled after model file download
+        if model_id in download_threads and download_threads[model_id]["cancel"]:
+            logger.info(f"Download cancelled for model {model_id} after model file download")
+
+            # Delete the downloaded file
+            try:
+                if os.path.exists(cache_model_path):
+                    logger.info(f"Deleting downloaded model file: {cache_model_path}")
+                    os.remove(cache_model_path)
+                    logger.info(f"Successfully deleted model file: {cache_model_path}")
+            except Exception as e:
+                logger.error(f"Error deleting model file: {e}")
+
+            # Delete the model directory
+            try:
+                if os.path.exists(cache_dir):
+                    logger.info(f"Deleting model directory: {cache_dir}")
+                    shutil.rmtree(cache_dir)
+                    logger.info(f"Successfully deleted model directory: {cache_dir}")
+            except Exception as e:
+                logger.error(f"Error deleting model directory: {e}")
+
+            # Don't add to registry at all for cancelled downloads
+            remove_download_status(model_id)
+            return  # Exit the thread
 
         # Download vocab file if provided
         cache_vocab_path = None
@@ -895,27 +1229,46 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
             logger.info(f"Using provided language codes: {language_codes}")
         else:
             # Try to determine language from model ID or URL
-            # Check if any known language code is in the model ID or URL
-            known_languages = ["zh", "en", "fi", "fr", "hi", "it", "ja", "ru", "es", "vi"]
+            # Use a more flexible approach to detect language codes
             model_id_lower = model_id.lower()
             model_url_lower = model_url.lower()
 
-            # Check for language codes in model ID
-            for lang in known_languages:
-                if f"-{lang}" in model_id_lower or f"_{lang}" in model_id_lower or model_id_lower.endswith(lang):
-                    supported_languages.append(lang)
-                    primary_language = lang
-                    logger.info(f"Detected language from model ID: {lang}")
-                    break
+            # Common language codes that might be found in model IDs or URLs
+            # This is just a fallback - the preferred method is to provide language codes explicitly
+            # We don't limit to a fixed list, but we'll check for common patterns
+
+            # Check for language codes in model ID using common patterns
+            # Look for patterns like "model-en", "model_en", "model-en-us", etc.
+            import re
+
+            # Pattern to match language codes in model ID
+            # This looks for 2-letter codes that are either:
+            # 1. At the end of the string
+            # 2. Followed by a hyphen and more text (like en-us)
+            # 3. Preceded by a hyphen or underscore
+            lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
+
+            # Find all matches in model ID
+            matches = re.findall(lang_pattern, model_id_lower)
+            if matches:
+                # Use the first match as primary language
+                primary_language = matches[0]
+                supported_languages = list(set(matches))  # Remove duplicates
+                logger.info(f"Detected languages from model ID: {supported_languages}")
 
             # If not found in model ID, check URL
             if not supported_languages:
-                for lang in known_languages:
-                    if lang in model_url_lower:
-                        supported_languages.append(lang)
-                        primary_language = lang
-                        logger.info(f"Detected language from URL: {lang}")
-                        break
+                matches = re.findall(lang_pattern, model_url_lower)
+                if matches:
+                    primary_language = matches[0]
+                    supported_languages = list(set(matches))  # Remove duplicates
+                    logger.info(f"Detected languages from URL: {supported_languages}")
+
+            # If still no languages detected, default to "en" as a fallback
+            if not supported_languages:
+                logger.info("No language detected, defaulting to 'en'")
+                primary_language = "en"
+                supported_languages = ["en"]
 
         # Create model info that points directly to the Hugging Face cache files
         model_info = {
@@ -931,6 +1284,19 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
             "original_model_file": None,
             "original_vocab_file": None
         }
+
+        # Log the model info for debugging
+        logger.info(f"Model info prepared: id={model_id}, model_path={cache_model_path}, vocab_path={cache_vocab_path}")
+
+        # Verify the model file exists
+        if not os.path.exists(cache_model_path):
+            logger.error(f"Model file not found at {cache_model_path}")
+            raise FileNotFoundError(f"Model file not found at {cache_model_path}")
+
+        # Verify the vocab file exists if provided
+        if cache_vocab_path and not os.path.exists(cache_vocab_path):
+            logger.error(f"Vocab file not found at {cache_vocab_path}")
+            raise FileNotFoundError(f"Vocab file not found at {cache_vocab_path}")
 
         # Set progress to 99% before adding to registry
         update_download_status(model_id, 'downloading', 99)
