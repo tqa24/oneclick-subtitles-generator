@@ -77,64 +77,99 @@
   margin-bottom: 0.75rem;
 }
 
+/* Base language chip styling */
 .language-chip {
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.75rem;
-  background-color: var(--md-surface-variant);
-  color: var(--md-on-surface-variant);
   display: inline-flex;
   align-items: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.language-chip.zh {
-  background-color: rgba(var(--md-primary-rgb), 0.15);
-  color: var(--md-primary);
+/* No global light theme override - we'll use specific colors for each language */
+
+/* Light theme - Language-specific colors */
+html:not([data-theme="dark"]) .language-chip.en {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: #0277bd; /* Darker blue for light mode */
 }
 
-.language-chip.en {
-  background-color: rgba(var(--md-secondary-rgb), 0.15);
-  color: var(--md-secondary);
+html:not([data-theme="dark"]) .language-chip.zh {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #c62828; /* Darker red for light mode */
 }
 
-.language-chip.fr {
-  background-color: rgba(var(--md-tertiary-rgb), 0.15);
-  color: var(--md-tertiary);
+html:not([data-theme="dark"]) .language-chip.fr {
+  background-color: rgba(156, 39, 176, 0.15);
+  color: #7b1fa2; /* Darker purple for light mode */
 }
 
-.language-chip.es {
-  background-color: rgba(103, 80, 164, 0.15);
-  color: #6750A4;
+html:not([data-theme="dark"]) .language-chip.es {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: #ef6c00; /* Darker orange for light mode */
 }
 
-.language-chip.it {
-  background-color: rgba(0, 110, 144, 0.15);
-  color: #006E90;
+html:not([data-theme="dark"]) .language-chip.it {
+  background-color: rgba(0, 150, 136, 0.15);
+  color: #00796b; /* Darker teal for light mode */
 }
 
-.language-chip.ja {
-  background-color: rgba(154, 0, 7, 0.15);
-  color: #9A0007;
+html:not([data-theme="dark"]) .language-chip.ja {
+  background-color: rgba(233, 30, 99, 0.15);
+  color: #c2185b; /* Darker pink for light mode */
 }
 
-.language-chip.ru {
-  background-color: rgba(0, 77, 64, 0.15);
-  color: #004D40;
+html:not([data-theme="dark"]) .language-chip.ru {
+  background-color: rgba(63, 81, 181, 0.15);
+  color: #303f9f; /* Darker indigo for light mode */
 }
 
-.language-chip.vi {
-  background-color: rgba(230, 81, 0, 0.15);
-  color: #E65100;
+html:not([data-theme="dark"]) .language-chip.vi {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #ff8f00; /* Darker amber for light mode */
 }
 
-.language-chip.fi {
-  background-color: rgba(26, 35, 126, 0.15);
-  color: #1A237E;
+html:not([data-theme="dark"]) .language-chip.fi {
+  background-color: rgba(3, 169, 244, 0.15);
+  color: #0288d1; /* Darker light blue for light mode */
 }
 
-.language-chip.hi {
-  background-color: rgba(183, 28, 28, 0.15);
-  color: #B71C1C;
+html:not([data-theme="dark"]) .language-chip.hi {
+  background-color: rgba(255, 87, 34, 0.15);
+  color: #d84315; /* Darker deep orange for light mode */
+}
+
+/* Default for any other language in light mode */
+html:not([data-theme="dark"]) .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.it):not(.ja):not(.ru):not(.vi):not(.fi):not(.hi) {
+  background-color: rgba(76, 175, 80, 0.15); /* Green */
+  color: #2e7d32; /* Darker green for light mode */
+}
+
+/* Dark theme styling */
+html[data-theme="dark"] .language-chip {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Language-specific colors for dark theme */
+html[data-theme="dark"] .language-chip.en { background-color: rgba(33, 150, 243, 0.25); color: #64b5f6; } /* Blue */
+html[data-theme="dark"] .language-chip.zh { background-color: rgba(244, 67, 54, 0.25); color: #ef9a9a; } /* Red */
+html[data-theme="dark"] .language-chip.fr { background-color: rgba(156, 39, 176, 0.25); color: #ce93d8; } /* Purple */
+html[data-theme="dark"] .language-chip.es { background-color: rgba(255, 152, 0, 0.25); color: #ffb74d; } /* Orange */
+html[data-theme="dark"] .language-chip.it { background-color: rgba(0, 150, 136, 0.25); color: #80cbc4; } /* Teal */
+html[data-theme="dark"] .language-chip.ja { background-color: rgba(233, 30, 99, 0.25); color: #f48fb1; } /* Pink */
+html[data-theme="dark"] .language-chip.ru { background-color: rgba(63, 81, 181, 0.25); color: #9fa8da; } /* Indigo */
+html[data-theme="dark"] .language-chip.vi { background-color: rgba(255, 193, 7, 0.25); color: #ffe082; } /* Amber */
+html[data-theme="dark"] .language-chip.fi { background-color: rgba(3, 169, 244, 0.25); color: #81d4fa; } /* Light Blue */
+html[data-theme="dark"] .language-chip.hi { background-color: rgba(255, 87, 34, 0.25); color: #ffab91; } /* Deep Orange */
+
+/* Default for any other language in dark theme */
+html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.it):not(.ja):not(.ru):not(.vi):not(.fi):not(.hi) {
+  background-color: rgba(76, 175, 80, 0.25); color: #a5d6a7; /* Green */
 }
 
 /* Model source */
