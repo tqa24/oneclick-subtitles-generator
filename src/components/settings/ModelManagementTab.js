@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   CircularProgress,
   Alert,
   Snackbar
@@ -14,10 +10,19 @@ import AddIcon from '@mui/icons-material/Add';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ErrorIcon from '@mui/icons-material/Error';
 import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
+import LanguageIcon from '@mui/icons-material/Language';
+import CodeIcon from '@mui/icons-material/Code';
+import LinkIcon from '@mui/icons-material/Link';
+import TuneIcon from '@mui/icons-material/Tune';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
 import { invalidateModelsCache } from '../../services/modelAvailabilityService';
+import '../../styles/settings/customModelDialog.css';
 import ModelList, { LANGUAGE_NAMES } from './ModelList';
 import '../../styles/settings/modelManagement.css';
+import CustomModelDialog from './CustomModelDialog';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
 
@@ -531,103 +536,158 @@ const ModelManagementTab = () => {
 
 
       {/* Add Model Dialog */}
-      <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="md" fullWidth>
-        <DialogTitle className="model-dialog-header">
-          <h4 className="model-dialog-title">{t('settings.modelManagement.addNewCustomModel')}</h4>
-        </DialogTitle>
-        <DialogContent className="model-dialog-content">
-          <div className="form-field">
-            <label>{t('settings.modelManagement.modelSource')}</label>
-            <div className="radio-group">
-              <div className="radio-option">
-                <input
-                  type="radio"
-                  id="source-huggingface"
-                  name="sourceType"
-                  value="huggingface"
-                  checked={addModelForm.sourceType === 'huggingface'}
-                  onChange={handleSourceTypeChange}
-                />
-                <label htmlFor="source-huggingface">
-                  {t('settings.modelManagement.huggingFace')}
-                </label>
-              </div>
-              <div className="radio-option">
-                <input
-                  type="radio"
-                  id="source-url"
-                  name="sourceType"
-                  value="url"
-                  checked={addModelForm.sourceType === 'url'}
-                  onChange={handleSourceTypeChange}
-                />
-                <label htmlFor="source-url">
-                  {t('settings.modelManagement.directUrl')}
-                </label>
-              </div>
+      <CustomModelDialog
+        isOpen={openAddDialog}
+        onClose={handleCloseAddDialog}
+        title={t('settings.modelManagement.addNewCustomModel')}
+        footer={
+          <>
+            <button
+              className="cancel-btn"
+              onClick={handleCloseAddDialog}
+              disabled={addingModel}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              className="confirm-btn"
+              onClick={handleAddModel}
+              disabled={!addModelForm.modelUrl || addingModel}
+            >
+              {addingModel && <span className="spinner"></span>}
+              {addingModel
+                ? t('settings.modelManagement.addingCustomModel')
+                : t('settings.modelManagement.addCustomModel')
+              }
+            </button>
+          </>
+        }
+      >
+        <p className="explanation">
+          {t('settings.modelManagement.addModelExplanation', 'Add a custom TTS model from Hugging Face or a direct URL. The model will be downloaded and made available for narration.')}
+        </p>
+
+        <div className="form-field">
+          <label>{t('settings.modelManagement.modelSource')}</label>
+          <div className="radio-group">
+            <div className="radio-option">
+              <input
+                type="radio"
+                id="source-huggingface"
+                name="sourceType"
+                value="huggingface"
+                checked={addModelForm.sourceType === 'huggingface'}
+                onChange={handleSourceTypeChange}
+              />
+              <label htmlFor="source-huggingface">
+                {t('settings.modelManagement.huggingFace')}
+              </label>
+            </div>
+            <div className="radio-option">
+              <input
+                type="radio"
+                id="source-url"
+                name="sourceType"
+                value="url"
+                checked={addModelForm.sourceType === 'url'}
+                onChange={handleSourceTypeChange}
+              />
+              <label htmlFor="source-url">
+                {t('settings.modelManagement.directUrl')}
+              </label>
             </div>
           </div>
+        </div>
 
-          <div className="form-field">
-            <label htmlFor="modelUrl">
-              {addModelForm.sourceType === 'huggingface'
-                ? t('settings.modelManagement.huggingFaceModelUrl')
-                : t('settings.modelManagement.directModelUrl')}
-            </label>
-            <input
-              id="modelUrl"
-              name="modelUrl"
-              type="text"
-              value={addModelForm.modelUrl}
-              onChange={handleFormChange}
-            />
-            <div className="helper-text">
-              {addModelForm.sourceType === 'huggingface'
-                ? t('settings.modelManagement.huggingFaceModelUrlHelp')
-                : t('settings.modelManagement.directModelUrlHelp')}
-            </div>
+        <div className="form-field">
+          <label htmlFor="modelUrl">
+            {addModelForm.sourceType === 'huggingface'
+              ? t('settings.modelManagement.huggingFaceModelUrl')
+              : t('settings.modelManagement.directModelUrl')}
+          </label>
+          <input
+            id="modelUrl"
+            name="modelUrl"
+            type="text"
+            value={addModelForm.modelUrl}
+            onChange={handleFormChange}
+            style={{
+              borderRadius: '100px',
+              height: '36px',
+              padding: '0 16px',
+              boxSizing: 'border-box'
+            }}
+            placeholder={addModelForm.sourceType === 'huggingface'
+              ? "facebook/fastspeech2-en-ljspeech"
+              : "https://example.com/model.bin"}
+          />
+          <div className="helper-text">
+            {addModelForm.sourceType === 'huggingface'
+              ? t('settings.modelManagement.huggingFaceModelUrlHelp')
+              : t('settings.modelManagement.directModelUrlHelp')}
+          </div>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="vocabUrl">
+            {addModelForm.sourceType === 'huggingface'
+              ? t('settings.modelManagement.huggingFaceVocabUrl')
+              : t('settings.modelManagement.directVocabUrl')}
+          </label>
+          <input
+            id="vocabUrl"
+            name="vocabUrl"
+            type="text"
+            value={addModelForm.vocabUrl}
+            onChange={handleFormChange}
+            style={{
+              borderRadius: '100px',
+              height: '36px',
+              padding: '0 16px',
+              boxSizing: 'border-box'
+            }}
+            placeholder={addModelForm.sourceType === 'huggingface'
+              ? "facebook/fastspeech2-en-ljspeech/vocab.json"
+              : "https://example.com/vocab.json"}
+          />
+          <div className="helper-text">
+            {addModelForm.sourceType === 'huggingface'
+              ? t('settings.modelManagement.huggingFaceVocabUrlHelp')
+              : t('settings.modelManagement.directVocabUrlHelp')}
+          </div>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="modelId">{t('settings.modelManagement.modelId')}</label>
+          <input
+            id="modelId"
+            name="modelId"
+            type="text"
+            value={addModelForm.modelId}
+            onChange={handleFormChange}
+            style={{
+              borderRadius: '100px',
+              height: '36px',
+              padding: '0 16px',
+              boxSizing: 'border-box'
+            }}
+            placeholder="my-custom-tts-model"
+          />
+          <div className="helper-text">
+            {t('settings.modelManagement.modelIdHelp')}
+          </div>
+        </div>
+
+        <div className="language-codes-section">
+          <div className="section-header">
+            <LanguageIcon />
+            <h5>{t('settings.modelManagement.languageCodes', 'Supported Languages')}</h5>
+          </div>
+          <div className="helper-text">
+            {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
           </div>
 
-          <div className="form-field">
-            <label htmlFor="vocabUrl">
-              {addModelForm.sourceType === 'huggingface'
-                ? t('settings.modelManagement.huggingFaceVocabUrl')
-                : t('settings.modelManagement.directVocabUrl')}
-            </label>
-            <input
-              id="vocabUrl"
-              name="vocabUrl"
-              type="text"
-              value={addModelForm.vocabUrl}
-              onChange={handleFormChange}
-            />
-            <div className="helper-text">
-              {addModelForm.sourceType === 'huggingface'
-                ? t('settings.modelManagement.huggingFaceVocabUrlHelp')
-                : t('settings.modelManagement.directVocabUrlHelp')}
-            </div>
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="modelId">{t('settings.modelManagement.modelId')}</label>
-            <input
-              id="modelId"
-              name="modelId"
-              type="text"
-              value={addModelForm.modelId}
-              onChange={handleFormChange}
-            />
-            <div className="helper-text">
-              {t('settings.modelManagement.modelIdHelp')}
-            </div>
-          </div>
-
-          <div className="language-codes-section">
-            <h5>{t('settings.modelManagement.languageCodes')}</h5>
-            <div className="helper-text">
-              {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
-            </div>
-
+          <div className="language-codes-container">
             {addModelForm.languageCodes.map((code, index) => (
               <div key={index} className="language-code-field">
                 <input
@@ -637,6 +697,13 @@ const ModelManagementTab = () => {
                     const newCodes = [...addModelForm.languageCodes];
                     newCodes[index] = e.target.value;
                     setAddModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                  }}
+                  style={{
+                    borderRadius: '100px',
+                    width: '80px',
+                    height: '36px',
+                    padding: '0 12px',
+                    boxSizing: 'border-box'
                   }}
                   placeholder={t('settings.modelManagement.languageCode')}
                 />
@@ -672,121 +739,145 @@ const ModelManagementTab = () => {
               {t('settings.modelManagement.addLanguageCode', 'Add language code')}
             </button>
           </div>
+        </div>
 
-          <button
-            className="advanced-options-toggle"
-            onClick={toggleAdvancedOptions}
-          >
-            {addModelForm.showAdvanced
-              ? t('settings.modelManagement.hideAdvancedOptions')
-              : t('settings.modelManagement.showAdvancedOptions')
-            }
-          </button>
+        <button
+          className="advanced-options-toggle"
+          onClick={toggleAdvancedOptions}
+        >
+          <TuneIcon fontSize="small" style={{ marginRight: '8px' }} />
+          {addModelForm.showAdvanced
+            ? t('settings.modelManagement.hideAdvancedOptions')
+            : t('settings.modelManagement.showAdvancedOptions')
+          }
+          {addModelForm.showAdvanced
+            ? <KeyboardArrowUpIcon fontSize="small" style={{ marginLeft: '4px' }} />
+            : <KeyboardArrowDownIcon fontSize="small" style={{ marginLeft: '4px' }} />
+          }
+        </button>
 
-          {addModelForm.showAdvanced && (
-            <div className="form-field">
-              <label htmlFor="config">{t('settings.modelManagement.modelConfig')}</label>
-              <textarea
-                id="config"
-                name="config"
-                value={addModelForm.config}
-                onChange={handleFormChange}
-                rows={4}
-              />
-              <div className="helper-text">
-                {t('settings.modelManagement.modelConfigHelp')}
-              </div>
+        {addModelForm.showAdvanced && (
+          <div className="form-field">
+            <label htmlFor="config">{t('settings.modelManagement.modelConfig')}</label>
+            <textarea
+              id="config"
+              name="config"
+              value={addModelForm.config}
+              onChange={handleFormChange}
+              rows={4}
+              placeholder='{"sample_rate": 22050, "vocoder": "hifigan"}'
+            />
+            <div className="helper-text">
+              {t('settings.modelManagement.modelConfigHelp')}
             </div>
-          )}
-        </DialogContent>
-        <DialogActions className="model-dialog-actions">
-          <button
-            className="cancel-btn"
-            onClick={handleCloseAddDialog}
-            disabled={addingModel}
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            className="confirm-btn"
-            onClick={handleAddModel}
-            disabled={!addModelForm.modelUrl || addingModel}
-          >
-            {addingModel && <span className="spinner"></span>}
-            {addingModel
-              ? t('settings.modelManagement.addingCustomModel')
-              : t('settings.modelManagement.addCustomModel')
-            }
-          </button>
-        </DialogActions>
-      </Dialog>
+          </div>
+        )}
+      </CustomModelDialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
-        <DialogTitle className="model-dialog-header">
-          <h4 className="model-dialog-title">{t('settings.modelManagement.confirmDelete')}</h4>
-        </DialogTitle>
-        <DialogContent className="model-dialog-content">
-          <p>
-            {t('settings.modelManagement.deleteConfirmationText', {
-              modelName: modelToDelete?.name || ''
+      <CustomModelDialog
+        isOpen={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        title={t('settings.modelManagement.confirmDelete')}
+        footer={
+          <>
+            <button
+              className="cancel-btn"
+              onClick={handleCloseDeleteDialog}
+              disabled={loading}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              className="delete-btn"
+              onClick={handleDeleteModel}
+              disabled={loading}
+            >
+              {loading && <span className="spinner"></span>}
+              {loading
+                ? t('settings.modelManagement.deleting')
+                : t('settings.modelManagement.delete')
+              }
+            </button>
+          </>
+        }
+      >
+        <p className="delete-confirmation-text">
+          {t('settings.modelManagement.deleteConfirmationText', {
+            modelName: modelToDelete?.name || ''
+          })}
+        </p>
+
+        {/* We no longer have active models, so no warning needed */}
+
+        {modelToDelete?.repo_id && (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            {t('settings.modelManagement.deleteFromCacheInfo', {
+              repoId: modelToDelete.repo_id
             })}
-          </p>
-
-          {/* We no longer have active models, so no warning needed */}
-
-          {modelToDelete?.repo_id && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              {t('settings.modelManagement.deleteFromCacheInfo', {
-                repoId: modelToDelete.repo_id
-              })}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions className="model-dialog-actions">
-          <button
-            className="cancel-btn"
-            onClick={handleCloseDeleteDialog}
-            disabled={loading}
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            className="delete-btn"
-            onClick={handleDeleteModel}
-            disabled={loading}
-          >
-            {loading && <span className="spinner"></span>}
-            {loading
-              ? t('settings.modelManagement.deleting')
-              : t('settings.modelManagement.delete')
-            }
-          </button>
-        </DialogActions>
-      </Dialog>
+          </Alert>
+        )}
+      </CustomModelDialog>
 
       {/* Edit Model Dialog */}
-      <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="md" fullWidth>
-        <DialogTitle className="model-dialog-header">
-          <h4 className="model-dialog-title">{t('settings.modelManagement.editModel')}</h4>
-        </DialogTitle>
-        <DialogContent className="model-dialog-content">
-          <div className="form-field">
-            <label htmlFor="modelName">{t('settings.modelManagement.modelName')}</label>
-            <input
-              id="modelName"
-              type="text"
-              value={editModelForm.name}
-              onChange={(e) => setEditModelForm(prev => ({ ...prev, name: e.target.value }))}
-            />
+      <CustomModelDialog
+        isOpen={openEditDialog}
+        onClose={handleCloseEditDialog}
+        title={t('settings.modelManagement.editModel')}
+        footer={
+          <>
+            <button
+              className="cancel-btn"
+              onClick={handleCloseEditDialog}
+              disabled={editingModel}
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              className="confirm-btn"
+              onClick={handleEditModel}
+              disabled={editingModel}
+            >
+              {editingModel && <span className="spinner"></span>}
+              {editingModel
+                ? t('settings.modelManagement.updating')
+                : t('settings.modelManagement.update')
+              }
+            </button>
+          </>
+        }
+      >
+        <p className="explanation">
+          {t('settings.modelManagement.editModelExplanation', 'Edit the information for this model. Changes will be applied immediately.')}
+        </p>
+
+        <div className="form-field">
+          <label htmlFor="modelName">{t('settings.modelManagement.modelName')}</label>
+          <input
+            id="modelName"
+            type="text"
+            value={editModelForm.name}
+            onChange={(e) => setEditModelForm(prev => ({ ...prev, name: e.target.value }))}
+            style={{
+              borderRadius: '100px',
+              height: '36px',
+              padding: '0 16px',
+              boxSizing: 'border-box'
+            }}
+            placeholder="Model Name"
+          />
+        </div>
+
+        <div className="language-codes-section">
+          <div className="section-header">
+            <LanguageIcon />
+            <h5>{t('settings.modelManagement.languageCodes', 'Supported Languages')}</h5>
+          </div>
+          <div className="helper-text">
+            {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
           </div>
 
-          <div className="language-codes-section">
-            <h5>{t('settings.modelManagement.languageCodes')}</h5>
-            <div className="helper-text">
-              {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
-            </div>
-
+          <div className="language-codes-container">
             {(editModelForm.languageCodes || []).map((code, index) => (
               <div key={index} className="language-code-field">
                 <input
@@ -796,6 +887,13 @@ const ModelManagementTab = () => {
                     const newCodes = [...(editModelForm.languageCodes || [''])];
                     newCodes[index] = e.target.value;
                     setEditModelForm(prev => ({ ...prev, languageCodes: newCodes }));
+                  }}
+                  style={{
+                    borderRadius: '100px',
+                    width: '80px',
+                    height: '36px',
+                    padding: '0 12px',
+                    boxSizing: 'border-box'
                   }}
                   placeholder={t('settings.modelManagement.languageCode')}
                 />
@@ -831,66 +929,50 @@ const ModelManagementTab = () => {
               {t('settings.modelManagement.addLanguageCode', 'Add language code')}
             </button>
           </div>
+        </div>
 
-          <div className="form-field">
-            <label htmlFor="editConfig">{t('settings.modelManagement.modelConfig')}</label>
-            <textarea
-              id="editConfig"
-              value={editModelForm.config}
-              onChange={(e) => setEditModelForm(prev => ({ ...prev, config: e.target.value }))}
-              rows={4}
-            />
-            <div className="helper-text">
-              {t('settings.modelManagement.modelConfigHelp')}
-            </div>
+        <div className="form-field">
+          <label htmlFor="editConfig">{t('settings.modelManagement.modelConfig')}</label>
+          <textarea
+            id="editConfig"
+            value={editModelForm.config}
+            onChange={(e) => setEditModelForm(prev => ({ ...prev, config: e.target.value }))}
+            rows={4}
+            placeholder='{"sample_rate": 22050, "vocoder": "hifigan"}'
+          />
+          <div className="helper-text">
+            {t('settings.modelManagement.modelConfigHelp')}
           </div>
+        </div>
 
-          {/* Display storage information only for symlinked models */}
-          {modelToEdit && modelStorageInfo[modelToEdit.id] && modelStorageInfo[modelToEdit.id].is_symlink && (
-            <div className="form-field">
+        {/* Display storage information only for symlinked models */}
+        {modelToEdit && modelStorageInfo[modelToEdit.id] && modelStorageInfo[modelToEdit.id].is_symlink && (
+          <div className="form-field storage-info">
+            <div className="section-header">
+              <LinkIcon />
               <h5>{t('settings.modelManagement.storageInformation')}</h5>
-
-              <Alert severity="info" sx={{ mb: 1 }}>
-                {t('settings.modelManagement.usingSymlinks')}
-              </Alert>
-
-              <p className="model-source">
-                {t('settings.modelManagement.originalFiles')}:
-              </p>
-              <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
-                <li>
-                  {modelStorageInfo[modelToEdit.id].original_model_file}
-                </li>
-                {modelStorageInfo[modelToEdit.id].original_vocab_file && (
-                  <li>
-                    {modelStorageInfo[modelToEdit.id].original_vocab_file}
-                  </li>
-                )}
-              </ul>
             </div>
-          )}
-        </DialogContent>
-        <DialogActions className="model-dialog-actions">
-          <button
-            className="cancel-btn"
-            onClick={handleCloseEditDialog}
-            disabled={editingModel}
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            className="confirm-btn"
-            onClick={handleEditModel}
-            disabled={editingModel}
-          >
-            {editingModel && <span className="spinner"></span>}
-            {editingModel
-              ? t('settings.modelManagement.updating')
-              : t('settings.modelManagement.update')
-            }
-          </button>
-        </DialogActions>
-      </Dialog>
+
+            <Alert severity="info" sx={{ mb: 1 }}>
+              {t('settings.modelManagement.usingSymlinks')}
+            </Alert>
+
+            <p className="model-source">
+              {t('settings.modelManagement.originalFiles')}:
+            </p>
+            <ul className="file-list">
+              <li>
+                {modelStorageInfo[modelToEdit.id].original_model_file}
+              </li>
+              {modelStorageInfo[modelToEdit.id].original_vocab_file && (
+                <li>
+                  {modelStorageInfo[modelToEdit.id].original_vocab_file}
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+      </CustomModelDialog>
 
       {/* Snackbar for notifications */}
       <Snackbar

@@ -20,7 +20,7 @@
 /* Model cards container */
 .model-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -576,7 +576,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .add-language-btn {
@@ -588,12 +587,11 @@
   cursor: pointer;
   font-size: 0.85rem;
   transition: background-color 0.2s, transform 0.1s;
-  height: 32px; /* Fixed height for consistency */
+  height: 36px; /* Fixed height for consistency */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 .add-language-btn:hover {
