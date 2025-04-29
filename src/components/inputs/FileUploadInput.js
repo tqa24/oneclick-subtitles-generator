@@ -16,7 +16,16 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
   // Supported file formats - wrapped in useMemo to avoid dependency issues
   const SUPPORTED_VIDEO_FORMATS = useMemo(() => [
-    "video/mp4", "video/mpeg", "video/mov", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"
+    "video/mp4", 
+    "video/mpeg", 
+    "video/mov",           // This might be incorrect
+    "video/avi", 
+    "video/x-flv", 
+    "video/mpg", 
+    "video/webm", 
+    "video/wmv", 
+    "video/3gpp",
+    "video/quicktime"      // Add this - correct MIME type for .mov files
   ], []);
 
   const SUPPORTED_AUDIO_FORMATS = useMemo(() => [
@@ -224,7 +233,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".mp4,.mov,.avi,.mp3,.wav,.aac,.ogg"
+        accept=".mp4,.mpeg,.mpg,.mov,.avi,.flv,.webm,.wmv,.3gp,.3gpp,.mp3,.wav,.aiff,.aac,.ogg,.flac"
         className="hidden-file-input"
       />
 
