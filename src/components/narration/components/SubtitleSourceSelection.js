@@ -540,95 +540,100 @@ const SubtitleSourceSelection = ({
 
           {selectedModel && (subtitleSource === 'original' ? originalLanguage : translatedLanguage) && !isCheckingModel && (
             <div className="selected-model">
-              <span className="model-label">{t('narration.narrationModel', 'Narration Model')}:</span>
+              <div className="model-header">
+                <span className="model-label">{t('narration.narrationModel', 'Model')}:</span>
+              </div>
 
-              {isLoadingModels ? (
-                <span className="loading-animation">
-                  <span className="spinner-circle"></span>
-                  {t('narration.loadingModels', 'Loading models...')}
-                </span>
-              ) : (
-                <select
-                  className="model-dropdown"
-                  value={selectedModel}
-                  onChange={handleModelChange}
-                  disabled={isGenerating}
-                >
-                  {availableModels.length > 0 ? (
-                    <>
-                      {/* Group 1: Models matching the detected language */}
-                      <optgroup label={t('narration.matchingLanguageModels', 'Matching Language')}>
-                        {availableModels
-                          .filter(model => {
-                            const currentLanguageObj = subtitleSource === 'original'
-                              ? originalLanguage
-                              : translatedLanguage;
+              <div className="model-content">
+                {isLoadingModels ? (
+                  <div className="loading-animation">
+                    <span className="spinner-circle"></span>
+                    <span>{t('narration.loadingModels', 'Loading models...')}</span>
+                  </div>
+                ) : (
+                  <select
+                    className="model-dropdown"
+                    value={selectedModel}
+                    onChange={handleModelChange}
+                    disabled={isGenerating}
+                    aria-label={t('narration.selectNarrationModel', 'Select narration model')}
+                  >
+                    {availableModels.length > 0 ? (
+                      <>
+                        {/* Group 1: Models matching the detected language */}
+                        <optgroup label={t('narration.matchingLanguageModels', 'Matching Language')}>
+                          {availableModels
+                            .filter(model => {
+                              const currentLanguageObj = subtitleSource === 'original'
+                                ? originalLanguage
+                                : translatedLanguage;
 
-                            if (!currentLanguageObj) return false;
+                              if (!currentLanguageObj) return false;
 
-                            // Get all language codes to check (primary + secondary)
-                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                              currentLanguageObj.secondaryLanguages.length > 0
-                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                : [currentLanguageObj.languageCode]; // Just use primary language
+                              // Get all language codes to check (primary + secondary)
+                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                                currentLanguageObj.secondaryLanguages.length > 0
+                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                  : [currentLanguageObj.languageCode]; // Just use primary language
 
-                            // Check if model supports any of the detected languages
-                            return languagesToCheck.some(langCode =>
-                              model.language === langCode ||
-                              (Array.isArray(model.languages) && model.languages.includes(langCode))
-                            );
-                          })
-                          .map(model => (
-                            <option key={model.id} value={model.id}>
-                              {model.id} {renderModelLanguages(model)}
-                            </option>
-                          ))
-                        }
-                      </optgroup>
+                              // Check if model supports any of the detected languages
+                              return languagesToCheck.some(langCode =>
+                                model.language === langCode ||
+                                (Array.isArray(model.languages) && model.languages.includes(langCode))
+                              );
+                            })
+                            .map(model => (
+                              <option key={model.id} value={model.id}>
+                                {model.id} {renderModelLanguages(model)}
+                              </option>
+                            ))
+                          }
+                        </optgroup>
 
-                      {/* Group 2: All other models */}
-                      <optgroup label={t('narration.otherModels', 'Other Models')}>
-                        {availableModels
-                          .filter(model => {
-                            const currentLanguageObj = subtitleSource === 'original'
-                              ? originalLanguage
-                              : translatedLanguage;
+                        {/* Group 2: All other models */}
+                        <optgroup label={t('narration.otherModels', 'Other Models')}>
+                          {availableModels
+                            .filter(model => {
+                              const currentLanguageObj = subtitleSource === 'original'
+                                ? originalLanguage
+                                : translatedLanguage;
 
-                            if (!currentLanguageObj) return true;
+                              if (!currentLanguageObj) return true;
 
-                            // Get all language codes to check (primary + secondary)
-                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                              currentLanguageObj.secondaryLanguages.length > 0
-                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                : [currentLanguageObj.languageCode]; // Just use primary language
+                              // Get all language codes to check (primary + secondary)
+                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                                currentLanguageObj.secondaryLanguages.length > 0
+                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                  : [currentLanguageObj.languageCode]; // Just use primary language
 
-                            // Check if model does NOT support any of the detected languages
-                            return !languagesToCheck.some(langCode =>
-                              model.language === langCode ||
-                              (Array.isArray(model.languages) && model.languages.includes(langCode))
-                            );
-                          })
-                          .map(model => (
-                            <option key={model.id} value={model.id}>
-                              {model.id} {renderModelLanguages(model)}
-                            </option>
-                          ))
-                        }
-                      </optgroup>
-                    </>
-                  ) : (
-                    <option value={selectedModel}>{selectedModel}</option>
-                  )}
-                </select>
-              )}
+                              // Check if model does NOT support any of the detected languages
+                              return !languagesToCheck.some(langCode =>
+                                model.language === langCode ||
+                                (Array.isArray(model.languages) && model.languages.includes(langCode))
+                              );
+                            })
+                            .map(model => (
+                              <option key={model.id} value={model.id}>
+                                {model.id} {renderModelLanguages(model)}
+                              </option>
+                            ))
+                          }
+                        </optgroup>
+                      </>
+                    ) : (
+                      <option value={selectedModel}>{selectedModel}</option>
+                    )}
+                  </select>
+                )}
+              </div>
 
               {modelError && (
-                <span className="model-error">
+                <div className="model-error">
                   <span className="error-icon">⚠️</span>
-                  {modelError}
-                </span>
+                  <span>{modelError}</span>
+                </div>
               )}
             </div>
           )}
@@ -636,7 +641,7 @@ const SubtitleSourceSelection = ({
           {modelError && !selectedModel && !isCheckingModel && (
             <div className="model-error-standalone">
               <span className="error-icon">⚠️</span>
-              {modelError}
+              <span>{modelError}</span>
             </div>
           )}
         </div>

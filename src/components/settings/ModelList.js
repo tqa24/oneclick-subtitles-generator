@@ -1,20 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  Grid,
-  Chip,
-  CircularProgress,
-  Tooltip,
-  IconButton
-} from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
+import AddIcon from '@mui/icons-material/Add';
 import { addModelFromHuggingFace, cancelModelDownload } from '../../services/modelService';
 import { invalidateModelsCache } from '../../services/modelAvailabilityService';
+import '../../styles/settings/modelManagement.css';
 
 // List of available models from F5-TTS SHARED.md
 const AVAILABLE_MODELS = [
@@ -227,7 +218,7 @@ const LANGUAGE_COLORS = {
   'vi': 'secondary'
 };
 
-const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] }) => {
+const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [], onAddModelClick }) => {
   const { t } = useTranslation();
   const [downloading, setDownloading] = React.useState({});
 
@@ -321,12 +312,12 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
   };
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        {t('settings.modelManagement.availableModels')}
-      </Typography>
+    <div className="model-management-section">
+      <div className="section-header">
+        <h4>{t('settings.modelManagement.availableModels')}</h4>
+      </div>
 
-      <Grid container spacing={2}>
+      <div className="model-cards-container">
         {AVAILABLE_MODELS.filter(model => {
           // Always filter out models that are already installed
           if (isModelInstalled(model.id)) {
@@ -341,88 +332,78 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [] 
 
           return true;
         }).map((model) => (
-          <Grid item xs={12} sm={6} md={4} key={model.id}>
-            <Paper
-              elevation={1}
-              sx={{
-                p: 2,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                position: 'relative'
-              }}
-            >
-              <Typography variant="subtitle1" gutterBottom>
-                {model.name}
-              </Typography>
+          <div className="model-card" key={model.id}>
+            <div className="model-card-content">
+              <h5 className="model-title">{model.name}</h5>
+              <p className="model-author">{t('settings.modelManagement.by')} {model.author}</p>
 
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                {t('settings.modelManagement.by')} {model.author}
-              </Typography>
-
-              <Box sx={{ mb: 2, mt: 1 }}>
+              <div className="model-languages">
                 {model.languages.map(lang => (
-                  <Chip
+                  <span
                     key={lang}
-                    label={LANGUAGE_NAMES[lang] || lang}
-                    size="small"
-                    color={LANGUAGE_COLORS[lang] || 'default'}
-                    sx={{ mr: 0.5, mb: 0.5 }}
-                  />
+                    className={`language-chip ${lang}`}
+                  >
+                    {LANGUAGE_NAMES[lang] || lang}
+                  </span>
                 ))}
-              </Box>
+              </div>
+            </div>
 
-              <Box sx={{ mt: 'auto' }}>
-                {isDownloading(model.id) ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Button
-                      variant="outlined"
-                      color="primary"
-                      startIcon={<CircularProgress size={20} />}
-                      disabled
-                      sx={{ flexGrow: 1 }}
-                    >
-                      {`${t('settings.modelManagement.downloading')} (${getDownloadProgress(model.id).toFixed(1)}%)`}
-                    </Button>
-                    <Tooltip title={t('settings.modelManagement.cancelDownload', 'Cancel Download')}>
-                      <IconButton
-                        color="error"
-                        onClick={() => handleCancelDownload(model.id)}
-                        sx={{ ml: 1 }}
-                      >
-                        <CancelIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                ) : (
-                  <Tooltip title={t('settings.modelManagement.downloadModel')}>
-                    <span>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleDownload(model)}
-                        fullWidth
-                      >
-                        {t('settings.modelManagement.download')}
-                      </Button>
-                    </span>
-                  </Tooltip>
-                )}
-              </Box>
-            </Paper>
-          </Grid>
+            {isDownloading(model.id) ? (
+              <div>
+                <div className="download-progress">
+                  <div
+                    className="download-progress-bar"
+                    style={{ width: `${getDownloadProgress(model.id)}%` }}
+                  ></div>
+                </div>
+                <div className="model-card-actions">
+                  <div className="download-percentage">
+                    <span className="spinner"></span>
+                    <span>{getDownloadProgress(model.id).toFixed(1)}%</span>
+                  </div>
+                  <button
+                    className="cancel-download-btn"
+                    onClick={() => handleCancelDownload(model.id)}
+                    title={t('settings.modelManagement.cancelDownload', 'Cancel Download')}
+                  >
+                    <CancelIcon fontSize="small" />
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="model-card-actions">
+                <button
+                  className="download-model-btn"
+                  onClick={() => handleDownload(model)}
+                  title={t('settings.modelManagement.downloadModel')}
+                >
+                  <DownloadIcon fontSize="small" />
+                  {t('settings.modelManagement.download')}
+                </button>
+              </div>
+            )}
+          </div>
         ))}
 
+        {/* Add model card */}
+        <div className="add-model-card" onClick={onAddModelClick}>
+          <div className="add-model-icon">
+            <AddIcon fontSize="large" />
+          </div>
+          <p>{t('settings.modelManagement.addCustomModel')}</p>
+        </div>
+
         {AVAILABLE_MODELS.filter(model => !isModelInstalled(model.id)).length === 0 && (
-          <Grid item xs={12}>
-            <Typography variant="body2" color="textSecondary" sx={{ p: 2, textAlign: 'center' }}>
+          <div className="model-card">
+            <p className="model-source" style={{ textAlign: 'center', padding: '2rem 0' }}>
               {t('settings.modelManagement.allModelsInstalled')}
-            </Typography>
-          </Grid>
+            </p>
+          </div>
         )}
-      </Grid>
-    </Box>
+      </div>
+    </div>
   );
 };
 

@@ -1,56 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box,
-  Typography,
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  RadioGroup,
-  Radio,
   CircularProgress,
-  Tooltip,
-  Paper,
   Alert,
-  Snackbar,
-  Divider,
-  Switch,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Chip,
-  Grid
+  Snackbar
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ErrorIcon from '@mui/icons-material/Error';
 import EditIcon from '@mui/icons-material/Edit';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import StorageIcon from '@mui/icons-material/Storage';
-import CancelIcon from '@mui/icons-material/Cancel';
-import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
+import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
 import { invalidateModelsCache } from '../../services/modelAvailabilityService';
-import ModelList, { LANGUAGE_NAMES, LANGUAGE_COLORS } from './ModelList';
+import ModelList, { LANGUAGE_NAMES } from './ModelList';
+import '../../styles/settings/modelManagement.css';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
 
 const ModelManagementTab = () => {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
-  const [cacheModels, setCacheModels] = useState([]);
-  const [activeModel, setActiveModelState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -59,7 +32,6 @@ const ModelManagementTab = () => {
   const [modelToDelete, setModelToDelete] = useState(null);
   const [modelToEdit, setModelToEdit] = useState(null);
   const [deleteFromCache, setDeleteFromCache] = useState(false);
-  const [showCacheModels, setShowCacheModels] = useState(false);
   const [modelStorageInfo, setModelStorageInfo] = useState({});
   const [addModelForm, setAddModelForm] = useState({
     sourceType: 'huggingface',
@@ -87,8 +59,8 @@ const ModelManagementTab = () => {
 
   // Fetch models on component mount
   useEffect(() => {
-    fetchModels(showCacheModels);
-  }, [showCacheModels]);
+    fetchModels();
+  }, []);
 
   // Set up polling for download status
   useEffect(() => {
@@ -157,17 +129,11 @@ const ModelManagementTab = () => {
   }, [downloads]);
 
   // Fetch models from API
-  const fetchModels = async (includeCacheModels = false) => {
+  const fetchModels = async () => {
     try {
       setLoading(true);
-      const data = await getModels(includeCacheModels);
+      const data = await getModels(false); // Never include cache models
       setModels(data.models || []);
-      setActiveModelState(data.active_model);
-
-      // Update cache models if included
-      if (includeCacheModels && data.cache_models) {
-        setCacheModels(data.cache_models);
-      }
 
       // Update downloads state with server data
       if (data.downloads) {
@@ -324,7 +290,7 @@ const ModelManagementTab = () => {
 
       // Close dialog and refresh models
       handleCloseDeleteDialog();
-      await fetchModels(showCacheModels);
+      await fetchModels();
 
       // Show success message
       setSnackbar({
@@ -417,7 +383,7 @@ const ModelManagementTab = () => {
 
       // Close dialog and refresh models
       handleCloseEditDialog();
-      await fetchModels(showCacheModels);
+      await fetchModels();
 
       // Show success message
       setSnackbar({
@@ -437,43 +403,7 @@ const ModelManagementTab = () => {
     }
   };
 
-  // Toggle showing cache models
-  const toggleCacheModels = () => {
-    setShowCacheModels(prev => !prev);
-  };
 
-  // Handle cancelling a model download
-  const handleCancelDownload = async (modelId) => {
-    try {
-      const response = await cancelModelDownload(modelId);
-
-      if (response.success) {
-        // Show success message
-        setSnackbar({
-          open: true,
-          message: t('settings.modelManagement.downloadCancelled', 'Download cancelled successfully'),
-          severity: 'success'
-        });
-
-        // Remove from downloads state immediately
-        setDownloads(prev => {
-          const newDownloads = { ...prev };
-          delete newDownloads[modelId];
-          return newDownloads;
-        });
-
-        // Refresh models
-        await fetchModels(showCacheModels);
-      }
-    } catch (error) {
-      console.error('Error cancelling model download:', error);
-      setSnackbar({
-        open: true,
-        message: error.message || t('settings.modelManagement.errorCancellingDownload', 'Error cancelling download'),
-        severity: 'error'
-      });
-    }
-  };
 
   // Handle closing snackbar
   const handleCloseSnackbar = () => {
@@ -484,14 +414,11 @@ const ModelManagementTab = () => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        {t('settings.modelManagement.title')}
-      </Typography>
-
-      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+    <div className="model-management-section" id="model-management">
+      <h4>{t('settings.modelManagement.title')}</h4>
+      <p className="model-management-description">
         {t('settings.modelManagement.description')}
-      </Typography>
+      </p>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -504,407 +431,307 @@ const ModelManagementTab = () => {
         onModelAdded={fetchModels}
         downloadingModels={downloads}
         installedModels={models}
+        onAddModelClick={handleOpenAddDialog}
       />
 
-      <Divider sx={{ my: 4 }} />
+      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
 
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">
-          {t('settings.modelManagement.modelManagement')}
-        </Typography>
-        <Box>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={toggleCacheModels}
-            startIcon={<StorageIcon />}
-            sx={{ mr: 2 }}
-          >
-            {showCacheModels
-              ? t('settings.modelManagement.hideCacheModels')
-              : t('settings.modelManagement.showCacheModels')}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleOpenAddDialog}
-            disabled={loading}
-          >
-            {t('settings.modelManagement.addCustomModel')}
-          </Button>
-        </Box>
-      </Box>
+      <div className="section-header">
+        <h4>{t('settings.modelManagement.modelManagement')}</h4>
+      </div>
 
-      <Paper elevation={1} sx={{ mb: 3, p: 2 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          {t('settings.modelManagement.installedModels')}
-        </Typography>
+      <div className="section-header">
+        <h4>{t('settings.modelManagement.installedModels')}</h4>
+      </div>
 
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : models.length === 0 && Object.keys(downloads).length === 0 ? (
-          <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
-            {t('settings.modelManagement.noModelsInstalled')}
-          </Typography>
-        ) : (
-          <List>
-            {models.map((model) => (
-              <ListItem
-                key={model.id}
-                secondaryAction={
-                  <Box sx={{ display: 'flex' }}>
-                    <Tooltip title={t('settings.modelManagement.editModel')}>
-                      <IconButton
-                        edge="end"
-                        aria-label="edit"
-                        onClick={() => handleOpenEditDialog(model)}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+          <CircularProgress size={24} />
+        </div>
+      ) : models.length === 0 && Object.keys(downloads).length === 0 ? (
+        <p className="model-source" style={{ textAlign: 'center', padding: '1rem' }}>
+          {t('settings.modelManagement.noModelsInstalled')}
+        </p>
+      ) : (
+        <div className="model-cards-container">
+          {models.map((model) => (
+            <div className="model-card installed-model" key={model.id}>
+              <div className="model-card-content">
+                <h5 className="model-title">{model.name}</h5>
+                <p className="model-source">{t('settings.modelManagement.source')}: {model.source}</p>
+
+                <div className="model-languages">
+                  {model.languages && model.languages.length > 0 ? (
+                    model.languages.map(lang => (
+                      <span
+                        key={lang}
+                        className={`language-chip ${lang}`}
                       >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {/* Hide delete button for F5-TTS v1 Base model */}
-                    {model.id !== 'f5tts-v1-base' && (
-                      <Tooltip title={t('settings.modelManagement.deleteModel')}>
-                        <IconButton
-                          edge="end"
-                          aria-label="delete"
-                          onClick={() => handleOpenDeleteDialog(model)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Box>
-                }
-              >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography
-                          variant="body1"
-                        >
-                          {model.name}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  }
-                  secondary={
-                    <Box sx={{ mt: 0.5 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        {t('settings.modelManagement.source')}: {model.source}
-                      </Typography>
-                      {/* Display all supported languages if available */}
-                      {model.languages && model.languages.length > 0 ? (
-                        <Box>
-                          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-                            {t('settings.modelManagement.language')}:
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {model.languages.map(lang => (
-                              <Chip
-                                key={lang}
-                                label={LANGUAGE_NAMES[lang] || lang}
-                                size="small"
-                                color={LANGUAGE_COLORS[lang] || 'default'}
-                                sx={{ mr: 0.5, mb: 0.5 }}
-                              />
-                            ))}
-                          </Box>
-                        </Box>
-                      ) : model.language && model.language !== 'unknown' && (
-                        <Typography variant="body2" color="textSecondary">
-                          {t('settings.modelManagement.language')}: {model.language}
-                        </Typography>
-                      )}
+                        {LANGUAGE_NAMES[lang] || lang}
+                      </span>
+                    ))
+                  ) : model.language && model.language !== 'unknown' && (
+                    <span className={`language-chip ${model.language}`}>
+                      {model.language}
+                    </span>
+                  )}
+                </div>
 
-                      {/* Show download status if this model is being downloaded */}
-                      {downloads[model.id] && downloads[model.id].status === 'downloading' && (
-                        <span style={{ color: '#1976d2', display: 'flex', alignItems: 'center', marginTop: '4px' }}>
-                          <CloudDownloadIcon fontSize="small" style={{ marginRight: '4px' }} />
-                          {t('settings.modelManagement.downloading')} ({downloads[model.id].progress.toFixed(1)}%)
-                        </span>
-                      )}
-                      {downloads[model.id] && downloads[model.id].status === 'failed' && (
-                        <span style={{ color: '#d32f2f', display: 'flex', alignItems: 'center', marginTop: '4px' }}>
-                          <ErrorIcon fontSize="small" style={{ marginRight: '4px' }} />
-                          {t('settings.modelManagement.downloadFailed')}: {downloads[model.id].error}
-                        </span>
-                      )}
-                    </Box>
-                  }
-                />
-              </ListItem>
-            ))}
-          </List>
-        )}
+                {/* Show download status if this model is being downloaded */}
+                {downloads[model.id] && downloads[model.id].status === 'downloading' && (
+                  <div>
+                    <div className="download-status">
+                      <CloudDownloadIcon fontSize="small" />
+                      <span>{t('settings.modelManagement.downloading')}</span>
+                      <span>({downloads[model.id].progress.toFixed(1)}%)</span>
+                    </div>
+                    <div className="download-progress">
+                      <div
+                        className="download-progress-bar"
+                        style={{ width: `${downloads[model.id].progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                {downloads[model.id] && downloads[model.id].status === 'failed' && (
+                  <div className="download-status error">
+                    <ErrorIcon fontSize="small" />
+                    <span>{t('settings.modelManagement.downloadFailed')}: {downloads[model.id].error}</span>
+                  </div>
+                )}
+              </div>
 
+              <div className="model-card-actions">
+                <button
+                  className="edit-model-btn"
+                  onClick={() => handleOpenEditDialog(model)}
+                  title={t('settings.modelManagement.editModel', 'Edit model information')}
+                >
+                  <EditIcon fontSize="small" />
+                  {t('settings.modelManagement.edit', 'Edit')}
+                </button>
 
-      </Paper>
-
-      {/* Hugging Face Cache Models */}
-      {showCacheModels && (
-        <Paper elevation={1} sx={{ mb: 3, p: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            {t('settings.modelManagement.cacheModels')}
-          </Typography>
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress size={24} />
-            </Box>
-          ) : cacheModels.length === 0 ? (
-            <Typography variant="body2" color="textSecondary" sx={{ p: 2 }}>
-              {t('settings.modelManagement.noCacheModels')}
-            </Typography>
-          ) : (
-            <List>
-              {cacheModels.map((model) => (
-                <Accordion key={model.id} sx={{ mb: 1 }}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Grid container alignItems="center">
-                      <Grid item xs={8}>
-                        <Typography variant="subtitle2">
-                          {model.id}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          {t('settings.modelManagement.size')}: {(model.size / (1024 * 1024)).toFixed(2)} MB
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4} sx={{ textAlign: 'right' }}>
-                        <Chip
-                          label={model.org}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{ mr: 1 }}
-                        />
-                      </Grid>
-                    </Grid>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="subtitle2" gutterBottom>
-                      {t('settings.modelManagement.snapshots')}:
-                    </Typography>
-                    {model.snapshots && model.snapshots.length > 0 ? (
-                      <List dense>
-                        {model.snapshots.map((snapshot) => (
-                          <ListItem key={snapshot.hash}>
-                            <ListItemText
-                              primary={snapshot.hash}
-                              secondary={`${t('settings.modelManagement.size')}: ${(snapshot.size / (1024 * 1024)).toFixed(2)} MB`}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    ) : (
-                      <Typography variant="body2" color="textSecondary">
-                        {t('settings.modelManagement.noSnapshots')}
-                      </Typography>
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </List>
-          )}
-        </Paper>
+                {/* Hide delete button for F5-TTS v1 Base model */}
+                {model.id !== 'f5tts-v1-base' && (
+                  <button
+                    className="delete-model-btn"
+                    onClick={() => handleOpenDeleteDialog(model)}
+                    title={t('settings.modelManagement.deleteModel', 'Delete model')}
+                  >
+                    <DeleteIcon fontSize="small" />
+                    {t('settings.modelManagement.delete', 'Delete')}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
+
 
       {/* Add Model Dialog */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{t('settings.modelManagement.addNewCustomModel')}</DialogTitle>
-        <DialogContent>
-          <FormControl component="fieldset" sx={{ mb: 2, mt: 1 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('settings.modelManagement.modelSource')}
-            </Typography>
-            <RadioGroup
-              name="sourceType"
-              value={addModelForm.sourceType}
-              onChange={handleSourceTypeChange}
-              row
-            >
-              <FormControlLabel
-                value="huggingface"
-                control={<Radio />}
-                label={t('settings.modelManagement.huggingFace')}
-              />
-              <FormControlLabel
-                value="url"
-                control={<Radio />}
-                label={t('settings.modelManagement.directUrl')}
-              />
-            </RadioGroup>
-          </FormControl>
+        <DialogTitle className="model-dialog-header">
+          <h4 className="model-dialog-title">{t('settings.modelManagement.addNewCustomModel')}</h4>
+        </DialogTitle>
+        <DialogContent className="model-dialog-content">
+          <div className="form-field">
+            <label>{t('settings.modelManagement.modelSource')}</label>
+            <div className="radio-group">
+              <div className="radio-option">
+                <input
+                  type="radio"
+                  id="source-huggingface"
+                  name="sourceType"
+                  value="huggingface"
+                  checked={addModelForm.sourceType === 'huggingface'}
+                  onChange={handleSourceTypeChange}
+                />
+                <label htmlFor="source-huggingface">
+                  {t('settings.modelManagement.huggingFace')}
+                </label>
+              </div>
+              <div className="radio-option">
+                <input
+                  type="radio"
+                  id="source-url"
+                  name="sourceType"
+                  value="url"
+                  checked={addModelForm.sourceType === 'url'}
+                  onChange={handleSourceTypeChange}
+                />
+                <label htmlFor="source-url">
+                  {t('settings.modelManagement.directUrl')}
+                </label>
+              </div>
+            </div>
+          </div>
 
-          <TextField
-            margin="dense"
-            name="modelUrl"
-            label={
-              addModelForm.sourceType === 'huggingface'
+          <div className="form-field">
+            <label htmlFor="modelUrl">
+              {addModelForm.sourceType === 'huggingface'
                 ? t('settings.modelManagement.huggingFaceModelUrl')
-                : t('settings.modelManagement.directModelUrl')
-            }
-            type="text"
-            fullWidth
-            value={addModelForm.modelUrl}
-            onChange={handleFormChange}
-            helperText={
-              addModelForm.sourceType === 'huggingface'
+                : t('settings.modelManagement.directModelUrl')}
+            </label>
+            <input
+              id="modelUrl"
+              name="modelUrl"
+              type="text"
+              value={addModelForm.modelUrl}
+              onChange={handleFormChange}
+            />
+            <div className="helper-text">
+              {addModelForm.sourceType === 'huggingface'
                 ? t('settings.modelManagement.huggingFaceModelUrlHelp')
-                : t('settings.modelManagement.directModelUrlHelp')
-            }
-            sx={{ mb: 2 }}
-          />
+                : t('settings.modelManagement.directModelUrlHelp')}
+            </div>
+          </div>
 
-          <TextField
-            margin="dense"
-            name="vocabUrl"
-            label={
-              addModelForm.sourceType === 'huggingface'
+          <div className="form-field">
+            <label htmlFor="vocabUrl">
+              {addModelForm.sourceType === 'huggingface'
                 ? t('settings.modelManagement.huggingFaceVocabUrl')
-                : t('settings.modelManagement.directVocabUrl')
-            }
-            type="text"
-            fullWidth
-            value={addModelForm.vocabUrl}
-            onChange={handleFormChange}
-            helperText={
-              addModelForm.sourceType === 'huggingface'
+                : t('settings.modelManagement.directVocabUrl')}
+            </label>
+            <input
+              id="vocabUrl"
+              name="vocabUrl"
+              type="text"
+              value={addModelForm.vocabUrl}
+              onChange={handleFormChange}
+            />
+            <div className="helper-text">
+              {addModelForm.sourceType === 'huggingface'
                 ? t('settings.modelManagement.huggingFaceVocabUrlHelp')
-                : t('settings.modelManagement.directVocabUrlHelp')
-            }
-            sx={{ mb: 2 }}
-          />
+                : t('settings.modelManagement.directVocabUrlHelp')}
+            </div>
+          </div>
 
-          <TextField
-            margin="dense"
-            name="modelId"
-            label={t('settings.modelManagement.modelId')}
-            type="text"
-            fullWidth
-            value={addModelForm.modelId}
-            onChange={handleFormChange}
-            helperText={t('settings.modelManagement.modelIdHelp')}
-            sx={{ mb: 2 }}
-          />
+          <div className="form-field">
+            <label htmlFor="modelId">{t('settings.modelManagement.modelId')}</label>
+            <input
+              id="modelId"
+              name="modelId"
+              type="text"
+              value={addModelForm.modelId}
+              onChange={handleFormChange}
+            />
+            <div className="helper-text">
+              {t('settings.modelManagement.modelIdHelp')}
+            </div>
+          </div>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('settings.modelManagement.languageCodes')}
-            </Typography>
-            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
-              {t('settings.modelManagement.languageCodesHelp')}
-            </Typography>
+          <div className="language-codes-section">
+            <h5>{t('settings.modelManagement.languageCodes')}</h5>
+            <div className="helper-text">
+              {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
+            </div>
 
             {addModelForm.languageCodes.map((code, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TextField
-                  margin="dense"
-                  name={`languageCode-${index}`}
-                  label={t('settings.modelManagement.languageCode')}
+              <div key={index} className="language-code-field">
+                <input
                   type="text"
-                  fullWidth
                   value={code}
                   onChange={(e) => {
                     const newCodes = [...addModelForm.languageCodes];
                     newCodes[index] = e.target.value;
                     setAddModelForm(prev => ({ ...prev, languageCodes: newCodes }));
                   }}
-                  sx={{ mr: 1 }}
+                  placeholder={t('settings.modelManagement.languageCode')}
                 />
 
                 {/* Remove button for all except the first language code */}
                 {index > 0 && (
-                  <IconButton
+                  <button
+                    className="delete-model-btn"
                     onClick={() => {
                       const newCodes = [...addModelForm.languageCodes];
                       newCodes.splice(index, 1);
                       setAddModelForm(prev => ({ ...prev, languageCodes: newCodes }));
                     }}
-                    color="error"
-                    size="small"
+                    title={t('settings.modelManagement.removeLanguageCode', 'Remove language code')}
                   >
                     <DeleteIcon fontSize="small" />
-                  </IconButton>
+                  </button>
                 )}
-              </Box>
+              </div>
             ))}
 
             {/* Add language code button */}
-            <Button
-              startIcon={<AddIcon />}
+            <button
+              className="add-language-btn"
               onClick={() => {
                 setAddModelForm(prev => ({
                   ...prev,
                   languageCodes: [...prev.languageCodes, '']
                 }));
               }}
-              size="small"
-              sx={{ mt: 1 }}
             >
-              {t('settings.modelManagement.addLanguageCode')}
-            </Button>
-          </Box>
+              <AddIcon fontSize="small" />
+              {t('settings.modelManagement.addLanguageCode', 'Add language code')}
+            </button>
+          </div>
 
-          <Button
+          <button
+            className="advanced-options-toggle"
             onClick={toggleAdvancedOptions}
-            variant="text"
-            color="primary"
-            sx={{ mb: 1 }}
           >
             {addModelForm.showAdvanced
               ? t('settings.modelManagement.hideAdvancedOptions')
               : t('settings.modelManagement.showAdvancedOptions')
             }
-          </Button>
+          </button>
 
           {addModelForm.showAdvanced && (
-            <TextField
-              margin="dense"
-              name="config"
-              label={t('settings.modelManagement.modelConfig')}
-              multiline
-              rows={4}
-              fullWidth
-              value={addModelForm.config}
-              onChange={handleFormChange}
-              helperText={t('settings.modelManagement.modelConfigHelp')}
-              sx={{ mb: 2 }}
-            />
+            <div className="form-field">
+              <label htmlFor="config">{t('settings.modelManagement.modelConfig')}</label>
+              <textarea
+                id="config"
+                name="config"
+                value={addModelForm.config}
+                onChange={handleFormChange}
+                rows={4}
+              />
+              <div className="helper-text">
+                {t('settings.modelManagement.modelConfigHelp')}
+              </div>
+            </div>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseAddDialog} disabled={addingModel}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleAddModel}
-            color="primary"
-            variant="contained"
-            disabled={!addModelForm.modelUrl || addingModel}
-            startIcon={addingModel ? <CircularProgress size={20} /> : null}
+        <DialogActions className="model-dialog-actions">
+          <button
+            className="cancel-btn"
+            onClick={handleCloseAddDialog}
+            disabled={addingModel}
           >
+            {t('common.cancel')}
+          </button>
+          <button
+            className="confirm-btn"
+            onClick={handleAddModel}
+            disabled={!addModelForm.modelUrl || addingModel}
+          >
+            {addingModel && <span className="spinner"></span>}
             {addingModel
               ? t('settings.modelManagement.addingCustomModel')
               : t('settings.modelManagement.addCustomModel')
             }
-          </Button>
+          </button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
-        <DialogTitle>{t('settings.modelManagement.confirmDelete')}</DialogTitle>
-        <DialogContent>
-          <Typography>
+        <DialogTitle className="model-dialog-header">
+          <h4 className="model-dialog-title">{t('settings.modelManagement.confirmDelete')}</h4>
+        </DialogTitle>
+        <DialogContent className="model-dialog-content">
+          <p>
             {t('settings.modelManagement.deleteConfirmationText', {
               modelName: modelToDelete?.name || ''
             })}
-          </Typography>
+          </p>
 
           {/* We no longer have active models, so no warning needed */}
 
@@ -916,154 +743,152 @@ const ModelManagementTab = () => {
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} disabled={loading}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleDeleteModel}
-            color="error"
-            variant="contained"
+        <DialogActions className="model-dialog-actions">
+          <button
+            className="cancel-btn"
+            onClick={handleCloseDeleteDialog}
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
           >
+            {t('common.cancel')}
+          </button>
+          <button
+            className="delete-btn"
+            onClick={handleDeleteModel}
+            disabled={loading}
+          >
+            {loading && <span className="spinner"></span>}
             {loading
               ? t('settings.modelManagement.deleting')
               : t('settings.modelManagement.delete')
             }
-          </Button>
+          </button>
         </DialogActions>
       </Dialog>
 
       {/* Edit Model Dialog */}
       <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="md" fullWidth>
-        <DialogTitle>{t('settings.modelManagement.editModel')}</DialogTitle>
-        <DialogContent>
-          <TextField
-            margin="dense"
-            name="name"
-            label={t('settings.modelManagement.modelName')}
-            type="text"
-            fullWidth
-            value={editModelForm.name}
-            onChange={(e) => setEditModelForm(prev => ({ ...prev, name: e.target.value }))}
-            sx={{ mb: 2 }}
-          />
+        <DialogTitle className="model-dialog-header">
+          <h4 className="model-dialog-title">{t('settings.modelManagement.editModel')}</h4>
+        </DialogTitle>
+        <DialogContent className="model-dialog-content">
+          <div className="form-field">
+            <label htmlFor="modelName">{t('settings.modelManagement.modelName')}</label>
+            <input
+              id="modelName"
+              type="text"
+              value={editModelForm.name}
+              onChange={(e) => setEditModelForm(prev => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              {t('settings.modelManagement.languageCodes')}
-            </Typography>
-            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
-              {t('settings.modelManagement.languageCodesHelp')}
-            </Typography>
+          <div className="language-codes-section">
+            <h5>{t('settings.modelManagement.languageCodes')}</h5>
+            <div className="helper-text">
+              {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
+            </div>
 
             {(editModelForm.languageCodes || []).map((code, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TextField
-                  margin="dense"
-                  name={`languageCode-${index}`}
-                  label={t('settings.modelManagement.languageCode')}
+              <div key={index} className="language-code-field">
+                <input
                   type="text"
-                  fullWidth
                   value={code}
                   onChange={(e) => {
                     const newCodes = [...(editModelForm.languageCodes || [''])];
                     newCodes[index] = e.target.value;
                     setEditModelForm(prev => ({ ...prev, languageCodes: newCodes }));
                   }}
-                  sx={{ mr: 1 }}
+                  placeholder={t('settings.modelManagement.languageCode')}
                 />
 
                 {/* Remove button for all except the first language code */}
                 {index > 0 && (
-                  <IconButton
+                  <button
+                    className="delete-model-btn"
                     onClick={() => {
                       const newCodes = [...(editModelForm.languageCodes || [])];
                       newCodes.splice(index, 1);
                       setEditModelForm(prev => ({ ...prev, languageCodes: newCodes }));
                     }}
-                    color="error"
-                    size="small"
+                    title={t('settings.modelManagement.removeLanguageCode', 'Remove language code')}
                   >
                     <DeleteIcon fontSize="small" />
-                  </IconButton>
+                  </button>
                 )}
-              </Box>
+              </div>
             ))}
 
             {/* Add language code button */}
-            <Button
-              startIcon={<AddIcon />}
+            <button
+              className="add-language-btn"
               onClick={() => {
                 setEditModelForm(prev => ({
                   ...prev,
                   languageCodes: [...(prev.languageCodes || []), '']
                 }));
               }}
-              size="small"
-              sx={{ mt: 1 }}
             >
-              {t('settings.modelManagement.addLanguageCode')}
-            </Button>
-          </Box>
+              <AddIcon fontSize="small" />
+              {t('settings.modelManagement.addLanguageCode', 'Add language code')}
+            </button>
+          </div>
 
-          <TextField
-            margin="dense"
-            name="config"
-            label={t('settings.modelManagement.modelConfig')}
-            multiline
-            rows={4}
-            fullWidth
-            value={editModelForm.config}
-            onChange={(e) => setEditModelForm(prev => ({ ...prev, config: e.target.value }))}
-            helperText={t('settings.modelManagement.modelConfigHelp')}
-            sx={{ mb: 2 }}
-          />
+          <div className="form-field">
+            <label htmlFor="editConfig">{t('settings.modelManagement.modelConfig')}</label>
+            <textarea
+              id="editConfig"
+              value={editModelForm.config}
+              onChange={(e) => setEditModelForm(prev => ({ ...prev, config: e.target.value }))}
+              rows={4}
+            />
+            <div className="helper-text">
+              {t('settings.modelManagement.modelConfigHelp')}
+            </div>
+          </div>
 
           {/* Display storage information only for symlinked models */}
           {modelToEdit && modelStorageInfo[modelToEdit.id] && modelStorageInfo[modelToEdit.id].is_symlink && (
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                {t('settings.modelManagement.storageInformation')}
-              </Typography>
+            <div className="form-field">
+              <h5>{t('settings.modelManagement.storageInformation')}</h5>
 
               <Alert severity="info" sx={{ mb: 1 }}>
                 {t('settings.modelManagement.usingSymlinks')}
               </Alert>
 
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              <p className="model-source">
                 {t('settings.modelManagement.originalFiles')}:
-                <Box component="ul" sx={{ mt: 0.5, pl: 2 }}>
-                  <Box component="li">
-                    {modelStorageInfo[modelToEdit.id].original_model_file}
-                  </Box>
-                  {modelStorageInfo[modelToEdit.id].original_vocab_file && (
-                    <Box component="li">
-                      {modelStorageInfo[modelToEdit.id].original_vocab_file}
-                    </Box>
-                  )}
-                </Box>
-              </Typography>
-            </Box>
+              </p>
+              <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
+                <li>
+                  {modelStorageInfo[modelToEdit.id].original_model_file}
+                </li>
+                {modelStorageInfo[modelToEdit.id].original_vocab_file && (
+                  <li>
+                    {modelStorageInfo[modelToEdit.id].original_vocab_file}
+                  </li>
+                )}
+              </ul>
+            </div>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditDialog} disabled={editingModel}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleEditModel}
-            color="primary"
-            variant="contained"
+        <DialogActions className="model-dialog-actions">
+          <button
+            className="cancel-btn"
+            onClick={handleCloseEditDialog}
             disabled={editingModel}
-            startIcon={editingModel ? <CircularProgress size={20} /> : null}
           >
+            {t('common.cancel')}
+          </button>
+          <button
+            className="confirm-btn"
+            onClick={handleEditModel}
+            disabled={editingModel}
+          >
+            {editingModel && <span className="spinner"></span>}
             {editingModel
               ? t('settings.modelManagement.updating')
               : t('settings.modelManagement.update')
             }
-          </Button>
+          </button>
         </DialogActions>
       </Dialog>
 
@@ -1082,7 +907,7 @@ const ModelManagementTab = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </div>
   );
 };
 
