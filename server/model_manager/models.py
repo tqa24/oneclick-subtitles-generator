@@ -15,8 +15,51 @@ except ImportError:
 
 
 def is_model_using_symlinks(model_id):
-    """Check if a model is using symbolic links (always returns False)."""
-    return False, None, None
+    """
+    Check if a model is using symbolic links and get model size information.
+
+    Args:
+        model_id: The ID of the model to check
+
+    Returns:
+        Tuple of (is_symlink, original_model_file, original_vocab_file, size)
+        where size is the total size of the model files in bytes
+    """
+    # Get model info from registry
+    registry = get_registry()
+    model = None
+    for m in registry.get("models", []):
+        if m.get("id") == model_id:
+            model = m
+            break
+
+    if not model:
+        raise FileNotFoundError(f"Model {model_id} not found in registry")
+
+    # Get model and vocab paths
+    model_path = model.get("model_path")
+    vocab_path = model.get("vocab_path")
+
+    # Calculate total size
+    size = 0
+    if model_path and os.path.exists(model_path):
+        try:
+            size += os.path.getsize(model_path)
+        except Exception as e:
+            logger.error(f"Error getting size of model file {model_path}: {e}")
+
+    if vocab_path and os.path.exists(vocab_path):
+        try:
+            size += os.path.getsize(vocab_path)
+        except Exception as e:
+            logger.error(f"Error getting size of vocab file {vocab_path}: {e}")
+
+    # Check for symlinks (always False in current implementation)
+    is_symlink = False
+    original_model_file = None
+    original_vocab_file = None
+
+    return is_symlink, original_model_file, original_vocab_file, size
 
 
 def update_model_info(model_id, model_info):

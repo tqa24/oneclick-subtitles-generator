@@ -18,8 +18,10 @@ import TuneIcon from '@mui/icons-material/Tune';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { FiRefreshCw } from 'react-icons/fi';
 import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
 import { invalidateModelsCache } from '../../services/modelAvailabilityService';
+import { formatBytes } from '../../utils/formatUtils';
 import '../../styles/settings/customModelDialog.css';
 import ModelList, { LANGUAGE_NAMES } from './ModelList';
 import '../../styles/settings/modelManagement.css';
@@ -37,7 +39,6 @@ const ModelManagementTab = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [modelToDelete, setModelToDelete] = useState(null);
   const [modelToEdit, setModelToEdit] = useState(null);
-  const [deleteFromCache, setDeleteFromCache] = useState(false);
   const [modelStorageInfo, setModelStorageInfo] = useState({});
   const [addModelForm, setAddModelForm] = useState({
     sourceType: 'huggingface',
@@ -62,11 +63,68 @@ const ModelManagementTab = () => {
     message: '',
     severity: 'info'
   });
+  const [modelSizes, setModelSizes] = useState({});
+  const [isScanning, setIsScanning] = useState(false);
 
   // Fetch models on component mount
   useEffect(() => {
     fetchModels();
   }, []);
+
+  // Set up periodic scanning for models in the f5_tts directory
+  useEffect(() => {
+    // Initial scan
+    scanForModels();
+
+    // Set up interval for periodic scanning (every 30 seconds)
+    const intervalId = setInterval(() => {
+      scanForModels();
+    }, 30000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Function to scan for models in the f5_tts directory
+  const scanForModels = async () => {
+    if (isScanning) return;
+
+    try {
+      setIsScanning(true);
+      const data = await getModels(false);
+
+      // Check if there are any new models that aren't in the current state
+      const currentModelIds = models.map(model => model.id);
+      const newModels = data.models.filter(model => !currentModelIds.includes(model.id));
+
+      if (newModels.length > 0) {
+        console.log(`Found ${newModels.length} new models during scan`);
+        setModels(data.models || []);
+        invalidateModelsCache();
+      }
+
+      // Update model sizes
+      const sizes = {};
+      for (const model of data.models) {
+        if (model.model_path && model.id !== 'f5tts-v1-base') {
+          try {
+            const storageInfo = await getModelStorageInfo(model.id);
+            if (storageInfo && storageInfo.size) {
+              sizes[model.id] = storageInfo.size;
+            }
+          } catch (error) {
+            console.error(`Error getting size for model ${model.id}:`, error);
+          }
+        }
+      }
+
+      setModelSizes(prev => ({...prev, ...sizes}));
+    } catch (error) {
+      console.error('Error scanning for models:', error);
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   // Set up polling for download status
   useEffect(() => {
@@ -276,7 +334,6 @@ const ModelManagementTab = () => {
   // Handle opening delete confirmation dialog
   const handleOpenDeleteDialog = (model) => {
     setModelToDelete(model);
-    setDeleteFromCache(true); // Always delete from cache
     setOpenDeleteDialog(true);
   };
 
@@ -292,7 +349,7 @@ const ModelManagementTab = () => {
 
     try {
       setLoading(true);
-      await deleteModel(modelToDelete.id, deleteFromCache);
+      await deleteModel(modelToDelete.id, true); // Always delete from cache without asking
 
       // Close dialog and refresh models
       handleCloseDeleteDialog();
@@ -479,6 +536,15 @@ const ModelManagementTab = () => {
 
       <div className="section-header">
         <h4>{t('settings.modelManagement.installedModels')}</h4>
+        <button
+          className="refresh-models-btn"
+          onClick={scanForModels}
+          disabled={isScanning}
+          title={t('settings.modelManagement.refreshModels', 'Scan for new models')}
+        >
+          <FiRefreshCw className={isScanning ? 'spinning' : ''} />
+          {t('settings.modelManagement.refresh', 'Refresh')}
+        </button>
       </div>
 
       {loading ? (
@@ -496,6 +562,14 @@ const ModelManagementTab = () => {
               <div className="model-card-content">
                 <h5 className="model-title">{model.name}</h5>
                 <p className="model-source">{t('settings.modelManagement.source')}: {model.source}</p>
+
+                {/* Show model size for all models except F5-TTS v1 Base */}
+                {model.id !== 'f5tts-v1-base' && modelSizes[model.id] ? (
+                  <p className="model-size">{formatBytes(modelSizes[model.id])}</p>
+                ) : (
+                  /* Add an empty placeholder with the same height for the default model to maintain consistent spacing */
+                  <p className="model-size empty-size">&nbsp;</p>
+                )}
 
                 <div className="model-languages">
                   {model.languages && model.languages.length > 0 ? (
@@ -863,14 +937,7 @@ const ModelManagementTab = () => {
         </p>
 
         {/* We no longer have active models, so no warning needed */}
-
-        {modelToDelete?.repo_id && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            {t('settings.modelManagement.deleteFromCacheInfo', {
-              repoId: modelToDelete.repo_id
-            })}
-          </Alert>
-        )}
+        {/* Removed Hugging Face cache message as it's no longer necessary */}
       </CustomModelDialog>
 
       {/* Edit Model Dialog */}

@@ -180,6 +180,21 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   line-height: 1.4;
 }
 
+/* Model size */
+.model-size {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Empty size placeholder for consistent spacing */
+.model-size.empty-size {
+  visibility: hidden;
+  height: 1.2em; /* Match the height of a typical line of text */
+}
+
 /* Download status */
 .download-status {
   display: flex;
@@ -365,6 +380,43 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
 .section-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+/* Refresh models button */
+.refresh-models-btn {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--md-shape-pill);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.refresh-models-btn:hover {
+  background-color: var(--md-surface-2);
+}
+
+.refresh-models-btn:active {
+  transform: scale(0.98);
+}
+
+.refresh-models-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinning animation for refresh icon */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.refresh-models-btn .spinning {
+  animation: spin 1s linear infinite;
 }
 
 .toggle-cache-btn {

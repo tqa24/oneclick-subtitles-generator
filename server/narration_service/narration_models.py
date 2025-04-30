@@ -284,12 +284,13 @@ def get_model_storage_info(model_id):
     logger.debug(f"Request for storage info for model: '{decoded_model_id}'")
 
     try:
-        is_symlink, original_model_file, original_vocab_file = is_model_using_symlinks(decoded_model_id)
+        is_symlink, original_model_file, original_vocab_file, size = is_model_using_symlinks(decoded_model_id)
         return jsonify({
             'model_id': decoded_model_id,
             'is_symlink': is_symlink,
             'original_model_file': original_model_file,
-            'original_vocab_file': original_vocab_file
+            'original_vocab_file': original_vocab_file,
+            'size': size
         })
     except FileNotFoundError:
          logger.warning(f"Storage info requested for non-existent model: '{decoded_model_id}'")
