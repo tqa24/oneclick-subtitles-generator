@@ -8,8 +8,8 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
-# Assuming modelManager.py is in the same directory or accessible via PYTHONPATH
-from modelManager import (
+# Import from model_manager package instead of modelManager.py
+from model_manager import (
     get_models, get_active_model, set_active_model, add_model, delete_model,
     download_model_from_hf, download_model_from_url, parse_hf_url,
     get_download_status, update_download_status, remove_download_status,
