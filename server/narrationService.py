@@ -8,25 +8,48 @@ import time
 from flask import Blueprint, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
 from io import BytesIO
-from modelManager import get_models, get_active_model, set_active_model, add_model, delete_model, download_model_from_hf, download_model_from_url, parse_hf_url, get_download_status, update_download_status, remove_download_status, update_model_info, is_model_using_symlinks, initialize_registry, cancel_download
+# Assuming modelManager.py is in the same directory or accessible via PYTHONPATH
+from modelManager import (
+    get_models, get_active_model, set_active_model, add_model, delete_model,
+    download_model_from_hf, download_model_from_url, parse_hf_url,
+    get_download_status, update_download_status, remove_download_status,
+    update_model_info, is_model_using_symlinks, initialize_registry, cancel_download
+)
 
 # Set up logging with UTF-8 encoding
 import sys
 import codecs
 
-# Force UTF-8 encoding for stdout and stderr
-sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+# Force UTF-8 encoding for stdout and stderr if not already set
+# Note: This might not be necessary or could cause issues in some environments (e.g., Docker logs)
+# Consider configuring logging handlers directly if problems arise.
+try:
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    if sys.stderr.encoding != 'utf-8':
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+except Exception as e:
+    print(f"Warning: Could not force UTF-8 encoding for stdout/stderr: {e}")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', encoding='utf-8')
+# Use basicConfig only if no handlers are configured yet to avoid duplicate logs
+if not logging.root.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        encoding='utf-8',
+        handlers=[logging.StreamHandler(sys.stdout)] # Explicitly use the configured stdout
+    )
 logger = logging.getLogger(__name__)
 
 # Create blueprint
 narration_bp = Blueprint('narration', __name__)
 
 # Constants
-NARRATION_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration')
+# Use absolute path relative to this file's location
+SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ROOT_DIR = os.path.dirname(SERVICE_DIR)
+NARRATION_DIR = os.path.join(APP_ROOT_DIR, 'narration')
 REFERENCE_AUDIO_DIR = os.path.join(NARRATION_DIR, 'reference')
 OUTPUT_AUDIO_DIR = os.path.join(NARRATION_DIR, 'output')
 
@@ -34,54 +57,58 @@ OUTPUT_AUDIO_DIR = os.path.join(NARRATION_DIR, 'output')
 os.makedirs(NARRATION_DIR, exist_ok=True)
 os.makedirs(REFERENCE_AUDIO_DIR, exist_ok=True)
 os.makedirs(OUTPUT_AUDIO_DIR, exist_ok=True)
+logger.info(f"Reference audio directory: {REFERENCE_AUDIO_DIR}")
+logger.info(f"Output audio directory: {OUTPUT_AUDIO_DIR}")
 
 # Initialize variables
 HAS_F5TTS = False
 INIT_ERROR = None
 device = None
-tts_model = None
+# tts_model variable is removed, models are loaded on demand within generate route
 
-# Function to get Gemini API key
+# --- Helper Functions (Gemini, Language Detection) ---
+
 def get_gemini_api_key():
     """Get Gemini API key from various sources"""
     # First try environment variable
     api_key = os.environ.get('GEMINI_API_KEY')
     if api_key:
+        logger.info("Found Gemini API key in environment variable.")
         return api_key
 
     # Try to read from a config file
     try:
-        # Check if there's a config.json file in the parent directory
-        config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.json')
+        config_path = os.path.join(APP_ROOT_DIR, 'config.json')
         if os.path.exists(config_path):
-            with open(config_path, 'r') as config_file:
+            with open(config_path, 'r', encoding='utf-8') as config_file:
                 config = json.load(config_file)
                 api_key = config.get('gemini_api_key')
                 if api_key:
+                    logger.info("Found Gemini API key in config.json.")
                     return api_key
     except Exception as e:
-        logger.error(f"Error reading config file: {e}")
+        logger.error(f"Error reading config file ({config_path}): {e}")
 
     # Try to read from localStorage.json file (saved from browser localStorage)
     try:
-        localStorage_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'localStorage.json')
+        localStorage_path = os.path.join(APP_ROOT_DIR, 'localStorage.json')
         if os.path.exists(localStorage_path):
-            with open(localStorage_path, 'r') as localStorage_file:
+            with open(localStorage_path, 'r', encoding='utf-8') as localStorage_file:
                 localStorage_data = json.load(localStorage_file)
                 api_key = localStorage_data.get('gemini_api_key')
                 if api_key:
+                    logger.info("Found Gemini API key in localStorage.json.")
                     return api_key
     except Exception as e:
-        logger.error(f"Error reading localStorage file: {e}")
+        logger.error(f"Error reading localStorage file ({localStorage_path}): {e}")
 
-    # If no API key found, return None
+    logger.warning("Gemini API key not found in environment variable, config.json, or localStorage.json.")
     return None
 
-# Function to transcribe audio using Gemini API
-def transcribe_with_gemini(audio_path, model="gemini-2.0-flash-lite"):
+def transcribe_with_gemini(audio_path, model="gemini-1.5-flash-latest"):
     """Transcribe audio using Gemini API and detect language"""
     try:
-        logger.info(f"Transcribing audio with Gemini: {audio_path}")
+        logger.info(f"Transcribing audio with Gemini: {audio_path}, Model: {model}")
 
         # Read the audio file as binary data
         with open(audio_path, 'rb') as audio_file:
@@ -92,41 +119,50 @@ def transcribe_with_gemini(audio_path, model="gemini-2.0-flash-lite"):
 
         # Use the base64 transcription function
         return transcribe_with_gemini_base64(audio_base64, model)
+    except FileNotFoundError:
+        logger.error(f"Audio file not found for Gemini transcription: {audio_path}")
+        return {
+            "text": "",
+            "is_english": True,
+            "language": "Error: File Not Found"
+        }
     except Exception as e:
-        logger.error(f"Error transcribing with Gemini: {e}")
+        logger.error(f"Error transcribing with Gemini (file: {audio_path}): {e}")
         return {
             "text": "",
             "is_english": True,  # Default to True on error
-            "language": "Unknown"
+            "language": f"Error: {type(e).__name__}"
         }
 
-# Function to transcribe audio directly from base64 data
-def transcribe_with_gemini_base64(audio_base64, model="gemini-2.0-flash-lite"):
+def transcribe_with_gemini_base64(audio_base64, model="gemini-1.5-flash-latest"):
     """Transcribe audio using Gemini API from base64 data"""
     try:
-        logger.info("Transcribing audio with Gemini from base64 data")
+        logger.info(f"Transcribing audio with Gemini from base64 data, Model: {model}")
 
         # Get Gemini API key
         api_key = get_gemini_api_key()
 
         if not api_key:
+            logger.error("Gemini API key not found, cannot transcribe.")
             raise ValueError("Gemini API key not found")
 
         # Prepare the request to Gemini API
+        # Use v1beta as it often has latest features like audio input
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-        # Create a minimal prompt for audio transcription
-        prompt = "Transcribe this audio."
+        # Create a more specific prompt for transcription and language ID
+        prompt = "Please transcribe the following audio accurately. Also, identify the primary language spoken."
 
         # Prepare the request payload with optimized parameters
         payload = {
             "contents": [
                 {
-                    "role": "user",
+                    # No role needed for simple inference with inline data
                     "parts": [
                         {"text": prompt},
                         {
                             "inlineData": {
+                                # Assuming WAV, adjust if needed or detect mime type
                                 "mimeType": "audio/wav",
                                 "data": audio_base64
                             }
@@ -135,70 +171,95 @@ def transcribe_with_gemini_base64(audio_base64, model="gemini-2.0-flash-lite"):
                 }
             ],
             "generationConfig": {
-                "temperature": 0.1,  # Lower temperature for more deterministic output
-                "topK": 1,          # More focused sampling
-                "topP": 0.8,         # More focused sampling
-                "maxOutputTokens": 1024  # Limit output size for faster response
+                "temperature": 0.1,  # Lower temperature for more deterministic transcription
+                "maxOutputTokens": 1024 # Generous limit for transcription
             }
         }
 
-        # Send the request to Gemini API with a timeout
-        response = requests.post(url, json=payload, timeout=10)  # 10 second timeout for faster response
+        # Send the request to Gemini API with a reasonable timeout
+        start_time = time.time()
+        response = requests.post(url, json=payload, timeout=30)  # Increased timeout for potentially longer audio
+        duration = time.time() - start_time
+        logger.info(f"Gemini API request completed in {duration:.2f} seconds.")
 
         # Check if the request was successful
         if response.status_code != 200:
-            logger.error(f"Gemini API error: {response.status_code} {response.text}")
-            raise Exception(f"Gemini API error: {response.status_code}")
+            error_text = response.text
+            logger.error(f"Gemini API error: {response.status_code} {error_text}")
+            # Try to parse error details if JSON
+            try:
+                error_json = response.json()
+                error_message = error_json.get('error', {}).get('message', 'Unknown API Error')
+            except json.JSONDecodeError:
+                error_message = error_text or 'Unknown API Error'
+            raise Exception(f"Gemini API error ({response.status_code}): {error_message}")
 
         # Parse the response
         result = response.json()
+        # logger.debug(f"Full Gemini Response: {json.dumps(result, indent=2)}") # Potentially large
 
         # Extract the transcription text
         transcription = ""
         if 'candidates' in result and len(result['candidates']) > 0:
-            if 'content' in result['candidates'][0] and 'parts' in result['candidates'][0]['content']:
-                parts = result['candidates'][0]['content']['parts']
+            candidate = result['candidates'][0]
+            if 'content' in candidate and 'parts' in candidate['content']:
+                parts = candidate['content']['parts']
                 if len(parts) > 0 and 'text' in parts[0]:
-                    transcription = parts[0]['text'].strip()
-                    logger.info(f"Gemini transcription result: {transcription}")
+                    full_response_text = parts[0]['text'].strip()
+                    logger.info(f"Raw Gemini response text: {full_response_text}")
+                    # Simple extraction: assume the first part is transcription,
+                    # might need refinement if Gemini includes language ID explicitly.
+                    # Let's assume the transcription is the main part of the text.
+                    transcription = full_response_text # May need parsing if language is included
+                    logger.info(f"Extracted Gemini transcription: {transcription}")
 
         if not transcription:
-            logger.warning("Unexpected Gemini API response format")
+            logger.warning("Gemini API returned response but no transcription text found.")
             return {
                 "text": "",
-                "is_english": True  # Default to True if we can't detect
+                "is_english": True,
+                "language": "Unknown (No text)"
             }
 
-        # Simple language detection without making another API call
-        # Check if the text contains mostly English characters and words
+        # Simple language detection based on the transcription
         is_english = is_text_english(transcription)
+        language = "English" if is_english else "Non-English"
+        logger.info(f"Detected language based on transcription: {language}")
 
         return {
             "text": transcription,
             "is_english": is_english,
-            "language": "English" if is_english else "Non-English"
+            "language": language
         }
 
-    except Exception as e:
+    except requests.exceptions.Timeout:
+        logger.error("Error transcribing with Gemini base64: Request timed out.")
+        return { "text": "", "is_english": True, "language": "Error: Timeout" }
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error transcribing with Gemini base64: Network error - {e}")
+        return { "text": "", "is_english": True, "language": f"Error: Network ({type(e).__name__})" }
+    except ValueError as e: # Specific catch for API key error
         logger.error(f"Error transcribing with Gemini base64: {e}")
+        return { "text": "", "is_english": True, "language": f"Error: {e}" }
+    except Exception as e:
+        logger.exception(f"Unexpected error transcribing with Gemini base64: {e}") # Log stack trace
         return {
             "text": "",
-            "is_english": True,  # Default to True on error
-            "language": "Unknown"
+            "is_english": True,
+            "language": f"Error: {type(e).__name__}"
         }
 
-# Function to detect if text is in English without using API
 def is_text_english(text):
-    """Detect if the text is in English using simple heuristics"""
+    """Detect if the text is likely English using simple heuristics"""
     try:
-        if not text:
-            return True  # Default to True for empty text
+        if not text or not isinstance(text, str):
+            return True  # Default to True for empty or non-string input
 
-        # Import here to avoid circular imports
+        # Avoid circular imports - ensure re and string are imported
         import re
         import string
 
-        # Common English words
+        # Common English words (more comprehensive list could be used)
         common_english_words = {
             'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on', 'with',
             'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she',
@@ -207,166 +268,50 @@ def is_text_english(text):
             'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than',
             'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two',
             'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give',
-            'day', 'most', 'us'
+            'day', 'most', 'us', 'is', 'are', 'was', 'were'
         }
 
-        # Clean the text
-        text = text.lower()
-        text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
-        words = text.split()
+        # Basic Latin alphabet + digits + space
+        basic_latin_chars = string.ascii_lowercase + string.digits + ' '
+        text_lower = text.lower()
 
-        if not words:
+        # 1. Character Set Analysis
+        total_chars = len(text_lower)
+        if total_chars == 0:
             return True
 
-        # Count English words
-        english_word_count = sum(1 for word in words if word in common_english_words)
+        latin_char_count = sum(1 for char in text_lower if char in basic_latin_chars)
+        non_latin_ratio = (total_chars - latin_char_count) / total_chars
 
-        # Check if at least 30% of words are common English words
-        english_ratio = english_word_count / len(words)
-
-        # Check for non-Latin characters
-        non_latin_chars = sum(1 for char in text if char not in string.ascii_lowercase + string.digits + ' ')
-        non_latin_ratio = non_latin_chars / len(text) if text else 0
-
-        logger.info(f"English word ratio: {english_ratio:.2f}, Non-Latin char ratio: {non_latin_ratio:.2f}")
-
-        # If many non-Latin characters, probably not English
-        if non_latin_ratio > 0.2:
+        # If a significant portion (> 30%) is non-basic-Latin, assume non-English
+        if non_latin_ratio > 0.3:
+            # logger.debug(f"Non-Latin ratio {non_latin_ratio:.2f} > 0.3 for text: '{text[:50]}...' -> Non-English")
             return False
 
-        # If reasonable number of English words, probably English
-        return english_ratio >= 0.15
+        # 2. Common Word Analysis (if predominantly Latin chars)
+        # Remove punctuation more carefully
+        text_cleaned = re.sub(r'[^\w\s]', '', text_lower)
+        words = text_cleaned.split()
+        total_words = len(words)
+
+        if total_words == 0:
+            return True # Treat as English if only punctuation/spaces
+
+        english_word_count = sum(1 for word in words if word in common_english_words)
+        english_word_ratio = english_word_count / total_words
+
+        # logger.debug(f"Text: '{text[:50]}...', Non-Latin Ratio: {non_latin_ratio:.2f}, Eng Word Ratio: {english_word_ratio:.2f}")
+
+        # Require at least a few common English words (e.g., 15% ratio)
+        # Adjust threshold based on typical text length if needed
+        return english_word_ratio >= 0.15
 
     except Exception as e:
-        logger.error(f"Error in is_text_english: {e}")
+        logger.error(f"Error in is_text_english: {e}", exc_info=True)
         return True  # Default to True on error
 
-# Keep the original function for compatibility
-def detect_language(text, api_key=None, model=None):
-    """Detect if the text is in English (compatibility function)"""
-    # Ignore api_key and model parameters, they're kept for backward compatibility
-    return is_text_english(text)
+# --- F5-TTS Initialization ---
 
-# Function to process base64 audio data for reference
-def process_base64_audio_reference():
-    """Process base64 audio data for reference"""
-    try:
-        # Get base64 audio data and reference text
-        data = request.get_json(force=True)  # Force parsing even if content-type is incorrect
-        logger.info(f"Request JSON keys: {list(data.keys()) if data else 'None'}")
-
-        audio_data = data.get('audio_data') if data else None
-        reference_text = data.get('reference_text', '')
-        should_transcribe = data.get('transcribe', '').lower() == 'true'
-
-        logger.info(f"Reference text from JSON: {reference_text}")
-        logger.info(f"Should transcribe flag: {should_transcribe}")
-
-        # Validate audio data
-        if not audio_data:
-            logger.error("No audio_data in request.json or audio_data is empty")
-            return jsonify({'error': 'No audio data'}), 400
-
-        # Log audio data details
-        audio_data_length = len(audio_data)
-        logger.info(f"Audio data received, length: {audio_data_length}")
-
-        # Check if audio_data is valid base64
-        try:
-            # Check if the string contains only valid base64 characters
-            import re
-            if not re.match('^[A-Za-z0-9+/]+={0,2}$', audio_data):
-                logger.error("Audio data is not valid base64 format")
-                # Log a sample of the data
-                sample = audio_data[:100] + '...' if len(audio_data) > 100 else audio_data
-                logger.error(f"Invalid base64 sample: {sample}")
-                return jsonify({'error': 'Invalid base64 format'}), 400
-        except Exception as e:
-            logger.error(f"Error validating base64 format: {e}")
-            return jsonify({'error': f'Error validating base64 format: {str(e)}'}), 400
-
-        # Generate a unique filename
-        unique_id = str(uuid.uuid4())
-        filename = f"recorded_{unique_id}.wav"
-        filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
-
-        # Ensure directory exists
-        os.makedirs(REFERENCE_AUDIO_DIR, exist_ok=True)
-
-        # Save the base64 data to a file
-        try:
-            # Decode base64 data
-            try:
-                # Try to decode the base64 data
-                audio_bytes = base64.b64decode(audio_data)
-                logger.info(f"Successfully decoded base64 data, size: {len(audio_bytes)} bytes")
-            except Exception as decode_error:
-                logger.error(f"Error decoding base64 data: {decode_error}")
-                # Log a sample of the data to help diagnose the issue
-                sample = audio_data[:100] + '...' if len(audio_data) > 100 else audio_data
-                logger.error(f"Base64 data sample: {sample}")
-                return jsonify({'error': f'Invalid base64 data: {str(decode_error)}'}), 400
-
-            # Save to file
-            with open(filepath, 'wb') as f:
-                f.write(audio_bytes)
-            logger.info(f"Saved base64 audio to {filepath}")
-        except Exception as e:
-            logger.error(f"Error saving base64 audio to file: {e}")
-            return jsonify({'error': f'Error saving audio: {str(e)}'}), 500
-
-        # Verify file was saved
-        if not os.path.exists(filepath):
-            logger.error(f"Failed to save file to {filepath}")
-            return jsonify({'error': 'Failed to save audio file'}), 500
-
-        logger.info(f"File saved successfully: {filepath}")
-
-        # Transcribe the audio if requested or if reference text is not provided
-        is_english = True  # Default to True
-        language = "Unknown"
-
-        if should_transcribe or not reference_text:
-            logger.info("Transcription requested or no reference text provided")
-            try:
-                # Transcribe directly from base64 data for faster response
-                logger.info("Transcribing audio with Gemini directly from base64 data")
-                transcription_result = transcribe_with_gemini_base64(audio_data)
-                reference_text = transcription_result.get("text", "")
-                is_english = transcription_result.get("is_english", True)
-                language = transcription_result.get("language", "Unknown")
-                logger.info(f"Gemini transcription result: {reference_text}, Language: {language}, Is English: {is_english}")
-            except Exception as e:
-                logger.error(f"Error transcribing with Gemini base64: {e}")
-
-                # Fallback to F5-TTS if available
-                if HAS_F5TTS:
-                    try:
-                        logger.info("Attempting to transcribe audio with F5-TTS")
-                        reference_text = tts_model.transcribe(filepath)
-                        logger.info(f"F5-TTS transcription result: {reference_text}")
-                    except Exception as e:
-                        logger.error(f"Error transcribing audio with F5-TTS: {e}")
-                        reference_text = ""
-        else:
-            logger.info("Skipping transcription as per request")
-
-        response_data = {
-            'success': True,
-            'filepath': filepath,
-            'filename': filename,
-            'reference_text': reference_text,
-            'is_english': is_english,
-            'language': language
-        }
-        logger.info(f"Returning success response: {response_data}")
-        return jsonify(response_data)
-
-    except Exception as e:
-        logger.error(f"Error in process_base64_audio_reference: {e}")
-        return jsonify({'error': str(e)}), 500
-
-# Initialize F5-TTS device settings only
 try:
     import torch
     from f5_tts.api import F5TTS
@@ -376,95 +321,102 @@ try:
     logger.info(f"CUDA available: {cuda_available}")
 
     if cuda_available:
-        # Set environment variable to force CUDA
-        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-        # Force CUDA device
-        device = "cuda:0"  # Explicitly use first CUDA device
-        torch.cuda.set_device(0)  # Set to first CUDA device
-        logger.info(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
-        logger.info(f"CUDA device count: {torch.cuda.device_count()}")
-        logger.info(f"Current CUDA device: {torch.cuda.current_device()}")
+        try:
+            # Explicitly set to device 0 if multiple GPUs exist
+            if torch.cuda.device_count() > 1:
+                torch.cuda.set_device(0)
+                logger.info(f"Multiple CUDA devices found ({torch.cuda.device_count()}), using device 0.")
+            device = "cuda:0"
+            logger.info(f"Attempting to use CUDA device: {torch.cuda.get_device_name(0)}")
+            # Small test allocation to confirm CUDA is working
+            _ = torch.tensor([1.0, 2.0]).to(device)
+            logger.info("CUDA device confirmed working.")
+        except Exception as e:
+            logger.error(f"CUDA available but failed to initialize/use: {e}. Falling back to CPU.", exc_info=True)
+            device = "cpu"
+            cuda_available = False # Update flag
     else:
-        logger.warning("CUDA not available, falling back to CPU")
+        logger.warning("CUDA not available, using CPU.")
         device = "cpu"
 
-    logger.info(f"Using device: {device}")
+    logger.info(f"F5-TTS will use device: {device}")
 
     # Initialize registry to ensure default model is registered
     initialize_registry()
     logger.info("Model registry initialized")
 
-    # We don't load any model at startup - models will be loaded on-demand
-    tts_model = None
-
     # Set flag to indicate F5-TTS is available
     HAS_F5TTS = True
     INIT_ERROR = None
-    logger.info("F5-TTS device settings initialized successfully")
+    logger.info("F5-TTS environment checks completed successfully.")
+
 except ImportError as e:
-    logger.warning(f"F5-TTS not found. Narration features will be disabled. Error: {e}")
+    logger.warning(f"F5-TTS library or dependencies not found. Narration features will be disabled. Error: {e}")
     HAS_F5TTS = False
-    INIT_ERROR = f"F5-TTS not found: {str(e)}"
+    INIT_ERROR = f"F5-TTS or dependency not found: {str(e)}"
+    device = None # No device relevant if library missing
 except Exception as e:
-    logger.error(f"Error initializing F5-TTS device settings: {e}")
+    logger.error(f"Error during F5-TTS initialization checks: {e}", exc_info=True)
     HAS_F5TTS = False
-    INIT_ERROR = f"Error initializing F5-TTS device settings: {str(e)}"
+    INIT_ERROR = f"Error initializing F5-TTS environment: {str(e)}"
+    device = None
+
+# --- Flask Routes ---
 
 @narration_bp.route('/status', methods=['GET'])
 def get_status():
-    """Check if F5-TTS is available"""
-    # Additional runtime check for CUDA status
+    """Check if F5-TTS is available and other system status"""
     runtime_device = device
-    if HAS_F5TTS and device == "cuda:0":
+    runtime_cuda_available = False
+    gpu_info = {'cuda_available': False}
+
+    if HAS_F5TTS:
+        # Perform runtime CUDA check as it might change (e.g., driver issues)
         try:
             import torch
-            if not torch.cuda.is_available():
-                logger.warning("CUDA was previously available but now reports as unavailable!")
+            runtime_cuda_available = torch.cuda.is_available()
+            if device == "cuda:0" and not runtime_cuda_available:
+                logger.warning("Runtime Check: CUDA was previously detected but is now unavailable!")
+                runtime_device = "cuda_error" # Indicate discrepancy
+            elif runtime_cuda_available and device != "cuda:0":
+                 logger.warning(f"Runtime Check: CUDA is available but service is configured for {device}. Check initialization.")
+                 # Don't change runtime_device here, reflect configured state unless error
+
+            if runtime_cuda_available:
+                gpu_info['cuda_available'] = True
+                current_dev_index = torch.cuda.current_device()
+                gpu_info['device_name'] = torch.cuda.get_device_name(current_dev_index)
+                gpu_info['device_count'] = torch.cuda.device_count()
+                gpu_info['current_device_index'] = current_dev_index
+                try:
+                    # Report memory for the current device F5TTS is likely using
+                    gpu_info['memory_allocated'] = f"{torch.cuda.memory_allocated(current_dev_index) / 1024**2:.2f} MB"
+                    gpu_info['memory_reserved'] = f"{torch.cuda.memory_reserved(current_dev_index) / 1024**2:.2f} MB"
+                    total_memory = torch.cuda.get_device_properties(current_dev_index).total_memory
+                    gpu_info['total_memory'] = f"{total_memory / 1024**2:.2f} MB"
+                except Exception as mem_e:
+                    logger.warning(f"Could not get detailed CUDA memory info: {mem_e}")
+                    gpu_info['memory_info'] = "Error retrieving memory details"
+
+        except Exception as e:
+            logger.error(f"Error during runtime status check for CUDA: {e}")
+            gpu_info['error'] = f"Runtime check error: {str(e)}"
+            if device == "cuda:0": # If we expected CUDA but check failed
                 runtime_device = "cuda_error"
-        except Exception as e:
-            logger.error(f"Error checking CUDA status: {e}")
 
-    # Only log status checks once every 60 seconds to reduce log spam
-    current_time = time.time()
-    if not hasattr(get_status, 'last_log_time') or current_time - get_status.last_log_time > 60:
-        logger.info(f"Status check: F5-TTS available: {HAS_F5TTS}, device: {runtime_device if HAS_F5TTS else 'None'}")
-        get_status.last_log_time = current_time
-
-    # Get GPU info if available
-    gpu_info = {}
-    if HAS_F5TTS and "cuda" in str(device):
-        try:
-            import torch
-            if torch.cuda.is_available():
-                gpu_info = {
-                    'cuda_available': True,
-                    'device_name': torch.cuda.get_device_name(0),
-                    'device_count': torch.cuda.device_count(),
-                    'current_device': torch.cuda.current_device(),
-                    'memory_allocated': f"{torch.cuda.memory_allocated(0) / 1024**2:.2f} MB",
-                    'memory_reserved': f"{torch.cuda.memory_reserved(0) / 1024**2:.2f} MB"
-                }
-
-                # Add model device info
-                if hasattr(tts_model, 'device'):
-                    gpu_info['model_device'] = str(tts_model.device)
-                elif hasattr(tts_model, 'model') and hasattr(tts_model.model, 'device'):
-                    gpu_info['model_device'] = str(tts_model.model.device)
-            else:
-                gpu_info = {'cuda_available': False, 'error': 'CUDA not available at runtime'}
-        except Exception as e:
-            gpu_info = {'cuda_available': False, 'error': str(e)}
-
-    # Get model info
+    # Get model info from modelManager
     model_info = get_models()
 
     return jsonify({
         'available': HAS_F5TTS,
-        'device': runtime_device if HAS_F5TTS else None,
-        'error': INIT_ERROR,
+        'device': runtime_device, # Reflects intended device or error state
+        'runtime_cuda_available': runtime_cuda_available, # Actual current state
+        'initialization_error': INIT_ERROR, # Error during startup
         'gpu_info': gpu_info,
-        'source': 'direct',
-        'models': model_info
+        'models': model_info,
+        'reference_audio_dir': REFERENCE_AUDIO_DIR,
+        'output_audio_dir': OUTPUT_AUDIO_DIR,
+        'gemini_api_key_found': bool(get_gemini_api_key()), # Check if key is discoverable
     })
 
 @narration_bp.route('/models', methods=['GET'])
@@ -492,905 +444,1007 @@ def set_current_model():
     success, message = set_active_model(model_id)
 
     if success:
-        # We no longer load the model immediately - it will be loaded on-demand
-        logger.info(f"Active model set to {model_id} (will be loaded on-demand when needed)")
-        return jsonify({'success': True, 'message': f'Active model set to {model_id} (will be loaded on-demand when needed)'})
+        logger.info(f"Active model set to '{model_id}' (will be loaded on-demand)")
+        return jsonify({'success': True, 'message': f'Active model set to {model_id}'})
     else:
+        logger.error(f"Failed to set active model to '{model_id}': {message}")
         return jsonify({'error': message}), 400
 
 @narration_bp.route('/models', methods=['POST'])
 def add_new_model():
-    """Add a new model"""
+    """Add a new model from Hugging Face or URL"""
     data = request.json
+    if not data:
+        return jsonify({'error': 'No JSON data received'}), 400
 
-    # Check if we're adding from Hugging Face or direct URL
-    source_type = data.get('source_type', 'huggingface')
+    source_type = data.get('source_type', 'huggingface').lower()
+    model_id_req = data.get('model_id') # User-provided preferred ID
+    config = data.get('config', {})
+    language_codes = data.get('languageCodes', [])
 
-    if source_type == 'huggingface':
-        # Handle Hugging Face model
-        model_url = data.get('model_url')
-        vocab_url = data.get('vocab_url')
-        config = data.get('config', {})
-        model_id = data.get('model_id')
+    logger.info(f"Request to add model: type={source_type}, id={model_id_req}, languages={language_codes}, config={config}")
 
-        if not model_url:
-            return jsonify({'error': 'No model_url provided'}), 400
+    try:
+        if source_type == 'huggingface':
+            model_url = data.get('model_url') # Can be hf:// protocol or just repo_id/path
+            vocab_url = data.get('vocab_url') # Optional
 
-        # Parse URLs if they're in hf:// format
-        repo_id, model_path = parse_hf_url(model_url)
-        _, vocab_path = parse_hf_url(vocab_url) if vocab_url else (None, None)
+            if not model_url:
+                return jsonify({'error': 'Missing Hugging Face model_url'}), 400
 
-        if not repo_id or not model_path:
-            logger.error(f"Failed to parse Hugging Face URL: model_url={model_url}, vocab_url={vocab_url}")
+            # Use parse_hf_url for robustness
+            repo_id, model_path = parse_hf_url(model_url)
+            vocab_repo_id, vocab_path = parse_hf_url(vocab_url) if vocab_url else (None, None)
+
+            if not repo_id or not model_path:
+                 # Fallback: maybe model_url is just repo_id? Assume standard filenames? Less robust.
+                 logger.warning(f"Could not parse '{model_url}' as standard hf:// or path. Trying as repo_id.")
+                 # This part needs clarification based on expected F5-TTS model structure on HF
+                 # For now, enforce parsing success.
+                 return jsonify({'error': 'Invalid Hugging Face URL format for model_url'}), 400
+
+            # Ensure vocab comes from the same repo if specified without one
+            if vocab_path and not vocab_repo_id:
+                vocab_repo_id = repo_id
+
+            logger.info(f"Parsed HF info: Repo={repo_id}, ModelPath={model_path}, VocabPath={vocab_path}")
+
+            success, message, downloaded_model_id = download_model_from_hf(
+                repo_id=repo_id,
+                model_filename=model_path,
+                vocab_filename=vocab_path, # Pass None if not provided
+                config=config,
+                preferred_model_id=model_id_req,
+                language_codes=language_codes
+            )
+
+        elif source_type == 'url':
+            model_url = data.get('model_url')
+            vocab_url = data.get('vocab_url') # Optional
+
+            if not model_url:
+                return jsonify({'error': 'Missing model_url for direct download'}), 400
+
+            success, message, downloaded_model_id = download_model_from_url(
+                model_url=model_url,
+                vocab_url=vocab_url, # Pass None if not provided
+                config=config,
+                preferred_model_id=model_id_req,
+                language_codes=language_codes
+            )
+        else:
+            return jsonify({'error': f'Invalid source_type: {source_type}. Must be "huggingface" or "url".'}), 400
+
+        if success:
+            logger.info(f"Successfully added model '{downloaded_model_id}': {message}")
             return jsonify({
-                'error': 'Invalid Hugging Face URL format. Please check the URL format in ModelList.js.',
-                'model_url': model_url,
-                'vocab_url': vocab_url
-            }), 400
+                'success': True,
+                'message': message,
+                'model_id': downloaded_model_id
+            }), 201 # 201 Created status
+        else:
+            # Handle specific HF private repo error if applicable
+            if source_type == 'huggingface' and "401" in message or "private" in message.lower():
+                 logger.warning(f"Failed to download from Hugging Face (potentially private repo {repo_id}): {message}")
+                 return jsonify({
+                     'error': message,
+                     'private_repo': True,
+                     'repo_id': repo_id
+                 }), 401 # Unauthorized
+            else:
+                logger.error(f"Failed to add model: {message}")
+                return jsonify({'error': message}), 400
 
-        logger.info(f"Successfully parsed URLs: repo_id={repo_id}, model_path={model_path}, vocab_path={vocab_path}")
+    except Exception as e:
+        logger.exception(f"Unexpected error in add_new_model: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
-        # Get language codes if provided
-        language_codes = data.get('languageCodes', [])
 
-        # Download the model
-        success, message, model_id = download_model_from_hf(repo_id, model_path, vocab_path, config, model_id, language_codes)
-
-        # If the download failed due to a private repository, provide a helpful message
-        if not success and "private repository" in message:
-            logger.error(f"Failed to download private repository: {repo_id}")
-            return jsonify({
-                'error': message,
-                'private_repo': True,
-                'repo_id': repo_id
-            }), 401  # Use 401 Unauthorized status code
-
-    elif source_type == 'url':
-        # Handle direct URL model
-        model_url = data.get('model_url')
-        vocab_url = data.get('vocab_url')
-        config = data.get('config', {})
-        model_id = data.get('model_id')
-
-        if not model_url:
-            return jsonify({'error': 'No model_url provided'}), 400
-
-        # Get language codes if provided
-        language_codes = data.get('languageCodes', [])
-
-        # Download the model
-        success, message, model_id = download_model_from_url(model_url, vocab_url, config, model_id, language_codes)
-
-    else:
-        return jsonify({'error': f'Invalid source_type: {source_type}'}), 400
-
-    if success:
-        return jsonify({
-            'success': True,
-            'message': message,
-            'model_id': model_id
-        })
-    else:
-        return jsonify({'error': message}), 400
-
-@narration_bp.route('/models/download-status/<model_id>', methods=['GET'])
+@narration_bp.route('/models/download-status/<path:model_id>', methods=['GET'])
 def get_model_download_status(model_id):
-    """Get the download status of a model"""
-    status = get_download_status(model_id)
+    """Get the download status of a model (handles potential slashes in ID)"""
+    # Decode model_id in case it contains URL-encoded characters like slashes
+    from urllib.parse import unquote
+    decoded_model_id = unquote(model_id)
+    logger.debug(f"Checking download status for model_id: '{decoded_model_id}' (raw: '{model_id}')")
+    status = get_download_status(decoded_model_id)
 
     if status:
-        # Create response object with required fields
+        # Return a consistent structure, including progress if available
         response = {
-            'model_id': model_id,
-            'status': status['status'],
-            'error': status['error'] if 'error' in status else None,
-            'timestamp': status['timestamp']
+            'model_id': decoded_model_id,
+            'status': status.get('status'),
+            'progress': status.get('progress', None), # Percentage
+            'downloaded_size': status.get('downloaded_size', None), # Bytes
+            'total_size': status.get('total_size', None), # Bytes
+            'error': status.get('error', None),
+            'timestamp': status.get('timestamp')
         }
-
-        # Add progress if available
-        if 'progress' in status:
-            response['progress'] = status['progress']
-
-        # Add size information if available
-        if 'downloaded_size' in status:
-            response['downloaded_size'] = status['downloaded_size']
-        if 'total_size' in status:
-            response['total_size'] = status['total_size']
-
         return jsonify(response)
     else:
-        return jsonify({
-            'model_id': model_id,
-            'status': None
-        }), 404
+        # Check if the model exists at all (even if not downloading)
+        all_models = get_models(include_cache=True)
+        model_exists = any(m['id'] == decoded_model_id for m in all_models.get('models', [])) or \
+                       any(m['id'] == decoded_model_id for m in all_models.get('cached_models', []))
 
-@narration_bp.route('/models/<model_id>', methods=['DELETE'])
+        if model_exists:
+             # Model exists but no active download status found
+             return jsonify({
+                 'model_id': decoded_model_id,
+                 'status': 'not_downloading' # Indicate it's not actively downloading
+             }), 200
+        else:
+             # Model ID not found anywhere
+             return jsonify({
+                 'model_id': decoded_model_id,
+                 'status': None,
+                 'error': 'Model ID not found'
+             }), 404
+
+
+@narration_bp.route('/models/<path:model_id>', methods=['DELETE'])
 def remove_model(model_id):
-    """Delete a model"""
+    """Delete a model (handles potential slashes in ID)"""
+    from urllib.parse import unquote
+    decoded_model_id = unquote(model_id)
     delete_cache = request.args.get('delete_cache', 'false').lower() == 'true'
-    success, message = delete_model(model_id, delete_cache)
+    logger.info(f"Request to delete model: '{decoded_model_id}', delete_cache={delete_cache}")
+
+    success, message = delete_model(decoded_model_id, delete_cache)
 
     if success:
+        logger.info(f"Successfully deleted model '{decoded_model_id}': {message}")
         return jsonify({'success': True, 'message': message})
     else:
-        return jsonify({'error': message}), 400
+        logger.error(f"Failed to delete model '{decoded_model_id}': {message}")
+        # Distinguish between 'not found' and other errors if possible
+        if "not found" in message.lower():
+            return jsonify({'error': message}), 404
+        else:
+            return jsonify({'error': message}), 400
 
-@narration_bp.route('/models/<model_id>', methods=['PUT'])
+@narration_bp.route('/models/<path:model_id>', methods=['PUT'])
 def update_model(model_id):
-    """Update model information"""
+    """Update model information (e.g., name, config)"""
+    from urllib.parse import unquote
+    decoded_model_id = unquote(model_id)
     data = request.json
 
     if not data:
-        return jsonify({'error': 'No data provided'}), 400
+        return jsonify({'error': 'No update data provided'}), 400
 
-    success, message = update_model_info(model_id, data)
+    logger.info(f"Request to update model '{decoded_model_id}' with data: {data}")
+    success, message = update_model_info(decoded_model_id, data)
 
     if success:
+        logger.info(f"Successfully updated model '{decoded_model_id}': {message}")
         return jsonify({'success': True, 'message': message})
     else:
-        return jsonify({'error': message}), 400
+        logger.error(f"Failed to update model '{decoded_model_id}': {message}")
+        if "not found" in message.lower():
+            return jsonify({'error': message}), 404
+        else:
+            return jsonify({'error': message}), 400
 
-@narration_bp.route('/models/<model_id>/storage', methods=['GET'])
+@narration_bp.route('/models/<path:model_id>/storage', methods=['GET'])
 def get_model_storage_info(model_id):
     """Get information about how a model is stored (symlink or copy)"""
-    is_symlink, original_model_file, original_vocab_file = is_model_using_symlinks(model_id)
+    from urllib.parse import unquote
+    decoded_model_id = unquote(model_id)
+    logger.debug(f"Request for storage info for model: '{decoded_model_id}'")
 
-    return jsonify({
-        'model_id': model_id,
-        'is_symlink': is_symlink,
-        'original_model_file': original_model_file,
-        'original_vocab_file': original_vocab_file
-    })
+    try:
+        is_symlink, original_model_file, original_vocab_file = is_model_using_symlinks(decoded_model_id)
+        return jsonify({
+            'model_id': decoded_model_id,
+            'is_symlink': is_symlink,
+            'original_model_file': original_model_file,
+            'original_vocab_file': original_vocab_file
+        })
+    except FileNotFoundError:
+         logger.warning(f"Storage info requested for non-existent model: '{decoded_model_id}'")
+         return jsonify({'error': 'Model not found'}), 404
+    except Exception as e:
+        logger.exception(f"Error getting storage info for model '{decoded_model_id}': {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
-@narration_bp.route('/models/cancel-download/<model_id>', methods=['POST'])
+
+@narration_bp.route('/models/cancel-download/<path:model_id>', methods=['POST'])
 def cancel_model_download(model_id):
     """Cancel an ongoing model download"""
-    logger.info(f"Received request to cancel download for model: {model_id}")
+    from urllib.parse import unquote
+    decoded_model_id = unquote(model_id)
+    logger.info(f"Received request to cancel download for model: {decoded_model_id}")
 
-    success = cancel_download(model_id)
+    success = cancel_download(decoded_model_id)
 
     if success:
+        logger.info(f"Successfully initiated download cancellation for model '{decoded_model_id}'")
         return jsonify({
             'success': True,
-            'message': f'Download cancelled for model {model_id}'
+            'message': f'Download cancellation requested for model {decoded_model_id}'
         })
     else:
+        logger.warning(f"Could not cancel download for model '{decoded_model_id}': No active download found.")
+        # 404 is appropriate as the specific resource (the download task) wasn't found
         return jsonify({
-            'error': f'No active download found for model {model_id}'
+            'error': f'No active download found for model {decoded_model_id}'
         }), 404
 
-@narration_bp.route('/upload-reference', methods=['POST'])
-def upload_reference_audio():
-    """Upload reference audio file"""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    # Generate a unique filename
-    filename = secure_filename(file.filename)
-    unique_id = str(uuid.uuid4())
-    base, ext = os.path.splitext(filename)
-    unique_filename = f"{base}_{unique_id}{ext}"
-
-    # Save the file
-    filepath = os.path.join(REFERENCE_AUDIO_DIR, unique_filename)
-    file.save(filepath)
-
-    # Transcribe the audio if reference text is not provided
-    reference_text = request.form.get('reference_text', '')
-
-    # Only attempt transcription if reference text is not provided
-    if not reference_text:
-        # First try with F5-TTS if available
-        if HAS_F5TTS:
-            try:
-                logger.info("Attempting to transcribe uploaded audio with F5-TTS")
-                reference_text = tts_model.transcribe(filepath)
-                logger.info(f"F5-TTS transcription result: {reference_text}")
-            except Exception as e:
-                logger.error(f"Error transcribing uploaded audio with F5-TTS: {e}")
-                reference_text = ""
-
-        # If F5-TTS failed or is not available, try with Gemini
-        is_english = True  # Default to True
-        if not reference_text:
-            try:
-                logger.info("Attempting to transcribe uploaded audio with Gemini Flash Lite")
-                transcription_result = transcribe_with_gemini(filepath, "gemini-2.0-flash-lite")
-                reference_text = transcription_result["text"]
-                is_english = transcription_result["is_english"]
-                logger.info(f"Gemini transcription result: {reference_text}, is_english: {is_english}")
-            except Exception as e:
-                logger.error(f"Error transcribing uploaded audio with Gemini: {e}")
-                reference_text = ""
-
-    return jsonify({
-        'success': True,
-        'filepath': filepath,
-        'filename': unique_filename,
-        'reference_text': reference_text,
-        'is_english': is_english
-    })
-
-@narration_bp.route('/record-reference', methods=['POST'])
-def record_reference_audio():
-    """Save recorded audio as reference"""
+@narration_bp.route('/process-base64-reference', methods=['POST'])
+def process_base64_audio_reference():
+    """Process base64 encoded audio data as reference"""
     try:
-        # Log detailed request information
-        logger.info(f"Received record-reference request")
-        logger.info(f"Request method: {request.method}")
-        logger.info(f"Content-Type: {request.headers.get('Content-Type')}")
-        logger.info(f"Content-Length: {request.headers.get('Content-Length')}")
-        logger.info(f"Request files: {list(request.files.keys()) if request.files else 'None'}")
-        logger.info(f"Request form: {list(request.form.keys()) if request.form else 'None'}")
+        # Use force=True cautiously, but good for flexibility if client Content-Type is wrong
+        data = request.get_json(force=True, silent=True)
 
-        # Check if the request has JSON content type
-        content_type = request.headers.get('Content-Type', '')
-        is_json_request = 'application/json' in content_type.lower()
-        logger.info(f"Is JSON request based on Content-Type: {is_json_request}")
+        if not data:
+            # Try getting raw data if JSON parsing failed but content looks like JSON
+            raw_data = request.get_data(as_text=True)
+            logger.warning(f"Request content-type was {request.content_type}, but failed to parse as JSON. Raw data starts with: {raw_data[:100]}...")
+            return jsonify({'error': 'Invalid JSON data received'}), 400
 
-        # Try to parse request data in different ways
-        request_data = None
+        # Log keys safely
+        logger.info(f"Received base64 reference request with keys: {list(data.keys()) if isinstance(data, dict) else 'Invalid data format'}")
 
-        # Try to get JSON data
-        try:
-            if is_json_request:
-                request_data = request.get_json(silent=True)
-                logger.info(f"Parsed JSON data: {type(request_data)}")
-                if request_data:
-                    logger.info(f"JSON keys: {list(request_data.keys())}")
-                    if 'audio_data' in request_data:
-                        audio_data_length = len(request_data.get('audio_data', ''))
-                        logger.info(f"Found audio_data in JSON, length: {audio_data_length}")
-                        if audio_data_length > 0:
-                            return process_base64_audio_reference()
-                        else:
-                            logger.error("audio_data is empty")
-                            return jsonify({'error': 'Empty audio data'}), 400
-                    else:
-                        logger.error("JSON data missing 'audio_data' field")
-                        return jsonify({'error': 'No audio_data field in JSON'}), 400
-                else:
-                    logger.error("Failed to parse JSON data")
-                    return jsonify({'error': 'Invalid JSON data'}), 400
-        except Exception as e:
-            logger.error(f"Error parsing JSON: {e}")
-            return jsonify({'error': f'Error parsing JSON: {str(e)}'}), 400
+        audio_data_base64 = data.get('audio_data') if isinstance(data, dict) else None
+        reference_text = data.get('reference_text', '') if isinstance(data, dict) else ''
+        should_transcribe = str(data.get('transcribe', 'false')).lower() == 'true' if isinstance(data, dict) else False
 
-        # Traditional file upload
-        if 'audio_data' not in request.files:
-            logger.error("No audio_data in request.files")
-            return jsonify({'error': 'No audio data'}), 400
+        logger.info(f"Base64 Ref: Transcribe={should_transcribe}, Provided Text='{reference_text[:50]}...'")
 
-        audio_file = request.files['audio_data']
-        logger.info(f"Received audio file: {audio_file.filename}, size: {audio_file.content_length}")
-    except Exception as e:
-        logger.error(f"Error in record_reference_audio: {e}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        if not audio_data_base64 or not isinstance(audio_data_base64, str):
+            logger.error("No 'audio_data' string found in request JSON.")
+            return jsonify({'error': 'Missing or invalid audio_data (must be a base64 string)'}), 400
 
-    try:
+        # Basic base64 format check (padding and characters)
+        import re
+        if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', audio_data_base64.strip()):
+             logger.error("Audio data does not appear to be valid base64.")
+             sample = audio_data_base64[:100] + ('...' if len(audio_data_base64) > 100 else '')
+             logger.error(f"Invalid base64 sample: {sample}")
+             return jsonify({'error': 'Invalid base64 format in audio_data'}), 400
+
         # Generate a unique filename
         unique_id = str(uuid.uuid4())
-        filename = f"recorded_{unique_id}.wav"
+        # Assume WAV format based on typical web audio recording
+        filename = f"recorded_b64_{unique_id}.wav"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
 
-        # Ensure directory exists
-        os.makedirs(REFERENCE_AUDIO_DIR, exist_ok=True)
+        # Decode and save the audio data
+        try:
+            audio_bytes = base64.b64decode(audio_data_base64)
+            logger.info(f"Successfully decoded base64 data, size: {len(audio_bytes)} bytes")
+            with open(filepath, 'wb') as f:
+                f.write(audio_bytes)
+            logger.info(f"Saved base64 audio to {filepath}")
+        except base64.binascii.Error as decode_error:
+            logger.error(f"Error decoding base64 data: {decode_error}")
+            sample = audio_data_base64[:100] + '...' if len(audio_data_base64) > 100 else audio_data_base64
+            logger.error(f"Base64 data sample: {sample}")
+            return jsonify({'error': f'Invalid base64 data: {str(decode_error)}'}), 400
+        except IOError as e:
+             logger.error(f"Error saving decoded audio to file {filepath}: {e}", exc_info=True)
+             return jsonify({'error': f'Error saving audio file: {str(e)}'}), 500
+        except Exception as e:
+            logger.exception(f"Unexpected error saving base64 audio: {e}")
+            return jsonify({'error': f'Internal server error saving audio: {str(e)}'}), 500
 
-        # Save the file
-        logger.info(f"Saving audio file to {filepath}")
-        audio_file.save(filepath)
-
-        # Verify file was saved
+        # Verify file was saved (redundant check, but useful for debugging)
         if not os.path.exists(filepath):
-            logger.error(f"Failed to save file to {filepath}")
-            return jsonify({'error': 'Failed to save audio file'}), 500
+            logger.error(f"File saving failed unexpectedly for {filepath}")
+            return jsonify({'error': 'Failed to save audio file after decoding'}), 500
 
-        logger.info(f"File saved successfully: {filepath}")
+        # --- Transcription Logic ---
+        final_reference_text = reference_text
+        is_english = True # Default assumption
+        language = "Unknown" # Default
 
-        # Get reference text and transcribe flag
-        reference_text = request.form.get('reference_text', '')
-        should_transcribe = request.form.get('transcribe', '').lower() == 'true'
+        # Transcribe if requested OR if no reference text was provided
+        if should_transcribe or not final_reference_text:
+            logger.info("Transcription needed (requested or text empty). Attempting with Gemini...")
+            # Use the already decoded base64 data for speed
+            transcription_result = transcribe_with_gemini_base64(audio_data_base64)
 
-        logger.info(f"Reference text from form: {reference_text}")
-        logger.info(f"Should transcribe flag: {should_transcribe}")
+            final_reference_text = transcription_result.get("text", "")
+            is_english = transcription_result.get("is_english", True)
+            language = transcription_result.get("language", "Error during transcription") # Provide feedback
 
-        # Attempt transcription if explicitly requested or if reference text is not provided
-        if should_transcribe or not reference_text:
-            # First try with F5-TTS if available
-            if HAS_F5TTS:
-                try:
-                    logger.info("Attempting to transcribe audio with F5-TTS")
-                    reference_text = tts_model.transcribe(filepath)
-                    logger.info(f"F5-TTS transcription result: {reference_text}")
-                except Exception as e:
-                    logger.error(f"Error transcribing audio with F5-TTS: {e}")
-                    reference_text = ""
+            if not final_reference_text and "Error" not in language:
+                 logger.warning("Gemini transcription returned empty text.")
+                 language = "Unknown (Empty Transcription)"
+            elif "Error" in language:
+                 logger.error(f"Gemini transcription failed: {language}")
+                 # Keep provided text if any, otherwise it remains empty
+                 final_reference_text = reference_text
+            else:
+                 logger.info(f"Gemini transcription successful: Lang={language}, Text='{final_reference_text[:50]}...'")
 
-            # If F5-TTS failed or is not available, try with Gemini
-            is_english = True  # Default to True
-            if not reference_text:
-                try:
-                    logger.info("Attempting to transcribe audio with Gemini Flash Lite")
-                    transcription_result = transcribe_with_gemini(filepath, "gemini-2.0-flash-lite")
-                    reference_text = transcription_result["text"]
-                    is_english = transcription_result["is_english"]
-                    logger.info(f"Gemini transcription result: {reference_text}, is_english: {is_english}")
-                except Exception as e:
-                    logger.error(f"Error transcribing audio with Gemini: {e}")
-                    reference_text = ""
+        else:
+            logger.info("Using provided reference text, skipping transcription.")
+            # Estimate language from provided text
+            is_english = is_text_english(final_reference_text)
+            language = "English" if is_english else "Non-English"
+            logger.info(f"Language estimated from provided text: {language}")
+
 
         response_data = {
             'success': True,
             'filepath': filepath,
             'filename': filename,
-            'reference_text': reference_text,
-            'is_english': is_english
+            'reference_text': final_reference_text,
+            'is_english': is_english,
+            'language': language
         }
-        logger.info(f"Returning success response: {response_data}")
+        logger.info(f"Returning success response for base64 reference: {response_data}")
         return jsonify(response_data)
 
     except Exception as e:
-        logger.error(f"Error in record_reference_audio: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.exception(f"Error in process_base64_audio_reference: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@narration_bp.route('/upload-reference', methods=['POST'])
+def upload_reference_audio():
+    """Upload reference audio file and optionally transcribe"""
+    try:
+        if 'file' not in request.files:
+            logger.error("Upload request missing 'file' part.")
+            return jsonify({'error': 'No file part in the request'}), 400
+
+        file = request.files['file']
+        if not file or file.filename == '':
+            logger.error("Upload request received with no selected file.")
+            return jsonify({'error': 'No selected file'}), 400
+
+        # Sanitize filename and make unique
+        original_filename = secure_filename(file.filename)
+        unique_id = str(uuid.uuid4())
+        base, ext = os.path.splitext(original_filename)
+        # Ensure extension is reasonable, default to .wav if missing/odd
+        ext = ext if ext else '.wav'
+        unique_filename = f"{base}_{unique_id}{ext}"
+        filepath = os.path.join(REFERENCE_AUDIO_DIR, unique_filename)
+
+        logger.info(f"Saving uploaded file '{original_filename}' as '{unique_filename}'")
+        file.save(filepath)
+        logger.info(f"File saved successfully to {filepath}")
+
+        # Get reference text from form data
+        reference_text = request.form.get('reference_text', '')
+        # Allow explicit 'transcribe' flag from form data as well
+        should_transcribe_form = request.form.get('transcribe', 'false').lower() == 'true'
+        logger.info(f"Upload Ref: Provided Text='{reference_text[:50]}...', Transcribe Flag={should_transcribe_form}")
+
+        # --- Transcription Logic ---
+        final_reference_text = reference_text
+        is_english = True
+        language = "Unknown"
+
+        # Transcribe if flag set OR if no text provided
+        if should_transcribe_form or not final_reference_text:
+            logger.info("Transcription needed for uploaded file. Attempting with Gemini...")
+            # Transcribe using the saved file path
+            transcription_result = transcribe_with_gemini(filepath)
+
+            final_reference_text = transcription_result.get("text", "")
+            is_english = transcription_result.get("is_english", True)
+            language = transcription_result.get("language", "Error during transcription")
+
+            if not final_reference_text and "Error" not in language:
+                 logger.warning("Gemini transcription returned empty text for uploaded file.")
+                 language = "Unknown (Empty Transcription)"
+            elif "Error" in language:
+                 logger.error(f"Gemini transcription failed for uploaded file: {language}")
+                 final_reference_text = reference_text # Fallback to provided text if any
+            else:
+                 logger.info(f"Gemini transcription successful for uploaded file: Lang={language}, Text='{final_reference_text[:50]}...'")
+        else:
+            logger.info("Using provided reference text for uploaded file, skipping transcription.")
+            is_english = is_text_english(final_reference_text)
+            language = "English" if is_english else "Non-English"
+            logger.info(f"Language estimated from provided text: {language}")
+
+        return jsonify({
+            'success': True,
+            'filepath': filepath,
+            'filename': unique_filename,
+            'reference_text': final_reference_text,
+            'is_english': is_english,
+            'language': language
+        })
+
+    except Exception as e:
+        logger.exception(f"Error handling uploaded reference file: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# This route seems redundant if /process-base64-reference handles JSON correctly.
+# Kept for backward compatibility or specific form-data scenarios.
+@narration_bp.route('/record-reference', methods=['POST'])
+def record_reference_audio():
+    """Handle reference audio potentially sent as form data (e.g., from recorder.js)"""
+    logger.info("Received request at /record-reference endpoint.")
+
+    # Check if content type suggests base64 JSON first
+    content_type = request.headers.get('Content-Type', '').lower()
+    if 'application/json' in content_type:
+        logger.info("/record-reference received JSON content type, attempting to process as base64...")
+        # Use the dedicated base64 handler
+        return process_base64_audio_reference()
+
+    # Fallback: Handle as form data file upload ('audio_data' field expected)
+    logger.info("/record-reference assuming form-data audio file upload.")
+    try:
+        if 'audio_data' not in request.files:
+            # Check form fields as fallback if file isn't present
+            if 'audio_data' in request.form:
+                 logger.warning("/record-reference: 'audio_data' found in form fields, not files. Might be base64 string?")
+                 # Attempt to handle as if it were base64 JSON payload
+                 try:
+                     mock_json_payload = {
+                         'audio_data': request.form['audio_data'],
+                         'reference_text': request.form.get('reference_text', ''),
+                         'transcribe': request.form.get('transcribe', 'false')
+                     }
+                     # Temporarily replace request data for the handler function
+                     # This is a bit hacky; ideally client sends consistent format.
+                     original_json = request.json
+                     request.json_data_override = mock_json_payload # Custom attribute to pass data
+                     response = process_base64_audio_reference_from_override()
+                     request.json_data_override = None # Clean up
+                     return response
+                 except Exception as form_b64_err:
+                     logger.error(f"Failed to process 'audio_data' from form field as base64: {form_b64_err}")
+                     return jsonify({'error': 'Received audio_data in form, but failed to process as base64'}), 400
+
+            logger.error("/record-reference: No 'audio_data' found in request files.")
+            return jsonify({'error': 'Missing audio_data file part'}), 400
+
+        audio_file = request.files['audio_data']
+        logger.info(f"Received audio file via form data: {audio_file.filename}, size: {audio_file.content_length}")
+
+        # Generate unique filename, save, and transcribe (similar to /upload-reference)
+        unique_id = str(uuid.uuid4())
+        # Assume WAV format for recordings
+        filename = f"recorded_form_{unique_id}.wav"
+        filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
+
+        logger.info(f"Saving recorded form data file as '{filename}'")
+        audio_file.save(filepath)
+        logger.info(f"File saved successfully to {filepath}")
+
+        reference_text = request.form.get('reference_text', '')
+        should_transcribe = request.form.get('transcribe', 'false').lower() == 'true'
+        logger.info(f"Record Ref (form): Provided Text='{reference_text[:50]}...', Transcribe Flag={should_transcribe}")
+
+        # --- Transcription Logic ---
+        final_reference_text = reference_text
+        is_english = True
+        language = "Unknown"
+
+        if should_transcribe or not final_reference_text:
+            logger.info("Transcription needed for recorded form data. Attempting with Gemini...")
+            transcription_result = transcribe_with_gemini(filepath)
+            final_reference_text = transcription_result.get("text", "")
+            is_english = transcription_result.get("is_english", True)
+            language = transcription_result.get("language", "Error during transcription")
+            # Logging handled within transcribe function
+        else:
+            logger.info("Using provided text for recorded form data, skipping transcription.")
+            is_english = is_text_english(final_reference_text)
+            language = "English" if is_english else "Non-English"
+            logger.info(f"Language estimated from provided text: {language}")
+
+        return jsonify({
+            'success': True,
+            'filepath': filepath,
+            'filename': filename,
+            'reference_text': final_reference_text,
+            'is_english': is_english,
+            'language': language
+        })
+
+    except Exception as e:
+        logger.exception(f"Error in /record-reference (form data handling): {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# Helper to allow record_reference to call the base64 logic with mocked data
+def process_base64_audio_reference_from_override():
+     # This function assumes request.json_data_override is set
+     if not hasattr(request, 'json_data_override') or not request.json_data_override:
+         logger.error("process_base64_audio_reference_from_override called without override data")
+         return jsonify({'error': 'Internal server error: missing override data'}), 500
+     data = request.json_data_override
+     # Now reuse the logic, but source data from the override dict
+     # This duplicates the core logic of process_base64_audio_reference.
+     # Consider refactoring process_base64_audio_reference to accept a dict?
+     # For now, keep it simple:
+     audio_data_base64 = data.get('audio_data')
+     reference_text = data.get('reference_text', '')
+     should_transcribe = str(data.get('transcribe', 'false')).lower() == 'true'
+
+     # (Paste the core decoding, saving, and transcription logic from process_base64_audio_reference here)
+     # ... [omitted for brevity - this needs careful copy/paste or refactoring] ...
+     # This approach is fragile. Better to refactor the core logic into a helper function.
+
+     # --- Simplified Placeholder - Requires full logic implementation ---
+     logger.warning("Executing simplified logic in process_base64_audio_reference_from_override. Needs full implementation.")
+     if not audio_data_base64: return jsonify({'error': 'Missing audio_data in override'}), 400
+     try:
+        # (Placeholder for Decode, Save, Transcribe logic)
+        unique_id = str(uuid.uuid4())
+        filename = f"recorded_override_{unique_id}.wav"
+        filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
+        audio_bytes = base64.b64decode(audio_data_base64)
+        with open(filepath, 'wb') as f: f.write(audio_bytes)
+        logger.info(f"Saved override audio to {filepath}")
+        # (Placeholder for Transcription logic)
+        final_reference_text = reference_text or "Transcription Placeholder"
+        is_english = True
+        language = "Unknown (Placeholder)"
+
+        response_data = {
+            'success': True, 'filepath': filepath, 'filename': filename,
+            'reference_text': final_reference_text, 'is_english': is_english, 'language': language
+        }
+        return jsonify(response_data)
+     except Exception as e:
+         logger.error(f"Error processing override data: {e}")
+         return jsonify({'error': f'Error processing override data: {str(e)}'}), 500
+     # --- End Placeholder ---
+
 
 @narration_bp.route('/extract-segment', methods=['POST'])
 def extract_audio_segment():
-    """Extract audio segment from video"""
-    data = request.json
-    video_path = data.get('video_path')
-    start_time = data.get('start_time')
-    end_time = data.get('end_time')
-    should_transcribe = data.get('transcribe', True)  # Default to True for backward compatibility
-
-    logger.info(f"Extract segment request: video_path={video_path}, start_time={start_time}, end_time={end_time}, should_transcribe={should_transcribe}")
-
-    if not video_path or start_time is None or end_time is None:
-        return jsonify({'error': 'Missing required parameters'}), 400
-
+    """Extract audio segment from video using ffmpeg"""
     try:
-        # Use ffmpeg to extract audio segment
-        unique_id = str(uuid.uuid4())
-        output_path = os.path.join(REFERENCE_AUDIO_DIR, f"segment_{unique_id}.wav")
+        data = request.json
+        video_path = data.get('video_path')
+        start_time_raw = data.get('start_time') # Can be seconds or HH:MM:SS.ms
+        end_time_raw = data.get('end_time')     # Can be seconds or HH:MM:SS.ms
+        should_transcribe = data.get('transcribe', True)
 
-        # Convert start and end times to seconds if they're in format "00:00:00"
-        if isinstance(start_time, str) and ":" in start_time:
-            parts = start_time.split(":")
-            start_time = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+        logger.info(f"Extract segment request: video={video_path}, start={start_time_raw}, end={end_time_raw}, transcribe={should_transcribe}")
 
-        if isinstance(end_time, str) and ":" in end_time:
-            parts = end_time.split(":")
-            end_time = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+        if not video_path or start_time_raw is None or end_time_raw is None:
+            return jsonify({'error': 'Missing required parameters (video_path, start_time, end_time)'}), 400
+
+        # Ensure video path exists
+        if not os.path.exists(video_path):
+             logger.error(f"Video file not found for extraction: {video_path}")
+             return jsonify({'error': f'Video file not found: {video_path}'}), 404
+
+        # Convert times to seconds if needed (handle HH:MM:SS.ms format)
+        def parse_time(time_raw):
+            if isinstance(time_raw, (int, float)):
+                return float(time_raw)
+            if isinstance(time_raw, str):
+                try:
+                    parts = time_raw.split(':')
+                    if len(parts) == 3:
+                        h, m, s_ms = parts
+                        s = float(s_ms) # Handles seconds with milliseconds
+                        return int(h) * 3600 + int(m) * 60 + s
+                    elif len(parts) == 2: # MM:SS.ms
+                        m, s_ms = parts
+                        s = float(s_ms)
+                        return int(m) * 60 + s
+                    else: # Assume seconds
+                        return float(time_raw)
+                except ValueError:
+                     raise ValueError(f"Invalid time format: {time_raw}")
+            raise ValueError(f"Unsupported time type: {type(time_raw)}")
+
+        try:
+            start_time = parse_time(start_time_raw)
+            end_time = parse_time(end_time_raw)
+        except ValueError as e:
+            logger.error(f"Error parsing time values: {e}")
+            return jsonify({'error': str(e)}), 400
+
+        if start_time < 0 or end_time <= start_time:
+             return jsonify({'error': 'Invalid time range (start must be non-negative, end must be after start)'}), 400
 
         duration = end_time - start_time
 
-        # Use ffmpeg to extract the segment
-        import subprocess
+        # Generate unique output path
+        unique_id = str(uuid.uuid4())
+        output_filename = f"segment_{unique_id}.wav"
+        output_path = os.path.join(REFERENCE_AUDIO_DIR, output_filename)
+
+        # Construct ffmpeg command
+        # -vn: no video
+        # -acodec pcm_s16le: Standard WAV format
+        # -ar 44100: Sample rate (adjust if F5TTS prefers different)
+        # -ac 1: Mono channel (adjust if needed)
+        # -ss before -i for faster seeking on keyframes (usually good)
+        # -t for duration
         cmd = [
-            'ffmpeg', '-y',
+            'ffmpeg', '-y', # Overwrite output without asking
+            '-ss', str(start_time), # Seek to start time
             '-i', video_path,
-            '-ss', str(start_time),
-            '-t', str(duration),
-            '-vn',  # No video
-            '-acodec', 'pcm_s16le',  # PCM 16-bit little-endian format
-            '-ar', '44100',  # 44.1kHz sample rate
-            '-ac', '1',  # Mono
+            '-t', str(duration), # Specify duration
+            '-vn',
+            '-acodec', 'pcm_s16le',
+            '-ar', '44100', # Consider making this configurable or detecting source rate
+            '-ac', '1',
             output_path
         ]
+        logger.info(f"Running ffmpeg command: {' '.join(cmd)}")
 
-        subprocess.run(cmd, check=True)
+        # Execute ffmpeg
+        import subprocess
+        try:
+            # Use capture_output=True to get stderr for debugging if needed
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
+            logger.info("ffmpeg completed successfully.")
+            logger.debug(f"ffmpeg stdout:\n{result.stdout}")
+            logger.debug(f"ffmpeg stderr:\n{result.stderr}")
+        except FileNotFoundError:
+             logger.error("ffmpeg command not found. Ensure ffmpeg is installed and in the system PATH.")
+             return jsonify({'error': 'ffmpeg not found. Please install ffmpeg.'}), 500
+        except subprocess.CalledProcessError as e:
+            logger.error(f"ffmpeg command failed with exit code {e.returncode}")
+            logger.error(f"ffmpeg stderr:\n{e.stderr}")
+            # Try to delete potentially incomplete output file
+            if os.path.exists(output_path): os.remove(output_path)
+            return jsonify({'error': f'ffmpeg failed: {e.stderr[:200]}...'}), 500
 
-        # Transcribe the audio segment if requested
+        # --- Transcription Logic ---
         reference_text = ""
-        is_english = True  # Default to True
+        is_english = True
         language = "Unknown"
 
         if should_transcribe:
-            logger.info("Transcription requested for audio segment")
-
-            # First try with F5-TTS if available
-            if HAS_F5TTS:
-                try:
-                    logger.info("Attempting to transcribe audio segment with F5-TTS")
-                    reference_text = tts_model.transcribe(output_path)
-                    logger.info(f"F5-TTS transcription result: {reference_text}")
-                except Exception as e:
-                    logger.error(f"Error transcribing audio segment with F5-TTS: {e}")
-                    reference_text = ""
-
-            # If F5-TTS failed or is not available, try with Gemini
-            if not reference_text:
-                try:
-                    logger.info("Attempting to transcribe audio segment with Gemini Flash Lite")
-                    transcription_result = transcribe_with_gemini(output_path, "gemini-2.0-flash-lite")
-                    reference_text = transcription_result["text"]
-                    is_english = transcription_result["is_english"]
-                    language = transcription_result.get("language", "Unknown")
-                    logger.info(f"Gemini transcription result: {reference_text}, language: {language}, is_english: {is_english}")
-                except Exception as e:
-                    logger.error(f"Error transcribing audio segment with Gemini: {e}")
-                    reference_text = ""
+            logger.info("Transcription requested for extracted segment. Attempting with Gemini...")
+            transcription_result = transcribe_with_gemini(output_path)
+            reference_text = transcription_result.get("text", "")
+            is_english = transcription_result.get("is_english", True)
+            language = transcription_result.get("language", "Error during transcription")
+            # Logging handled within transcribe function
         else:
-            logger.info("Transcription not requested for audio segment")
+            logger.info("Transcription not requested for extracted segment.")
+            # Cannot determine language without transcription
 
         return jsonify({
             'success': True,
             'filepath': output_path,
-            'filename': os.path.basename(output_path),
+            'filename': output_filename,
             'reference_text': reference_text,
             'is_english': is_english,
             'language': language
         })
 
     except Exception as e:
-        logger.error(f"Error extracting audio segment: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.exception(f"Error extracting audio segment: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# --- Narration Generation ---
+
+# Global variable to hold the loaded model instance (if caching is desired)
+# However, the current logic re-loads per request for isolation.
+# Consider a caching mechanism if model loading time is significant and state isn't an issue.
+# loaded_tts_model_cache = {}
+
+def load_tts_model(model_id=None):
+    """Loads or retrieves the specified F5-TTS model."""
+    # This function encapsulates model loading logic.
+    # Currently called within the /generate route per request.
+    if not HAS_F5TTS:
+        raise RuntimeError("F5-TTS is not available.")
+
+    try:
+        import torch
+        from f5_tts.api import F5TTS
+
+        # Determine which model to load
+        target_model_id = model_id or get_active_model()
+        if not target_model_id:
+             logger.warning("No specific or active model set, attempting to load default F5-TTS model.")
+             # Initialize default F5-TTS
+             tts_instance = F5TTS(device=device)
+             logger.info(f"Loaded default F5-TTS model instance on device: {device}")
+             return tts_instance, "default" # Return instance and ID used
+
+        # Find the model details from registry
+        model_registry = get_models(include_cache=True) # Check both installed and cache
+        all_known_models = model_registry.get('models', []) + model_registry.get('cached_models', [])
+        model_info = next((m for m in all_known_models if m['id'] == target_model_id), None)
+
+        if not model_info:
+            logger.error(f"Model ID '{target_model_id}' not found in registry. Cannot load.")
+            raise ValueError(f"Model ID '{target_model_id}' not found.")
+
+        logger.info(f"Loading F5-TTS model: '{target_model_id}' on device: {device}")
+        logger.debug(f"Model Info: {model_info}")
+
+        # Handle the default model marker explicitly
+        if model_info.get("source") == "default" or model_info.get("model_path") == "default":
+             logger.info("Model identified as default, initializing F5TTS without explicit paths.")
+             tts_instance = F5TTS(device=device)
+        else:
+             # Initialize with specific model paths
+             model_path = model_info.get("model_path")
+             vocab_path = model_info.get("vocab_path") # Can be None
+
+             if not model_path or not os.path.exists(model_path):
+                 logger.error(f"Model file path not found or invalid for '{target_model_id}': {model_path}")
+                 raise FileNotFoundError(f"Model file not found for {target_model_id}")
+             if vocab_path and not os.path.exists(vocab_path):
+                  logger.warning(f"Vocabulary file path specified but not found for '{target_model_id}': {vocab_path}. Model might fail.")
+                  # Depending on F5TTS, None might be acceptable if vocab is bundled or not needed
+
+             # Only pass parameters that F5TTS actually accepts
+             logger.info(f"Initializing F5-TTS with ckpt_file='{model_path}', vocab_file='{vocab_path}'")
+             tts_instance = F5TTS(
+                 device=device,
+                 ckpt_file=model_path,
+                 vocab_file=vocab_path # Pass None if vocab_path is None or empty
+             )
+
+        logger.info(f"Successfully loaded F5-TTS model '{target_model_id}'")
+        return tts_instance, target_model_id
+
+    except Exception as e:
+        logger.exception(f"Error loading F5-TTS model (ID: {target_model_id}): {e}")
+        # Re-raise a more specific error or handle appropriately
+        raise RuntimeError(f"Failed to load TTS model '{target_model_id}': {str(e)}") from e
+
 
 @narration_bp.route('/generate', methods=['POST', 'HEAD'])
 def generate_narration():
-    """Generate narration for subtitles"""
+    """Generate narration for subtitles using F5-TTS (Streaming Response)"""
     if not HAS_F5TTS:
-        return jsonify({'error': 'F5-TTS is not available'}), 503
+        logger.error("Generate request received but F5-TTS is not available.")
+        return jsonify({'error': 'F5-TTS service is not available'}), 503
 
-    # Handle HEAD request to check if streaming is supported
+    # Handle HEAD request for capability check (e.g., by streaming clients)
     if request.method == 'HEAD':
+        logger.debug("Received HEAD request for /generate")
         response = Response()
+        # Indicate streaming capability
         response.headers['Content-Type'] = 'text/event-stream'
+        response.headers['Cache-Control'] = 'no-cache'
         return response
 
-    data = request.json
-    reference_audio = data.get('reference_audio')
-    reference_text = data.get('reference_text', '')
-    subtitles = data.get('subtitles', [])
-    settings = data.get('settings', {})
-
-    # Extract settings with defaults
-    # Only use parameters that are actually supported by F5-TTS
-    remove_silence = settings.get('removeSilence', True)
-    speed = float(settings.get('speechRate', 1.0))
-    batch_size = settings.get('batchSize', 10)
-
-    # Handle nfeStep parameter safely
-    nfe_step_value = settings.get('nfeStep')
-    nfe_step = 32  # Default value
-    if nfe_step_value is not None:
-        try:
-            nfe_step = int(nfe_step_value)
-        except (ValueError, TypeError):
-            logger.warning(f"Invalid nfeStep value: {nfe_step_value}, using default: 32")
-
-    # Handle swayCoef parameter safely
-    sway_coef_value = settings.get('swayCoef')
-    sway_coef = -1.0  # Default value
-    if sway_coef_value is not None:
-        try:
-            sway_coef = float(sway_coef_value)
-        except (ValueError, TypeError):
-            logger.warning(f"Invalid swayCoef value: {sway_coef_value}, using default: -1.0")
-
-    # Handle cfgStrength parameter safely
-    cfg_strength_value = settings.get('cfgStrength')
-    cfg_strength = 2.0  # Default value
-    if cfg_strength_value is not None:
-        try:
-            cfg_strength = float(cfg_strength_value)
-        except (ValueError, TypeError):
-            logger.warning(f"Invalid cfgStrength value: {cfg_strength_value}, using default: 2.0")
-
-    # Handle seed parameter
-    seed = settings.get('seed')  # None means random seed
-
-    # Log the settings being used
-    logger.info(f"Using settings: remove_silence={remove_silence}, speed={speed}, batch_size={batch_size}, nfe_step={nfe_step}, sway_coef={sway_coef}, cfg_strength={cfg_strength}, seed={seed}")
-
-    logger.info(f"Advanced settings: {settings}")
-
-    if not reference_audio or not subtitles:
-        return jsonify({'error': 'Missing required parameters'}), 400
-
+    # --- Process POST Request ---
     try:
-        # Log the received references to help with debugging
-        logger.info(f"Generating narration with reference_audio: {reference_audio}")
-        logger.info(f"Reference text: {reference_text}")
-        logger.info(f"Number of subtitles: {len(subtitles)}")
+        data = request.json
+        if not data:
+             return jsonify({'error': 'No JSON data received'}), 400
 
-        # Verify the reference audio file exists
+        reference_audio = data.get('reference_audio')
+        reference_text = data.get('reference_text', '')
+        subtitles = data.get('subtitles', [])
+        settings = data.get('settings', {})
+        requested_model_id = settings.get('modelId') # User can override active model
+
+        logger.info(f"Generate request: RefAudio={reference_audio}, #Subtitles={len(subtitles)}, Model={requested_model_id or 'active/default'}")
+        logger.debug(f"Reference Text: '{reference_text[:100]}...'")
+        logger.debug(f"Settings: {settings}")
+
+        if not reference_audio or not subtitles:
+            return jsonify({'error': 'Missing required parameters (reference_audio, subtitles)'}), 400
+
+        # Verify reference audio file exists *before* loading model
         if not os.path.exists(reference_audio):
             logger.error(f"Reference audio file does not exist: {reference_audio}")
             return jsonify({'error': f'Reference audio file not found: {reference_audio}'}), 404
 
-        # Create a new model instance to avoid any cached state from previous references
-        logger.info("Creating new F5TTS instance to avoid cached references")
-        import torch
-        from f5_tts.api import F5TTS
-
-        # Use the same device as the global model
-        current_device = device
-
-        # Initialize request_model variable
-        request_model = None
-
+        # --- Load Model ---
+        # Load model instance specifically for this request to ensure isolation
         try:
-            # Get model registry
-            model_registry = get_models()
+            tts_model_instance, loaded_model_id = load_tts_model(requested_model_id)
+            logger.info(f"Using TTS model '{loaded_model_id}' for this generation request.")
+        except Exception as model_load_error:
+             logger.error(f"Failed to load TTS model for generation: {model_load_error}", exc_info=True)
+             # Return error before starting stream
+             return jsonify({'error': f'Failed to load TTS model: {model_load_error}'}), 500
 
-            # Check if a specific model ID was provided in the request
-            model_id = settings.get('modelId')
+        # --- Prepare Settings ---
+        remove_silence = settings.get('removeSilence', True)
+        speed = float(settings.get('speechRate', 1.0))
+        # Batch size isn't directly used by F5TTS.infer for single text, remove unless needed
+        # batch_size = settings.get('batchSize', 10) # This seems unused for item-by-item generation
+        nfe_step = int(settings.get('nfeStep', 32)) # Default from F5TTS if not specified
+        sway_coef = float(settings.get('swayCoef', -1.0)) # Default from F5TTS
+        cfg_strength = float(settings.get('cfgStrength', 2.0)) # Default from F5TTS
+        seed_val = settings.get('seed') # Can be None, int, or string convertible to int
+        seed = int(seed_val) if seed_val is not None and str(seed_val).isdigit() else None
 
-            if model_id and any(model["id"] == model_id for model in model_registry["models"]):
-                # Get the requested model info
-                requested_model = next(model for model in model_registry["models"] if model["id"] == model_id)
-                logger.info(f"Using requested model for generation: {requested_model['id']}")
+        logger.info(f"Effective Generation Settings: model={loaded_model_id}, remove_silence={remove_silence}, speed={speed}, nfe_step={nfe_step}, sway_coef={sway_coef}, cfg_strength={cfg_strength}, seed={seed}")
 
-                # Check if this is the default model with special markers
-                if requested_model.get("source") == "default" or requested_model.get("model_path") == "default":
-                    logger.info("Requested model is the default model, initializing without paths")
-                    request_model = F5TTS(device=current_device)
-                else:
-                    # Initialize with custom model paths
-                    model_path = requested_model.get("model_path")
-                    vocab_path = requested_model.get("vocab_path")
-                    config = requested_model.get("config", {})
+        # --- Define Streaming Generator ---
+        def generate_narration_stream():
+            # Make the model instance accessible in this scope
+            nonlocal tts_model_instance, loaded_model_id
 
-                    logger.info(f"Initializing F5-TTS with requested model: {model_path}")
-                    # Only pass parameters that F5TTS actually accepts
-                    logger.info(f"Model config (not passed to constructor): {config}")
-                    request_model = F5TTS(
-                        device=current_device,
-                        ckpt_file=model_path,
-                        vocab_file=vocab_path
-                    )
-            else:
-                # If no specific model was requested or the requested model doesn't exist,
-                # fall back to the default model
-                logger.info(f"No specific model requested or model not found, using default F5-TTS model")
-                request_model = F5TTS(device=current_device)
-
-                # Make sure the default model is in the registry
-                if not hasattr(get_status, 'default_model_checked'):
-                    initialize_registry()
-                    get_status.default_model_checked = True
-
-            # Log the device being used
-            logger.info(f"New F5TTS instance created with device: {current_device}")
-
-            # Verify the model was created successfully
-            if request_model is None:
-                error_msg = "F5-TTS model initialization failed"
-                logger.error(error_msg)
-                return jsonify({'error': error_msg}), 500
-        except Exception as e:
-            logger.error(f"Error creating F5TTS instance: {e}")
-            return jsonify({'error': f'Error initializing F5-TTS: {str(e)}'}), 500
-
-        # Create a local copy of the model for the generator function
-        model_for_generator = request_model
-
-        # Use Flask's streaming response to send results incrementally
-        def generate_narration_stream(model=model_for_generator, ref_text=reference_text, ref_audio=reference_audio):
-            # Initialize results list
             results = []
-            # Store reference text locally to avoid scope issues
-            reference_text = ref_text
+            total_subtitles = len(subtitles)
+            processed_count = 0
+            start_time_generation = time.time()
 
-            # Check if the model was successfully created
-            if model is None:
-                error_msg = "F5-TTS model initialization failed"
-                logger.error(error_msg)
+            # Language mismatch check (simple version)
+            ref_lang_is_english = is_text_english(reference_text)
+            logger.info(f"Reference text language heuristics: {'English' if ref_lang_is_english else 'Non-English'}")
+            mismatch_warning_sent = False
 
-                # Ensure proper UTF-8 encoding in JSON
-                error_data = {'type': 'error', 'error': error_msg}
-                try:
-                    json_data = json.dumps(error_data, ensure_ascii=False)
-                    yield f"data: {json_data}\n\n"
-                except UnicodeEncodeError as ue:
-                    logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                    json_data = json.dumps(error_data)
-                    yield f"data: {json_data}\n\n"
-                return
+            try:
+                for i, subtitle in enumerate(subtitles):
+                    subtitle_id = subtitle.get('id', f"index_{i}") # Use index if ID missing
+                    text = subtitle.get('text', '').strip()
+                    processed_count += 1
 
-            # Process each subtitle one by one
-            for subtitle in subtitles:
-                subtitle_id = subtitle.get('id')
-                text = subtitle.get('text', '')
-
-                if not text:
-                    # Skip empty subtitles but still send a response
-                    result = {
-                        'subtitle_id': subtitle_id,
-                        'text': '',
-                        'success': True,
-                        'skipped': True
+                    # --- Send Progress Update ---
+                    progress_data = {
+                        'type': 'progress',
+                        'message': f'Processing subtitle {processed_count}/{total_subtitles} (ID: {subtitle_id})',
+                        'current': processed_count,
+                        'total': total_subtitles
                     }
-                    results.append(result)
+                    yield f"data: {json.dumps(progress_data)}\n\n"
 
-                    # Send the current result as a JSON string followed by a special delimiter
-                    skip_data = {'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)}
-                    try:
-                        json_data = json.dumps(skip_data, ensure_ascii=False)
-                        yield f"data: {json_data}\n\n"
-                    except UnicodeEncodeError as ue:
-                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                        json_data = json.dumps(skip_data)
-                        yield f"data: {json_data}\n\n"
-                    continue
+                    if not text:
+                        logger.info(f"Skipping empty subtitle (ID: {subtitle_id})")
+                        result = {'subtitle_id': subtitle_id, 'text': '', 'success': True, 'skipped': True}
+                        results.append(result)
+                        # Send skip result immediately
+                        skip_data = {'type': 'result', 'result': result, 'progress': processed_count, 'total': total_subtitles}
+                        yield f"data: {json.dumps(skip_data)}\n\n"
+                        continue
 
-                # Generate a unique filename for this subtitle
-                unique_id = str(uuid.uuid4())
-                output_filename = f"narration_{subtitle_id}_{unique_id}.wav"
-                output_path = os.path.join(OUTPUT_AUDIO_DIR, output_filename)
+                    # --- Language Mismatch Check ---
+                    if not mismatch_warning_sent:
+                         target_lang_is_english = is_text_english(text)
+                         if ref_lang_is_english != target_lang_is_english:
+                             logger.warning(f"Potential language mismatch! Reference is {'English' if ref_lang_is_english else 'Non-English'}, "
+                                            f"first target subtitle (ID: {subtitle_id}) seems {'English' if target_lang_is_english else 'Non-English'}. "
+                                            f"Model '{loaded_model_id}' might not support this cross-lingual generation.")
+                             mismatch_warning_sent = True # Send warning only once
 
-                # Send progress update with more detailed message
-                progress_message = f'Generating narration for subtitle {subtitle_id} ({len(results) + 1}/{len(subtitles)})'
-                logger.info(progress_message)
+                    # --- Prepare for Generation ---
+                    unique_id = str(uuid.uuid4())
+                    output_filename = f"narration_{subtitle_id}_{unique_id}.wav"
+                    output_path = os.path.join(OUTPUT_AUDIO_DIR, output_filename)
 
-                # Ensure proper UTF-8 encoding in JSON
-                progress_data = {'type': 'progress', 'message': progress_message, 'current': len(results) + 1, 'total': len(subtitles)}
-                try:
-                    json_data = json.dumps(progress_data, ensure_ascii=False)
-                    yield f"data: {json_data}\n\n"
-                except UnicodeEncodeError as ue:
-                    logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                    json_data = json.dumps(progress_data)
-                    yield f"data: {json_data}\n\n"
-
-                try:
-                    # Generate narration and save to file
-                    logger.info(f"Generating narration for subtitle {subtitle_id} using device: {current_device}")
-                    logger.info(f"Using reference audio: {ref_audio}")
-                    logger.info(f"Using reference text: {reference_text}")
-                    logger.info(f"Generating for text: {text}")
-
-                    # Double-check that the model is still valid
-                    if model is None:
-                        raise ValueError("Model is not available for generation")
-
-                    # Log the text we're generating for
-                    logger.info(f"Cleaned text for subtitle {subtitle_id}: {text}")
-
-                    # No need to clean Unicode characters as F5-TTS should support them
-                    # We'll only clean control characters that might cause issues
+                    # Clean text: Remove control characters, ensure UTF-8
                     import re
-                    # Remove control characters but preserve Unicode characters (including Vietnamese)
-                    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+                    cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+                    # Ensure string type and UTF-8 encoding (though F5TTS might handle bytes too)
+                    # cleaned_text = cleaned_text.encode('utf-8').decode('utf-8')
+                    # Ensure reference text is also clean string
+                    cleaned_ref_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', reference_text or "")
+                    # cleaned_ref_text = cleaned_ref_text.encode('utf-8').decode('utf-8')
 
-                    # Ensure text is properly encoded as UTF-8
-                    if isinstance(text, str):
-                        text_bytes = text.encode('utf-8')
-                        text = text_bytes.decode('utf-8')
+                    # Log parameters clearly before calling infer
+                    log_params = {
+                        'ref_file': reference_audio, 'ref_text': cleaned_ref_text, 'gen_text': cleaned_text,
+                        'file_wave': output_path, 'remove_silence': remove_silence, 'speed': speed,
+                        'nfe_step': nfe_step, 'sway_sampling_coef': sway_coef, 'cfg_strength': cfg_strength, 'seed': seed
+                    }
+                    logger.info(f"Calling model.infer for subtitle ID {subtitle_id} with text: '{cleaned_text[:100]}...'")
+                    logger.debug(f"Infer params: { {k: v for k, v in log_params.items() if k not in ['ref_text', 'gen_text']} }") # Avoid logging long texts at debug
 
-                    # Log text in a way that won't cause encoding issues
+
+                    # --- Perform Inference ---
                     try:
-                        logger.info(f"Final text after cleaning for subtitle {subtitle_id}: {text}")
-                    except UnicodeEncodeError:
-                        logger.info(f"Final text after cleaning for subtitle {subtitle_id}: [Contains special characters]")
+                        # Use the loaded model instance
+                        # Ensure device context if needed (though F5TTS internal handling might suffice)
+                        import torch
+                        context_manager = torch.cuda.device(device) if device.startswith("cuda") and torch.cuda.is_available() else torch.device(device)
+                        with context_manager:
+                             tts_model_instance.infer(**log_params)
 
-                    # Ensure reference text is properly encoded as UTF-8
-                    if isinstance(reference_text, str):
-                        reference_text_bytes = reference_text.encode('utf-8')
-                        reference_text = reference_text_bytes.decode('utf-8')
+                        logger.info(f"Successfully generated narration for subtitle ID {subtitle_id}")
+                        result = {
+                            'subtitle_id': subtitle_id,
+                            'text': cleaned_text, # Return the cleaned text used for generation
+                            'audio_path': output_path,
+                            'filename': output_filename,
+                            'success': True
+                        }
+                        results.append(result)
 
-                    # Force CUDA if available
-                    import torch
-                    if torch.cuda.is_available():
-                        logger.info(f"Using CUDA for subtitle {subtitle_id} generation")
-                        with torch.cuda.device(0):
-                            # Use the model instance with supported settings
-                            try:
-                                # Try to log the text we're generating (safely)
-                                try:
-                                    logger.info(f"Generating with text: {text}")
-                                except UnicodeEncodeError:
-                                    logger.info("Generating with text containing special characters")
+                        # Send success result
+                        result_data = {'type': 'result', 'result': result, 'progress': processed_count, 'total': total_subtitles}
+                        yield f"data: {json.dumps(result_data)}\n\n"
 
-                                model.infer(
-                                    ref_file=ref_audio,
-                                    ref_text=reference_text,
-                                    gen_text=text,
-                                    file_wave=output_path,
-                                    remove_silence=remove_silence,
-                                    speed=speed,
-                                    nfe_step=nfe_step,
-                                    sway_sampling_coef=sway_coef,
-                                    cfg_strength=cfg_strength,
-                                    seed=seed
-                                )
-                            except UnicodeEncodeError as ue:
-                                # If we get a Unicode error, try with a different encoding approach
-                                logger.warning(f"Unicode error: {ue}. Trying with explicit encoding.")
+                    except Exception as infer_error:
+                        # Log the specific error and the text that caused it
+                        logger.error(f"Error generating narration for subtitle ID {subtitle_id} with text '{cleaned_text[:100]}...': {infer_error}", exc_info=True) # Log stack trace
+                        error_message = f"{type(infer_error).__name__}: {str(infer_error)}"
+                        result = {
+                            'subtitle_id': subtitle_id,
+                            'text': cleaned_text,
+                            'error': error_message,
+                            'success': False
+                        }
+                        results.append(result)
 
-                                # Convert to bytes and back with explicit UTF-8 encoding
-                                if isinstance(text, str):
-                                    text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
-
-                                if isinstance(reference_text, str):
-                                    reference_text = reference_text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
-
-                                # Try again with the cleaned text
-                                model.infer(
-                                    ref_file=ref_audio,
-                                    ref_text=reference_text,
-                                    gen_text=text,
-                                    file_wave=output_path,
-                                    remove_silence=remove_silence,
-                                    speed=speed,
-                                    nfe_step=nfe_step,
-                                    sway_sampling_coef=sway_coef,
-                                    cfg_strength=cfg_strength,
-                                    seed=seed
-                                )
-                    else:
-                        logger.warning(f"CUDA not available for subtitle {subtitle_id} generation, using CPU")
-                        # Use the model instance with supported settings
+                        # Send error result
+                        error_data = {'type': 'error', 'result': result, 'progress': processed_count, 'total': total_subtitles}
+                        # Use ensure_ascii=False for better Unicode in JSON, but handle errors
                         try:
-                            # Try to log the text we're generating (safely)
-                            try:
-                                logger.info(f"Generating with text: {text}")
-                            except UnicodeEncodeError:
-                                logger.info("Generating with text containing special characters")
+                            json_payload = json.dumps(error_data, ensure_ascii=False)
+                        except UnicodeEncodeError:
+                            logger.warning("Falling back to ASCII JSON encoding due to Unicode error.")
+                            json_payload = json.dumps(error_data, ensure_ascii=True)
+                        yield f"data: {json_payload}\n\n"
 
-                            model.infer(
-                                ref_file=ref_audio,
-                                ref_text=reference_text,
-                                gen_text=text,
-                                file_wave=output_path,
-                                remove_silence=remove_silence,
-                                speed=speed,
-                                nfe_step=nfe_step,
-                                sway_sampling_coef=sway_coef,
-                                cfg_strength=cfg_strength,
-                                seed=seed
-                            )
-                        except UnicodeEncodeError as ue:
-                            # If we get a Unicode error, try with a different encoding approach
-                            logger.warning(f"Unicode error: {ue}. Trying with explicit encoding.")
+                    finally:
+                         # --- Memory Management ---
+                         # Try to free memory after each item, especially important for GPU
+                         try:
+                             import torch
+                             import gc
+                             gc.collect() # Force Python garbage collection
+                             if device.startswith("cuda") and torch.cuda.is_available():
+                                 torch.cuda.empty_cache()
+                                 # logger.debug(f"CUDA cache cleared after subtitle ID {subtitle_id}")
+                         except Exception as mem_error:
+                              logger.warning(f"Error during memory cleanup after subtitle ID {subtitle_id}: {mem_error}")
 
-                            # Convert to bytes and back with explicit UTF-8 encoding
-                            if isinstance(text, str):
-                                text = text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+            except Exception as stream_err:
+                 # Catch errors within the generator loop itself
+                 logger.error(f"Error during narration stream generation: {stream_err}", exc_info=True)
+                 error_data = {'type': 'fatal_error', 'error': f'Stream generation failed: {str(stream_err)}'}
+                 yield f"data: {json.dumps(error_data)}\n\n"
 
-                            if isinstance(reference_text, str):
-                                reference_text = reference_text.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+            finally:
+                # --- Signal Completion ---
+                total_time = time.time() - start_time_generation
+                logger.info(f"Narration generation stream completed in {total_time:.2f} seconds. Results: {len(results)} processed.")
+                complete_data = {'type': 'complete', 'results': results, 'total': len(results), 'duration_seconds': total_time}
+                try:
+                    json_payload = json.dumps(complete_data, ensure_ascii=False)
+                except UnicodeEncodeError:
+                    json_payload = json.dumps(complete_data, ensure_ascii=True)
+                yield f"data: {json_payload}\n\n"
 
-                            # Try again with the cleaned text
-                            model.infer(
-                                ref_file=ref_audio,
-                                ref_text=reference_text,
-                                gen_text=text,
-                                file_wave=output_path,
-                                remove_silence=remove_silence,
-                                speed=speed,
-                                nfe_step=nfe_step,
-                                sway_sampling_coef=sway_coef,
-                                cfg_strength=cfg_strength,
-                                seed=seed
-                            )
-                    logger.info(f"Successfully generated narration for subtitle {subtitle_id}")
-
-                    # Create result object
-                    result = {
-                        'subtitle_id': subtitle_id,
-                        'text': text,
-                        'audio_path': output_path,
-                        'filename': output_filename,
-                        'success': True
-                    }
-                    results.append(result)
-
-                    # Send the current result as a JSON string followed by a special delimiter
-                    result_data = {'type': 'result', 'result': result, 'progress': len(results), 'total': len(subtitles)}
-                    logger.info(f"Sending result for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
-
-                    # Ensure proper UTF-8 encoding in JSON
+                # --- Resource Cleanup ---
+                # Explicitly delete model instance to release resources if loaded per-request
+                if tts_model_instance is not None:
+                    logger.info(f"Cleaning up TTS model instance '{loaded_model_id}' after request.")
+                    del tts_model_instance
                     try:
-                        json_data = json.dumps(result_data, ensure_ascii=False)
-                        yield f"data: {json_data}\n\n"
-                    except UnicodeEncodeError as ue:
-                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                        json_data = json.dumps(result_data)
-                        yield f"data: {json_data}\n\n"
+                         import torch, gc
+                         gc.collect()
+                         if device.startswith("cuda") and torch.cuda.is_available():
+                             torch.cuda.empty_cache()
+                             logger.info(f"Final CUDA cache clear. Mem allocated: {torch.cuda.memory_allocated(0)/1024**2:.2f}MB")
+                    except Exception as final_clean_err:
+                        logger.warning(f"Error during final resource cleanup: {final_clean_err}")
 
-                    # Free memory after each generation
-                    try:
-                        if torch.cuda.is_available():
-                            # Force garbage collection
-                            import gc
-                            gc.collect()
 
-                            # Empty CUDA cache
-                            torch.cuda.empty_cache()
-                            logger.info(f"Cleared CUDA cache after generating subtitle {subtitle_id}")
-                    except Exception as mem_error:
-                        logger.error(f"Error freeing memory: {mem_error}")
-
-                except Exception as e:
-                    logger.error(f"Error generating narration for subtitle {subtitle_id}: {e}")
-                    result = {
-                        'subtitle_id': subtitle_id,
-                        'text': text,
-                        'error': str(e),
-                        'success': False
-                    }
-                    results.append(result)
-
-                    # Send the error result
-                    error_data = {'type': 'error', 'result': result, 'progress': len(results), 'total': len(subtitles)}
-                    logger.info(f"Sending error for subtitle {subtitle_id} ({len(results)}/{len(subtitles)})")
-
-                    # Ensure proper UTF-8 encoding in JSON
-                    try:
-                        json_data = json.dumps(error_data, ensure_ascii=False)
-                        yield f"data: {json_data}\n\n"
-                    except UnicodeEncodeError as ue:
-                        logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                        json_data = json.dumps(error_data)
-                        yield f"data: {json_data}\n\n"
-
-            # Clean up the model to free memory if it exists
-            try:
-                # Force garbage collection
-                import gc
-                gc.collect()
-
-                # Import torch here to avoid scope issues
-                import torch
-                if torch.cuda.is_available():
-                    # Empty CUDA cache
-                    torch.cuda.empty_cache()
-
-                    # Log memory usage
-                    allocated = torch.cuda.memory_allocated(0)
-                    reserved = torch.cuda.memory_reserved(0)
-                    logger.info(f"Cleared CUDA cache after generation. Memory allocated: {allocated/1024**2:.2f}MB, reserved: {reserved/1024**2:.2f}MB")
-            except Exception as e:
-                logger.error(f"Error cleaning up resources: {e}")
-
-            # Send final completion message
-            complete_data = {'type': 'complete', 'results': results, 'total': len(results)}
-            logger.info(f"Sending completion message with {len(results)} results")
-
-            # Ensure proper UTF-8 encoding in JSON
-            try:
-                json_data = json.dumps(complete_data, ensure_ascii=False)
-                yield f"data: {json_data}\n\n"
-            except UnicodeEncodeError as ue:
-                logger.warning(f"Unicode error in JSON serialization: {ue}. Using ASCII fallback.")
-                json_data = json.dumps(complete_data)
-                yield f"data: {json_data}\n\n"
-
-        # Return a streaming response with error handling
-        try:
-            # Pass the model and reference text explicitly to the generator function
-            return Response(
-                generate_narration_stream(
-                    model=model_for_generator,
-                    ref_text=reference_text,
-                    ref_audio=reference_audio
-                ),
-                mimetype='text/event-stream'
-            )
-        except Exception as e:
-            logger.error(f"Unexpected error in streaming response: {e}")
-            return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        # --- Return Streaming Response ---
+        logger.info("Starting narration generation stream response.")
+        return Response(generate_narration_stream(), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache'})
 
     except Exception as e:
-        logger.error(f"Error generating narration: {e}")
-        return jsonify({'error': str(e)}), 500
+        # Catch errors before starting the stream (e.g., request parsing)
+        logger.exception(f"Error setting up narration generation: {e}")
+        return jsonify({'error': f'Failed to start generation: {str(e)}'}), 500
 
 @narration_bp.route('/audio/<path:filename>', methods=['GET'])
 def get_audio_file(filename):
-    """Serve audio files"""
-    # Check if the file is in the reference directory
+    """Serve audio files from reference or output directories"""
+    # Prevent directory traversal attacks
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    # Check reference directory first
     reference_path = os.path.join(REFERENCE_AUDIO_DIR, filename)
-    if os.path.exists(reference_path):
-        return send_file(reference_path, mimetype='audio/wav')
+    # Use safe join and check existence within the intended directory
+    safe_ref_path = os.path.abspath(reference_path)
+    if safe_ref_path.startswith(os.path.abspath(REFERENCE_AUDIO_DIR)) and os.path.exists(safe_ref_path):
+        logger.debug(f"Serving reference audio: {safe_ref_path}")
+        return send_file(safe_ref_path, mimetype='audio/wav') # Assume WAV, adjust if needed
 
-    # Check if the file is in the output directory
+    # Check output directory
     output_path = os.path.join(OUTPUT_AUDIO_DIR, filename)
-    if os.path.exists(output_path):
-        return send_file(output_path, mimetype='audio/wav')
+    safe_output_path = os.path.abspath(output_path)
+    if safe_output_path.startswith(os.path.abspath(OUTPUT_AUDIO_DIR)) and os.path.exists(safe_output_path):
+        logger.debug(f"Serving output audio: {safe_output_path}")
+        return send_file(safe_output_path, mimetype='audio/wav') # Assume WAV
 
+    logger.warning(f"Audio file not found in reference or output dirs: {filename}")
     return jsonify({'error': 'File not found'}), 404

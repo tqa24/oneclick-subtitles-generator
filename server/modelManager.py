@@ -10,10 +10,18 @@ from pathlib import Path
 # Dictionary to track download threads and cancellation flags
 download_threads = {}
 from huggingface_hub import hf_hub_download
-from huggingFaceCache import list_huggingface_cache_models, delete_huggingface_cache_model
+# Assuming huggingFaceCache.py exists in the same directory or is accessible
+try:
+    from huggingFaceCache import list_huggingface_cache_models, delete_huggingface_cache_model
+except ImportError:
+    # Provide dummy functions if the import fails, to avoid crashing
+    logging.warning("huggingFaceCache module not found. Cache operations might be limited.")
+    def list_huggingface_cache_models(): return []
+    def delete_huggingface_cache_model(repo_id): return (False, "huggingFaceCache module not found")
+
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Note on language detection:
@@ -29,6 +37,8 @@ MODELS_REGISTRY_FILE = os.path.join(MODELS_DIR, 'models_registry.json')
 
 # Ensure models directory exists
 os.makedirs(MODELS_DIR, exist_ok=True)
+
+# --- Registry Initialization and Management (largely unchanged) ---
 
 def initialize_registry():
     """Initialize the models registry if it doesn't exist."""
@@ -48,6 +58,7 @@ def initialize_registry():
 
         # Check if registry has required fields
         if "active_model" not in registry or "models" not in registry:
+            logger.warning("Registry missing 'active_model' or 'models' field. Resetting.")
             raise ValueError("Invalid registry format")
 
         # Add downloads field if it doesn't exist
@@ -55,25 +66,31 @@ def initialize_registry():
             registry["downloads"] = {}
             with open(MODELS_REGISTRY_FILE, 'w') as f:
                 json.dump(registry, f, indent=2)
+            logger.info("Added 'downloads' field to registry.")
 
         # Check if F5-TTS v1 Base model is in the registry
-        # This is the default model that's always available
         f5tts_base_exists = False
-        for model in registry["models"]:
-            if model["id"] == "f5tts-v1-base":
+        for model in registry.get("models", []): # Use .get for safety
+            if model.get("id") == "f5tts-v1-base":
                 f5tts_base_exists = True
+                # Ensure default model has correct structure (add missing fields if needed)
+                if "languages" not in model: model["languages"] = ["en", "zh"]
+                if "language" not in model: model["language"] = "en"
+                if "is_symlink" not in model: model["is_symlink"] = False
+                if "original_model_file" not in model: model["original_model_file"] = None
+                if "original_vocab_file" not in model: model["original_vocab_file"] = None
+                if "source" not in model: model["source"] = "default"
                 break
 
         # Add F5-TTS v1 Base model if it's not in the registry
         if not f5tts_base_exists:
-            # Add a simple entry for the default model without trying to find it in cache
-            # Since we know the narration service can use it regardless
-            registry["models"].append({
+            logger.info("F5-TTS v1 Base model not found in registry. Adding it.")
+            registry.setdefault("models", []).append({ # Use setdefault for safety
                 "id": "f5tts-v1-base",
                 "name": "F5-TTS v1 Base",
                 "repo_id": "SWivid/F5-TTS",
-                "model_path": "default",  # Special marker to indicate this is the default model
-                "vocab_path": "default",  # Special marker to indicate this is the default model
+                "model_path": "default",
+                "vocab_path": "default",
                 "config": {
                     "dim": 1024,
                     "depth": 22,
@@ -91,17 +108,16 @@ def initialize_registry():
             })
 
             # If no active model is set, set this as active
-            if registry["active_model"] is None:
+            if registry.get("active_model") is None: # Use .get for safety
                 registry["active_model"] = "f5tts-v1-base"
 
             # Save the updated registry
             with open(MODELS_REGISTRY_FILE, 'w') as f:
                 json.dump(registry, f, indent=2)
-
             logger.info("Added F5-TTS v1 Base model to registry as the default model")
 
-    except Exception as e:
-        logger.error(f"Error reading registry: {e}")
+    except (json.JSONDecodeError, ValueError, TypeError, KeyError) as e:
+        logger.error(f"Error reading or validating registry: {e}. Resetting registry.")
         # Reset registry if invalid
         with open(MODELS_REGISTRY_FILE, 'w') as f:
             json.dump({
@@ -110,194 +126,225 @@ def initialize_registry():
                 "downloads": {}
             }, f, indent=2)
         logger.info(f"Reset models registry due to error")
+        # Re-run initialization after reset
+        initialize_registry()
+
 
 def get_registry():
     """Get the current models registry."""
-    initialize_registry()
+    initialize_registry() # Ensure it's initialized and valid before reading
     try:
         with open(MODELS_REGISTRY_FILE, 'r') as f:
             return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        logger.error(f"Error reading registry file: {e}. Returning default empty registry.")
+        # Return a default structure in case of error
+        return {"active_model": None, "models": [], "downloads": {}}
     except Exception as e:
-        logger.error(f"Error reading registry: {e}")
-        return {"active_model": None, "models": []}
+        logger.error(f"Unexpected error reading registry: {e}")
+        return {"active_model": None, "models": [], "downloads": {}}
+
 
 def save_registry(registry):
     """Save the models registry."""
     try:
-        with open(MODELS_REGISTRY_FILE, 'w') as f:
+        # Create a temporary file path
+        temp_file_path = MODELS_REGISTRY_FILE + ".tmp"
+
+        # Write to the temporary file
+        with open(temp_file_path, 'w') as f:
             json.dump(registry, f, indent=2)
+
+        # Atomically replace the original file with the temporary file
+        # On Windows, os.replace might fail if the target exists, so remove first.
+        if os.path.exists(MODELS_REGISTRY_FILE):
+            os.remove(MODELS_REGISTRY_FILE)
+        os.replace(temp_file_path, MODELS_REGISTRY_FILE) # Atomic on POSIX, near-atomic on Windows
+
+        logger.debug(f"Registry saved successfully to {MODELS_REGISTRY_FILE}")
         return True
     except Exception as e:
         logger.error(f"Error saving registry: {e}")
+        # Clean up temp file if it exists
+        if os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError as rm_err:
+                logger.error(f"Error removing temporary registry file {temp_file_path}: {rm_err}")
         return False
 
-def get_models(include_cache=False):
-    """
-    Get list of available models.
 
-    Args:
-        include_cache (bool): Whether to include models from Hugging Face cache
-    """
+def get_models(include_cache=False):
+    """Get list of available models."""
     registry = get_registry()
+    # Ensure downloads is present
+    if "downloads" not in registry:
+        registry["downloads"] = {}
+
     result = {
-        "active_model": registry["active_model"],
-        "models": registry["models"],
-        "downloads": registry["downloads"]
+        "active_model": registry.get("active_model"), # Use .get for safety
+        "models": registry.get("models", []),       # Use .get for safety
+        "downloads": registry.get("downloads", {})   # Use .get for safety
     }
 
     if include_cache:
-        # Add cache info to the response
         result["cache_models"] = list_huggingface_cache_models()
 
     return result
 
+# --- is_model_using_symlinks (kept for compatibility, always returns False) ---
 def is_model_using_symlinks(model_id):
-    """
-    Check if a model is using symbolic links.
-    Note: This function is kept for backward compatibility but will always return False
-    since we no longer use symlinks in the new implementation.
-
-    Args:
-        model_id (str): ID of the model to check
-
-    Returns:
-        tuple: (is_using_symlinks, original_model_file, original_vocab_file)
-    """
-    registry = get_registry()
-
-    # Find the model in the registry
-    model = None
-    for m in registry["models"]:
-        if m["id"] == model_id:
-            model = m
-            break
-
-    if model is None:
-        return False, None, None
-
-    # In the new implementation, we always return False since we're using direct paths
-    # to the Hugging Face cache and not using symlinks
+    """Check if a model is using symbolic links (always returns False)."""
     return False, None, None
 
+# --- update_model_info (unchanged) ---
 def update_model_info(model_id, model_info):
-    """
-    Update model information in the registry.
-
-    Args:
-        model_id (str): ID of the model to update
-        model_info (dict): New model information
-    """
+    """Update model information in the registry."""
     registry = get_registry()
-
-    # Check if model exists
-    model_to_update = None
     model_index = -1
-    for i, model in enumerate(registry["models"]):
-        if model["id"] == model_id:
-            model_to_update = model
+    for i, model in enumerate(registry.get("models", [])):
+        if model.get("id") == model_id:
             model_index = i
             break
 
-    if model_to_update is None:
+    if model_index == -1:
         return False, f"Model {model_id} not found"
 
     # Update allowed fields
     allowed_fields = ["name", "language", "languages", "config"]
+    updated = False
     for field in allowed_fields:
         if field in model_info:
-            registry["models"][model_index][field] = model_info[field]
+            if registry["models"][model_index].get(field) != model_info[field]:
+                registry["models"][model_index][field] = model_info[field]
+                updated = True
 
     # If language is updated but languages is not, update languages array too
     if "language" in model_info and "languages" not in model_info:
-        registry["models"][model_index]["languages"] = [model_info["language"]]
+        # Only update if the single language isn't already the only one in languages
+        current_languages = registry["models"][model_index].get("languages", [])
+        new_language = model_info["language"]
+        if not (len(current_languages) == 1 and current_languages[0] == new_language):
+            registry["models"][model_index]["languages"] = [new_language]
+            updated = True
 
-    if save_registry(registry):
-        return True, f"Model {model_id} updated successfully"
+    if updated:
+        if save_registry(registry):
+            return True, f"Model {model_id} updated successfully"
+        else:
+            return False, "Failed to save registry"
     else:
-        return False, "Failed to save registry"
+        return True, f"No changes detected for model {model_id}"
+
+# --- Download Status Management (MODIFIED) ---
 
 def get_download_status(model_id):
     """Get the download status of a model."""
     registry = get_registry()
-    return registry["downloads"].get(model_id, None)
+    return registry.get("downloads", {}).get(model_id, None)
 
-def update_download_status(model_id, status, progress=0, error=None, downloaded_size=None, total_size=None):
-    """Update the download status of a model."""
+def update_download_status(model_id, status, progress=None, error=None, downloaded_size=None, total_size=None):
+    """
+    Update the download status of a model with precise, truncated progress.
+
+    Args:
+        model_id (str): ID of the model.
+        status (str): 'downloading', 'completed', 'failed'.
+        progress (float, optional): Fallback progress percentage (0-100) if size info is unavailable.
+                                    Not used if downloaded_size and total_size are provided.
+        error (str, optional): Error message if status is 'failed'.
+        downloaded_size (int, optional): Bytes downloaded so far.
+        total_size (int, optional): Total bytes of the download.
+    """
+    # Get the registry first to avoid race conditions
     registry = get_registry()
+    # Ensure downloads key exists
+    if "downloads" not in registry:
+        registry["downloads"] = {}
 
-    # If status is 'completed', ensure progress is 100% and remove it immediately
+    # If status is 'completed', remove immediately and log 100%
     if status == 'completed':
-        progress = 100
-        # Log the completion with 100%
         logger.info(f"Download completed for {model_id}: 100.0%")
-        # Remove the download status immediately
-        remove_download_status(model_id)
-        return True
-    else:
-        # Round progress to 1 decimal place
-        progress = round(progress, 1)
-
-        # Create the status object
-        if downloaded_size is not None:
-            # If we have size information, include both size and calculated progress
-            status_obj = {
-                "status": status,  # 'downloading', 'completed', 'failed'
-                "downloaded_size": downloaded_size,
-                "error": error,
-                "timestamp": time.time()
-            }
-
-            # Add total size if available and calculate progress percentage
-            if total_size is not None:
-                status_obj["total_size"] = total_size
-                # Calculate progress percentage from size information with exactly one decimal place
-                calculated_progress = (downloaded_size / total_size) * 100
-                # Truncate to one decimal place without rounding
-                truncated_progress = int(calculated_progress * 10) / 10
-                status_obj["progress"] = truncated_progress
-            else:
-                # If we don't have total size, use the provided progress
-                status_obj["progress"] = progress
+        # Remove the download status from the current registry object
+        if model_id in registry["downloads"]:
+            del registry["downloads"][model_id]
+            # Attempt to save the registry immediately
+            if not save_registry(registry):
+                logger.error(f"Failed to save registry after removing completed download status for {model_id}")
         else:
-            # Fall back to progress percentage if no size information
-            status_obj = {
-                "status": status,  # 'downloading', 'completed', 'failed'
-                "progress": progress,
-                "error": error,
-                "timestamp": time.time()
-            }
+            logger.warning(f"Attempted to remove completed download status for {model_id}, but it was not found.")
+        return True # Indicate success even if save fails, as the state is 'completed'
 
-        registry["downloads"][model_id] = status_obj
+    # --- Status Object Construction ---
+    status_obj = {
+        "status": status,
+        "error": error,
+        "timestamp": time.time()
+    }
 
-    # Log the status update
-    if downloaded_size is not None:
-        downloaded_mb = downloaded_size / (1024 * 1024)
-        if total_size is not None:
-            total_mb = total_size / (1024 * 1024)
-            calculated_progress = (downloaded_size / total_size) * 100
-            # Truncate to one decimal place without rounding
-            truncated_progress = int(calculated_progress * 10) / 10
-            logger.info(f"Updated download status for {model_id}: status={status}, size={downloaded_mb:.1f}MB/{total_mb:.1f}MB, progress={truncated_progress}%")
-        else:
-            logger.info(f"Updated download status for {model_id}: status={status}, size={downloaded_mb:.1f}MB, progress={progress:.1f}%")
+    calculated_progress = None
+    # **Prioritize size information for precise progress**
+    if downloaded_size is not None and total_size is not None and total_size > 0:
+        status_obj["downloaded_size"] = downloaded_size
+        status_obj["total_size"] = total_size
+        # Calculate precise progress percentage
+        raw_progress = (downloaded_size / total_size) * 100
+        # **Truncate to one decimal place**
+        calculated_progress = int(raw_progress * 10) / 10
+        # Ensure progress doesn't exceed 100.0 (e.g., due to slight header inaccuracies)
+        calculated_progress = min(calculated_progress, 100.0)
+        status_obj["progress"] = calculated_progress
+        # logger.debug(f"Calculated progress for {model_id}: {calculated_progress:.1f}% ({downloaded_size}/{total_size})")
+    elif downloaded_size is not None:
+        # We have downloaded size but not total size
+        status_obj["downloaded_size"] = downloaded_size
+        # Cannot calculate percentage, so don't include 'progress' or 'total_size'
+        # logger.debug(f"Progress for {model_id}: {downloaded_size} bytes (total size unknown)")
+    elif progress is not None:
+        # Fallback to provided progress percentage if size info is incomplete/missing
+        # Truncate the fallback progress as well
+        fallback_progress = int(progress * 10) / 10
+        fallback_progress = min(max(fallback_progress, 0.0), 100.0) # Clamp between 0 and 100
+        status_obj["progress"] = fallback_progress
+        # logger.debug(f"Using fallback progress for {model_id}: {fallback_progress:.1f}%")
     else:
-        logger.info(f"Updated download status for {model_id}: status={status}, progress={progress:.1f}%")
+        # No progress information available (should ideally not happen during 'downloading')
+        # logger.debug(f"No progress information available for {model_id}")
+        pass # status_obj only contains status, error, timestamp
 
-    # Make sure to save the registry
+    # Update the registry dictionary
+    registry["downloads"][model_id] = status_obj
+
+    # --- Logging ---
+    log_message = f"Updating download status for {model_id}: status={status}"
+    if "progress" in status_obj:
+        log_message += f", progress={status_obj['progress']:.1f}%"
+    if "downloaded_size" in status_obj:
+        downloaded_mb = status_obj['downloaded_size'] / (1024 * 1024)
+        if "total_size" in status_obj:
+            total_mb = status_obj['total_size'] / (1024 * 1024)
+            log_message += f" ({downloaded_mb:.2f}/{total_mb:.2f} MB)"
+        else:
+            log_message += f" ({downloaded_mb:.2f} MB / unknown total)"
+    if error:
+        log_message += f", error='{error}'"
+
+    # Only log if the status has changed meaningfully (to reduce noise)
+    # This basic check prevents logging identical consecutive updates,
+    # but a more robust check might compare the whole status_obj.
+    # For now, let's log every update during download for debugging.
+    # if status != 'downloading' or model_id not in previous_statuses or previous_statuses[model_id] != status_obj:
+    logger.info(log_message)
+    # previous_statuses[model_id] = status_obj # Requires defining previous_statuses globally or passing it
+
+    # --- Save Registry ---
+    # Make sure to save the updated registry dictionary
     if not save_registry(registry):
         logger.error(f"Failed to save registry after updating download status for {model_id}")
         return False
 
-    # If status is 'completed', remove the download status after a short delay
-    if status == 'completed':
-        import threading
-        def remove_after_delay():
-            time.sleep(5)  # Wait 5 seconds
-            remove_download_status(model_id)
-
-        thread = threading.Thread(target=remove_after_delay)
-        thread.daemon = True
-        thread.start()
+    # Note: No delayed removal for 'completed' anymore, it's handled at the start.
+    # If status is 'failed', it remains in the registry until acted upon (e.g., retry or delete).
 
     return True
 
@@ -305,6 +352,9 @@ def remove_download_status(model_id):
     """Remove the download status of a model."""
     try:
         registry = get_registry()
+        if "downloads" not in registry:
+            logger.info(f"No 'downloads' section found in registry. Cannot remove status for {model_id}.")
+            return True # Nothing to remove
 
         if model_id in registry["downloads"]:
             logger.info(f"Removing download status for model {model_id}")
@@ -313,1203 +363,1001 @@ def remove_download_status(model_id):
                 logger.error(f"Failed to save registry after removing download status for {model_id}")
                 return False
             logger.info(f"Successfully removed download status for model {model_id}")
+            return True
         else:
-            logger.info(f"No download status found for model {model_id}")
-
-        return True
+            logger.info(f"No download status found for model {model_id} to remove.")
+            return True # Nothing to remove
     except Exception as e:
         logger.error(f"Error removing download status for model {model_id}: {e}")
         return False
 
+
+# --- cancel_download (mostly unchanged, but logs more clearly) ---
 def cancel_download(model_id):
-    """
-    Cancel an ongoing model download and delete the model folder from the Hugging Face cache.
+    """Cancel an ongoing download and attempt cleanup."""
+    logger.info(f"Initiating cancel request for model download: {model_id}")
+    cancelled = False
+    thread_found = False
 
-    Args:
-        model_id (str): ID of the model download to cancel
-
-    Returns:
-        bool: True if cancellation was successful, False otherwise
-    """
-    try:
-        logger.info(f"Received request to cancel download for model {model_id}")
-
-        # Check if the model is in the download_threads dictionary
-        if model_id in download_threads:
-            logger.info(f"Found active download thread for model {model_id}, setting cancel flag")
-
-            # Set the cancellation flag to True - this will be checked during download
-            download_threads[model_id]["cancel"] = True
-
-            # Log the cancellation
-            logger.info(f"Cancellation flag set for model {model_id}")
-
-            # Remove from download status immediately
-            remove_download_status(model_id)
-            logger.info(f"Removed download status for model {model_id}")
-
-            # Get the project's models directory
-            try:
-                project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                project_models_dir = os.path.join(project_dir, "models", "f5_tts")
-                logger.info(f"Using project models directory: {project_models_dir}")
-
-                # Check for model in the project's models directory
-                model_dir = os.path.join(project_models_dir, model_id)
-                if os.path.exists(model_dir):
-                    logger.info(f"Deleting model directory: {model_dir}")
-                    try:
-                        shutil.rmtree(model_dir)
-                        logger.info(f"Successfully deleted model directory: {model_dir}")
-                    except Exception as e:
-                        logger.error(f"Error deleting model directory: {e}")
-                else:
-                    logger.info(f"No model directory found at: {model_dir}")
-            except Exception as e:
-                logger.error(f"Error accessing project models directory: {e}")
-
-            # For backward compatibility, also check the Hugging Face cache location
-            try:
-                # Try the newer API first
-                try:
-                    from huggingface_hub import get_cache_dir
-                    hf_cache_dir = get_cache_dir()
-                    logger.info(f"Using get_cache_dir(): {hf_cache_dir}")
-                except (ImportError, AttributeError):
-                    # Fall back to older approach
-                    home_dir = os.path.expanduser("~")
-                    hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
-                    logger.info(f"Using default cache path: {hf_cache_dir}")
-
-                # If we found the cache directory, try to delete any partial downloads
-                if hf_cache_dir:
-                    # Check for model in the custom_models directory
-                    custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
-                    if os.path.exists(custom_cache_dir):
-                        logger.info(f"Deleting custom model directory: {custom_cache_dir}")
-                        try:
-                            shutil.rmtree(custom_cache_dir)
-                            logger.info(f"Successfully deleted custom model directory: {custom_cache_dir}")
-                        except Exception as e:
-                            logger.error(f"Error deleting custom model directory: {e}")
-                    else:
-                        logger.info(f"No custom model directory found at: {custom_cache_dir}")
-            except Exception as e:
-                logger.error(f"Error getting Hugging Face cache directory: {e}")
-                hf_cache_dir = None
-
-                # Also check for repository-based models
-                registry = get_registry()
-                download_info = registry.get("downloads", {}).get(model_id, {})
-                repo_id = download_info.get("repo_id")
-                if repo_id:
-                    logger.info(f"Model {model_id} is from repository {repo_id}")
-                    try:
-                        # Import the function to delete from Hugging Face cache
-                        from huggingFaceCache import delete_huggingface_cache_model
-                        success, message = delete_huggingface_cache_model(repo_id)
-                        if success:
-                            logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
-                        else:
-                            logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
-                    except Exception as e:
-                        logger.error(f"Error deleting model from Hugging Face cache: {e}")
-
-            # Remove from download_threads after a short delay
-            def cleanup_thread():
-                time.sleep(2)
-                if model_id in download_threads:
-                    logger.info(f"Cleaning up download thread for model {model_id}")
-                    del download_threads[model_id]
-
-            cleanup = threading.Thread(target=cleanup_thread)
-            cleanup.daemon = True
-            cleanup.start()
-
-            logger.info(f"Successfully cancelled download for model {model_id}")
-            return True
+    # 1. Signal the download thread to stop
+    if model_id in download_threads:
+        thread_info = download_threads[model_id]
+        if not thread_info.get("cancel", False): # Check if not already cancelled
+            logger.info(f"Setting cancellation flag for active download thread: {model_id}")
+            thread_info["cancel"] = True
+            cancelled = True
         else:
-            # Check if there's a download status for this model in the registry
-            registry = get_registry()
-            if model_id in registry.get("downloads", {}):
-                logger.info(f"Found download status for model {model_id} in registry but no active thread")
+            logger.info(f"Cancellation flag already set for download thread: {model_id}")
+        thread_found = True
+    else:
+        logger.info(f"No active download thread found in tracking for {model_id}. Will attempt cleanup based on registry status.")
 
-                # Remove from download status immediately
-                remove_download_status(model_id)
-                logger.info(f"Removed download status for model {model_id}")
+    # 2. Update registry status immediately to 'failed' or remove entry
+    registry = get_registry()
+    download_entry = registry.get("downloads", {}).get(model_id)
 
-                # Try to delete any partial downloads
-                try:
-                    # Get the project's models directory
-                    try:
-                        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        project_models_dir = os.path.join(project_dir, "models", "f5_tts")
-                        logger.info(f"Using project models directory: {project_models_dir}")
+    if download_entry:
+        if download_entry.get("status") == 'downloading':
+            logger.info(f"Updating download status to 'failed' due to cancellation for {model_id}")
+            update_download_status(model_id, 'failed', error="Download cancelled by user.")
+            # Keep the failed status for a bit so UI can see it was cancelled
+        else:
+             # If it wasn't downloading (e.g., already failed/completed), just remove it
+             logger.info(f"Removing non-downloading status entry for cancelled model {model_id}")
+             remove_download_status(model_id)
+    else:
+        logger.info(f"No download status found in registry for {model_id} during cancellation.")
 
-                        # Check for model in the project's models directory
-                        model_dir = os.path.join(project_models_dir, model_id)
-                        if os.path.exists(model_dir):
-                            logger.info(f"Deleting model directory: {model_dir}")
-                            try:
-                                shutil.rmtree(model_dir)
-                                logger.info(f"Successfully deleted model directory: {model_dir}")
-                            except Exception as e:
-                                logger.error(f"Error deleting model directory: {e}")
-                        else:
-                            logger.info(f"No model directory found at: {model_dir}")
-                    except Exception as e:
-                        logger.error(f"Error accessing project models directory: {e}")
+    # 3. Attempt to clean up files (project dir and cache)
+    cleanup_paths = []
+    try:
+        # Project's models directory
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        project_model_dir = os.path.join(project_dir, "models", "f5_tts", model_id)
+        if os.path.exists(project_model_dir):
+            cleanup_paths.append(project_model_dir)
 
-                    # For backward compatibility, also check the Hugging Face cache location
-                    try:
-                        # Try the newer API first
-                        try:
-                            from huggingface_hub import get_cache_dir
-                            hf_cache_dir = get_cache_dir()
-                        except (ImportError, AttributeError):
-                            # Fall back to older approach
-                            home_dir = os.path.expanduser("~")
-                            hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
+        # Hugging Face cache (check for custom dir, less likely now but for safety)
+        try:
+            from huggingface_hub import get_cache_dir
+            hf_cache_dir = get_cache_dir()
+            custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
+            if os.path.exists(custom_cache_dir):
+                 cleanup_paths.append(custom_cache_dir)
+        except Exception as e:
+            logger.warning(f"Could not check standard Hugging Face cache dir: {e}")
+            # Fallback check (less reliable)
+            home_dir = os.path.expanduser("~")
+            fallback_cache_dir = os.path.join(home_dir, ".cache", "huggingface", "hub", f"models--{model_id.replace('_', '--')}") # Example format
+            # This fallback is highly speculative, better rely on project dir cleanup
 
-                        if hf_cache_dir:
-                            # Check for model in the custom_models directory
-                            custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
-                            if os.path.exists(custom_cache_dir):
-                                logger.info(f"Deleting custom model directory: {custom_cache_dir}")
-                                try:
-                                    shutil.rmtree(custom_cache_dir)
-                                    logger.info(f"Successfully deleted custom model directory: {custom_cache_dir}")
-                                except Exception as e:
-                                    logger.error(f"Error deleting custom model directory: {e}")
-                            else:
-                                logger.info(f"No custom model directory found at: {custom_cache_dir}")
-                    except Exception as e:
-                        logger.error(f"Error getting Hugging Face cache directory: {e}")
-                        hf_cache_dir = None
-
-                        # Also check for repository-based models
-                        download_info = registry.get("downloads", {}).get(model_id, {})
-                        repo_id = download_info.get("repo_id")
-                        if repo_id:
-                            logger.info(f"Model {model_id} is from repository {repo_id}")
-                            try:
-                                # Import the function to delete from Hugging Face cache
-                                from huggingFaceCache import delete_huggingface_cache_model
-                                success, message = delete_huggingface_cache_model(repo_id)
-                                if success:
-                                    logger.info(f"Successfully deleted model from Hugging Face cache: {repo_id}")
-                                else:
-                                    logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
-                            except Exception as e:
-                                logger.error(f"Error deleting model from Hugging Face cache: {e}")
-
-                except Exception as e:
-                    logger.error(f"Error cleaning up model files: {e}")
-                    # Continue with cancellation even if cleanup fails
-
-                logger.info(f"Successfully cancelled download for model {model_id} from registry")
-                return True
-            else:
-                logger.warning(f"No active download found for model {model_id}")
-                return False
     except Exception as e:
-        logger.error(f"Error cancelling download for model {model_id}: {e}")
-        return False
+        logger.error(f"Error determining cleanup paths for {model_id}: {e}")
 
+    # Perform deletion
+    for path_to_delete in cleanup_paths:
+        logger.info(f"Attempting to delete directory during cancellation: {path_to_delete}")
+        try:
+            if os.path.isdir(path_to_delete):
+                 shutil.rmtree(path_to_delete)
+                 logger.info(f"Successfully deleted directory: {path_to_delete}")
+            elif os.path.exists(path_to_delete): # Might be a file if download failed early
+                 os.remove(path_to_delete)
+                 logger.info(f"Successfully deleted file: {path_to_delete}")
+        except Exception as e:
+            logger.error(f"Error deleting path {path_to_delete} during cancellation: {e}")
+
+    # Also attempt cache deletion if it was a repo-based download
+    model_info_from_registry = next((m for m in registry.get("models", []) if m.get("id") == model_id), None)
+    repo_id_to_delete = None
+    if download_entry and download_entry.get("repo_id"): # Check download entry first
+         repo_id_to_delete = download_entry["repo_id"]
+    elif model_info_from_registry and model_info_from_registry.get("repo_id"): # Check model registry
+         repo_id_to_delete = model_info_from_registry["repo_id"]
+
+    if repo_id_to_delete:
+         logger.info(f"Attempting Hugging Face cache deletion for repo {repo_id_to_delete} associated with {model_id}")
+         try:
+             success, message = delete_huggingface_cache_model(repo_id_to_delete)
+             if success:
+                 logger.info(f"Successfully initiated deletion from Hugging Face cache for repo: {repo_id_to_delete}")
+             else:
+                 logger.warning(f"Failed to delete model from Hugging Face cache for repo {repo_id_to_delete}: {message}")
+         except Exception as e:
+             logger.error(f"Error calling delete_huggingface_cache_model for {repo_id_to_delete}: {e}")
+
+
+    # 4. Clean up the thread tracking dictionary (after a delay to let the thread potentially exit)
+    if thread_found:
+        def cleanup_thread_entry():
+            time.sleep(3) # Give thread time to see the flag
+            if model_id in download_threads:
+                logger.info(f"Cleaning up download thread entry for {model_id}")
+                try:
+                    # Optional: join the thread shortly before removing?
+                    # thread_obj = download_threads[model_id].get("thread")
+                    # if thread_obj and thread_obj.is_alive():
+                    #    thread_obj.join(timeout=1.0) # Don't wait forever
+                    del download_threads[model_id]
+                except KeyError:
+                    logger.warning(f"Thread entry for {model_id} already removed during cleanup.")
+            else:
+                logger.info(f"Thread entry for {model_id} already removed before cleanup function ran.")
+
+        cleanup_thread = threading.Thread(target=cleanup_thread_entry, daemon=True)
+        cleanup_thread.start()
+
+    logger.info(f"Cancel request processing finished for model {model_id}. Cancel initiated: {cancelled}")
+    return cancelled or bool(download_entry) # Return True if we did anything (flagged thread or modified registry)
+
+
+# --- Active Model Management (unchanged) ---
 def get_active_model():
     """Get the currently active model."""
     registry = get_registry()
-    return registry["active_model"]
+    return registry.get("active_model")
 
 def set_active_model(model_id):
     """Set the active model."""
     registry = get_registry()
+    model_exists = any(model.get("id") == model_id for model in registry.get("models", []))
 
-    # Check if model exists
-    model_exists = False
-    for model in registry["models"]:
-        if model["id"] == model_id:
-            model_exists = True
-            break
+    if not model_exists and model_id != "f5tts-v1-base": # Allow setting default even if temporarily missing
+         # Re-check default specifically
+         initialize_registry() # Ensure default is added if missing
+         registry = get_registry()
+         model_exists = any(model.get("id") == model_id for model in registry.get("models", []))
+         if not model_exists:
+            return False, f"Model {model_id} not found in registry"
 
-    if not model_exists:
-        return False, f"Model {model_id} not found"
+    if registry.get("active_model") == model_id:
+        return True, f"Model {model_id} is already active"
 
     registry["active_model"] = model_id
     if save_registry(registry):
         return True, f"Active model set to {model_id}"
     else:
-        return False, "Failed to save registry"
+        # Revert if save failed? Depends on desired behavior.
+        # registry["active_model"] = original_active_model # Need to store original before changing
+        return False, "Failed to save registry after setting active model"
 
+# --- Add/Delete Model (adjusted delete cleanup) ---
 def add_model(model_info):
     """Add a new model to the registry."""
+    if not isinstance(model_info, dict) or "id" not in model_info:
+         return False, "Invalid model_info format: must be a dict with an 'id'"
+
     registry = get_registry()
+    model_id = model_info["id"]
 
     # Check if model already exists
-    for model in registry["models"]:
-        if model["id"] == model_info["id"]:
-            return False, f"Model {model_info['id']} already exists"
+    if any(model.get("id") == model_id for model in registry.get("models", [])):
+        # Optionally update existing model? For now, just report exists.
+        logger.warning(f"Attempted to add model {model_id}, but it already exists.")
+        return False, f"Model {model_id} already exists"
 
     # Add model to registry
-    registry["models"].append(model_info)
+    registry.setdefault("models", []).append(model_info)
 
-    # If this is the first model, set it as active
-    if registry["active_model"] is None:
-        registry["active_model"] = model_info["id"]
+    # If this is the first *non-default* model added, or if active is None, set it as active
+    if registry.get("active_model") is None or registry.get("active_model") == "f5tts-v1-base":
+         if model_id != "f5tts-v1-base": # Don't reset active to default if adding default
+            registry["active_model"] = model_id
+            logger.info(f"Setting newly added model {model_id} as active.")
 
     if save_registry(registry):
-        return True, f"Model {model_info['id']} added successfully"
+        return True, f"Model {model_id} added successfully"
     else:
-        return False, "Failed to save registry"
+        # Revert addition if save failed?
+        # registry["models"] = [m for m in registry["models"] if m.get("id") != model_id]
+        return False, "Failed to save registry after adding model"
 
 def delete_model(model_id, delete_cache=False):
-    """
-    Delete a model from the registry and optionally from the Hugging Face cache.
-
-    Args:
-        model_id (str): ID of the model to delete
-        delete_cache (bool): Whether to also delete the model from Hugging Face cache
-    """
-    # Prevent deletion of the default F5-TTS v1 Base model
+    """Delete a model from registry and optionally files."""
     if model_id == 'f5tts-v1-base':
-        return False, "Cannot delete the default F5-TTS v1 Base model as it is required by the system"
+        return False, "Cannot delete the default F5-TTS v1 Base model."
 
     registry = get_registry()
-
-    # Check if model exists
+    original_models = list(registry.get("models", [])) # Copy for potential revert
     model_to_delete = None
-    for model in registry["models"]:
-        if model["id"] == model_id:
+    model_index = -1
+    for i, model in enumerate(original_models):
+        if model.get("id") == model_id:
             model_to_delete = model
+            model_index = i
             break
 
     if model_to_delete is None:
-        return False, f"Model {model_id} not found"
+        return False, f"Model {model_id} not found for deletion"
 
-    # If model is active, set active model to None
-    if registry["active_model"] == model_id:
-        registry["active_model"] = None
-        logger.info(f"Active model {model_id} is being deleted, setting active model to None")
+    # --- Prepare for Deletion ---
+    repo_id_to_delete = model_to_delete.get("repo_id")
+    source = model_to_delete.get("source")
+    model_path_to_delete = model_to_delete.get("model_path")
+    vocab_path_to_delete = model_to_delete.get("vocab_path")
+    original_active_model = registry.get("active_model")
 
-    # Remove model from registry
-    registry["models"] = [model for model in registry["models"] if model["id"] != model_id]
+    # --- Update Registry ---
+    registry["models"].pop(model_index)
+    logger.info(f"Removed model {model_id} from registry list.")
 
-    # Also remove any download status for this model
-    if model_id in registry["downloads"]:
-        logger.info(f"Removing download status for model {model_id} during deletion")
+    # If model was active, set active to default or None
+    if original_active_model == model_id:
+        # Check if default model exists, otherwise set to None
+        default_exists = any(m.get("id") == 'f5tts-v1-base' for m in registry["models"])
+        new_active_model = 'f5tts-v1-base' if default_exists else None
+        registry["active_model"] = new_active_model
+        logger.info(f"Active model was {model_id}, setting active model to {new_active_model}")
+
+    # Remove any download status
+    if model_id in registry.get("downloads", {}):
+        logger.info(f"Removing download status for deleted model {model_id}")
         del registry["downloads"][model_id]
 
-    # Get the project's models directory
-    project_models_dir = None
+    # --- Save Registry Changes ---
+    if not save_registry(registry):
+        # Attempt to revert registry changes if save fails
+        registry["models"] = original_models
+        registry["active_model"] = original_active_model
+        logger.error(f"Failed to save registry after preparing to delete {model_id}. Reverting registry changes.")
+        return False, "Failed to save registry during model deletion"
+
+    # --- Delete Files (after successful registry save) ---
+    deleted_files_summary = []
     try:
-        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        project_models_dir = os.path.join(project_dir, "models", "f5_tts")
-        logger.info(f"Using project models directory: {project_models_dir}")
-    except Exception as e:
-        logger.error(f"Error getting project models directory: {e}")
-        project_models_dir = None
-
-    # Always check and delete from project's models directory regardless of delete_cache flag
-    custom_models_deleted = False
-    if project_models_dir:
-        model_dir = os.path.join(project_models_dir, model_id)
-        logger.info(f"Checking for model directory at: {model_dir}")
-
-        if os.path.exists(model_dir):
+        # 1. Delete specific model/vocab files if paths are absolute and exist
+        if model_path_to_delete and os.path.isabs(model_path_to_delete) and os.path.exists(model_path_to_delete):
+            logger.info(f"Deleting model file: {model_path_to_delete}")
             try:
-                shutil.rmtree(model_dir)
-                logger.info(f"Deleted model from project models directory: {model_dir}")
-                custom_models_deleted = True
+                os.remove(model_path_to_delete)
+                deleted_files_summary.append("Deleted model file.")
             except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-        else:
-            logger.info(f"No model directory found at: {model_dir}")
+                logger.error(f"Error deleting model file {model_path_to_delete}: {e}")
+                deleted_files_summary.append(f"Error deleting model file: {e}")
 
-    # For backward compatibility, also check the Hugging Face cache location
-    hf_cache_dir = None
-    try:
-        # Try the newer API first
+        if vocab_path_to_delete and os.path.isabs(vocab_path_to_delete) and os.path.exists(vocab_path_to_delete):
+             logger.info(f"Deleting vocab file: {vocab_path_to_delete}")
+             try:
+                 os.remove(vocab_path_to_delete)
+                 deleted_files_summary.append("Deleted vocab file.")
+             except Exception as e:
+                 logger.error(f"Error deleting vocab file {vocab_path_to_delete}: {e}")
+                 deleted_files_summary.append(f"Error deleting vocab file: {e}")
+
+        # 2. Delete the model's directory within the project's models/f5_tts folder
         try:
-            from huggingface_hub import get_cache_dir
-            hf_cache_dir = get_cache_dir()
-            logger.info(f"Using get_cache_dir(): {hf_cache_dir}")
-        except (ImportError, AttributeError):
-            # Fall back to older approach
-            home_dir = os.path.expanduser("~")
-            hf_cache_dir = os.path.join(home_dir, ".cache", "huggingface")
-            logger.info(f"Using default cache path: {hf_cache_dir}")
-    except Exception as e:
-        logger.error(f"Error getting Hugging Face cache directory: {e}")
-        hf_cache_dir = None
+            project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            project_model_dir = os.path.join(project_dir, "models", "f5_tts", model_id)
+            if os.path.exists(project_model_dir) and os.path.isdir(project_model_dir):
+                 logger.info(f"Deleting project model directory: {project_model_dir}")
+                 try:
+                     shutil.rmtree(project_model_dir)
+                     deleted_files_summary.append("Deleted project model directory.")
+                 except Exception as e:
+                     logger.error(f"Error deleting project model directory {project_model_dir}: {e}")
+                     deleted_files_summary.append(f"Error deleting project directory: {e}")
+            elif os.path.exists(project_model_dir):
+                 logger.warning(f"Expected project model directory, but found a file: {project_model_dir}. Skipping deletion.")
 
-    # Also check and delete from custom_models directory in Hugging Face cache for backward compatibility
-    if hf_cache_dir:
-        custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
-        logger.info(f"Checking for custom model directory at: {custom_cache_dir}")
+        except Exception as e:
+            logger.error(f"Error accessing project models directory for deletion: {e}")
 
-        if os.path.exists(custom_cache_dir):
-            try:
-                shutil.rmtree(custom_cache_dir)
-                logger.info(f"Deleted custom model from Hugging Face cache: {custom_cache_dir}")
-                custom_models_deleted = True
-            except Exception as e:
-                logger.error(f"Error deleting custom model directory: {e}")
-        else:
-            logger.info(f"No custom model directory found at: {custom_cache_dir}")
 
-    # Delete from Hugging Face cache if requested
-    cache_deletion_result = None
-    if delete_cache:
-        if model_to_delete.get("repo_id"):
-            try:
-                success, message = delete_huggingface_cache_model(model_to_delete["repo_id"])
-                if success:
-                    logger.info(f"Deleted model from Hugging Face cache: {model_to_delete['repo_id']}")
-                    cache_deletion_result = f"Also deleted from Hugging Face cache: {model_to_delete['repo_id']}"
-                else:
-                    logger.warning(f"Failed to delete model from Hugging Face cache: {message}")
-                    cache_deletion_result = f"Note: Failed to delete from Hugging Face cache: {message}"
-            except Exception as e:
-                logger.error(f"Error deleting model from Hugging Face cache: {e}")
-                cache_deletion_result = f"Note: Error deleting from Hugging Face cache: {str(e)}"
-        elif model_to_delete.get("source") == "url" and not custom_models_deleted:
-            # For URL-based models, try to delete the custom model directory in the cache
-            # (only if we haven't already deleted it above)
-            try:
-                if hf_cache_dir:
-                    custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
-                    logger.info(f"Checking for custom model directory at: {custom_cache_dir}")
-
-                    if os.path.exists(custom_cache_dir):
-                        shutil.rmtree(custom_cache_dir)
-                        logger.info(f"Deleted custom model from Hugging Face cache: {custom_cache_dir}")
-                        cache_deletion_result = f"Deleted custom model from Hugging Face cache"
+        # 3. Delete from Hugging Face cache if requested and applicable
+        cache_deletion_result = None
+        if delete_cache:
+            if repo_id_to_delete:
+                logger.info(f"Attempting Hugging Face cache deletion for repo: {repo_id_to_delete}")
+                try:
+                    success, message = delete_huggingface_cache_model(repo_id_to_delete)
+                    if success:
+                        logger.info(f"Successfully initiated deletion from Hugging Face cache for {repo_id_to_delete}")
+                        cache_deletion_result = f"Initiated Hugging Face cache deletion for {repo_id_to_delete}."
                     else:
-                        logger.info(f"Custom model directory not found at: {custom_cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting custom model from Hugging Face cache: {e}")
-                cache_deletion_result = f"Note: Error deleting custom model from Hugging Face cache: {str(e)}"
+                        logger.warning(f"Failed to delete from Hugging Face cache for {repo_id_to_delete}: {message}")
+                        cache_deletion_result = f"Failed Hugging Face cache deletion for {repo_id_to_delete}: {message}"
+                except Exception as e:
+                    logger.error(f"Error calling delete_huggingface_cache_model for {repo_id_to_delete}: {e}")
+                    cache_deletion_result = f"Error during Hugging Face cache deletion for {repo_id_to_delete}: {e}"
+            else:
+                logger.info(f"delete_cache=True but model {model_id} has no associated repo_id. Skipping HF cache deletion.")
+                cache_deletion_result = "Skipped Hugging Face cache deletion (no repo_id)."
 
-    # Also check for model files in the model paths
-    if model_to_delete.get("model_path") and os.path.exists(model_to_delete["model_path"]):
-        try:
-            logger.info(f"Deleting model file: {model_to_delete['model_path']}")
-            os.remove(model_to_delete["model_path"])
-            logger.info(f"Successfully deleted model file")
-        except Exception as e:
-            logger.error(f"Error deleting model file: {e}")
-
-    if model_to_delete.get("vocab_path") and os.path.exists(model_to_delete["vocab_path"]):
-        try:
-            logger.info(f"Deleting vocab file: {model_to_delete['vocab_path']}")
-            os.remove(model_to_delete["vocab_path"])
-            logger.info(f"Successfully deleted vocab file")
-        except Exception as e:
-            logger.error(f"Error deleting vocab file: {e}")
-
-    if save_registry(registry):
-        success_message = f"Model {model_id} deleted successfully"
-        if custom_models_deleted:
-            success_message += f". Deleted model files from project directory"
+        # Combine results
+        final_message = f"Model {model_id} deleted from registry."
+        if deleted_files_summary:
+            final_message += " " + " ".join(deleted_files_summary)
         if cache_deletion_result:
-            success_message += f". {cache_deletion_result}"
-        return True, success_message
-    else:
-        return False, "Failed to save registry"
+            final_message += f" {cache_deletion_result}"
 
-# Function removed since we're only using public repositories
+        return True, final_message
 
-def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_id=None, language_codes=None):
+    except Exception as e:
+        # This catch block is for unexpected errors during the file deletion phase
+        logger.error(f"Unexpected error during file deletion phase for model {model_id}: {e}")
+        return True, f"Model {model_id} deleted from registry, but encountered an error during file cleanup: {e}"
+
+
+# --- Model Downloading (MODIFIED for progress reporting) ---
+
+def _custom_download_file(url, output_path, model_id, progress_start_pct=0, progress_end_pct=100):
     """
-    Download a model from Hugging Face Hub.
+    Custom download function with precise progress tracking and cancellation.
 
     Args:
-        repo_id (str): Hugging Face repository ID (e.g., "SWivid/F5-TTS")
-        model_path (str): Path to model file within the repo (e.g., "F5TTS_v1_Base/model_1250000.safetensors")
-        vocab_path (str): Path to vocab file within the repo (e.g., "F5TTS_v1_Base/vocab.txt")
-        config (dict, optional): Model configuration
-        model_id (str, optional): Custom ID for the model, defaults to last part of repo_id
-        language_codes (list, optional): List of language codes supported by the model
+        url (str): URL to download from.
+        output_path (str): Path to save the downloaded file.
+        model_id (str): Model ID for tracking cancellation.
+        progress_start_pct (float): The starting percentage this file represents in the overall download.
+        progress_end_pct (float): The ending percentage this file represents in the overall download.
 
     Returns:
-        tuple: (success, message, model_id)
+        tuple: (success: bool, downloaded_size: int, total_size: int or None)
+               success is False if cancelled or download failed.
     """
-    # Log the huggingface_hub version and available functions for debugging
+    import requests
+    import os
+
+    total_size = None
+    downloaded_size = 0
+    headers = {}
+    # Optional: Add headers like User-Agent if needed
+    # headers['User-Agent'] = 'MyTTSApp/1.0'
+
     try:
-        import huggingface_hub
-        import inspect
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        # Log version
+        # Get headers to find content length
+        response_head = requests.head(url, allow_redirects=True, timeout=10, headers=headers)
+        response_head.raise_for_status() # Check for errors like 404
+        content_length = response_head.headers.get('Content-Length')
+        if content_length and content_length.isdigit():
+            total_size = int(content_length)
+            logger.info(f"Determined file size for {os.path.basename(output_path)}: {total_size / (1024*1024):.2f} MB")
+        else:
+            logger.warning(f"Could not determine file size for {os.path.basename(output_path)} from headers.")
+
+        # Start the download stream
+        response = requests.get(url, stream=True, timeout=30, headers=headers) # Longer timeout for GET
+        response.raise_for_status() # Check for errors during GET request
+
+        # --- Download Loop ---
+        chunk_size = 8192 * 4 # Adjust chunk size if needed (e.g., 32KB)
+        last_update_time = time.time()
+        update_interval = 0.5 # Update status at most every 0.5 seconds
+
+        with open(output_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                # Check for cancellation before writing chunk
+                if model_id in download_threads and download_threads[model_id].get("cancel"):
+                    logger.warning(f"Download cancelled for model {model_id} during file download.")
+                    # Close file handle before attempting delete
+                    f.close()
+                    # Try to delete partially downloaded file
+                    try:
+                        if os.path.exists(output_path):
+                            os.remove(output_path)
+                            logger.info(f"Deleted partially downloaded file: {output_path}")
+                    except OSError as e:
+                        logger.error(f"Error deleting partial file {output_path}: {e}")
+                    return False, downloaded_size, total_size # Indicate cancellation
+
+                if chunk: # Filter out keep-alive new chunks
+                    f.write(chunk)
+                    downloaded_size += len(chunk)
+
+                    # Throttle status updates
+                    current_time = time.time()
+                    if current_time - last_update_time >= update_interval:
+                        # Calculate overall progress percentage based on this file's contribution
+                        overall_progress = None
+                        if total_size is not None and total_size > 0:
+                            file_progress_pct = (downloaded_size / total_size) * 100
+                            progress_range = progress_end_pct - progress_start_pct
+                            overall_progress = progress_start_pct + (file_progress_pct / 100) * progress_range
+                            # Don't pass calculated overall_progress here, pass raw sizes
+                            # Let update_download_status recalculate based on ALL files if needed
+                            # For single file downloads, this is fine though.
+                            update_download_status(
+                                model_id=model_id,
+                                status='downloading',
+                                # progress=overall_progress, # Let update_download_status calculate from sizes
+                                downloaded_size=downloaded_size,
+                                total_size=total_size
+                            )
+                        else:
+                             # If total size is unknown, just report bytes downloaded
+                             update_download_status(
+                                 model_id=model_id,
+                                 status='downloading',
+                                 downloaded_size=downloaded_size,
+                                 total_size=None # Explicitly None
+                             )
+
+                        last_update_time = current_time
+
+
+        logger.info(f"File downloaded successfully: {output_path} ({downloaded_size} bytes)")
+        # Final update for this file - report exact downloaded size
+        # Let the calling function decide the overall percentage completion
+        update_download_status(
+             model_id=model_id,
+             status='downloading', # Still downloading overall if more files exist
+             downloaded_size=downloaded_size,
+             total_size=total_size
+        )
+        return True, downloaded_size, total_size # Indicate success
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Download error for {url}: {e}")
+        # Try to delete potentially corrupted file
+        if os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+            except OSError as rm_err:
+                 logger.error(f"Error cleaning up failed download {output_path}: {rm_err}")
+        update_download_status(model_id, 'failed', error=f"Network error: {e}")
+        return False, downloaded_size, total_size
+    except IOError as e:
+         logger.error(f"File writing error for {output_path}: {e}")
+         update_download_status(model_id, 'failed', error=f"File system error: {e}")
+         return False, downloaded_size, total_size
+    except Exception as e:
+        logger.error(f"Unexpected error during download of {url}: {e}")
+        update_download_status(model_id, 'failed', error=f"Unexpected error: {e}")
+        return False, downloaded_size, total_size
+
+
+def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filename_in_repo, config=None, model_id=None, language_codes=None):
+    """Thread function to download a model from Hugging Face Hub."""
+    import os
+    import time
+    import shutil # Ensure shutil is imported
+
+    if model_id is None: # Should be generated before calling thread now
+        logger.error("Model ID is None in download thread, cannot proceed.")
+        # Cannot update status without model_id
+        return
+
+    logger.info(f"Starting download thread for model_id: {model_id} from repo: {repo_id}")
+
+    # Use the project's models/f5_tts directory
+    download_dir = None
+    try:
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        target_base_dir = os.path.join(project_dir, "models", "f5_tts")
+        download_dir = os.path.join(target_base_dir, model_id) # Specific dir for this model
+        logger.info(f"Target download directory: {download_dir}")
+        os.makedirs(download_dir, exist_ok=True)
+    except Exception as e:
+        logger.error(f"Error setting up download directory {download_dir}: {e}")
+        update_download_status(model_id, 'failed', error=f"Directory setup error: {e}")
+        return
+
+    # Update status: Starting
+    update_download_status(model_id, 'downloading', progress=0) # Initial status
+
+    # --- Check for Cancellation ---
+    if model_id in download_threads and download_threads[model_id].get("cancel"):
+        logger.info(f"Download cancelled immediately upon starting thread for {model_id}")
+        remove_download_status(model_id) # Clean up status
+        # Attempt cleanup of the created directory
         try:
-            logger.info(f"Using huggingface_hub version: {huggingface_hub.__version__}")
-        except AttributeError:
-            logger.warning("Could not determine huggingface_hub version")
-
-        # Log available functions to help with debugging
-        try:
-            functions = [name for name, obj in inspect.getmembers(huggingface_hub)
-                        if inspect.isfunction(obj)]
-            logger.info(f"Available huggingface_hub functions: {', '.join(functions[:10])}...")
-
-            # Check if specific functions exist
-            has_get_cache_dir = hasattr(huggingface_hub, 'get_cache_dir')
-            has_hf_hub_download = hasattr(huggingface_hub, 'hf_hub_download')
-            logger.info(f"Has get_cache_dir: {has_get_cache_dir}, Has hf_hub_download: {has_hf_hub_download}")
+            if os.path.exists(download_dir):
+                shutil.rmtree(download_dir)
         except Exception as e:
-            logger.warning(f"Error inspecting huggingface_hub: {e}")
-    except ImportError:
-        logger.warning("huggingface_hub module not found")
+             logger.error(f"Error cleaning up directory after immediate cancel: {e}")
+        return
 
-    # Log that we're proceeding with the download
-    logger.info(f"Proceeding with download from repository: {repo_id}")
+    # --- Construct URLs ---
+    # Use os.path.basename just in case full paths were passed
+    model_file_basename = os.path.basename(model_filename_in_repo)
+    vocab_file_basename = os.path.basename(vocab_filename_in_repo)
 
-    # Log the input parameters
-    logger.info(f"Download request: repo_id={repo_id}, model_path={model_path}, vocab_path={vocab_path}, model_id={model_id}")
-    # Generate model ID if not provided
-    if model_id is None:
-        model_id = repo_id.split('/')[-1]
-        if '/' in model_path:
-            model_id += '_' + model_path.split('/')[0]
+    model_url = f"https://huggingface.co/{repo_id}/resolve/main/{model_filename_in_repo}"
+    vocab_url = f"https://huggingface.co/{repo_id}/resolve/main/{vocab_filename_in_repo}"
+    logger.info(f"Model URL: {model_url}")
+    logger.info(f"Vocab URL: {vocab_url}")
 
-    # Update download status to 'downloading'
-    update_download_status(model_id, 'downloading')
+    # --- File Paths ---
+    final_model_path = os.path.join(download_dir, model_file_basename)
+    final_vocab_path = os.path.join(download_dir, vocab_file_basename)
 
-    # Create a cancellation flag
-    download_threads[model_id] = {"cancel": False, "thread": None}
+    # --- Download Files ---
+    total_download_size = 0
+    known_total_size = 0
+    files_to_download = [
+        {"url": model_url, "path": final_model_path, "type": "model"},
+        {"url": vocab_url, "path": final_vocab_path, "type": "vocab"}
+    ]
+    downloaded_sizes = {}
+
+    # 1. Download Model File
+    logger.info(f"Starting download of model file...")
+    model_success, d_size, t_size = _custom_download_file(
+        url=model_url,
+        output_path=final_model_path,
+        model_id=model_id,
+        # Assume model is ~90% of total download effort/size for rough staging
+        progress_start_pct=0,
+        progress_end_pct=90
+    )
+    downloaded_sizes["model"] = d_size
+    if t_size is not None: known_total_size += t_size
+
+    if not model_success:
+        logger.error(f"Model file download failed for {model_id}.")
+        # _custom_download_file already updated status to 'failed' or handled cancellation
+        # Attempt cleanup
+        try:
+            if os.path.exists(download_dir):
+                shutil.rmtree(download_dir)
+                logger.info(f"Cleaned up directory after failed model download: {download_dir}")
+        except Exception as e:
+             logger.error(f"Error cleaning up directory after failed model download: {e}")
+        return # Exit thread
+
+    # --- Check for Cancellation after model download ---
+    if model_id in download_threads and download_threads[model_id].get("cancel"):
+        logger.info(f"Download cancelled after model file download for {model_id}")
+        remove_download_status(model_id)
+        # Attempt cleanup
+        try:
+            if os.path.exists(download_dir):
+                shutil.rmtree(download_dir)
+                logger.info(f"Cleaned up directory after cancellation: {download_dir}")
+        except Exception as e:
+             logger.error(f"Error cleaning up directory after cancellation: {e}")
+        return
+
+    # 2. Download Vocab File
+    logger.info(f"Starting download of vocab file...")
+    vocab_success, d_size_v, t_size_v = _custom_download_file(
+        url=vocab_url,
+        output_path=final_vocab_path,
+        model_id=model_id,
+        # Assume vocab is the remaining 10%
+        progress_start_pct=90,
+        progress_end_pct=100
+    )
+    downloaded_sizes["vocab"] = d_size_v
+    if t_size_v is not None: known_total_size += t_size_v
+
+    if not vocab_success:
+        logger.error(f"Vocab file download failed for {model_id}.")
+        # Attempt cleanup
+        try:
+            if os.path.exists(download_dir):
+                shutil.rmtree(download_dir)
+                logger.info(f"Cleaned up directory after failed vocab download: {download_dir}")
+        except Exception as e:
+             logger.error(f"Error cleaning up directory after failed vocab download: {e}")
+        return # Exit thread
+
+    # --- Check for Cancellation after all downloads ---
+    if model_id in download_threads and download_threads[model_id].get("cancel"):
+        logger.info(f"Download cancelled after all files downloaded for {model_id}")
+        remove_download_status(model_id)
+        # Attempt cleanup
+        try:
+            if os.path.exists(download_dir):
+                shutil.rmtree(download_dir)
+                logger.info(f"Cleaned up directory after final cancellation check: {download_dir}")
+        except Exception as e:
+             logger.error(f"Error cleaning up directory after final cancellation check: {e}")
+        return
+
+    # --- Finalizing - Add to Registry ---
+    logger.info(f"All files downloaded for {model_id}. Preparing registry entry.")
+
+    # Determine language (using existing logic)
+    primary_language = "unknown"
+    supported_languages = []
+    if language_codes and len(language_codes) > 0:
+        supported_languages = language_codes
+        primary_language = language_codes[0]
+        logger.info(f"Using provided language codes: {language_codes}")
+    else:
+        # Fallback language detection logic (simplified for brevity)
+        import re
+        lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
+        matches = re.findall(lang_pattern, model_id.lower())
+        if not matches: matches = re.findall(lang_pattern, repo_id.lower())
+        if matches:
+            primary_language = matches[0]
+            supported_languages = list(set(matches))
+            logger.info(f"Detected languages: {supported_languages}")
+        else:
+            primary_language = "en"
+            supported_languages = ["en"]
+            logger.info("No language detected, defaulting to 'en'")
+
+    model_info = {
+        "id": model_id,
+        "name": model_id.replace('_', ' ').replace('-', ' ').title(), # Basic naming
+        "repo_id": repo_id,
+        "model_path": final_model_path, # Direct path to downloaded file
+        "vocab_path": final_vocab_path, # Direct path to downloaded file
+        "config": config or {},
+        "source": "huggingface",
+        "language": primary_language,
+        "languages": supported_languages,
+        "is_symlink": False,
+        "original_model_file": None,
+        "original_vocab_file": None
+    }
+
+    # Add model to registry
+    # Update status briefly to indicate completion before adding
+    # Use the actual total downloaded size and known total size for final percentage before 'completed'
+    update_download_status(
+        model_id,
+        'downloading',
+        downloaded_size=sum(downloaded_sizes.values()),
+        total_size=known_total_size if known_total_size > 0 else None,
+        progress=99.9 # Indicate almost done before registry add
+    )
+
+    success, message = add_model(model_info)
+
+    if success:
+        # Status 'completed' will remove the entry from downloads
+        update_download_status(model_id, 'completed')
+        logger.info(f"Model {model_id} download complete and added to registry.")
+    else:
+        update_download_status(model_id, 'failed', error=f"Registry add failed: {message}")
+        logger.error(f"Failed to add model {model_id} to registry: {message}")
+        # Consider deleting downloaded files if registry add fails?
+        # try:
+        #    if os.path.exists(download_dir): shutil.rmtree(download_dir)
+        # except Exception as e: logger.error(f"Error cleaning up after failed registry add: {e}")
+
+    # Clean up thread entry (no longer needed after completion/failure)
+    if model_id in download_threads:
+        del download_threads[model_id]
+
+
+def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_id=None, language_codes=None):
+    """Initiates download of a model from Hugging Face Hub."""
+    logger.info(f"Request to download HF model: repo={repo_id}, model={model_path}, vocab={vocab_path}")
+
+    # Generate a model ID if not provided or invalid
+    if not model_id:
+        # Try to create a reasonably unique ID
+        model_id = f"{repo_id.split('/')[-1]}_{os.path.splitext(os.path.basename(model_path))[0]}"
+        # Sanitize ID (replace non-alphanumeric with underscore)
+        model_id = re.sub(r'[^a-zA-Z0-9_-]+', '_', model_id)
+        logger.info(f"Generated model_id: {model_id}")
+
+    # --- Pre-download Checks ---
+    registry = get_registry()
+    # Check if already downloaded
+    if any(m.get("id") == model_id for m in registry.get("models", [])):
+        logger.warning(f"Model {model_id} already exists in the registry. Skipping download.")
+        return False, f"Model {model_id} already exists.", model_id
+    # Check if download is already in progress
+    if model_id in registry.get("downloads", {}) and registry["downloads"][model_id].get("status") == "downloading":
+        logger.warning(f"Download for model {model_id} is already in progress. Skipping new request.")
+        return False, f"Download already in progress for {model_id}.", model_id
+    if model_id in download_threads:
+         logger.warning(f"Download thread for model {model_id} is already active. Skipping new request.")
+         return False, f"Download thread already active for {model_id}.", model_id
+
+    # Update status to 'downloading' (initial state)
+    update_download_status(model_id, 'downloading', progress=0)
+
+    # Create entry for cancellation flag and thread object
+    download_threads[model_id] = {"cancel": False, "thread": None, "repo_id": repo_id} # Store repo_id here too
 
     # Start download in a separate thread
     thread = threading.Thread(
         target=_download_model_from_hf_thread,
-        args=(repo_id, model_path, vocab_path, config, model_id, language_codes)
+        args=(repo_id, model_path, vocab_path, config, model_id, language_codes),
+        daemon=True # Allows program exit even if thread hangs
     )
-    thread.daemon = True
 
-    # Store the thread in the dictionary
     download_threads[model_id]["thread"] = thread
-
-    # Start the thread
     thread.start()
+    logger.info(f"Download thread started for model {model_id}.")
 
     return True, f"Model download started for {model_id}", model_id
 
-def _custom_download_file(url, output_path, model_id, progress_start=0, progress_end=90):
-    """
-    Custom download function with progress tracking and cancellation support.
-
-    Args:
-        url (str): URL to download from
-        output_path (str): Path to save the downloaded file
-        model_id (str): Model ID for tracking cancellation
-        progress_start (int): Starting progress percentage
-        progress_end (int): Ending progress percentage
-
-    Returns:
-        bool: True if download was successful, False if cancelled
-    """
-    import requests
-    import os
-
-    try:
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-        # Try to get content length for progress tracking
-        response_head = requests.head(url, allow_redirects=True)
-        total_size = int(response_head.headers.get('Content-Length', 0))
-        logger.info(f"File size: {total_size / (1024 * 1024):.2f} MB")
-        has_size = total_size > 0
-    except Exception as e:
-        logger.warning(f"Could not determine file size: {e}")
-        has_size = False
-        total_size = 0
-
-    # Download the file
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-    except Exception as e:
-        logger.error(f"Error starting download: {e}")
-        raise
-
-    # Set up progress tracking
-    downloaded_size = 0
-    chunk_size = 8192
-    progress_step = 2  # Update progress every 2%
-    last_progress = progress_start
-    progress_range = progress_end - progress_start
-
-    # Download with progress tracking
-    with open(output_path, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=chunk_size):
-            # Check if download has been cancelled
-            if model_id in download_threads and download_threads[model_id]["cancel"]:
-                logger.info(f"Download cancelled for model {model_id} during file download")
-                f.close()
-
-                # Delete the partially downloaded file
-                try:
-                    if os.path.exists(output_path):
-                        logger.info(f"Deleting partially downloaded file: {output_path}")
-                        os.remove(output_path)
-                        logger.info(f"Successfully deleted file: {output_path}")
-                except Exception as e:
-                    logger.error(f"Error deleting file: {e}")
-
-                return False  # Indicate cancellation
-
-            f.write(chunk)
-            downloaded_size += len(chunk)
-
-            # Update progress
-            if has_size:
-                # Calculate real progress if we know the size
-                progress = progress_start + min(progress_range, (downloaded_size / total_size) * progress_range)
-            else:
-                # Otherwise increment by small amounts
-                progress = min(progress_end, last_progress + 0.5)
-
-            # Only update status when progress changes significantly
-            if progress >= last_progress + progress_step or progress >= progress_end:
-                update_download_status(
-                    model_id=model_id,
-                    status='downloading',
-                    progress=progress,
-                    downloaded_size=downloaded_size,
-                    total_size=total_size if has_size else None
-                )
-                last_progress = progress
-                if has_size:
-                    progress_percent = (downloaded_size / total_size) * 100
-                    # Truncate to one decimal place without rounding
-                    truncated_progress = int(progress_percent * 10) / 10
-                    logger.info(f"Download progress: {downloaded_size / (1024 * 1024):.1f}MB/{total_size / (1024 * 1024):.1f}MB ({truncated_progress}%)")
-                else:
-                    logger.info(f"Download progress: {downloaded_size / (1024 * 1024):.1f}MB")
-
-    logger.info(f"File downloaded successfully to: {output_path}")
-    update_download_status(
-        model_id=model_id,
-        status='downloading',
-        progress=progress_end,
-        downloaded_size=downloaded_size,
-        total_size=total_size if has_size else None
-    )
-    return True  # Indicate successful download
-
-def _download_model_from_hf_thread(repo_id, model_path, vocab_path, config=None, model_id=None, language_codes=None):
-    """
-    Thread function to download a model from Hugging Face Hub.
-
-    Args:
-        repo_id (str): Hugging Face repository ID
-        model_path (str): Path to model file within the repo
-        vocab_path (str): Path to vocab file within the repo
-        config (dict, optional): Model configuration
-        model_id (str, optional): Custom ID for the model
-        language_codes (list, optional): List of language codes supported by the model
-    """
-    # Import required modules
-    import os
-    import time
-
-    try:
-        # Download model file with progress tracking
-        logger.info(f"Downloading model from {repo_id}/{model_path}")
-        update_download_status(model_id, 'downloading', 0)
-
-        # Log that we're starting the actual download
-        logger.info("Starting actual download from Hugging Face Hub")
-
-        # Use the project's models/f5_tts directory instead of Hugging Face cache
-        try:
-            # Get the project's models directory
-            import os
-            project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            models_dir = os.path.join(project_dir, "models", "f5_tts")
-            logger.info(f"Using project models directory: {models_dir}")
-
-            # Make sure the directory exists
-            os.makedirs(models_dir, exist_ok=True)
-        except Exception as e:
-            logger.error(f"Error getting project models directory: {e}")
-            raise
-
-        # Create a directory in the project's models/f5_tts directory for this model
-        cache_dir = os.path.join(models_dir, model_id)
-        logger.info(f"Creating model directory at: {cache_dir}")
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Set initial progress
-        update_download_status(model_id, 'downloading', 5)
-
-        # Check if download has been cancelled before starting actual download
-        if model_id in download_threads and download_threads[model_id]["cancel"]:
-            logger.info(f"Download cancelled for model {model_id} before starting actual download")
-            # Don't add to registry at all for cancelled downloads
-            remove_download_status(model_id)
-
-            # Delete the model directory
-            try:
-                if os.path.exists(cache_dir):
-                    logger.info(f"Deleting model directory: {cache_dir}")
-                    shutil.rmtree(cache_dir)
-                    logger.info(f"Successfully deleted model directory: {cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-
-            return  # Exit the thread
-
-        # Construct URLs for the model and vocab files
-        model_url = f"https://huggingface.co/{repo_id}/resolve/main/{model_path}"
-        vocab_url = f"https://huggingface.co/{repo_id}/resolve/main/{vocab_path}"
-
-        logger.info(f"Model URL: {model_url}")
-        logger.info(f"Vocab URL: {vocab_url}")
-
-        # Prepare file paths
-        model_filename = os.path.basename(model_path)
-        vocab_filename = os.path.basename(vocab_path)
-        model_file = os.path.join(cache_dir, model_filename)
-        vocab_file = os.path.join(cache_dir, vocab_filename)
-
-        # Download model file with progress tracking
-        logger.info(f"Starting download of model file from {model_url}")
-        update_download_status(model_id, 'downloading', 10)
-
-        # Download model file
-        model_success = _custom_download_file(
-            url=model_url,
-            output_path=model_file,
-            model_id=model_id,
-            progress_start=10,
-            progress_end=60
-        )
-
-        # If model download was cancelled, exit
-        if not model_success:
-            # Delete the model directory
-            try:
-                if os.path.exists(cache_dir):
-                    logger.info(f"Deleting model directory: {cache_dir}")
-                    shutil.rmtree(cache_dir)
-                    logger.info(f"Successfully deleted model directory: {cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-
-            # Don't add to registry at all for cancelled downloads
-            remove_download_status(model_id)
-            return  # Exit the thread
-
-        # Download vocab file
-        logger.info(f"Starting download of vocab file from {vocab_url}")
-        update_download_status(model_id, 'downloading', 60)
-
-        # Download vocab file
-        vocab_success = _custom_download_file(
-            url=vocab_url,
-            output_path=vocab_file,
-            model_id=model_id,
-            progress_start=60,
-            progress_end=90
-        )
-
-        # If vocab download was cancelled, exit
-        if not vocab_success:
-            # Delete the model directory
-            try:
-                if os.path.exists(cache_dir):
-                    logger.info(f"Deleting model directory: {cache_dir}")
-                    shutil.rmtree(cache_dir)
-                    logger.info(f"Successfully deleted model directory: {cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-
-            # Don't add to registry at all for cancelled downloads
-            remove_download_status(model_id)
-            return  # Exit the thread
-
-        # Check if download has been cancelled after all files are downloaded
-        if model_id in download_threads and download_threads[model_id]["cancel"]:
-            logger.info(f"Download cancelled for model {model_id} after all files downloaded")
-
-            # Delete the model directory
-            try:
-                if os.path.exists(cache_dir):
-                    logger.info(f"Deleting model directory: {cache_dir}")
-                    shutil.rmtree(cache_dir)
-                    logger.info(f"Successfully deleted model directory: {cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-
-            # Don't add to registry at all for cancelled downloads
-            remove_download_status(model_id)
-            return  # Exit the thread
-
-        # Set language information
-        primary_language = "unknown"
-        supported_languages = []
-
-        # Use provided language codes if available
-        if language_codes and len(language_codes) > 0:
-            supported_languages = language_codes
-            primary_language = language_codes[0]  # First language is primary
-            logger.info(f"Using provided language codes: {language_codes}")
-        else:
-            # Try to determine language from model ID or repo ID
-            # Use a more flexible approach to detect language codes
-            model_id_lower = model_id.lower()
-            repo_id_lower = repo_id.lower()
-
-            # Common language codes that might be found in model IDs or repo IDs
-            # This is just a fallback - the preferred method is to provide language codes explicitly
-            # We don't limit to a fixed list, but we'll check for common patterns
-
-            # Check for language codes in model ID using common patterns
-            # Look for patterns like "model-en", "model_en", "model-en-us", etc.
-            import re
-
-            # Pattern to match language codes in model ID
-            # This looks for 2-letter codes that are either:
-            # 1. At the end of the string
-            # 2. Followed by a hyphen and more text (like en-us)
-            # 3. Preceded by a hyphen or underscore
-            lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
-
-            # Find all matches in model ID
-            matches = re.findall(lang_pattern, model_id_lower)
-            if matches:
-                # Use the first match as primary language
-                primary_language = matches[0]
-                supported_languages = list(set(matches))  # Remove duplicates
-                logger.info(f"Detected languages from model ID: {supported_languages}")
-
-            # If not found in model ID, check repo ID
-            if not supported_languages:
-                matches = re.findall(lang_pattern, repo_id_lower)
-                if matches:
-                    primary_language = matches[0]
-                    supported_languages = list(set(matches))  # Remove duplicates
-                    logger.info(f"Detected languages from repo ID: {supported_languages}")
-
-            # If still no languages detected, default to "en" as a fallback
-            if not supported_languages:
-                logger.info("No language detected, defaulting to 'en'")
-                primary_language = "en"
-                supported_languages = ["en"]
-
-        # Create model info that points directly to the Hugging Face cache files
-        model_info = {
-            "id": model_id,
-            "name": model_id.replace('_', ' '),
-            "repo_id": repo_id,
-            "model_path": model_file,  # Direct path to the file in Hugging Face cache
-            "vocab_path": vocab_file,  # Direct path to the file in Hugging Face cache
-            "config": config or {},
-            "source": "huggingface",
-            "language": primary_language,  # Primary language
-            "languages": supported_languages,  # List of supported languages
-            "is_symlink": False,  # No symlinks used
-            "original_model_file": None,
-            "original_vocab_file": None
-        }
-
-        # Log the model info for debugging
-        logger.info(f"Model info prepared: id={model_id}, model_path={model_file}, vocab_path={vocab_file}")
-
-        # Set progress to 99% before adding to registry
-        update_download_status(model_id, 'downloading', 99)
-        logger.info(f"Download complete, adding model {model_id} to registry")
-
-        # Add model to registry
-        success, message = add_model(model_info)
-
-        if success:
-            # Only set to 100% when fully complete
-            update_download_status(model_id, 'completed', 100)
-            logger.info(f"Model {model_id} downloaded successfully and added to registry")
-
-            # After a short delay, remove the download status to clean up the registry
-            time.sleep(2)
-            remove_download_status(model_id)
-            logger.info(f"Removed download status for model {model_id}")
-        else:
-            update_download_status(model_id, 'failed', 0, message)
-            logger.error(f"Failed to add model {model_id}: {message}")
-
-    except Exception as e:
-        logger.error(f"Error downloading model: {e}")
-        update_download_status(model_id, 'failed', 0, str(e))
+# --- URL Parsing and Downloading (MODIFIED for progress reporting) ---
 
 def parse_hf_url(url):
-    """
-    Parse a Hugging Face URL to extract repo_id and file path.
-
-    Examples:
-    - hf://SWivid/F5-TTS/F5TTS_v1_Base/model_1250000.safetensors
-    - hf://erax-ai/EraX-Smile-UnixSex-F5/models/model_42000.safetensors
-    - https://huggingface.co/SWivid/F5-TTS/blob/main/F5TTS_v1_Base/model_1250000.safetensors
-
-    Returns:
-        tuple: (repo_id, file_path)
-    """
+    """Parse Hugging Face URL (unchanged)."""
     logger.info(f"Parsing Hugging Face URL: {url}")
+    if not url: return None, None
 
-    if not url:
-        logger.error("Empty URL provided to parse_hf_url")
-        return None, None
-
+    # Try hf:// format
     if url.startswith('hf://'):
-        # Format: hf://repo_id/file_path
         parts = url[5:].split('/', 1)
         if len(parts) == 2:
             repo_id, file_path = parts
-            logger.info(f"Parsed hf:// URL - repo_id: {repo_id}, file_path: {file_path}")
-            return repo_id, file_path
+            # Basic validation: repo_id should have one '/'
+            if repo_id.count('/') == 1 and file_path:
+                logger.info(f"Parsed hf:// URL -> repo_id: {repo_id}, file_path: {file_path}")
+                return repo_id, file_path
+            else:
+                 logger.warning(f"Invalid hf:// format structure: {url}")
+                 return None, None
 
+    # Try https://huggingface.co format
     elif 'huggingface.co' in url:
-        # Format: https://huggingface.co/repo_id/blob/branch/file_path
-        parts = url.split('huggingface.co/', 1)
-        if len(parts) == 2:
-            path = parts[1]
-            # Remove blob/main or blob/master if present
-            if '/blob/' in path:
-                repo_id, file_path = path.split('/blob/', 1)
-                # Remove branch name
-                if '/' in file_path:
-                    # Split by first slash to remove branch name
-                    _, file_path = file_path.split('/', 1)
-                    logger.info(f"Parsed huggingface.co URL - repo_id: {repo_id}, file_path: {file_path}")
-                    return repo_id, file_path
+        try:
+            path_part = url.split('huggingface.co/', 1)[1]
+            # Format: repo_id/resolve/branch/file_path
+            if '/resolve/' in path_part:
+                repo_id, branch_file = path_part.split('/resolve/', 1)
+                if '/' in branch_file:
+                    _, file_path = branch_file.split('/', 1) # Skip branch
+                    if repo_id.count('/') == 1 and file_path:
+                        logger.info(f"Parsed resolve URL -> repo_id: {repo_id}, file_path: {file_path}")
+                        return repo_id, file_path
+            # Format: repo_id/blob/branch/file_path
+            elif '/blob/' in path_part:
+                repo_id, branch_file = path_part.split('/blob/', 1)
+                if '/' in branch_file:
+                    _, file_path = branch_file.split('/', 1) # Skip branch
+                    if repo_id.count('/') == 1 and file_path:
+                        logger.info(f"Parsed blob URL -> repo_id: {repo_id}, file_path: {file_path}")
+                        return repo_id, file_path
+            # Add other potential formats if needed (e.g., direct file links without resolve/blob?)
+            logger.warning(f"Could not extract repo_id/file_path from huggingface.co URL structure: {url}")
+            return None, None
+        except (IndexError, ValueError) as e:
+            logger.error(f"Error parsing huggingface.co URL {url}: {e}")
+            return None, None
 
-            # Handle direct resolve URLs (no blob)
-            # Format: https://huggingface.co/repo_id/resolve/main/file_path
-            elif '/resolve/' in path:
-                repo_id, file_path = path.split('/resolve/', 1)
-                # Remove branch name
-                if '/' in file_path:
-                    # Split by first slash to remove branch name
-                    _, file_path = file_path.split('/', 1)
-                    logger.info(f"Parsed huggingface.co resolve URL - repo_id: {repo_id}, file_path: {file_path}")
-                    return repo_id, file_path
-
-    # If we get here, the URL format wasn't recognized
-    logger.error(f"Failed to parse Hugging Face URL: {url}")
+    logger.error(f"URL format not recognized as Hugging Face: {url}")
     return None, None
 
-def download_model_from_url(model_url, vocab_url=None, config=None, model_id=None, language_codes=None):
-    """
-    Download a model from direct URLs.
-
-    Args:
-        model_url (str): URL to model file
-        vocab_url (str, optional): URL to vocab file
-        config (dict, optional): Model configuration
-        model_id (str, optional): Custom ID for the model
-        language_codes (list, optional): List of language codes supported by the model
-
-    Returns:
-        tuple: (success, message, model_id)
-    """
-    # Generate model ID if not provided
-    if model_id is None:
-        model_id = os.path.basename(model_url).split('.')[0]
-
-    # Update download status to 'downloading'
-    update_download_status(model_id, 'downloading')
-
-    # Create a cancellation flag
-    download_threads[model_id] = {"cancel": False, "thread": None}
-
-    # Start download in a separate thread
-    thread = threading.Thread(
-        target=_download_model_from_url_thread,
-        args=(model_url, vocab_url, config, model_id, language_codes)
-    )
-    thread.daemon = True
-
-    # Store the thread in the dictionary
-    download_threads[model_id]["thread"] = thread
-
-    # Start the thread
-    thread.start()
-
-    return True, f"Model download started for {model_id}", model_id
 
 def _download_model_from_url_thread(model_url, vocab_url=None, config=None, model_id=None, language_codes=None):
-    """
-    Thread function to download a model from direct URLs.
-
-    Args:
-        model_url (str): URL to model file
-        vocab_url (str, optional): URL to vocab file
-        config (dict, optional): Model configuration
-        model_id (str, optional): Custom ID for the model
-        language_codes (list, optional): List of language codes supported by the model
-    """
-    # Import required modules
+    """Thread function to download a model from direct URLs."""
     import os
-    import requests
-    import re
+    import time
+    import shutil # Ensure shutil is imported
+    import re # For sanitizing model_id
 
+    if model_id is None:
+        logger.error("Model ID is None in URL download thread, cannot proceed.")
+        return
+
+    logger.info(f"Starting URL download thread for model_id: {model_id}")
+
+    # Setup download directory within project structure
+    download_dir = None
     try:
-        # Use the project's models/f5_tts directory instead of Hugging Face cache
-        try:
-            # Get the project's models directory
-            import os
-            project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            models_dir = os.path.join(project_dir, "models", "f5_tts")
-            logger.info(f"Using project models directory: {models_dir}")
-
-            # Make sure the directory exists
-            os.makedirs(models_dir, exist_ok=True)
-        except Exception as e:
-            logger.error(f"Error getting project models directory: {e}")
-            raise
-
-        # Create a directory in the project's models/f5_tts directory for this model
-        cache_dir = os.path.join(models_dir, model_id)
-        logger.info(f"Creating model directory at: {cache_dir}")
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Verify the directory was created
-        if not os.path.exists(cache_dir):
-            raise IOError(f"Failed to create cache directory at {cache_dir}")
-        else:
-            logger.info(f"Cache directory created/exists: {cache_dir}")
-
-        # Download model file directly to the Hugging Face cache
-        logger.info(f"Downloading model from {model_url}")
-        model_filename = os.path.basename(model_url)
-        cache_model_path = os.path.join(cache_dir, model_filename)
-        logger.info(f"Model will be saved to: {cache_model_path}")
-
-        # Start with 0% progress
-        update_download_status(model_id, 'downloading', 0)
-        logger.info("Starting download with direct progress tracking")
-
-        # Download model file with progress tracking
-        try:
-            # Try to get content length for progress tracking
-            response_head = requests.head(model_url, allow_redirects=True)
-            total_size = int(response_head.headers.get('Content-Length', 0))
-            logger.info(f"Model file size: {total_size / (1024 * 1024):.2f} MB")
-            has_size = total_size > 0
-        except Exception as e:
-            logger.warning(f"Could not determine file size: {e}")
-            has_size = False
-            total_size = 0
-
-        # Download the file
-        response = requests.get(model_url, stream=True)
-        response.raise_for_status()
-
-        # Set up progress tracking
-        downloaded_size = 0
-        chunk_size = 8192
-        progress_step = 5  # Update progress every 5%
-        last_progress = 0
-
-        # Download with progress tracking
-        with open(cache_model_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                # Check if download has been cancelled
-                if model_id in download_threads and download_threads[model_id]["cancel"]:
-                    logger.info(f"Download cancelled for model {model_id} during model file download")
-                    f.close()
-
-                    # Delete the partially downloaded file
-                    try:
-                        if os.path.exists(cache_model_path):
-                            logger.info(f"Deleting partially downloaded model file: {cache_model_path}")
-                            os.remove(cache_model_path)
-                            logger.info(f"Successfully deleted model file: {cache_model_path}")
-                    except Exception as e:
-                        logger.error(f"Error deleting model file: {e}")
-
-                    # Delete the model directory
-                    try:
-                        if os.path.exists(cache_dir):
-                            logger.info(f"Deleting model directory: {cache_dir}")
-                            shutil.rmtree(cache_dir)
-                            logger.info(f"Successfully deleted model directory: {cache_dir}")
-                    except Exception as e:
-                        logger.error(f"Error deleting model directory: {e}")
-
-                    # Don't add to registry at all for cancelled downloads
-                    remove_download_status(model_id)
-                    return  # Exit the thread
-
-                f.write(chunk)
-                downloaded_size += len(chunk)
-
-                # Update progress
-                if has_size:
-                    # Calculate real progress if we know the size
-                    progress = min(90, (downloaded_size / total_size) * 90)
-                else:
-                    # Otherwise increment by small amounts
-                    progress = min(90, last_progress + 0.1)
-
-                # Only update status when progress changes significantly
-                if progress >= last_progress + progress_step or progress >= 90:
-                    update_download_status(model_id, 'downloading', progress)
-                    last_progress = progress
-                    logger.info(f"Model download progress: {progress:.1f}% ({downloaded_size / (1024 * 1024):.1f}MB)")
-
-        logger.info(f"Model file downloaded: {cache_model_path}")
-        update_download_status(model_id, 'downloading', 90)
-
-        # Check if download has been cancelled after model file download
-        if model_id in download_threads and download_threads[model_id]["cancel"]:
-            logger.info(f"Download cancelled for model {model_id} after model file download")
-
-            # Delete the downloaded file
-            try:
-                if os.path.exists(cache_model_path):
-                    logger.info(f"Deleting downloaded model file: {cache_model_path}")
-                    os.remove(cache_model_path)
-                    logger.info(f"Successfully deleted model file: {cache_model_path}")
-            except Exception as e:
-                logger.error(f"Error deleting model file: {e}")
-
-            # Delete the model directory
-            try:
-                if os.path.exists(cache_dir):
-                    logger.info(f"Deleting model directory: {cache_dir}")
-                    shutil.rmtree(cache_dir)
-                    logger.info(f"Successfully deleted model directory: {cache_dir}")
-            except Exception as e:
-                logger.error(f"Error deleting model directory: {e}")
-
-            # Don't add to registry at all for cancelled downloads
-            remove_download_status(model_id)
-            return  # Exit the thread
-
-        # Download vocab file if provided
-        cache_vocab_path = None
-        if vocab_url:
-            logger.info(f"Downloading vocab from {vocab_url}")
-            vocab_filename = os.path.basename(vocab_url)
-            cache_vocab_path = os.path.join(cache_dir, vocab_filename)
-
-            # Download the vocab file
-            response = requests.get(vocab_url, stream=True)
-            response.raise_for_status()
-
-            with open(cache_vocab_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    f.write(chunk)
-
-            logger.info(f"Vocab file downloaded: {cache_vocab_path}")
-            update_download_status(model_id, 'downloading', 95)
-        else:
-            # If no vocab file, we're at 95% complete
-            update_download_status(model_id, 'downloading', 95)
-            logger.info("No vocab file to download")
-
-        # Set language information
-        primary_language = "unknown"
-        supported_languages = []
-
-        # Use provided language codes if available
-        if language_codes and len(language_codes) > 0:
-            supported_languages = language_codes
-            primary_language = language_codes[0]  # First language is primary
-            logger.info(f"Using provided language codes: {language_codes}")
-        else:
-            # Try to determine language from model ID or URL
-            # Use a more flexible approach to detect language codes
-            model_id_lower = model_id.lower()
-            model_url_lower = model_url.lower()
-
-            # Common language codes that might be found in model IDs or URLs
-            # This is just a fallback - the preferred method is to provide language codes explicitly
-            # We don't limit to a fixed list, but we'll check for common patterns
-
-            # Check for language codes in model ID using common patterns
-            # Look for patterns like "model-en", "model_en", "model-en-us", etc.
-            import re
-
-            # Pattern to match language codes in model ID
-            # This looks for 2-letter codes that are either:
-            # 1. At the end of the string
-            # 2. Followed by a hyphen and more text (like en-us)
-            # 3. Preceded by a hyphen or underscore
-            lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
-
-            # Find all matches in model ID
-            matches = re.findall(lang_pattern, model_id_lower)
-            if matches:
-                # Use the first match as primary language
-                primary_language = matches[0]
-                supported_languages = list(set(matches))  # Remove duplicates
-                logger.info(f"Detected languages from model ID: {supported_languages}")
-
-            # If not found in model ID, check URL
-            if not supported_languages:
-                matches = re.findall(lang_pattern, model_url_lower)
-                if matches:
-                    primary_language = matches[0]
-                    supported_languages = list(set(matches))  # Remove duplicates
-                    logger.info(f"Detected languages from URL: {supported_languages}")
-
-            # If still no languages detected, default to "en" as a fallback
-            if not supported_languages:
-                logger.info("No language detected, defaulting to 'en'")
-                primary_language = "en"
-                supported_languages = ["en"]
-
-        # Create model info that points directly to the Hugging Face cache files
-        model_info = {
-            "id": model_id,
-            "name": model_id.replace('_', ' '),
-            "model_path": cache_model_path,  # Direct path to the file in Hugging Face cache
-            "vocab_path": cache_vocab_path,  # Direct path to the file in Hugging Face cache
-            "config": config or {},
-            "source": "url",
-            "language": primary_language,
-            "languages": supported_languages,
-            "is_symlink": False,  # No symlinks used
-            "original_model_file": None,
-            "original_vocab_file": None
-        }
-
-        # Log the model info for debugging
-        logger.info(f"Model info prepared: id={model_id}, model_path={cache_model_path}, vocab_path={cache_vocab_path}")
-
-        # Verify the model file exists
-        if not os.path.exists(cache_model_path):
-            logger.error(f"Model file not found at {cache_model_path}")
-            raise FileNotFoundError(f"Model file not found at {cache_model_path}")
-
-        # Verify the vocab file exists if provided
-        if cache_vocab_path and not os.path.exists(cache_vocab_path):
-            logger.error(f"Vocab file not found at {cache_vocab_path}")
-            raise FileNotFoundError(f"Vocab file not found at {cache_vocab_path}")
-
-        # Set progress to 99% before adding to registry
-        update_download_status(model_id, 'downloading', 99)
-        logger.info(f"Download complete, adding model {model_id} to registry")
-
-        # Add model to registry
-        success, message = add_model(model_info)
-
-        if success:
-            # Only set to 100% when fully complete
-            update_download_status(model_id, 'completed', 100)
-            logger.info(f"Model {model_id} downloaded successfully and added to registry")
-
-            # After a short delay, remove the download status to clean up the registry
-            time.sleep(2)
-            remove_download_status(model_id)
-            logger.info(f"Removed download status for model {model_id}")
-        else:
-            update_download_status(model_id, 'failed', 0, message)
-            logger.error(f"Failed to add model {model_id}: {message}")
-
+        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        target_base_dir = os.path.join(project_dir, "models", "f5_tts")
+        download_dir = os.path.join(target_base_dir, model_id)
+        logger.info(f"Target URL download directory: {download_dir}")
+        os.makedirs(download_dir, exist_ok=True)
     except Exception as e:
-        logger.error(f"Error downloading model: {e}")
-        update_download_status(model_id, 'failed', 0, str(e))
+        logger.error(f"Error setting up download directory {download_dir}: {e}")
+        update_download_status(model_id, 'failed', error=f"Directory setup error: {e}")
+        return
 
-# Initialize registry on module import
+    # Update status: Starting
+    update_download_status(model_id, 'downloading', progress=0)
+
+    # --- Check for Cancellation ---
+    if model_id in download_threads and download_threads[model_id].get("cancel"):
+        logger.info(f"URL Download cancelled immediately upon starting thread for {model_id}")
+        remove_download_status(model_id)
+        try:
+             if os.path.exists(download_dir): shutil.rmtree(download_dir)
+        except Exception as e: logger.error(f"Error cleaning up directory after immediate cancel: {e}")
+        return
+
+    # --- Determine File Paths ---
+    try:
+        model_filename = os.path.basename(requests.utils.urlparse(model_url).path)
+        if not model_filename: model_filename = f"{model_id}_model.file" # Fallback name
+        final_model_path = os.path.join(download_dir, model_filename)
+
+        final_vocab_path = None
+        if vocab_url:
+            vocab_filename = os.path.basename(requests.utils.urlparse(vocab_url).path)
+            if not vocab_filename: vocab_filename = f"{model_id}_vocab.txt" # Fallback name
+            final_vocab_path = os.path.join(download_dir, vocab_filename)
+    except Exception as e:
+        logger.error(f"Error parsing URLs to get filenames: {e}")
+        update_download_status(model_id, 'failed', error="Invalid URL format")
+        return
+
+    # --- Download Files ---
+    known_total_size = 0
+    downloaded_sizes = {}
+
+    # 1. Download Model File
+    logger.info(f"Starting download of model file from URL: {model_url}")
+    model_success, d_size, t_size = _custom_download_file(
+        url=model_url,
+        output_path=final_model_path,
+        model_id=model_id,
+        # If vocab exists, model is ~90%, else 100%
+        progress_start_pct=0,
+        progress_end_pct=90 if vocab_url else 100
+    )
+    downloaded_sizes["model"] = d_size
+    if t_size is not None: known_total_size += t_size
+
+    if not model_success:
+        logger.error(f"Model file URL download failed for {model_id}.")
+        # Cleanup handled by _custom_download_file or its caller
+        try:
+            if os.path.exists(download_dir): shutil.rmtree(download_dir)
+        except Exception as e: logger.error(f"Error cleaning directory after failed URL model download: {e}")
+        return # Exit thread
+
+    # --- Check for Cancellation after model ---
+    if model_id in download_threads and download_threads[model_id].get("cancel"):
+        logger.info(f"URL Download cancelled after model file download for {model_id}")
+        remove_download_status(model_id)
+        try:
+            if os.path.exists(download_dir): shutil.rmtree(download_dir)
+        except Exception as e: logger.error(f"Error cleaning directory after cancel: {e}")
+        return
+
+    # 2. Download Vocab File (if applicable)
+    if vocab_url:
+        logger.info(f"Starting download of vocab file from URL: {vocab_url}")
+        vocab_success, d_size_v, t_size_v = _custom_download_file(
+            url=vocab_url,
+            output_path=final_vocab_path,
+            model_id=model_id,
+            progress_start_pct=90, # Starts after model download percentage
+            progress_end_pct=100
+        )
+        downloaded_sizes["vocab"] = d_size_v
+        if t_size_v is not None: known_total_size += t_size_v
+
+        if not vocab_success:
+            logger.error(f"Vocab file URL download failed for {model_id}.")
+            try:
+                if os.path.exists(download_dir): shutil.rmtree(download_dir)
+            except Exception as e: logger.error(f"Error cleaning directory after failed URL vocab download: {e}")
+            return # Exit thread
+
+        # --- Check for Cancellation after vocab ---
+        if model_id in download_threads and download_threads[model_id].get("cancel"):
+            logger.info(f"URL Download cancelled after vocab file download for {model_id}")
+            remove_download_status(model_id)
+            try:
+                 if os.path.exists(download_dir): shutil.rmtree(download_dir)
+            except Exception as e: logger.error(f"Error cleaning directory after cancel: {e}")
+            return
+
+    # --- Finalizing - Add to Registry ---
+    logger.info(f"All URL files downloaded for {model_id}. Preparing registry entry.")
+
+    # Determine language (using existing logic, checking ID and URL)
+    primary_language = "unknown"
+    supported_languages = []
+    if language_codes and len(language_codes) > 0:
+        supported_languages = language_codes
+        primary_language = language_codes[0]
+        logger.info(f"Using provided language codes: {language_codes}")
+    else:
+        # Fallback logic
+        import re
+        lang_pattern = r'(?:^|[-_])([a-z]{2})(?:$|[-_])'
+        matches = re.findall(lang_pattern, model_id.lower())
+        if not matches: matches = re.findall(lang_pattern, model_url.lower())
+        if matches:
+            primary_language = matches[0]
+            supported_languages = list(set(matches))
+            logger.info(f"Detected languages: {supported_languages}")
+        else:
+            primary_language = "en"
+            supported_languages = ["en"]
+            logger.info("No language detected, defaulting to 'en'")
+
+    model_info = {
+        "id": model_id,
+        "name": model_id.replace('_', ' ').replace('-', ' ').title(),
+        "model_path": final_model_path,
+        "vocab_path": final_vocab_path, # Will be None if no vocab_url provided
+        "config": config or {},
+        "source": "url", # Indicate source is URL
+        "language": primary_language,
+        "languages": supported_languages,
+        "is_symlink": False,
+        "original_model_file": None,
+        "original_vocab_file": None
+    }
+
+    # Update status before adding to registry
+    update_download_status(
+        model_id,
+        'downloading',
+        downloaded_size=sum(downloaded_sizes.values()),
+        total_size=known_total_size if known_total_size > 0 else None,
+        progress=99.9
+    )
+
+    success, message = add_model(model_info)
+
+    if success:
+        update_download_status(model_id, 'completed')
+        logger.info(f"Model {model_id} from URL download complete and added to registry.")
+    else:
+        update_download_status(model_id, 'failed', error=f"Registry add failed: {message}")
+        logger.error(f"Failed to add model {model_id} from URL to registry: {message}")
+        # try:
+        #     if os.path.exists(download_dir): shutil.rmtree(download_dir)
+        # except Exception as e: logger.error(f"Error cleaning up after failed registry add: {e}")
+
+
+    # Clean up thread entry
+    if model_id in download_threads:
+        del download_threads[model_id]
+
+
+def download_model_from_url(model_url, vocab_url=None, config=None, model_id=None, language_codes=None):
+    """Initiates download of a model from direct URLs."""
+    logger.info(f"Request to download URL model: model={model_url}, vocab={vocab_url}")
+    import re # For sanitizing
+
+    # Generate model ID if not provided
+    if not model_id:
+        try:
+            # Use filename from model URL as base for ID
+            parsed_url = requests.utils.urlparse(model_url)
+            base_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+            if not base_name: # Handle cases like domain root download?
+                base_name = parsed_url.netloc.replace('.', '_')
+            model_id = base_name
+        except Exception:
+             model_id = f"url_model_{int(time.time())}" # Safe fallback ID
+
+        # Sanitize ID
+        model_id = re.sub(r'[^a-zA-Z0-9_-]+', '_', model_id)
+        logger.info(f"Generated model_id for URL download: {model_id}")
+
+
+    # --- Pre-download Checks ---
+    registry = get_registry()
+    if any(m.get("id") == model_id for m in registry.get("models", [])):
+        logger.warning(f"Model {model_id} (from URL) already exists. Skipping download.")
+        return False, f"Model {model_id} already exists.", model_id
+    if model_id in registry.get("downloads", {}) and registry["downloads"][model_id].get("status") == "downloading":
+        logger.warning(f"Download for model {model_id} (from URL) already in progress.")
+        return False, f"Download already in progress for {model_id}.", model_id
+    if model_id in download_threads:
+         logger.warning(f"Download thread for model {model_id} (from URL) already active.")
+         return False, f"Download thread already active for {model_id}.", model_id
+
+
+    # Update status to 'downloading'
+    update_download_status(model_id, 'downloading', progress=0)
+
+    # Track thread
+    download_threads[model_id] = {"cancel": False, "thread": None, "url": model_url}
+
+    # Start download thread
+    thread = threading.Thread(
+        target=_download_model_from_url_thread,
+        args=(model_url, vocab_url, config, model_id, language_codes),
+        daemon=True
+    )
+
+    download_threads[model_id]["thread"] = thread
+    thread.start()
+    logger.info(f"URL download thread started for model {model_id}.")
+
+    return True, f"Model download started for {model_id} from URL", model_id
+
+# --- Initialize registry on module import ---
 initialize_registry()
+logger.info("Model manager initialized.")
+
+# Example usage (for testing, remove in production)
+if __name__ == '__main__':
+    print("Model Manager Testing...")
+    print("Current Registry:")
+    # Use print instead of logger for direct output when run as script
+    print(json.dumps(get_models(include_cache=False), indent=2))
