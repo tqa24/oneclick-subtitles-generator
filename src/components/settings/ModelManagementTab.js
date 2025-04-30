@@ -17,7 +17,8 @@ import LinkIcon from '@mui/icons-material/Link';
 import TuneIcon from '@mui/icons-material/Tune';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo } from '../../services/modelService';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { getModels, addModelFromHuggingFace, addModelFromUrl, deleteModel, getModelDownloadStatus, updateModelInfo, getModelStorageInfo, cancelModelDownload } from '../../services/modelService';
 import { invalidateModelsCache } from '../../services/modelAvailabilityService';
 import '../../styles/settings/customModelDialog.css';
 import ModelList, { LANGUAGE_NAMES } from './ModelList';
@@ -410,6 +411,42 @@ const ModelManagementTab = () => {
 
 
 
+  // Handle cancelling a model download
+  const handleCancelDownload = async (modelId) => {
+    try {
+      // Call API to cancel download
+      const response = await cancelModelDownload(modelId);
+
+      if (response.success) {
+        console.log(`Download cancelled for model ${modelId}`);
+
+        // Update downloads state to remove the cancelled download
+        setDownloads(prev => {
+          const newDownloads = { ...prev };
+          delete newDownloads[modelId];
+          return newDownloads;
+        });
+
+        // Show success message
+        setSnackbar({
+          open: true,
+          message: t('settings.modelManagement.downloadCancelled', 'Download cancelled successfully'),
+          severity: 'info'
+        });
+
+        // Refresh models to update the UI
+        await fetchModels();
+      }
+    } catch (err) {
+      console.error('Error cancelling model download:', err);
+      setSnackbar({
+        open: true,
+        message: err.message || t('settings.modelManagement.errorCancellingDownload', 'Error cancelling download'),
+        severity: 'error'
+      });
+    }
+  };
+
   // Handle closing snackbar
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({
@@ -483,12 +520,35 @@ const ModelManagementTab = () => {
                     <div className="download-status">
                       <CloudDownloadIcon fontSize="small" />
                       <span>{t('settings.modelManagement.downloading')}</span>
-                      <span>({downloads[model.id].progress.toFixed(1)}%)</span>
+                      <span>
+                        {downloads[model.id].downloaded_size !== undefined ? (
+                          <>
+                            ({(downloads[model.id].downloaded_size / (1024 * 1024)).toFixed(1)} MB
+                            {downloads[model.id].total_size !== undefined ?
+                              ` / ${(downloads[model.id].total_size / (1024 * 1024)).toFixed(1)} MB` :
+                              ''
+                            })
+                          </>
+                        ) : (
+                          <>({downloads[model.id].progress ? `${downloads[model.id].progress}%` : ''})</>
+                        )}
+                      </span>
+                      <button
+                        className="cancel-download-btn"
+                        onClick={() => handleCancelDownload(model.id)}
+                        title={t('settings.modelManagement.cancelDownload', 'Cancel Download')}
+                      >
+                        <CancelIcon fontSize="small" />
+                      </button>
                     </div>
                     <div className="download-progress">
                       <div
                         className="download-progress-bar"
-                        style={{ width: `${downloads[model.id].progress}%` }}
+                        style={{
+                          width: downloads[model.id].progress !== undefined
+                            ? `${downloads[model.id].progress}%`
+                            : '10%' // Default progress when no information is available
+                        }}
                       ></div>
                     </div>
                   </div>

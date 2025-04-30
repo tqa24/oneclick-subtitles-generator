@@ -191,6 +191,24 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   border-radius: 8px;
   background-color: rgba(var(--md-primary-rgb), 0.08);
   color: var(--md-primary);
+  position: relative;
+}
+
+.download-status .cancel-download-btn {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem;
+  height: auto;
+  min-width: 24px;
+  background-color: transparent;
+  border: none;
+  color: var(--md-error);
+}
+
+.download-status .cancel-download-btn:hover {
+  background-color: rgba(var(--md-error-rgb), 0.1);
 }
 
 .download-status.error {

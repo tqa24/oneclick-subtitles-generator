@@ -156,8 +156,8 @@ const AVAILABLE_MODELS = [
     "name": "F5-TTS Base Italian",
     "languages": ["it"],
     "author": "alien79",
-    "modelUrl": "https://huggingface.co/alien79/F5-TTS-italian/resolve/main/model_159600.safetensors",
-    "vocabUrl": "https://huggingface.co/alien79/F5-TTS-italian/resolve/main/vocab.txt",
+    "modelUrl": "https://huggingface.co/alien79/F5-TTS-italian/blob/main/model_159600.safetensors",
+    "vocabUrl": "https://huggingface.co/alien79/F5-TTS-italian/blob/main/vocab.txt",
     "config": {
       "dim": 1024,
       "depth": 22,
@@ -283,8 +283,8 @@ const AVAILABLE_MODELS = [
     "name": "EraX-Smile-Female-F5-V1.0",
     "languages": ["vi"],
     "author": "erax-ai",
-    "modelUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/resolve/main/model_420000.safetensors",
-    "vocabUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/resolve/main/vocab.txt",
+    "modelUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/blob/main/model/model_612000.safetensors",
+    "vocabUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/blob/main/model/vocab.txt",
     "config": { // Assuming standard 'base' config
       "dim": 1024,
       "depth": 22,
@@ -417,6 +417,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
   // Get download progress if available
   const getDownloadProgress = (modelId) => {
     if (downloadingModels[modelId] && downloadingModels[modelId].status === 'downloading') {
+      // Use the progress value directly from the server
       return downloadingModels[modelId].progress || 0;
     }
     return 0;
@@ -470,13 +471,29 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
                 <div className="download-progress">
                   <div
                     className="download-progress-bar"
-                    style={{ width: `${getDownloadProgress(model.id)}%` }}
+                    style={{
+                      width: downloadingModels[model.id] && downloadingModels[model.id].progress !== undefined
+                        ? `${downloadingModels[model.id].progress}%`
+                        : '10%' // Default progress when no information is available
+                    }}
                   ></div>
                 </div>
                 <div className="model-card-actions">
                   <div className="download-percentage">
                     <span className="spinner"></span>
-                    <span>{getDownloadProgress(model.id).toFixed(1)}%</span>
+                    <span>
+                      {downloadingModels[model.id] && downloadingModels[model.id].downloaded_size !== undefined ? (
+                        <>
+                          {(downloadingModels[model.id].downloaded_size / (1024 * 1024)).toFixed(1)} MB
+                          {downloadingModels[model.id].total_size !== undefined ?
+                            ` / ${(downloadingModels[model.id].total_size / (1024 * 1024)).toFixed(1)} MB` :
+                            ''
+                          }
+                        </>
+                      ) : (
+                        <>{getDownloadProgress(model.id) ? `${getDownloadProgress(model.id)}%` : ''}</>
+                      )}
+                    </span>
                   </div>
                   <button
                     className="cancel-download-btn"

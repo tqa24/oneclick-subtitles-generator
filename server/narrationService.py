@@ -579,14 +579,25 @@ def get_model_download_status(model_id):
     status = get_download_status(model_id)
 
     if status:
-        # Return the status directly, not nested under 'status'
-        return jsonify({
+        # Create response object with required fields
+        response = {
             'model_id': model_id,
             'status': status['status'],
-            'progress': status['progress'],
             'error': status['error'] if 'error' in status else None,
             'timestamp': status['timestamp']
-        })
+        }
+
+        # Add progress if available
+        if 'progress' in status:
+            response['progress'] = status['progress']
+
+        # Add size information if available
+        if 'downloaded_size' in status:
+            response['downloaded_size'] = status['downloaded_size']
+        if 'total_size' in status:
+            response['total_size'] = status['total_size']
+
+        return jsonify(response)
     else:
         return jsonify({
             'model_id': model_id,
