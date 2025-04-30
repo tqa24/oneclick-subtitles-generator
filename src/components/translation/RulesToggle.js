@@ -31,7 +31,7 @@ const RulesToggle = ({
             <input
               type="checkbox"
               id="include-rules"
-              checked={includeRules}
+              checked={rulesAvailable && !hasUserProvidedSubtitles ? includeRules : false}
               onChange={(e) => {
                 const value = e.target.checked;
                 onIncludeRulesChange(value);
