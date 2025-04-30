@@ -11,6 +11,7 @@ import '../styles/ModelDropdown.css';
  * @param {string} props.buttonClassName - Additional class name for the button
  * @param {string} props.label - Label to display on the button (optional)
  * @param {string} props.headerText - Text to display in the dropdown header
+ * @param {boolean} props.isTranslationSection - Whether this dropdown is used in the translation section
  * @returns {JSX.Element} - Rendered component
  */
 const ModelDropdown = ({
@@ -18,7 +19,8 @@ const ModelDropdown = ({
   selectedModel = 'gemini-2.0-flash',
   buttonClassName = '',
   label = '',
-  headerText
+  headerText,
+  isTranslationSection = false
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -30,7 +32,9 @@ const ModelDropdown = ({
     {
       id: 'gemini-2.5-pro-exp-03-25',
       name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
-      description: t('models.bestAccuracy', 'Best accuracy'),
+      description: isTranslationSection
+        ? t('translation.modelGemini25Pro', 'output length 65536 tokens (usually no splitting needed)')
+        : t('models.bestAccuracy', 'Best accuracy'),
       icon: <FiStar className="model-icon star-icon" />,
       color: 'var(--md-tertiary)',
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
@@ -38,7 +42,9 @@ const ModelDropdown = ({
     {
       id: 'gemini-2.5-flash-preview-04-17',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
-      description: t('models.smarterFaster', 'Smarter & faster'),
+      description: isTranslationSection
+        ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
+        : t('models.smarterFaster', 'Smarter & faster'),
       icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,
       color: 'var(--md-tertiary)',
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
@@ -46,7 +52,9 @@ const ModelDropdown = ({
     {
       id: 'gemini-2.0-flash',
       name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
-      description: t('models.balancedModel', 'Balanced'),
+      description: isTranslationSection
+        ? t('translation.modelGemini20Flash', 'output length 8192 tokens (splitting recommended)')
+        : t('models.balancedModel', 'Balanced'),
       icon: <FiZap className="model-icon zap-icon" />,
       color: 'var(--md-primary)',
       bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
@@ -54,7 +62,9 @@ const ModelDropdown = ({
     {
       id: 'gemini-2.0-flash-lite',
       name: t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite'),
-      description: t('models.fastestModel', 'Fastest'),
+      description: isTranslationSection
+        ? t('translation.modelGemini20FlashLite', 'output length 8192 tokens (splitting recommended)')
+        : t('models.fastestModel', 'Fastest'),
       icon: <FiCpu className="model-icon cpu-icon" />,
       color: 'var(--success-color)',
       bgColor: 'rgba(var(--success-color-rgb), 0.1)'
