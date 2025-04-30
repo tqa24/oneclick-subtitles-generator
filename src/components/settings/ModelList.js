@@ -120,8 +120,8 @@ const AVAILABLE_MODELS = [
     "name": "F5-TTS English German Polish",
     "languages": ["pl"],
     "author": "Gregniuki",
-    "modelUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/model_270000.safetensors", 
-    "vocabUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/vocab.txt", 
+    "modelUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/model_270000.safetensors",
+    "vocabUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/vocab.txt",
     "config": {
       "dim": 1024,
       "depth": 22,
@@ -374,17 +374,8 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
                   <div className="download-percentage">
                     <span className="spinner"></span>
                     <span>
-                      {downloadingModels[model.id] && downloadingModels[model.id].downloaded_size !== undefined ? (
-                        <>
-                          {(downloadingModels[model.id].downloaded_size / (1024 * 1024)).toFixed(1)} MB
-                          {downloadingModels[model.id].total_size !== undefined ?
-                            ` / ${(downloadingModels[model.id].total_size / (1024 * 1024)).toFixed(1)} MB` :
-                            ''
-                          }
-                        </>
-                      ) : (
-                        <>{getDownloadProgress(model.id) ? `${getDownloadProgress(model.id)}%` : ''}</>
-                      )}
+                      {/* Always show percentage format only */}
+                      {getDownloadProgress(model.id) ? `${getDownloadProgress(model.id)}%` : ''}
                     </span>
                   </div>
                   <button

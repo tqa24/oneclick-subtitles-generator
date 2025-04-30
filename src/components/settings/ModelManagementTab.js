@@ -595,17 +595,8 @@ const ModelManagementTab = () => {
                       <CloudDownloadIcon fontSize="small" />
                       <span>{t('settings.modelManagement.downloading')}</span>
                       <span>
-                        {downloads[model.id].downloaded_size !== undefined ? (
-                          <>
-                            ({(downloads[model.id].downloaded_size / (1024 * 1024)).toFixed(1)} MB
-                            {downloads[model.id].total_size !== undefined ?
-                              ` / ${(downloads[model.id].total_size / (1024 * 1024)).toFixed(1)} MB` :
-                              ''
-                            })
-                          </>
-                        ) : (
-                          <>({downloads[model.id].progress ? `${downloads[model.id].progress}%` : ''})</>
-                        )}
+                        {/* Always show percentage format only */}
+                        ({downloads[model.id].progress ? `${downloads[model.id].progress}%` : ''})
                       </span>
                       <button
                         className="cancel-download-btn"
