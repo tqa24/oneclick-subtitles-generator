@@ -10,24 +10,6 @@ import '../../styles/settings/modelManagement.css';
 // List of available models from F5-TTS SHARED.md
 const AVAILABLE_MODELS = [
   {
-    "id": "f5tts-ar-ibrahim",
-    "name": "F5-TTS Arabic (MSA)",
-    "languages": ["ar"],
-    "author": "IbrahimSalah",
-    "modelUrl": "https://huggingface.co/IbrahimSalah/F5-TTS-Arabic/resolve/main/model_750000.safetensors",
-    "vocabUrl": "https://huggingface.co/IbrahimSalah/F5-TTS-Arabic/resolve/main/vocab.txt",
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-  {
     "id": "f5tts-de-marduk",
     "name": "F5-TTS German (marduk-ra)",
     "languages": ["de"],
@@ -62,29 +44,11 @@ const AVAILABLE_MODELS = [
     }
   },
   {
-    "id": "f5tts-base", // Primarily zh, en
-    "name": "F5-TTS Base",
-    "languages": ["zh", "en"],
-    "author": "F5-TTS",
-    "modelUrl": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/model_1200000.safetensors",
-    "vocabUrl": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_Base/vocab.txt",
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-    {
     "id": "f5tts-base-es",
     "name": "F5-TTS Base Spanish",
     "languages": ["es"],
     "author": "jpgallegoar",
-    "modelUrl": "https://huggingface.co/jpgallegoar/F5-Spanish/resolve/main/model_1200000.safetensors",
+    "modelUrl": "https://huggingface.co/jpgallegoar/F5-Spanish/resolve/main/model_1250000.safetensors",
     "vocabUrl": "https://huggingface.co/jpgallegoar/F5-Spanish/resolve/main/vocab.txt",
     "config": {
       "dim": 1024,
@@ -116,24 +80,6 @@ const AVAILABLE_MODELS = [
     }
   },
   {
-    "id": "f5tts-base-fr",
-    "name": "F5-TTS Base French",
-    "languages": ["fr"],
-    "author": "RASPIAUDIO",
-    "modelUrl": "https://huggingface.co/RASPIAUDIO/F5-French-MixedSpeakers-reduced/resolve/main/model_last_reduced.pt",
-    "vocabUrl": "https://huggingface.co/RASPIAUDIO/F5-French-MixedSpeakers-reduced/resolve/main/vocab.txt",
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-    {
     "id": "f5tts-small-hi",
     "name": "F5-TTS Small Hindi",
     "languages": ["hi"],
@@ -170,48 +116,12 @@ const AVAILABLE_MODELS = [
     }
   },
   {
-    "id": "f5tts-base-ja",
-    "name": "F5-TTS Base Japanese",
-    "languages": ["ja"],
-    "author": "Jmica",
-    "modelUrl": "https://huggingface.co/Jmica/F5TTS/resolve/main/JA_21999120/model_21999120.pt",
-    "vocabUrl": "https://huggingface.co/Jmica/F5TTS/resolve/main/JA_21999120/vocab_japanese.txt",
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-  {
-    "id": "f5tts-pl-en-de", // Primarily pl
-    "name": "F5-TTS Pl/En/De",
-    "languages": ["pl", "en", "de"],
+    "id": "f5tts-pl-en-de",
+    "name": "F5-TTS English German Polish",
+    "languages": ["pl"],
     "author": "Gregniuki",
-    "modelUrl": "https://huggingface.co/Gregniuki/f5-tts_Polish_English_German/resolve/main/model_75000.safetensors", // Needs verification if this is the correct/latest model file
-    "vocabUrl": "https://huggingface.co/Gregniuki/f5-tts_Polish_English_German/resolve/main/vocab.txt", // Needs verification
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-  {
-    "id": "f5tts-pt-br-firstpixel",
-    "name": "F5-TTS Portuguese (Brazilian)",
-    "languages": ["pt-br"],
-    "author": "firstpixel",
-    "modelUrl": "https://huggingface.co/firstpixel/F5-TTS-pt-br/resolve/main/model.safetensors", // Placeholder filename, needs verification
-    "vocabUrl": "https://huggingface.co/firstpixel/F5-TTS-pt-br/resolve/main/vocab.txt", // Placeholder filename, needs verification
+    "modelUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/model_270000.safetensors", 
+    "vocabUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/vocab.txt", 
     "config": {
       "dim": 1024,
       "depth": 22,
@@ -227,7 +137,7 @@ const AVAILABLE_MODELS = [
     "id": "f5tts-base-ru",
     "name": "F5-TTS Base Russian",
     "languages": ["ru"],
-    "author": "HotDro4illa", // Note: User might be 'hotstone228' based on original list's URL
+    "author": "hotstone228",
     "modelUrl": "https://huggingface.co/hotstone228/F5-TTS-Russian/resolve/main/model_last.safetensors",
     "vocabUrl": "https://huggingface.co/hotstone228/F5-TTS-Russian/resolve/main/vocab.txt",
     "config": {
