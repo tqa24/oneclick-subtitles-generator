@@ -6,6 +6,7 @@ import requests
 import time
 import threading
 from pathlib import Path
+import re
 
 # Dictionary to track download threads and cancellation flags
 download_threads = {}

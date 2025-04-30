@@ -171,24 +171,6 @@ const AVAILABLE_MODELS = [
     }
   },
   {
-    "id": "f5tts-vi-toandev",
-    "name": "F5-TTS Vietnamese (toandev)",
-    "languages": ["vi"],
-    "author": "toandev",
-    "modelUrl": "https://huggingface.co/yukiakai/F5-TTS-Vietnamese/blob/main/model_85044.safetensors",
-    "vocabUrl": "https://huggingface.co/yukiakai/F5-TTS-Vietnamese/blob/main/vocab.txt",
-    "config": {
-      "dim": 1024,
-      "depth": 22,
-      "heads": 16,
-      "ff_mult": 2,
-      "text_dim": 512,
-      "text_mask_padding": false,
-      "conv_layers": 4,
-      "pe_attn_head": 1
-    }
-  },
-  {
     "id": "erax-smile-female-f5-v1",
     "name": "EraX-Smile-Female-F5-V1.0",
     "languages": ["vi"],

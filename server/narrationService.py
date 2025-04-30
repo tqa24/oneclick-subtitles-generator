@@ -491,10 +491,10 @@ def add_new_model():
 
             success, message, downloaded_model_id = download_model_from_hf(
                 repo_id=repo_id,
-                model_filename=model_path,
-                vocab_filename=vocab_path, # Pass None if not provided
+                model_path=model_path,
+                vocab_path=vocab_path, # Pass None if not provided
                 config=config,
-                preferred_model_id=model_id_req,
+                model_id=model_id_req,
                 language_codes=language_codes
             )
 
