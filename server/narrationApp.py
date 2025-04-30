@@ -4,9 +4,9 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# Add the current directory to the path so we can import narrationService
+# Add the current directory to the path so we can import narration_service
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from narrationService import narration_bp
+from narration_service import narration_bp
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
