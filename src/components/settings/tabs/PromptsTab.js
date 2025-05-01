@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../../../services/geminiService';
-import ContentTypeFloatingCard from '../utils/ContentTypeFloatingCard';
 
 const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
   const { t } = useTranslation();
@@ -12,7 +11,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
   const [viewingPreset, setViewingPreset] = useState(null);
   const [targetLanguage, setTargetLanguage] = useState('');
   const textareaRef = useRef(null);
-  const floatingCardRef = useRef(null);
 
   // Handle selecting a preset
   const handleSelectPreset = (preset, customLanguage = '') => {
@@ -288,7 +286,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
       <div className="transcription-prompt-setting">
         <h4>{t('settings.transcriptionPrompt', 'Transcription Prompt')}</h4>
         <p className="setting-description">
-          {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder (shown as a floating icon) will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
+          {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
         </p>
         <div className="prompt-editor-container">
           <textarea
@@ -442,11 +440,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             // No placeholder needed since we're pre-filling with the default prompt
             rows={8}
             className="transcription-prompt-textarea"
-          />
-          <ContentTypeFloatingCard
-            textareaRef={textareaRef}
-            floatingCardRef={floatingCardRef}
-            transcriptionPrompt={transcriptionPrompt}
           />
         </div>
         <div className="prompt-actions">
