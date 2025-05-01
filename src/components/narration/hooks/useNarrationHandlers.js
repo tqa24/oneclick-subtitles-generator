@@ -321,7 +321,13 @@ const useNarrationHandlers = ({
 
           // Fetch the audio file
           const audioUrl = getAudioUrl(result.filename);
-          const response = await fetch(audioUrl);
+          const response = await fetch(audioUrl, {
+            mode: 'cors',
+            credentials: 'include',
+            headers: {
+              'Accept': 'audio/*'
+            }
+          });
           const audioBlob = await response.blob();
 
           // Transcribe the audio
@@ -620,8 +626,11 @@ const useNarrationHandlers = ({
       console.log('Fetching:', downloadUrl);
       const response = await fetch(downloadUrl, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/octet-stream'
         },
         body: JSON.stringify({ filenames })
       });
@@ -723,8 +732,11 @@ const useNarrationHandlers = ({
       console.log('Fetching:', downloadUrl);
       const response = await fetch(downloadUrl, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'audio/wav'
         },
         body: JSON.stringify({ narrations: narrationData })
       });

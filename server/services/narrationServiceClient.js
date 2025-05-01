@@ -23,7 +23,12 @@ const checkService = async (maxAttempts = 20, delayMs = 10000) => {
       const timeoutId = setTimeout(() => controller.abort(), 2000);
 
       const response = await fetch(`http://localhost:${NARRATION_PORT}/api/narration/status`, {
-        signal: controller.signal
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
       clearTimeout(timeoutId);
@@ -69,7 +74,13 @@ const fetchAudioFile = async (filename) => {
   const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration/audio/${filename}`;
   console.log(`Proxying to: ${narrationUrl}`);
 
-  const response = await fetch(narrationUrl);
+  const response = await fetch(narrationUrl, {
+    mode: 'cors',
+    credentials: 'include',
+    headers: {
+      'Accept': '*/*'
+    }
+  });
 
   if (!response.ok) {
     console.error(`Error from narration service: ${response.status}`);
@@ -81,7 +92,7 @@ const fetchAudioFile = async (filename) => {
 
   // Get the binary data
   const buffer = await response.arrayBuffer();
-  
+
   return {
     buffer: Buffer.from(buffer),
     contentType
@@ -104,8 +115,11 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
     // Check the content type of the response to determine how to handle it
     const headResponse = await fetch(narrationUrl, {
       method: 'HEAD',
+      mode: 'cors',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': '*/*'
       }
     }).catch(() => null);
 
@@ -120,6 +134,8 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
       // Forward the request to the F5-TTS service with streaming response
       const streamResponse = await fetch(narrationUrl, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream'
@@ -188,8 +204,11 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
     // Forward the request to the F5-TTS service
     const response = await fetch(narrationUrl, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         reference_audio,
@@ -223,10 +242,21 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
  */
 const proxyRequest = async (url, options) => {
   const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration${url}`;
-  
+
   try {
-    const response = await fetch(narrationUrl, options);
-    
+    // Add CORS options to the request
+    const corsOptions = {
+      ...options,
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        ...options.headers,
+        'Accept': options.headers?.['Accept'] || '*/*'
+      }
+    };
+
+    const response = await fetch(narrationUrl, corsOptions);
+
     // Check if the response is JSON
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {

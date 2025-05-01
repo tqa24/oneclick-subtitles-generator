@@ -16,7 +16,17 @@ logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app)
+# Configure CORS to allow requests from the frontend origin with credentials
+CORS(app, resources={r"/*": {"origins": "http://localhost:3008", "supports_credentials": True}}, allow_headers=["Content-Type", "Authorization", "Accept"])
+
+# Add CORS headers to all responses
+@app.after_request
+def add_cors_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3008')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
 
 # Create directories
 NARRATION_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration')

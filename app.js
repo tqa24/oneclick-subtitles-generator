@@ -33,14 +33,16 @@ ensureDirectories();
 app.use(cors({
   origin: CORS_ORIGIN,
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
+  credentials: true
 }));
 
 // Add CORS headers to all responses for health endpoint
 app.use('/api/health', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
@@ -50,9 +52,10 @@ app.use(express.json({ limit: '500mb' }));
 // Serve static directories with CORS headers
 const staticOptions = {
   setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Origin', CORS_ORIGIN);
     res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+    res.set('Access-Control-Allow-Credentials', 'true');
   }
 };
 
@@ -65,9 +68,10 @@ app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public'
 
 // Add CORS headers to all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
