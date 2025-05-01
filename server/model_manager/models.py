@@ -236,10 +236,10 @@ def delete_model(model_id, delete_cache=False):
                  logger.error(f"Error deleting vocab file {vocab_path_to_delete}: {e}")
                  deleted_files_summary.append(f"Error deleting vocab file: {e}")
 
-        # 2. Delete the model's directory within the project's models/f5_tts folder
+        # 2. Delete the model's directory within the models/f5_tts folder
         try:
-            project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            project_model_dir = os.path.join(project_dir, "models", "f5_tts", model_id)
+            from .constants import MODELS_DIR
+            project_model_dir = os.path.join(MODELS_DIR, model_id)
             if os.path.exists(project_model_dir) and os.path.isdir(project_model_dir):
                  logger.info(f"Deleting project model directory: {project_model_dir}")
                  try:

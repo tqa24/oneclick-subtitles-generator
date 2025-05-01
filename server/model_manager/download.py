@@ -56,12 +56,12 @@ def cancel_download(model_id):
     else:
         logger.info(f"No download status found in registry for {model_id} during cancellation.")
 
-    # 3. Attempt to clean up files (project dir and cache)
+    # 3. Attempt to clean up files (models dir and cache)
     cleanup_paths = []
     try:
-        # Project's models directory
-        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        project_model_dir = os.path.join(project_dir, "models", "f5_tts", model_id)
+        # Models directory
+        from .constants import MODELS_DIR
+        project_model_dir = os.path.join(MODELS_DIR, model_id)
         if os.path.exists(project_model_dir):
             cleanup_paths.append(project_model_dir)
 

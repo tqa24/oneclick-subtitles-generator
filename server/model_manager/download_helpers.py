@@ -146,12 +146,11 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
 
     logger.info(f"Starting download thread for model_id: {model_id} from repo: {repo_id}")
 
-    # Use the project's models/f5_tts directory
+    # Use the models/f5_tts directory
     download_dir = None
     try:
-        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        target_base_dir = os.path.join(project_dir, "models", "f5_tts")
-        download_dir = os.path.join(target_base_dir, model_id) # Specific dir for this model
+        from .constants import MODELS_DIR
+        download_dir = os.path.join(MODELS_DIR, model_id) # Specific dir for this model
         logger.info(f"Target download directory: {download_dir}")
         os.makedirs(download_dir, exist_ok=True)
     except Exception as e:
@@ -350,12 +349,11 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
     logger.info(f"Starting URL download thread for model_id: {model_id}")
 
-    # Setup download directory within project structure
+    # Setup download directory within models/f5_tts structure
     download_dir = None
     try:
-        project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        target_base_dir = os.path.join(project_dir, "models", "f5_tts")
-        download_dir = os.path.join(target_base_dir, model_id)
+        from .constants import MODELS_DIR
+        download_dir = os.path.join(MODELS_DIR, model_id)
         logger.info(f"Target URL download directory: {download_dir}")
         os.makedirs(download_dir, exist_ok=True)
     except Exception as e:
