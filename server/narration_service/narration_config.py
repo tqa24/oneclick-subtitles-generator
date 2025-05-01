@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # Use absolute path relative to this file's location
 SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
-APP_ROOT_DIR = os.path.dirname(SERVICE_DIR)
+APP_ROOT_DIR = os.path.dirname(os.path.dirname(SERVICE_DIR))  # Go up two levels to get to the root
 NARRATION_DIR = os.path.join(APP_ROOT_DIR, 'narration')
 REFERENCE_AUDIO_DIR = os.path.join(NARRATION_DIR, 'reference')
 OUTPUT_AUDIO_DIR = os.path.join(NARRATION_DIR, 'output')

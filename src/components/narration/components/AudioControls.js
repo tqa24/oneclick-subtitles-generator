@@ -92,7 +92,7 @@ const AudioControls = ({
                 ) : referenceAudio.filename ? (
                   <audio
                     controls
-                    src={`${SERVER_URL}/narration/audio/${referenceAudio.filename}`}
+                    src={`${SERVER_URL}/api/narration/audio/${referenceAudio.filename}`}
                     className="audio-player"
                   >
                     {t('narration.audioNotSupported', 'Your browser does not support the audio element.')}

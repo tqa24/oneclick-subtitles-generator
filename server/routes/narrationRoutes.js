@@ -1,0 +1,185 @@
+/**
+ * Routes for narration-related endpoints
+ */
+
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const narrationController = require('../controllers/narrationController');
+const narrationServiceClient = require('../services/narrationServiceClient');
+
+// Ensure narration directories exist
+narrationController.ensureNarrationDirectories();
+
+// Import narration directory from config
+const { NARRATION_DIR } = require('../config');
+
+// Set up multer for file uploads
+const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
+const upload = multer({ dest: REFERENCE_AUDIO_DIR });
+
+// Serve narration audio files
+router.get('/audio/:filename', narrationController.serveAudioFile);
+
+// Download all narration audio files as a zip
+router.post('/download-all', express.json(), narrationController.downloadAllAudio);
+
+// Download aligned narration audio (one file)
+router.post('/download-aligned', express.json(), narrationController.downloadAlignedAudio);
+
+// Record reference audio
+router.post('/record-reference', upload.single('audio_data'), narrationController.recordReference);
+
+// Upload reference audio
+router.post('/upload-reference', upload.single('file'), narrationController.uploadReference);
+
+// Generate narration
+router.post('/generate', narrationController.generateNarration);
+
+// Get narration service status
+router.get('/status', narrationController.getNarrationStatus);
+
+// Clear narration output files
+router.post('/clear-output', narrationController.clearOutput);
+
+// Proxy all other narration requests to the Python service
+router.use('/', async (req, res, next) => {
+  // Skip endpoints we handle directly
+  if (req.url === '/status' || req.url === '/download-all' || req.url === '/download-aligned' ||
+      req.url === '/generate' || req.url === '/record-reference' || req.url === '/upload-reference' ||
+      req.url === '/clear-output' || req.url.startsWith('/audio/')) {
+    return next();
+  }
+
+  console.log(`Proxying ${req.method} request to narration service: ${req.url}`);
+
+  // Check if the narration service is available
+  const serviceStatus = await narrationServiceClient.checkService();
+  if (!serviceStatus.available) {
+    console.log(`Narration service not available, returning fallback response for ${req.url}`);
+    return res.status(503).json({
+      success: false,
+      error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
+    });
+  }
+
+  // Special handling for multipart form data (file uploads)
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    console.log('Handling multipart form data request');
+    console.log('Request URL:', req.url);
+    console.log('Request method:', req.method);
+    console.log('Request headers:', req.headers);
+
+    // Create a proxy request
+    const http = require('http');
+    const narrationUrl = `http://localhost:${narrationServiceClient.getNarrationPort()}/api/narration${req.url}`;
+    const proxyReq = http.request(narrationUrl, {
+      method: req.method,
+      headers: req.headers
+    });
+
+    // Handle proxy response
+    proxyReq.on('response', (proxyRes) => {
+      console.log('Received proxy response:', proxyRes.statusCode);
+      console.log('Proxy response headers:', proxyRes.headers);
+
+      // Copy status and headers
+      res.status(proxyRes.statusCode);
+      Object.keys(proxyRes.headers).forEach(key => {
+        res.setHeader(key, proxyRes.headers[key]);
+      });
+
+      // Collect response data
+      let responseData = [];
+      proxyRes.on('data', (chunk) => {
+        console.log('Received chunk of size:', chunk.length);
+        responseData.push(chunk);
+      });
+
+      proxyRes.on('end', () => {
+        const responseBody = Buffer.concat(responseData);
+        console.log('Response complete, total size:', responseBody.length);
+
+        // Try to parse as JSON for logging
+        if (proxyRes.headers['content-type']?.includes('application/json')) {
+          try {
+            const jsonResponse = JSON.parse(responseBody.toString());
+            console.log('JSON response:', jsonResponse);
+          } catch (error) {
+            console.error('Error parsing JSON response:', error);
+            console.log('Response body (first 200 chars):', responseBody.toString().substring(0, 200));
+          }
+        }
+
+        res.end(responseBody);
+      });
+    });
+
+    // Handle proxy errors
+    proxyReq.on('error', (error) => {
+      console.error('Error proxying multipart request:', error);
+      res.status(502).json({
+        error: 'Failed to connect to narration service',
+        message: error.message
+      });
+    });
+
+    // Pipe the request to the proxy
+    req.pipe(proxyReq);
+    return;
+  }
+
+  // For other requests (JSON, GET, etc.)
+  try {
+    const options = {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        'host': `localhost:${narrationServiceClient.getNarrationPort()}`
+      }
+    };
+
+    // Forward the request body for POST/PUT requests with JSON data
+    if (['POST', 'PUT'].includes(req.method) && req.headers['content-type']?.includes('application/json')) {
+      options.body = JSON.stringify(req.body);
+    }
+
+    // Handle audio file requests (GET requests to /audio/...)
+    if (req.method === 'GET' && req.url.startsWith('/audio/')) {
+      try {
+        const audioData = await narrationServiceClient.fetchAudioFile(req.url.replace('/audio/', ''));
+
+        // Set content type if available
+        if (audioData.contentType) {
+          res.setHeader('Content-Type', audioData.contentType);
+        }
+
+        // Send the audio data
+        res.send(audioData.buffer);
+      } catch (error) {
+        console.error('Error proxying audio file:', error);
+        res.status(502).json({ error: 'Failed to fetch audio file' });
+      }
+      return;
+    }
+
+    // Forward the request to the narration service
+    const data = await narrationServiceClient.proxyRequest(req.url, options);
+
+    // Send the response
+    if (typeof data === 'string') {
+      res.send(data);
+    } else {
+      res.json(data);
+    }
+  } catch (error) {
+    console.error('Error proxying to narration service:', error);
+    res.status(502).json({
+      error: 'Failed to connect to narration service',
+      message: error.message
+    });
+  }
+});
+
+module.exports = router;
