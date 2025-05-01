@@ -78,8 +78,8 @@ app.use((req, res, next) => {
 // Import adm-zip for creating zip files
 const AdmZip = require('adm-zip');
 
-// Serve narration audio files directly
-app.get('/narration/audio/:filename', (req, res) => {
+// Serve narration audio files by proxying to the narration service
+app.get('/narration/audio/:filename', async (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(REFERENCE_AUDIO_DIR, filename);
   const outputPath = path.join(OUTPUT_AUDIO_DIR, filename);
@@ -87,6 +87,7 @@ app.get('/narration/audio/:filename', (req, res) => {
   console.log(`Serving audio file: ${filename}`);
   console.log(`Checking paths: ${filePath} or ${outputPath}`);
 
+  // First try to serve directly from the filesystem for better performance
   // Check if file exists in reference directory
   if (fs.existsSync(filePath)) {
     console.log(`Serving from reference directory: ${filePath}`);
@@ -99,9 +100,42 @@ app.get('/narration/audio/:filename', (req, res) => {
     return res.sendFile(outputPath);
   }
 
-  // File not found
-  console.log(`Audio file not found: ${filename}`);
-  res.status(404).send('Audio file not found');
+  // If file not found locally, proxy the request to the narration service
+  console.log(`Audio file not found locally, proxying to narration service: ${filename}`);
+
+  try {
+    const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration/audio/${filename}`;
+    console.log(`Proxying to: ${narrationUrl}`);
+
+    const response = await fetch(narrationUrl);
+
+    if (!response.ok) {
+      console.error(`Error from narration service: ${response.status}`);
+      return res.status(response.status).send('Audio file not found');
+    }
+
+    // Copy status and headers
+    res.status(response.status);
+    for (const [key, value] of response.headers.entries()) {
+      res.setHeader(key, value);
+    }
+
+    // Stream the binary data
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+
+    // After successfully serving from the narration service, copy the file locally for future requests
+    try {
+      const audioData = Buffer.from(buffer);
+      fs.writeFileSync(outputPath, audioData);
+      console.log(`Cached audio file to: ${outputPath}`);
+    } catch (cacheError) {
+      console.error(`Error caching audio file: ${cacheError.message}`);
+    }
+  } catch (error) {
+    console.error(`Error proxying audio file: ${error.message}`);
+    res.status(502).send('Failed to fetch audio file from narration service');
+  }
 });
 
 // Download all narration audio files as a zip
