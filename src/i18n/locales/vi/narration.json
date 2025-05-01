@@ -40,6 +40,7 @@
   "pause": "Tạm dừng",
   "download": "Tải xuống",
   "downloadAll": "Tải xuống tất cả",
+  "downloadAligned": "Tải xuống như sắp xếp trên timeline",
   "failed": "Tạo thất bại",
   "noReferenceError": "Vui lòng thiết lập âm thanh tham chiếu bằng một trong các tùy chọn trên",
   "noSubtitlesError": "Không có phụ đề để tạo thuyết minh",
