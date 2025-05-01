@@ -22,7 +22,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
       setTranscriptionPrompt(preset);
     } else {
       // If it's the translation preset, replace the target language placeholder
-      if (preset.id === 'translate-vietnamese' && customLanguage) {
+      if (preset.id === 'translate-directly' && customLanguage) {
         // Replace 'TARGET_LANGUAGE' with the custom language in the prompt
         const updatedPrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage);
         setTranscriptionPrompt(updatedPrompt);
@@ -78,7 +78,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                  viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
                  viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                  viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                 viewingPreset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                 viewingPreset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
                  viewingPreset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
                  viewingPreset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                  viewingPreset.title}
@@ -92,13 +92,13 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             </div>
             <div className="preset-view-body">
               <pre className="preset-full-text">
-                {viewingPreset.id === 'translate-vietnamese' && targetLanguage.trim()
+                {viewingPreset.id === 'translate-directly' && targetLanguage.trim()
                   ? viewingPreset.prompt.replace(/TARGET_LANGUAGE/g, targetLanguage)
                   : viewingPreset.prompt}
               </pre>
             </div>
             <div className="preset-view-footer">
-              {viewingPreset.id === 'translate-vietnamese' ? (
+              {viewingPreset.id === 'translate-directly' ? (
                 <div className="translation-language-input-modal">
                   <input
                     type="text"
@@ -159,12 +159,12 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                    preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
                    preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                    preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                   preset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                   preset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
                    preset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
                    preset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                    preset.title}
                 </h5>
-                {preset.id === 'translate-vietnamese' ? (
+                {preset.id === 'translate-directly' ? (
                   <>
                     <div className="translation-language-input">
                       <input
@@ -192,7 +192,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                 >
                   {t('settings.viewPreset', 'View')}
                 </button>
-                {preset.id === 'translate-vietnamese' ? (
+                {preset.id === 'translate-directly' ? (
                   <button
                     className="use-preset-btn"
                     onClick={() => handleSelectPreset(preset, targetLanguage)}
