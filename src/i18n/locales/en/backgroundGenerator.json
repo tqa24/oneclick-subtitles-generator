@@ -18,7 +18,7 @@
   "generateImageTooltip": "Generate images using the same prompt",
   "generatingImage": "Generating...",
   "downloadImage": "Download",
-  "downloadAllImages": "Download All",
+  "downloadAllImages": "All",
   "generationFailed": "Generation failed",
   "images": "images",
   "uniqueImages": "images",
