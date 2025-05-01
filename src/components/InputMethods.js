@@ -26,6 +26,13 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
   // Update pill position when active tab changes
   useEffect(() => {
     if (tabsRef.current) {
+      // Reset wasActive and lastActive attributes on all tabs when active tab changes programmatically
+      const tabButtons = tabsRef.current.querySelectorAll('.tab-btn');
+      tabButtons.forEach(tab => {
+        tab.dataset.wasActive = 'false';
+        tab.dataset.lastActive = 'false';
+      });
+
       // Small delay to ensure the active class is applied
       setTimeout(() => {
         initTabPillAnimation('.input-tabs');

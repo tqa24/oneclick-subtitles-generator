@@ -10,7 +10,7 @@
   scrollbar-width: none; /* For Firefox */
   -ms-overflow-style: none; /* For Internet Explorer and Edge */
   padding: 0px 24px;
-  min-height: 48px; /* Ensure consistent height */
+  min-height: 55px; /* Ensure consistent height */
 }
 
 .input-tabs::-webkit-scrollbar {
@@ -26,13 +26,13 @@
 .input-tabs::before {
   content: '';
   position: absolute;
-  height: 36px;
-  width: var(--pill-width);
-  left: var(--pill-left);
+  height: 45px;
+  width: calc(var(--pill-width) + 40px);
+  left: calc(var(--pill-left) - 20px);
   top: 50%;
   transform: translateY(-50%);
   background-color: rgba(var(--md-primary-container-rgb), 0.5);
-  border-radius: 20px;
+  border-radius: 48px;
   z-index: 0;
   box-shadow: 0 2px 8px rgba(var(--md-primary-rgb), 0.15),
               0 1px 3px rgba(var(--md-primary-rgb), 0.1),
@@ -79,7 +79,7 @@
 /* Material Design 3 active state for tab buttons */
 .tab-btn.active {
   color: var(--md-on-primary-container);
-  font-weight: 600;
+  font-weight: 1000;
   opacity: 1;
   transform: scale(1.2);
   letter-spacing: 0.2px; /* Slightly increased letter spacing for emphasis */

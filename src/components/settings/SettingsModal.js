@@ -54,6 +54,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Update pill position when active tab changes
   useEffect(() => {
     if (tabsRef.current) {
+      // Reset wasActive and lastActive attributes on all tabs when active tab changes programmatically
+      const tabButtons = tabsRef.current.querySelectorAll('.settings-tab');
+      tabButtons.forEach(tab => {
+        tab.dataset.wasActive = 'false';
+        tab.dataset.lastActive = 'false';
+      });
+
       // Small delay to ensure the active class is applied
       setTimeout(() => {
         initSettingsTabPillAnimation('.settings-tabs');
