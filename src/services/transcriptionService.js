@@ -142,7 +142,7 @@ export const transcribeAudio = async (audioBlob) => {
 
     // Prepare request data for transcription
     const requestData = {
-      model: "gemini-2.5-flash-preview-04-17",
+      model: "gemini-2.0-flash-lite",
       contents: [
         {
           role: "user",

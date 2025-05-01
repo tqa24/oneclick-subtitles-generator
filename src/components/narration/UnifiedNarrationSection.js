@@ -51,7 +51,6 @@ const UnifiedNarrationSection = ({
   const [segmentEndTime, setSegmentEndTime] = useState('');
   const [autoRecognize, setAutoRecognize] = useState(true); // Default to true
   const [isRecognizing, setIsRecognizing] = useState(false);
-  const [languageWarning, setLanguageWarning] = useState(false);
 
   // Narration Generation state
   const [isAvailable, setIsAvailable] = useState(false);
@@ -269,7 +268,6 @@ const UnifiedNarrationSection = ({
     setIsRecording,
     setIsExtractingSegment,
     setIsRecognizing,
-    setLanguageWarning,
     setError,
     autoRecognize,
     segmentStartTime,
@@ -356,7 +354,6 @@ const UnifiedNarrationSection = ({
         autoRecognize={autoRecognize}
         setAutoRecognize={setAutoRecognize}
         isRecognizing={isRecognizing}
-        languageWarning={languageWarning}
         referenceText={referenceText}
         setReferenceText={setReferenceText}
         clearReferenceAudio={clearReferenceAudio}
