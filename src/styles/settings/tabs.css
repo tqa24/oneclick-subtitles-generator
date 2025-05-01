@@ -138,16 +138,4 @@
 
 .settings-tab-content.active {
   display: block;
-  animation: settingsContentFadeIn var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
-}
-
-@keyframes settingsContentFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }

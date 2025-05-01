@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/SettingsModal.css';
 import '../../styles/settings/checkbox-fix.css';
+import '../../styles/components/tab-content-animations.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT } from '../../services/geminiService';
 import { getClientCredentials, hasValidTokens } from '../../services/youtubeApiService';
 import LanguageSelector from '../LanguageSelector';
@@ -32,6 +33,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Reference to the tabs container
   const tabsRef = useRef(null);
 
+  // State for tracking tab transitions
+  const [previousTab, setPreviousTab] = useState(null);
+  const [animationDirection, setAnimationDirection] = useState('center');
+
   // Theme state
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
@@ -61,12 +66,34 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         tab.dataset.lastActive = 'false';
       });
 
+      // Determine animation direction based on tab order
+      if (previousTab) {
+        const tabOrder = ['api-keys', 'video-processing', 'prompts', 'cache', 'model-management', 'about'];
+        const prevIndex = tabOrder.indexOf(previousTab);
+        const currentIndex = tabOrder.indexOf(activeTab);
+
+        if (prevIndex !== -1 && currentIndex !== -1) {
+          if (prevIndex < currentIndex) {
+            setAnimationDirection('left');
+          } else if (prevIndex > currentIndex) {
+            setAnimationDirection('right');
+          } else {
+            setAnimationDirection('center');
+          }
+        } else {
+          setAnimationDirection('center');
+        }
+      }
+
+      // Update previous tab for next change
+      setPreviousTab(activeTab);
+
       // Small delay to ensure the active class is applied
       setTimeout(() => {
         initSettingsTabPillAnimation('.settings-tabs');
       }, 10);
     }
-  }, [activeTab]);
+  }, [activeTab, previousTab]);
 
   const [hasChanges, setHasChanges] = useState(false); // Track if any settings have changed
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false); // Track if settings have been loaded
@@ -477,7 +504,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
         <div className="settings-content">
           {/* API Keys Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'api-keys' ? 'active' : ''}`}>
+          <div key={`settings-tab-api-keys-${activeTab}`} className={`settings-tab-content ${activeTab === 'api-keys' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <ApiKeysTab
               geminiApiKey={geminiApiKey}
               setGeminiApiKey={setGeminiApiKey}
@@ -509,7 +536,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           </div>
 
           {/* Video Processing Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'video-processing' ? 'active' : ''}`}>
+          <div key={`settings-tab-video-processing-${activeTab}`} className={`settings-tab-content ${activeTab === 'video-processing' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <VideoProcessingTab
               segmentDuration={segmentDuration}
               setSegmentDuration={setSegmentDuration}
@@ -535,7 +562,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           </div>
 
           {/* Prompts Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'prompts' ? 'active' : ''}`}>
+          <div key={`settings-tab-prompts-${activeTab}`} className={`settings-tab-content ${activeTab === 'prompts' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <PromptsTab
               transcriptionPrompt={transcriptionPrompt}
               setTranscriptionPrompt={setTranscriptionPrompt}
@@ -543,17 +570,17 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           </div>
 
           {/* Cache Management Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'cache' ? 'active' : ''}`}>
+          <div key={`settings-tab-cache-${activeTab}`} className={`settings-tab-content ${activeTab === 'cache' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <CacheTab />
           </div>
 
           {/* Model Management Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'model-management' ? 'active' : ''}`}>
+          <div key={`settings-tab-model-management-${activeTab}`} className={`settings-tab-content ${activeTab === 'model-management' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <ModelManagementTab />
           </div>
 
           {/* About Tab Content */}
-          <div className={`settings-tab-content ${activeTab === 'about' ? 'active' : ''}`}>
+          <div key={`settings-tab-about-${activeTab}`} className={`settings-tab-content ${activeTab === 'about' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <AboutTab useAlternativeBackground={useAlternativeBackground} />
           </div>
         </div>

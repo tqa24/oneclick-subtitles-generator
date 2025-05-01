@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import YoutubeUrlInput from './inputs/YoutubeUrlInput';
 import YoutubeSearchInput from './inputs/YoutubeSearchInput';
@@ -8,10 +8,13 @@ import AllSitesUrlInput from './inputs/AllSitesUrlInput';
 import UnifiedUrlInput from './inputs/UnifiedUrlInput';
 import { initTabPillAnimation } from '../utils/tabPillAnimation';
 import '../styles/InputMethods.css';
+import '../styles/components/tab-content-animations.css';
 
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
   const tabsRef = useRef(null);
+  const [previousTab, setPreviousTab] = useState(null);
+  const [animationDirection, setAnimationDirection] = useState('center');
 
   // Initialize pill position on component mount
   useEffect(() => {
@@ -33,52 +36,100 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         tab.dataset.lastActive = 'false';
       });
 
+      // Determine animation direction based on tab order
+      if (previousTab) {
+        const tabOrder = ['unified-url', 'youtube-search', 'file-upload'];
+        const prevIndex = tabOrder.indexOf(previousTab);
+        const currentIndex = tabOrder.indexOf(activeTab);
+
+        if (prevIndex !== -1 && currentIndex !== -1) {
+          if (prevIndex < currentIndex) {
+            setAnimationDirection('left');
+          } else if (prevIndex > currentIndex) {
+            setAnimationDirection('right');
+          } else {
+            setAnimationDirection('center');
+          }
+        } else {
+          setAnimationDirection('center');
+        }
+      }
+
+      // Update previous tab for next change
+      setPreviousTab(activeTab);
+
       // Small delay to ensure the active class is applied
       setTimeout(() => {
         initTabPillAnimation('.input-tabs');
       }, 10);
     }
-  }, [activeTab]);
+  }, [activeTab, previousTab]);
 
   const renderInputMethod = () => {
+    // Determine the animation class based on direction
+    const animationClass = `tab-content-slide-${animationDirection}`;
+
     switch (activeTab) {
       case 'unified-url':
-        return <UnifiedUrlInput
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <UnifiedUrlInput
+              selectedVideo={selectedVideo}
+              setSelectedVideo={setSelectedVideo}
+            />
+          </div>
+        );
       case 'youtube-search':
-        return <YoutubeSearchInput
-          apiKeysSet={apiKeysSet}
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <YoutubeSearchInput
+              apiKeysSet={apiKeysSet}
+              selectedVideo={selectedVideo}
+              setSelectedVideo={setSelectedVideo}
+            />
+          </div>
+        );
       case 'file-upload':
-        return <FileUploadInput
-          onVideoSelect={onVideoSelect}
-          uploadedFile={uploadedFile}
-          setUploadedFile={setUploadedFile}
-          className="tab-content"
-          isSrtOnlyMode={isSrtOnlyMode}
-          setIsSrtOnlyMode={setIsSrtOnlyMode}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <FileUploadInput
+              onVideoSelect={onVideoSelect}
+              uploadedFile={uploadedFile}
+              setUploadedFile={setUploadedFile}
+              isSrtOnlyMode={isSrtOnlyMode}
+              setIsSrtOnlyMode={setIsSrtOnlyMode}
+            />
+          </div>
+        );
       // Keep the old tabs for backward compatibility, but they won't be shown in the UI
       case 'all-sites-url':
-        return <AllSitesUrlInput
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <AllSitesUrlInput
+              selectedVideo={selectedVideo}
+              setSelectedVideo={setSelectedVideo}
+            />
+          </div>
+        );
       case 'youtube-url':
-        return <YoutubeUrlInput
-          onVideoSelect={onVideoSelect}
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <YoutubeUrlInput
+              onVideoSelect={onVideoSelect}
+              selectedVideo={selectedVideo}
+              setSelectedVideo={setSelectedVideo}
+            />
+          </div>
+        );
       case 'douyin-url':
-        return <DouyinUrlInput
-          selectedVideo={selectedVideo}
-          setSelectedVideo={setSelectedVideo}
-        />;
+        return (
+          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
+            <DouyinUrlInput
+              selectedVideo={selectedVideo}
+              setSelectedVideo={setSelectedVideo}
+            />
+          </div>
+        );
       default:
         return null;
     }
