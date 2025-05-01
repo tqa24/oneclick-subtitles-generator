@@ -2,17 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CircularProgress,
-  Alert,
-  Snackbar
+  Alert
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ErrorIcon from '@mui/icons-material/Error';
 import EditIcon from '@mui/icons-material/Edit';
-import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
-import CodeIcon from '@mui/icons-material/Code';
 import LinkIcon from '@mui/icons-material/Link';
 import TuneIcon from '@mui/icons-material/Tune';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -26,6 +23,7 @@ import '../../styles/settings/customModelDialog.css';
 import ModelList, { LANGUAGE_NAMES } from './ModelList';
 import '../../styles/settings/modelManagement.css';
 import CustomModelDialog from './CustomModelDialog';
+import Toast from '../common/Toast';
 
 // We're using inline status display instead of a component to avoid DOM nesting issues
 
@@ -1086,21 +1084,14 @@ const ModelManagementTab = () => {
         )}
       </CustomModelDialog>
 
-      {/* Snackbar for notifications */}
-      <Snackbar
+      {/* Custom Toast notification */}
+      <Toast
         open={snackbar.open}
-        autoHideDuration={6000}
+        message={snackbar.message}
+        severity={snackbar.severity}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        autoHideDuration={2000}
+      />
     </div>
   );
 };
