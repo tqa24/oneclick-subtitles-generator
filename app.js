@@ -39,7 +39,19 @@ app.use(cors({
 
 // Add CORS headers to all responses for health endpoint
 app.use('/api/health', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
+  const origin = req.headers.origin;
+  // If CORS_ORIGIN is an array, check if the request origin is in the allowed list
+  if (Array.isArray(CORS_ORIGIN) && origin) {
+    if (CORS_ORIGIN.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else {
+      // Default to the first origin in the list
+      res.header('Access-Control-Allow-Origin', CORS_ORIGIN[0]);
+    }
+  } else {
+    // If CORS_ORIGIN is a string, use it directly
+    res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
+  }
   res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -51,8 +63,24 @@ app.use(express.json({ limit: '500mb' }));
 
 // Serve static directories with CORS headers
 const staticOptions = {
-  setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', CORS_ORIGIN);
+  setHeaders: (res, path, stat) => {
+    // Get the request origin from the request object
+    const req = res.req;
+    const origin = req.headers.origin;
+
+    // If CORS_ORIGIN is an array, check if the request origin is in the allowed list
+    if (Array.isArray(CORS_ORIGIN) && origin) {
+      if (CORS_ORIGIN.includes(origin)) {
+        res.set('Access-Control-Allow-Origin', origin);
+      } else {
+        // Default to the first origin in the list
+        res.set('Access-Control-Allow-Origin', CORS_ORIGIN[0]);
+      }
+    } else {
+      // If CORS_ORIGIN is a string, use it directly
+      res.set('Access-Control-Allow-Origin', CORS_ORIGIN);
+    }
+
     res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
     res.set('Access-Control-Allow-Credentials', 'true');
@@ -68,7 +96,21 @@ app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public'
 
 // Add CORS headers to all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
+  const origin = req.headers.origin;
+
+  // If CORS_ORIGIN is an array, check if the request origin is in the allowed list
+  if (Array.isArray(CORS_ORIGIN) && origin) {
+    if (CORS_ORIGIN.includes(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+    } else {
+      // Default to the first origin in the list
+      res.header('Access-Control-Allow-Origin', CORS_ORIGIN[0]);
+    }
+  } else {
+    // If CORS_ORIGIN is a string, use it directly
+    res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
+  }
+
   res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
   res.header('Access-Control-Allow-Credentials', 'true');

@@ -22,7 +22,7 @@ const checkService = async (maxAttempts = 20, delayMs = 10000) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-      const response = await fetch(`http://localhost:${NARRATION_PORT}/api/narration/status`, {
+      const response = await fetch(`http://127.0.0.1:${NARRATION_PORT}/api/narration/status`, {
         signal: controller.signal,
         mode: 'cors',
         credentials: 'include',
@@ -71,7 +71,7 @@ const checkService = async (maxAttempts = 20, delayMs = 10000) => {
  * @returns {Promise<Object>} - Object containing the audio buffer and content type
  */
 const fetchAudioFile = async (filename) => {
-  const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration/audio/${filename}`;
+  const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration/audio/${filename}`;
   console.log(`Proxying to: ${narrationUrl}`);
 
   const response = await fetch(narrationUrl, {
@@ -109,7 +109,7 @@ const fetchAudioFile = async (filename) => {
  * @returns {Promise<Object|null>} - Narration results or null if streaming
  */
 const generateNarration = async (reference_audio, reference_text, subtitles, settings, res) => {
-  const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration/generate`;
+  const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration/generate`;
 
   try {
     // Check the content type of the response to determine how to handle it
@@ -241,7 +241,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
  * @returns {Promise<Object>} - Response data
  */
 const proxyRequest = async (url, options) => {
-  const narrationUrl = `http://localhost:${NARRATION_PORT}/api/narration${url}`;
+  const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration${url}`;
 
   try {
     // Add CORS options to the request
