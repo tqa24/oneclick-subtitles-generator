@@ -618,5 +618,5 @@ export const generateNarration = async (
  * @returns {string} - Audio file URL
  */
 export const getAudioUrl = (filename) => {
-  return `${SERVER_URL}/narration/audio/${filename}`;
+  return `${SERVER_URL}/api/narration/audio/${filename}`;
 };

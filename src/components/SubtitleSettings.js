@@ -452,7 +452,7 @@ const SubtitleSettings = ({
 
     // Get or create audio element for this narration
     if (!audioRefs.current[narration.subtitle_id]) {
-      const audioUrl = `${SERVER_URL}/narration/audio/${narration.filename || 'test.wav'}`;
+      const audioUrl = `${SERVER_URL}/api/narration/audio/${narration.filename || 'test.wav'}`;
       console.log('Creating new audio element for URL:', audioUrl);
 
       const audio = new Audio(audioUrl);

@@ -4,10 +4,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2.5rem 0 2.5rem;
+  padding: 0.5rem 2.5rem 0.5rem 2.5rem;
   border-bottom: 1px solid var(--border-color);
   transition: border-color var(--transition-speed);
-  padding-bottom: 0;
 }
 
 .settings-header h2 {
@@ -15,6 +14,7 @@
   font-size: 1.5rem;
   color: var(--text-primary);
   transition: color var(--transition-speed);
+  min-width: 120px; /* Ensure the title can shrink */
 }
 
 .close-btn {

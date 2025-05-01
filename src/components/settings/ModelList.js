@@ -10,212 +10,220 @@ import '../../styles/settings/modelManagement.css';
 // List of available models from F5-TTS SHARED.md
 const AVAILABLE_MODELS = [
   {
-    id: 'f5tts-v1-base',
-    name: 'F5-TTS v1 Base',
-    languages: ['zh', 'en'],
-    author: 'F5-TTS',
-    modelUrl: 'hf://SWivid/F5-TTS/F5TTS_v1_Base/model_1250000.safetensors',
-    vocabUrl: 'hf://SWivid/F5-TTS/F5TTS_v1_Base/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      conv_layers: 4
+    "id": "f5tts-de-marduk",
+    "name": "F5-TTS German (marduk-ra)",
+    "languages": ["de"],
+    "author": "marduk-ra",
+    "modelUrl": "https://huggingface.co/marduk-ra/F5-TTS-German/blob/main/f5_tts_german_1010000.safetensors", // Placeholder filename, needs verification
+    "vocabUrl": "https://huggingface.co/marduk-ra/F5-TTS-German/blob/main/vocab.txt", // Placeholder filename, needs verification
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base',
-    name: 'F5-TTS Base',
-    languages: ['zh', 'en'],
-    author: 'F5-TTS',
-    modelUrl: 'hf://SWivid/F5-TTS/F5TTS_Base/model_1200000.safetensors',
-    vocabUrl: 'hf://SWivid/F5-TTS/F5TTS_Base/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-v1-base", // Primarily zh, en
+    "name": "F5-TTS v1 Base",
+    "languages": ["zh", "en"],
+    "author": "F5-TTS",
+    "modelUrl": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_v1_Base/model_1250000.safetensors",
+    "vocabUrl": "https://huggingface.co/SWivid/F5-TTS/resolve/main/F5TTS_v1_Base/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "conv_layers": 4
     }
   },
   {
-    id: 'f5tts-base-fi',
-    name: 'F5-TTS Base Finnish',
-    languages: ['fi'],
-    author: 'AsmoKoskinen',
-    modelUrl: 'hf://AsmoKoskinen/F5-TTS_Finnish_Model/model_common_voice_fi_vox_populi_fi_20241206.safetensors',
-    vocabUrl: 'hf://AsmoKoskinen/F5-TTS_Finnish_Model/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-base-es",
+    "name": "F5-TTS Base Spanish",
+    "languages": ["es"],
+    "author": "jpgallegoar",
+    "modelUrl": "https://huggingface.co/jpgallegoar/F5-Spanish/resolve/main/model_1250000.safetensors",
+    "vocabUrl": "https://huggingface.co/jpgallegoar/F5-Spanish/resolve/main/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base-fr',
-    name: 'F5-TTS Base French',
-    languages: ['fr'],
-    author: 'RASPIAUDIO',
-    modelUrl: 'hf://RASPIAUDIO/F5-French-MixedSpeakers-reduced/model_last_reduced.pt',
-    vocabUrl: 'hf://RASPIAUDIO/F5-French-MixedSpeakers-reduced/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-base-fi",
+    "name": "F5-TTS Base Finnish",
+    "languages": ["fi"],
+    "author": "AsmoKoskinen",
+    "modelUrl": "https://huggingface.co/AsmoKoskinen/F5-TTS_Finnish_Model/resolve/main/model_common_voice_fi_vox_populi_fi_20241206.safetensors",
+    "vocabUrl": "https://huggingface.co/AsmoKoskinen/F5-TTS_Finnish_Model/resolve/main/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-small-hi',
-    name: 'F5-TTS Small Hindi',
-    languages: ['hi'],
-    author: 'SPRINGLab',
-    modelUrl: 'hf://SPRINGLab/F5-Hindi-24KHz/model_2500000.safetensors',
-    vocabUrl: 'hf://SPRINGLab/F5-Hindi-24KHz/vocab.txt',
-    config: {
-      dim: 768,
-      depth: 18,
-      heads: 12,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-small-hi",
+    "name": "F5-TTS Small Hindi",
+    "languages": ["hi"],
+    "author": "SPRINGLab",
+    "modelUrl": "https://huggingface.co/SPRINGLab/F5-Hindi-24KHz/resolve/main/model_2500000.safetensors",
+    "vocabUrl": "https://huggingface.co/SPRINGLab/F5-Hindi-24KHz/resolve/main/vocab.txt",
+    "config": {
+      "dim": 768,
+      "depth": 18,
+      "heads": 12,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base-it',
-    name: 'F5-TTS Base Italian',
-    languages: ['it'],
-    author: 'alien79',
-    modelUrl: 'hf://alien79/F5-TTS-italian/model_159600.safetensors',
-    vocabUrl: 'hf://alien79/F5-TTS-italian/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-base-it",
+    "name": "F5-TTS Base Italian",
+    "languages": ["it"],
+    "author": "alien79",
+    "modelUrl": "https://huggingface.co/alien79/F5-TTS-italian/blob/main/model_159600.safetensors",
+    "vocabUrl": "https://huggingface.co/alien79/F5-TTS-italian/blob/main/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base-ja',
-    name: 'F5-TTS Base Japanese',
-    languages: ['ja'],
-    author: 'Jmica',
-    modelUrl: 'hf://Jmica/F5TTS/JA_21999120/model_21999120.pt',
-    vocabUrl: 'hf://Jmica/F5TTS/JA_21999120/vocab_japanese.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-pl-en-de",
+    "name": "F5-TTS English German Polish",
+    "languages": ["pl"],
+    "author": "Gregniuki",
+    "modelUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/model_270000.safetensors",
+    "vocabUrl": "https://huggingface.co/Gregniuki/F5-tts_English_German_Polish/blob/main/Polish/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base-ru',
-    name: 'F5-TTS Base Russian',
-    languages: ['ru'],
-    author: 'HotDro4illa',
-    modelUrl: 'hf://hotstone228/F5-TTS-Russian/model_last.safetensors',
-    vocabUrl: 'hf://hotstone228/F5-TTS-Russian/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "f5tts-base-ru",
+    "name": "F5-TTS Base Russian",
+    "languages": ["ru"],
+    "author": "hotstone228",
+    "modelUrl": "https://huggingface.co/hotstone228/F5-TTS-Russian/resolve/main/model_last.safetensors",
+    "vocabUrl": "https://huggingface.co/hotstone228/F5-TTS-Russian/resolve/main/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
   {
-    id: 'f5tts-base-es',
-    name: 'F5-TTS Base Spanish',
-    languages: ['es'],
-    author: 'jpgallegoar',
-    modelUrl: 'https://huggingface.co/jpgallegoar/F5-Spanish/blob/main/model_1200000.safetensors',
-    vocabUrl: 'https://huggingface.co/jpgallegoar/F5-Spanish/blob/main/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "erax-smile-unixsex-f5",
+    "name": "EraX Smile UnixSex F5 (Vietnamese)",
+    "languages": ["vi"],
+    "author": "erax-ai",
+
+    "modelUrl": "https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/resolve/main/models/model_42000.safetensors",
+    "vocabUrl": "https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/resolve/main/models/vocab.txt",
+    "config": {
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   },
-  // Add Vietnamese model if available
   {
-    id: 'erax-smile-unixsex-f5',
-    name: 'EraX Smile UnixSex F5',
-    languages: ['vi'],
-    author: 'EraX',
-    modelUrl: 'https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/blob/main/models/model_42000.safetensors',
-    vocabUrl: 'https://huggingface.co/erax-ai/EraX-Smile-UnixSex-F5/blob/main/models/vocab.txt',
-    config: {
-      dim: 1024,
-      depth: 22,
-      heads: 16,
-      ff_mult: 2,
-      text_dim: 512,
-      text_mask_padding: false,
-      conv_layers: 4,
-      pe_attn_head: 1
+    "id": "erax-smile-female-f5-v1",
+    "name": "EraX-Smile-Female-F5-V1.0",
+    "languages": ["vi"],
+    "author": "erax-ai",
+    "modelUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/blob/main/model/model_612000.safetensors",
+    "vocabUrl": "https://huggingface.co/erax-ai/EraX-Smile-Female-F5-V1.0/blob/main/model/vocab.txt",
+    "config": { // Assuming standard 'base' config
+      "dim": 1024,
+      "depth": 22,
+      "heads": 16,
+      "ff_mult": 2,
+      "text_dim": 512,
+      "text_mask_padding": false,
+      "conv_layers": 4,
+      "pe_attn_head": 1
     }
   }
 ];
 
 // Language name mapping
 const LANGUAGE_NAMES = {
-  'zh': 'Chinese',
+  'ar': 'Arabic',
+  'de': 'German',
   'en': 'English',
+  'es': 'Spanish',
   'fi': 'Finnish',
   'fr': 'French',
   'hi': 'Hindi',
   'it': 'Italian',
   'ja': 'Japanese',
+  'pl': 'Polish',
+  'pt-br': 'Portuguese (BR)',
   'ru': 'Russian',
-  'es': 'Spanish',
-  'vi': 'Vietnamese'
+  'vi': 'Vietnamese',
+  'zh': 'Chinese'
 };
 
 // Language color mapping
 const LANGUAGE_COLORS = {
-  'zh': 'primary',
+  'ar': 'warning',
+  'de': 'info',
   'en': 'success',
+  'es': 'success',
   'fi': 'info',
   'fr': 'secondary',
   'hi': 'warning',
   'it': 'error',
   'ja': 'default',
+  'pl': 'error',
+  'pt-br': 'warning',
   'ru': 'primary',
-  'es': 'success',
-  'vi': 'secondary'
+  'vi': 'secondary',
+  'zh': 'primary'
 };
 
 const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [], onAddModelClick }) => {
@@ -301,6 +309,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
   // Get download progress if available
   const getDownloadProgress = (modelId) => {
     if (downloadingModels[modelId] && downloadingModels[modelId].status === 'downloading') {
+      // Use the progress value directly from the server
       return downloadingModels[modelId].progress || 0;
     }
     return 0;
@@ -354,13 +363,20 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
                 <div className="download-progress">
                   <div
                     className="download-progress-bar"
-                    style={{ width: `${getDownloadProgress(model.id)}%` }}
+                    style={{
+                      width: downloadingModels[model.id] && downloadingModels[model.id].progress !== undefined
+                        ? `${downloadingModels[model.id].progress}%`
+                        : '10%' // Default progress when no information is available
+                    }}
                   ></div>
                 </div>
                 <div className="model-card-actions">
                   <div className="download-percentage">
                     <span className="spinner"></span>
-                    <span>{getDownloadProgress(model.id).toFixed(1)}%</span>
+                    <span>
+                      {/* Always show percentage format only */}
+                      {getDownloadProgress(model.id) ? `${getDownloadProgress(model.id)}%` : ''}
+                    </span>
                   </div>
                   <button
                     className="cancel-download-btn"
@@ -368,7 +384,6 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
                     title={t('settings.modelManagement.cancelDownload', 'Cancel Download')}
                   >
                     <CancelIcon fontSize="small" />
-                    {t('common.cancel')}
                   </button>
                 </div>
               </div>

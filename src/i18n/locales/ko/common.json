@@ -2,6 +2,7 @@
   "cancel": "취소",
   "undo": "실행 취소",
   "reset": "초기화",
+  "resetToDefaults": "기본값으로 초기화",
   "save": "저장",
   "close": "닫기",
   "on": "켜기",

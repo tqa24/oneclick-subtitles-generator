@@ -20,7 +20,7 @@
 /* Model cards container */
 .model-cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -180,6 +180,21 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   line-height: 1.4;
 }
 
+/* Model size */
+.model-size {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Empty size placeholder for consistent spacing */
+.model-size.empty-size {
+  visibility: hidden;
+  height: 1.2em; /* Match the height of a typical line of text */
+}
+
 /* Download status */
 .download-status {
   display: flex;
@@ -191,6 +206,24 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   border-radius: 8px;
   background-color: rgba(var(--md-primary-rgb), 0.08);
   color: var(--md-primary);
+  position: relative;
+}
+
+.download-status .cancel-download-btn {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem;
+  height: auto;
+  min-width: 24px;
+  background-color: transparent;
+  border: none;
+  color: var(--md-error);
+}
+
+.download-status .cancel-download-btn:hover {
+  background-color: rgba(var(--md-error-rgb), 0.1);
 }
 
 .download-status.error {
@@ -347,6 +380,43 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
 .section-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+/* Refresh models button */
+.refresh-models-btn {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--md-shape-pill);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.refresh-models-btn:hover {
+  background-color: var(--md-surface-2);
+}
+
+.refresh-models-btn:active {
+  transform: scale(0.98);
+}
+
+.refresh-models-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinning animation for refresh icon */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.refresh-models-btn .spinning {
+  animation: spin 1s linear infinite;
 }
 
 .toggle-cache-btn {

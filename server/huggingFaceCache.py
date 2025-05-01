@@ -13,16 +13,46 @@ logger = logging.getLogger(__name__)
 
 def get_huggingface_cache_dir():
     """Get the Hugging Face cache directory path"""
-    # Default cache directory is ~/.cache/huggingface/hub on Linux/Mac
-    # and C:\Users\<username>\.cache\huggingface\hub on Windows
-    home_dir = os.path.expanduser("~")
-    cache_dir = os.path.join(home_dir, ".cache", "huggingface", "hub")
-    
+    try:
+        # Try the newer API first
+        try:
+            from huggingface_hub import get_cache_dir
+            cache_dir = os.path.join(get_cache_dir(), "hub")
+            logger.info(f"Using Hugging Face cache directory from get_cache_dir(): {cache_dir}")
+        except (ImportError, AttributeError):
+            # Fallback to default paths if the import fails
+            # Default cache directory is ~/.cache/huggingface/hub on Linux/Mac
+            # and C:\Users\<username>\.cache\huggingface\hub on Windows
+            home_dir = os.path.expanduser("~")
+            cache_dir = os.path.join(home_dir, ".cache", "huggingface", "hub")
+            logger.info(f"Using default Hugging Face cache directory: {cache_dir}")
+
+        # Make sure the parent directory exists
+        parent_dir = os.path.dirname(cache_dir)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+            logger.info(f"Created parent directory: {parent_dir}")
+    except Exception as e:
+        logger.error(f"Error setting up cache directory: {e}")
+        # Still return the default path as a fallback
+        home_dir = os.path.expanduser("~")
+        cache_dir = os.path.join(home_dir, ".cache", "huggingface", "hub")
+        logger.warning(f"Falling back to default path due to error: {cache_dir}")
+
     # Check if the directory exists
     if not os.path.exists(cache_dir):
         logger.warning(f"Hugging Face cache directory not found at {cache_dir}")
         return None
-    
+
+    # Log the directory contents for debugging
+    try:
+        if os.path.exists(cache_dir):
+            logger.info(f"Hugging Face cache directory exists: {cache_dir}")
+            contents = os.listdir(cache_dir)
+            logger.info(f"Cache directory contents: {contents[:10]}{'...' if len(contents) > 10 else ''}")
+    except Exception as e:
+        logger.warning(f"Error listing cache directory contents: {e}")
+
     return cache_dir
 
 def list_huggingface_cache_models():
@@ -30,32 +60,32 @@ def list_huggingface_cache_models():
     cache_dir = get_huggingface_cache_dir()
     if not cache_dir:
         return []
-    
+
     models = []
-    
+
     # The models directory structure is:
     # ~/.cache/huggingface/hub/models--<org>--<model>/snapshots/<hash>/
     try:
         # List all directories that start with "models--"
         model_dirs = [d for d in os.listdir(cache_dir) if d.startswith("models--")]
-        
+
         for model_dir in model_dirs:
             # Extract org and model name from directory name
             parts = model_dir.split("--")
             if len(parts) >= 3:
                 org = parts[1]
                 model_name = "--".join(parts[2:])
-                
+
                 # Get the full path to the model directory
                 full_path = os.path.join(cache_dir, model_dir)
-                
+
                 # Get size of the model directory
                 size = get_directory_size(full_path)
-                
+
                 # Check if there are snapshots
                 snapshots_dir = os.path.join(full_path, "snapshots")
                 has_snapshots = os.path.exists(snapshots_dir)
-                
+
                 # Get snapshot hashes if they exist
                 snapshots = []
                 if has_snapshots:
@@ -78,7 +108,7 @@ def list_huggingface_cache_models():
                                             })
                                 except Exception as e:
                                     logger.error(f"Error listing files in snapshot {hash_dir}: {e}")
-                                
+
                                 snapshots.append({
                                     "hash": hash_dir,
                                     "path": snapshot_path,
@@ -87,7 +117,7 @@ def list_huggingface_cache_models():
                                 })
                     except Exception as e:
                         logger.error(f"Error listing snapshots for {model_dir}: {e}")
-                
+
                 models.append({
                     "id": f"{org}/{model_name}",
                     "org": org,
@@ -98,7 +128,7 @@ def list_huggingface_cache_models():
                 })
     except Exception as e:
         logger.error(f"Error listing Hugging Face cache models: {e}")
-    
+
     return models
 
 def get_directory_size(path):
@@ -116,23 +146,23 @@ def delete_huggingface_cache_model(model_id):
     cache_dir = get_huggingface_cache_dir()
     if not cache_dir:
         return False, "Hugging Face cache directory not found"
-    
+
     # Split model_id into org and model name
     parts = model_id.split("/")
     if len(parts) != 2:
         return False, f"Invalid model ID format: {model_id}. Expected format: org/model"
-    
+
     org = parts[0]
     model_name = parts[1]
-    
+
     # Construct the directory name
     dir_name = f"models--{org}--{model_name.replace('/', '--')}"
     model_dir = os.path.join(cache_dir, dir_name)
-    
+
     # Check if the directory exists
     if not os.path.exists(model_dir):
         return False, f"Model directory not found: {model_dir}"
-    
+
     # Delete the directory
     try:
         shutil.rmtree(model_dir)

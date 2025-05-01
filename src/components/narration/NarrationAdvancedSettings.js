@@ -168,19 +168,19 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${calculateFillPercentage(settings.swayCoef || -1.0, -2.0, 2.0)}%` }}
+                      style={{ width: `${calculateFillPercentage(settings.swayCoef || -1.0, -1.1, 1.7)}%` }}
                     ></div>
                     <div
                       className="custom-slider-thumb"
-                      style={{ left: `${calculateFillPercentage(settings.swayCoef || -1.0, -2.0, 2.0)}%` }}
+                      style={{ left: `${calculateFillPercentage(settings.swayCoef || -1.0, -1.1, 1.7)}%` }}
                     ></div>
                   </div>
                   <input
                     type="range"
                     id="swayCoef"
                     name="swayCoef"
-                    min="-2.0"
-                    max="2.0"
+                    min="-1.1"
+                    max="1.7"
                     step="0.1"
                     value={settings.swayCoef || -1.0}
                     onChange={handleSliderChange}
@@ -337,7 +337,7 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
             </div>
             <div className="row-content">
               <div className="radio-pill-group">
-                {['5', '10', '20', 'all'].map((value) => (
+                {['1', '2', '4', '8', '16', '32', '64', 'all'].map((value) => (
                   <div className="radio-pill" key={value}>
                     <input
                       type="radio"
