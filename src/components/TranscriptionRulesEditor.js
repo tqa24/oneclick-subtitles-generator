@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/TranscriptionRulesEditor.css';
+import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService';
 
-const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCancel }) => {
+const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCancel, onChangePrompt }) => {
   const { t } = useTranslation();
   const [rules, setRules] = useState(initialRules || {
     atmosphere: '',
@@ -13,6 +14,39 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     relationships: [],
     additionalNotes: []
   });
+
+  // State for prompt presets
+  const [currentPresetId, setCurrentPresetId] = useState('');
+  const [userPromptPresets, setUserPromptPresets] = useState([]);
+
+  // Get all available presets (built-in + user)
+  const allPresets = [...PROMPT_PRESETS, ...userPromptPresets];
+
+  // Effect to determine the current preset
+  useEffect(() => {
+    // First check if there's a session-specific preset
+    const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
+
+    if (sessionPresetId) {
+      setCurrentPresetId(sessionPresetId);
+    } else {
+      // If no session preset, try to determine from the stored prompt
+      const storedPrompt = localStorage.getItem('transcription_prompt');
+
+      // Find a preset that matches the stored prompt
+      const matchingPreset = allPresets.find(preset => preset.prompt === storedPrompt);
+
+      if (matchingPreset) {
+        setCurrentPresetId(matchingPreset.id);
+      } else {
+        // If no matching preset, it's a custom prompt
+        setCurrentPresetId('custom');
+      }
+    }
+
+    // Load user presets
+    setUserPromptPresets(getUserPromptPresets());
+  }, []);
 
   // Handle atmosphere change
   const handleAtmosphereChange = (e) => {
@@ -76,6 +110,62 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     onClose('cancel');
   };
 
+  // Handle changing the prompt preset
+  const handleChangePrompt = (e) => {
+    const newPresetId = e.target.value;
+    setCurrentPresetId(newPresetId);
+
+    if (newPresetId === 'custom') {
+      // For custom preset, do nothing as we're keeping the current prompt
+      return;
+    }
+
+    // Find the preset
+    const preset = allPresets.find(p => p.id === newPresetId);
+    if (preset && onChangePrompt) {
+      // If it's a session preset, update session storage
+      if (sessionStorage.getItem('current_session_preset_id')) {
+        sessionStorage.setItem('current_session_preset_id', newPresetId);
+        sessionStorage.setItem('current_session_prompt', preset.prompt);
+      } else {
+        // Otherwise update localStorage
+        localStorage.setItem('transcription_prompt', preset.prompt);
+      }
+
+      // Call the callback to update the prompt in the parent component
+      onChangePrompt(preset);
+    }
+  };
+
+  // Get preset title based on ID
+  const getPresetTitle = (presetId) => {
+    if (presetId === 'custom') {
+      return t('settings.customPrompt', 'Custom Prompt');
+    }
+
+    const preset = allPresets.find(p => p.id === presetId);
+    if (!preset) return presetId;
+
+    switch (preset.id) {
+      case 'general':
+        return t('settings.presetGeneralPurpose', 'General purpose');
+      case 'extract-text':
+        return t('settings.presetExtractText', 'Extract text');
+      case 'focus-lyrics':
+        return t('settings.presetFocusLyrics', 'Focus on Lyrics');
+      case 'describe-video':
+        return t('settings.presetDescribeVideo', 'Describe video');
+      case 'translate-directly':
+        return t('settings.presetTranslateDirectly', 'Translate directly');
+      case 'chaptering':
+        return t('settings.presetChaptering', 'Chaptering');
+      case 'diarize-speakers':
+        return t('settings.presetIdentifySpeakers', 'Identify Speakers');
+      default:
+        return preset.title || presetId;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -84,6 +174,42 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
         <div className="modal-header">
           <h2>{t('rulesEditor.title', 'Edit Transcription Rules')}</h2>
           <button className="close-button" onClick={handleCancel}>×</button>
+        </div>
+
+        <div className="prompt-preset-selector">
+          <div className="prompt-preset-label">
+            {t('rulesEditor.currentPrompt', 'Current Prompt Preset')}:
+          </div>
+          <div className="prompt-preset-dropdown">
+            <select
+              value={currentPresetId}
+              onChange={handleChangePrompt}
+              className="preset-select"
+            >
+              {/* Custom prompt option */}
+              <option value="custom">{t('settings.customPrompt', 'Custom Prompt')}</option>
+
+              {/* Built-in presets */}
+              <optgroup label={t('settings.builtInPresets', 'Built-in Presets')}>
+                {PROMPT_PRESETS.map(preset => (
+                  <option key={preset.id} value={preset.id}>
+                    {getPresetTitle(preset.id)}
+                  </option>
+                ))}
+              </optgroup>
+
+              {/* User presets */}
+              {userPromptPresets.length > 0 && (
+                <optgroup label={t('settings.userPresets', 'Your Presets')}>
+                  {userPromptPresets.map(preset => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.title}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
         </div>
 
         <div className="modal-content">
