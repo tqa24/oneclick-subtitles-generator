@@ -129,3 +129,4 @@ lib64/
 *.wav
 !src/assets/*.mp3
 !src/assets/*.wav
+live-api-web-console/
