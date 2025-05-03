@@ -1,5 +1,5 @@
 {
-  "title": "Tạo thuyết minh",
+  "title": "Tạo thuyết minh (Việc tạo thuyết minh từng đoạn sắp được thay thể bằng tạo thuyết minh dài và sắp xếp lại để đảm bảo nhất quán. Thêm vào đó, sẽ có thêm tạo thuyết minh bằng gemini-2.0-flash-live-001 cho các máy yếu)",
   "description": "Tạo âm thanh thuyết minh từ phụ đề của bạn bằng giọng tham chiếu.",
   "referenceAudio": "Văn bản tham chiếu",
   "referenceText": "Văn bản tham chiếu",
