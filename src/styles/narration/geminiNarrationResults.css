@@ -1,0 +1,142 @@
+.gemini-narration-results {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #4a6cf7;
+}
+
+.gemini-narration-results h4 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #333;
+}
+
+.gemini-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gemini-result-item {
+  background-color: #ffffff;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.gemini-result-item:hover {
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.gemini-result-item.failed {
+  border-left: 4px solid #dc3545;
+}
+
+.gemini-result-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.gemini-result-id {
+  font-weight: bold;
+  margin-right: 8px;
+  color: #4a6cf7;
+  min-width: 24px;
+}
+
+.gemini-result-text {
+  flex: 1;
+  font-weight: 500;
+  color: #555;
+}
+
+.gemini-narration-text {
+  padding: 12px;
+  background-color: #f0f4ff;
+  border-radius: 6px;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.gemini-error-message {
+  padding: 12px;
+  background-color: #fff0f0;
+  border-radius: 6px;
+  color: #dc3545;
+  font-size: 14px;
+}
+
+.audio-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.play-btn,
+.download-btn,
+.copy-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-btn:hover,
+.download-btn:hover,
+.copy-btn:hover {
+  color: #4a6cf7;
+  background-color: #f0f4ff;
+}
+
+.play-btn.playing {
+  color: #4a6cf7;
+  background-color: #f0f4ff;
+}
+
+.gemini-export-controls {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gemini-export-btn {
+  background-color: #4a6cf7;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gemini-export-btn:hover {
+  background-color: #3a5bd7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gemini-narration-results {
+    padding: 15px;
+  }
+
+  .gemini-result-item {
+    padding: 12px;
+  }
+
+  .gemini-export-controls {
+    justify-content: center;
+  }
+}
