@@ -4,7 +4,12 @@ import {
   checkNarrationStatusWithRetry,
   getAudioUrl
 } from '../../services/narrationService';
-import { checkGeminiAvailability, generateGeminiNarrations, cancelGeminiNarrations } from '../../services/gemini/geminiNarrationService';
+import {
+  checkGeminiAvailability,
+  generateGeminiNarrations,
+  cancelGeminiNarrations,
+  getGeminiLanguageCode
+} from '../../services/gemini/geminiNarrationService';
 import NarrationAdvancedSettings from './NarrationAdvancedSettings'; // Redesigned component
 import useNarrationHandlers from './hooks/useNarrationHandlers';
 
@@ -14,6 +19,7 @@ import AudioControls from './components/AudioControls';
 import SubtitleSourceSelection from './components/SubtitleSourceSelection';
 import GeminiSubtitleSourceSelection from './components/GeminiSubtitleSourceSelection';
 import GeminiSleepTimeSlider from './components/GeminiSleepTimeSlider';
+import GeminiVoiceSelection from './components/GeminiVoiceSelection';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
 import GenerateButton from './components/GenerateButton';
 import GeminiGenerateButton from './components/GeminiGenerateButton';
@@ -55,6 +61,12 @@ const UnifiedNarrationSection = ({
     // Try to load from localStorage
     const savedSleepTime = localStorage.getItem('gemini_sleep_time');
     return savedSleepTime ? parseInt(savedSleepTime) : 1000; // Default to 1 second
+  });
+
+  const [selectedVoice, setSelectedVoice] = useState(() => {
+    // Try to load from localStorage
+    const savedVoice = localStorage.getItem('gemini_voice');
+    return savedVoice || 'Aoede'; // Default to Aoede if not set
   });
 
   // Narration Settings state (for F5-TTS)
@@ -305,10 +317,15 @@ const UnifiedNarrationSection = ({
       return;
     }
 
-    // Get the language for the selected subtitles
-    const language = subtitleSource === 'original'
-      ? (originalLanguage?.languageName || originalLanguage?.languageCode || 'English')
-      : (translatedLanguage?.languageName || translatedLanguage?.languageCode || 'English');
+    // Get the language code for the selected subtitles
+    const detectedLanguageCode = subtitleSource === 'original'
+      ? (originalLanguage?.languageCode || 'en')
+      : (translatedLanguage?.languageCode || 'en');
+
+    // Convert to Gemini-compatible language code
+    const language = getGeminiLanguageCode(detectedLanguageCode);
+
+    console.log(`Using language: ${detectedLanguageCode} (Gemini format: ${language}) for Gemini narration`);
 
     setIsGenerating(true);
     setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
@@ -323,7 +340,7 @@ const UnifiedNarrationSection = ({
       }));
 
       // Generate narration with Gemini
-      console.log(`Using Gemini API for narration with sleep time: ${sleepTime}ms`);
+      console.log(`Using Gemini API for narration with sleep time: ${sleepTime}ms and voice: ${selectedVoice}`);
 
       await generateGeminiNarrations(
         subtitlesWithIds,
@@ -353,7 +370,8 @@ const UnifiedNarrationSection = ({
           setGenerationResults(results);
         },
         null, // Use default model
-        sleepTime // Use the configured sleep time
+        sleepTime, // Use the configured sleep time
+        selectedVoice // Use the selected voice
       );
     } catch (error) {
       console.error('Error generating Gemini narration:', error);
@@ -615,6 +633,13 @@ const UnifiedNarrationSection = ({
                 setTranslatedLanguage(language);
               }
             }}
+          />
+
+          {/* Voice Selection for Gemini */}
+          <GeminiVoiceSelection
+            selectedVoice={selectedVoice}
+            setSelectedVoice={setSelectedVoice}
+            isGenerating={isGenerating}
           />
 
           {/* Sleep Time Slider for Gemini */}

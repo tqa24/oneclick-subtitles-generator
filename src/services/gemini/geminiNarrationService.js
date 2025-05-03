@@ -4,6 +4,116 @@
 
 import { GeminiWebSocketClient } from './geminiWebSocketClient';
 
+/**
+ * Available Gemini voices
+ * @type {Array<Object>}
+ */
+export const GEMINI_VOICES = [
+  { id: 'Aoede', name: 'Aoede', gender: 'Female' },
+  { id: 'Puck', name: 'Puck', gender: 'Male' },
+  { id: 'Charon', name: 'Charon', gender: 'Male' },
+  { id: 'Kore', name: 'Kore', gender: 'Female' },
+  { id: 'Fenrir', name: 'Fenrir', gender: 'Male' },
+  { id: 'Leda', name: 'Leda', gender: 'Female' },
+  { id: 'Orus', name: 'Orus', gender: 'Male' },
+  { id: 'Zephyr', name: 'Zephyr', gender: 'Female' }
+];
+
+/**
+ * Mapping of language codes to Gemini-compatible language codes
+ * @type {Object}
+ */
+export const GEMINI_LANGUAGE_CODES = {
+  // Common language codes
+  'de': 'de-DE', // German
+  'en': 'en-US', // English (default to US)
+  'es': 'es-ES', // Spanish (default to Spain)
+  'fr': 'fr-FR', // French (default to France)
+  'hi': 'hi-IN', // Hindi
+  'pt': 'pt-BR', // Portuguese (default to Brazil)
+  'ar': 'ar-XA', // Arabic
+  'id': 'id-ID', // Indonesian
+  'it': 'it-IT', // Italian
+  'ja': 'ja-JP', // Japanese
+  'tr': 'tr-TR', // Turkish
+  'vi': 'vi-VN', // Vietnamese
+  'bn': 'bn-IN', // Bengali
+  'gu': 'gu-IN', // Gujarati
+  'kn': 'kn-IN', // Kannada
+  'ml': 'ml-IN', // Malayalam
+  'mr': 'mr-IN', // Marathi
+  'ta': 'ta-IN', // Tamil
+  'te': 'te-IN', // Telugu
+  'nl': 'nl-NL', // Dutch
+  'ko': 'ko-KR', // Korean
+  'cmn': 'cmn-CN', // Mandarin Chinese
+  'zh': 'cmn-CN', // Chinese (map to Mandarin)
+  'pl': 'pl-PL', // Polish
+  'ru': 'ru-RU', // Russian
+  'th': 'th-TH', // Thai
+
+  // Specific regional codes (already in correct format)
+  'de-DE': 'de-DE', // German (Germany)
+  'en-AU': 'en-AU', // English (Australia)
+  'en-GB': 'en-GB', // English (United Kingdom)
+  'en-IN': 'en-IN', // English (India)
+  'en-US': 'en-US', // English (United States)
+  'es-US': 'es-US', // Spanish (United States)
+  'es-ES': 'es-ES', // Spanish (Spain)
+  'fr-FR': 'fr-FR', // French (France)
+  'fr-CA': 'fr-CA', // French (Canada)
+  'hi-IN': 'hi-IN', // Hindi (India)
+  'pt-BR': 'pt-BR', // Portuguese (Brazil)
+  'ar-XA': 'ar-XA', // Arabic (Generic)
+  'id-ID': 'id-ID', // Indonesian (Indonesia)
+  'it-IT': 'it-IT', // Italian (Italy)
+  'ja-JP': 'ja-JP', // Japanese (Japan)
+  'tr-TR': 'tr-TR', // Turkish (Turkey)
+  'vi-VN': 'vi-VN', // Vietnamese (Vietnam)
+  'bn-IN': 'bn-IN', // Bengali (India)
+  'gu-IN': 'gu-IN', // Gujarati (India)
+  'kn-IN': 'kn-IN', // Kannada (India)
+  'ml-IN': 'ml-IN', // Malayalam (India)
+  'mr-IN': 'mr-IN', // Marathi (India)
+  'ta-IN': 'ta-IN', // Tamil (India)
+  'te-IN': 'te-IN', // Telugu (India)
+  'nl-NL': 'nl-NL', // Dutch (Netherlands)
+  'ko-KR': 'ko-KR', // Korean (South Korea)
+  'cmn-CN': 'cmn-CN', // Mandarin Chinese (China)
+  'pl-PL': 'pl-PL', // Polish (Poland)
+  'ru-RU': 'ru-RU', // Russian (Russia)
+  'th-TH': 'th-TH'  // Thai (Thailand)
+};
+
+/**
+ * Convert a language code to a Gemini-compatible language code
+ * @param {string} languageCode - Language code to convert
+ * @returns {string} - Gemini-compatible language code
+ */
+export const getGeminiLanguageCode = (languageCode) => {
+  if (!languageCode) {
+    return 'en-US'; // Default to English (US) if no language code is provided
+  }
+
+  // Normalize the language code to lowercase
+  const normalizedCode = languageCode.toLowerCase();
+
+  // Check if the exact code exists in our mapping
+  if (GEMINI_LANGUAGE_CODES[normalizedCode]) {
+    return GEMINI_LANGUAGE_CODES[normalizedCode];
+  }
+
+  // If not, try to match just the language part (before the hyphen)
+  const languagePart = normalizedCode.split('-')[0];
+  if (GEMINI_LANGUAGE_CODES[languagePart]) {
+    return GEMINI_LANGUAGE_CODES[languagePart];
+  }
+
+  // If all else fails, default to English (US)
+  console.warn(`No Gemini language code found for "${languageCode}", defaulting to en-US`);
+  return 'en-US';
+};
+
 // Cache for WebSocket clients to avoid creating multiple connections
 const clientCache = {
   client: null,
@@ -11,7 +121,9 @@ const clientCache = {
   connected: false,
   connecting: false,
   setupComplete: false,
-  supportedModels: null
+  supportedModels: null,
+  voiceName: null,
+  languageCode: null
 };
 
 /**
@@ -152,11 +264,27 @@ export const findSuitableAudioModel = async (apiKey) => {
  * Get or create a WebSocket client
  * @param {string} apiKey - Gemini API key
  * @param {string} modelName - Optional model name to use
+ * @param {string} voiceName - Optional voice name to use
+ * @param {string} languageCode - Optional language code for speech synthesis
  * @returns {Promise<GeminiWebSocketClient>} - WebSocket client
  */
-const getWebSocketClient = async (apiKey, modelName = null) => {
-  // If we already have a connected client with the same API key, return it
-  if (clientCache.client && clientCache.apiKey === apiKey && clientCache.connected) {
+const getWebSocketClient = async (apiKey, modelName = null, voiceName = null, languageCode = null) => {
+  // Get the voice name from localStorage if not provided
+  if (!voiceName) {
+    voiceName = localStorage.getItem('gemini_voice') || 'Aoede'; // Default to Aoede if not set
+  }
+
+  // Default language code to English if not provided
+  if (!languageCode) {
+    languageCode = 'en-US';
+  }
+
+  // If we already have a connected client with the same API key, voice, and language, return it
+  if (clientCache.client &&
+      clientCache.apiKey === apiKey &&
+      clientCache.connected &&
+      clientCache.voiceName === voiceName &&
+      clientCache.languageCode === languageCode) {
     return clientCache.client;
   }
 
@@ -185,11 +313,13 @@ const getWebSocketClient = async (apiKey, modelName = null) => {
   // Create a new client
   clientCache.connecting = true;
   clientCache.apiKey = apiKey;
+  clientCache.voiceName = voiceName; // Store the voice name
+  clientCache.languageCode = languageCode; // Store the language code
   clientCache.client = new GeminiWebSocketClient(apiKey);
 
   // Set up event listeners
   clientCache.client.on('setupcomplete', () => {
-    console.log('Gemini WebSocket setup complete');
+    console.log(`Gemini WebSocket setup complete with voice: ${voiceName}`);
     clientCache.setupComplete = true;
   });
 
@@ -213,17 +343,20 @@ const getWebSocketClient = async (apiKey, modelName = null) => {
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {
-              voiceName: "Aoede" // Default voice
+              voiceName: voiceName // Use the selected voice
             }
           },
+          languageCode: languageCode // Set the language code for speech synthesis
         }
       },
       systemInstruction: {
         parts: [
-          { text: "you are a narrator, when user tells you to read something only read it, do not say anything else" }
+          { text: "You are a multilingual narrator. When asked to speak text in a specific language, you must speak in that language without translating the content. Always pronounce the text in the language specified, using proper pronunciation for that language." }
         ]
       }
     };
+
+    console.log(`Using voice: ${voiceName} for Gemini narration`);
 
     console.log(`Connecting to Gemini WebSocket API with model: ${modelName}`);
     await clientCache.client.connect(config);
@@ -271,9 +404,10 @@ const getWebSocketClient = async (apiKey, modelName = null) => {
  * @param {Object} subtitle - Subtitle object with text and id
  * @param {string} language - Language of the subtitle
  * @param {string} modelName - Optional model name to use
+ * @param {string} voiceName - Optional voice name to use
  * @returns {Promise<Object>} - Narration result
  */
-export const generateGeminiNarration = async (subtitle, language, modelName = null) => {
+export const generateGeminiNarration = async (subtitle, language, modelName = null, voiceName = null) => {
   try {
     // Get API key from localStorage
     const apiKey = localStorage.getItem('gemini_api_key');
@@ -281,12 +415,16 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
       throw new Error('Gemini API key not found');
     }
 
-    // Create the prompt for narration
-    const narrationPrompt = `Read this sentence in ${language}: "${subtitle.text}"`;
+    // Convert the language code to a Gemini-compatible format
+    const geminiLanguageCode = getGeminiLanguageCode(language);
+    console.log(`Converting language code "${language}" to Gemini format: "${geminiLanguageCode}"`);
+
+    // Create the prompt for narration - explicitly instruct to speak in the target language
+    const narrationPrompt = `Speak the following text in ${geminiLanguageCode} language. Do not translate, just read it exactly as written: "${subtitle.text}"`;
 
     // Get or create a WebSocket client
-    console.log(`Getting WebSocket client for subtitle ${subtitle.id}: "${subtitle.text}"`);
-    const client = await getWebSocketClient(apiKey, modelName);
+    console.log(`Getting WebSocket client for subtitle ${subtitle.id}: "${subtitle.text}" with voice: ${voiceName || 'default'} and language: ${geminiLanguageCode}`);
+    const client = await getWebSocketClient(apiKey, modelName, voiceName, geminiLanguageCode);
 
     // Create a unique request ID for this subtitle
     const requestId = `subtitle_${subtitle.id}_${Date.now()}`;
@@ -356,6 +494,7 @@ export const cancelGeminiNarrations = () => {
  * @param {Function} onComplete - Callback for completion
  * @param {string} modelName - Optional model name to use
  * @param {number} sleepTime - Time to sleep between requests in milliseconds
+ * @param {string} voiceName - Optional voice name to use
  * @returns {Promise<Object>} - Generation response
  */
 export const generateGeminiNarrations = async (
@@ -366,7 +505,8 @@ export const generateGeminiNarrations = async (
   onError = () => {},
   onComplete = () => {},
   modelName = null,
-  sleepTime = 1000
+  sleepTime = 1000,
+  voiceName = null
 ) => {
   // Reset cancellation flag
   isCancelled = false;
@@ -402,8 +542,8 @@ export const generateGeminiNarrations = async (
       // Process each subtitle in the batch concurrently
       console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} subtitles`);
       const batchPromises = batch.map(subtitle => {
-        console.log(`Adding subtitle ${subtitle.id} to batch: "${subtitle.text}"`);
-        return generateGeminiNarration(subtitle, language, modelName);
+        console.log(`Adding subtitle ${subtitle.id} to batch: "${subtitle.text}" with voice: ${voiceName || 'default'}`);
+        return generateGeminiNarration(subtitle, language, modelName, voiceName);
       });
 
       // Wait for all narrations in this batch to complete
