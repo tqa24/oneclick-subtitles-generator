@@ -2,11 +2,11 @@
  * Frontend configuration
  */
 
-// API base URL for server requests
-export const API_BASE_URL = 'http://localhost:3007/api'; // Changed from 3004 to match server port
+// API base URL for server requests - using IPv4 for better compatibility
+export const API_BASE_URL = 'http://127.0.0.1:3007/api';
 
-// Server URL for direct server requests (without /api)
-export const SERVER_URL = 'http://localhost:3007'; // Changed from 3004 to match server port
+// Server URL for direct server requests (without /api) - using IPv4 for better compatibility
+export const SERVER_URL = 'http://127.0.0.1:3007';
 
 // Gemini API key for direct API calls
 // This should be loaded from environment variables in production

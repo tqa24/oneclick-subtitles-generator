@@ -11,7 +11,13 @@ import { API_BASE_URL } from '../config';
 export const getModels = async (includeCache = false) => {
   try {
     const url = `${API_BASE_URL}/narration/models${includeCache ? '?include_cache=true' : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     if (!response.ok) {
       throw new Error(`Server returned ${response.status}`);
     }

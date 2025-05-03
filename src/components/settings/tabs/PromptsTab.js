@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../../../services/geminiService';
-import ContentTypeFloatingCard from '../utils/ContentTypeFloatingCard';
 
 const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
   const { t } = useTranslation();
@@ -12,7 +11,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
   const [viewingPreset, setViewingPreset] = useState(null);
   const [targetLanguage, setTargetLanguage] = useState('');
   const textareaRef = useRef(null);
-  const floatingCardRef = useRef(null);
 
   // Handle selecting a preset
   const handleSelectPreset = (preset, customLanguage = '') => {
@@ -22,7 +20,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
       setTranscriptionPrompt(preset);
     } else {
       // If it's the translation preset, replace the target language placeholder
-      if (preset.id === 'translate-vietnamese' && customLanguage) {
+      if (preset.id === 'translate-directly' && customLanguage) {
         // Replace 'TARGET_LANGUAGE' with the custom language in the prompt
         const updatedPrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage);
         setTranscriptionPrompt(updatedPrompt);
@@ -78,7 +76,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                  viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
                  viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                  viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                 viewingPreset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                 viewingPreset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
                  viewingPreset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
                  viewingPreset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                  viewingPreset.title}
@@ -92,13 +90,13 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             </div>
             <div className="preset-view-body">
               <pre className="preset-full-text">
-                {viewingPreset.id === 'translate-vietnamese' && targetLanguage.trim()
+                {viewingPreset.id === 'translate-directly' && targetLanguage.trim()
                   ? viewingPreset.prompt.replace(/TARGET_LANGUAGE/g, targetLanguage)
                   : viewingPreset.prompt}
               </pre>
             </div>
             <div className="preset-view-footer">
-              {viewingPreset.id === 'translate-vietnamese' ? (
+              {viewingPreset.id === 'translate-directly' ? (
                 <div className="translation-language-input-modal">
                   <input
                     type="text"
@@ -159,12 +157,12 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                    preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
                    preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
                    preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                   preset.id === 'translate-vietnamese' && t('settings.presetTranslateDirectly', 'Translate directly') ||
+                   preset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
                    preset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
                    preset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
                    preset.title}
                 </h5>
-                {preset.id === 'translate-vietnamese' ? (
+                {preset.id === 'translate-directly' ? (
                   <>
                     <div className="translation-language-input">
                       <input
@@ -192,7 +190,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
                 >
                   {t('settings.viewPreset', 'View')}
                 </button>
-                {preset.id === 'translate-vietnamese' ? (
+                {preset.id === 'translate-directly' ? (
                   <button
                     className="use-preset-btn"
                     onClick={() => handleSelectPreset(preset, targetLanguage)}
@@ -288,7 +286,7 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
       <div className="transcription-prompt-setting">
         <h4>{t('settings.transcriptionPrompt', 'Transcription Prompt')}</h4>
         <p className="setting-description">
-          {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder (shown as a floating icon) will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
+          {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
         </p>
         <div className="prompt-editor-container">
           <textarea
@@ -442,11 +440,6 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             // No placeholder needed since we're pre-filling with the default prompt
             rows={8}
             className="transcription-prompt-textarea"
-          />
-          <ContentTypeFloatingCard
-            textareaRef={textareaRef}
-            floatingCardRef={floatingCardRef}
-            transcriptionPrompt={transcriptionPrompt}
           />
         </div>
         <div className="prompt-actions">

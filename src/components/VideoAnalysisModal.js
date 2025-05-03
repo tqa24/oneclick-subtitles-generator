@@ -112,7 +112,7 @@ const VideoAnalysisModal = ({
         return t('settings.presetFocusLyrics', 'Focus on Lyrics');
       case 'describe-video':
         return t('settings.presetDescribeVideo', 'Describe video');
-      case 'translate-vietnamese':
+      case 'translate-directly':
         return t('settings.presetTranslateDirectly', 'Translate directly');
       case 'chaptering':
         return t('settings.presetChaptering', 'Chaptering');

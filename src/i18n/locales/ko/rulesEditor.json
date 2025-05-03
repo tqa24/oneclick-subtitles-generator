@@ -20,5 +20,6 @@
   "addRelationship": "+ 관계 추가",
   "notesDescription": "일관된 트랜스크립션을 위한 기타 참고 사항 추가",
   "notePlaceholder": "추가 참고 사항...",
-  "addNote": "+ 참고 사항 추가"
+  "addNote": "+ 참고 사항 추가",
+  "currentPrompt": "현재 프롬프트 프리셋"
 }

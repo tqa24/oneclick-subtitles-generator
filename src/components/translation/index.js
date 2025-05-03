@@ -8,8 +8,9 @@ import TranslationHeader from './TranslationHeader';
 import LanguageChain from './LanguageChain';
 import ModelSelection from './ModelSelection';
 import SplitDurationSlider from './SplitDurationSlider';
+import RestTimeSlider from './RestTimeSlider';
 import RulesToggle from './RulesToggle';
-import PromptEditorButton from './PromptEditorButton';
+import TranslationPromptEditorButton from './TranslationPromptEditorButton';
 import TranslationActions from './TranslationActions';
 import TranslationStatus from './TranslationStatus';
 import TranslationError from './TranslationError';
@@ -62,6 +63,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     selectedModel,
     customTranslationPrompt,
     splitDuration,
+    restTime,
     includeRules,
     rulesAvailable,
     hasUserProvidedSubtitles,
@@ -72,6 +74,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleCancelTranslation,
     handleReset,
     handleSplitDurationChange,
+    handleRestTimeChange,
     handleIncludeRulesChange
   } = useTranslationState(subtitles, onTranslationComplete);
 
@@ -265,7 +268,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 
   return (
     <div className="translation-section">
-      <TranslationHeader />
+      <TranslationHeader
+        promptEditorButton={
+          <TranslationPromptEditorButton
+            customPrompt={customTranslationPrompt}
+            onSavePrompt={handleSavePrompt}
+          />
+        }
+      />
 
       <div className="translation-controls">
         {/* Language Chain UI */}
@@ -319,6 +329,13 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   disabled={isTranslating || translatedSubtitles !== null}
                 />
 
+                {/* Rest time slider */}
+                <RestTimeSlider
+                  restTime={restTime}
+                  onRestTimeChange={handleRestTimeChange}
+                  disabled={isTranslating || translatedSubtitles !== null}
+                />
+
                 {/* Include rules toggle */}
                 <RulesToggle
                   includeRules={includeRules}
@@ -326,12 +343,6 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   rulesAvailable={rulesAvailable}
                   hasUserProvidedSubtitles={hasUserProvidedSubtitles}
                   disabled={isTranslating || translatedSubtitles !== null}
-                />
-
-                {/* Prompt editor button */}
-                <PromptEditorButton
-                  customPrompt={customTranslationPrompt}
-                  onSavePrompt={handleSavePrompt}
                 />
               </>
             )}

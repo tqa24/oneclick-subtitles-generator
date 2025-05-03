@@ -39,62 +39,7 @@
   box-shadow: 0 0 0 2px var(--primary-color-light);
 }
 
-/* Floating content type card */
-.content-type-floating-card {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--md-surface-1);
-  border-radius: 20px;
-  padding: 4px 10px;
-  box-shadow: var(--md-elevation-level1);
-  border: 1px solid var(--border-color);
-  pointer-events: none; /* Allow clicking through the card */
-  transition: transform 0.1s ease, box-shadow 0.2s ease;
-  z-index: 20; /* Higher than the overlay */
-  top: 40px; /* Initial position, will be updated with JS */
-  left: 120px; /* Initial position, will be updated with JS */
-  animation: pulse 2s infinite;
-}
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(93, 95, 239, 0.4); /* Using the --md-primary color value directly */
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(93, 95, 239, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(93, 95, 239, 0);
-  }
-}
-
-/* Dark theme pulse animation */
-[data-theme="dark"] .content-type-floating-card {
-  animation: pulse-dark 2s infinite;
-}
-
-@keyframes pulse-dark {
-  0% {
-    box-shadow: 0 0 0 0 rgba(180, 181, 255, 0.4); /* Using the dark theme --md-primary color value */
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(180, 181, 255, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(180, 181, 255, 0);
-  }
-}
-
-.content-type-icon {
-  font-size: 1.2rem;
-}
-
-.content-type-separator {
-  margin: 0 4px;
-  color: var(--text-secondary);
-  font-weight: 300;
-}
 
 .reset-prompt-btn {
   margin-top: 0; /* Remove top margin since it's in a flex container */

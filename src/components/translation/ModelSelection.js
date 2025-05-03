@@ -23,6 +23,7 @@ const ModelSelection = ({ selectedModel, onModelSelect }) => {
           selectedModel={selectedModel}
           buttonClassName="translate-model-dropdown"
           headerText={t('translation.selectModel', 'Select model for translation')}
+          isTranslationSection={true}
         />
       </div>
     </div>

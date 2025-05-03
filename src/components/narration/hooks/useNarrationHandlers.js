@@ -26,7 +26,6 @@ const useNarrationHandlers = ({
   setIsRecording,
   setIsExtractingSegment,
   setIsRecognizing,
-  setLanguageWarning,
   setError,
   autoRecognize,
   segmentStartTime,
@@ -68,7 +67,6 @@ const useNarrationHandlers = ({
       // If auto-recognize is enabled and upload was successful, transcribe the audio
       if (autoRecognize && result && result.success) {
         setIsRecognizing(true);
-        setLanguageWarning(false); // Reset language warning
 
         try {
           // Set a timeout to prevent waiting too long (10 seconds)
@@ -133,14 +131,6 @@ const useNarrationHandlers = ({
         // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
         if (autoRecognize || (!referenceText && result.reference_text)) {
           setReferenceText(result.reference_text);
-
-          // Check if the audio is not in English
-          if (result.is_english === false) {
-            setLanguageWarning(true);
-          } else {
-            // Make sure to reset the language warning if it's English
-            setLanguageWarning(false);
-          }
         }
 
         // Notify parent component
@@ -198,7 +188,6 @@ const useNarrationHandlers = ({
           // Set recognizing state if auto-recognize is enabled
           if (autoRecognize) {
             setIsRecognizing(true);
-            setLanguageWarning(false); // Reset language warning
 
             // Set a timeout to prevent waiting too long (10 seconds)
             const recognitionTimeout = setTimeout(() => {
@@ -258,14 +247,6 @@ const useNarrationHandlers = ({
             // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
             if (autoRecognize || (!referenceText && result.reference_text)) {
               setReferenceText(result.reference_text);
-
-              // Check if the audio is not in English
-              if (result.is_english === false) {
-                setLanguageWarning(true);
-              } else {
-                // Make sure to reset the language warning if it's English
-                setLanguageWarning(false);
-              }
             }
 
             // Notify parent component
@@ -329,7 +310,6 @@ const useNarrationHandlers = ({
       // If auto-recognize is enabled, transcribe the extracted segment
       if (autoRecognize && result && result.success) {
         setIsRecognizing(true);
-        setLanguageWarning(false); // Reset language warning
 
         // Create a blob from the extracted audio URL
         try {
@@ -341,7 +321,13 @@ const useNarrationHandlers = ({
 
           // Fetch the audio file
           const audioUrl = getAudioUrl(result.filename);
-          const response = await fetch(audioUrl);
+          const response = await fetch(audioUrl, {
+            mode: 'cors',
+            credentials: 'include',
+            headers: {
+              'Accept': 'audio/*'
+            }
+          });
           const audioBlob = await response.blob();
 
           // Transcribe the audio
@@ -380,14 +366,6 @@ const useNarrationHandlers = ({
         // Update reference text if auto-recognize is enabled or we got it from transcription
         if (autoRecognize || result.reference_text) {
           setReferenceText(result.reference_text);
-
-          // Check if the audio is not in English
-          if (result.is_english === false) {
-            setLanguageWarning(true);
-          } else {
-            // Make sure to reset the language warning if it's English
-            setLanguageWarning(false);
-          }
         }
 
         // Notify parent component
@@ -648,8 +626,11 @@ const useNarrationHandlers = ({
       console.log('Fetching:', downloadUrl);
       const response = await fetch(downloadUrl, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/octet-stream'
         },
         body: JSON.stringify({ filenames })
       });
@@ -751,8 +732,11 @@ const useNarrationHandlers = ({
       console.log('Fetching:', downloadUrl);
       const response = await fetch(downloadUrl, {
         method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'audio/wav'
         },
         body: JSON.stringify({ narrations: narrationData })
       });

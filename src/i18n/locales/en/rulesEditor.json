@@ -20,5 +20,6 @@
   "addRelationship": "+ Add Relationship",
   "notesDescription": "Add any other notes for consistent transcription",
   "notePlaceholder": "Additional note...",
-  "addNote": "+ Add Note"
+  "addNote": "+ Add Note",
+  "currentPrompt": "Current Prompt Preset"
 }

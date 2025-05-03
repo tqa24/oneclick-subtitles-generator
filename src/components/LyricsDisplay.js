@@ -224,8 +224,10 @@ const LyricsDisplay = ({
   // Find current lyric index based on time
   const currentIndex = lyrics.findIndex((lyric, index) => {
     const nextLyric = lyrics[index + 1];
+    // If there's a next lyric, use the middle point between current lyric's end and next lyric's start
+    // Otherwise, use the current lyric's end time
     return currentTime >= lyric.start &&
-      (nextLyric ? currentTime < nextLyric.start : currentTime <= lyric.end);
+      (nextLyric ? currentTime < (lyric.end + (nextLyric.start - lyric.end) / 2) : currentTime <= lyric.end);
   });
 
   // Reference to the virtualized list

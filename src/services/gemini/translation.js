@@ -112,7 +112,14 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message }
         }));
-        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems);
+
+        // Get rest time from localStorage if available
+        const restTime = parseInt(localStorage.getItem('translation_rest_time') || '0');
+        if (restTime > 0) {
+            console.log(`Using rest time of ${restTime} seconds between chunks`);
+        }
+
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems, restTime);
     }
 
     // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
@@ -768,9 +775,10 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
  *                                  For 3+ languages, only delimiter is used
  * @param {Object} bracketStyle - Custom bracket style { open, close } for single language mode or dual language mode
  * @param {Array} chainItems - Optional chain items for chain-based formatting
+ * @param {number} restTime - Optional rest time in seconds between chunk translations
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null) => {
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null, restTime = 0) => {
     // Convert splitDuration from minutes to seconds
     const splitDurationSeconds = splitDuration * 60;
 
@@ -835,6 +843,38 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
             // Pass along all parameters to maintain consistency across chunks
             const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, customPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle, chainItems);
             translatedChunks.push(translatedChunk);
+
+            // Add rest time between chunks if specified and not the last chunk
+            if (restTime > 0 && i < chunks.length - 1) {
+                console.log(`Adding rest time of ${restTime} seconds before next chunk`);
+                // Dispatch event to update UI with status
+                const waitMessage = i18n.t('translation.waitingForNextChunk', 'Waiting {{seconds}} seconds before translating the next chunk...', {
+                    seconds: restTime
+                });
+                window.dispatchEvent(new CustomEvent('translation-status', {
+                    detail: { message: waitMessage }
+                }));
+
+                // Create a countdown timer
+                for (let second = restTime; second > 0; second--) {
+                    // Check if processing has been force stopped
+                    if (getProcessingForceStopped()) {
+                        console.log('Translation was cancelled during rest time, stopping chunk processing');
+                        throw new Error('Translation request was aborted');
+                    }
+
+                    // Update the status message with the remaining seconds
+                    const countdownMessage = i18n.t('translation.waitingForNextChunk', 'Waiting {{seconds}} seconds before translating the next chunk...', {
+                        seconds: second
+                    });
+                    window.dispatchEvent(new CustomEvent('translation-status', {
+                        detail: { message: countdownMessage }
+                    }));
+
+                    // Wait for 1 second
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
         } catch (error) {
             console.error(`Error translating chunk ${i + 1}:`, error);
 

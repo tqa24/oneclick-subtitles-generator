@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateSubtitles, abortAllRequests, cancelTranslation } from '../services/geminiService';
+import { translateSubtitles, abortAllRequests, cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
 
 /**
  * Custom hook to manage translation state
@@ -25,9 +25,14 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('translation_split_duration') || '0');
   });
+  const [restTime, setRestTime] = useState(() => {
+    // Get the rest time from localStorage or use default (0 = no rest)
+    return parseInt(localStorage.getItem('translation_rest_time') || '0');
+  });
   const [includeRules, setIncludeRules] = useState(() => {
-    // Get the preference from localStorage or default to true
-    return localStorage.getItem('translation_include_rules') !== 'false';
+    // Get the preference from localStorage, but default to false
+    // It will be updated to true only if rules are available
+    return localStorage.getItem('translation_include_rules') === 'true';
   });
   const [rulesAvailable, setRulesAvailable] = useState(false);
   const [userProvidedSubtitles, setUserProvidedSubtitles] = useState('');
@@ -53,11 +58,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   useEffect(() => {
     const handleTranslationStatus = (event) => {
       setTranslationStatus(event.detail.message);
-
-      // Scroll to the status message if it exists
-      if (statusRef.current) {
-        statusRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
+      // Removed auto-scrolling behavior to prevent viewport jumping
     };
 
     window.addEventListener('translation-status', handleTranslationStatus);
@@ -71,11 +72,21 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         // Dynamically import to avoid circular dependencies
         const { getTranscriptionRulesSync } = await import('../utils/transcriptionRulesStore');
         const rules = getTranscriptionRulesSync();
-        setRulesAvailable(!!rules);
-        console.log('Transcription rules available:', !!rules);
+        const hasRules = !!rules;
+        setRulesAvailable(hasRules);
+
+        // If rules are not available, set includeRules to false
+        if (!hasRules) {
+          setIncludeRules(false);
+          localStorage.setItem('translation_include_rules', 'false');
+        }
+
+        console.log('Transcription rules available:', hasRules);
       } catch (error) {
         console.error('Error checking transcription rules availability:', error);
         setRulesAvailable(false);
+        setIncludeRules(false);
+        localStorage.setItem('translation_include_rules', 'false');
       }
     };
 
@@ -90,6 +101,13 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         const { getUserProvidedSubtitlesSync } = await import('../utils/userSubtitlesStore');
         const subtitles = getUserProvidedSubtitlesSync();
         setUserProvidedSubtitles(subtitles || '');
+
+        // If user-provided subtitles are present, set includeRules to false
+        if (subtitles && subtitles.trim() !== '') {
+          setIncludeRules(false);
+          localStorage.setItem('translation_include_rules', 'false');
+        }
+
         console.log('User-provided subtitles loaded:', subtitles ? 'yes' : 'no');
       } catch (error) {
         console.error('Error loading user-provided subtitles:', error);
@@ -138,6 +156,11 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       setError(t('translation.noSubtitles', 'No subtitles to translate'));
       return;
     }
+
+    // Reset the processing force stopped flag before starting a new translation
+    // This is important to ensure that previous cancellations don't affect new translations
+    setProcessingForceStopped(false);
+    console.log('Reset processing force stopped flag before starting translation');
 
     setError('');
     setIsTranslating(true);
@@ -198,7 +221,9 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const handleCancelTranslation = () => {
     console.log('Cancelling translation process...');
     // Call the cancelTranslation function from the translation service
-    // This will abort all active requests and set the processingForceStopped flag
+    // This will abort all active requests and set the processingForceStopped flag to true
+    // Note: The processingForceStopped flag will be reset to false when starting a new translation
+    // or when resetting the translation
     const aborted = cancelTranslation();
     console.log(`Translation cancellation ${aborted ? 'successful' : 'had no active requests to cancel'}`);
 
@@ -216,6 +241,11 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const handleReset = () => {
     setTranslatedSubtitles(null);
     setError('');
+
+    // Reset the processing force stopped flag when resetting translation
+    setProcessingForceStopped(false);
+    console.log('Reset processing force stopped flag during translation reset');
+
     if (onTranslationComplete) {
       onTranslationComplete(null);
     }
@@ -239,6 +269,15 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   };
 
   /**
+   * Handle rest time change
+   * @param {number} value - New rest time value in seconds
+   */
+  const handleRestTimeChange = (value) => {
+    setRestTime(value);
+    localStorage.setItem('translation_rest_time', value.toString());
+  };
+
+  /**
    * Handle include rules toggle
    * @param {boolean} value - New include rules value
    */
@@ -255,6 +294,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     selectedModel,
     customTranslationPrompt,
     splitDuration,
+    restTime,
     includeRules,
     rulesAvailable,
     hasUserProvidedSubtitles,
@@ -265,6 +305,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     handleCancelTranslation,
     handleReset,
     handleSplitDurationChange,
+    handleRestTimeChange,
     handleIncludeRulesChange
   };
 };

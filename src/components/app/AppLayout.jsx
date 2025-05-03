@@ -306,6 +306,17 @@ const AppLayout = ({
           }}
           initialRules={transcriptionRules}
           onSave={handleSaveRules}
+          onChangePrompt={(preset) => {
+            console.log('Prompt preset changed to:', preset.id);
+            // If we're using a recommended preset from video analysis, update the session storage
+            if (sessionStorage.getItem('current_session_preset_id')) {
+              sessionStorage.setItem('current_session_preset_id', preset.id);
+              sessionStorage.setItem('current_session_prompt', preset.prompt);
+            } else {
+              // Otherwise update the localStorage
+              localStorage.setItem('transcription_prompt', preset.prompt);
+            }
+          }}
         />
       )}
 

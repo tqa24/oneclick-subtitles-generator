@@ -90,7 +90,13 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
 
   // First, check if the Express server is available
   try {
-    const healthResponse = await fetch(`${API_BASE_URL}/health`);
+    const healthResponse = await fetch(`${API_BASE_URL}/health`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     if (!healthResponse.ok) {
       // If the Express server is not available, don't even try to check narration service
       return {
@@ -115,7 +121,13 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
         console.log(`Attempt ${attempt}/${maxAttempts} to check narration service status`);
       }
 
-      const response = await fetch(`${API_BASE_URL}/narration/status`);
+      const response = await fetch(`${API_BASE_URL}/narration/status`, {
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
 
       if (!response.ok) {
         if (!quietMode) {
@@ -200,7 +212,13 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
 export const checkNarrationStatus = async () => {
   // First, check if the Express server is available
   try {
-    const healthResponse = await fetch(`${API_BASE_URL}/health`);
+    const healthResponse = await fetch(`${API_BASE_URL}/health`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     if (!healthResponse.ok) {
       // If the Express server is not available, don't even try to check narration service
       return {
@@ -220,7 +238,13 @@ export const checkNarrationStatus = async () => {
 
   // Now check the narration service
   try {
-    const response = await fetch(`${API_BASE_URL}/narration/status`);
+    const response = await fetch(`${API_BASE_URL}/narration/status`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
 
     if (!response.ok) {
       // Using hardcoded Vietnamese message here because i18n context is not available in this service
@@ -267,6 +291,8 @@ export const uploadReferenceAudio = async (file, referenceText = '') => {
 
     const response = await fetch(`${API_BASE_URL}/narration/upload-reference`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       body: formData
     });
 
@@ -312,6 +338,8 @@ export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
 
     const response = await fetch(`${API_BASE_URL}/narration/record-reference`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       body: formData
     });
 
@@ -344,8 +372,11 @@ export const extractAudioSegment = async (videoPath, startTime, endTime) => {
   try {
     const response = await fetch(`${API_BASE_URL}/narration/extract-segment`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         video_path: videoPath,
@@ -401,8 +432,11 @@ export const clearNarrationOutput = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/narration/clear-output`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
 
@@ -461,8 +495,11 @@ export const generateNarration = async (
     // Create a fetch request with streaming response
     const response = await fetch(`${API_BASE_URL}/narration/generate`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
       },
       body: JSON.stringify({
         reference_audio: referenceAudio,
