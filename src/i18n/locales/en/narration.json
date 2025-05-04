@@ -100,5 +100,17 @@
   "batchSize": "Batch Size",
   "batchSizeDesc": "Set this smaller if your GPU cannot handle",
   "all": "All",
-  "mergeOutput": "Merge All Audio Files"
+  "mergeOutput": "Merge All Audio Files",
+
+  "geminiResults": "Generated Narration (Gemini)",
+  "playbackError": "Error playing audio",
+  "processingError": "Error processing audio data",
+  "downloadError": "Error creating WAV file for download",
+  "saveToServer": "Save to Server",
+  "saveToServerTooltip": "Save to server for use with video player",
+  "savedToServer": "Saved",
+  "alreadySavedTooltip": "Already saved to server",
+  "alreadySaved": "Audio already saved to server",
+  "savedSuccess": "Audio saved to server successfully",
+  "saveError": "Error saving audio to server"
 }

@@ -3,6 +3,7 @@
  */
 
 import { GeminiWebSocketClient } from './geminiWebSocketClient';
+import { SERVER_URL } from '../../config';
 
 /**
  * Available Gemini voices
@@ -550,8 +551,53 @@ export const generateGeminiNarrations = async (
       const batchResults = await Promise.all(batchPromises);
       console.log(`Completed batch ${batchIndex + 1}/${batches.length}`);
 
-      // Process each result
+      // Process each result and automatically save to server
       for (const result of batchResults) {
+        // If the result has audio data, save it to the server automatically
+        if (result.success && result.audioData) {
+          try {
+            console.log(`Automatically saving audio for subtitle ${result.subtitle_id} to server...`);
+
+            // Send the audio data to the server
+            const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                audioData: result.audioData,
+                subtitle_id: result.subtitle_id,
+                sampleRate: result.sampleRate || 24000
+              })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success) {
+                console.log(`Successfully saved audio to server: ${data.filename}`);
+                // Update the result with the filename
+                result.filename = data.filename;
+
+                // Dispatch an event to notify other components that narrations have been updated
+                const event = new CustomEvent('narrations-updated', {
+                  detail: {
+                    source: 'original', // Assuming Gemini narrations are for original subtitles
+                    narrations: [...results, result]
+                  }
+                });
+                window.dispatchEvent(event);
+              } else {
+                console.error(`Error saving audio to server: ${data.error}`);
+              }
+            } else {
+              console.error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+          } catch (error) {
+            console.error(`Error saving audio to server for subtitle ${result.subtitle_id}:`, error);
+          }
+        }
+
+        // Add the result to the results array
         results.push(result);
         onResult(result, results.length, total);
       }

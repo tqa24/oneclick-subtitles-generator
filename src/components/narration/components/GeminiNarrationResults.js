@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiPlay, FiPause, FiDownload } from 'react-icons/fi';
 import '../../../styles/narration/geminiNarrationResults.css';
+import { SERVER_URL } from '../../../config';
 
 // Utility function to convert base64 to ArrayBuffer
 const base64ToArrayBuffer = (base64) => {
@@ -269,6 +269,8 @@ const GeminiNarrationResults = ({ generationResults }) => {
   const audioRef = useRef(null);
   // Audio player reference for Web Audio API
   const [activeAudioPlayer, setActiveAudioPlayer] = useState(null);
+  // Track which audio files have been saved to the server
+  const [savedToServer, setSavedToServer] = useState({});
 
   // Clean up audio resources when component unmounts
   useEffect(() => {
@@ -357,10 +359,25 @@ const GeminiNarrationResults = ({ generationResults }) => {
             console.log(`Audio playback ended for subtitle ${result.subtitle_id}`);
             // Only clear the currently playing if it's still this subtitle
             if (currentlyPlaying === result.subtitle_id) {
+              console.log(`Clearing currently playing state for subtitle ${result.subtitle_id}`);
               setCurrentlyPlaying(null);
               setActiveAudioPlayer(null);
             }
           };
+
+          // Add a backup timeout in case the ended event doesn't fire
+          const audioDuration = player.getDuration();
+          if (audioDuration && audioDuration > 0) {
+            const timeoutMs = (audioDuration * 1000) + 500; // Add 500ms buffer
+            console.log(`Setting backup timeout for ${timeoutMs}ms for subtitle ${result.subtitle_id}`);
+            setTimeout(() => {
+              if (currentlyPlaying === result.subtitle_id) {
+                console.log(`Backup timeout: clearing playing state for subtitle ${result.subtitle_id}`);
+                setCurrentlyPlaying(null);
+                setActiveAudioPlayer(null);
+              }
+            }, timeoutMs);
+          }
 
           // Start playback
           await player.play();
@@ -391,7 +408,34 @@ const GeminiNarrationResults = ({ generationResults }) => {
           const wavBlob = createWavFromPcmForDownload(pcmData, sampleRate);
           const audioUrl = URL.createObjectURL(wavBlob);
 
+          // Set up the audio element
           audioRef.current.src = audioUrl;
+
+          // Make sure we have an ended event handler
+          const handleAudioEnded = () => {
+            console.log(`HTML Audio element ended for subtitle ${result.subtitle_id}`);
+            if (currentlyPlaying === result.subtitle_id) {
+              console.log(`Clearing currently playing state for subtitle ${result.subtitle_id}`);
+              setCurrentlyPlaying(null);
+            }
+          };
+
+          // Remove any existing ended event listener and add a new one
+          audioRef.current.removeEventListener('ended', handleAudioEnded);
+          audioRef.current.addEventListener('ended', handleAudioEnded);
+
+          // Add a backup timeout in case the ended event doesn't fire
+          const audioDuration = audioRef.current.duration || 5; // Default to 5 seconds if duration is not available
+          const timeoutMs = (audioDuration * 1000) + 500; // Add 500ms buffer
+          console.log(`Setting backup timeout for HTML Audio: ${timeoutMs}ms for subtitle ${result.subtitle_id}`);
+          setTimeout(() => {
+            if (currentlyPlaying === result.subtitle_id) {
+              console.log(`Backup timeout for HTML Audio: clearing playing state for subtitle ${result.subtitle_id}`);
+              setCurrentlyPlaying(null);
+            }
+          }, timeoutMs);
+
+          // Play the audio
           audioRef.current.play()
             .then(() => {
               // Check if this is still the current playback request
@@ -400,6 +444,8 @@ const GeminiNarrationResults = ({ generationResults }) => {
                 audioRef.current.pause();
                 return;
               }
+
+              console.log(`HTML Audio playback started for subtitle ${result.subtitle_id}`);
             })
             .catch(err => {
               console.error(`Error playing audio with fallback method for subtitle ${result.subtitle_id}:`, err);
@@ -423,7 +469,9 @@ const GeminiNarrationResults = ({ generationResults }) => {
 
   // Handle audio ended event
   const handleAudioEnded = () => {
+    console.log('Audio playback ended');
     setCurrentlyPlaying(null);
+    setActiveAudioPlayer(null);
   };
 
   // Download audio as WAV file
@@ -457,6 +505,89 @@ const GeminiNarrationResults = ({ generationResults }) => {
     }
   };
 
+  // Save audio to server for use with video player
+  const saveAudioToServer = async (result) => {
+    // If already saved, don't save again
+    if (savedToServer[result.subtitle_id]) {
+      console.log(`Audio for subtitle ${result.subtitle_id} already saved to server`);
+      alert(t('narration.alreadySaved', 'Audio already saved to server'));
+      return savedToServer[result.subtitle_id];
+    }
+
+    if (result.audioData) {
+      try {
+        console.log(`Saving audio for subtitle ${result.subtitle_id} to server...`);
+        console.log(`Audio data length: ${result.audioData.length} characters`);
+        console.log(`Sample rate: ${result.sampleRate || 24000}Hz`);
+
+        // Validate the audio data
+        try {
+          // Test decode to make sure it's valid base64
+          const testBuffer = base64ToArrayBuffer(result.audioData);
+          console.log(`Test decode successful, buffer size: ${testBuffer.byteLength} bytes`);
+        } catch (decodeError) {
+          console.error(`Error validating audio data: ${decodeError.message}`);
+          throw new Error(`Invalid audio data: ${decodeError.message}`);
+        }
+
+        // Send the audio data to the server
+        const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audioData: result.audioData,
+            subtitle_id: result.subtitle_id,
+            sampleRate: result.sampleRate || 24000
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Server error response: ${errorText}`);
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log(`Successfully saved audio to server: ${data.filename}`);
+          // Update the result with the filename
+          result.filename = data.filename;
+
+          // Update the savedToServer state
+          setSavedToServer(prev => ({
+            ...prev,
+            [result.subtitle_id]: data.filename
+          }));
+
+          // Dispatch an event to notify other components that narrations have been updated
+          const event = new CustomEvent('narrations-updated', {
+            detail: {
+              source: 'original', // Assuming Gemini narrations are for original subtitles
+              narrations: generationResults.map(r => ({
+                ...r,
+                filename: r.subtitle_id === result.subtitle_id ? data.filename : (savedToServer[r.subtitle_id] || r.filename)
+              }))
+            }
+          });
+          window.dispatchEvent(event);
+
+          alert(t('narration.savedSuccess', 'Audio saved to server successfully'));
+          return data.filename;
+        } else {
+          throw new Error(data.error || 'Unknown error saving audio to server');
+        }
+      } catch (error) {
+        console.error(`Error saving audio to server for subtitle ${result.subtitle_id}:`, error);
+        alert(t('narration.saveError', 'Error saving audio to server'));
+        return null;
+      }
+    }
+    return null;
+  };
+
   // Download all audio files as a zip
   const downloadAllAudio = () => {
     // For now, just alert that this feature is not implemented
@@ -472,40 +603,66 @@ const GeminiNarrationResults = ({ generationResults }) => {
         {generationResults.map((result) => (
           <div
             key={result.subtitle_id}
-            className={`gemini-result-item ${result.success ? '' : 'failed'}`}
+            className={`gemini-result-item ${result.success ? '' : 'failed'} ${currentlyPlaying === result.subtitle_id ? 'playing' : ''}`}
           >
-            <div className="gemini-result-header">
+            <div className="gemini-result-text">
               <span className="gemini-result-id">{result.subtitle_id}.</span>
-              <div className="gemini-result-text">
-                {result.text}
-              </div>
-              {result.success && result.audioData && (
-                <div className="audio-controls">
-                  <button
-                    className={`play-btn ${currentlyPlaying === result.subtitle_id ? 'playing' : ''}`}
-                    onClick={() => playAudio(result)}
-                    title={currentlyPlaying === result.subtitle_id ?
-                      t('narration.pause', 'Pause') :
-                      t('narration.play', 'Play')}
-                  >
-                    {currentlyPlaying === result.subtitle_id ? <FiPause size={16} /> : <FiPlay size={16} />}
-                  </button>
-                  <button
-                    className="download-btn"
-                    onClick={() => downloadAudio(result)}
-                    title={t('narration.download', 'Download')}
-                  >
-                    <FiDownload size={16} />
-                  </button>
-                </div>
-              )}
+              {result.text}
             </div>
 
-            {!result.success && (
-              <div className="gemini-error-message">
-                {t('narration.generationFailed', 'Generation failed')}: {result.error || t('narration.unknownError', 'Unknown error')}
-              </div>
-            )}
+            <div className="audio-controls">
+              {result.success && result.audioData ? (
+                <>
+                  <button
+                    className="pill-button primary"
+                    onClick={() => playAudio(result)}
+                  >
+                    {currentlyPlaying === result.subtitle_id ? (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="6" y="4" width="4" height="16" fill="currentColor" />
+                          <rect x="14" y="4" width="4" height="16" fill="currentColor" />
+                        </svg>
+                        {t('narration.pause', 'Pause')}
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                        </svg>
+                        {t('narration.play', 'Play')}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    className="pill-button secondary"
+                    onClick={() => downloadAudio(result)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    {t('narration.download', 'Download')}
+                  </button>
+                  {/* Status indicator for saved files */}
+                  {savedToServer[result.subtitle_id] && (
+                    <span className="pill-button success" style={{ cursor: 'default' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                      {t('narration.savedToServer', 'Saved')}
+                    </span>
+                  )}
+                </>
+              ) : (
+                !result.success && (
+                  <span className="gemini-error-message">
+                    {t('narration.failed', 'Generation failed')}
+                  </span>
+                )
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -516,7 +673,13 @@ const GeminiNarrationResults = ({ generationResults }) => {
           <button
             className="gemini-export-btn"
             onClick={downloadAllAudio}
+            title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
             {t('narration.downloadAll', 'Download All Audio')}
           </button>
         </div>

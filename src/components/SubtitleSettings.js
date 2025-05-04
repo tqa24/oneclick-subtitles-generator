@@ -329,43 +329,55 @@ const SubtitleSettings = ({
 
   // Handle video timeupdate to trigger narration playback
   useEffect(() => {
+    // Handle seeking events to reset audio state
+    const handleSeeking = () => {
+      console.log('Video seeking event triggered');
+
+      // Stop any currently playing narration
+      if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+        console.log(`Stopping current narration ${currentNarration.subtitle_id} due to seeking`);
+        audioRefs.current[currentNarration.subtitle_id].pause();
+        setCurrentNarration(null);
+      }
+    };
+
+    const handleSeeked = () => {
+      console.log('Video seeked event triggered');
+
+      // The timeupdate handler will pick up the new position and play the appropriate narration
+    };
+
     const handleTimeUpdate = () => {
       if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0) return;
 
       const currentTime = videoRef.current.currentTime;
+      console.log(`Video time update: ${currentTime}`);
       const activeNarrations = narrationSource === 'original' ? internalOriginalNarrations : internalTranslatedNarrations;
+
+      // Array to collect narrations that should be playing at the current time
+      const eligibleNarrations = [];
 
       // Find narrations that should be playing at the current time
       activeNarrations.forEach(narration => {
         if (!narration.success) return;
 
-        // Debug narration success status
-        console.log('Narration success status:', narration.success);
-
-        // Debug narration structure
-        console.log('Narration object:', narration);
-
         // Get the subtitle ID
         const subtitleId = narration.subtitle_id;
-        console.log('Subtitle ID:', subtitleId);
 
         // Try to find the matching subtitle from window.subtitlesData
         let subtitleData;
         if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
           subtitleData = window.subtitlesData.find(sub => sub.id === subtitleId);
-          console.log('Found subtitle data from window.subtitlesData:', subtitleData);
         }
 
         // If not found, try to find it in the original subtitles prop
         if (!subtitleData && window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
           subtitleData = window.originalSubtitles.find(sub => sub.id === subtitleId);
-          console.log('Found subtitle data from window.originalSubtitles:', subtitleData);
         }
 
         // If still not found, try to find it in the translated subtitles prop
         if (!subtitleData && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
           subtitleData = window.translatedSubtitles.find(sub => sub.id === subtitleId);
-          console.log('Found subtitle data from window.translatedSubtitles:', subtitleData);
         }
 
         // If we couldn't find the subtitle data, skip this narration
@@ -380,39 +392,62 @@ const SubtitleSettings = ({
         const subtitleEnd = typeof subtitleData.end === 'number' ?
           subtitleData.end : parseFloat(subtitleData.end);
 
-        console.log('Subtitle timing:', subtitleStart, 'to', subtitleEnd);
-
-        // We no longer need the subtitle midpoint since we're aligning with the start
-
         // Get narration duration (or use a default if not available)
         const narrationDuration = audioDurationsRef.current[narration.subtitle_id] || 2.0;
 
         // Simply align the narration start with the subtitle start
-        // This is more straightforward and predictable
         const startPlay = subtitleStart;
         const endPlay = subtitleStart + narrationDuration;
 
         // Check if current time is within the play window
         if (currentTime >= startPlay && currentTime <= endPlay) {
           console.log(`Current time ${currentTime} is within play window ${startPlay}-${endPlay} for subtitle ${narration.subtitle_id}`);
-          // If we're not already playing this narration, play it
-          if (!currentNarration || currentNarration.subtitle_id !== narration.subtitle_id) {
-            console.log(`Starting narration for subtitle ${narration.subtitle_id} at subtitle start ${subtitleStart}`);
-            playNarration(narration);
-          }
+
+          // Add this narration to eligible narrations with its start time
+          eligibleNarrations.push({
+            narration,
+            subtitleStart,
+            subtitleEnd,
+            startPlay,
+            endPlay
+          });
         }
       });
+
+      // If we have eligible narrations and we're not already playing one of them
+      if (eligibleNarrations.length > 0) {
+        // Sort eligible narrations by start time (earliest first)
+        eligibleNarrations.sort((a, b) => a.subtitleStart - b.subtitleStart);
+
+        // Log all eligible narrations for debugging
+        console.log(`Found ${eligibleNarrations.length} eligible narrations:`, eligibleNarrations);
+
+        // Check if we're already playing one of the eligible narrations
+        const alreadyPlayingEligible = currentNarration &&
+          eligibleNarrations.some(item => item.narration.subtitle_id === currentNarration.subtitle_id);
+
+        // If we're not already playing an eligible narration, play the earliest one
+        if (!alreadyPlayingEligible) {
+          const narrationToPlay = eligibleNarrations[0].narration;
+          console.log(`Starting narration for subtitle ${narrationToPlay.subtitle_id} at subtitle start ${eligibleNarrations[0].subtitleStart}`);
+          playNarration(narrationToPlay);
+        }
+      }
     };
 
-    // Add event listener to video
+    // Add event listeners to video
     if (videoRef && videoRef.current && hasAnyNarrations && narrationSource !== '' && narrationVolume > 0) {
       videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+      videoRef.current.addEventListener('seeking', handleSeeking);
+      videoRef.current.addEventListener('seeked', handleSeeked);
     }
 
     return () => {
-      // Clean up event listener
+      // Clean up event listeners
       if (videoRef && videoRef.current) {
         videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
+        videoRef.current.removeEventListener('seeking', handleSeeking);
+        videoRef.current.removeEventListener('seeked', handleSeeked);
       }
     };
   }, [hasAnyNarrations, narrationSource, internalOriginalNarrations, internalTranslatedNarrations, currentNarration, videoRef, narrationVolume]);
@@ -420,6 +455,12 @@ const SubtitleSettings = ({
   // Play a specific narration
   const playNarration = (narration) => {
     console.log('Playing narration:', narration);
+
+    // If we're already playing this narration, don't restart it
+    if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+      console.log(`Already playing narration ${narration.subtitle_id}, not restarting`);
+      return;
+    }
 
     // Store the subtitle data with the narration for reference
     if (!narration.subtitleData) {
@@ -456,7 +497,10 @@ const SubtitleSettings = ({
       console.log('Creating new audio element for URL:', audioUrl);
 
       const audio = new Audio(audioUrl);
+
+      // Set volume immediately
       audio.volume = narrationVolume;
+      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${narration.subtitle_id}`);
 
       // Add error handling
       audio.addEventListener('error', (e) => {
@@ -469,18 +513,46 @@ const SubtitleSettings = ({
       audio.addEventListener('loadedmetadata', () => {
         console.log('Audio loaded metadata, duration:', audio.duration);
         audioDurationsRef.current[narration.subtitle_id] = audio.duration;
+
+        // Set volume again after metadata is loaded
+        audio.volume = narrationVolume;
+        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${narration.subtitle_id}`);
       });
 
       // Add play event listener
       audio.addEventListener('play', () => {
-        console.log('Audio started playing');
+        console.log(`Audio started playing for narration ${narration.subtitle_id} with volume ${audio.volume}`);
       });
 
       // Add ended event listener
       audio.addEventListener('ended', () => {
-        console.log('Audio finished playing');
+        console.log(`Audio finished playing for narration ${narration.subtitle_id}`);
         if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+          console.log(`Clearing current narration state for ${narration.subtitle_id}`);
           setCurrentNarration(null);
+        }
+      });
+
+      // Add a safety timeout to ensure the narration state is cleared
+      // even if the ended event doesn't fire for some reason
+      audio.addEventListener('play', () => {
+        const duration = audio.duration || 10; // Default to 10 seconds if duration is unknown
+        const safetyTimeout = setTimeout(() => {
+          if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+            console.log(`Safety timeout: clearing current narration state for ${narration.subtitle_id}`);
+            setCurrentNarration(null);
+          }
+        }, (duration * 1000) + 1000); // Add 1 second buffer
+
+        // Store the timeout ID on the audio element so we can clear it if needed
+        audio._safetyTimeoutId = safetyTimeout;
+      });
+
+      // Clear the safety timeout if the audio is paused or ended
+      audio.addEventListener('pause', () => {
+        if (audio._safetyTimeoutId) {
+          clearTimeout(audio._safetyTimeoutId);
+          audio._safetyTimeoutId = null;
         }
       });
 
@@ -491,8 +563,10 @@ const SubtitleSettings = ({
 
     // Play the narration
     const audioElement = audioRefs.current[narration.subtitle_id];
+
+    // Set volume again before playing
     audioElement.volume = narrationVolume;
-    console.log('Setting audio volume to:', narrationVolume);
+    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${narration.subtitle_id}`);
 
     // If we have the subtitle midpoint and audio duration, calculate the start time
     const audioDuration = audioDurationsRef.current[narration.subtitle_id];
