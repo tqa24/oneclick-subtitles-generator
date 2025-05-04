@@ -510,7 +510,6 @@ const GeminiNarrationResults = ({ generationResults }) => {
     // If already saved, don't save again
     if (savedToServer[result.subtitle_id]) {
       console.log(`Audio for subtitle ${result.subtitle_id} already saved to server`);
-      alert(t('narration.alreadySaved', 'Audio already saved to server'));
       return savedToServer[result.subtitle_id];
     }
 
@@ -574,25 +573,114 @@ const GeminiNarrationResults = ({ generationResults }) => {
           });
           window.dispatchEvent(event);
 
-          alert(t('narration.savedSuccess', 'Audio saved to server successfully'));
           return data.filename;
         } else {
           throw new Error(data.error || 'Unknown error saving audio to server');
         }
       } catch (error) {
         console.error(`Error saving audio to server for subtitle ${result.subtitle_id}:`, error);
-        alert(t('narration.saveError', 'Error saving audio to server'));
         return null;
       }
     }
     return null;
   };
 
-  // Download all audio files as a zip
+  // Download all audio files
   const downloadAllAudio = () => {
-    // For now, just alert that this feature is not implemented
-    // In a real implementation, you would use JSZip or similar to create a zip file
-    alert(t('narration.downloadAllNotImplemented', 'Download all functionality not implemented yet'));
+    // Download each audio file individually
+    generationResults.forEach(result => {
+      if (result.success && result.audioData) {
+        downloadAudio(result);
+      }
+    });
+  };
+
+  // Download aligned narration audio (one file)
+  const downloadAlignedAudio = async () => {
+    // Check if we have any generation results
+    if (!generationResults || generationResults.length === 0) {
+      alert(t('narration.noResults', 'No narration results to download'));
+      return;
+    }
+
+    // Create a loading indicator
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.className = 'loading-indicator';
+    loadingIndicator.innerHTML = `
+      <div class="loading-spinner"></div>
+      <div class="loading-text">${t('narration.preparingDownload', 'Preparing aligned narration file...')}</div>
+    `;
+    document.body.appendChild(loadingIndicator);
+
+    try {
+      // Get the server URL from the config
+      const { SERVER_URL } = require('../../../config');
+
+      // Prepare the data for the aligned narration
+      const narrationData = generationResults
+        .filter(result => result.success && result.audioData)
+        .map(result => {
+          return {
+            filename: result.filename || `gemini_narration_${result.subtitle_id}.wav`,
+            subtitle_id: result.subtitle_id,
+            start: result.start || 0,
+            end: result.end || 0,
+            text: result.text || ''
+          };
+        });
+
+      // Sort by subtitle ID to ensure correct order
+      narrationData.sort((a, b) => a.subtitle_id - b.subtitle_id);
+
+      console.log('Generating aligned narration for:', narrationData);
+
+      // Create a download link
+      const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
+
+      // Use fetch API to download the file
+      console.log('Fetching:', downloadUrl);
+      const response = await fetch(downloadUrl, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/wav'
+        },
+        body: JSON.stringify({ narrations: narrationData })
+      });
+
+      // Check if the response is successful
+      if (!response.ok) {
+        throw new Error(`Failed to download aligned audio: ${response.statusText}`);
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
+
+      // Create a temporary anchor element
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'aligned_narration.wav';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading aligned audio:', error);
+      alert(t('narration.downloadError', `Error downloading aligned audio file: ${error.message}`));
+    } finally {
+      // Remove loading indicator
+      document.body.removeChild(loadingIndicator);
+    }
   };
 
   return (
@@ -645,15 +733,7 @@ const GeminiNarrationResults = ({ generationResults }) => {
                     </svg>
                     {t('narration.download', 'Download')}
                   </button>
-                  {/* Status indicator for saved files */}
-                  {savedToServer[result.subtitle_id] && (
-                    <span className="pill-button success" style={{ cursor: 'default' }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                      {t('narration.savedToServer', 'Saved')}
-                    </span>
-                  )}
+
                 </>
               ) : (
                 !result.success && (
@@ -667,21 +747,35 @@ const GeminiNarrationResults = ({ generationResults }) => {
         ))}
       </div>
 
-      {/* Download all button */}
+      {/* Download buttons - styled like the F5-TTS section */}
       {generationResults.length > 0 && generationResults.some(r => r.success && r.audioData) && (
         <div className="gemini-export-controls">
-          <button
-            className="gemini-export-btn"
-            onClick={downloadAllAudio}
-            title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {t('narration.downloadAll', 'Download All Audio')}
-          </button>
+          <div className="pill-button-group">
+            <button
+              className="pill-button secondary download-all-btn"
+              onClick={downloadAllAudio}
+              title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {t('narration.downloadAll', 'Download All')}
+            </button>
+            <button
+              className="pill-button secondary"
+              onClick={downloadAlignedAudio}
+              title={t('narration.downloadAlignedTooltip', 'Download a single aligned narration file')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {t('narration.downloadAligned', 'Download as aligned on timeline')}
+            </button>
+          </div>
         </div>
       )}
 
