@@ -29,6 +29,29 @@
   border: 1px solid rgba(var(--md-error-rgb), 0.2);
 }
 
+/* Loading message styling */
+.narration-loading-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: rgba(var(--md-primary-rgb), 0.08);
+  border-radius: 16px;
+  margin-top: 1rem;
+  border: 1px solid rgba(var(--md-primary-rgb), 0.2);
+}
+
+.narration-loading-message .loading-icon {
+  animation: spin 2s linear infinite;
+  color: var(--md-primary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .narration-unavailable-message .warning-icon {
   flex-shrink: 0;
   color: var(--md-error);
@@ -587,8 +610,11 @@ textarea.reference-text::-webkit-resizer {
 /* Radio pill group */
 .radio-pill-group {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Keep buttons in a row */
   gap: 0.5rem;
+  align-items: center;
+  height: 42px; /* Match the height of narration-row */
+  justify-content: flex-start; /* Align to the left */
 }
 
 .radio-pill {
@@ -688,9 +714,19 @@ textarea.reference-text::-webkit-resizer {
 /* Subtitle source selection container */
 .subtitle-selection-container {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   width: 100%;
+  flex-wrap: wrap;
+}
+
+/* Ensure radio-pill-group inside subtitle-selection-container aligns left */
+.subtitle-selection-container .radio-pill-group {
+  justify-content: flex-start;
+  align-items: center;
+  flex-shrink: 0;
+  order: 1; /* Ensure it appears before error messages */
 }
 
 /* Selected model display */
@@ -724,6 +760,10 @@ textarea.reference-text::-webkit-resizer {
   background-color: rgba(var(--md-surface-variant-rgb), 0.3);
   color: var(--md-on-surface-variant);
   font-size: 0.9rem;
+  box-sizing: border-box;
+  order: 2; /* Ensure it appears below the radio pills and dropdown */
+  flex-basis: 100%; /* Take full width in flex container */
+  margin-top: 0.5rem;
 }
 
 /* Model error messages */

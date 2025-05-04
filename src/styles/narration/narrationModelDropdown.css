@@ -3,6 +3,8 @@
   position: relative;
   display: inline-block;
   z-index: 1000;
+  flex-shrink: 0;
+  order: 1; /* Ensure it appears before error messages */
 }
 
 /* When dropdown is open, ensure container has higher z-index */
@@ -16,24 +18,28 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 21px;
-  background-color: var(--md-surface-3);
+  height: 36px; /* Match height with radio pills */
+  border-radius: var(--md-shape-pill); /* Use the same pill shape */
+  background-color: rgba(var(--md-surface-variant-rgb), 0.5); /* Match radio pill background */
   border: 1px solid var(--md-outline-variant);
-  color: var(--text-primary);
-  font-family: 'Open Sans', sans-serif;
+  color: var(--md-on-surface-variant); /* Match radio pill text color */
+  font-family: var(--font-primary);
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard); /* Match radio pill transition */
   white-space: nowrap;
-  width: 100%;
-  max-width: 400px;
+  width: auto; /* Allow button to size to content */
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  box-shadow: var(--md-elevation-level1); /* Add shadow like radio pills */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .narration-model-dropdown-btn:hover:not(:disabled) {
-  background-color: var(--md-surface-4);
+  background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .narration-model-dropdown-btn:disabled {
@@ -43,6 +49,13 @@
 
 .narration-model-dropdown-btn .dropdown-icon.active {
   transform: rotate(180deg);
+}
+
+.model-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
 }
 
 /* Model group label */
@@ -72,6 +85,10 @@
   background-color: rgba(var(--error-color-rgb), 0.1);
   color: var(--error-color);
   font-size: 0.85rem;
+  width: 100%; /* Full width */
+  box-sizing: border-box;
+  order: 2; /* Ensure it appears below the radio pills and dropdown */
+  flex-basis: 100%; /* Take full width in flex container */
 }
 
 .model-error-standalone {
@@ -84,6 +101,10 @@
   background-color: rgba(var(--error-color-rgb), 0.1);
   color: var(--error-color);
   font-size: 0.85rem;
+  width: 100%; /* Full width */
+  box-sizing: border-box;
+  order: 2; /* Ensure it appears below the radio pills and dropdown */
+  flex-basis: 100%; /* Take full width in flex container */
 }
 
 /* Responsive adjustments */
@@ -98,8 +119,9 @@
   }
 
   .model-name {
-    max-width: 150px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: inline-block;
   }
 }

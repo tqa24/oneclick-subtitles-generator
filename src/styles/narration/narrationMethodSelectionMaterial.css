@@ -1,0 +1,140 @@
+/* Narration Method Selection Styles - Material Design */
+
+/* The row styling is already handled by .narration-row in unifiedNarrationRedesign.css */
+
+.narration-method-selection {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.narration-method-selection .radio-pill-group {
+  display: flex;
+  flex-wrap: nowrap; /* Keep buttons in a row */
+  gap: 12px;
+  align-items: center;
+  height: 42px; /* Match the height of narration-row */
+  justify-content: flex-start; /* Align to the left */
+  flex-shrink: 0;
+  order: 1; /* Ensure it appears before error messages */
+}
+
+.narration-method-selection .radio-pill {
+  position: relative;
+}
+
+.narration-method-selection .radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.narration-method-selection .radio-pill label {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  height: 36px; /* Match the height of pill buttons in audio-controls */
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--md-on-surface);
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  box-shadow: var(--md-elevation-level1); /* Add shadow like pill buttons */
+}
+
+.narration-method-selection .radio-pill label:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.narration-method-selection .radio-pill label:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:checked + label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:checked + label:hover {
+  background-color: var(--md-primary-container);
+  opacity: 0.9;
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:disabled + label {
+  opacity: 0.38; /* Match the opacity of disabled pill buttons */
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+  transform: none;
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:disabled + label:hover {
+  box-shadow: none;
+  transform: none;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+}
+
+.narration-method-selection .radio-pill label.unavailable {
+  opacity: 0.38;
+  background-color: var(--md-surface-1);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+}
+
+.narration-method-selection .method-description {
+  margin-left: 8px;
+  font-size: 0.85em;
+  opacity: 0.7;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:checked + label .method-description {
+  opacity: 0.9;
+}
+
+/* Error message styling */
+.narration-method-selection .method-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background-color: rgba(var(--md-error-rgb), 0.1);
+  color: var(--md-error);
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+  order: 2; /* Ensure it appears below the radio pills */
+  flex-basis: 100%; /* Take full width in flex container */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .narration-method-selection .radio-pill-group {
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+  }
+  
+  .narration-method-selection .radio-pill label {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

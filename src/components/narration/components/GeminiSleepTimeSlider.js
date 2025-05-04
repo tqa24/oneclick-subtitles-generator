@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import '../../../styles/narration/geminiSleepTimeSlider.css';
+import '../../../styles/narration/geminiSleepTimeSliderMaterial.css';
 
 /**
  * Component for controlling the sleep time between Gemini narration requests
@@ -21,7 +21,7 @@ const GeminiSleepTimeSlider = ({
     const newValue = parseInt(e.target.value);
     console.log('Sleep time changed:', newValue);
     setSleepTime(newValue);
-    
+
     // Store in localStorage for persistence
     try {
       localStorage.setItem('gemini_sleep_time', newValue.toString());
@@ -41,8 +41,8 @@ const GeminiSleepTimeSlider = ({
             <input
               type="range"
               min="0"
-              max="5000"
-              step="100"
+              max="30000"
+              step="500"
               value={sleepTime}
               onChange={handleSleepTimeChange}
               disabled={isGenerating}
@@ -50,7 +50,8 @@ const GeminiSleepTimeSlider = ({
             />
             <div className="slider-labels">
               <span>0s</span>
-              <span>5s</span>
+              <span>15s</span>
+              <span>30s</span>
             </div>
           </div>
           <div className="current-value">
@@ -58,7 +59,7 @@ const GeminiSleepTimeSlider = ({
           </div>
         </div>
         <div className="sleep-time-description">
-          {t('narration.sleepTimeDescription', 'Adjust the delay between batches to avoid rate limiting. Higher values may prevent errors but will slow down generation.')}
+          {t('narration.sleepTimeDescription', 'Adjust the delay between batches to avoid rate limiting. Higher values (10-30s) may prevent errors but will slow down generation.')}
         </div>
       </div>
     </div>

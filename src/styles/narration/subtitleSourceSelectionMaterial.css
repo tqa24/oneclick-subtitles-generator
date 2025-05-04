@@ -1,0 +1,198 @@
+/* Subtitle Source Selection Styles - Material Design */
+
+/* The row styling is already handled by .narration-row in unifiedNarrationRedesign.css */
+
+.subtitle-selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.subtitle-selection-container .radio-pill-group {
+  display: flex;
+  flex-wrap: nowrap; /* Keep buttons in a row like audio-controls */
+  gap: 12px;
+  align-items: center;
+  height: 42px; /* Match the height of narration-row and audio-controls */
+  justify-content: flex-start; /* Align to the left */
+}
+
+.subtitle-selection-container .radio-pill {
+  position: relative;
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.subtitle-selection-container .radio-pill label {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  height: 36px; /* Match the height of pill buttons in audio-controls */
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--md-on-surface);
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  box-shadow: var(--md-elevation-level1); /* Add shadow like pill buttons */
+}
+
+.subtitle-selection-container .radio-pill label:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.subtitle-selection-container .radio-pill label:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label:hover {
+  background-color: var(--md-primary-container);
+  opacity: 0.9;
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:disabled + label {
+  opacity: 0.38; /* Match the opacity of disabled pill buttons */
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+  transform: none;
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:disabled + label:hover {
+  box-shadow: none;
+  transform: none;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+}
+
+.subtitle-selection-container .unavailable-indicator {
+  margin-left: 8px;
+  font-size: 0.85em;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Language badge styles */
+.language-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  border-radius: 12px; /* More pill-like */
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label .language-badge {
+  background-color: rgba(var(--md-on-primary-container-rgb), 0.2);
+  color: var(--md-on-primary-container);
+  border-color: rgba(var(--md-primary-rgb), 0.3);
+}
+
+.language-badge.multi {
+  margin-left: 4px;
+  background-color: var(--md-surface-3);
+}
+
+.language-badge-container {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+/* Loading animation */
+.loading-animation {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner-circle {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(var(--md-primary-rgb), 0.3);
+  border-top-color: var(--md-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Model checking styles */
+.model-checking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--md-on-surface-variant);
+}
+
+.model-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--md-error-container);
+  border-left: 3px solid var(--md-error);
+  color: var(--md-on-error-container);
+  font-size: 0.9rem;
+  border-radius: 4px;
+}
+
+.model-error-standalone {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background-color: var(--md-error-container);
+  border: 1px solid var(--md-outline-variant);
+  border-left: 4px solid var(--md-error);
+  color: var(--md-on-error-container);
+  font-size: 0.9rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-icon {
+  font-size: 1.1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subtitle-selection-container .radio-pill-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .subtitle-selection-container .radio-pill label {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

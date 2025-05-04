@@ -11,6 +11,7 @@ import '../../../styles/narration/modelDropdown.css';
 import '../../../styles/narration/languageBadges.css';
 import '../../../styles/narration/narrationModelDropdown.css';
 import '../../../styles/ModelDropdown.css';
+import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
 
 /**
  * Subtitle Source Selection component

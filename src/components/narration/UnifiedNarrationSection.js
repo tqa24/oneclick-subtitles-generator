@@ -52,9 +52,10 @@ const UnifiedNarrationSection = ({
 }) => {
   const { t } = useTranslation();
 
-  // Narration Method state
-  const [narrationMethod, setNarrationMethod] = useState('f5tts'); // Default to F5-TTS
+  // Narration Method state - always default to Gemini
+  const [narrationMethod, setNarrationMethod] = useState('gemini');
   const [isGeminiAvailable, setIsGeminiAvailable] = useState(true); // Assume Gemini is available by default
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
 
   // Gemini-specific settings
   const [sleepTime, setSleepTime] = useState(() => {
@@ -134,7 +135,7 @@ const UnifiedNarrationSection = ({
       try {
         console.log('Checking narration service availability');
 
-        // Check F5-TTS availability
+        // Check F5-TTS availability in the background
         const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
         console.log('F5-TTS narration service status:', f5Status);
 
@@ -148,13 +149,13 @@ const UnifiedNarrationSection = ({
         // Set Gemini availability
         setIsGeminiAvailable(geminiStatus.available);
 
-        // Set error message if F5-TTS is not available and we're using F5-TTS method
-        if (!f5Status.available && narrationMethod === 'f5tts' && f5Status.message) {
-          setError(f5Status.message);
-        }
         // Set error message if Gemini is not available and we're using Gemini method
-        else if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
+        if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
           setError(geminiStatus.message);
+        }
+        // Set error message if F5-TTS is not available and we're using F5-TTS method
+        else if (!f5Status.available && narrationMethod === 'f5tts' && f5Status.message) {
+          setError(f5Status.message);
         }
         else {
           // Clear any previous errors
@@ -448,8 +449,10 @@ const UnifiedNarrationSection = ({
     translatedLanguage
   });
 
-  // If service is unavailable, show a simple message with the Vietnamese text
-  if (!isAvailable) {
+  // No loading state - we'll just show the Gemini UI right away
+
+  // Only show the unavailable message if both F5-TTS and Gemini are unavailable
+  if (!isAvailable && !isGeminiAvailable) {
     return (
       <div className="narration-section unavailable">
         <div className="narration-header">
@@ -469,7 +472,7 @@ const UnifiedNarrationSection = ({
             </svg>
           </div>
           <div className="message">
-            {error || t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.")}
+            {t('narration.allServicesUnavailableMessage', "Both F5-TTS and Gemini narration services are unavailable. For F5-TTS, please run with npm run dev:cuda. For Gemini, please check your API key in settings.")}
           </div>
         </div>
       </div>
@@ -490,6 +493,8 @@ const UnifiedNarrationSection = ({
         narrationMethod={narrationMethod}
         setNarrationMethod={setNarrationMethod}
         isGenerating={isGenerating}
+        isF5Available={isAvailable}
+        isGeminiAvailable={isGeminiAvailable}
       />
 
       {/* Error Message */}

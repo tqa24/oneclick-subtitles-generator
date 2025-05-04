@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
-import '../../../styles/narration/subtitleSourceSelection.css';
+import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
 
 /**
  * Simplified subtitle source selection component for Gemini narration

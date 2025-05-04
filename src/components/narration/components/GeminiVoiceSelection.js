@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GEMINI_VOICES } from '../../../services/gemini/geminiNarrationService';
-import '../../../styles/narration/geminiVoiceSelection.css';
+import '../../../styles/narration/geminiVoiceSelectionMaterial.css';
 
 /**
  * Component for selecting a Gemini voice
@@ -17,16 +17,16 @@ const GeminiVoiceSelection = ({
   isGenerating
 }) => {
   const { t } = useTranslation();
-  
+
   // Group voices by gender
   const femaleVoices = GEMINI_VOICES.filter(voice => voice.gender === 'Female');
   const maleVoices = GEMINI_VOICES.filter(voice => voice.gender === 'Male');
-  
+
   const handleVoiceChange = (e) => {
     const newVoice = e.target.value;
     console.log('Voice changed:', newVoice);
     setSelectedVoice(newVoice);
-    
+
     // Store in localStorage for persistence
     try {
       localStorage.setItem('gemini_voice', newVoice);
@@ -62,7 +62,7 @@ const GeminiVoiceSelection = ({
                 ))}
               </div>
             </div>
-            
+
             <div className="voice-group male-voices">
               <div className="group-label">{t('narration.maleVoices', 'Male Voices')}</div>
               <div className="voice-options">
