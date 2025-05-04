@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
-import '../styles/narration/unifiedNarration.css';
+import '../styles/narration/unifiedNarrationRedesign.css';
 import VideoPreview from './previews/VideoPreview';
 import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';

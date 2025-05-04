@@ -2,118 +2,66 @@
 
 /* The row styling is already handled by .narration-row in unifiedNarrationRedesign.css */
 
-.gemini-sleep-time-slider {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
+/* Fix for disabled sliders in narration gemini sleep time row */
+.narration-row.gemini-sleep-time-row .slider-with-value .custom-slider-container.disabled {
+  position: relative;
+  overflow: hidden;
+  background: none;
 }
 
-.slider-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+/* Add a semi-transparent overlay to prevent ghost effect */
+.narration-row.gemini-sleep-time-row .slider-with-value .custom-slider-container.disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none;
 }
 
-/* Material Design slider styling */
-.sleep-time-slider {
-  width: 100%;
-  height: 8px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--md-surface-variant);
-  border-radius: 4px;
-  outline: none;
-  cursor: pointer;
-  margin: 10px 0;
+/* Ensure the input is completely hidden in disabled state */
+.narration-row.gemini-sleep-time-row .slider-with-value .custom-slider-container.disabled .custom-slider-input {
+  opacity: 0;
+  visibility: hidden;
 }
 
-.sleep-time-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--md-primary);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: var(--md-elevation-level1);
-  transition: all 0.2s ease;
-}
-
-.sleep-time-slider::-webkit-slider-thumb:hover {
-  background: var(--md-primary);
-  transform: scale(1.1);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.sleep-time-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: var(--md-primary);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-  box-shadow: var(--md-elevation-level1);
-  transition: all 0.2s ease;
-}
-
-.sleep-time-slider::-moz-range-thumb:hover {
-  background: var(--md-primary);
-  transform: scale(1.1);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.sleep-time-slider:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.sleep-time-slider:disabled::-webkit-slider-thumb,
-.sleep-time-slider:disabled::-moz-range-thumb {
-  background: var(--md-outline);
-  transform: none;
+/* Ensure the thumb doesn't create ghost effect */
+.narration-row.gemini-sleep-time-row .slider-with-value .custom-slider-container.disabled .custom-slider-thumb {
   box-shadow: none;
 }
 
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--md-on-surface-variant);
-  padding: 0 10px;
+/* Additional fix for ghost duplicate effect */
+.narration-row.gemini-sleep-time-row .slider-with-value .custom-slider-container.disabled {
+  filter: grayscale(30%);
 }
 
-.current-value {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--md-primary);
-  min-width: 50px;
-  text-align: center;
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  padding: 6px 12px;
-  border-radius: var(--md-shape-pill);
-  box-shadow: var(--md-elevation-level1);
-}
-
-.sleep-time-description {
-  margin-top: 10px;
-  font-size: 0.9rem;
-  color: var(--md-on-surface-variant);
-  font-style: italic;
-  line-height: 1.4;
+/* Ensure gemini sleep time slider doesn't have ghost effect */
+.gemini-sleep-time-slider {
+  z-index: 1;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .gemini-sleep-time-slider {
+  .narration-row.gemini-sleep-time-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
   }
-  
-  .current-value {
-    align-self: flex-start;
+
+  .narration-row.gemini-sleep-time-row .row-label {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    margin-bottom: 0.5rem;
+  }
+
+  .narration-row.gemini-sleep-time-row .row-content {
+    width: 100%;
+  }
+
+  .narration-row.gemini-sleep-time-row .slider-with-value {
+    width: 100%;
   }
 }

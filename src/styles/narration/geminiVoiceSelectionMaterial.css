@@ -59,8 +59,10 @@
   color: var(--md-on-surface);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: 32px;
   transition: all 0.2s ease;
+  width: 100%;
 }
 
 .voice-option label::before {
@@ -124,6 +126,50 @@
 
 .male-voices .voice-option label:hover::before {
   border-color: var(--md-secondary);
+}
+
+/* Play voice sample button */
+.play-voice-sample {
+  background: none;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--md-outline);
+  transition: all 0.2s ease;
+  margin-left: 8px;
+  padding: 0;
+}
+
+.play-voice-sample:hover {
+  background-color: var(--md-surface-2);
+  color: var(--md-primary);
+}
+
+.play-voice-sample.playing {
+  background-color: var(--md-primary-container);
+  color: var(--md-primary);
+}
+
+.female-voices .play-voice-sample:hover,
+.female-voices .play-voice-sample.playing {
+  color: var(--md-tertiary);
+  background-color: var(--md-tertiary-container);
+}
+
+.male-voices .play-voice-sample:hover,
+.male-voices .play-voice-sample.playing {
+  color: var(--md-secondary);
+  background-color: var(--md-secondary-container);
+}
+
+/* Hide the audio element */
+.voice-sample-audio {
+  display: none;
 }
 
 /* Responsive adjustments */

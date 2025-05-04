@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import '../../styles/narration/narrationPlaybackMenu.css';
+import '../../styles/narration/narrationPlaybackMenuRedesign.css';
 
 /**
  * Narration Playback Menu component
