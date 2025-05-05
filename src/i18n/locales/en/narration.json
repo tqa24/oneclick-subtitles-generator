@@ -115,5 +115,12 @@
 
   "narrationMethod": "Narration Method",
   "f5ttsMethod": "F5-TTS",
-  "geminiMethod": "Gemini"
+  "geminiMethod": "Gemini",
+
+  "alignedMode": "Use Aligned Narration",
+  "enabled": "Enabled",
+  "disabled": "Disabled",
+  "generatingAligned": "Generating aligned narration...",
+  "regenerateAligned": "Regenerate Aligned Audio",
+  "videoVolume": "Video Audio Volume"
 }

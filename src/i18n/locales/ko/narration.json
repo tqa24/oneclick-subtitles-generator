@@ -116,5 +116,12 @@
   "narrationMethod": "나레이션 방식",
   "geminiUnavailable": "(사용 불가 - 설정에서 API 키 확인)",
   "downloadAligned": "타임라인에 정렬된 상태로 다운로드",
-  "downloadAlignedTooltip": "단일 정렬된 나레이션 파일 다운로드"
+  "downloadAlignedTooltip": "단일 정렬된 나레이션 파일 다운로드",
+
+  "alignedMode": "정렬된 나레이션 사용",
+  "enabled": "활성화됨",
+  "disabled": "비활성화됨",
+  "generatingAligned": "정렬된 나레이션 생성 중...",
+  "regenerateAligned": "정렬된 오디오 재생성",
+  "videoVolume": "비디오 오디오 볼륨"
 }

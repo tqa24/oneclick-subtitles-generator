@@ -31,7 +31,15 @@ const NarrationMenu = ({
   currentNarration,
   hasOriginalNarrations,
   hasTranslatedNarrations,
-  hasAnyNarrations
+  hasAnyNarrations,
+  useAlignedMode,
+  setUseAlignedMode,
+  isAlignedAvailable,
+  isGeneratingAligned,
+  alignedStatus,
+  regenerateAlignedNarration,
+  setCurrentNarration,
+  audioRefs
 }) => {
   const { t } = useTranslation();
   const menuRef = useRef(null);
@@ -233,6 +241,107 @@ const NarrationMenu = ({
                 <div className="slider-value-display">{Math.round(narrationVolume * 100)}%</div>
               </div>
             </div>
+
+            {/* Aligned Narration Mode Toggle */}
+            {hasAnyNarrations && (
+              <div className="setting-group">
+                <label className={hasAnyNarrations ? '' : 'disabled'}>
+                  <span className="icon-label-container">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                      <line x1="7" y1="2" x2="7" y2="22"></line>
+                      <line x1="17" y1="2" x2="17" y2="22"></line>
+                      <line x1="2" y1="12" x2="22" y2="12"></line>
+                      <line x1="2" y1="7" x2="7" y2="7"></line>
+                      <line x1="2" y1="17" x2="7" y2="17"></line>
+                      <line x1="17" y1="17" x2="22" y2="17"></line>
+                      <line x1="17" y1="7" x2="22" y2="7"></line>
+                    </svg>
+                    <span>{t('narration.alignedMode', 'Use Aligned Narration')}</span>
+                  </span>
+                </label>
+                <div className="toggle-switch-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={useAlignedMode}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        const isEnablingAlignedMode = e.target.checked;
+
+                        // Update the aligned mode state
+                        setUseAlignedMode(isEnablingAlignedMode);
+
+                        if (isEnablingAlignedMode) {
+                          // When enabling aligned mode:
+
+                          // 1. Stop any currently playing individual narrations
+                          if (currentNarration) {
+                            console.log('Stopping individual narration when enabling aligned mode');
+
+                            // Clean up all audio elements
+                            Object.keys(audioRefs.current).forEach(id => {
+                              const audio = audioRefs.current[id];
+                              if (audio) {
+                                console.log(`Cleaning up audio element for narration ${id}`);
+                                audio.pause();
+                                audio.src = '';
+                                delete audioRefs.current[id];
+                              }
+                            });
+
+                            // Clear current narration state
+                            setCurrentNarration(null);
+                          }
+
+                          // 2. Generate aligned narration if needed
+                          if (!isAlignedAvailable && !isGeneratingAligned) {
+                            console.log('Generating aligned narration');
+                            regenerateAlignedNarration();
+                          }
+                        }
+                      }}
+                      disabled={!hasAnyNarrations}
+                    />
+                    <span className="slider round"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {useAlignedMode ? t('narration.enabled', 'Enabled') : t('narration.disabled', 'Disabled')}
+                  </span>
+                </div>
+
+                {/* Aligned narration status */}
+                {isGeneratingAligned && (
+                  <div className="notification-message info">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>
+                      {alignedStatus?.message || t('narration.generatingAligned', 'Generating aligned narration...')}
+                    </span>
+                  </div>
+                )}
+
+                {useAlignedMode && isAlignedAvailable && !isGeneratingAligned && (
+                  <button
+                    className="pill-button secondary regenerate-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      regenerateAlignedNarration();
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 4v6h-6"></path>
+                      <path d="M1 20v-6h6"></path>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    {t('narration.regenerateAligned', 'Regenerate Aligned Audio')}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="setting-group">
               <label>

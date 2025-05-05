@@ -137,5 +137,12 @@
   "narrationMethod": "Phương pháp thuyết minh",
   "geminiUnavailable": "(Không khả dụng - Kiểm tra khóa API trong cài đặt)",
   "downloadAligned": "Tải xuống như đã sắp xếp trên timeline",
-  "downloadAlignedTooltip": "Tải xuống một tập tin thuyết minh đã sắp xếp"
+  "downloadAlignedTooltip": "Tải xuống một tập tin thuyết minh đã sắp xếp",
+
+  "alignedMode": "Sử dụng thuyết minh đã sắp xếp",
+  "enabled": "Đã bật",
+  "disabled": "Đã tắt",
+  "generatingAligned": "Đang tạo thuyết minh đã sắp xếp...",
+  "regenerateAligned": "Tạo lại âm thanh đã sắp xếp",
+  "videoVolume": "Âm lượng video"
 }

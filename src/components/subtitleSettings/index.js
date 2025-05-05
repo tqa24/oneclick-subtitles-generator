@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/SubtitleSettings.css';
 import '../../styles/narration/narrationPlaybackMenuRedesign.css';
+import '../../styles/narration/alignedNarration.css';
 import { SERVER_URL } from '../../config';
 import useSubtitleSettings from './hooks/useSubtitleSettings';
 import useNarration from './hooks/useNarration';
 import NarrationMenu from './components/NarrationMenu';
 import SubtitleSettingsPanel from './components/SubtitleSettingsPanel';
+import { cleanupAudioElement } from './utils/AudioUtils';
 
 /**
  * SubtitleSettings component
@@ -60,12 +62,21 @@ const SubtitleSettings = ({
     videoVolume,
     setVideoVolume,
     currentNarration,
+    setCurrentNarration,
     internalOriginalNarrations,
     internalTranslatedNarrations,
     hasOriginalNarrations,
     hasTranslatedNarrations,
     hasAnyNarrations,
-    playNarration
+    playNarration,
+    audioRefs,
+    // Aligned narration props
+    useAlignedMode,
+    setUseAlignedMode,
+    isAlignedAvailable,
+    isGeneratingAligned,
+    alignedStatus,
+    regenerateAlignedNarration
   } = useNarration(videoRef, originalNarrations, translatedNarrations, SERVER_URL);
 
   // Update subtitle language when translation becomes available
@@ -81,21 +92,62 @@ const SubtitleSettings = ({
     const handleSeeking = () => {
       console.log('Video seeking event triggered');
 
+      // Skip individual narration handling when aligned mode is enabled
+      if (useAlignedMode) {
+        console.log('Using aligned narration mode, seeking handled by aligned narration service');
+        return;
+      }
+
       // Stop any currently playing narration
       if (currentNarration) {
         console.log(`Stopping current narration ${currentNarration.subtitle_id} due to seeking`);
+
+        // Get the audio element for the current narration
+        const audioElement = audioRefs.current[currentNarration.subtitle_id];
+
+        if (audioElement) {
+          console.log(`Cleaning up audio element for narration ${currentNarration.subtitle_id}`);
+
+          // Properly clean up the audio element
+          cleanupAudioElement(audioElement);
+
+          // Remove the reference to force recreation on next play
+          delete audioRefs.current[currentNarration.subtitle_id];
+        }
+
+        // Clear current narration state
+        setCurrentNarration(null);
       }
     };
 
     const handleSeeked = () => {
       console.log('Video seeked event triggered');
+
+      // Skip individual narration handling when aligned mode is enabled
+      if (useAlignedMode) {
+        console.log('Using aligned narration mode, seeked handled by aligned narration service');
+        return;
+      }
+
+      // Reset any audio elements that might be in a bad state
+      // This ensures that when we try to play narration after seeking, we'll create fresh audio elements
+      if (currentNarration === null) {
+        console.log('Ready to play new narration after seeking');
+      }
+
       // The timeupdate handler will pick up the new position and play the appropriate narration
     };
 
     const lastLoggedTime = { current: 0 };
 
     const handleTimeUpdate = () => {
-      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0) {
+      // Skip individual narration handling if any of these conditions are true:
+      // 1. No narrations available
+      // 2. No video reference
+      // 3. No narration source selected
+      // 4. Narration volume is muted
+      // 5. Aligned narration mode is enabled (this is the key change)
+      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0 || useAlignedMode) {
         return;
       }
 
@@ -208,7 +260,10 @@ const SubtitleSettings = ({
     currentNarration,
     videoRef,
     narrationVolume,
-    playNarration
+    playNarration,
+    audioRefs,
+    setCurrentNarration,
+    useAlignedMode
   ]);
 
   return (
@@ -250,6 +305,14 @@ const SubtitleSettings = ({
           hasOriginalNarrations={hasOriginalNarrations}
           hasTranslatedNarrations={hasTranslatedNarrations}
           hasAnyNarrations={hasAnyNarrations}
+          useAlignedMode={useAlignedMode}
+          setUseAlignedMode={setUseAlignedMode}
+          isAlignedAvailable={isAlignedAvailable}
+          isGeneratingAligned={isGeneratingAligned}
+          alignedStatus={alignedStatus}
+          regenerateAlignedNarration={regenerateAlignedNarration}
+          setCurrentNarration={setCurrentNarration}
+          audioRefs={audioRefs}
         />
       </div>
 

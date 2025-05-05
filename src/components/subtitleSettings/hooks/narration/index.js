@@ -3,6 +3,7 @@ import useNarrationState from './useNarrationState';
 import useNarrationEvents from './useNarrationEvents';
 import useNarrationPlayback from './useNarrationPlayback';
 import useNarrationEffects from './useNarrationEffects';
+import useAlignedNarration from './useAlignedNarration';
 
 /**
  * Custom hook for managing narration playback
@@ -17,10 +18,13 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
   // Audio refs for narration playback
   const audioRefs = useRef({});
   const audioDurationsRef = useRef({});
-  
+
   // Get basic narration state
   const narrationState = useNarrationState(originalNarrations, translatedNarrations);
-  
+
+  // Add aligned narration mode state
+  const [useAlignedMode, setUseAlignedMode] = useState(false);
+
   // Handle narration events
   const narrationEvents = useNarrationEvents(
     narrationState.setInternalOriginalNarrations,
@@ -30,7 +34,7 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
     narrationState.narrationSource,
     audioRefs
   );
-  
+
   // Handle narration playback
   const narrationPlayback = useNarrationPlayback(
     videoRef,
@@ -42,7 +46,7 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
     audioDurationsRef,
     serverUrl
   );
-  
+
   // Handle narration effects
   useNarrationEffects(
     videoRef,
@@ -54,11 +58,30 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
     narrationState.currentNarration,
     narrationState.setNarrationSource
   );
-  
+
+  // Get the active narrations based on source
+  const activeNarrations = narrationState.narrationSource === 'original'
+    ? narrationState.internalOriginalNarrations
+    : narrationState.internalTranslatedNarrations;
+
+  // Handle aligned narration
+  const alignedNarration = useAlignedNarration(
+    videoRef,
+    activeNarrations,
+    narrationState.narrationVolume,
+    useAlignedMode
+  );
+
   return {
     ...narrationState,
     playNarration: narrationPlayback.playNarration,
-    audioRefs
+    audioRefs,
+    // Explicitly include setCurrentNarration to ensure it's exported
+    setCurrentNarration: narrationState.setCurrentNarration,
+    // Add aligned narration state and handlers
+    useAlignedMode,
+    setUseAlignedMode,
+    ...alignedNarration
   };
 };
 

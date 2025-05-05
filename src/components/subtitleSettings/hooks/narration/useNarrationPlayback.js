@@ -94,8 +94,19 @@ const useNarrationPlayback = (
     // Always recreate the audio element for retried narrations to ensure we're using the latest version
     // Check if this is a retried narration by comparing the filename with what we might have in audioRefs
     const existingAudio = audioRefs.current[latestNarration.subtitle_id];
-    const isRetried = existingAudio && existingAudio.src &&
-                     !existingAudio.src.includes(latestNarration.filename);
+
+    // Consider an audio element for recreation if:
+    // 1. It's a retried narration (different filename)
+    // 2. It has an error
+    // 3. It's in a non-playable state (readyState < 1)
+    const isRetried = existingAudio && (
+      // Different filename indicates a retry
+      (existingAudio.src && !existingAudio.src.includes(latestNarration.filename)) ||
+      // Error state indicates we should recreate
+      existingAudio.error ||
+      // Low readyState indicates potential playback issues
+      (existingAudio.readyState < 1)
+    );
 
     if (isRetried) {
       console.log(`Detected retried narration for ${latestNarration.subtitle_id}, recreating audio element`);
@@ -111,11 +122,18 @@ const useNarrationPlayback = (
 
     // Get or create audio element for this narration
     if (!audioRefs.current[latestNarration.subtitle_id]) {
-      const audioUrl = `${serverUrl}/api/narration/audio/${latestNarration.filename}`;
+      // Get the properly formatted audio URL
+      const audioUrl = getAudioUrl(latestNarration, serverUrl);
       console.log('Creating new audio element for URL:', audioUrl);
 
       // Create a new audio element with event handlers
-      const audio = new Audio(audioUrl);
+      const audio = new Audio();
+
+      // Set preload attribute to auto to start loading as soon as possible
+      audio.preload = 'auto';
+
+      // Set the source after configuring preload
+      audio.src = audioUrl;
 
       // Set volume immediately
       audio.volume = narrationVolume;
@@ -248,32 +266,103 @@ const useNarrationPlayback = (
                 audioUrl: audioElement.src,
                 error: error
               });
+
+              // If the error is about no supported sources, try to reload with a corrected URL
+              if (error.name === 'NotSupportedError' && error.message.includes('no supported sources')) {
+                console.log('Attempting to reload audio with corrected URL');
+
+                // Get the properly formatted audio URL
+                const correctedUrl = getAudioUrl(latestNarration, serverUrl);
+
+                if (audioElement.src !== correctedUrl) {
+                  console.log(`Correcting URL from ${audioElement.src} to ${correctedUrl}`);
+                  audioElement.src = correctedUrl;
+
+                  // Try loading again
+                  audioElement.load();
+                }
+              }
             });
           audioElement.removeEventListener('loadeddata', loadHandler);
         };
 
         audioElement.addEventListener('loadeddata', loadHandler);
 
-        // Set a timeout in case the loadeddata event never fires
-        setTimeout(() => {
+        // Also listen for canplaythrough event which is more reliable
+        const canPlayHandler = () => {
+          console.log('Audio can play through without buffering, now attempting to play');
+
+          // Clear the timeout since we're ready to play
+          if (audioElement._loadTimeoutId) {
+            clearTimeout(audioElement._loadTimeoutId);
+            audioElement._loadTimeoutId = null;
+          }
+
+          audioElement.play()
+            .then(() => console.log('Audio playback started successfully from canplaythrough event'))
+            .catch(error => {
+              console.error('Error playing audio from canplaythrough event:', error);
+            });
+          audioElement.removeEventListener('canplaythrough', canPlayHandler);
+        };
+
+        audioElement.addEventListener('canplaythrough', canPlayHandler);
+
+        // Set a longer timeout in case the loadeddata event never fires
+        // Increased from 3 seconds to 8 seconds for better buffering
+        audioElement._loadTimeoutId = setTimeout(() => {
+          // Clear the timeout ID since it's now executing
+          audioElement._loadTimeoutId = null;
           if (audioElement.readyState < 2) {
             console.log('Timeout waiting for audio to load, trying to play anyway');
             audioElement.removeEventListener('loadeddata', loadHandler);
-            audioElement.play()
-              .then(() => console.log('Audio playback started after timeout'))
-              .catch(error => {
-                console.error('Error playing audio after timeout:', error);
+            audioElement.removeEventListener('canplaythrough', canPlayHandler);
 
-                // Log detailed error information
-                console.error('Failed to play audio after timeout:', {
-                  subtitle_id: latestNarration.subtitle_id,
-                  filename: latestNarration.filename,
-                  audioUrl: audioElement.src,
-                  error: error
+            // Force a reload before trying to play
+            audioElement.load();
+
+            // Wait a bit more after reload
+            setTimeout(() => {
+              audioElement.play()
+                .then(() => console.log('Audio playback started after timeout and reload'))
+                .catch(error => {
+                  console.error('Error playing audio after timeout:', error);
+
+                  // Log detailed error information
+                  console.error('Failed to play audio after timeout:', {
+                    subtitle_id: latestNarration.subtitle_id,
+                    filename: latestNarration.filename,
+                    audioUrl: audioElement.src,
+                    error: error
+                  });
+
+                  // If still failing, try one more time with a corrected URL
+                  if (error.name === 'NotSupportedError' && error.message.includes('no supported sources')) {
+                    // Get the properly formatted audio URL with explicit http protocol if needed
+                    let correctedUrl = getAudioUrl(latestNarration, serverUrl);
+
+                    // If URL doesn't start with http, add it
+                    if (!correctedUrl.startsWith('http')) {
+                      correctedUrl = `http://${correctedUrl.startsWith('//') ? correctedUrl.slice(2) : correctedUrl}`;
+                    }
+
+                    console.log(`Last attempt with fully corrected URL: ${correctedUrl}`);
+                    audioElement.src = correctedUrl;
+                    audioElement.load();
+
+                    // Final attempt after a short delay
+                    setTimeout(() => {
+                      audioElement.play()
+                        .then(() => console.log('Audio playback finally started with corrected URL'))
+                        .catch(finalError => {
+                          console.error('Final error playing audio:', finalError);
+                        });
+                    }, 1000);
+                  }
                 });
-              });
+            }, 1000);
           }
-        }, 3000);
+        }, 8000);
       } else {
         // Audio is ready, play it now
         audioElement.play()

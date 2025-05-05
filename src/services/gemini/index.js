@@ -30,6 +30,20 @@ import { translateSubtitles, cancelTranslation } from './translation';
 // Export document processing functionality
 import { completeDocument, summarizeDocument } from './documentProcessingService';
 
+// Export WebSocket client
+import { GeminiWebSocketClient } from './client/GeminiWebSocketClient';
+
+// Export audio utilities
+import {
+    convertPcmBase64ToWavBase64,
+    createWavFromPcm,
+    base64ToArrayBuffer,
+    writeString
+} from './utils/audioUtils';
+
+// Export blob utilities
+import { blobToJSON } from './utils/blobUtils';
+
 // Export aliases for backward compatibility
 const transcribeVideo = callGeminiApi;
 const transcribeAudio = callGeminiApi;
@@ -61,6 +75,18 @@ export {
     // Document processing
     completeDocument,
     summarizeDocument,
+
+    // WebSocket client
+    GeminiWebSocketClient,
+
+    // Audio utilities
+    convertPcmBase64ToWavBase64,
+    createWavFromPcm,
+    base64ToArrayBuffer,
+    writeString,
+
+    // Blob utilities
+    blobToJSON,
 
     // Aliases for backward compatibility
     transcribeVideo,

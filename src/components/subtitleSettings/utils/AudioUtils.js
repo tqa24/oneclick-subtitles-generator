@@ -1,7 +1,6 @@
 /**
  * Audio utilities for narration playback
  */
-import { base64ToBlob } from './base64Utils';
 
 /**
  * Create and configure an audio element for narration
@@ -59,6 +58,12 @@ export const cleanupAudioElement = (audioElement) => {
     audioElement._safetyTimeoutId = null;
   }
 
+  // Stop any load timeouts
+  if (audioElement._loadTimeoutId) {
+    clearTimeout(audioElement._loadTimeoutId);
+    audioElement._loadTimeoutId = null;
+  }
+
   // Pause and unload the audio
   audioElement.pause();
   audioElement.src = '';
@@ -67,15 +72,25 @@ export const cleanupAudioElement = (audioElement) => {
 
 /**
  * Create a server URL for a narration file
- * @param {Object} narration - Narration object
+ * @param {Object|string} narration - Narration object or filename
  * @param {string} serverUrl - Server URL
  * @returns {string|null} - URL to the audio file or null if not available
  */
 export const getAudioUrl = (narration, serverUrl) => {
-  if (!narration || !narration.filename) {
+  // Handle case where narration is just a filename string
+  const filename = typeof narration === 'string'
+    ? narration
+    : (narration && narration.filename ? narration.filename : null);
+
+  if (!filename) {
     console.error('Cannot get audio URL: narration has no filename', narration);
     return null;
   }
 
-  return `${serverUrl}/api/narration/audio/${narration.filename}`;
+  // Ensure the server URL is properly formatted
+  const baseUrl = serverUrl ?
+    (serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl) :
+    '';
+
+  return `${baseUrl}/api/narration/audio/${filename}`;
 };
