@@ -5,6 +5,7 @@ import '../styles/narration/narrationPlaybackMenuRedesign.css';
 import NarrationPlaybackMenu from './narration/NarrationPlaybackMenu';
 import SimpleNarrationMenu from './narration/SimpleNarrationMenu';
 import { SERVER_URL } from '../config';
+import { debugNarrationPlayback, testAudioPlayback } from '../utils/narrationDebugger';
 
 const SubtitleSettings = ({
   settings,
@@ -167,6 +168,7 @@ const SubtitleSettings = ({
   const audioRefs = useRef({});
   const audioDurationsRef = useRef({});
   const [currentNarration, setCurrentNarration] = useState(null);
+  const lastLoggedTime = useRef(0);
 
   // State to track narrations internally
   const [internalOriginalNarrations, setInternalOriginalNarrations] = useState(originalNarrations || []);
@@ -182,7 +184,7 @@ const SubtitleSettings = ({
     }
   }, [originalNarrations, translatedNarrations]);
 
-  // Listen for narrations-updated event
+  // Listen for narrations-updated and narration-retried events
   useEffect(() => {
     const handleNarrationsUpdated = (event) => {
       console.log('SubtitleSettings - Received narrations-updated event:', event.detail);
@@ -216,7 +218,97 @@ const SubtitleSettings = ({
       }
     };
 
+    // Handle narration retry events
+    const handleNarrationRetried = (event) => {
+      console.log('SubtitleSettings - Received narration-retried event:', event.detail);
+      const { source, narration, narrations } = event.detail;
+
+      // Update the appropriate narration array
+      if (source === 'original') {
+        setInternalOriginalNarrations(narrations);
+        console.log('SubtitleSettings - Updated original narrations with retried narration:', narration);
+
+        // If we're currently playing the retried narration, stop it so it can be replaced
+        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+          console.log('SubtitleSettings - Currently playing narration was retried, stopping playback');
+          if (audioRefs.current[narration.subtitle_id]) {
+            audioRefs.current[narration.subtitle_id].pause();
+          }
+
+          // Properly clean up the old audio element
+          const oldAudio = audioRefs.current[narration.subtitle_id];
+          if (oldAudio) {
+            // Remove all event listeners to prevent memory leaks
+            oldAudio.onloadedmetadata = null;
+            oldAudio.onplay = null;
+            oldAudio.onended = null;
+            oldAudio.onpause = null;
+            oldAudio.onerror = null;
+
+            // Stop any safety timeouts
+            if (oldAudio._safetyTimeoutId) {
+              clearTimeout(oldAudio._safetyTimeoutId);
+              oldAudio._safetyTimeoutId = null;
+            }
+
+            // Pause and unload the audio
+            oldAudio.pause();
+            oldAudio.src = '';
+            oldAudio.load();
+          }
+
+          // Remove the old audio reference so it will be recreated with the new audio
+          delete audioRefs.current[narration.subtitle_id];
+          delete audioDurationsRef.current[narration.subtitle_id];
+
+          // Clear current narration state
+          setCurrentNarration(null);
+        }
+      } else if (source === 'translated') {
+        setInternalTranslatedNarrations(narrations);
+        console.log('SubtitleSettings - Updated translated narrations with retried narration:', narration);
+
+        // If we're currently playing the retried narration, stop it so it can be replaced
+        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
+          console.log('SubtitleSettings - Currently playing narration was retried, stopping playback');
+          if (audioRefs.current[narration.subtitle_id]) {
+            audioRefs.current[narration.subtitle_id].pause();
+          }
+
+          // Properly clean up the old audio element
+          const oldAudio = audioRefs.current[narration.subtitle_id];
+          if (oldAudio) {
+            // Remove all event listeners to prevent memory leaks
+            oldAudio.onloadedmetadata = null;
+            oldAudio.onplay = null;
+            oldAudio.onended = null;
+            oldAudio.onpause = null;
+            oldAudio.onerror = null;
+
+            // Stop any safety timeouts
+            if (oldAudio._safetyTimeoutId) {
+              clearTimeout(oldAudio._safetyTimeoutId);
+              oldAudio._safetyTimeoutId = null;
+            }
+
+            // Pause and unload the audio
+            oldAudio.pause();
+            oldAudio.src = '';
+            oldAudio.load();
+          }
+
+          // Remove the old audio reference so it will be recreated with the new audio
+          delete audioRefs.current[narration.subtitle_id];
+          delete audioDurationsRef.current[narration.subtitle_id];
+
+          // Clear current narration state
+          setCurrentNarration(null);
+        }
+      }
+    };
+
     window.addEventListener('narrations-updated', handleNarrationsUpdated);
+    window.addEventListener('narration-retried', handleNarrationRetried);
 
     // Also check localStorage on mount
     try {
@@ -241,6 +333,7 @@ const SubtitleSettings = ({
 
     return () => {
       window.removeEventListener('narrations-updated', handleNarrationsUpdated);
+      window.removeEventListener('narration-retried', handleNarrationRetried);
     };
   }, [currentNarration, narrationSource]);
 
@@ -348,11 +441,43 @@ const SubtitleSettings = ({
     };
 
     const handleTimeUpdate = () => {
-      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0) return;
+      if (!hasAnyNarrations || !videoRef?.current || narrationSource === '' || narrationVolume === 0) {
+        // Log the reason why we're not processing this time update
+        if (!hasAnyNarrations) console.log('Time update ignored: No narrations available');
+        if (!videoRef?.current) console.log('Time update ignored: No video reference');
+        if (narrationSource === '') console.log('Time update ignored: No narration source selected');
+        if (narrationVolume === 0) console.log('Time update ignored: Narration volume is 0');
+        return;
+      }
 
       const currentTime = videoRef.current.currentTime;
-      console.log(`Video time update: ${currentTime}`);
+
+      // Only log every second to reduce console spam
+      if (Math.floor(currentTime) !== Math.floor(lastLoggedTime.current)) {
+        console.log(`Video time update: ${currentTime.toFixed(2)}`);
+        lastLoggedTime.current = currentTime;
+      }
+
       const activeNarrations = narrationSource === 'original' ? internalOriginalNarrations : internalTranslatedNarrations;
+
+      // Log if there are no active narrations
+      if (!activeNarrations || activeNarrations.length === 0) {
+        console.log(`No active narrations for source: ${narrationSource}`);
+        // Log the current state of narrations for debugging
+        console.log('Current narration state:', {
+          internalOriginalNarrations: internalOriginalNarrations,
+          internalTranslatedNarrations: internalTranslatedNarrations,
+          windowOriginalNarrations: window.originalNarrations,
+          windowTranslatedNarrations: window.translatedNarrations,
+          narrationSource: narrationSource,
+          hasOriginalNarrations: hasOriginalNarrations,
+          hasTranslatedNarrations: hasTranslatedNarrations
+        });
+        return;
+      }
+
+      // Log the active narrations for debugging
+      console.log(`Active narrations for source ${narrationSource}:`, activeNarrations);
 
       // Array to collect narrations that should be playing at the current time
       const eligibleNarrations = [];
@@ -452,14 +577,64 @@ const SubtitleSettings = ({
     };
   }, [hasAnyNarrations, narrationSource, internalOriginalNarrations, internalTranslatedNarrations, currentNarration, videoRef, narrationVolume]);
 
+  // Helper function to convert base64 to Blob
+  const base64ToBlob = (base64, mimeType) => {
+    const byteCharacters = atob(base64);
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+
+    return new Blob(byteArrays, { type: mimeType });
+  };
+
   // Play a specific narration
-  const playNarration = (narration) => {
+  const playNarration = async (narration) => {
     console.log('Playing narration:', narration);
 
     // If we're already playing this narration, don't restart it
     if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
       console.log(`Already playing narration ${narration.subtitle_id}, not restarting`);
       return;
+    }
+
+    // Validate narration object
+    if (!narration || !narration.subtitle_id) {
+      console.error('Invalid narration object:', narration);
+      return;
+    }
+
+    // Check if the narration has a filename
+    if (!narration.filename) {
+      console.error('Narration has no filename:', narration);
+
+      // Try to find the narration in the global arrays and get the filename
+      let updatedNarration = null;
+
+      if (narrationSource === 'original' && window.originalNarrations) {
+        updatedNarration = window.originalNarrations.find(n => n.subtitle_id === narration.subtitle_id);
+      } else if (narrationSource === 'translated' && window.translatedNarrations) {
+        updatedNarration = window.translatedNarrations.find(n => n.subtitle_id === narration.subtitle_id);
+      }
+
+      if (updatedNarration && updatedNarration.filename) {
+        console.log(`Found updated narration with filename in global array:`, updatedNarration);
+        narration = updatedNarration;
+      } else {
+        console.error('Could not find updated narration with filename in global arrays');
+        console.log('window.originalNarrations:', window.originalNarrations);
+        console.log('window.translatedNarrations:', window.translatedNarrations);
+        return;
+      }
     }
 
     // Store the subtitle data with the narration for reference
@@ -479,6 +654,8 @@ const SubtitleSettings = ({
       if (subtitleData) {
         narration.subtitleData = subtitleData;
         console.log('Added subtitle data to narration:', subtitleData);
+      } else {
+        console.warn('Could not find subtitle data for narration:', narration);
       }
     }
 
@@ -491,44 +668,162 @@ const SubtitleSettings = ({
     // Set the current narration
     setCurrentNarration(narration);
 
+    // Check if we need to get the latest version of the narration
+    let latestNarration = narration;
+
+    // Get the latest narration data from the appropriate source
+    if (narrationSource === 'original' && window.originalNarrations) {
+      const updatedNarration = window.originalNarrations.find(n => n.subtitle_id === narration.subtitle_id);
+      if (updatedNarration) {
+        latestNarration = updatedNarration;
+        console.log('Using latest version of original narration:', latestNarration);
+      }
+    } else if (narrationSource === 'translated' && window.translatedNarrations) {
+      const updatedNarration = window.translatedNarrations.find(n => n.subtitle_id === narration.subtitle_id);
+      if (updatedNarration) {
+        latestNarration = updatedNarration;
+        console.log('Using latest version of translated narration:', latestNarration);
+      }
+    }
+
+    // Always recreate the audio element for retried narrations to ensure we're using the latest version
+    // Check if this is a retried narration by comparing the filename with what we might have in audioRefs
+    const existingAudio = audioRefs.current[latestNarration.subtitle_id];
+    const isRetried = existingAudio && existingAudio.src &&
+                     !existingAudio.src.includes(latestNarration.filename);
+
+    if (isRetried) {
+      console.log(`Detected retried narration for ${latestNarration.subtitle_id}, recreating audio element`);
+
+      // Clean up the old audio element
+      if (existingAudio) {
+        // Remove all event listeners to prevent memory leaks
+        existingAudio.onloadedmetadata = null;
+        existingAudio.onplay = null;
+        existingAudio.onended = null;
+        existingAudio.onpause = null;
+        existingAudio.onerror = null;
+
+        // Stop any safety timeouts
+        if (existingAudio._safetyTimeoutId) {
+          clearTimeout(existingAudio._safetyTimeoutId);
+          existingAudio._safetyTimeoutId = null;
+        }
+
+        // Pause and unload the audio
+        existingAudio.pause();
+        existingAudio.src = '';
+        existingAudio.load();
+
+        // Remove the reference
+        delete audioRefs.current[latestNarration.subtitle_id];
+      }
+    }
+
     // Get or create audio element for this narration
-    if (!audioRefs.current[narration.subtitle_id]) {
-      const audioUrl = `${SERVER_URL}/api/narration/audio/${narration.filename || 'test.wav'}`;
+    if (!audioRefs.current[latestNarration.subtitle_id]) {
+      const audioUrl = `${SERVER_URL}/api/narration/audio/${latestNarration.filename}`;
       console.log('Creating new audio element for URL:', audioUrl);
+
+      // Test if the audio file is accessible
+      try {
+        const testResult = await testAudioPlayback(audioUrl);
+        console.log('Audio playback test result:', testResult);
+
+        if (!testResult.success) {
+          console.error('Audio file test failed:', testResult);
+        }
+      } catch (error) {
+        console.error('Error testing audio file:', error);
+      }
 
       const audio = new Audio(audioUrl);
 
       // Set volume immediately
       audio.volume = narrationVolume;
-      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
 
-      // Add error handling
-      audio.addEventListener('error', (e) => {
+      // Add enhanced error handling
+      audio.addEventListener('error', async (e) => {
         console.error('Audio error:', e);
         console.error('Audio error code:', audio.error?.code);
         console.error('Audio error message:', audio.error?.message);
+
+        // Debug the narration playback
+        const debugInfo = await debugNarrationPlayback(latestNarration, audio, narrationVolume);
+        console.error('Narration playback debug info:', debugInfo);
+
+        // Clear current narration if there's an error
+        if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
+          console.log(`Clearing current narration state for ${latestNarration.subtitle_id} due to error`);
+          setCurrentNarration(null);
+        }
+
+        // Try alternative URL if this is a Gemini narration with audioData
+        if (latestNarration.gemini && latestNarration.audioData) {
+          console.log('Trying to play directly from audioData for Gemini narration');
+
+          try {
+            // Create a new audio element with a data URL
+            const base64Audio = latestNarration.audioData;
+            const audioBlob = base64ToBlob(base64Audio, 'audio/wav');
+            const blobUrl = URL.createObjectURL(audioBlob);
+
+            console.log('Created blob URL for direct playback:', blobUrl);
+
+            // Replace the current audio element
+            const newAudio = new Audio(blobUrl);
+            newAudio.volume = narrationVolume;
+
+            // Add the same event listeners
+            newAudio.addEventListener('loadedmetadata', () => {
+              console.log('Direct audio loaded metadata, duration:', newAudio.duration);
+              audioDurationsRef.current[latestNarration.subtitle_id] = newAudio.duration;
+            });
+
+            newAudio.addEventListener('play', () => {
+              console.log(`Direct audio started playing for narration ${latestNarration.subtitle_id}`);
+            });
+
+            newAudio.addEventListener('ended', () => {
+              console.log(`Direct audio finished playing for narration ${latestNarration.subtitle_id}`);
+              setCurrentNarration(null);
+              URL.revokeObjectURL(blobUrl); // Clean up the blob URL
+            });
+
+            // Replace the audio reference
+            audioRefs.current[latestNarration.subtitle_id] = newAudio;
+
+            // Try to play
+            newAudio.play().catch(directError => {
+              console.error('Error playing direct audio:', directError);
+            });
+          } catch (blobError) {
+            console.error('Error creating blob for direct playback:', blobError);
+          }
+        }
       });
 
       // Store the audio duration once it's loaded
       audio.addEventListener('loadedmetadata', () => {
         console.log('Audio loaded metadata, duration:', audio.duration);
-        audioDurationsRef.current[narration.subtitle_id] = audio.duration;
+        audioDurationsRef.current[latestNarration.subtitle_id] = audio.duration;
 
         // Set volume again after metadata is loaded
         audio.volume = narrationVolume;
-        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
       });
 
       // Add play event listener
       audio.addEventListener('play', () => {
-        console.log(`Audio started playing for narration ${narration.subtitle_id} with volume ${audio.volume}`);
+        console.log(`Audio started playing for narration ${latestNarration.subtitle_id} with volume ${audio.volume}`);
       });
 
       // Add ended event listener
       audio.addEventListener('ended', () => {
-        console.log(`Audio finished playing for narration ${narration.subtitle_id}`);
-        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
-          console.log(`Clearing current narration state for ${narration.subtitle_id}`);
+        console.log(`Audio finished playing for narration ${latestNarration.subtitle_id}`);
+        if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
+          console.log(`Clearing current narration state for ${latestNarration.subtitle_id}`);
           setCurrentNarration(null);
         }
       });
@@ -538,8 +833,8 @@ const SubtitleSettings = ({
       audio.addEventListener('play', () => {
         const duration = audio.duration || 10; // Default to 10 seconds if duration is unknown
         const safetyTimeout = setTimeout(() => {
-          if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
-            console.log(`Safety timeout: clearing current narration state for ${narration.subtitle_id}`);
+          if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
+            console.log(`Safety timeout: clearing current narration state for ${latestNarration.subtitle_id}`);
             setCurrentNarration(null);
           }
         }, (duration * 1000) + 1000); // Add 1 second buffer
@@ -556,38 +851,38 @@ const SubtitleSettings = ({
         }
       });
 
-      audioRefs.current[narration.subtitle_id] = audio;
+      audioRefs.current[latestNarration.subtitle_id] = audio;
     } else {
-      console.log('Using existing audio element for narration:', narration.subtitle_id);
+      console.log('Using existing audio element for narration:', latestNarration.subtitle_id);
     }
 
     // Play the narration
-    const audioElement = audioRefs.current[narration.subtitle_id];
+    const audioElement = audioRefs.current[latestNarration.subtitle_id];
 
     // Set volume again before playing
     audioElement.volume = narrationVolume;
-    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
 
     // If we have the subtitle midpoint and audio duration, calculate the start time
-    const audioDuration = audioDurationsRef.current[narration.subtitle_id];
+    const audioDuration = audioDurationsRef.current[latestNarration.subtitle_id];
     console.log('Audio duration:', audioDuration);
 
     // Find the subtitle start time
     let subtitleStart = 0;
-    if (narration.subtitleData) {
-      subtitleStart = typeof narration.subtitleData.start === 'number' ?
-        narration.subtitleData.start : parseFloat(narration.subtitleData.start);
+    if (latestNarration.subtitleData) {
+      subtitleStart = typeof latestNarration.subtitleData.start === 'number' ?
+        latestNarration.subtitleData.start : parseFloat(latestNarration.subtitleData.start);
     } else {
       // Try to find the subtitle data
       let subtitleData;
       if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
-        subtitleData = window.subtitlesData.find(sub => sub.id === narration.subtitle_id);
+        subtitleData = window.subtitlesData.find(sub => sub.id === latestNarration.subtitle_id);
       }
       if (!subtitleData && window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-        subtitleData = window.originalSubtitles.find(sub => sub.id === narration.subtitle_id);
+        subtitleData = window.originalSubtitles.find(sub => sub.id === latestNarration.subtitle_id);
       }
       if (!subtitleData && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
-        subtitleData = window.translatedSubtitles.find(sub => sub.id === narration.subtitle_id);
+        subtitleData = window.translatedSubtitles.find(sub => sub.id === latestNarration.subtitle_id);
       }
 
       if (subtitleData) {
@@ -620,9 +915,55 @@ const SubtitleSettings = ({
       console.log('No subtitle midpoint or audio duration, starting from beginning');
     }
 
-    // Try to play the audio and handle any errors
+    // Try to play the audio with enhanced error handling
     try {
-      const playPromise = audioElement.play();
+      // Log detailed information before attempting to play
+      console.log('About to play audio:', {
+        audioElement: audioElement,
+        src: audioElement.src,
+        volume: audioElement.volume,
+        readyState: audioElement.readyState,
+        networkState: audioElement.networkState,
+        error: audioElement.error
+      });
+
+      // Check if the audio is in a playable state
+      if (audioElement.readyState < 2) { // HAVE_CURRENT_DATA = 2
+        console.log('Audio not ready yet, waiting for loadeddata event');
+
+        // Set up a one-time event listener for when the audio is ready
+        const loadHandler = () => {
+          console.log('Audio loaded data, now attempting to play');
+          playAudioWithFallbacks(audioElement, latestNarration);
+          audioElement.removeEventListener('loadeddata', loadHandler);
+        };
+
+        audioElement.addEventListener('loadeddata', loadHandler);
+
+        // Set a timeout in case the loadeddata event never fires
+        setTimeout(() => {
+          if (audioElement.readyState < 2) {
+            console.log('Timeout waiting for audio to load, trying to play anyway');
+            audioElement.removeEventListener('loadeddata', loadHandler);
+            playAudioWithFallbacks(audioElement, latestNarration);
+          }
+        }, 3000);
+      } else {
+        // Audio is ready, play it now
+        playAudioWithFallbacks(audioElement, latestNarration);
+      }
+    } catch (error) {
+      console.error('Exception trying to play audio:', error);
+
+      // Try direct playback from audioData as a last resort
+      if (latestNarration.gemini && latestNarration.audioData) {
+        tryDirectPlayback(latestNarration);
+      }
+    }
+
+    // Helper function to play audio with fallbacks
+    function playAudioWithFallbacks(audio, narrationObj) {
+      const playPromise = audio.play();
       console.log('Audio play called');
 
       // Modern browsers return a promise from play()
@@ -633,19 +974,69 @@ const SubtitleSettings = ({
           })
           .catch(error => {
             console.error('Error playing audio:', error);
+
             // Try again with user interaction
             console.log('Adding one-time click handler to play audio');
             const handleClick = () => {
-              audioElement.play()
+              audio.play()
                 .then(() => console.log('Audio played after user interaction'))
-                .catch(e => console.error('Still failed to play audio:', e));
+                .catch(e => {
+                  console.error('Still failed to play audio after user interaction:', e);
+
+                  // Try direct playback as a last resort
+                  if (narrationObj.gemini && narrationObj.audioData) {
+                    tryDirectPlayback(narrationObj);
+                  }
+                });
               document.removeEventListener('click', handleClick);
             };
             document.addEventListener('click', handleClick, { once: true });
+
+            // Also try direct playback for Gemini narrations
+            if (narrationObj.gemini && narrationObj.audioData) {
+              tryDirectPlayback(narrationObj);
+            }
           });
       }
-    } catch (error) {
-      console.error('Exception trying to play audio:', error);
+    }
+
+    // Helper function to try direct playback from audioData
+    function tryDirectPlayback(narrationObj) {
+      if (!narrationObj.audioData) return;
+
+      console.log('Trying direct playback from audioData');
+      try {
+        // Create a data URL from the base64 audio data
+        const base64Audio = narrationObj.audioData;
+        const audioBlob = base64ToBlob(base64Audio, 'audio/wav');
+        const blobUrl = URL.createObjectURL(audioBlob);
+
+        // Create a new audio element
+        const directAudio = new Audio(blobUrl);
+        directAudio.volume = narrationVolume;
+
+        // Add event listeners
+        directAudio.addEventListener('ended', () => {
+          console.log('Direct audio playback ended');
+          setCurrentNarration(null);
+          URL.revokeObjectURL(blobUrl);
+        });
+
+        directAudio.addEventListener('error', (e) => {
+          console.error('Error with direct audio playback:', e);
+          URL.revokeObjectURL(blobUrl);
+        });
+
+        // Play the audio
+        directAudio.play()
+          .then(() => console.log('Direct audio playback started'))
+          .catch(e => console.error('Failed to play direct audio:', e));
+
+        // Replace the audio reference
+        audioRefs.current[narrationObj.subtitle_id] = directAudio;
+      } catch (error) {
+        console.error('Error with direct playback:', error);
+      }
     }
   };
 

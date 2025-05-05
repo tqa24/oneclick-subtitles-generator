@@ -4,6 +4,7 @@ import {
   checkNarrationStatusWithRetry,
   getAudioUrl
 } from '../../services/narrationService';
+import { SERVER_URL } from '../../config';
 import {
   checkGeminiAvailability,
   generateGeminiNarrations,
@@ -456,12 +457,113 @@ const UnifiedNarrationSection = ({
       // Generate narration for the single subtitle
       const result = await generateGeminiNarration(subtitleWithId, language, null, selectedVoice);
 
+      // If the result has audio data, save it to the server to get a filename
+      if (result.success && result.audioData) {
+        try {
+          console.log(`Saving retried audio for subtitle ${result.subtitle_id} to server...`);
+
+          // Send the audio data to the server
+          const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              audioData: result.audioData,
+              subtitle_id: result.subtitle_id,
+              sampleRate: result.sampleRate || 24000
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              console.log(`Successfully saved retried audio to server: ${data.filename}`);
+              // Update the result with the filename
+              result.filename = data.filename;
+            } else {
+              console.error(`Error saving retried audio to server: ${data.error}`);
+              setError(t('narration.saveError', 'Error saving audio to server: {{error}}', { error: data.error }));
+            }
+          } else {
+            console.error(`Server returned ${response.status}: ${response.statusText}`);
+            setError(t('narration.serverError', 'Server error: {{status}} {{statusText}}', {
+              status: response.status,
+              statusText: response.statusText
+            }));
+          }
+        } catch (error) {
+          console.error(`Error saving retried audio to server for subtitle ${result.subtitle_id}:`, error);
+          setError(t('narration.saveError', 'Error saving audio to server: {{error}}', { error: error.message }));
+        }
+      }
+
       // Update the results array by replacing the old result with the new one
-      setGenerationResults(prevResults =>
-        prevResults.map(prevResult =>
+      setGenerationResults(prevResults => {
+        const updatedResults = prevResults.map(prevResult =>
           prevResult.subtitle_id === subtitleId ? result : prevResult
-        )
-      );
+        );
+
+        // Update the global narration references to ensure video player uses the latest version
+        if (subtitleSource === 'original') {
+          // Update window.originalNarrations
+          window.originalNarrations = [...updatedResults];
+
+          // Also update the global narrations array if it exists
+          if (window.subtitlesData && window.narrations) {
+            // Find and update the narration in the global narrations array
+            const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
+            if (globalIndex !== -1) {
+              window.narrations[globalIndex] = result;
+              console.log('Updated window.narrations with retried narration:', result);
+            }
+          }
+
+          // Also update localStorage
+          try {
+            localStorage.setItem('originalNarrations', JSON.stringify(updatedResults));
+          } catch (e) {
+            console.error('Error storing updated originalNarrations in localStorage:', e);
+          }
+          console.log('Updated window.originalNarrations with retried narration:', result);
+        } else {
+          // Update window.translatedNarrations
+          window.translatedNarrations = [...updatedResults];
+
+          // Also update the global narrations array if it exists
+          if (window.subtitlesData && window.narrations) {
+            // Find and update the narration in the global narrations array
+            const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
+            if (globalIndex !== -1) {
+              window.narrations[globalIndex] = result;
+              console.log('Updated window.narrations with retried narration:', result);
+            }
+          }
+
+          // Also update localStorage
+          try {
+            localStorage.setItem('translatedNarrations', JSON.stringify(updatedResults));
+          } catch (e) {
+            console.error('Error storing updated translatedNarrations in localStorage:', e);
+          }
+          console.log('Updated window.translatedNarrations with retried narration:', result);
+        }
+
+        // Add a timestamp to the result to help identify retried narrations
+        result.retriedAt = Date.now();
+
+        // Dispatch a custom event to notify other components about the updated narration
+        const event = new CustomEvent('narration-retried', {
+          detail: {
+            source: subtitleSource,
+            narration: result,
+            narrations: updatedResults
+          }
+        });
+        window.dispatchEvent(event);
+
+        return updatedResults;
+      });
 
       setGenerationStatus(t('narration.retryComplete', 'Retry complete for subtitle {{id}}', { id: subtitleId }));
     } catch (error) {
