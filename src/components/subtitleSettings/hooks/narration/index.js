@@ -1,7 +1,5 @@
 import { useState, useRef } from 'react';
 import useNarrationState from './useNarrationState';
-import useNarrationEvents from './useNarrationEvents';
-import useNarrationPlayback from './useNarrationPlayback';
 import useNarrationEffects from './useNarrationEffects';
 import useAlignedNarration from './useAlignedNarration';
 
@@ -15,47 +13,21 @@ import useAlignedNarration from './useAlignedNarration';
  * @returns {Object} - Narration state and handlers
  */
 const useNarration = (videoRef, originalNarrations = [], translatedNarrations = [], serverUrl) => {
-  // Audio refs for narration playback
-  const audioRefs = useRef({});
-  const audioDurationsRef = useRef({});
-
   // Get basic narration state
   const narrationState = useNarrationState(originalNarrations, translatedNarrations);
 
-  // Add aligned narration mode state
-  const [useAlignedMode, setUseAlignedMode] = useState(false);
+  // Always use aligned narration mode
+  const [useAlignedMode] = useState(true);
 
-  // Handle narration events
-  const narrationEvents = useNarrationEvents(
-    narrationState.setInternalOriginalNarrations,
-    narrationState.setInternalTranslatedNarrations,
-    narrationState.currentNarration,
-    narrationState.setCurrentNarration,
-    narrationState.narrationSource,
-    audioRefs
-  );
-
-  // Handle narration playback
-  const narrationPlayback = useNarrationPlayback(
-    videoRef,
-    narrationState.narrationVolume,
-    narrationState.narrationSource,
-    narrationState.currentNarration,
-    narrationState.setCurrentNarration,
-    audioRefs,
-    audioDurationsRef,
-    serverUrl
-  );
-
-  // Handle narration effects
+  // Handle narration effects (only for video volume)
   useNarrationEffects(
     videoRef,
     narrationState.videoVolume,
     narrationState.narrationVolume,
-    audioRefs,
+    null, // No audioRefs needed
     narrationState.hasOriginalNarrations,
     narrationState.hasTranslatedNarrations,
-    narrationState.currentNarration,
+    null, // No currentNarration needed
     narrationState.setNarrationSource
   );
 
@@ -74,13 +46,11 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
 
   return {
     ...narrationState,
-    playNarration: narrationPlayback.playNarration,
-    audioRefs,
-    // Explicitly include setCurrentNarration to ensure it's exported
-    setCurrentNarration: narrationState.setCurrentNarration,
+    // No individual narration playback anymore
+    currentNarration: null, // Always null since we only use aligned narration
+    setCurrentNarration: () => {}, // Empty function since we don't use it anymore
     // Add aligned narration state and handlers
-    useAlignedMode,
-    setUseAlignedMode,
+    useAlignedMode: true, // Always true
     ...alignedNarration
   };
 };

@@ -336,6 +336,7 @@ const useAlignedNarration = (
           if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {
             console.log('Video is playing, starting aligned narration playback after event-triggered regeneration');
             const currentTime = videoRef.current.currentTime;
+            const playbackRate = videoRef.current.playbackRate;
 
             // Force a small delay to ensure the audio is loaded
             setTimeout(() => {
@@ -343,8 +344,8 @@ const useAlignedNarration = (
 
               // Also get the audio element and set its playback rate to match the video
               const audio = getAlignedAudioElement();
-              if (audio && videoRef.current) {
-                audio.playbackRate = videoRef.current.playbackRate;
+              if (audio && videoRef?.current) {
+                audio.playbackRate = playbackRate;
               }
             }, 100);
           }
@@ -441,7 +442,7 @@ const useAlignedNarration = (
 
       // When seeking starts, immediately pause the audio to prevent
       // it from continuing to play at the wrong position
-      if (useAlignedMode && isAlignedAvailable) {
+      if (useAlignedMode && isAlignedAvailable && videoRef?.current) {
         playAlignedNarration(videoRef.current.currentTime, false);
       }
     };
@@ -479,8 +480,9 @@ const useAlignedNarration = (
       if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
 
       // Pause the audio without changing the time
-      console.log(`Video paused at ${videoRef.current.currentTime.toFixed(2)}s`);
-      playAlignedNarration(videoRef.current.currentTime, false);
+      const currentTime = videoRef.current.currentTime;
+      console.log(`Video paused at ${currentTime.toFixed(2)}s`);
+      playAlignedNarration(currentTime, false);
     };
 
     // Handle rate change events to keep audio in sync with video speed
@@ -491,13 +493,15 @@ const useAlignedNarration = (
       const audio = getAlignedAudioElement();
       if (audio) {
         const newRate = videoRef.current.playbackRate;
+        const currentTime = videoRef.current.currentTime;
+        const isPlaying = !videoRef.current.paused;
         console.log(`Video playback rate changed to ${newRate}, updating audio`);
 
         // Update audio playback rate
         audio.playbackRate = newRate;
 
         // Also sync position since rate changes can cause sync issues
-        playAlignedNarration(videoRef.current.currentTime, !videoRef.current.paused);
+        playAlignedNarration(currentTime, isPlaying);
       }
     };
 
@@ -611,6 +615,7 @@ const useAlignedNarration = (
         if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {
           console.log('Video is playing, starting aligned narration playback after regeneration');
           const currentTime = videoRef.current.currentTime;
+          const playbackRate = videoRef.current.playbackRate;
 
           // Force a small delay to ensure the audio is loaded
           setTimeout(() => {
@@ -618,8 +623,8 @@ const useAlignedNarration = (
 
             // Also get the audio element and set its playback rate to match the video
             const audio = getAlignedAudioElement();
-            if (audio && videoRef.current) {
-              audio.playbackRate = videoRef.current.playbackRate;
+            if (audio && videoRef?.current) {
+              audio.playbackRate = playbackRate;
             }
           }, 100);
         }

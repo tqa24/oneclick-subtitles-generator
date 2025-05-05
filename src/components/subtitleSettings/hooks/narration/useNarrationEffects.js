@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 /**
  * Hook to handle narration side effects
- * 
+ *
  * @param {Object} videoRef - Reference to the video element
  * @param {number} videoVolume - Volume level for video
  * @param {number} narrationVolume - Volume level for narration
@@ -40,15 +40,15 @@ const useNarrationEffects = (
       console.log('useNarration: No narrations available, clearing narration source');
 
       // Also stop any currently playing narration
-      if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+      if (currentNarration && audioRefs && audioRefs.current && audioRefs.current[currentNarration.subtitle_id]) {
         audioRefs.current[currentNarration.subtitle_id].pause();
       }
     }
   }, [
-    hasOriginalNarrations, 
-    hasTranslatedNarrations, 
-    currentNarration, 
-    setNarrationSource, 
+    hasOriginalNarrations,
+    hasTranslatedNarrations,
+    currentNarration,
+    setNarrationSource,
     audioRefs
   ]);
 
@@ -61,9 +61,11 @@ const useNarrationEffects = (
 
   // Update all audio volumes when narration volume changes
   useEffect(() => {
-    Object.values(audioRefs.current).forEach(audio => {
-      audio.volume = narrationVolume;
-    });
+    if (audioRefs && audioRefs.current) {
+      Object.values(audioRefs.current).forEach(audio => {
+        audio.volume = narrationVolume;
+      });
+    }
   }, [narrationVolume, audioRefs]);
 };
 
