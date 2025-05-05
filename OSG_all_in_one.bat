@@ -46,14 +46,14 @@ ECHO ======================================================
 ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat voi Tinh nang Thuyet minh (Cai dat sach - XOA thu muc cu neu co)
+ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)
 ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
-ECHO   2. Cai dat khong co Tinh nang Thuyet minh (Cai dat sach - XOA thu muc cu neu co)
+ECHO   2. Cai dat (Thuyet minh thong thuong)
 ECHO.
 ECHO BAO TRI / SU DUNG:
 ECHO   3. Cap nhat Ung dung (git pull)
 ECHO   4. Chay Ung dung (npm run dev)
-ECHO   5. Chay Ung dung voi Thuyet minh (npm run dev:cuda)
+ECHO   5. Chay Ung dung voi Nhan ban giong noi (npm run dev:cuda)
 ECHO.
 ECHO GO CAI DAT:
 ECHO   6. Go cai dat Ung dung (Xoa thu muc du an)
