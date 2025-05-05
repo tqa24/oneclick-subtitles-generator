@@ -11,10 +11,10 @@ const { exec } = require('child_process');
 const narrationServiceClient = require('../../services/narrationServiceClient');
 
 // Import directory paths
-const { 
-  REFERENCE_AUDIO_DIR, 
-  OUTPUT_AUDIO_DIR, 
-  TEMP_AUDIO_DIR 
+const {
+  REFERENCE_AUDIO_DIR,
+  OUTPUT_AUDIO_DIR,
+  TEMP_AUDIO_DIR
 } = require('./directoryManager');
 
 /**
@@ -157,35 +157,75 @@ const downloadAlignedAudio = async (req, res) => {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    // Create a list of files to concatenate
-    const filesToConcatenate = [];
-    const fileList = path.join(tempDir, 'file_list.txt');
+    // Create the output file path
+    const timestamp = Date.now();
+    const outputFilename = `aligned_narration_${timestamp}.wav`;
+    const outputPath = path.join(tempDir, outputFilename);
 
-    // Check if all files exist
+    // Check if all files exist and get their durations
+    const audioSegments = [];
+
+    // Log the received narrations for debugging
+    console.log('Received narrations with timing info:');
+    narrations.forEach(n => {
+      console.log(`Subtitle ID: ${n.subtitle_id}, Start: ${n.start}s, End: ${n.end}s, Filename: ${n.filename}`);
+    });
+
     for (const narration of narrations) {
       const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
       if (!fs.existsSync(filePath)) {
         console.log(`File not found: ${filePath}`);
         return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
       }
-      filesToConcatenate.push(filePath);
+
+      // Ensure we have valid timing information
+      const start = typeof narration.start === 'number' ? narration.start : 0;
+      const end = typeof narration.end === 'number' ? narration.end : (start + 5); // Default 5 seconds if no end time
+
+      // Add to our segments list with timing information
+      audioSegments.push({
+        path: filePath,
+        start: start,
+        end: end,
+        subtitle_id: narration.subtitle_id
+      });
     }
 
-    // Create the output file path
-    const timestamp = Date.now();
-    const outputFilename = `aligned_narration_${timestamp}.wav`;
-    const outputPath = path.join(tempDir, outputFilename);
+    // Sort segments by start time to ensure proper ordering
+    audioSegments.sort((a, b) => a.start - b.start);
 
-    // Create a file list for ffmpeg
-    let fileListContent = '';
-    for (const file of filesToConcatenate) {
-      fileListContent += `file '${file.replace(/'/g, "'\\''")}'
-`;
-    }
-    fs.writeFileSync(fileList, fileListContent);
+    // Find the total duration needed (end time of the last subtitle)
+    const totalDuration = Math.max(...audioSegments.map(s => s.end)) + 1; // Add 1 second buffer at the end
 
-    // Use ffmpeg to concatenate the files
-    const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${fileList}" -c copy "${outputPath}" -y`;
+    console.log(`Creating aligned audio with total duration: ${totalDuration}s`);
+    console.log(`Using ${audioSegments.length} audio segments with precise timing`);
+
+    // Create a complex filter for precise audio placement
+    let filterComplex = '';
+    let inputs = '';
+    let amixInputs = [];
+
+    // Add each audio file as an input
+    audioSegments.forEach((segment, index) => {
+      inputs += `-i "${segment.path}" `;
+
+      // Add an adelay filter to position each audio at the exact timestamp
+      // adelay takes delay in milliseconds, so multiply by 1000
+      const delayMs = Math.round(segment.start * 1000);
+
+      // Log the delay being applied for each segment
+      console.log(`Segment ${index} (ID: ${segment.subtitle_id}): Positioning at ${segment.start}s (delay: ${delayMs}ms)`);
+
+      filterComplex += `[${index}]adelay=${delayMs}|${delayMs}[a${index}]; `;
+      amixInputs.push(`[a${index}]`);
+    });
+
+    // Combine all delayed audio streams
+    filterComplex += `${amixInputs.join('')}amix=inputs=${audioSegments.length}:dropout_transition=0:normalize=0[aout]`;
+
+    // Build the complete ffmpeg command
+    // We create a silent audio track of the total duration, then mix our positioned audio segments on top
+    const ffmpegCommand = `ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100:duration=${totalDuration} ${inputs} -filter_complex "${filterComplex}" -map "[aout]" -c:a pcm_s16le -ar 44100 "${outputPath}" -y`;
 
     console.log(`Running ffmpeg command: ${ffmpegCommand}`);
 

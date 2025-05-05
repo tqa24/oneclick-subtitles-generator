@@ -36,17 +36,27 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     const narrationData = generationResults
       .filter(result => result.success && result.filename)
       .map(result => {
+        // Ensure we have valid timing information
+        const start = typeof result.start === 'number' ? result.start : 0;
+        const end = typeof result.end === 'number' ? result.end : (start + 5); // Default 5 seconds if no end time
+
         return {
           filename: result.filename,
           subtitle_id: result.subtitle_id,
-          start: result.start || 0,
-          end: result.end || 0,
+          start: start,
+          end: end,
           text: result.text || ''
         };
       });
 
-    // Sort by subtitle ID to ensure correct order
-    narrationData.sort((a, b) => a.subtitle_id - b.subtitle_id);
+    // Log the timing information for debugging
+    console.log('Narration data with timing information:');
+    narrationData.forEach(item => {
+      console.log(`Subtitle ID: ${item.subtitle_id}, Start: ${item.start}s, End: ${item.end}s`);
+    });
+
+    // Sort by start time to ensure correct order (more reliable than subtitle ID)
+    narrationData.sort((a, b) => a.start - b.start);
 
     console.log('Generating aligned narration for:', narrationData);
 
@@ -159,26 +169,62 @@ export const getAlignedAudioElement = () => {
     console.log('Creating new aligned narration audio element');
 
     // Create a new audio element
-    alignedAudioElement = new Audio(alignedNarrationCache.url);
+    alignedAudioElement = new Audio();
 
-    // Set preload to auto to ensure it loads completely
+    // Set audio properties for better performance
     alignedAudioElement.preload = 'auto';
+    alignedAudioElement.crossOrigin = 'anonymous'; // Helps with CORS issues
 
-    // Add minimal error handling
+    // Add comprehensive error handling
     alignedAudioElement.onerror = (event) => {
-      console.error('Error with aligned narration audio:',
-        alignedAudioElement.error ? alignedAudioElement.error.message : 'unknown error');
+      const errorMessage = alignedAudioElement.error
+        ? `Code: ${alignedAudioElement.error.code}, Message: ${alignedAudioElement.error.message}`
+        : 'unknown error';
+      console.error('Error with aligned narration audio:', errorMessage);
+
+      // Try to recover by reloading
+      setTimeout(() => {
+        console.log('Attempting to recover from audio error');
+        if (alignedNarrationCache.url) {
+          alignedAudioElement.src = alignedNarrationCache.url;
+          alignedAudioElement.load();
+        }
+      }, 1000);
     };
 
-    // Load the audio
+    // Add stalled and waiting event handlers
+    alignedAudioElement.onstalled = () => {
+      console.warn('Audio playback stalled, attempting to resume');
+      alignedAudioElement.load();
+    };
+
+    alignedAudioElement.onwaiting = () => {
+      console.log('Audio is waiting for more data');
+    };
+
+    // Add successful load handler
+    alignedAudioElement.oncanplaythrough = () => {
+      console.log('Audio can play through without buffering');
+    };
+
+    // Set the source and load
+    alignedAudioElement.src = alignedNarrationCache.url;
     alignedAudioElement.load();
 
     console.log('Created aligned narration audio element with URL:', alignedNarrationCache.url);
   } else if (alignedAudioElement.src !== alignedNarrationCache.url) {
     // Only update the source if it has changed
     console.log('Updating aligned narration audio source');
+
+    // Pause first to avoid any playback issues during source change
+    alignedAudioElement.pause();
+
+    // Update source and reload
     alignedAudioElement.src = alignedNarrationCache.url;
     alignedAudioElement.load();
+
+    // Reset any custom properties we might have set
+    alignedAudioElement.seeking = false;
   }
 
   return alignedAudioElement;
@@ -196,19 +242,61 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
   }
 
   try {
-    // Simple approach: just set the time and play/pause
+    // More robust approach with less frequent seeking
     if (currentTime >= 0) {
       // Only update currentTime if it's significantly different to avoid unnecessary seeking
-      if (Math.abs(audio.currentTime - currentTime) > 0.2) {
-        audio.currentTime = currentTime;
+      // Increased threshold to reduce seeking frequency
+      const timeDifference = Math.abs(audio.currentTime - currentTime);
+      const seekThreshold = 0.5; // Half a second threshold
+
+      // Only seek if the time difference is significant or we're in a paused state
+      // This reduces the number of seek operations during normal playback
+      if (timeDifference > seekThreshold || !isPlaying) {
+        console.log(`Seeking aligned audio to ${currentTime} (diff: ${timeDifference.toFixed(2)}s)`);
+
+        // Set a flag to track seeking state
+        audio.seeking = true;
+
+        // Use a try-catch specifically for the seeking operation
+        try {
+          audio.currentTime = currentTime;
+        } catch (seekError) {
+          console.error('Error seeking aligned narration:', seekError);
+          // If seeking fails, try to recover by reloading the audio
+          if (alignedNarrationCache.url) {
+            console.log('Attempting to recover from seek error by reloading audio');
+            audio.src = alignedNarrationCache.url;
+            audio.load();
+            // After loading, try to set the time and play state again
+            setTimeout(() => {
+              try {
+                audio.currentTime = currentTime;
+                if (isPlaying) audio.play();
+              } catch (e) {
+                console.error('Recovery attempt failed:', e);
+              }
+            }, 100);
+          }
+        }
       }
     }
 
-    // Simply play or pause based on video state
+    // Handle play/pause state
     if (isPlaying && audio.paused) {
-      audio.play().catch(error => {
-        console.error('Error playing aligned narration:', error);
-      });
+      // Add a small delay before playing if we just performed a seek
+      // This helps avoid playback issues after seeking
+      if (audio.seeking) {
+        setTimeout(() => {
+          audio.play().catch(error => {
+            console.error('Error playing aligned narration:', error);
+          });
+          audio.seeking = false;
+        }, 50);
+      } else {
+        audio.play().catch(error => {
+          console.error('Error playing aligned narration:', error);
+        });
+      }
     } else if (!isPlaying && !audio.paused) {
       audio.pause();
     }
@@ -232,14 +320,41 @@ export const setAlignedNarrationVolume = (volume) => {
  * Clean up aligned narration resources
  */
 export const cleanupAlignedNarration = () => {
-  // Pause the audio if it's playing
+  // Properly clean up the audio element
   if (alignedAudioElement) {
+    // First pause playback
     alignedAudioElement.pause();
+
+    // Remove all event listeners to prevent memory leaks
+    alignedAudioElement.oncanplaythrough = null;
+    alignedAudioElement.onerror = null;
+    alignedAudioElement.onstalled = null;
+    alignedAudioElement.onwaiting = null;
+    alignedAudioElement.onplay = null;
+    alignedAudioElement.onpause = null;
+    alignedAudioElement.ontimeupdate = null;
+    alignedAudioElement.onseeking = null;
+    alignedAudioElement.onseeked = null;
+
+    // Clear the source
+    alignedAudioElement.src = '';
+
+    // Force browser to release resources
+    try {
+      alignedAudioElement.load();
+    } catch (e) {
+      console.warn('Error during audio cleanup:', e);
+    }
   }
 
   // Revoke the URL to free up memory
   if (alignedNarrationCache.url) {
-    URL.revokeObjectURL(alignedNarrationCache.url);
+    try {
+      URL.revokeObjectURL(alignedNarrationCache.url);
+      console.log('Revoked object URL:', alignedNarrationCache.url);
+    } catch (e) {
+      console.warn('Error revoking object URL:', e);
+    }
   }
 
   // Reset the cache
@@ -252,6 +367,8 @@ export const cleanupAlignedNarration = () => {
 
   // Clear the audio element reference
   alignedAudioElement = null;
+
+  console.log('Aligned narration resources cleaned up');
 };
 
 /**

@@ -705,23 +705,74 @@ const useNarrationHandlers = ({
       // Get the server URL from the narration service
       const { SERVER_URL } = require('../../../config');
 
-      // Prepare the data for the aligned narration
-      // We need to include the subtitle timing information for proper alignment
-      const narrationData = generationResults.map(result => {
-        // Find the corresponding subtitle
-        const subtitle = getSelectedSubtitles().find(sub => sub.id === result.subtitle_id);
-        return {
-          filename: result.filename,
-          subtitle_id: result.subtitle_id,
-          // Include subtitle timing if available
-          start: subtitle ? subtitle.start : 0,
-          end: subtitle ? subtitle.end : 0,
-          text: subtitle ? subtitle.text : ''
-        };
+      // Get all subtitles from the video for timing information
+      const allSubtitles = [];
+
+      // First try to get subtitles from the getSelectedSubtitles function
+      const selectedSubtitles = getSelectedSubtitles();
+      if (selectedSubtitles && Array.isArray(selectedSubtitles) && selectedSubtitles.length > 0) {
+        console.log('Using selected subtitles for timing information');
+        allSubtitles.push(...selectedSubtitles);
+      }
+
+      // Also try window.subtitles (main source)
+      if (window.subtitles && Array.isArray(window.subtitles)) {
+        console.log('Using window.subtitles for timing information');
+        allSubtitles.push(...window.subtitles);
+      }
+
+      // Also try original and translated subtitles
+      if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+        console.log('Using window.originalSubtitles for timing information');
+        allSubtitles.push(...window.originalSubtitles);
+      }
+
+      if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+        console.log('Using window.translatedSubtitles for timing information');
+        allSubtitles.push(...window.translatedSubtitles);
+      }
+
+      // Create a map for faster lookup
+      const subtitleMap = {};
+      allSubtitles.forEach(sub => {
+        if (sub.id !== undefined) {
+          subtitleMap[sub.id] = sub;
+        }
       });
 
-      // Sort by subtitle ID to ensure correct order
-      narrationData.sort((a, b) => a.subtitle_id - b.subtitle_id);
+      console.log('Found subtitle timing information for IDs:', Object.keys(subtitleMap));
+
+      // Prepare the data for the aligned narration with correct timing
+      const narrationData = generationResults
+        .filter(result => result.success && result.filename)
+        .map(result => {
+          // Find the corresponding subtitle for timing information
+          const subtitle = subtitleMap[result.subtitle_id];
+
+          // If we found a matching subtitle, use its timing
+          if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+            console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+            return {
+              filename: result.filename,
+              subtitle_id: result.subtitle_id,
+              start: subtitle.start,
+              end: subtitle.end,
+              text: subtitle.text || result.text || ''
+            };
+          }
+
+          // Otherwise, use existing timing or defaults
+          return {
+            filename: result.filename,
+            subtitle_id: result.subtitle_id,
+            start: result.start || 0,
+            end: result.end || (result.start ? result.start + 5 : 5),
+            text: result.text || ''
+          };
+        });
+
+      // Sort by start time to ensure correct order
+      narrationData.sort((a, b) => a.start - b.start);
 
       console.log('Generating aligned narration for:', narrationData);
 

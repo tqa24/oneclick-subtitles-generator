@@ -115,21 +115,67 @@ export const downloadAlignedAudio = async (generationResults, t) => {
   document.body.appendChild(loadingIndicator);
 
   try {
-    // Prepare the data for the aligned narration
+    // Get all subtitles from the video for timing information
+    const allSubtitles = [];
+
+    // Try to get subtitles from window.subtitles (main source)
+    if (window.subtitles && Array.isArray(window.subtitles)) {
+      console.log('Using window.subtitles for timing information');
+      allSubtitles.push(...window.subtitles);
+    }
+
+    // Also try original and translated subtitles
+    if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+      console.log('Using window.originalSubtitles for timing information');
+      allSubtitles.push(...window.originalSubtitles);
+    }
+
+    if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+      console.log('Using window.translatedSubtitles for timing information');
+      allSubtitles.push(...window.translatedSubtitles);
+    }
+
+    // Create a map for faster lookup
+    const subtitleMap = {};
+    allSubtitles.forEach(sub => {
+      if (sub.id !== undefined) {
+        subtitleMap[sub.id] = sub;
+      }
+    });
+
+    console.log('Found subtitle timing information for IDs:', Object.keys(subtitleMap));
+
+    // Prepare the data for the aligned narration with correct timing
     const narrationData = generationResults
-      .filter(result => result.success && result.audioData)
+      .filter(result => result.success && (result.audioData || result.filename))
       .map(result => {
+        // Find the corresponding subtitle for timing information
+        const subtitle = subtitleMap[result.subtitle_id];
+
+        // If we found a matching subtitle, use its timing
+        if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+          console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+          return {
+            filename: result.filename || `gemini_narration_${result.subtitle_id}.wav`,
+            subtitle_id: result.subtitle_id,
+            start: subtitle.start,
+            end: subtitle.end,
+            text: result.text || ''
+          };
+        }
+
+        // Otherwise, use existing timing or defaults
         return {
           filename: result.filename || `gemini_narration_${result.subtitle_id}.wav`,
           subtitle_id: result.subtitle_id,
           start: result.start || 0,
-          end: result.end || 0,
+          end: result.end || (result.start ? result.start + 5 : 5),
           text: result.text || ''
         };
       });
 
-    // Sort by subtitle ID to ensure correct order
-    narrationData.sort((a, b) => a.subtitle_id - b.subtitle_id);
+    // Sort by start time to ensure correct order
+    narrationData.sort((a, b) => a.start - b.start);
 
     console.log('Generating aligned narration for:', narrationData);
 

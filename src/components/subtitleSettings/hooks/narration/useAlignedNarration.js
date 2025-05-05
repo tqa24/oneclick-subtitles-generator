@@ -5,7 +5,7 @@ import {
   setAlignedNarrationVolume as setAlignedNarrationVolumeService,
   cleanupAlignedNarration as cleanupAlignedNarrationService,
   isAlignedNarrationAvailable,
-  getAlignedAudioElement
+  getAlignedAudioElement as getAlignedAudioElementService
 } from '../../../../services/alignedNarrationService';
 
 /**
@@ -42,6 +42,10 @@ const useAlignedNarration = (
     cleanupAlignedNarrationService();
   }, []);
 
+  const getAlignedAudioElement = useCallback(() => {
+    return getAlignedAudioElementService();
+  }, []);
+
   // Generate aligned narration when needed
   useEffect(() => {
     // Only generate if aligned mode is enabled and we have narration results
@@ -54,8 +58,64 @@ const useAlignedNarration = (
             setIsGeneratingAligned(true);
             setAlignedStatus({ status: 'generating', message: 'Generating aligned narration...' });
 
-            // Generate the aligned narration
-            await generateAlignedNarrationService(generationResults, setAlignedStatus);
+            // First, ensure each narration result has the correct timing information
+            // We need to find the corresponding subtitle for each narration result
+            // This is critical for proper alignment
+
+            // Get all subtitles from the video
+            const allSubtitles = [];
+
+            // Try to get subtitles from window.subtitles (main source)
+            if (window.subtitles && Array.isArray(window.subtitles)) {
+              console.log('Using window.subtitles for timing information');
+              allSubtitles.push(...window.subtitles);
+            }
+
+            // Also try original and translated subtitles
+            if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+              console.log('Using window.originalSubtitles for timing information');
+              allSubtitles.push(...window.originalSubtitles);
+            }
+
+            if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+              console.log('Using window.translatedSubtitles for timing information');
+              allSubtitles.push(...window.translatedSubtitles);
+            }
+
+            // Create a map for faster lookup
+            const subtitleMap = {};
+            allSubtitles.forEach(sub => {
+              if (sub.id !== undefined) {
+                subtitleMap[sub.id] = sub;
+              }
+            });
+
+            // Add timing information to each narration result
+            const enhancedResults = generationResults.map(result => {
+              const subtitle = subtitleMap[result.subtitle_id];
+
+              // If we found a matching subtitle, use its timing
+              if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+                console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+                return {
+                  ...result,
+                  start: subtitle.start,
+                  end: subtitle.end
+                };
+              }
+
+              // Otherwise, keep existing timing or use defaults
+              return {
+                ...result,
+                start: result.start || 0,
+                end: result.end || (result.start ? result.start + 5 : 5)
+              };
+            });
+
+            console.log('Enhanced narration results with timing information:', enhancedResults);
+
+            // Generate the aligned narration with the enhanced results
+            await generateAlignedNarrationService(enhancedResults, setAlignedStatus);
 
             // Update state
             setIsAlignedAvailable(true);
@@ -158,8 +218,60 @@ const useAlignedNarration = (
       // Clean up existing resources
       cleanupAlignedNarration();
 
-      // Generate the aligned narration
-      await generateAlignedNarrationService(generationResults, setAlignedStatus);
+      // Get all subtitles from the video for timing information
+      const allSubtitles = [];
+
+      // Try to get subtitles from window.subtitles (main source)
+      if (window.subtitles && Array.isArray(window.subtitles)) {
+        console.log('Using window.subtitles for timing information');
+        allSubtitles.push(...window.subtitles);
+      }
+
+      // Also try original and translated subtitles
+      if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+        console.log('Using window.originalSubtitles for timing information');
+        allSubtitles.push(...window.originalSubtitles);
+      }
+
+      if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+        console.log('Using window.translatedSubtitles for timing information');
+        allSubtitles.push(...window.translatedSubtitles);
+      }
+
+      // Create a map for faster lookup
+      const subtitleMap = {};
+      allSubtitles.forEach(sub => {
+        if (sub.id !== undefined) {
+          subtitleMap[sub.id] = sub;
+        }
+      });
+
+      // Add timing information to each narration result
+      const enhancedResults = generationResults.map(result => {
+        const subtitle = subtitleMap[result.subtitle_id];
+
+        // If we found a matching subtitle, use its timing
+        if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+          console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+          return {
+            ...result,
+            start: subtitle.start,
+            end: subtitle.end
+          };
+        }
+
+        // Otherwise, keep existing timing or use defaults
+        return {
+          ...result,
+          start: result.start || 0,
+          end: result.end || (result.start ? result.start + 5 : 5)
+        };
+      });
+
+      console.log('Enhanced narration results with timing information:', enhancedResults);
+
+      // Generate the aligned narration with the enhanced results
+      await generateAlignedNarrationService(enhancedResults, setAlignedStatus);
 
       // Update state
       setIsAlignedAvailable(true);
@@ -188,22 +300,44 @@ const useAlignedNarration = (
     playAlignedNarration
   ]);
 
+  // Track the last time we updated the audio position
+  const lastUpdateTimeRef = useRef(0);
+
   // Handle video timeupdate to sync aligned narration
   useEffect(() => {
-    // Simplified event handlers
+    // Minimum time between updates in milliseconds
+    const updateIntervalMs = 500; // Only update every 500ms during normal playback
+
+    // Improved event handlers with throttling for better performance
     const handleTimeUpdate = () => {
       if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
 
+      // Skip updates that are too frequent during normal playback
+      const now = Date.now();
+      if (!isSeekingRef.current && now - lastUpdateTimeRef.current < updateIntervalMs) {
+        return;
+      }
+
       const currentTime = videoRef.current.currentTime;
       const isPlaying = !videoRef.current.paused;
+
+      // Store the last video time for comparison
+      lastVideoTimeRef.current = currentTime;
+      lastUpdateTimeRef.current = now;
 
       // Update the aligned narration to match the video
       playAlignedNarration(currentTime, isPlaying);
     };
 
     const handleSeeking = () => {
-      // Just mark that we're seeking - no need to do anything else
+      // Mark that we're seeking
       isSeekingRef.current = true;
+
+      // When seeking starts, immediately pause the audio to prevent
+      // it from continuing to play at the wrong position
+      if (useAlignedMode && isAlignedAvailable) {
+        playAlignedNarration(videoRef.current.currentTime, false);
+      }
     };
 
     const handleSeeked = () => {
@@ -212,9 +346,16 @@ const useAlignedNarration = (
       const currentTime = videoRef.current.currentTime;
       const isPlaying = !videoRef.current.paused;
 
+      // Store the last video time
+      lastVideoTimeRef.current = currentTime;
+      lastUpdateTimeRef.current = Date.now();
+
       // Update the aligned narration to match the video after seeking
+      // This is a critical sync point, so we always update here
+      console.log(`Video seeked to ${currentTime.toFixed(2)}s, syncing audio`);
       playAlignedNarration(currentTime, isPlaying);
 
+      // Reset seeking state
       isSeekingRef.current = false;
     };
 
@@ -222,14 +363,36 @@ const useAlignedNarration = (
       if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
 
       const currentTime = videoRef.current.currentTime;
+      lastUpdateTimeRef.current = Date.now();
+
+      console.log(`Video play at ${currentTime.toFixed(2)}s`);
       playAlignedNarration(currentTime, true);
     };
 
     const handlePause = () => {
       if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
 
-      // Just pause the audio without changing the time
+      // Pause the audio without changing the time
+      console.log(`Video paused at ${videoRef.current.currentTime.toFixed(2)}s`);
       playAlignedNarration(videoRef.current.currentTime, false);
+    };
+
+    // Handle rate change events to keep audio in sync with video speed
+    const handleRateChange = () => {
+      if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
+
+      // Get the audio element and match its playback rate to the video
+      const audio = getAlignedAudioElement();
+      if (audio) {
+        const newRate = videoRef.current.playbackRate;
+        console.log(`Video playback rate changed to ${newRate}, updating audio`);
+
+        // Update audio playback rate
+        audio.playbackRate = newRate;
+
+        // Also sync position since rate changes can cause sync issues
+        playAlignedNarration(videoRef.current.currentTime, !videoRef.current.paused);
+      }
     };
 
     // Add event listeners to video
@@ -239,6 +402,7 @@ const useAlignedNarration = (
       videoRef.current.addEventListener('seeked', handleSeeked);
       videoRef.current.addEventListener('play', handlePlay);
       videoRef.current.addEventListener('pause', handlePause);
+      videoRef.current.addEventListener('ratechange', handleRateChange);
     }
 
     return () => {
@@ -249,13 +413,15 @@ const useAlignedNarration = (
         videoRef.current.removeEventListener('seeked', handleSeeked);
         videoRef.current.removeEventListener('play', handlePlay);
         videoRef.current.removeEventListener('pause', handlePause);
+        videoRef.current.removeEventListener('ratechange', handleRateChange);
       }
     };
   }, [
     videoRef,
     useAlignedMode,
     isAlignedAvailable,
-    playAlignedNarration
+    playAlignedNarration,
+    getAlignedAudioElement
   ]);
 
   // Clean up resources when component unmounts
