@@ -21,8 +21,6 @@
 /* Voice dropdown */
 .voice-dropdown {
   position: relative;
-  min-width: 180px;
-  max-width: 250px;
 }
 
 .voice-dropdown select {
