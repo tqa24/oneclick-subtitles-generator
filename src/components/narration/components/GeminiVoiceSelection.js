@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GEMINI_VOICES } from '../../../services/gemini/geminiNarrationService';
-import '../../../styles/narration/geminiVoiceSelectionMaterial.css';
+import '../../../styles/narration/geminiVoiceSelectionCompact.css';
 
 /**
  * Component for selecting a Gemini voice
@@ -84,6 +84,15 @@ const GeminiVoiceSelection = ({
     };
   }, []);
 
+  // Get the currently selected voice object
+  const selectedVoiceObj = GEMINI_VOICES.find(voice => voice.id === selectedVoice) || GEMINI_VOICES[0];
+
+  // Get the gender of the currently selected voice
+  const selectedGender = selectedVoiceObj?.gender || 'Female';
+
+  // Filter voices by the selected gender
+  const filteredVoices = GEMINI_VOICES.filter(voice => voice.gender === selectedGender);
+
   return (
     <div className="narration-row gemini-voice-row">
       <div className="row-label">
@@ -94,90 +103,91 @@ const GeminiVoiceSelection = ({
           {/* Hidden audio element for playing voice samples */}
           <audio ref={audioRef} className="voice-sample-audio" />
 
-          <div className="voice-groups">
-            <div className="voice-group female-voices">
-              <div className="group-label">{t('narration.femaleVoices', 'Female Voices')}</div>
-              <div className="voice-options">
-                {femaleVoices.map(voice => (
-                  <div className="voice-option" key={voice.id}>
-                    <input
-                      type="radio"
-                      id={`voice-${voice.id}`}
-                      name="gemini-voice"
-                      value={voice.id}
-                      checked={selectedVoice === voice.id}
-                      onChange={handleVoiceChange}
-                      disabled={isGenerating}
-                    />
-                    <label htmlFor={`voice-${voice.id}`}>
-                      {voice.name}
-                      <button
-                        type="button"
-                        className={`play-voice-sample ${isPlaying && currentPlayingVoice === voice.id ? 'playing' : ''}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          playVoiceSample(voice.id);
-                        }}
-                        title={t('narration.playVoiceSample', 'Play voice sample')}
-                      >
-                        {isPlaying && currentPlayingVoice === voice.id ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="6" y="4" width="4" height="16"></rect>
-                            <rect x="14" y="4" width="4" height="16"></rect>
-                          </svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                          </svg>
-                        )}
-                      </button>
-                    </label>
-                  </div>
-                ))}
+          <div className="voice-dropdown-container">
+            {/* Voice type selection pills */}
+            <div className="voice-type-pills">
+              <div className={`voice-type-pill female`}>
+                <input
+                  type="radio"
+                  id="voice-type-female"
+                  name="voice-type"
+                  value="Female"
+                  checked={selectedGender === 'Female'}
+                  onChange={() => {
+                    // Find the first female voice and select it
+                    const firstFemaleVoice = femaleVoices[0];
+                    if (firstFemaleVoice) {
+                      setSelectedVoice(firstFemaleVoice.id);
+                      localStorage.setItem('gemini_voice', firstFemaleVoice.id);
+                    }
+                  }}
+                  disabled={isGenerating}
+                />
+                <label htmlFor="voice-type-female">
+                  {t('narration.femaleVoices', 'Female Voices')}
+                </label>
+              </div>
+
+              <div className={`voice-type-pill male`}>
+                <input
+                  type="radio"
+                  id="voice-type-male"
+                  name="voice-type"
+                  value="Male"
+                  checked={selectedGender === 'Male'}
+                  onChange={() => {
+                    // Find the first male voice and select it
+                    const firstMaleVoice = maleVoices[0];
+                    if (firstMaleVoice) {
+                      setSelectedVoice(firstMaleVoice.id);
+                      localStorage.setItem('gemini_voice', firstMaleVoice.id);
+                    }
+                  }}
+                  disabled={isGenerating}
+                />
+                <label htmlFor="voice-type-male">
+                  {t('narration.maleVoices', 'Male Voices')}
+                </label>
               </div>
             </div>
 
-            <div className="voice-group male-voices">
-              <div className="group-label">{t('narration.maleVoices', 'Male Voices')}</div>
-              <div className="voice-options">
-                {maleVoices.map(voice => (
-                  <div className="voice-option" key={voice.id}>
-                    <input
-                      type="radio"
-                      id={`voice-${voice.id}`}
-                      name="gemini-voice"
-                      value={voice.id}
-                      checked={selectedVoice === voice.id}
-                      onChange={handleVoiceChange}
-                      disabled={isGenerating}
-                    />
-                    <label htmlFor={`voice-${voice.id}`}>
-                      {voice.name}
-                      <button
-                        type="button"
-                        className={`play-voice-sample ${isPlaying && currentPlayingVoice === voice.id ? 'playing' : ''}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          playVoiceSample(voice.id);
-                        }}
-                        title={t('narration.playVoiceSample', 'Play voice sample')}
-                      >
-                        {isPlaying && currentPlayingVoice === voice.id ? (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="6" y="4" width="4" height="16"></rect>
-                            <rect x="14" y="4" width="4" height="16"></rect>
-                          </svg>
-                        ) : (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                          </svg>
-                        )}
-                      </button>
-                    </label>
-                  </div>
+            {/* Voice dropdown */}
+            <div className="voice-dropdown">
+              <select
+                value={selectedVoice}
+                onChange={handleVoiceChange}
+                disabled={isGenerating}
+              >
+                {filteredVoices.map(voice => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.name}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
+
+            {/* Play button */}
+            <button
+              type="button"
+              className={`play-voice-sample ${isPlaying && currentPlayingVoice === selectedVoice ? 'playing' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                playVoiceSample(selectedVoice);
+              }}
+              title={t('narration.playVoiceSample', 'Play voice sample')}
+              disabled={isGenerating}
+            >
+              {isPlaying && currentPlayingVoice === selectedVoice ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </div>

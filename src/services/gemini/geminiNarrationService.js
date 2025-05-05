@@ -352,7 +352,7 @@ const getWebSocketClient = async (apiKey, modelName = null, voiceName = null, la
       },
       systemInstruction: {
         parts: [
-          { text: "You are a multilingual narrator. When asked to speak text in a specific language, you must speak in that language without translating the content. Always pronounce the text in the language specified, using proper pronunciation for that language." }
+          { text: "You are a narrator. When asked to read a text, YOU MUST ONLY READ IT OUT LOUD AND DO NOT ASK BACK ANY QUESTIONS." }
         ]
       }
     };
@@ -421,7 +421,7 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
     console.log(`Converting language code "${language}" to Gemini format: "${geminiLanguageCode}"`);
 
     // Create the prompt for narration - explicitly instruct to speak in the target language
-    const narrationPrompt = `Speak the following text in ${geminiLanguageCode} language. Do not translate, just read it exactly as written: "${subtitle.text}"`;
+    const narrationPrompt = `READ the following text. DO NOT ASK ME ANYTHING FOLLOW UP, just read it exactly as written: "${subtitle.text}"`;
 
     // Get or create a WebSocket client
     console.log(`Getting WebSocket client for subtitle ${subtitle.id}: "${subtitle.text}" with voice: ${voiceName || 'default'} and language: ${geminiLanguageCode}`);
@@ -506,7 +506,7 @@ export const generateGeminiNarrations = async (
   onError = () => {},
   onComplete = () => {},
   modelName = null,
-  sleepTime = 1000,
+  sleepTime = 10000,
   voiceName = null
 ) => {
   // Reset cancellation flag

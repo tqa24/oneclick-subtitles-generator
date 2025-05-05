@@ -89,5 +89,32 @@
   "batchProcessing": "일괄 처리",
   "batchSize": "배치 크기",
   "all": "모두",
-  "mergeOutput": "모든 오디오 파일 병합"
+  "mergeOutput": "모든 오디오 파일 병합",
+
+  "geminiResults": "생성된 나레이션 (Gemini)",
+  "playbackError": "오디오 재생 오류",
+  "processingError": "오디오 데이터 처리 오류",
+  "downloadError": "다운로드용 WAV 파일 생성 오류",
+  "saveToServer": "서버에 저장",
+  "saveToServerTooltip": "비디오 플레이어에서 사용하기 위해 서버에 저장",
+  "savedToServer": "저장됨",
+  "alreadySavedTooltip": "이미 서버에 저장됨",
+  "alreadySaved": "오디오가 이미 서버에 저장됨",
+  "savedSuccess": "오디오가 서버에 성공적으로 저장됨",
+  "saveError": "서버에 오디오 저장 오류",
+
+  "voice": "음성",
+  "femaleVoices": "여성 음성",
+  "maleVoices": "남성 음성",
+  "sleepTime": "배치 간 지연 시간",
+  "sleepTimeHelp": "Gemini의 속도 제한을 초과하지 않도록 나레이션 요청 사이에 지연 시간을 추가합니다. 높은 값(10-30초)은 오류를 방지할 수 있지만 생성 속도가 느려집니다.",
+  "generateWithGemini": "Gemini로 나레이션 생성",
+  "geminiGeneratingProgress": "Gemini로 {{total}}개 중 {{progress}}개 나레이션 생성됨...",
+  "geminiGenerationComplete": "Gemini 나레이션 생성 완료",
+  "geminiGenerationError": "Gemini로 나레이션 생성 오류",
+  "geminiMethod": "Gemini",
+  "narrationMethod": "나레이션 방식",
+  "geminiUnavailable": "(사용 불가 - 설정에서 API 키 확인)",
+  "downloadAligned": "타임라인에 정렬된 상태로 다운로드",
+  "downloadAlignedTooltip": "단일 정렬된 나레이션 파일 다운로드"
 }

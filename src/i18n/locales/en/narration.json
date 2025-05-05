@@ -112,5 +112,9 @@
   "alreadySavedTooltip": "Already saved to server",
   "alreadySaved": "Audio already saved to server",
   "savedSuccess": "Audio saved to server successfully",
-  "saveError": "Error saving audio to server"
+  "saveError": "Error saving audio to server",
+
+  "narrationMethod": "Narration Method",
+  "f5ttsMethod": "F5-TTS",
+  "geminiMethod": "Gemini"
 }

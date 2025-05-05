@@ -49,11 +49,11 @@ const NarrationMethodSelection = ({
               />
               <label htmlFor="method-f5tts" className={!isF5Available ? 'unavailable' : ''}>
                 {t('narration.f5ttsMethod', 'F5-TTS')}
-                <span className="method-description">
-                  {isF5Available
-                    ? t('narration.f5ttsDescription', '(Requires Python Server)')
-                    : t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
-                </span>
+                {!isF5Available && (
+                  <span className="method-description">
+                    {t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  </span>
+                )}
               </label>
             </div>
             <div className="radio-pill">
@@ -68,11 +68,11 @@ const NarrationMethodSelection = ({
               />
               <label htmlFor="method-gemini" className={!isGeminiAvailable ? 'unavailable' : ''}>
                 {t('narration.geminiMethod', 'Gemini')}
-                <span className="method-description">
-                  {isGeminiAvailable
-                    ? t('narration.geminiDescription', '(npm run dev is enough)')
-                    : t('narration.geminiUnavailable', '(Unavailable - Check API key in settings)')}
-                </span>
+                {!isGeminiAvailable && (
+                  <span className="method-description">
+                    {t('narration.geminiUnavailable', '(Unavailable - Check API key in settings)')}
+                  </span>
+                )}
               </label>
             </div>
           </div>

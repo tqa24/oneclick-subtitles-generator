@@ -1,0 +1,198 @@
+/* Gemini Voice Selection Compact Styles - Material Design */
+
+/* The row styling is already handled by .narration-row in unifiedNarrationRedesign.css */
+
+/* Voice selection container */
+.gemini-voice-selection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Voice dropdown container */
+.voice-dropdown-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Voice dropdown */
+.voice-dropdown {
+  position: relative;
+  min-width: 180px;
+  max-width: 250px;
+}
+
+.voice-dropdown select {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--md-shape-pill);
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  appearance: none;
+  cursor: pointer;
+  padding-right: 32px; /* Space for the dropdown arrow */
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.voice-dropdown select:hover {
+  border-color: var(--md-primary);
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.voice-dropdown select:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+}
+
+.voice-dropdown select:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+}
+
+/* Dropdown arrow */
+.voice-dropdown::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--md-on-surface-variant);
+  pointer-events: none;
+}
+
+/* Voice type pills */
+.voice-type-pills {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.voice-type-pill {
+  position: relative;
+}
+
+.voice-type-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.voice-type-pill label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--md-on-surface-variant);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.voice-type-pill label:hover {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+.voice-type-pill input[type="radio"]:checked + label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.voice-type-pill input[type="radio"]:disabled + label {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Female voice pill */
+.voice-type-pill.female input[type="radio"]:checked + label {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-color: var(--md-tertiary);
+}
+
+/* Male voice pill */
+.voice-type-pill.male input[type="radio"]:checked + label {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: var(--md-secondary);
+}
+
+/* Play button */
+.play-voice-sample {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+  margin-left: 8px;
+}
+
+.play-voice-sample:hover {
+  background-color: var(--md-surface-2);
+  color: var(--md-primary);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+.play-voice-sample.playing {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+/* Hide the audio element */
+.voice-sample-audio {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .voice-dropdown-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .voice-dropdown {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .voice-type-pills {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
