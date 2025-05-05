@@ -483,7 +483,7 @@ const saveGeminiAudio = (req, res) => {
   console.log('Received save-gemini-audio request');
 
   try {
-    const { audioData, subtitle_id, sampleRate } = req.body;
+    const { audioData, subtitle_id, sampleRate, mimeType } = req.body;
 
     if (!audioData || !subtitle_id) {
       console.error('Missing required data');
@@ -502,19 +502,35 @@ const saveGeminiAudio = (req, res) => {
       const audioBuffer = Buffer.from(audioData, 'base64');
 
       console.log(`Audio data size: ${audioBuffer.length} bytes`);
+      console.log(`MIME type: ${mimeType || 'Not specified'}`);
 
-      // Ensure we're using the correct sample rate
-      const actualSampleRate = sampleRate || 24000;
-      console.log(`Using sample rate: ${actualSampleRate}Hz`);
-
-      // Create WAV header with the correct format
-      const wavHeader = createWavHeader(audioBuffer.length, actualSampleRate);
-      console.log(`Created WAV header with sample rate: ${actualSampleRate}Hz`);
-
-      // Write the WAV file
+      // Create file stream
       const fileStream = fs.createWriteStream(filepath);
-      fileStream.write(wavHeader);
-      fileStream.write(audioBuffer);
+
+      // Check if the data is already in WAV format (converted on client side)
+      if (mimeType === 'audio/wav') {
+        console.log('Audio is already in WAV format, writing directly to file');
+
+        // Write the WAV file directly
+        fileStream.write(audioBuffer);
+      } else {
+        // If not in WAV format, assume it's PCM and add WAV header
+        console.log('Audio is in PCM format, adding WAV header');
+
+        // Ensure we're using the correct sample rate
+        const actualSampleRate = sampleRate || 24000;
+        console.log(`Using sample rate: ${actualSampleRate}Hz`);
+
+        // Create WAV header with the correct format
+        const wavHeader = createWavHeader(audioBuffer.length, actualSampleRate);
+        console.log(`Created WAV header with sample rate: ${actualSampleRate}Hz`);
+
+        // Write the WAV file with header
+        fileStream.write(wavHeader);
+        fileStream.write(audioBuffer);
+      }
+
+      // End the file stream
       fileStream.end();
 
       // Wait for the file to be fully written

@@ -567,7 +567,8 @@ export const generateGeminiNarrations = async (
               body: JSON.stringify({
                 audioData: result.audioData,
                 subtitle_id: result.subtitle_id,
-                sampleRate: result.sampleRate || 24000
+                sampleRate: result.sampleRate || 24000,
+                mimeType: result.mimeType || 'audio/pcm' // Include MIME type
               })
             });
 

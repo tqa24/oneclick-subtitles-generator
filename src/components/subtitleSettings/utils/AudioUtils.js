@@ -66,45 +66,16 @@ export const cleanupAudioElement = (audioElement) => {
 };
 
 /**
- * Try direct playback from base64 audio data
+ * Create a server URL for a narration file
  * @param {Object} narration - Narration object
- * @param {number} volume - Volume level (0-1)
- * @param {Function} onEnded - Callback when audio ends
- * @returns {HTMLAudioElement|null} - Audio element or null if failed
+ * @param {string} serverUrl - Server URL
+ * @returns {string|null} - URL to the audio file or null if not available
  */
-export const tryDirectPlayback = (narration, volume, onEnded) => {
-  if (!narration.audioData) return null;
-
-  try {
-    // Create a data URL from the base64 audio data
-    const base64Audio = narration.audioData;
-    const audioBlob = base64ToBlob(base64Audio, 'audio/wav');
-    const blobUrl = URL.createObjectURL(audioBlob);
-
-    // Create a new audio element
-    const directAudio = new Audio(blobUrl);
-    directAudio.volume = volume;
-
-    // Add event listeners
-    directAudio.addEventListener('ended', () => {
-      console.log('Direct audio playback ended');
-      if (onEnded) onEnded();
-      URL.revokeObjectURL(blobUrl);
-    });
-
-    directAudio.addEventListener('error', (e) => {
-      console.error('Error with direct audio playback:', e);
-      URL.revokeObjectURL(blobUrl);
-    });
-
-    // Play the audio
-    directAudio.play()
-      .then(() => console.log('Direct audio playback started'))
-      .catch(e => console.error('Failed to play direct audio:', e));
-
-    return directAudio;
-  } catch (error) {
-    console.error('Error with direct playback:', error);
+export const getAudioUrl = (narration, serverUrl) => {
+  if (!narration || !narration.filename) {
+    console.error('Cannot get audio URL: narration has no filename', narration);
     return null;
   }
+
+  return `${serverUrl}/api/narration/audio/${narration.filename}`;
 };

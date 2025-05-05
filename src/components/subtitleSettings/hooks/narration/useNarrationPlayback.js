@@ -1,9 +1,9 @@
-import { cleanupAudioElement, tryDirectPlayback } from '../../utils/AudioUtils';
+import { cleanupAudioElement, getAudioUrl } from '../../utils/AudioUtils';
 import { findSubtitleData, getLatestNarration, calculateAudioStartTime } from './narrationUtils';
 
 /**
  * Hook to handle narration playback
- * 
+ *
  * @param {Object} videoRef - Reference to the video element
  * @param {number} narrationVolume - Volume level for narration
  * @param {string} narrationSource - Source of narration (original/translated)
@@ -70,7 +70,7 @@ const useNarrationPlayback = (
     // Store the subtitle data with the narration for reference
     if (!narration.subtitleData) {
       const subtitleData = findSubtitleData(narration);
-      
+
       if (subtitleData) {
         narration.subtitleData = subtitleData;
         console.log('Added subtitle data to narration:', subtitleData);
@@ -133,19 +133,13 @@ const useNarrationPlayback = (
           setCurrentNarration(null);
         }
 
-        // Try alternative URL if this is a Gemini narration with audioData
-        if (latestNarration.gemini && latestNarration.audioData) {
-          console.log('Trying to play directly from audioData for Gemini narration');
-          const directAudio = tryDirectPlayback(latestNarration, narrationVolume, () => {
-            console.log(`Direct audio finished playing for narration ${latestNarration.subtitle_id}`);
-            setCurrentNarration(null);
-          });
-
-          if (directAudio) {
-            // Replace the audio reference
-            audioRefs.current[latestNarration.subtitle_id] = directAudio;
-          }
-        }
+        // Log detailed error information
+        console.error('Audio playback failed for narration:', {
+          subtitle_id: latestNarration.subtitle_id,
+          filename: latestNarration.filename,
+          audioUrl: audio.src,
+          error: audio.error
+        });
       });
 
       // Store the audio duration once it's loaded
@@ -213,7 +207,7 @@ const useNarrationPlayback = (
 
     // Calculate the start time for audio playback
     const audioStartTime = calculateAudioStartTime(videoRef, latestNarration, audioDuration);
-    
+
     // Set the audio start time
     if (audioStartTime > 0) {
       audioElement.currentTime = audioStartTime;
@@ -247,17 +241,13 @@ const useNarrationPlayback = (
             .catch(error => {
               console.error('Error playing audio:', error);
 
-              // Try direct playback as a last resort
-              if (latestNarration.gemini && latestNarration.audioData) {
-                const directAudio = tryDirectPlayback(latestNarration, narrationVolume, () => {
-                  setCurrentNarration(null);
-                });
-
-                if (directAudio) {
-                  // Replace the audio reference
-                  audioRefs.current[latestNarration.subtitle_id] = directAudio;
-                }
-              }
+              // Log detailed error information
+              console.error('Failed to play audio:', {
+                subtitle_id: latestNarration.subtitle_id,
+                filename: latestNarration.filename,
+                audioUrl: audioElement.src,
+                error: error
+              });
             });
           audioElement.removeEventListener('loadeddata', loadHandler);
         };
@@ -274,17 +264,13 @@ const useNarrationPlayback = (
               .catch(error => {
                 console.error('Error playing audio after timeout:', error);
 
-                // Try direct playback as a last resort
-                if (latestNarration.gemini && latestNarration.audioData) {
-                  const directAudio = tryDirectPlayback(latestNarration, narrationVolume, () => {
-                    setCurrentNarration(null);
-                  });
-
-                  if (directAudio) {
-                    // Replace the audio reference
-                    audioRefs.current[latestNarration.subtitle_id] = directAudio;
-                  }
-                }
+                // Log detailed error information
+                console.error('Failed to play audio after timeout:', {
+                  subtitle_id: latestNarration.subtitle_id,
+                  filename: latestNarration.filename,
+                  audioUrl: audioElement.src,
+                  error: error
+                });
               });
           }
         }, 3000);
@@ -295,33 +281,24 @@ const useNarrationPlayback = (
           .catch(error => {
             console.error('Error playing audio:', error);
 
-            // Try direct playback as a last resort
-            if (latestNarration.gemini && latestNarration.audioData) {
-              const directAudio = tryDirectPlayback(latestNarration, narrationVolume, () => {
-                setCurrentNarration(null);
-              });
-
-              if (directAudio) {
-                // Replace the audio reference
-                audioRefs.current[latestNarration.subtitle_id] = directAudio;
-              }
-            }
+            // Log detailed error information
+            console.error('Failed to play audio:', {
+              subtitle_id: latestNarration.subtitle_id,
+              filename: latestNarration.filename,
+              audioUrl: audioElement.src,
+              error: error
+            });
           });
       }
     } catch (error) {
       console.error('Exception trying to play audio:', error);
 
-      // Try direct playback from audioData as a last resort
-      if (latestNarration.gemini && latestNarration.audioData) {
-        const directAudio = tryDirectPlayback(latestNarration, narrationVolume, () => {
-          setCurrentNarration(null);
-        });
-
-        if (directAudio) {
-          // Replace the audio reference
-          audioRefs.current[latestNarration.subtitle_id] = directAudio;
-        }
-      }
+      // Log detailed error information
+      console.error('Exception trying to play audio:', {
+        subtitle_id: latestNarration.subtitle_id,
+        filename: latestNarration.filename,
+        error: error
+      });
     }
   };
 
