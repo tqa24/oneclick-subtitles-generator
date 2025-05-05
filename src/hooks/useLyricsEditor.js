@@ -196,6 +196,17 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     if (onUpdateLyrics) {
       onUpdateLyrics(updatedLyrics);
     }
+
+    // Dispatch a custom event to notify that subtitle timings have changed
+    // This is used by the aligned narration component to auto-regenerate
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: {
+        index,
+        field,
+        newValue,
+        updatedLyrics
+      }
+    }));
   };
 
   const startDrag = (index, field, startX, startValue) => {
@@ -276,6 +287,15 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
 
     // Reset the last updated value reference
     lastUpdatedValueRef.current = { index: -1, field: null, value: 0 };
+
+    // Dispatch a custom event to notify that subtitle timings have changed
+    // This is especially important after a drag operation completes
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: {
+        action: 'drag-end',
+        timestamp: Date.now()
+      }
+    }));
   };
 
   const isDragging = (index, field) =>

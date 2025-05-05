@@ -459,10 +459,19 @@ const LyricsDisplay = ({
           onSaveSubtitles(subtitlesToSave);
         }
 
-        // Dispatch a custom event to notify that subtitles have been saved
-        // This is used by the segment retry functionality
+        // Dispatch custom events to notify that subtitles have been saved
+        // These are used by various components including segment retry and aligned narration
         window.dispatchEvent(new CustomEvent('subtitles-saved', {
           detail: { success: true }
+        }));
+
+        // Also dispatch a subtitle-timing-changed event for the aligned narration component
+        window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+          detail: {
+            action: 'save',
+            timestamp: Date.now(),
+            subtitles: subtitlesToSave
+          }
         }));
       } else {
         console.error('Failed to save subtitles:', result.error);

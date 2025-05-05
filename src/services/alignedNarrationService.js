@@ -224,7 +224,7 @@ export const getAlignedAudioElement = () => {
     alignedAudioElement.load();
 
     // Reset any custom properties we might have set
-    alignedAudioElement.seeking = false;
+    alignedAudioElement._customSeeking = false;
   }
 
   return alignedAudioElement;
@@ -254,8 +254,9 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       if (timeDifference > seekThreshold || !isPlaying) {
         console.log(`Seeking aligned audio to ${currentTime} (diff: ${timeDifference.toFixed(2)}s)`);
 
-        // Set a flag to track seeking state
-        audio.seeking = true;
+        // Set a flag to track our custom seeking state
+        // Use a different name to avoid conflict with the built-in seeking property
+        audio._customSeeking = true;
 
         // Use a try-catch specifically for the seeking operation
         try {
@@ -283,22 +284,59 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
 
     // Handle play/pause state
     if (isPlaying && audio.paused) {
+      console.log(`Starting aligned narration playback at ${currentTime}s`);
+
       // Add a small delay before playing if we just performed a seek
       // This helps avoid playback issues after seeking
-      if (audio.seeking) {
+      if (audio._customSeeking) {
         setTimeout(() => {
+          console.log('Playing after seek delay');
           audio.play().catch(error => {
             console.error('Error playing aligned narration:', error);
+
+            // Try to recover by reloading and playing again
+            if (alignedNarrationCache.url) {
+              console.log('Attempting to recover from play error by reloading audio');
+              audio.src = alignedNarrationCache.url;
+              audio.load();
+              setTimeout(() => {
+                try {
+                  audio.currentTime = currentTime;
+                  audio.play();
+                } catch (e) {
+                  console.error('Recovery attempt failed:', e);
+                }
+              }, 100);
+            }
           });
-          audio.seeking = false;
+          audio._customSeeking = false;
         }, 50);
       } else {
         audio.play().catch(error => {
           console.error('Error playing aligned narration:', error);
+
+          // Try to recover by reloading and playing again
+          if (alignedNarrationCache.url) {
+            console.log('Attempting to recover from play error by reloading audio');
+            audio.src = alignedNarrationCache.url;
+            audio.load();
+            setTimeout(() => {
+              try {
+                audio.currentTime = currentTime;
+                audio.play();
+              } catch (e) {
+                console.error('Recovery attempt failed:', e);
+              }
+            }, 100);
+          }
         });
       }
     } else if (!isPlaying && !audio.paused) {
+      console.log(`Pausing aligned narration at ${currentTime}s`);
       audio.pause();
+    } else if (isPlaying && !audio.paused) {
+      // Already playing, just log for debugging
+      console.log(`Aligned narration already playing at ${audio.currentTime}s (requested: ${currentTime}s)`);
     }
   } catch (error) {
     console.error('Error in playAlignedNarration:', error);
