@@ -28,7 +28,6 @@
   "downloadAll": "Download All",
   "downloadAligned": "Download Aligned",
   "downloading": "Downloading audio...",
-  "downloadError": "Error downloading audio files",
   "noResults": "No narration results to download",
   "cancel": "Cancel Generation",
   "generationCancelled": "Narration generation cancelled by user",

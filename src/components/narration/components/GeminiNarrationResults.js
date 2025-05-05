@@ -10,9 +10,11 @@ import { playAudio as playAudioHandler, downloadAudio as downloadAudioHandler, d
  * Component for displaying Gemini narration results with audio playback
  * @param {Object} props - Component props
  * @param {Array} props.generationResults - Array of narration results
+ * @param {Function} props.onRetry - Function to retry generation for a specific subtitle
+ * @param {number|null} props.retryingSubtitleId - ID of the subtitle currently being retried
  * @returns {JSX.Element} - Rendered component
  */
-const GeminiNarrationResults = ({ generationResults }) => {
+const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId }) => {
   const { t } = useTranslation();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const audioRef = useRef(null);
@@ -82,7 +84,7 @@ const GeminiNarrationResults = ({ generationResults }) => {
         {generationResults.map((result) => (
           <div
             key={result.subtitle_id}
-            className={`gemini-result-item ${result.success ? '' : 'failed'} ${currentlyPlaying === result.subtitle_id ? 'playing' : ''}`}
+            className={`gemini-result-item ${result.success ? '' : 'failed'} ${currentlyPlaying === result.subtitle_id ? 'playing' : ''} ${retryingSubtitleId === result.subtitle_id ? 'retrying' : ''}`}
           >
             <div className="gemini-result-text">
               <span className="gemini-result-id">{result.subtitle_id}.</span>
@@ -124,13 +126,63 @@ const GeminiNarrationResults = ({ generationResults }) => {
                     </svg>
                     {t('narration.download', 'Download')}
                   </button>
+                  <button
+                    className={`pill-button secondary retry-button ${retryingSubtitleId === result.subtitle_id ? 'retrying' : ''}`}
+                    onClick={() => onRetry(result.subtitle_id)}
+                    title={t('narration.retry', 'Retry generation')}
+                    disabled={retryingSubtitleId === result.subtitle_id}
+                  >
+                    {retryingSubtitleId === result.subtitle_id ? (
+                      <>
+                        <svg className="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 6v6l4 2" />
+                        </svg>
+                        {t('narration.retrying', 'Retrying...')}
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 4v6h6" />
+                          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                        </svg>
+                        {t('narration.retry', 'Retry')}
+                      </>
+                    )}
+                  </button>
 
                 </>
               ) : (
                 !result.success && (
-                  <span className="gemini-error-message">
-                    {t('narration.failed', 'Generation failed')}
-                  </span>
+                  <>
+                    <span className="gemini-error-message">
+                      {t('narration.failed', 'Generation failed')}
+                    </span>
+                    <button
+                      className={`pill-button secondary retry-button ${retryingSubtitleId === result.subtitle_id ? 'retrying' : ''}`}
+                      onClick={() => onRetry(result.subtitle_id)}
+                      title={t('narration.retry', 'Retry generation')}
+                      disabled={retryingSubtitleId === result.subtitle_id}
+                    >
+                      {retryingSubtitleId === result.subtitle_id ? (
+                        <>
+                          <svg className="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                          </svg>
+                          {t('narration.retrying', 'Retrying...')}
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 4v6h6" />
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                          </svg>
+                          {t('narration.retry', 'Retry')}
+                        </>
+                      )}
+                    </button>
+                  </>
                 )
               )}
             </div>

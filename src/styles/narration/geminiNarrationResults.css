@@ -48,6 +48,13 @@
   border-left-color: var(--md-error);
 }
 
+.gemini-result-item.retrying {
+  opacity: 0.7;
+  background-color: var(--md-surface-1);
+  border-left-color: var(--md-tertiary);
+  pointer-events: none;
+}
+
 .gemini-result-text {
   flex: 1;
   margin-right: 1rem;
@@ -67,6 +74,40 @@
 .audio-controls {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Specific styling for the retry button */
+.retry-button {
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+}
+
+.retry-button:hover {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.retry-button.retrying {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  cursor: not-allowed;
+}
+
+.retry-button.retrying:hover {
+  background-color: var(--md-surface-2);
+  transform: none;
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Spinner animation for retry button */
+.spinner {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Pill button styling for audio controls */
@@ -207,7 +248,9 @@
 
   .audio-controls {
     width: 100%;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .gemini-export-controls {

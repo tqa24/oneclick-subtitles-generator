@@ -97,6 +97,7 @@ const UnifiedNarrationSection = ({
   const [modelAvailabilityError, setModelAvailabilityError] = useState(null);
   const [originalLanguage, setOriginalLanguage] = useState(null);
   const [translatedLanguage, setTranslatedLanguage] = useState(null);
+  const [retryingSubtitleId, setRetryingSubtitleId] = useState(null);
   const [advancedSettings, setAdvancedSettings] = useState({
     // Voice Style Controls - only speechRate is supported
     speechRate: 1.0,
@@ -394,6 +395,84 @@ const UnifiedNarrationSection = ({
     // which will set isGenerating to false when it's done
   };
 
+  // Retry Gemini narration generation for a specific subtitle
+  const retryGeminiNarration = async (subtitleId) => {
+    if (!subtitleSource) {
+      setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
+      return;
+    }
+
+    // Get the appropriate subtitles based on the selected source
+    const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
+      ? translatedSubtitles
+      : originalSubtitles || subtitles;
+
+    if (!selectedSubtitles || selectedSubtitles.length === 0) {
+      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
+      return;
+    }
+
+    // Find the subtitle with the given ID
+    const subtitleToRetry = selectedSubtitles.find(subtitle =>
+      (subtitle.id || subtitle.index) === subtitleId
+    );
+
+    if (!subtitleToRetry) {
+      console.error(`Subtitle with ID ${subtitleId} not found`);
+      return;
+    }
+
+    // Set retrying state
+    setRetryingSubtitleId(subtitleId);
+    // Clear any previous errors
+    setError('');
+
+    // Get the language code for the selected subtitles
+    const detectedLanguageCode = subtitleSource === 'original'
+      ? (originalLanguage?.languageCode || 'en')
+      : (translatedLanguage?.languageCode || 'en');
+
+    // Convert to Gemini-compatible language code
+    const language = getGeminiLanguageCode(detectedLanguageCode);
+
+    console.log(`Retrying narration for subtitle ${subtitleId} with language: ${language}`);
+
+    // Set status for this specific retry
+    setGenerationStatus(t('narration.retryingGeminiGeneration', 'Retrying narration generation for subtitle {{id}}...', { id: subtitleId }));
+
+    try {
+      // Prepare subtitle with ID for tracking
+      const subtitleWithId = {
+        ...subtitleToRetry,
+        id: subtitleToRetry.id || subtitleToRetry.index || subtitleId
+      };
+
+      // Generate narration with Gemini for this single subtitle
+      console.log(`Retrying Gemini narration for subtitle ${subtitleId} with voice: ${selectedVoice}`);
+
+      // Import the generateGeminiNarration function for a single subtitle
+      const { generateGeminiNarration } = await import('../../services/gemini/geminiNarrationService');
+
+      // Generate narration for the single subtitle
+      const result = await generateGeminiNarration(subtitleWithId, language, null, selectedVoice);
+
+      // Update the results array by replacing the old result with the new one
+      setGenerationResults(prevResults =>
+        prevResults.map(prevResult =>
+          prevResult.subtitle_id === subtitleId ? result : prevResult
+        )
+      );
+
+      setGenerationStatus(t('narration.retryComplete', 'Retry complete for subtitle {{id}}', { id: subtitleId }));
+    } catch (error) {
+      console.error(`Error retrying Gemini narration for subtitle ${subtitleId}:`, error);
+      setError(t('narration.retryError', 'Error retrying narration for subtitle {{id}}', { id: subtitleId }));
+    } finally {
+      // Clear retrying state regardless of success or failure
+      setRetryingSubtitleId(null);
+    }
+  };
+
   // Import the handler functions from separate file to keep this component clean
   const {
     handleFileUpload,
@@ -592,7 +671,7 @@ const UnifiedNarrationSection = ({
 
           {/* Generation Status */}
           <StatusMessage
-            message={isGenerating ? generationStatus : ''}
+            message={(isGenerating || retryingSubtitleId) ? generationStatus : ''}
             type="info"
             statusRef={statusRef}
           />
@@ -672,6 +751,8 @@ const UnifiedNarrationSection = ({
           {/* Gemini Results */}
           <GeminiNarrationResults
             generationResults={generationResults}
+            onRetry={retryGeminiNarration}
+            retryingSubtitleId={retryingSubtitleId}
           />
         </>
       )}
