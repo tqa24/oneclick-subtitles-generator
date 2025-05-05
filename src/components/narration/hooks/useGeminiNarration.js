@@ -22,6 +22,7 @@ import {
  * @param {number} params.sleepTime - Sleep time between requests
  * @param {string} params.selectedVoice - Selected voice
  * @param {Function} params.t - Translation function
+ * @param {Function} params.setRetryingSubtitleId - Function to set the ID of the subtitle being retried
  * @returns {Object} - Gemini narration handlers
  */
 const useGeminiNarration = ({
@@ -38,7 +39,8 @@ const useGeminiNarration = ({
   translatedLanguage,
   sleepTime,
   selectedVoice,
-  t
+  t,
+  setRetryingSubtitleId
 }) => {
   // Handle Gemini narration generation
   const handleGeminiNarration = async () => {
@@ -165,13 +167,9 @@ const useGeminiNarration = ({
       return;
     }
 
-    // Set retrying state
-    const setRetryingSubtitleId = (id) => {
-      // This function will be passed in from the parent component
-      // We're just defining it here for TypeScript
-    };
+    // Set retrying state using the function passed from the parent component
     setRetryingSubtitleId(subtitleId);
-    
+
     // Clear any previous errors
     setError('');
 

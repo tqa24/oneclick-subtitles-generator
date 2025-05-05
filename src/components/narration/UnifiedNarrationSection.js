@@ -426,7 +426,7 @@ const UnifiedNarrationSection = ({
 
           {/* Generation Status */}
           <StatusMessage
-            message={isGenerating ? generationStatus : ''}
+            message={(isGenerating || retryingSubtitleId) ? generationStatus : ''}
             type="info"
             statusRef={statusRef}
           />
