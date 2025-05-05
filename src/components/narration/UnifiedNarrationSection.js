@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  checkNarrationStatusWithRetry,
-  getAudioUrl
-} from '../../services/narrationService';
-import { SERVER_URL } from '../../config';
-import {
-  checkGeminiAvailability,
-  generateGeminiNarrations,
-  cancelGeminiNarrations,
-  getGeminiLanguageCode
-} from '../../services/gemini/geminiNarrationService';
-import NarrationAdvancedSettings from './NarrationAdvancedSettings'; // Redesigned component
+import { getAudioUrl } from '../../services/narrationService';
 import useNarrationHandlers from './hooks/useNarrationHandlers';
+
+// Import custom hooks
+import useNarrationState from './hooks/useNarrationState';
+import useAvailabilityCheck from './hooks/useAvailabilityCheck';
+import useGeminiNarration from './hooks/useGeminiNarration';
+import useAudioPlayback from './hooks/useAudioPlayback';
+import useNarrationStorage from './hooks/useNarrationStorage';
+import useUIEffects from './hooks/useUIEffects';
 
 // Import modular components
 import ReferenceAudioSection from './components/ReferenceAudioSection';
@@ -53,534 +50,124 @@ const UnifiedNarrationSection = ({
 }) => {
   const { t } = useTranslation();
 
-  // Narration Method state - always default to Gemini
-  const [narrationMethod, setNarrationMethod] = useState('gemini');
-  const [isGeminiAvailable, setIsGeminiAvailable] = useState(true); // Assume Gemini is available by default
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
-
-  // Gemini-specific settings
-  const [sleepTime, setSleepTime] = useState(() => {
-    // Try to load from localStorage
-    const savedSleepTime = localStorage.getItem('gemini_sleep_time');
-    return savedSleepTime ? parseInt(savedSleepTime) : 10000; // Default to 10 seconds
-  });
-
-  const [selectedVoice, setSelectedVoice] = useState(() => {
-    // Try to load from localStorage
-    const savedVoice = localStorage.getItem('gemini_voice');
-    return savedVoice || 'Aoede'; // Default to Aoede if not set
-  });
-
-  // Narration Settings state (for F5-TTS)
-  const [referenceAudio, setReferenceAudio] = useState(initialReferenceAudio);
-  const [referenceText, setReferenceText] = useState(initialReferenceAudio?.text || '');
-  const [isRecording, setIsRecording] = useState(false);
-  // recordedAudio is used in the handlers but not directly in this component
-  const [, setRecordedAudio] = useState(null);
-  const [isExtractingSegment, setIsExtractingSegment] = useState(false);
-  const [segmentStartTime, setSegmentStartTime] = useState('');
-  const [segmentEndTime, setSegmentEndTime] = useState('');
-  const [autoRecognize, setAutoRecognize] = useState(true); // Default to true
-  const [isRecognizing, setIsRecognizing] = useState(false);
-
-  // Narration Generation state
-  const [isAvailable, setIsAvailable] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationStatus, setGenerationStatus] = useState('');
-  const [generationResults, setGenerationResults] = useState([]);
-  const [error, setError] = useState('');
-  const [currentAudio, setCurrentAudio] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [subtitleSource, setSubtitleSource] = useState(null); // No default selection, will be set when user clicks
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
-  const [detectedLanguage, setDetectedLanguage] = useState(null);
-  const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);
-  const [modelAvailabilityError, setModelAvailabilityError] = useState(null);
-  const [originalLanguage, setOriginalLanguage] = useState(null);
-  const [translatedLanguage, setTranslatedLanguage] = useState(null);
-  const [retryingSubtitleId, setRetryingSubtitleId] = useState(null);
-  const [advancedSettings, setAdvancedSettings] = useState({
-    // Voice Style Controls - only speechRate is supported
-    speechRate: 1.0,
-
-    // Generation Quality Controls
-    nfeStep: '32',  // Number of Function Evaluations (diffusion steps)
-    swayCoef: -1.0, // Sway Sampling Coefficient
-    cfgStrength: 2.0, // Classifier-Free Guidance Strength
-
-    // Seed Control
-    useRandomSeed: true,
-    seed: 42,
-
-    // Audio Processing Options - only removeSilence is supported
-    removeSilence: true,
-
-    // Output Format Options
-    sampleRate: '44100',
-    audioFormat: 'wav',
-
-    // Batch Processing Options
-    batchSize: '10',
-    mergeOutput: false
-  });
-
   // Refs
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
   const statusRef = useRef(null);
-  const audioRef = useRef(null);
 
-  // Check if narration services are available
+  // Use custom hooks for state management
+  const narrationState = useNarrationState(initialReferenceAudio);
+
+  // Destructure state from the hook
+  const {
+    // Narration Method state
+    narrationMethod, setNarrationMethod,
+    isGeminiAvailable, setIsGeminiAvailable,
+
+    // Gemini-specific settings
+    sleepTime, setSleepTime,
+    selectedVoice, setSelectedVoice,
+
+    // Narration Settings state (for F5-TTS)
+    referenceAudio, setReferenceAudio,
+    referenceText, setReferenceText,
+    isRecording, setIsRecording,
+    /* recordedAudio, */ setRecordedAudio,
+    isExtractingSegment, setIsExtractingSegment,
+    segmentStartTime, segmentEndTime,
+    autoRecognize, setAutoRecognize,
+    isRecognizing, setIsRecognizing,
+
+    // Narration Generation state
+    isAvailable, setIsAvailable,
+    isGenerating, setIsGenerating,
+    generationStatus, setGenerationStatus,
+    generationResults, setGenerationResults,
+    error, setError,
+    currentAudio, setCurrentAudio,
+    isPlaying, setIsPlaying,
+    subtitleSource, setSubtitleSource,
+    advancedSettings, setAdvancedSettings,
+    originalLanguage, setOriginalLanguage,
+    translatedLanguage, setTranslatedLanguage,
+    retryingSubtitleId, setRetryingSubtitleId,
+    selectedNarrationModel,
+
+    // Helper functions
+    updateReferenceAudio
+  } = narrationState;
+
+  // Use availability check hook
+  useAvailabilityCheck({
+    narrationMethod,
+    setIsAvailable,
+    setIsGeminiAvailable,
+    setError,
+    t
+  });
+
+  // Use Gemini narration hook
+  const {
+    handleGeminiNarration,
+    cancelGeminiGeneration,
+    retryGeminiNarration
+  } = useGeminiNarration({
+    setIsGenerating,
+    setGenerationStatus,
+    setError,
+    setGenerationResults,
+    generationResults,
+    subtitleSource,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    originalLanguage,
+    translatedLanguage,
+    sleepTime,
+    selectedVoice,
+    t,
+    setRetryingSubtitleId
+  });
+
+  // Use audio playback hook
+  const { audioRef, handleAudioEnded } = useAudioPlayback({
+    isPlaying,
+    currentAudio,
+    setIsPlaying
+  });
+
+  // Use narration storage hook
+  useNarrationStorage({
+    generationResults,
+    subtitleSource
+  });
+
+  // Use UI effects hook
+  useUIEffects({
+    isGenerating,
+    generationStatus,
+    statusRef,
+    t,
+    referenceAudio,
+    referenceText,
+    segmentStartTime,
+    segmentEndTime,
+    setError
+  });
+
+  // Update reference audio when initialReferenceAudio changes
   useEffect(() => {
-    const checkAvailability = async () => {
-      try {
-        console.log('Checking narration service availability');
-
-        // Check F5-TTS availability in the background
-        const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
-        console.log('F5-TTS narration service status:', f5Status);
-
-        // Set F5-TTS availability based on the actual status
-        setIsAvailable(f5Status.available);
-
-        // Check Gemini availability
-        const geminiStatus = await checkGeminiAvailability();
-        console.log('Gemini API availability status:', geminiStatus);
-
-        // Set Gemini availability
-        setIsGeminiAvailable(geminiStatus.available);
-
-        // Set error message if Gemini is not available and we're using Gemini method
-        if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
-          setError(geminiStatus.message);
-        }
-        // Set error message if F5-TTS is not available and we're using F5-TTS method
-        else if (!f5Status.available && narrationMethod === 'f5tts' && f5Status.message) {
-          setError(f5Status.message);
-        }
-        else {
-          // Clear any previous errors
-          setError('');
-        }
-      } catch (error) {
-        console.error('Error checking service availability:', error);
-
-        // If we're using F5-TTS, show F5-TTS error
-        if (narrationMethod === 'f5tts') {
-          setIsAvailable(false);
-          setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
-        }
-        // If we're using Gemini, show Gemini error
-        else {
-          setIsGeminiAvailable(false);
-          setError(t('narration.geminiUnavailableMessage', "Gemini API is not available. Please check your API key in settings."));
-        }
-      }
-    };
-
-    // Check availability once when component mounts or narration method changes
-    checkAvailability();
-  }, [t, narrationMethod]);
-
-  // Update local state when initialReferenceAudio changes
-  useEffect(() => {
-    if (initialReferenceAudio) {
-      setReferenceAudio(initialReferenceAudio);
-      setReferenceText(initialReferenceAudio.text || '');
-    }
-  }, [initialReferenceAudio]);
-
-  // Try to load previously detected language from localStorage
-  useEffect(() => {
-    try {
-      const savedLanguageData = localStorage.getItem('detected_language');
-      if (savedLanguageData) {
-        const { source, language, modelId, modelError } = JSON.parse(savedLanguageData);
-        console.log(`Loaded previously detected language for ${source}: ${language.languageCode}`);
-        if (modelError) {
-          console.warn(`Loaded model availability error: ${modelError}`);
-        }
-        setDetectedLanguage(language);
-        setSelectedNarrationModel(modelId);
-        setModelAvailabilityError(modelError);
-
-        // We no longer automatically set the subtitle source
-        // Let the user explicitly select it
-      }
-    } catch (error) {
-      // Silently fail if data can't be loaded
-      console.error('Error loading detected language from localStorage:', error);
-    }
-  }, []);
-
-  // Reset error when inputs change
-  useEffect(() => {
-    setError('');
-  }, [referenceAudio, referenceText, segmentStartTime, segmentEndTime]);
-
-  // Load advanced settings from localStorage
-  useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('narration_advanced_settings');
-      if (savedSettings) {
-        setAdvancedSettings(JSON.parse(savedSettings));
-      }
-    } catch (error) {
-      // Silently fail if settings can't be loaded
-    }
-  }, []);
-
-  // Scroll to status only when generation starts, not for every status update
-  useEffect(() => {
-    // Only scroll when generation starts, not for every status update
-    if (isGenerating && statusRef.current && generationStatus === t('narration.preparingGeneration', 'Preparing to generate narration...')) {
-      statusRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [isGenerating, generationStatus, t]);
-
-  // Handle audio playback
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play();
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentAudio]);
-
-  // Store narration results in window object for access by other components
-  useEffect(() => {
-    console.log('UnifiedNarrationSection - generationResults:', generationResults);
-    console.log('UnifiedNarrationSection - subtitleSource:', subtitleSource);
-
-    if (generationResults.length > 0) {
-      // Store based on subtitle source
-      if (subtitleSource === 'original') {
-        // Create a new array to ensure reference changes trigger updates
-        window.originalNarrations = [...generationResults];
-        // Also store in localStorage for more reliable access
-        try {
-          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
-        } catch (e) {
-          console.error('Error storing originalNarrations in localStorage:', e);
-        }
-        console.log('UnifiedNarrationSection - Setting window.originalNarrations:', window.originalNarrations);
-      } else {
-        // Create a new array to ensure reference changes trigger updates
-        window.translatedNarrations = [...generationResults];
-        // Also store in localStorage for more reliable access
-        try {
-          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
-        } catch (e) {
-          console.error('Error storing translatedNarrations in localStorage:', e);
-        }
-        console.log('UnifiedNarrationSection - Setting window.translatedNarrations:', window.translatedNarrations);
-      }
-
-      // Dispatch a custom event to notify other components
-      const event = new CustomEvent('narrations-updated', {
-        detail: {
-          source: subtitleSource,
-          narrations: generationResults
-        }
-      });
-      window.dispatchEvent(event);
-    }
-
-    console.log('UnifiedNarrationSection - After update - window.originalNarrations:', window.originalNarrations);
-    console.log('UnifiedNarrationSection - After update - window.translatedNarrations:', window.translatedNarrations);
-  }, [generationResults, subtitleSource]);
-
-  // Handle audio ended event
-  const handleAudioEnded = () => {
-    setIsPlaying(false);
-  };
-
-  // Handle Gemini narration generation
-  const handleGeminiNarration = async () => {
-    if (!subtitleSource) {
-      setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
-      return;
-    }
-
-    // Get the appropriate subtitles based on the selected source
-    const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
-      ? translatedSubtitles
-      : originalSubtitles || subtitles;
-
-    if (!selectedSubtitles || selectedSubtitles.length === 0) {
-      // If translated subtitles are selected but not available, show a specific error
-      if (subtitleSource === 'translated' && (!translatedSubtitles || translatedSubtitles.length === 0)) {
-        setError(t('narration.noTranslatedSubtitlesError', 'No translated subtitles available. Please translate the subtitles first or select original subtitles.'));
-      } else {
-        setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
-      }
-      return;
-    }
-
-    // Get the language code for the selected subtitles
-    const detectedLanguageCode = subtitleSource === 'original'
-      ? (originalLanguage?.languageCode || 'en')
-      : (translatedLanguage?.languageCode || 'en');
-
-    // Convert to Gemini-compatible language code
-    const language = getGeminiLanguageCode(detectedLanguageCode);
-
-    console.log(`Using language: ${detectedLanguageCode} (Gemini format: ${language}) for Gemini narration`);
-
-    setIsGenerating(true);
-    setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
-    setError('');
-    setGenerationResults([]);
-
-    try {
-      // Prepare subtitles with IDs for tracking
-      const subtitlesWithIds = selectedSubtitles.map((subtitle, index) => ({
-        ...subtitle,
-        id: subtitle.id || index + 1
-      }));
-
-      // Generate narration with Gemini
-      console.log(`Using Gemini API for narration with sleep time: ${sleepTime}ms and voice: ${selectedVoice}`);
-
-      await generateGeminiNarrations(
-        subtitlesWithIds,
-        language,
-        (message) => setGenerationStatus(message),
-        (result, progress, total) => {
-          // Add the result to the results array
-          setGenerationResults(prev => [...prev, result]);
-          // Update the status
-          setGenerationStatus(
-            t(
-              'narration.geminiGeneratingProgress',
-              'Generated {{progress}} of {{total}} narrations with Gemini...',
-              {
-                progress,
-                total
-              }
-            )
-          );
-        },
-        (error) => {
-          console.error('Error in Gemini narration generation:', error);
-          setError(`${t('narration.geminiGenerationError', 'Error generating narration with Gemini')}: ${error.message || error}`);
-        },
-        (results) => {
-          setGenerationStatus(t('narration.geminiGenerationComplete', 'Gemini narration generation complete'));
-          setGenerationResults(results);
-        },
-        null, // Use default model
-        sleepTime, // Use the configured sleep time
-        selectedVoice // Use the selected voice
-      );
-    } catch (error) {
-      console.error('Error generating Gemini narration:', error);
-      setError(t('narration.geminiGenerationError', 'Error generating narration with Gemini'));
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // Cancel Gemini narration generation
-  const cancelGeminiGeneration = () => {
-    // Call the cancel function from the service
-    cancelGeminiNarrations();
-
-    // Update UI
-    setGenerationStatus(t('narration.geminiGenerationCancelling', 'Cancelling Gemini narration generation...'));
-
-    // We don't set isGenerating to false here because the service will call the completion callback
-    // which will set isGenerating to false when it's done
-  };
-
-  // Retry Gemini narration generation for a specific subtitle
-  const retryGeminiNarration = async (subtitleId) => {
-    if (!subtitleSource) {
-      setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
-      return;
-    }
-
-    // Get the appropriate subtitles based on the selected source
-    const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
-      ? translatedSubtitles
-      : originalSubtitles || subtitles;
-
-    if (!selectedSubtitles || selectedSubtitles.length === 0) {
-      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
-      return;
-    }
-
-    // Find the subtitle with the given ID
-    const subtitleToRetry = selectedSubtitles.find(subtitle =>
-      (subtitle.id || subtitle.index) === subtitleId
-    );
-
-    if (!subtitleToRetry) {
-      console.error(`Subtitle with ID ${subtitleId} not found`);
-      return;
-    }
-
-    // Set retrying state
-    setRetryingSubtitleId(subtitleId);
-    // Clear any previous errors
-    setError('');
-
-    // Get the language code for the selected subtitles
-    const detectedLanguageCode = subtitleSource === 'original'
-      ? (originalLanguage?.languageCode || 'en')
-      : (translatedLanguage?.languageCode || 'en');
-
-    // Convert to Gemini-compatible language code
-    const language = getGeminiLanguageCode(detectedLanguageCode);
-
-    console.log(`Retrying narration for subtitle ${subtitleId} with language: ${language}`);
-
-    // Set status for this specific retry
-    setGenerationStatus(t('narration.retryingGeminiGeneration', 'Retrying narration generation for subtitle {{id}}...', { id: subtitleId }));
-
-    try {
-      // Prepare subtitle with ID for tracking
-      const subtitleWithId = {
-        ...subtitleToRetry,
-        id: subtitleToRetry.id || subtitleToRetry.index || subtitleId
-      };
-
-      // Generate narration with Gemini for this single subtitle
-      console.log(`Retrying Gemini narration for subtitle ${subtitleId} with voice: ${selectedVoice}`);
-
-      // Import the generateGeminiNarration function for a single subtitle
-      const { generateGeminiNarration } = await import('../../services/gemini/geminiNarrationService');
-
-      // Generate narration for the single subtitle
-      const result = await generateGeminiNarration(subtitleWithId, language, null, selectedVoice);
-
-      // If the result has audio data, save it to the server to get a filename
-      if (result.success && result.audioData) {
-        try {
-          console.log(`Saving retried audio for subtitle ${result.subtitle_id} to server...`);
-
-          // Send the audio data to the server
-          const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              audioData: result.audioData,
-              subtitle_id: result.subtitle_id,
-              sampleRate: result.sampleRate || 24000
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-              console.log(`Successfully saved retried audio to server: ${data.filename}`);
-              // Update the result with the filename
-              result.filename = data.filename;
-            } else {
-              console.error(`Error saving retried audio to server: ${data.error}`);
-              setError(t('narration.saveError', 'Error saving audio to server: {{error}}', { error: data.error }));
-            }
-          } else {
-            console.error(`Server returned ${response.status}: ${response.statusText}`);
-            setError(t('narration.serverError', 'Server error: {{status}} {{statusText}}', {
-              status: response.status,
-              statusText: response.statusText
-            }));
-          }
-        } catch (error) {
-          console.error(`Error saving retried audio to server for subtitle ${result.subtitle_id}:`, error);
-          setError(t('narration.saveError', 'Error saving audio to server: {{error}}', { error: error.message }));
-        }
-      }
-
-      // Update the results array by replacing the old result with the new one
-      setGenerationResults(prevResults => {
-        const updatedResults = prevResults.map(prevResult =>
-          prevResult.subtitle_id === subtitleId ? result : prevResult
-        );
-
-        // Update the global narration references to ensure video player uses the latest version
-        if (subtitleSource === 'original') {
-          // Update window.originalNarrations
-          window.originalNarrations = [...updatedResults];
-
-          // Also update the global narrations array if it exists
-          if (window.subtitlesData && window.narrations) {
-            // Find and update the narration in the global narrations array
-            const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
-            if (globalIndex !== -1) {
-              window.narrations[globalIndex] = result;
-              console.log('Updated window.narrations with retried narration:', result);
-            }
-          }
-
-          // Also update localStorage
-          try {
-            localStorage.setItem('originalNarrations', JSON.stringify(updatedResults));
-          } catch (e) {
-            console.error('Error storing updated originalNarrations in localStorage:', e);
-          }
-          console.log('Updated window.originalNarrations with retried narration:', result);
-        } else {
-          // Update window.translatedNarrations
-          window.translatedNarrations = [...updatedResults];
-
-          // Also update the global narrations array if it exists
-          if (window.subtitlesData && window.narrations) {
-            // Find and update the narration in the global narrations array
-            const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
-            if (globalIndex !== -1) {
-              window.narrations[globalIndex] = result;
-              console.log('Updated window.narrations with retried narration:', result);
-            }
-          }
-
-          // Also update localStorage
-          try {
-            localStorage.setItem('translatedNarrations', JSON.stringify(updatedResults));
-          } catch (e) {
-            console.error('Error storing updated translatedNarrations in localStorage:', e);
-          }
-          console.log('Updated window.translatedNarrations with retried narration:', result);
-        }
-
-        // Add a timestamp to the result to help identify retried narrations
-        result.retriedAt = Date.now();
-
-        // Dispatch a custom event to notify other components about the updated narration
-        const event = new CustomEvent('narration-retried', {
-          detail: {
-            source: subtitleSource,
-            narration: result,
-            narrations: updatedResults
-          }
-        });
-        window.dispatchEvent(event);
-
-        return updatedResults;
-      });
-
-      setGenerationStatus(t('narration.retryComplete', 'Retry complete for subtitle {{id}}', { id: subtitleId }));
-    } catch (error) {
-      console.error(`Error retrying Gemini narration for subtitle ${subtitleId}:`, error);
-      setError(t('narration.retryError', 'Error retrying narration for subtitle {{id}}', { id: subtitleId }));
-    } finally {
-      // Clear retrying state regardless of success or failure
-      setRetryingSubtitleId(null);
-    }
-  };
+    updateReferenceAudio(initialReferenceAudio);
+  }, [initialReferenceAudio, updateReferenceAudio]);
 
   // Import the handler functions from separate file to keep this component clean
   const {
     handleFileUpload,
     startRecording,
     stopRecording,
-    extractSegment,
+    // extractSegment is available but not used in this component
+    extractSegment: _extractSegment,
     clearReferenceAudio,
     handleGenerateNarration,
     playAudio,
@@ -629,8 +216,6 @@ const UnifiedNarrationSection = ({
     originalLanguage,
     translatedLanguage
   });
-
-  // No loading state - we'll just show the Gemini UI right away
 
   // Only show the unavailable message if both F5-TTS and Gemini are unavailable
   if (!isAvailable && !isGeminiAvailable) {
@@ -726,10 +311,6 @@ const UnifiedNarrationSection = ({
               if (modelError) {
                 console.warn(`Model availability error: ${modelError}`);
               }
-
-              setDetectedLanguage(language);
-              setSelectedNarrationModel(modelId);
-              setModelAvailabilityError(modelError);
 
               // Update the appropriate language state
               if (source === 'original') {
