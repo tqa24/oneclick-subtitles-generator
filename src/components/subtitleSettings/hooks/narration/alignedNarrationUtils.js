@@ -57,6 +57,16 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
   console.log('Enhancing narration with timing. Results count:', generationResults.length);
   console.log('Available subtitle IDs in map:', Object.keys(subtitleMap));
 
+  // Check if any narration has been retried recently
+  const hasRecentRetry = generationResults.some(result =>
+    result.retriedAt && result.retriedAt > Date.now() - 60000 // Consider retries in the last minute as "recent"
+  );
+
+  // If any narration has been retried recently, force regeneration
+  if (hasRecentRetry) {
+    console.log('Recent narration retry detected - will force regeneration of aligned narration');
+  }
+
   return generationResults.map(result => {
     // Get the correct subtitle ID from the result
     const subtitleId = result.subtitle_id;
@@ -67,22 +77,29 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
     // Get the subtitle from the map using the exact ID from the result
     const subtitle = subtitleMap[subtitleId];
 
+    // Check if this specific narration has been retried
+    const wasRetried = result.retriedAt && result.retriedAt > Date.now() - 60000; // Within the last minute
+
     // If we found a matching subtitle, use its timing
     if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-      console.log(`Found timing for subtitle ${subtitleId}: ${subtitle.start}s - ${subtitle.end}s`);
+      console.log(`Found timing for subtitle ${subtitleId}: ${subtitle.start}s - ${subtitle.end}s${wasRetried ? ' (RETRIED)' : ''}`);
       return {
         ...result,
         start: subtitle.start,
-        end: subtitle.end
+        end: subtitle.end,
+        // Add forceRegenerate flag if this narration was retried or any narration was retried recently
+        forceRegenerate: wasRetried || hasRecentRetry
       };
     } else {
-      console.warn(`No timing found for subtitle ${subtitleId}. Using defaults.`);
+      console.warn(`No timing found for subtitle ${subtitleId}. Using defaults.${wasRetried ? ' (RETRIED)' : ''}`);
 
       // Otherwise, keep existing timing or use defaults
       return {
         ...result,
         start: result.start || 0,
-        end: result.end || (result.start ? result.start + 5 : 5)
+        end: result.end || (result.start ? result.start + 5 : 5),
+        // Add forceRegenerate flag if this narration was retried or any narration was retried recently
+        forceRegenerate: wasRetried || hasRecentRetry
       };
     }
   });

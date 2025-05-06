@@ -303,10 +303,21 @@ const useGeminiNarration = ({
           detail: {
             source: subtitleSource,
             narration: result,
-            narrations: updatedResults
+            narrations: updatedResults,
+            timestamp: Date.now() // Add timestamp to ensure the event is treated as new
           }
         });
         window.dispatchEvent(event);
+
+        // Also dispatch a subtitle-timing-changed event to ensure aligned narration is regenerated
+        // This provides a backup mechanism in case the narration-retried event isn't handled
+        window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+          detail: {
+            action: 'narration-retry',
+            timestamp: Date.now(),
+            subtitleId: result.subtitle_id
+          }
+        }));
 
         return updatedResults;
       });

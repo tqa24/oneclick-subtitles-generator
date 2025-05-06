@@ -130,6 +130,21 @@
   color: white;
 }
 
+/* Refresh narration button - Material Design style */
+.refresh-narration-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+}
+
+.video-container:hover .refresh-narration-button {
+  opacity: 1;
+}
+
 /* Download audio button - Material Design style */
 .download-audio-button {
   position: absolute;
@@ -145,6 +160,8 @@
   opacity: 1;
 }
 
+/* Common button styles for both refresh and download buttons */
+.refresh-narration-button button,
 .download-audio-button button {
   display: flex;
   align-items: center;
@@ -162,6 +179,7 @@
   box-shadow: var(--md-elevation-level1);
 }
 
+.refresh-narration-button button:hover,
 .download-audio-button button:hover {
   background-color: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
@@ -170,6 +188,7 @@
   border-color: transparent;
 }
 
+.refresh-narration-button button:active,
 .download-audio-button button:active {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
@@ -222,13 +241,19 @@
   height: 24px;
 }
 
-/* Responsive styles for the download button */
+/* Responsive styles for the refresh and download buttons */
 @media (max-width: 768px) {
+  .refresh-narration-button {
+    top: 12px;
+    left: 12px;
+  }
+
   .download-audio-button {
     top: 12px;
     right: 12px;
   }
 
+  .refresh-narration-button button,
   .download-audio-button button {
     padding: 8px;
     min-width: 40px;
@@ -238,14 +263,17 @@
     background-color: rgba(var(--md-secondary-rgb), 0.1);
   }
 
+  .refresh-narration-button .button-text,
   .download-audio-button .button-text {
     display: none;
   }
 
+  .refresh-narration-button svg,
   .download-audio-button svg {
     margin-right: 0;
   }
 
+  .refresh-narration-button button:hover,
   .download-audio-button button:hover {
     background-color: var(--md-secondary-container);
   }

@@ -54,17 +54,18 @@ const useAlignedNarrationEvents = ({
         clearTimeout(regenerationTimeoutRef.current);
       }
 
-      // Debounce regeneration to avoid multiple rapid regenerations
-      const debounceDelay = 2000; // 2 second debounce (increased from 1s)
+      // Use a very short debounce to be immediately responsive to narration retries
+      const debounceDelay = 100; // 100ms debounce (reduced from 2s)
 
       // Set a timeout to regenerate after the debounce period
       regenerationTimeoutRef.current = setTimeout(async () => {
         try {
           console.log('Regenerating aligned narration due to subtitle timing change');
 
-          // Prevent regeneration if we've recently regenerated
+          // For narration retries, use an extremely short cooldown
+          // to be immediately responsive to user actions
           const now = Date.now();
-          if (now - lastRegenerationTimeRef.current < 30000) { // 30 second cooldown
+          if (now - lastRegenerationTimeRef.current < 500) { // 0.5 second cooldown (reduced from 2s)
             console.log('Skipping regeneration due to cooldown period');
             return;
           }
@@ -99,14 +100,49 @@ const useAlignedNarrationEvents = ({
       }, debounceDelay);
     };
 
+    // Function to handle narration retry events
+    const handleNarrationRetried = (event) => {
+      console.log('Narration retry event detected - forcing immediate regeneration', event.detail);
+
+      // Clear any existing timeout
+      if (regenerationTimeoutRef.current) {
+        clearTimeout(regenerationTimeoutRef.current);
+      }
+
+      // Force immediate regeneration without debounce or cooldown
+      // This ensures the aligned narration is updated immediately after a retry
+      try {
+        console.log('Forcing immediate regeneration due to narration retry');
+
+        // Reset the last regeneration time to ensure cooldown doesn't block this
+        lastRegenerationTimeRef.current = 0;
+
+        // Reset the aligned narration cache completely
+        // This is a direct call to the service to ensure we don't use any cached data
+        if (typeof window.resetAlignedNarration === 'function') {
+          console.log('Resetting aligned narration cache before regeneration');
+          window.resetAlignedNarration();
+        }
+
+        // Regenerate the aligned narration immediately
+        regenerateAlignedNarration();
+      } catch (error) {
+        console.error('Error during forced regeneration:', error);
+      }
+    };
+
     // Listen for custom events that might be dispatched when subtitle timings change
     window.addEventListener('subtitle-timing-changed', handleSubtitleTimingChange);
     window.addEventListener('subtitles-updated', handleSubtitleTimingChange);
+    window.addEventListener('narration-retried', handleNarrationRetried);
+    window.addEventListener('narrations-updated', handleNarrationRetried);
 
     // Clean up event listeners
     return () => {
       window.removeEventListener('subtitle-timing-changed', handleSubtitleTimingChange);
       window.removeEventListener('subtitles-updated', handleSubtitleTimingChange);
+      window.removeEventListener('narration-retried', handleNarrationRetried);
+      window.removeEventListener('narrations-updated', handleNarrationRetried);
 
       if (regenerationTimeoutRef.current) {
         clearTimeout(regenerationTimeoutRef.current);
@@ -120,7 +156,10 @@ const useAlignedNarrationEvents = ({
     playAlignedNarration,
     getAlignedAudioElement,
     regenerationTimeoutRef,
-    lastRegenerationTimeRef
+    lastRegenerationTimeRef,
+    // These dependencies are important for the event handlers
+    generationResults,
+    isGeneratingAligned
   ]);
 
   // Auto-regenerate aligned narration when narration results or subtitle timings change
@@ -180,8 +219,8 @@ const useAlignedNarrationEvents = ({
       clearTimeout(regenerationTimeoutRef.current);
     }
 
-    // Debounce regeneration to avoid multiple rapid regenerations
-    const debounceDelay = 2000; // 2 second debounce (increased from 1s)
+    // Use a very short debounce to be immediately responsive
+    const debounceDelay = 100; // 100ms debounce (reduced from 2s)
 
     // Set a timeout to regenerate after the debounce period
     regenerationTimeoutRef.current = setTimeout(async () => {
@@ -189,8 +228,9 @@ const useAlignedNarrationEvents = ({
         console.log('Auto-regenerating aligned narration');
 
         // Prevent regeneration if we've recently regenerated
+        // Use an extremely short cooldown period (0.5 seconds) to be immediately responsive
         const now = Date.now();
-        if (now - lastRegenerationTimeRef.current < 2000) { // 30 second cooldown (increased from 5s)
+        if (now - lastRegenerationTimeRef.current < 500) { // 0.5 second cooldown (reduced from 2s)
           console.log('Skipping auto-regeneration due to cooldown period');
           return;
         }

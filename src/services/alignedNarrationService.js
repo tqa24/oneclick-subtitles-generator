@@ -72,8 +72,15 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       };
     });
 
-    // Check if we already have a cached version with the same timestamps
-    if (alignedNarrationCache.url && alignedNarrationCache.subtitleTimestamps) {
+    // Check if we have a forceRegenerate flag in the narrationData
+    const forceRegenerate = narrationData.some(item => item.forceRegenerate === true);
+
+    // If forceRegenerate is true, skip the cache check and always regenerate
+    if (forceRegenerate) {
+      console.log('Force regenerating aligned narration due to narration retry');
+    }
+    // Otherwise, check if we already have a cached version with the same timestamps
+    else if (alignedNarrationCache.url && alignedNarrationCache.subtitleTimestamps) {
       const hasChanged = Object.keys(newSubtitleTimestamps).some(id => {
         const oldTimestamp = alignedNarrationCache.subtitleTimestamps[id];
         const newTimestamp = newSubtitleTimestamps[id];
@@ -85,11 +92,20 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       });
 
       if (!hasChanged) {
-        console.log('Using cached aligned narration - no timestamp changes detected');
-        if (onProgress) {
-          onProgress({ status: 'complete', message: 'Using cached aligned narration' });
+        // Check if any narration has a retriedAt timestamp that's newer than our cache timestamp
+        const hasRetriedNarration = narrationData.some(item =>
+          item.retriedAt && (!alignedNarrationCache.timestamp || item.retriedAt > alignedNarrationCache.timestamp)
+        );
+
+        if (hasRetriedNarration) {
+          console.log('Regenerating aligned narration due to retried narration');
+        } else {
+          console.log('Using cached aligned narration - no timestamp changes detected');
+          if (onProgress) {
+            onProgress({ status: 'complete', message: 'Using cached aligned narration' });
+          }
+          return alignedNarrationCache.url;
         }
-        return alignedNarrationCache.url;
       }
     }
 
@@ -283,8 +299,8 @@ export const getAlignedAudioElement = () => {
     return null;
   }
 
-  // Always create a fresh audio element to ensure we're using the latest audio
-  console.log('Creating/updating aligned narration audio element');
+  // Check if we need to create or update the audio element
+  // Don't log every time this function is called to reduce console spam
 
   try {
     // If we already have an audio element, check if it's valid and has the correct source
@@ -380,8 +396,9 @@ export const getAlignedAudioElement = () => {
  * @returns {boolean} - Whether playback was successful
  */
 export const playAlignedNarration = (currentTime, isPlaying) => {
-  console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
-  console.log(`Cache status: URL=${alignedNarrationCache.url ? 'available' : 'not available'}, blob=${alignedNarrationCache.blob ? 'available' : 'not available'}`);
+  // Only log on significant events to reduce console spam
+  // console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
+  // console.log(`Cache status: URL=${alignedNarrationCache.url ? 'available' : 'not available'}, blob=${alignedNarrationCache.blob ? 'available' : 'not available'}`);
 
   // Try to get the audio element
   const audio = getAlignedAudioElement();
@@ -486,7 +503,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       // This helps avoid playback issues after seeking
       if (audio._customSeeking) {
         setTimeout(() => {
-          console.log('Playing after seek delay');
+          // Don't log this common event to reduce console spam
           audio.play().catch(error => {
             console.error('Error playing aligned narration:', error);
 
@@ -531,8 +548,8 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       console.log(`Pausing aligned narration at ${currentTime}s`);
       audio.pause();
     } else if (isPlaying && !audio.paused) {
-      // Already playing, just log for debugging
-      console.log(`Aligned narration already playing at ${audio.currentTime}s (requested: ${currentTime}s)`);
+      // Already playing, no need to log this common case
+      // This happens frequently during normal playback
     }
   } catch (error) {
     console.error('Error in playAlignedNarration:', error);
@@ -609,6 +626,9 @@ export const resetAlignedNarration = () => {
 
   console.log('Aligned narration reset complete');
 };
+
+// Make resetAlignedNarration available globally for direct access from event handlers
+window.resetAlignedNarration = resetAlignedNarration;
 
 /**
  * Clean up aligned narration resources
