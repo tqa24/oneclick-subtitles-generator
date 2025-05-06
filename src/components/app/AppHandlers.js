@@ -178,6 +178,9 @@ export const useAppHandlers = (appState) => {
       return;
     }
 
+    // Clear the segments-status before starting the generation process
+    setSegmentsStatus([]);
+
     let input, inputType;
 
     // For YouTube, Douyin, All Sites, or Unified URL tabs, download the video first and switch to upload tab
@@ -300,6 +303,9 @@ export const useAppHandlers = (appState) => {
 
     // Set retrying state to true immediately
     setIsRetrying(true);
+
+    // Clear the segments-status before starting the retry process
+    setSegmentsStatus([]);
 
     let input, inputType;
 
