@@ -77,9 +77,12 @@ latest.yml
 
 # F5-TTS and models
 F5-TTS/
-models/
-models/*/
-models/f5_tts/
+# Exclude model files but not source code
+/models/
+/models/*/
+/models/f5_tts/
+# Don't ignore the src/services/gemini/models directory
+!src/services/gemini/models/
 *.safetensors
 *.pt
 *.bin
