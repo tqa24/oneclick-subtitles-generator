@@ -13,15 +13,23 @@ import '../styles/components/tab-content-animations.css';
 const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode }) => {
   const { t } = useTranslation();
   const tabsRef = useRef(null);
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
   const [previousTab, setPreviousTab] = useState(null);
   const [animationDirection, setAnimationDirection] = useState('center');
 
-  // Initialize pill position on component mount
+  // Initialize pill position and container height on component mount
   useEffect(() => {
     if (tabsRef.current) {
       // Small delay to ensure the DOM is fully rendered
       setTimeout(() => {
         initTabPillAnimation('.input-tabs');
+
+        // Set initial height with extra 100px to ensure enough space
+        if (containerRef.current && contentRef.current) {
+          const contentHeight = contentRef.current.offsetHeight;
+          containerRef.current.style.height = `${contentHeight + 100}px`;
+        }
       }, 50);
     }
   }, []);
@@ -64,6 +72,22 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
       }, 10);
     }
   }, [activeTab, previousTab]);
+
+  // Handle height animation when content changes
+  useEffect(() => {
+    // Use a small delay to ensure the new content is rendered
+    const animationTimeout = setTimeout(() => {
+      if (containerRef.current && contentRef.current) {
+        // Get the height of the content and add 100px for extra space
+        const contentHeight = contentRef.current.offsetHeight;
+
+        // Set the container height to match the content height plus extra space
+        containerRef.current.style.height = `${contentHeight + 100}px`;
+      }
+    }, 50); // Small delay to ensure content is rendered
+
+    return () => clearTimeout(animationTimeout);
+  }, [activeTab]);
 
   const renderInputMethod = () => {
     // Determine the animation class based on direction
@@ -136,7 +160,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
   };
 
   return (
-    <div className="input-methods-container">
+    <div className="input-methods-container" ref={containerRef}>
       <div className="input-header">
         <h2 className="input-title">
           {t('inputMethods.title', 'Select Video Source')}
@@ -180,7 +204,9 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         </div>
       </div>
 
-      {renderInputMethod()}
+      <div className="tab-content-wrapper" ref={contentRef}>
+        {renderInputMethod()}
+      </div>
     </div>
   );
 };
