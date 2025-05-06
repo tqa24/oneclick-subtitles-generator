@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
  * @param {Function} props.getAudioUrl - Function to get audio URL
  * @param {Function} props.onRetry - Function to retry generation for a specific subtitle
  * @param {number|null} props.retryingSubtitleId - ID of the subtitle currently being retried
+ * @param {Function} props.onRetryFailed - Function to retry all failed narrations
  * @returns {JSX.Element} - Rendered component
  */
 const NarrationResults = ({
@@ -20,16 +21,38 @@ const NarrationResults = ({
   isPlaying,
   getAudioUrl,
   onRetry,
-  retryingSubtitleId
+  retryingSubtitleId,
+  onRetryFailed
 }) => {
   const { t } = useTranslation();
+
+  // Check if there are any failed narrations
+  const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
 
   // Always show the results section, even when there are no results yet
   // This ensures the section is visible as soon as the first result comes in
 
   return (
     <div className="results-section">
-      <h4>{t('narration.results', 'Generated Narration')}</h4>
+      <div className="results-header">
+        <h4>{t('narration.results', 'Generated Narration')}</h4>
+
+        {/* Retry Failed Narrations button */}
+        {hasFailedNarrations && onRetryFailed && (
+          <button
+            className="pill-button secondary retry-failed-button"
+            onClick={onRetryFailed}
+            disabled={retryingSubtitleId !== null}
+            title={t('narration.retryFailedTooltip', 'Retry all failed narrations')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            {t('narration.retryFailed', 'Retry Failed Narrations')}
+          </button>
+        )}
+      </div>
 
       <div className="results-list">
         {(!generationResults || generationResults.length === 0) ? (

@@ -9,10 +9,34 @@
   padding-bottom: 0.5rem;
 }
 
+/* Results header with title and retry failed button */
+.gemini-narration-results .results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .gemini-narration-results h4 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1.1rem;
   color: var(--text-primary);
+}
+
+/* Retry failed narrations button */
+.gemini-narration-results .retry-failed-button {
+  margin-left: auto;
+  background-color: rgba(var(--md-error-rgb), 0.1);
+  color: var(--md-error);
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
+}
+
+.gemini-narration-results .retry-failed-button:hover {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: transparent;
 }
 
 .gemini-results-list {

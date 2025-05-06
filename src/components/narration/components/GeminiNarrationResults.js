@@ -12,14 +12,18 @@ import { playAudio as playAudioHandler, downloadAudio as downloadAudioHandler, d
  * @param {Array} props.generationResults - Array of narration results
  * @param {Function} props.onRetry - Function to retry generation for a specific subtitle
  * @param {number|null} props.retryingSubtitleId - ID of the subtitle currently being retried
+ * @param {Function} props.onRetryFailed - Function to retry all failed narrations
  * @returns {JSX.Element} - Rendered component
  */
-const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId }) => {
+const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId, onRetryFailed }) => {
   const { t } = useTranslation();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const audioRef = useRef(null);
   // Audio player reference for Web Audio API
   const [activeAudioPlayer, setActiveAudioPlayer] = useState(null);
+
+  // Check if there are any failed narrations
+  const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
 
   // Clean up audio resources when component unmounts
   useEffect(() => {
@@ -58,6 +62,30 @@ const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId
     setActiveAudioPlayer(null);
   };
 
+  // Add an effect to listen for audio ended events from the hidden audio element
+  useEffect(() => {
+    // This effect ensures the play/pause button state is updated when audio ends
+    const handleGlobalAudioEnded = (event) => {
+      // Check if this is one of our audio elements
+      if (event.target && event.target.dataset && event.target.dataset.narrationId) {
+        const subtitleId = parseInt(event.target.dataset.narrationId);
+        if (currentlyPlaying === subtitleId) {
+          console.log(`Audio ended for subtitle ${subtitleId}, updating UI`);
+          setCurrentlyPlaying(null);
+          setActiveAudioPlayer(null);
+        }
+      }
+    };
+
+    // Add global event listener
+    document.addEventListener('ended', handleGlobalAudioEnded, true);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('ended', handleGlobalAudioEnded, true);
+    };
+  }, [currentlyPlaying]);
+
   // Download audio as WAV file
   const downloadAudio = async (result) => {
     await downloadAudioHandler(result, t);
@@ -77,7 +105,25 @@ const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId
 
   return (
     <div className="gemini-narration-results">
-      <h4>{t('narration.geminiResults', 'Generated Narration (Gemini)')}</h4>
+      <div className="results-header">
+        <h4>{t('narration.geminiResults', 'Generated Narration (Gemini)')}</h4>
+
+        {/* Retry Failed Narrations button */}
+        {hasFailedNarrations && onRetryFailed && (
+          <button
+            className="pill-button secondary retry-failed-button"
+            onClick={onRetryFailed}
+            disabled={retryingSubtitleId !== null}
+            title={t('narration.retryFailedTooltip', 'Retry all failed narrations')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            {t('narration.retryFailed', 'Retry Failed Narrations')}
+          </button>
+        )}
+      </div>
 
       <div className="gemini-results-list">
         {(!generationResults || generationResults.length === 0) ? (

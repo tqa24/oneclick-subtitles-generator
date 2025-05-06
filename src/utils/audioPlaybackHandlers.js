@@ -235,99 +235,95 @@ export const playAudio = async (
           return;
         }
 
-        // Create a visible audio element with controls for debugging
-        const visibleAudioElement = document.createElement('audio');
-        visibleAudioElement.src = audioUrl;
-        visibleAudioElement.volume = 1.0;
-        visibleAudioElement.controls = true; // Show controls for debugging
-        visibleAudioElement.style.position = 'absolute';
-        visibleAudioElement.style.bottom = '10px';
-        visibleAudioElement.style.right = '10px';
-        visibleAudioElement.style.zIndex = '9999';
-        visibleAudioElement.style.width = '300px';
-
-        // Add a label
-        const label = document.createElement('div');
-        label.textContent = `Subtitle ${result.subtitle_id}`;
-        label.style.position = 'absolute';
-        label.style.bottom = '40px';
-        label.style.right = '10px';
-        label.style.zIndex = '9999';
-        label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        label.style.color = 'white';
-        label.style.padding = '5px';
-        label.style.borderRadius = '3px';
-
-        // Append to body
-        document.body.appendChild(label);
-        document.body.appendChild(visibleAudioElement);
+        // Create a hidden audio element for playback
+        const hiddenAudioElement = new Audio(audioUrl);
+        hiddenAudioElement.volume = 1.0;
+        // Add a data attribute to identify this audio element
+        hiddenAudioElement.dataset.narrationId = result.subtitle_id;
 
         // Set up ended event
-        visibleAudioElement.addEventListener('ended', () => {
-          console.log(`Visible audio playback ended for subtitle ${result.subtitle_id}`);
+        hiddenAudioElement.addEventListener('ended', () => {
+          console.log(`Audio playback ended for subtitle ${result.subtitle_id}`);
           if (currentlyPlaying === result.subtitle_id) {
             setCurrentlyPlaying(null);
             setActiveAudioPlayer(null);
-          }
-          // Remove from DOM
-          if (document.body.contains(visibleAudioElement)) {
-            document.body.removeChild(visibleAudioElement);
-          }
-          if (document.body.contains(label)) {
-            document.body.removeChild(label);
           }
         });
 
         // Create a player object
         const player = {
           stop: () => {
-            console.log(`Stopping visible audio playback for subtitle ${result.subtitle_id}`);
-            visibleAudioElement.pause();
-            if (document.body.contains(visibleAudioElement)) {
-              document.body.removeChild(visibleAudioElement);
+            console.log(`Stopping audio playback for subtitle ${result.subtitle_id}`);
+
+            // First, remove all event listeners to prevent any callbacks
+            hiddenAudioElement.oncanplay = null;
+            hiddenAudioElement.onloadeddata = null;
+            hiddenAudioElement.onended = null;
+            hiddenAudioElement.onerror = null;
+
+            // Then pause the audio
+            try {
+              hiddenAudioElement.pause();
+
+              // Reset the audio element to prevent any further events
+              hiddenAudioElement.currentTime = 0;
+              hiddenAudioElement.src = '';
+            } catch (error) {
+              console.warn(`Error while stopping audio for subtitle ${result.subtitle_id}:`, error);
             }
-            if (document.body.contains(label)) {
-              document.body.removeChild(label);
-            }
+
+            // Dispatch an ended event to ensure UI is updated
+            const endedEvent = new Event('ended');
+            hiddenAudioElement.dispatchEvent(endedEvent);
           }
         };
 
         setActiveAudioPlayer(player);
 
-        // Play the audio with user interaction
-        visibleAudioElement.play()
-          .then(() => {
-            console.log(`Visible audio playback started for subtitle ${result.subtitle_id}`);
-          })
-          .catch(error => {
-            console.error(`Error playing visible audio for subtitle ${result.subtitle_id}:`, error);
-            // Add a play button for user interaction
-            const playButton = document.createElement('button');
-            playButton.textContent = 'Play Audio';
-            playButton.style.position = 'absolute';
-            playButton.style.bottom = '70px';
-            playButton.style.right = '10px';
-            playButton.style.zIndex = '9999';
-            playButton.style.padding = '10px';
-            playButton.style.backgroundColor = '#4CAF50';
-            playButton.style.color = 'white';
-            playButton.style.border = 'none';
-            playButton.style.borderRadius = '5px';
-            playButton.style.cursor = 'pointer';
+        // Use the canplay event to ensure the audio is ready before playing
+        hiddenAudioElement.oncanplay = () => {
+          // Check if this is still the current playback request
+          if (currentPlaybackId !== playbackId) {
+            console.log('Playback request superseded by a newer request');
+            return;
+          }
 
-            playButton.addEventListener('click', () => {
-              visibleAudioElement.play()
+          // Play the audio with better error handling
+          let playPromise;
+          try {
+            // Store the promise to handle it properly
+            playPromise = hiddenAudioElement.play();
+
+            // Only add the promise handlers if it's actually a promise
+            // (this helps with older browsers)
+            if (playPromise !== undefined) {
+              playPromise
                 .then(() => {
-                  console.log(`Visible audio playback started after button click for subtitle ${result.subtitle_id}`);
-                  document.body.removeChild(playButton);
+                  console.log(`Audio playback started for subtitle ${result.subtitle_id}`);
                 })
-                .catch(buttonError => {
-                  console.error(`Error playing visible audio after button click for subtitle ${result.subtitle_id}:`, buttonError);
+                .catch(error => {
+                  // Check if this is an AbortError (play interrupted by pause)
+                  if (error.name === 'AbortError') {
+                    console.log(`Play was aborted for subtitle ${result.subtitle_id}, this is normal when stopping playback`);
+                  } else {
+                    console.error(`Error playing audio for subtitle ${result.subtitle_id}:`, error);
+                    // Clear the currently playing state on error
+                    if (currentlyPlaying === result.subtitle_id) {
+                      setCurrentlyPlaying(null);
+                      setActiveAudioPlayer(null);
+                    }
+                  }
                 });
-            });
-
-            document.body.appendChild(playButton);
-          });
+            }
+          } catch (error) {
+            console.error(`Exception trying to play audio for subtitle ${result.subtitle_id}:`, error);
+            // Clear the currently playing state on error
+            if (currentlyPlaying === result.subtitle_id) {
+              setCurrentlyPlaying(null);
+              setActiveAudioPlayer(null);
+            }
+          }
+        };
       };
 
       // Try to play immediately

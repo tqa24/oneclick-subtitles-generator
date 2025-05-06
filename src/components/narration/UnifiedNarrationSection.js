@@ -174,7 +174,8 @@ const UnifiedNarrationSection = ({
     downloadAllAudio,
     downloadAlignedAudio,
     cancelGeneration,
-    retryF5TTSNarration
+    retryF5TTSNarration,
+    retryFailedNarrations
   } = useNarrationHandlers({
     fileInputRef,
     mediaRecorderRef,
@@ -370,6 +371,7 @@ const UnifiedNarrationSection = ({
             getAudioUrl={getAudioUrl}
             onRetry={retryF5TTSNarration}
             retryingSubtitleId={retryingSubtitleId}
+            onRetryFailed={retryFailedNarrations}
           />
 
           {/* Hidden audio player for playback */}
@@ -440,6 +442,7 @@ const UnifiedNarrationSection = ({
             generationResults={generationResults}
             onRetry={retryGeminiNarration}
             retryingSubtitleId={retryingSubtitleId}
+            onRetryFailed={retryFailedNarrations}
           />
         </>
       )}
