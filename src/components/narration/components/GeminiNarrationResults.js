@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../../styles/narration/geminiNarrationResults.css';
 
 // Import utility functions
 import { downloadAlignedAudio as downloadAlignedAudioUtil } from '../../../utils/narrationServerUtils';
-import { playAudio as playAudioHandler, downloadAudio as downloadAudioHandler, downloadAllAudio as downloadAllAudioHandler } from '../../../utils/audioPlaybackHandlers';
+import { getAudioUrl } from '../../../services/narrationService';
 
 /**
  * Component for displaying Gemini narration results with audio playback
@@ -18,84 +18,70 @@ import { playAudio as playAudioHandler, downloadAudio as downloadAudioHandler, d
 const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId, onRetryFailed }) => {
   const { t } = useTranslation();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
-  // Audio player reference for Web Audio API
-  const [activeAudioPlayer, setActiveAudioPlayer] = useState(null);
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
 
-  // Clean up audio resources when component unmounts
-  useEffect(() => {
-    return () => {
-      // Clean up any active audio player
-      if (activeAudioPlayer) {
-        try {
-          activeAudioPlayer.stop();
-        } catch (error) {
-          console.error('Error stopping audio player during cleanup:', error);
-        }
+  // Play audio function - simplified approach like F5-TTS
+  const playAudio = (result) => {
+    // If already playing this audio, stop it
+    if (currentlyPlaying === result.subtitle_id && isPlaying) {
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
       }
-    };
-  }, [activeAudioPlayer]);
+      return;
+    }
 
-  // Always show the results section, even when there are no results yet
-  // This ensures the section is visible as soon as the first result comes in
+    // Set up the audio element with the new source
+    if (audioRef.current) {
+      // Set the source to the new audio file
+      audioRef.current.src = getAudioUrl(result.filename);
 
-  // Play audio from base64 data
-  const playAudio = async (result) => {
-    await playAudioHandler(
-      result,
-      currentlyPlaying,
-      setCurrentlyPlaying,
-      activeAudioPlayer,
-      setActiveAudioPlayer,
-      audioRef,
-      t
-    );
+      // Update state to show we're playing this subtitle
+      setCurrentlyPlaying(result.subtitle_id);
+      setIsPlaying(true);
+
+      // Play the audio
+      audioRef.current.play().catch(error => {
+        console.error(`Error playing audio for subtitle ${result.subtitle_id}:`, error);
+        setIsPlaying(false);
+      });
+    }
   };
 
   // Handle audio ended event
   const handleAudioEnded = () => {
     console.log('Audio playback ended');
-    setCurrentlyPlaying(null);
-    setActiveAudioPlayer(null);
+    setIsPlaying(false);
   };
-
-  // Add an effect to listen for audio ended events from the hidden audio element
-  useEffect(() => {
-    // This effect ensures the play/pause button state is updated when audio ends
-    const handleGlobalAudioEnded = (event) => {
-      // Check if this is one of our audio elements
-      if (event.target && event.target.dataset && event.target.dataset.narrationId) {
-        const subtitleId = parseInt(event.target.dataset.narrationId);
-        if (currentlyPlaying === subtitleId) {
-          console.log(`Audio ended for subtitle ${subtitleId}, updating UI`);
-          setCurrentlyPlaying(null);
-          setActiveAudioPlayer(null);
-        }
-      }
-    };
-
-    // Add global event listener
-    document.addEventListener('ended', handleGlobalAudioEnded, true);
-
-    // Clean up
-    return () => {
-      document.removeEventListener('ended', handleGlobalAudioEnded, true);
-    };
-  }, [currentlyPlaying]);
 
   // Download audio as WAV file
-  const downloadAudio = async (result) => {
-    await downloadAudioHandler(result, t);
+  const downloadAudio = (result) => {
+    if (result.filename) {
+      // Create a download link
+      const a = document.createElement('a');
+      a.href = getAudioUrl(result.filename);
+      a.download = `narration_${result.subtitle_id}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      console.error('No filename available for download');
+      alert(t('narration.downloadError', 'No audio file available for download'));
+    }
   };
-
-  // Note: Audio is automatically saved to server by the geminiNarrationService
 
   // Download all audio files
   const downloadAllAudio = () => {
-    downloadAllAudioHandler(generationResults, t);
+    // Download each audio file individually
+    generationResults.forEach(result => {
+      if (result.success && result.filename) {
+        downloadAudio(result);
+      }
+    });
   };
 
   // Download aligned narration audio (one file)
@@ -148,7 +134,7 @@ const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId
                     className="pill-button primary"
                     onClick={() => playAudio(result)}
                   >
-                    {currentlyPlaying === result.subtitle_id ? (
+                    {currentlyPlaying === result.subtitle_id && isPlaying ? (
                       <>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="6" y="4" width="4" height="16" fill="currentColor" />
@@ -277,6 +263,8 @@ const GeminiNarrationResults = ({ generationResults, onRetry, retryingSubtitleId
         ref={audioRef}
         onEnded={handleAudioEnded}
         style={{ display: 'none' }}
+        data-testid="hidden-audio-player"
+        preload="auto"
       />
     </div>
   );

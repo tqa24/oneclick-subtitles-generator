@@ -247,6 +247,12 @@ export const playAudio = async (
           if (currentlyPlaying === result.subtitle_id) {
             setCurrentlyPlaying(null);
             setActiveAudioPlayer(null);
+
+            // Force UI update by dispatching a custom event that React components can listen for
+            const customEvent = new CustomEvent('narrationEnded', {
+              detail: { subtitleId: result.subtitle_id }
+            });
+            document.dispatchEvent(customEvent);
           }
         });
 
@@ -275,6 +281,12 @@ export const playAudio = async (
             // Dispatch an ended event to ensure UI is updated
             const endedEvent = new Event('ended');
             hiddenAudioElement.dispatchEvent(endedEvent);
+
+            // Also dispatch our custom event for React components
+            const customEvent = new CustomEvent('narrationEnded', {
+              detail: { subtitleId: result.subtitle_id }
+            });
+            document.dispatchEvent(customEvent);
           }
         };
 
@@ -332,6 +344,8 @@ export const playAudio = async (
       // Store the audio element in the ref for external access
       if (audioRef && audioRef.current) {
         audioRef.current.src = audioUrl;
+        // Add a data attribute to identify this audio element
+        audioRef.current.dataset.narrationId = result.subtitle_id;
 
         // Make sure we have an ended event handler
         const handleAudioEnded = () => {
@@ -339,6 +353,13 @@ export const playAudio = async (
           if (currentlyPlaying === result.subtitle_id) {
             console.log(`Clearing currently playing state for subtitle ${result.subtitle_id}`);
             setCurrentlyPlaying(null);
+            setActiveAudioPlayer(null);
+
+            // Dispatch our custom event for React components
+            const customEvent = new CustomEvent('narrationEnded', {
+              detail: { subtitleId: result.subtitle_id }
+            });
+            document.dispatchEvent(customEvent);
           }
         };
 

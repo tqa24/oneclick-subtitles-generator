@@ -444,6 +444,8 @@ const UnifiedNarrationSection = ({
             retryingSubtitleId={retryingSubtitleId}
             onRetryFailed={retryFailedNarrations}
           />
+
+          {/* No need for a separate audio element here as it's included in the GeminiNarrationResults component */}
         </>
       )}
     </div>
