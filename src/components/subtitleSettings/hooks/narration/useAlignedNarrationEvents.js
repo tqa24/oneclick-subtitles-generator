@@ -190,7 +190,7 @@ const useAlignedNarrationEvents = ({
 
         // Prevent regeneration if we've recently regenerated
         const now = Date.now();
-        if (now - lastRegenerationTimeRef.current < 30000) { // 30 second cooldown (increased from 5s)
+        if (now - lastRegenerationTimeRef.current < 2000) { // 30 second cooldown (increased from 5s)
           console.log('Skipping auto-regeneration due to cooldown period');
           return;
         }

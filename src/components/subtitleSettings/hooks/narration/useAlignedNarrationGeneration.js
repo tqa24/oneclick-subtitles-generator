@@ -2,7 +2,11 @@
  * Hook for handling aligned narration generation
  */
 import { useCallback, useEffect } from 'react';
-import { isAlignedNarrationAvailable, generateAlignedNarration as generateAlignedNarrationService } from '../../../../services/alignedNarrationService';
+import {
+  isAlignedNarrationAvailable,
+  generateAlignedNarration as generateAlignedNarrationService,
+  resetAlignedAudioElement
+} from '../../../../services/alignedNarrationService';
 import { createHash, enhanceNarrationWithTiming, createSubtitleMap, getAllSubtitles } from './alignedNarrationUtils';
 
 /**
@@ -59,8 +63,9 @@ const useAlignedNarrationGeneration = ({
         message: 'Preparing aligned narration...'
       });
 
-      // Skip cleanup to avoid stuttering during regeneration
-      // The generateAlignedNarrationService will handle URL revocation
+      // Force reset any existing audio element to ensure we use the new one
+      console.log('Resetting audio element before regeneration');
+      resetAlignedAudioElement();
 
       // Get all subtitles from the video for timing information
       const allSubtitles = getAllSubtitles();
@@ -114,6 +119,10 @@ const useAlignedNarrationGeneration = ({
           try {
             setIsGeneratingAligned(true);
             setAlignedStatus({ status: 'generating', message: 'Generating aligned narration...' });
+
+            // Force reset any existing audio element to ensure we use the new one
+            console.log('Resetting audio element before initial generation');
+            resetAlignedAudioElement();
 
             // Get all subtitles from the video for timing information
             const allSubtitles = getAllSubtitles();
