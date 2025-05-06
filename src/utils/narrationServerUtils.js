@@ -105,14 +105,52 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     return;
   }
 
-  // Create a loading indicator
+  // Create a loading indicator with improved styling
   const loadingIndicator = document.createElement('div');
   loadingIndicator.className = 'loading-indicator';
+  loadingIndicator.style.position = 'fixed';
+  loadingIndicator.style.top = '50%';
+  loadingIndicator.style.left = '50%';
+  loadingIndicator.style.transform = 'translate(-50%, -50%)';
+  loadingIndicator.style.padding = '20px';
+  loadingIndicator.style.background = 'rgba(0, 0, 0, 0.8)';
+  loadingIndicator.style.color = 'white';
+  loadingIndicator.style.borderRadius = '8px';
+  loadingIndicator.style.zIndex = '9999';
+  loadingIndicator.style.textAlign = 'center';
+  loadingIndicator.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+  loadingIndicator.style.minWidth = '250px';
+
   loadingIndicator.innerHTML = `
-    <div class="loading-spinner"></div>
-    <div class="loading-text">${t('narration.preparingDownload', 'Preparing aligned narration file...')}</div>
+    <div class="loading-spinner" style="
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid white;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 15px auto;
+      animation: spin 1s linear infinite;
+    "></div>
+    <div class="loading-text" style="
+      font-size: 16px;
+      font-weight: bold;
+    ">${t('narration.preparingDownload', 'Preparing aligned narration file...')}</div>
   `;
+
+  // Add the animation keyframes
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Add the loading indicator to the document
   document.body.appendChild(loadingIndicator);
+
+  console.log('Loading indicator created and added to document');
 
   try {
     // Get all subtitles from the video for timing information
@@ -184,27 +222,72 @@ export const downloadAlignedAudio = async (generationResults, t) => {
 
     // Use fetch API to download the file
     console.log('Fetching:', downloadUrl);
-    const response = await fetch(downloadUrl, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'audio/wav'
-      },
-      body: JSON.stringify({ narrations: narrationData })
-    });
+
+    // Update loading indicator text
+    loadingIndicator.querySelector('.loading-text').textContent = t('narration.sendingRequest', 'Sending request to server...');
+
+    let response;
+    try {
+      response = await fetch(downloadUrl, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/wav'
+        },
+        body: JSON.stringify({ narrations: narrationData })
+      });
+
+      console.log('Response received:', response.status, response.statusText);
+      console.log('Response headers:', [...response.headers.entries()]);
+    } catch (fetchError) {
+      console.error('Network error during fetch:', fetchError);
+      throw new Error(`Network error: ${fetchError.message}`);
+    }
 
     // Check if the response is successful
     if (!response.ok) {
-      throw new Error(`Failed to download aligned audio: ${response.statusText}`);
+      // Try to parse error message if it's JSON
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status} ${response.statusText}`);
+      } catch (jsonError) {
+        // If it's not JSON, use the status text
+        throw new Error(`Failed to download aligned audio: ${response.status} ${response.statusText}`);
+      }
     }
 
+    // Update loading indicator text
+    loadingIndicator.querySelector('.loading-text').textContent = t('narration.processingResponse', 'Processing audio data...');
+
     // Get the blob from the response
-    const blob = await response.blob();
+    let blob;
+    try {
+      blob = await response.blob();
+      console.log(`Received blob: type=${blob.type}, size=${blob.size} bytes`);
+
+      // Validate the blob
+      if (!blob || blob.size === 0) {
+        throw new Error('Received empty audio data from server');
+      }
+    } catch (blobError) {
+      console.error('Error processing response blob:', blobError);
+      throw new Error(`Error processing audio data: ${blobError.message}`);
+    }
+
+    // Update loading indicator text
+    loadingIndicator.querySelector('.loading-text').textContent = t('narration.preparingDownload', 'Preparing download...');
 
     // Create a URL for the blob
-    const url = URL.createObjectURL(blob);
+    let url;
+    try {
+      url = URL.createObjectURL(blob);
+      console.log('Created blob URL:', url);
+    } catch (urlError) {
+      console.error('Error creating blob URL:', urlError);
+      throw new Error(`Error creating download: ${urlError.message}`);
+    }
 
     // Create a temporary anchor element
     const a = document.createElement('a');
@@ -212,18 +295,68 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     a.download = 'aligned_narration.wav';
     a.style.display = 'none';
     document.body.appendChild(a);
-    a.click();
+
+    // Update loading indicator text
+    loadingIndicator.querySelector('.loading-text').textContent = t('narration.startingDownload', 'Starting download...');
+
+    // Trigger the download
+    try {
+      a.click();
+      console.log('Download triggered successfully');
+    } catch (clickError) {
+      console.error('Error triggering download:', clickError);
+      throw new Error(`Error starting download: ${clickError.message}`);
+    }
 
     // Clean up
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+    try {
+      setTimeout(() => {
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+        console.log('Download cleanup completed');
+      }, 1000); // Increased timeout to ensure download starts
+    } catch (cleanupError) {
+      console.error('Error during cleanup:', cleanupError);
+      // Don't throw here, as the download might still be working
+    }
   } catch (error) {
     console.error('Error downloading aligned audio:', error);
+
+    // Update loading indicator to show error
+    try {
+      if (loadingIndicator && document.body.contains(loadingIndicator)) {
+        loadingIndicator.querySelector('.loading-text').textContent = t('narration.downloadError', 'Error downloading audio');
+        loadingIndicator.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+      }
+    } catch (uiError) {
+      console.error('Error updating loading indicator:', uiError);
+    }
+
+    // Show error message to user
     alert(t('narration.downloadError', `Error downloading aligned audio file: ${error.message}`));
+
+    // Short delay before removing the loading indicator to ensure the user sees the error
+    await new Promise(resolve => setTimeout(resolve, 1500));
   } finally {
-    // Remove loading indicator
-    document.body.removeChild(loadingIndicator);
+    // Remove loading indicator and style element
+    try {
+      // Remove the loading indicator
+      if (loadingIndicator && document.body.contains(loadingIndicator)) {
+        document.body.removeChild(loadingIndicator);
+        console.log('Loading indicator removed');
+      }
+
+      // Remove the style element (animation keyframes)
+      if (style && document.head.contains(style)) {
+        document.head.removeChild(style);
+        console.log('Animation style element removed');
+      }
+    } catch (cleanupError) {
+      console.error('Error during final cleanup:', cleanupError);
+    }
   }
 };

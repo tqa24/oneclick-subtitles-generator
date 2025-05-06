@@ -2,6 +2,11 @@ import { useState, useRef } from 'react';
 import useNarrationState from './useNarrationState';
 import useNarrationEffects from './useNarrationEffects';
 import useAlignedNarration from './useAlignedNarration';
+import useAlignedNarrationState from './useAlignedNarrationState';
+import useAlignedNarrationGeneration from './useAlignedNarrationGeneration';
+import useAlignedNarrationPlayback from './useAlignedNarrationPlayback';
+import useAlignedNarrationEvents from './useAlignedNarrationEvents';
+import * as alignedNarrationUtils from './alignedNarrationUtils';
 
 /**
  * Custom hook for managing narration playback
@@ -53,6 +58,16 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
     useAlignedMode: true, // Always true
     ...alignedNarration
   };
+};
+
+// Export all hooks
+export {
+  useAlignedNarration,
+  useAlignedNarrationState,
+  useAlignedNarrationGeneration,
+  useAlignedNarrationPlayback,
+  useAlignedNarrationEvents,
+  alignedNarrationUtils
 };
 
 export default useNarration;

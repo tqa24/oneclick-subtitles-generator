@@ -58,6 +58,25 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     // Sort by start time to ensure correct order (more reliable than subtitle ID)
     narrationData.sort((a, b) => a.start - b.start);
 
+    // Validate that all narrations have proper timing and adjust if needed
+    for (let i = 0; i < narrationData.length; i++) {
+      const item = narrationData[i];
+
+      // Ensure each narration has a reasonable duration (at least 1 second)
+      if (item.end - item.start < 1) {
+        console.warn(`Narration for subtitle ${item.subtitle_id} has too short duration (${item.end - item.start}s), extending to 1s`);
+        item.end = item.start + 1;
+      }
+
+      // For the last narration, ensure it has enough time to be heard completely
+      // This fixes the issue where the last narration can't be heard
+      if (i === narrationData.length - 1) {
+        console.log(`Ensuring last narration (subtitle ${item.subtitle_id}) has enough time to be heard`);
+        // Add an extra 2 seconds to the end time of the last narration
+        item.end += 2;
+      }
+    }
+
     console.log('Generating aligned narration for:', narrationData);
 
     // Store subtitle timestamps to detect changes
@@ -238,6 +257,7 @@ export const getAlignedAudioElement = () => {
 export const playAlignedNarration = (currentTime, isPlaying) => {
   const audio = getAlignedAudioElement();
   if (!audio) {
+    console.warn('No audio element available for aligned narration');
     return;
   }
 
@@ -247,12 +267,17 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       // Only update currentTime if it's significantly different to avoid unnecessary seeking
       // Increased threshold to reduce seeking frequency
       const timeDifference = Math.abs(audio.currentTime - currentTime);
-      const seekThreshold = 0.5; // Half a second threshold
+      const seekThreshold = 0.3; // Reduced threshold for more accurate sync
+
+      // Log the current state for debugging
+      if (timeDifference > 0.1) {
+        console.log(`Aligned audio time: ${audio.currentTime.toFixed(2)}s, Video time: ${currentTime.toFixed(2)}s, Diff: ${timeDifference.toFixed(2)}s`);
+      }
 
       // Only seek if the time difference is significant or we're in a paused state
       // This reduces the number of seek operations during normal playback
       if (timeDifference > seekThreshold || !isPlaying) {
-        console.log(`Seeking aligned audio to ${currentTime} (diff: ${timeDifference.toFixed(2)}s)`);
+        console.log(`Seeking aligned audio to ${currentTime.toFixed(2)}s (diff: ${timeDifference.toFixed(2)}s)`);
 
         // Set a flag to track our custom seeking state
         // Use a different name to avoid conflict with the built-in seeking property
@@ -260,7 +285,12 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
 
         // Use a try-catch specifically for the seeking operation
         try {
-          audio.currentTime = currentTime;
+          // Ensure the time is within the valid range for the audio
+          const safeTime = Math.max(0, currentTime);
+          audio.currentTime = safeTime;
+
+          // Log the actual time after seeking for debugging
+          console.log(`After seeking, aligned audio time is now: ${audio.currentTime.toFixed(2)}s`);
         } catch (seekError) {
           console.error('Error seeking aligned narration:', seekError);
           // If seeking fails, try to recover by reloading the audio
