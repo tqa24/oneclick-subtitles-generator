@@ -17,7 +17,6 @@
   "translated": "Đã dịch",
   "notAvailable": "Không có sẵn",
   "noNarrationsAvailable": "Không có thuyết minh nào. Hãy tạo thuyết minh trước.",
-  "videoVolume": "Âm lượng video",
   "referenceTextPlaceholder": "Nhập văn bản khớp với âm thanh tham chiếu...",
   "clearReference": "Xóa âm thanh tham chiếu",
   "audioNotSupported": "Trình duyệt của bạn không hỗ trợ phần tử âm thanh.",
@@ -144,5 +143,10 @@
   "disabled": "Đã tắt",
   "generatingAligned": "Đang tạo thuyết minh đã sắp xếp...",
   "regenerateAligned": "Tạo lại âm thanh đã sắp xếp",
-  "videoVolume": "Âm lượng video"
+  "videoVolume": "Âm lượng video",
+
+  "notGenerated": "Chưa được tạo",
+  "pending": "Đang chờ tạo...",
+  "geminiGenerationIncomplete": "Tạo thuyết minh Gemini không hoàn tất. Đã tạo {{generated}} trên {{total}} thuyết minh.",
+  "geminiConnectionError": "Kết nối với Gemini bị gián đoạn. Bạn có thể thử lại các thuyết minh thất bại một cách riêng lẻ."
 }

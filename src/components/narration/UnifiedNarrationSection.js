@@ -130,6 +130,56 @@ const UnifiedNarrationSection = ({
     setRetryingSubtitleId
   });
 
+  // Custom function to retry all failed Gemini narrations
+  const retryFailedGeminiNarrations = async () => {
+    // Find all failed narrations
+    const failedNarrations = generationResults.filter(result => !result.success);
+
+    if (failedNarrations.length === 0) {
+      setError(t('narration.noFailedNarrationsError', 'No failed narrations to retry'));
+      return;
+    }
+
+    // Clear any previous errors
+    setError('');
+
+    // Set status for retrying failed narrations
+    setGenerationStatus(t('narration.retryingFailedNarrations', 'Retrying {{count}} failed narrations...', { count: failedNarrations.length }));
+
+    // Process each failed narration one by one
+    for (let i = 0; i < failedNarrations.length; i++) {
+      const failedNarration = failedNarrations[i];
+      const subtitleId = failedNarration.subtitle_id;
+
+      // Set retrying state
+      setRetryingSubtitleId(subtitleId);
+
+      // Update status
+      setGenerationStatus(t('narration.retryingFailedNarrationProgress', 'Retrying failed narration {{current}} of {{total}} (ID: {{id}})...', {
+        current: i + 1,
+        total: failedNarrations.length,
+        id: subtitleId
+      }));
+
+      try {
+        // Retry this specific narration
+        await retryGeminiNarration(subtitleId);
+
+        // Add a small delay between retries to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        console.error(`Error retrying Gemini narration for subtitle ${subtitleId}:`, error);
+        // Continue with the next failed narration
+      }
+    }
+
+    // Clear retrying state
+    setRetryingSubtitleId(null);
+
+    // Update status
+    setGenerationStatus(t('narration.retryingFailedNarrationsComplete', 'Completed retrying all failed narrations'));
+  };
+
   // Use audio playback hook
   const { audioRef, handleAudioEnded } = useAudioPlayback({
     isPlaying,
@@ -442,7 +492,8 @@ const UnifiedNarrationSection = ({
             generationResults={generationResults}
             onRetry={retryGeminiNarration}
             retryingSubtitleId={retryingSubtitleId}
-            onRetryFailed={retryFailedNarrations}
+            onRetryFailed={retryFailedGeminiNarrations}
+            hasGenerationError={!!error && error.includes('Gemini')}
           />
 
           {/* No need for a separate audio element here as it's included in the GeminiNarrationResults component */}

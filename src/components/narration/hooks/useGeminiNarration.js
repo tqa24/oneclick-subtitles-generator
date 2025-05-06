@@ -77,7 +77,6 @@ const useGeminiNarration = ({
     setIsGenerating(true);
     setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
     setError('');
-    setGenerationResults([]);
 
     try {
       // Prepare subtitles with IDs for tracking
@@ -86,16 +85,32 @@ const useGeminiNarration = ({
         id: subtitle.id || index + 1
       }));
 
+      // Initialize generationResults with placeholder objects for all subtitles
+      const initialResults = subtitlesWithIds.map(subtitle => ({
+        subtitle_id: subtitle.id,
+        text: subtitle.text,
+        success: false,
+        pending: true, // Flag to indicate this subtitle is pending generation
+        audioData: null,
+        filename: null
+      }));
+      setGenerationResults(initialResults);
+
       // Generate narration with Gemini
       console.log(`Using Gemini API for narration with sleep time: ${sleepTime}ms and voice: ${selectedVoice}`);
 
-      await generateGeminiNarrations(
+      const response = await generateGeminiNarrations(
         subtitlesWithIds,
         language,
         (message) => setGenerationStatus(message),
         (result, progress, total) => {
-          // Add the result to the results array
-          setGenerationResults(prev => [...prev, result]);
+          // Update the existing result in the array
+          setGenerationResults(prev => {
+            return prev.map(item =>
+              item.subtitle_id === result.subtitle_id ? { ...result, pending: false } : item
+            );
+          });
+
           // Update the status
           setGenerationStatus(
             t(
@@ -113,13 +128,66 @@ const useGeminiNarration = ({
           setError(`${t('narration.geminiGenerationError', 'Error generating narration with Gemini')}: ${error.message || error}`);
         },
         (results) => {
-          setGenerationStatus(t('narration.geminiGenerationComplete', 'Gemini narration generation complete'));
-          setGenerationResults(results);
+          // Update the generation results, marking any pending items as failed
+          setGenerationResults(prev => {
+            return prev.map(item => {
+              // If this item is in the results, use that result
+              const resultItem = results.find(r => r.subtitle_id === item.subtitle_id);
+              if (resultItem) {
+                return { ...resultItem, pending: false };
+              }
+
+              // If this item is still pending, mark it as failed
+              if (item.pending) {
+                return {
+                  ...item,
+                  pending: false,
+                  success: false,
+                  error: 'Generation was interrupted'
+                };
+              }
+
+              // Otherwise, keep the item as is
+              return item;
+            });
+          });
+
+          if (results.length < subtitlesWithIds.length) {
+            // Generation was incomplete
+            setGenerationStatus(
+              t(
+                'narration.geminiGenerationIncomplete',
+                'Gemini narration generation incomplete. Generated {{generated}} of {{total}} narrations.',
+                {
+                  generated: results.length,
+                  total: subtitlesWithIds.length
+                }
+              )
+            );
+            setError(
+              t(
+                'narration.geminiConnectionError',
+                'Connection to Gemini was interrupted. You can retry the failed narrations individually.'
+              )
+            );
+          } else {
+            setGenerationStatus(t('narration.geminiGenerationComplete', 'Gemini narration generation complete'));
+          }
         },
         null, // Use default model
         sleepTime, // Use the configured sleep time
         selectedVoice // Use the selected voice
       );
+
+      // If the response indicates an incomplete generation, set an error
+      if (response && response.incomplete) {
+        setError(
+          t(
+            'narration.geminiConnectionError',
+            'Connection to Gemini was interrupted. You can retry the failed narrations individually.'
+          )
+        );
+      }
     } catch (error) {
       console.error('Error generating Gemini narration:', error);
       setError(t('narration.geminiGenerationError', 'Error generating narration with Gemini'));

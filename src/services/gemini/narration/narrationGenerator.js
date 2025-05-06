@@ -224,6 +224,27 @@ export const generateGeminiNarrations = async (
       }
     }
 
+    // Check if we have any results at all
+    if (results.length === 0) {
+      // No results were generated, likely due to a connection error
+      const error = new Error("No narrations were generated. There may have been a connection issue with Gemini.");
+      onError(error);
+      return { success: false, error: error.message, results: [] };
+    }
+
+    // Check if we have fewer results than expected
+    if (results.length < subtitles.length) {
+      // Some results were generated, but not all
+      onProgress(`Narration generation incomplete. Generated ${results.length} of ${subtitles.length} narrations.`);
+      onComplete(results);
+      return {
+        success: true,
+        incomplete: true,
+        results,
+        message: `Generation was interrupted. Only ${results.length} of ${subtitles.length} narrations were generated.`
+      };
+    }
+
     // Complete the generation
     onProgress("Narration generation complete");
     onComplete(results);
