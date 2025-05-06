@@ -173,7 +173,8 @@ const UnifiedNarrationSection = ({
     playAudio,
     downloadAllAudio,
     downloadAlignedAudio,
-    cancelGeneration
+    cancelGeneration,
+    retryF5TTSNarration
   } = useNarrationHandlers({
     fileInputRef,
     mediaRecorderRef,
@@ -214,7 +215,8 @@ const UnifiedNarrationSection = ({
     isPlaying,
     selectedNarrationModel,
     originalLanguage,
-    translatedLanguage
+    translatedLanguage,
+    setRetryingSubtitleId
   });
 
   // Only show the unavailable message if both F5-TTS and Gemini are unavailable
@@ -366,6 +368,8 @@ const UnifiedNarrationSection = ({
             currentAudio={currentAudio}
             isPlaying={isPlaying}
             getAudioUrl={getAudioUrl}
+            onRetry={retryF5TTSNarration}
+            retryingSubtitleId={retryingSubtitleId}
           />
 
           {/* Hidden audio player for playback */}

@@ -6,8 +6,12 @@ import { useState } from 'react';
  * @returns {Object} - Narration state and setters
  */
 const useNarrationState = (initialReferenceAudio) => {
-  // Narration Method state - always default to Gemini
-  const [narrationMethod, setNarrationMethod] = useState('gemini');
+  // Narration Method state - load from localStorage or default to Gemini
+  const [narrationMethod, setNarrationMethod] = useState(() => {
+    // Try to load from localStorage
+    const savedMethod = localStorage.getItem('narration_method');
+    return savedMethod || 'gemini'; // Default to Gemini if not set
+  });
   const [isGeminiAvailable, setIsGeminiAvailable] = useState(true); // Assume Gemini is available by default
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
 

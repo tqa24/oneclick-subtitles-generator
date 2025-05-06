@@ -131,11 +131,41 @@ const useAlignedNarrationEvents = ({
       }
     };
 
+    // Function to handle direct regeneration requests
+    const handleRegenerateAlignedNarration = (event) => {
+      console.log('Received direct regenerate-aligned-narration event', event.detail);
+
+      // Clear any existing timeout
+      if (regenerationTimeoutRef.current) {
+        clearTimeout(regenerationTimeoutRef.current);
+      }
+
+      // Force immediate regeneration without any debounce or cooldown
+      try {
+        console.log('CRITICAL FIX: Forcing immediate regeneration due to direct request');
+
+        // Reset the last regeneration time to ensure cooldown doesn't block this
+        lastRegenerationTimeRef.current = 0;
+
+        // Reset the aligned narration cache completely
+        if (typeof window.resetAlignedNarration === 'function') {
+          console.log('CRITICAL FIX: Resetting aligned narration cache before regeneration');
+          window.resetAlignedNarration();
+        }
+
+        // Regenerate the aligned narration immediately
+        regenerateAlignedNarration();
+      } catch (error) {
+        console.error('Error during forced regeneration:', error);
+      }
+    };
+
     // Listen for custom events that might be dispatched when subtitle timings change
     window.addEventListener('subtitle-timing-changed', handleSubtitleTimingChange);
     window.addEventListener('subtitles-updated', handleSubtitleTimingChange);
     window.addEventListener('narration-retried', handleNarrationRetried);
     window.addEventListener('narrations-updated', handleNarrationRetried);
+    window.addEventListener('regenerate-aligned-narration', handleRegenerateAlignedNarration);
 
     // Clean up event listeners
     return () => {
@@ -143,6 +173,7 @@ const useAlignedNarrationEvents = ({
       window.removeEventListener('subtitles-updated', handleSubtitleTimingChange);
       window.removeEventListener('narration-retried', handleNarrationRetried);
       window.removeEventListener('narrations-updated', handleNarrationRetried);
+      window.removeEventListener('regenerate-aligned-narration', handleRegenerateAlignedNarration);
 
       if (regenerationTimeoutRef.current) {
         clearTimeout(regenerationTimeoutRef.current);

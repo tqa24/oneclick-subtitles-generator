@@ -14,8 +14,17 @@ const { clearNarrationOutputFiles } = require('./directoryManager');
 const generateNarration = async (req, res) => {
   console.log('Received generate request');
 
-  // Clear all existing narration output files for fresh generation
-  clearNarrationOutputFiles();
+  // Check if we should skip clearing the output directory
+  // This is used for retrying a single narration to avoid deleting all other narrations
+  const skipClearOutput = req.body.settings && req.body.settings.skipClearOutput === true;
+
+  if (!skipClearOutput) {
+    // Clear all existing narration output files for fresh generation
+    console.log('Clearing all narration output files for fresh generation');
+    clearNarrationOutputFiles();
+  } else {
+    console.log('CRITICAL FIX: Skipping clearing narration output files for retry');
+  }
 
   try {
     const { reference_audio, reference_text, subtitles, settings } = req.body;

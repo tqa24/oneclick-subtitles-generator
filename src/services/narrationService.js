@@ -477,8 +477,17 @@ export const generateNarration = async (
   onComplete = () => {}
 ) => {
   try {
-    // Clear all narration output files before generating new ones
-    await clearNarrationOutput();
+    // Check if we should skip clearing the output directory
+    // This is used for retrying a single narration to avoid deleting all other narrations
+    const skipClearOutput = settings && settings.skipClearOutput === true;
+
+    if (!skipClearOutput) {
+      // Clear all narration output files before generating new ones
+      console.log('Clearing all narration output files before generation');
+      await clearNarrationOutput();
+    } else {
+      console.log('CRITICAL FIX: Skipping clearing narration output files for retry');
+    }
 
     // Initial progress message for waking up the server - only on first run
     // Using hardcoded Vietnamese messages here because i18n context is not available in this service

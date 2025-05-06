@@ -49,7 +49,8 @@ const useNarrationHandlers = ({
   isPlaying,
   selectedNarrationModel,
   originalLanguage,
-  translatedLanguage
+  translatedLanguage,
+  setRetryingSubtitleId
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {
@@ -869,6 +870,206 @@ const useNarrationHandlers = ({
     }
   };
 
+  // Retry narration generation for a specific subtitle
+  const retryF5TTSNarration = async (subtitleId) => {
+    if (!referenceAudio) {
+      setError(t('narration.noReferenceAudioError', 'Please upload or record reference audio first'));
+      return;
+    }
+
+    // Get the appropriate subtitles based on the selected source
+    const selectedSubtitles = getSelectedSubtitles();
+
+    if (!selectedSubtitles || selectedSubtitles.length === 0) {
+      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
+      return;
+    }
+
+    // Find the subtitle with the given ID
+    const subtitleToRetry = selectedSubtitles.find(subtitle =>
+      (subtitle.id || subtitle.index) === subtitleId
+    );
+
+    if (!subtitleToRetry) {
+      console.error(`Subtitle with ID ${subtitleId} not found`);
+      return;
+    }
+
+    // Set retrying state
+    setRetryingSubtitleId(subtitleId);
+
+    // Clear any previous errors
+    setError('');
+
+    // Set status for this specific retry
+    setGenerationStatus(t('narration.retryingGeneration', 'Retrying narration generation for subtitle {{id}}...', { id: subtitleId }));
+
+    try {
+      // CRITICAL FIX: Force reset the aligned narration before retrying
+      // This ensures that the aligned narration will be regenerated with the new audio
+      console.log('CRITICAL FIX: Force resetting aligned narration before retry');
+      if (window.resetAlignedNarration) {
+        window.resetAlignedNarration();
+      }
+
+      // Prepare subtitle with ID for tracking
+      const subtitleWithId = {
+        ...subtitleToRetry,
+        id: subtitleToRetry.id || subtitleToRetry.index || subtitleId,
+        // Add a flag to force regeneration of aligned narration
+        forceRegenerate: true
+      };
+
+      // Prepare advanced settings for the API - only include supported parameters
+      const apiSettings = {
+        // Convert string values to appropriate types
+        speechRate: parseFloat(advancedSettings.speechRate),
+        nfeStep: parseInt(advancedSettings.nfeStep),
+        swayCoef: parseFloat(advancedSettings.swayCoef),
+        cfgStrength: parseFloat(advancedSettings.cfgStrength),
+        removeSilence: advancedSettings.removeSilence,
+        // Include the selected model ID
+        modelId: selectedNarrationModel,
+        // CRITICAL FIX: Add a flag to skip clearing the output directory
+        skipClearOutput: true
+      };
+
+      // Handle seed
+      if (!advancedSettings.useRandomSeed) {
+        apiSettings.seed = advancedSettings.seed;
+      }
+
+      // Import the narration service functions
+      const { generateNarration } = await import('../../../services/narrationService');
+
+      // Define callbacks for the streaming response
+      const handleProgress = (message) => {
+        setGenerationStatus(`${message} (ID: ${subtitleId})`);
+      };
+
+      const handleResult = (result) => {
+        // Add a flag to force regeneration of aligned narration
+        result.forceRegenerate = true;
+
+        // Add a timestamp to the result to help identify retried narrations
+        result.retriedAt = Date.now();
+
+        // Update the results array by replacing the old result with the new one
+        setGenerationResults(prevResults => {
+          const updatedResults = prevResults.map(prevResult =>
+            prevResult.subtitle_id === subtitleId ? result : prevResult
+          );
+
+          // Update the global narration references to ensure video player uses the latest version
+          if (subtitleSource === 'original') {
+            // Update window.originalNarrations
+            window.originalNarrations = [...updatedResults];
+
+            // Also update the global narrations array if it exists
+            if (window.subtitlesData && window.narrations) {
+              // Find and update the narration in the global narrations array
+              const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
+              if (globalIndex !== -1) {
+                window.narrations[globalIndex] = result;
+                console.log('Updated window.narrations with retried narration:', result);
+              }
+            }
+
+            // Also update localStorage
+            try {
+              localStorage.setItem('originalNarrations', JSON.stringify(updatedResults));
+            } catch (e) {
+              console.error('Error storing updated originalNarrations in localStorage:', e);
+            }
+            console.log('Updated window.originalNarrations with retried narration:', result);
+          } else {
+            // Update window.translatedNarrations
+            window.translatedNarrations = [...updatedResults];
+
+            // Also update the global narrations array if it exists
+            if (window.subtitlesData && window.narrations) {
+              // Find and update the narration in the global narrations array
+              const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
+              if (globalIndex !== -1) {
+                window.narrations[globalIndex] = result;
+                console.log('Updated window.narrations with retried narration:', result);
+              }
+            }
+
+            // Also update localStorage
+            try {
+              localStorage.setItem('translatedNarrations', JSON.stringify(updatedResults));
+            } catch (e) {
+              console.error('Error storing updated translatedNarrations in localStorage:', e);
+            }
+            console.log('Updated window.translatedNarrations with retried narration:', result);
+          }
+
+          // Dispatch a custom event to notify other components about the updated narration
+          const event = new CustomEvent('narration-retried', {
+            detail: {
+              source: subtitleSource,
+              narration: result,
+              narrations: updatedResults,
+              timestamp: Date.now(), // Add timestamp to ensure the event is treated as new
+              forceRegenerate: true // Add flag to force regeneration of aligned narration
+            }
+          });
+          window.dispatchEvent(event);
+
+          // Also dispatch a subtitle-timing-changed event to ensure aligned narration is regenerated
+          window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+            detail: {
+              action: 'narration-retry',
+              timestamp: Date.now(),
+              subtitleId: result.subtitle_id,
+              forceRegenerate: true // Add flag to force regeneration of aligned narration
+            }
+          }));
+
+          // CRITICAL FIX: Force regenerate aligned narration after a short delay
+          // This ensures that the aligned narration is regenerated with the new audio
+          setTimeout(() => {
+            console.log('CRITICAL FIX: Triggering aligned narration regeneration after retry');
+            window.dispatchEvent(new CustomEvent('regenerate-aligned-narration', {
+              detail: {
+                timestamp: Date.now(),
+                forceRegenerate: true
+              }
+            }));
+          }, 500);
+
+          return updatedResults;
+        });
+      };
+
+      const handleError = (error) => {
+        console.error(`Error retrying narration for subtitle ${subtitleId}:`, error);
+        setError(t('narration.retryError', 'Error retrying narration for subtitle {{id}}', { id: subtitleId }));
+      };
+
+      // Generate narration for the single subtitle
+      await generateNarration(
+        referenceAudio.filepath,
+        referenceAudio.text || referenceText,
+        [subtitleWithId], // Pass as an array with a single subtitle
+        apiSettings,
+        handleProgress,
+        handleResult,
+        handleError,
+        () => {
+          setGenerationStatus(t('narration.retryComplete', 'Retry complete for subtitle {{id}}', { id: subtitleId }));
+        }
+      );
+    } catch (error) {
+      console.error(`Error retrying narration for subtitle ${subtitleId}:`, error);
+      setError(t('narration.retryError', 'Error retrying narration for subtitle {{id}}', { id: subtitleId }));
+    } finally {
+      // Clear retrying state regardless of success or failure
+      setRetryingSubtitleId(null);
+    }
+  };
+
   return {
     handleFileUpload,
     startRecording,
@@ -879,7 +1080,8 @@ const useNarrationHandlers = ({
     playAudio,
     downloadAllAudio,
     downloadAlignedAudio,
-    cancelGeneration
+    cancelGeneration,
+    retryF5TTSNarration
   };
 };
 

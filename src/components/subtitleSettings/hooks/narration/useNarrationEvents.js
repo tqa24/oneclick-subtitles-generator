@@ -3,7 +3,7 @@ import { cleanupAudioElement } from '../../utils/AudioUtils';
 
 /**
  * Hook to handle narration events
- * 
+ *
  * @param {Function} setInternalOriginalNarrations - Setter for original narrations
  * @param {Function} setInternalTranslatedNarrations - Setter for translated narrations
  * @param {Object} currentNarration - Current narration being played
@@ -62,51 +62,39 @@ const useNarrationEvents = (
       if (source === 'original') {
         setInternalOriginalNarrations(narrations);
         console.log('useNarration - Updated original narrations with retried narration:', narration);
-
-        // If we're currently playing the retried narration, stop it so it can be replaced
-        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
-          console.log('useNarration - Currently playing narration was retried, stopping playback');
-          if (audioRefs.current[narration.subtitle_id]) {
-            audioRefs.current[narration.subtitle_id].pause();
-          }
-
-          // Properly clean up the old audio element
-          const oldAudio = audioRefs.current[narration.subtitle_id];
-          if (oldAudio) {
-            cleanupAudioElement(oldAudio);
-          }
-
-          // Remove the old audio reference so it will be recreated with the new audio
-          delete audioRefs.current[narration.subtitle_id];
-
-          // Clear current narration state
-          setCurrentNarration(null);
-        }
       } else if (source === 'translated') {
         setInternalTranslatedNarrations(narrations);
         console.log('useNarration - Updated translated narrations with retried narration:', narration);
-
-        // If we're currently playing the retried narration, stop it so it can be replaced
-        if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
-          console.log('useNarration - Currently playing narration was retried, stopping playback');
-          if (audioRefs.current[narration.subtitle_id]) {
-            audioRefs.current[narration.subtitle_id].pause();
-          }
-
-          // Properly clean up the old audio element
-          const oldAudio = audioRefs.current[narration.subtitle_id];
-          if (oldAudio) {
-            cleanupAudioElement(oldAudio);
-          }
-
-          // Remove the old audio reference so it will be recreated with the new audio
-          delete audioRefs.current[narration.subtitle_id];
-
-          // Clear current narration state
-          setCurrentNarration(null);
-        }
       }
+
+      // AGGRESSIVE FIX: Always clean up ALL audio elements when any narration is retried
+      // This ensures that all audio elements are recreated with fresh URLs
+      console.log('useNarration - AGGRESSIVE FIX: Cleaning up ALL audio elements');
+
+      // Stop any currently playing narration
+      if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
+        audioRefs.current[currentNarration.subtitle_id].pause();
+      }
+
+      // Clear current narration state
+      setCurrentNarration(null);
+
+      // Clean up all audio elements
+      Object.keys(audioRefs.current).forEach(key => {
+        const audio = audioRefs.current[key];
+        if (audio) {
+          console.log(`useNarration - Cleaning up audio element for narration ${key}`);
+          cleanupAudioElement(audio);
+        }
+      });
+
+      // Reset the audio refs object
+      audioRefs.current = {};
+
+      console.log('useNarration - All audio elements have been cleaned up and will be recreated on next playback');
     };
+
+    // We're now using the narration-retried event for both Gemini and F5-TTS
 
     window.addEventListener('narrations-updated', handleNarrationsUpdated);
     window.addEventListener('narration-retried', handleNarrationRetried);
@@ -137,11 +125,11 @@ const useNarrationEvents = (
       window.removeEventListener('narration-retried', handleNarrationRetried);
     };
   }, [
-    currentNarration, 
-    narrationSource, 
-    setInternalOriginalNarrations, 
-    setInternalTranslatedNarrations, 
-    setCurrentNarration, 
+    currentNarration,
+    narrationSource,
+    setInternalOriginalNarrations,
+    setInternalTranslatedNarrations,
+    setCurrentNarration,
     audioRefs
   ]);
 

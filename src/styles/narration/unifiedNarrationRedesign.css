@@ -1006,6 +1006,39 @@ textarea.reference-text::-webkit-resizer {
   gap: 0.5rem;
 }
 
+/* Retry button styling */
+.retry-button {
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+}
+
+.retry-button:hover {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.retry-button.retrying {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  cursor: not-allowed;
+}
+
+.retry-button.retrying:hover {
+  background-color: var(--md-surface-2);
+  transform: none;
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Spinner animation for retry button */
+.spinner {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* No results message styling */
 .no-results-message {
   padding: 1rem;

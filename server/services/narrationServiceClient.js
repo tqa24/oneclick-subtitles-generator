@@ -147,7 +147,11 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
           reference_audio,
           reference_text,
           subtitles,
-          settings
+          settings: {
+            ...settings,
+            // Ensure the skipClearOutput flag is passed to the Python service
+            skipClearOutput: settings && settings.skipClearOutput === true
+          }
         })
       });
 
@@ -307,7 +311,11 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
         reference_audio,
         reference_text,
         subtitles,
-        settings
+        settings: {
+          ...settings,
+          // Ensure the skipClearOutput flag is passed to the Python service
+          skipClearOutput: settings && settings.skipClearOutput === true
+        }
       })
     });
 

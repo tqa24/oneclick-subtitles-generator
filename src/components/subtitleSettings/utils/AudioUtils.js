@@ -92,5 +92,11 @@ export const getAudioUrl = (narration, serverUrl) => {
     (serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl) :
     '';
 
-  return `${baseUrl}/api/narration/audio/${filename}`;
+  // AGGRESSIVE FIX: Add a timestamp or unique identifier to the URL to force a fresh request
+  // This prevents browser caching issues
+  const timestamp = (typeof narration === 'object' && narration._timestamp) ?
+    narration._timestamp :
+    Date.now();
+
+  return `${baseUrl}/api/narration/audio/${filename}?t=${timestamp}`;
 };
