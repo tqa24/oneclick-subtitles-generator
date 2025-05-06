@@ -58,6 +58,14 @@ const serveAudioFile = (req, res) => {
 
 /**
  * Download aligned narration audio (one file)
+ *
+ * Audio processing includes:
+ * 1. Individual audio segments are boosted by 1.5x for clarity
+ * 2. Using amix with normalize=0 to prevent automatic volume reduction during overlaps
+ *
+ * The key setting is normalize=0 in the amix filter, which ensures that when audio segments
+ * overlap (even partially), they maintain their full volume without any reduction.
+ * By default, amix would reduce the volume of overlapping segments to prevent clipping.
  */
 const downloadAlignedAudio = async (req, res) => {
   console.log('Received download-aligned request');
@@ -168,14 +176,21 @@ const downloadAlignedAudio = async (req, res) => {
 
       // Apply resampling (safety), delay, and volume to the correct input stream
       // Output this processed stream as [a<index>] (e.g., [a0], [a1], ...)
+      // Use a moderate volume boost (1.5) as we'll preserve full volume during mixing
       filterComplex += `[${inputIndex}]aresample=44100,adelay=${delayMs}|${delayMs},volume=1.5[${delayedStreamName}]; `;
       amixInputs.push(`[${delayedStreamName}]`); // Add the delayed stream name to the list for amix
     });
 
-    // Combine all delayed audio streams using amix
-    // The number of inputs to amix is the number of audio segments
+    // Combine all delayed audio streams
     if (audioSegments.length > 0) {
-      filterComplex += `${amixInputs.join('')}amix=inputs=${audioSegments.length}:dropout_transition=0:normalize=1[aout]`;
+      if (audioSegments.length === 1) {
+        // If there's only one segment, just map it directly to output
+        filterComplex += `${amixInputs[0]}asetpts=PTS-STARTPTS[aout]`;
+      } else {
+        // For multiple segments, use amix with normalize=0 to prevent volume reduction during overlaps
+        // This is the key setting that ensures overlapping segments maintain their volume
+        filterComplex += `${amixInputs.join('')}amix=inputs=${audioSegments.length}:dropout_transition=0:normalize=0[aout]`;
+      }
     } else {
       // If there are no audio segments, the output is just the silent track
       filterComplex = '[0:a]acopy[aout]'; // Map the anullsrc input directly
