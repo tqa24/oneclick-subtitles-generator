@@ -59,8 +59,8 @@ const useAlignedNarrationGeneration = ({
         message: 'Preparing aligned narration...'
       });
 
-      // Clean up existing resources
-      cleanupAlignedNarration();
+      // Skip cleanup to avoid stuttering during regeneration
+      // The generateAlignedNarrationService will handle URL revocation
 
       // Get all subtitles from the video for timing information
       const allSubtitles = getAllSubtitles();

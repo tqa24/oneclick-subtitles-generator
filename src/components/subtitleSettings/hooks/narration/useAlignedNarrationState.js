@@ -18,7 +18,7 @@ const useAlignedNarrationState = () => {
   const [isGeneratingAligned, setIsGeneratingAligned] = useState(false);
   const [alignedStatus, setAlignedStatus] = useState(null);
   const [isAlignedAvailable, setIsAlignedAvailable] = useState(false);
-  
+
   // Refs for tracking state
   const lastVideoTimeRef = useRef(0);
   const isSeekingRef = useRef(false);
@@ -37,8 +37,8 @@ const useAlignedNarrationState = () => {
     setAlignedNarrationVolumeService(volume);
   }, []);
 
-  const cleanupAlignedNarration = useCallback(() => {
-    cleanupAlignedNarrationService();
+  const cleanupAlignedNarration = useCallback((preserveAudioElement = true, preserveCache = true, force = false) => {
+    cleanupAlignedNarrationService(preserveAudioElement, preserveCache, force);
   }, []);
 
   const getAlignedAudioElement = useCallback(() => {
@@ -53,7 +53,7 @@ const useAlignedNarrationState = () => {
     setAlignedStatus,
     isAlignedAvailable,
     setIsAlignedAvailable,
-    
+
     // Refs
     lastVideoTimeRef,
     isSeekingRef,
@@ -62,7 +62,7 @@ const useAlignedNarrationState = () => {
     lastSubtitleTimingsHashRef,
     regenerationTimeoutRef,
     lastRegenerationTimeRef,
-    
+
     // Service functions
     playAlignedNarration,
     setAlignedNarrationVolume,

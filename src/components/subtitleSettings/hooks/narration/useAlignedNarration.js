@@ -61,7 +61,8 @@ const useAlignedNarration = (
         clearTimeout(state.regenerationTimeoutRef.current);
       }
 
-      state.cleanupAlignedNarration();
+      // When unmounting, we want to preserve both the audio element and the cache for reuse
+      state.cleanupAlignedNarration(true, true);
     };
   }, [state]);
 

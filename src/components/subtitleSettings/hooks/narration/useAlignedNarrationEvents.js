@@ -43,32 +43,38 @@ const useAlignedNarrationEvents = ({
     const handleSubtitleTimingChange = () => {
       console.log('Subtitle timing change event detected');
 
+      // Skip regeneration if video is playing to avoid interrupting playback
+      if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {
+        console.log('Skipping event-triggered regeneration during playback to avoid interruption');
+        return;
+      }
+
       // Clear any existing timeout
       if (regenerationTimeoutRef.current) {
         clearTimeout(regenerationTimeoutRef.current);
       }
 
       // Debounce regeneration to avoid multiple rapid regenerations
-      const debounceDelay = 1000; // 1 second debounce
+      const debounceDelay = 2000; // 2 second debounce (increased from 1s)
 
       // Set a timeout to regenerate after the debounce period
       regenerationTimeoutRef.current = setTimeout(async () => {
         try {
           console.log('Regenerating aligned narration due to subtitle timing change');
-          
+
           // Prevent regeneration if we've recently regenerated
           const now = Date.now();
-          if (now - lastRegenerationTimeRef.current < 5000) { // 5 second cooldown
+          if (now - lastRegenerationTimeRef.current < 30000) { // 30 second cooldown
             console.log('Skipping regeneration due to cooldown period');
             return;
           }
-          
+
           // Update last regeneration time
           lastRegenerationTimeRef.current = now;
-          
+
           // Regenerate the aligned narration
           await regenerateAlignedNarration();
-          
+
           // After regeneration is complete, check if the video is playing
           // and explicitly start playing the aligned narration
           if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {
@@ -145,12 +151,25 @@ const useAlignedNarrationEvents = ({
     const generationResultsChanged = currentGenerationResultsHash !== lastGenerationResultsHashRef.current;
     const subtitleTimingsChanged = currentSubtitleTimingsHash !== lastSubtitleTimingsHashRef.current;
 
-    // Update the hash refs
-    lastGenerationResultsHashRef.current = currentGenerationResultsHash;
-    lastSubtitleTimingsHashRef.current = currentSubtitleTimingsHash;
+    // Only update the hash refs if this is the first time or if there are actual changes
+    // This prevents unnecessary updates during normal playback
+    if (lastGenerationResultsHashRef.current === '' || generationResultsChanged) {
+      lastGenerationResultsHashRef.current = currentGenerationResultsHash;
+    }
+
+    if (lastSubtitleTimingsHashRef.current === '' || subtitleTimingsChanged) {
+      lastSubtitleTimingsHashRef.current = currentSubtitleTimingsHash;
+    }
 
     // If nothing has changed, skip regeneration
     if (!generationResultsChanged && !subtitleTimingsChanged) {
+      return;
+    }
+
+    // Skip regeneration if video is playing to avoid interrupting playback
+    // Only regenerate if video is paused or if this is the first generation
+    if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {
+      console.log('Skipping regeneration during playback to avoid interruption');
       return;
     }
 
@@ -162,26 +181,26 @@ const useAlignedNarrationEvents = ({
     }
 
     // Debounce regeneration to avoid multiple rapid regenerations
-    const debounceDelay = 1000; // 1 second debounce
+    const debounceDelay = 2000; // 2 second debounce (increased from 1s)
 
     // Set a timeout to regenerate after the debounce period
     regenerationTimeoutRef.current = setTimeout(async () => {
       try {
         console.log('Auto-regenerating aligned narration');
-        
+
         // Prevent regeneration if we've recently regenerated
         const now = Date.now();
-        if (now - lastRegenerationTimeRef.current < 5000) { // 5 second cooldown
+        if (now - lastRegenerationTimeRef.current < 30000) { // 30 second cooldown (increased from 5s)
           console.log('Skipping auto-regeneration due to cooldown period');
           return;
         }
-        
+
         // Update last regeneration time
         lastRegenerationTimeRef.current = now;
-        
+
         // Regenerate the aligned narration
         await regenerateAlignedNarration();
-        
+
         // After regeneration is complete, check if the video is playing
         // and explicitly start playing the aligned narration
         if (videoRef?.current && !videoRef.current.paused && isAlignedAvailable) {

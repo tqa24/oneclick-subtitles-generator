@@ -144,8 +144,16 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 
     console.log(`Received aligned audio blob: type=${blob.type}, size=${blob.size} bytes`);
 
-    // Clean up previous resources
-    cleanupAlignedNarration();
+    // Skip cleanup to avoid stuttering - we'll just create a new URL
+    // If there's an old URL, revoke it directly without full cleanup
+    if (alignedNarrationCache.url) {
+      try {
+        URL.revokeObjectURL(alignedNarrationCache.url);
+        console.log('Revoked previous object URL');
+      } catch (e) {
+        console.warn('Error revoking previous object URL:', e);
+      }
+    }
 
     // Create a URL for the blob
     const url = URL.createObjectURL(blob);
@@ -159,6 +167,22 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     };
 
     console.log(`Created blob URL: ${url}`);
+
+    // Initialize the audio element if it doesn't exist
+    if (!alignedAudioElement) {
+      console.log('Initializing audio element after generating aligned narration');
+      try {
+        alignedAudioElement = new Audio();
+        alignedAudioElement.preload = 'auto';
+        alignedAudioElement.crossOrigin = 'anonymous';
+        alignedAudioElement.src = url;
+        alignedAudioElement.load();
+        console.log('Successfully initialized audio element');
+      } catch (error) {
+        console.error('Error initializing audio element:', error);
+        // Continue even if there's an error, as we can try to create the audio element later
+      }
+    }
 
     if (onProgress) {
       onProgress({ status: 'complete', message: 'Aligned narration ready' });
@@ -179,7 +203,9 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
  * @returns {HTMLAudioElement} - Audio element
  */
 export const getAlignedAudioElement = () => {
+  // Check if we have a URL in the cache
   if (!alignedNarrationCache.url) {
+    console.warn('No aligned narration URL available in cache');
     return null;
   }
 
@@ -187,63 +213,104 @@ export const getAlignedAudioElement = () => {
   if (!alignedAudioElement) {
     console.log('Creating new aligned narration audio element');
 
-    // Create a new audio element
-    alignedAudioElement = new Audio();
+    try {
+      // Create a new audio element
+      alignedAudioElement = new Audio();
 
-    // Set audio properties for better performance
-    alignedAudioElement.preload = 'auto';
-    alignedAudioElement.crossOrigin = 'anonymous'; // Helps with CORS issues
+      // Set audio properties for better performance
+      alignedAudioElement.preload = 'auto';
+      alignedAudioElement.crossOrigin = 'anonymous'; // Helps with CORS issues
 
-    // Add comprehensive error handling
-    alignedAudioElement.onerror = (event) => {
-      const errorMessage = alignedAudioElement.error
-        ? `Code: ${alignedAudioElement.error.code}, Message: ${alignedAudioElement.error.message}`
-        : 'unknown error';
-      console.error('Error with aligned narration audio:', errorMessage);
+      // Add comprehensive error handling
+      alignedAudioElement.onerror = () => {
+        const errorMessage = alignedAudioElement?.error
+          ? `Code: ${alignedAudioElement.error.code}, Message: ${alignedAudioElement.error.message}`
+          : 'unknown error';
+        console.error('Error with aligned narration audio:', errorMessage);
 
-      // Try to recover by reloading
-      setTimeout(() => {
-        console.log('Attempting to recover from audio error');
-        if (alignedNarrationCache.url) {
-          alignedAudioElement.src = alignedNarrationCache.url;
+        // Try to recover by reloading
+        setTimeout(() => {
+          console.log('Attempting to recover from audio error');
+          if (alignedNarrationCache.url && alignedAudioElement) {
+            alignedAudioElement.src = alignedNarrationCache.url;
+            alignedAudioElement.load();
+          }
+        }, 1000);
+      };
+
+      // Add stalled and waiting event handlers
+      alignedAudioElement.onstalled = () => {
+        console.warn('Audio playback stalled, attempting to resume');
+        if (alignedAudioElement) {
           alignedAudioElement.load();
         }
-      }, 1000);
-    };
+      };
 
-    // Add stalled and waiting event handlers
-    alignedAudioElement.onstalled = () => {
-      console.warn('Audio playback stalled, attempting to resume');
+      alignedAudioElement.onwaiting = () => {
+        console.log('Audio is waiting for more data');
+      };
+
+      // Add successful load handler
+      alignedAudioElement.oncanplaythrough = () => {
+        console.log('Audio can play through without buffering');
+      };
+
+      // Set the source and load
+      alignedAudioElement.src = alignedNarrationCache.url;
       alignedAudioElement.load();
-    };
 
-    alignedAudioElement.onwaiting = () => {
-      console.log('Audio is waiting for more data');
-    };
+      console.log('Created aligned narration audio element with URL:', alignedNarrationCache.url);
+    } catch (error) {
+      console.error('Error creating audio element:', error);
+      return null;
+    }
+  } else {
+    // Check if the audio element has a valid source
+    if (!alignedAudioElement.src || alignedAudioElement.src === '' || alignedAudioElement.src === 'about:blank') {
+      console.log('Audio element exists but has no source, updating source');
 
-    // Add successful load handler
-    alignedAudioElement.oncanplaythrough = () => {
-      console.log('Audio can play through without buffering');
-    };
+      if (alignedNarrationCache.url) {
+        try {
+          alignedAudioElement.src = alignedNarrationCache.url;
+          alignedAudioElement.load();
+          console.log('Updated audio element source with cached URL');
+        } catch (error) {
+          console.error('Error setting audio source from cache:', error);
+        }
+      } else {
+        console.warn('No URL in cache to set as audio source');
+      }
+    } else if (alignedAudioElement.src !== alignedNarrationCache.url && alignedNarrationCache.url) {
+      // Only update the source if it has changed and we have a new URL
+      console.log('Updating aligned narration audio source');
 
-    // Set the source and load
-    alignedAudioElement.src = alignedNarrationCache.url;
-    alignedAudioElement.load();
+      try {
+        // Pause first to avoid any playback issues during source change
+        alignedAudioElement.pause();
 
-    console.log('Created aligned narration audio element with URL:', alignedNarrationCache.url);
-  } else if (alignedAudioElement.src !== alignedNarrationCache.url) {
-    // Only update the source if it has changed
-    console.log('Updating aligned narration audio source');
+        // Update source and reload
+        alignedAudioElement.src = alignedNarrationCache.url;
+        alignedAudioElement.load();
 
-    // Pause first to avoid any playback issues during source change
-    alignedAudioElement.pause();
+        // Reset any custom properties we might have set
+        alignedAudioElement._customSeeking = false;
+      } catch (error) {
+        console.error('Error updating audio element source:', error);
 
-    // Update source and reload
-    alignedAudioElement.src = alignedNarrationCache.url;
-    alignedAudioElement.load();
-
-    // Reset any custom properties we might have set
-    alignedAudioElement._customSeeking = false;
+        // Try to recreate the audio element if updating fails
+        try {
+          alignedAudioElement = new Audio();
+          alignedAudioElement.preload = 'auto';
+          alignedAudioElement.crossOrigin = 'anonymous';
+          alignedAudioElement.src = alignedNarrationCache.url;
+          alignedAudioElement.load();
+          console.log('Recreated aligned narration audio element after error');
+        } catch (recreateError) {
+          console.error('Failed to recreate audio element:', recreateError);
+          return null;
+        }
+      }
+    }
   }
 
   return alignedAudioElement;
@@ -253,12 +320,49 @@ export const getAlignedAudioElement = () => {
  * Play aligned narration at the specified time
  * @param {number} currentTime - Current video time
  * @param {boolean} isPlaying - Whether the video is playing
+ * @returns {boolean} - Whether playback was successful
  */
 export const playAlignedNarration = (currentTime, isPlaying) => {
+  console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
+  console.log(`Cache status: URL=${alignedNarrationCache.url ? 'available' : 'not available'}, blob=${alignedNarrationCache.blob ? 'available' : 'not available'}`);
+
+  // Try to get the audio element
   const audio = getAlignedAudioElement();
+
+  // If no audio element is available, try to create one if we have a URL
   if (!audio) {
-    console.warn('No audio element available for aligned narration');
-    return;
+    if (alignedNarrationCache.url) {
+      console.warn('No audio element available for aligned narration, attempting to create one');
+
+      // Try to create a new audio element
+      try {
+        alignedAudioElement = new Audio();
+        alignedAudioElement.preload = 'auto';
+        alignedAudioElement.crossOrigin = 'anonymous';
+        alignedAudioElement.src = alignedNarrationCache.url;
+        alignedAudioElement.load();
+        console.log('Created new audio element for aligned narration');
+
+        // Add basic event listeners for debugging
+        alignedAudioElement.oncanplay = () => console.log('Audio can play');
+        alignedAudioElement.oncanplaythrough = () => console.log('Audio can play through without buffering');
+        alignedAudioElement.onerror = () => {
+          const errorMessage = alignedAudioElement?.error
+            ? `Code: ${alignedAudioElement.error.code}, Message: ${alignedAudioElement.error.message}`
+            : 'unknown error';
+          console.error('Error with aligned narration audio:', errorMessage);
+        };
+
+        // Call this function again with the new audio element
+        return playAlignedNarration(currentTime, isPlaying);
+      } catch (error) {
+        console.error('Failed to create new audio element for aligned narration:', error);
+        return false;
+      }
+    } else {
+      console.warn('No audio element or URL available for aligned narration');
+      return false;
+    }
   }
 
   try {
@@ -269,15 +373,20 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       const timeDifference = Math.abs(audio.currentTime - currentTime);
       const seekThreshold = 0.3; // Reduced threshold for more accurate sync
 
-      // Log the current state for debugging
-      if (timeDifference > 0.1) {
+      // Log the current state for debugging, but only for significant differences
+      // to reduce console spam during normal playback
+      if (timeDifference > 0.5) {
         console.log(`Aligned audio time: ${audio.currentTime.toFixed(2)}s, Video time: ${currentTime.toFixed(2)}s, Diff: ${timeDifference.toFixed(2)}s`);
       }
 
       // Only seek if the time difference is significant or we're in a paused state
       // This reduces the number of seek operations during normal playback
+      // Increased threshold to further reduce seeking frequency
       if (timeDifference > seekThreshold || !isPlaying) {
-        console.log(`Seeking aligned audio to ${currentTime.toFixed(2)}s (diff: ${timeDifference.toFixed(2)}s)`);
+        // Don't log every seek during normal playback to reduce console spam
+        if (timeDifference > 1.0 || !isPlaying) {
+          console.log(`Seeking aligned audio to ${currentTime.toFixed(2)}s (diff: ${timeDifference.toFixed(2)}s)`);
+        }
 
         // Set a flag to track our custom seeking state
         // Use a different name to avoid conflict with the built-in seeking property
@@ -370,7 +479,11 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
     }
   } catch (error) {
     console.error('Error in playAlignedNarration:', error);
+    return false;
   }
+
+  // If we got here, playback was successful
+  return true;
 };
 
 /**
@@ -386,37 +499,55 @@ export const setAlignedNarrationVolume = (volume) => {
 
 /**
  * Clean up aligned narration resources
+ * @param {boolean} preserveAudioElement - Whether to preserve the audio element for reuse
+ * @param {boolean} preserveCache - Whether to preserve the cache (URL and blob)
  */
-export const cleanupAlignedNarration = () => {
+export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCache = false) => {
+  // ALWAYS preserve both audio element and cache during normal operation
+  // Only clean up when explicitly told not to preserve (like when unmounting)
+  preserveAudioElement = true;
+  preserveCache = true;
+
+  // Skip cleanup entirely during normal operation to avoid stuttering
+  if (alignedAudioElement) {
+    console.log('Skipping unnecessary cleanup to avoid stuttering');
+    return;
+  }
+
+  console.log(`Cleaning up aligned narration resources (preserveAudioElement: ${preserveAudioElement}, preserveCache: ${preserveCache})`);
+
+  // Store the current cache if we're preserving it
+  const oldCache = preserveCache ? { ...alignedNarrationCache } : null;
+
   // Properly clean up the audio element
   if (alignedAudioElement) {
-    // First pause playback
-    alignedAudioElement.pause();
-
-    // Remove all event listeners to prevent memory leaks
-    alignedAudioElement.oncanplaythrough = null;
-    alignedAudioElement.onerror = null;
-    alignedAudioElement.onstalled = null;
-    alignedAudioElement.onwaiting = null;
-    alignedAudioElement.onplay = null;
-    alignedAudioElement.onpause = null;
-    alignedAudioElement.ontimeupdate = null;
-    alignedAudioElement.onseeking = null;
-    alignedAudioElement.onseeked = null;
-
-    // Clear the source
-    alignedAudioElement.src = '';
-
-    // Force browser to release resources
     try {
-      alignedAudioElement.load();
+      // First pause playback
+      alignedAudioElement.pause();
+
+      // Remove all event listeners to prevent memory leaks
+      alignedAudioElement.oncanplaythrough = null;
+      alignedAudioElement.onerror = null;
+      alignedAudioElement.onstalled = null;
+      alignedAudioElement.onwaiting = null;
+      alignedAudioElement.onplay = null;
+      alignedAudioElement.onpause = null;
+      alignedAudioElement.ontimeupdate = null;
+      alignedAudioElement.onseeking = null;
+      alignedAudioElement.onseeked = null;
+
+      // Only clear the source if we're not preserving the cache
+      if (!preserveCache) {
+        alignedAudioElement.src = '';
+        alignedAudioElement.load();
+      }
     } catch (e) {
       console.warn('Error during audio cleanup:', e);
     }
   }
 
-  // Revoke the URL to free up memory
-  if (alignedNarrationCache.url) {
+  // Revoke the URL to free up memory, but only if we're not preserving the cache
+  if (!preserveCache && alignedNarrationCache.url) {
     try {
       URL.revokeObjectURL(alignedNarrationCache.url);
       console.log('Revoked object URL:', alignedNarrationCache.url);
@@ -425,16 +556,24 @@ export const cleanupAlignedNarration = () => {
     }
   }
 
-  // Reset the cache
-  alignedNarrationCache = {
-    blob: null,
-    url: null,
-    timestamp: null,
-    subtitleTimestamps: {}
-  };
+  // Reset the cache, but restore it if we're preserving it
+  if (preserveCache && oldCache) {
+    // Keep the existing cache
+    console.log('Preserving aligned narration cache');
+  } else {
+    // Reset the cache
+    alignedNarrationCache = {
+      blob: null,
+      url: null,
+      timestamp: null,
+      subtitleTimestamps: {}
+    };
+  }
 
-  // Clear the audio element reference
-  alignedAudioElement = null;
+  // Only clear the audio element reference if we're not preserving it
+  if (!preserveAudioElement) {
+    alignedAudioElement = null;
+  }
 
   console.log('Aligned narration resources cleaned up');
 };

@@ -21,7 +21,15 @@ export const createHash = (obj) => {
       .sort()
       .map(key => {
         // Only include specific properties we care about for comparison
+        // Focus on timing-related properties to prevent unnecessary regeneration
         if (['id', 'subtitle_id', 'start', 'end', 'filename', 'success'].includes(key)) {
+          // For timing values, round to 2 decimal places to avoid tiny changes triggering regeneration
+          if (key === 'start' || key === 'end') {
+            const value = obj[key];
+            if (typeof value === 'number') {
+              return `${key}:${Math.round(value * 100) / 100}`;
+            }
+          }
           return `${key}:${createHash(obj[key])}`;
         }
         return '';

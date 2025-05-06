@@ -32,7 +32,7 @@ const useAlignedNarrationPlayback = ({
     }
 
     // Constants for throttling updates
-    const updateIntervalMs = 250; // Minimum time between updates during normal playback
+    const updateIntervalMs = 500; // Minimum time between updates during normal playback (increased from 250ms)
 
     // Improved event handlers with throttling for better performance
     const handleTimeUpdate = () => {
@@ -111,15 +111,22 @@ const useAlignedNarrationPlayback = ({
       const audio = getAlignedAudioElement();
       if (audio) {
         const newRate = videoRef.current.playbackRate;
-        const currentTime = videoRef.current.currentTime;
-        const isPlaying = !videoRef.current.paused;
-        console.log(`Video playback rate changed to ${newRate}, updating audio`);
 
-        // Update audio playback rate
-        audio.playbackRate = newRate;
+        // Only update if the rate has actually changed
+        if (audio.playbackRate !== newRate) {
+          const currentTime = videoRef.current.currentTime;
+          const isPlaying = !videoRef.current.paused;
+          console.log(`Video playback rate changed to ${newRate}, updating audio`);
 
-        // Also sync position since rate changes can cause sync issues
-        playAlignedNarration(currentTime, isPlaying);
+          // Update audio playback rate
+          audio.playbackRate = newRate;
+
+          // Only sync position if there's a significant difference
+          const timeDifference = Math.abs(audio.currentTime - currentTime);
+          if (timeDifference > 0.3) {
+            playAlignedNarration(currentTime, isPlaying);
+          }
+        }
       }
     };
 
