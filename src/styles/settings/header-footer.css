@@ -2,11 +2,12 @@
 
 .settings-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  padding: 0.5rem 1rem 0.5rem 2.5rem;
+  padding: 0.5rem 3.5rem 0.5rem 2.5rem;
   border-bottom: 1px solid var(--border-color);
   transition: border-color var(--transition-speed);
+  position: relative; /* For absolute positioning of close button */
 }
 
 .settings-header h2 {
@@ -33,6 +34,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  /* Ensure the close button is always visible */
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  z-index: 10;
+  background-color: var(--background-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn:hover {

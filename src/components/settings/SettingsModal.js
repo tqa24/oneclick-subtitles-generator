@@ -22,6 +22,7 @@ import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon
 // Import theme utilities
 import { toggleTheme as toggleThemeUtil, getThemeIcon, getThemeLabel, initializeTheme, setupSystemThemeListener } from './utils/themeUtils';
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
+import initSettingsTabsDrag from '../../utils/settingsTabsDrag';
 
 const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
@@ -49,12 +50,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     return localStorage.getItem('about_alternative_bg') === 'true';
   });
 
-  // Initialize pill position on component mount
+  // Initialize pill position and drag functionality on component mount
   useEffect(() => {
     if (tabsRef.current) {
       // Small delay to ensure the DOM is fully rendered
       setTimeout(() => {
         initSettingsTabPillAnimation('.settings-tabs');
+
+        // Initialize drag functionality for tabs
+        const cleanupDrag = initSettingsTabsDrag('.settings-tabs');
+
+        // Return cleanup function
+        return () => {
+          if (cleanupDrag) cleanupDrag();
+        };
       }, 50);
     }
   }, []);
@@ -455,7 +464,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           <h2>{t('settings.title', 'Settings')}</h2>
 
           {/* Tab Navigation */}
-          <div className="settings-tabs" ref={tabsRef}>
+          <div className="settings-tabs" ref={tabsRef} title={t('settings.dragToScroll', 'Drag to scroll tabs')}>
+            <div className="pill-background"></div>
             <button
               className={`settings-tab ${activeTab === 'api-keys' ? 'active' : ''}`}
               onClick={() => setActiveTab('api-keys')}

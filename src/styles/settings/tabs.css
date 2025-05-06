@@ -14,10 +14,22 @@
   --settings-pill-width: 0px;
   --settings-pill-left: 0px;
   align-items: center; /* Center tabs vertically */
+  overflow-x: auto; /* Enable horizontal scrolling */
+  cursor: grab; /* Indicate tabs are draggable */
+  user-select: none; /* Prevent text selection during drag */
+  scroll-behavior: smooth; /* Smooth scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  /* Add visual drag handle indicator */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(128, 128, 128, 0.3)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3Cpolyline points='12 5 19 12 12 19'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 30px; /* Make room for the drag handle icon */
+  padding-left: 16px; /* Add padding to prevent pill clipping */
 }
 
 /* Sliding pill background for active tab - Material Design 3 style */
-.settings-tabs::before {
+.settings-tabs .pill-background {
   content: '';
   position: absolute;
   height: 40px;
@@ -38,7 +50,7 @@
 }
 
 /* When there's an active tab, show the pill */
-.settings-tabs:has(.settings-tab.active)::before {
+.settings-tabs:has(.settings-tab.active) .pill-background {
   opacity: 1;
 }
 
@@ -125,6 +137,44 @@
   transform: scale(1);
   transition: transform var(--md-duration-short4) var(--md-easing-emphasized),
               opacity var(--md-duration-short4) var(--md-easing-emphasized);
+}
+
+/* Styles for when tabs are being dragged */
+.settings-tabs.dragging {
+  cursor: grabbing;
+  scroll-behavior: auto; /* Disable smooth scrolling during drag for better performance */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(128, 128, 128, 0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3Cpolyline points='12 5 19 12 12 19'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Add fade indicators to show there are more tabs */
+.settings-tabs::after,
+.settings-tabs::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 40px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none; /* Allow clicks to pass through */
+  z-index: 2; /* Above the pill background */
+}
+
+/* Right fade indicator */
+.settings-tabs::after {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--background-primary));
+}
+
+/* Left fade indicator */
+.settings-tabs::before {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--background-primary));
+}
+
+.settings-tabs.has-overflow::after,
+.settings-tabs.has-overflow::before {
+  opacity: 1;
 }
 
 /* Tab content */
