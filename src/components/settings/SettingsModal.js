@@ -33,6 +33,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Reference to the tabs container
   const tabsRef = useRef(null);
 
+  // State for tracking when the modal is closing
+  const [isClosing, setIsClosing] = useState(false);
+
   // State for tracking tab transitions
   const [previousTab, setPreviousTab] = useState(null);
   const [animationDirection, setAnimationDirection] = useState('center');
@@ -128,11 +131,22 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('settings_last_active_tab', activeTab);
   }, [activeTab]);
 
+  // Function to handle closing with animation
+  const handleClose = () => {
+    // Start the closing animation
+    setIsClosing(true);
+
+    // Wait for the animation to complete before actually closing
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match this with the CSS transition duration
+  };
+
   // Add ESC key handler to close the modal
   useEffect(() => {
     const handleEscKey = (event) => {
-      if (event.key === 'Escape') {
-        onClose();
+      if (event.key === 'Escape' && !isClosing) {
+        handleClose();
       }
     };
 
@@ -143,7 +157,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [onClose]);
+  }, [onClose, isClosing]);
 
   // Store original settings for comparison
   const [originalSettings, setOriginalSettings] = useState({
@@ -431,12 +445,12 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(false);
     setIsSettingsLoaded(true);
 
-    onClose();
+    handleClose();
   };
 
   return (
-    <div className="settings-modal-overlay">
-      <div className="settings-modal" noValidate data-no-autofill>
+    <div className={`settings-modal-overlay ${isClosing ? 'closing' : ''}`}>
+      <div className={`settings-modal ${isClosing ? 'closing' : ''}`} noValidate data-no-autofill>
         <div className="settings-header">
           <h2>{t('settings.title', 'Settings')}</h2>
 
@@ -499,7 +513,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             </button>
           </div>
 
-          <button className="close-btn" onClick={onClose}>&times;</button>
+          <button
+            className="close-btn"
+            onClick={handleClose}
+            aria-label={t('common.close', 'Close')}
+            title={t('common.close', 'Close')}
+          >
+            &times;
+          </button>
         </div>
 
         <div className="settings-content">
@@ -620,7 +641,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           <div className="settings-footer-right">
             <button
               className="cancel-btn"
-              onClick={onClose}
+              onClick={handleClose}
               title={t('settings.pressEscToClose', 'Press ESC to close')}
             >
               {t('common.cancel', 'Cancel')} <span className="key-hint">(ESC)</span>

@@ -12,6 +12,12 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(3px);
+  /* i want short duration */
+  transition: opacity 0.2s var(--md-easing-emphasized-accelerate);
+}
+
+.settings-modal-overlay.closing {
+  opacity: 0;
 }
 
 /* Material Design 3 modal */
@@ -26,14 +32,19 @@
   box-shadow: var(--md-elevation-level3);
   overflow: hidden; /* Hide any content that overflows the container */
   animation: modal-appear var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
-  transition: background-color var(--transition-speed);
+  transition: background-color var(--transition-speed), transform var(--md-duration-medium3) var(--md-easing-emphasized-accelerate), opacity var(--md-duration-medium3) var(--md-easing-emphasized-accelerate);
   /* Ensure child elements respect the border radius */
   position: relative;
   /* Fix for scrollbar appearing outside border radius */
   transform: translateZ(0);
-  will-change: transform;
+  will-change: transform, opacity;
   /* Create a containing block for absolute positioning */
   contain: layout;
+}
+
+.settings-modal.closing {
+  transform: scale(0.95) translateY(20px);
+  opacity: 0;
 }
 
 /* Loading placeholder for delayed rendering */

@@ -4,7 +4,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 2.5rem 0.5rem 2.5rem;
+  padding: 0.5rem 1rem 0.5rem 2.5rem;
   border-bottom: 1px solid var(--border-color);
   transition: border-color var(--transition-speed);
 }
@@ -25,13 +25,30 @@
   color: var(--text-secondary);
   padding: 0;
   line-height: 1;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
+  /* Increase clickable area */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .close-btn:hover {
   color: var(--text-primary);
   transform: rotate(90deg);
-  transition: transform 0.3s ease;
+  background-color: rgba(var(--md-surface-variant-rgb, 128, 128, 128), 0.3);
+}
+
+.close-btn:active {
+  transform: rotate(90deg) scale(0.95);
+  background-color: rgba(var(--md-surface-variant-rgb, 128, 128, 128), 0.5);
+}
+
+.close-btn:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
 }
 
 /* Footer with action buttons */
