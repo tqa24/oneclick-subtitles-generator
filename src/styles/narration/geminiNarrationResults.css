@@ -21,6 +21,24 @@
   gap: 0.75rem;
 }
 
+/* No results message styling */
+.gemini-results-list .no-results-message {
+  padding: 1rem;
+  background-color: var(--md-surface-2);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+  border: 1px dashed var(--md-outline-variant);
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
 .gemini-result-item {
   display: flex;
   justify-content: space-between;
@@ -146,6 +164,20 @@
   background-color: var(--md-surface-4);
   box-shadow: var(--md-elevation-level2);
   transform: translateY(-2px);
+}
+
+.pill-button:disabled {
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pill-button:disabled:hover {
+  background-color: var(--md-surface-1);
+  transform: none;
+  box-shadow: none;
 }
 
 .pill-button.success {

@@ -101,11 +101,16 @@ def generate_narration():
                     processed_count += 1
 
                     # --- Send Progress Update ---
+                    # Send a more detailed progress update with the subtitle text
+                    subtitle_text = text[:50] + "..." if len(text) > 50 else text
                     progress_data = {
                         'type': 'progress',
                         'message': f'Processing subtitle {processed_count}/{total_subtitles} (ID: {subtitle_id})',
                         'current': processed_count,
-                        'total': total_subtitles
+                        'total': total_subtitles,
+                        'subtitle_id': subtitle_id,
+                        'subtitle_text': subtitle_text,
+                        'processing_started': True
                     }
                     yield f"data: {json.dumps(progress_data)}\n\n"
 
@@ -149,6 +154,17 @@ def generate_narration():
                     logger.info(f"Calling model.infer for subtitle ID {subtitle_id} with text: '{cleaned_text[:100]}...'")
                     logger.debug(f"Infer params: { {k: v for k, v in log_params.items() if k not in ['ref_text', 'gen_text']} }") # Avoid logging long texts at debug
 
+
+                    # --- Send Generating Update ---
+                    generating_data = {
+                        'type': 'progress',
+                        'message': f'Generating audio for subtitle {processed_count}/{total_subtitles} (ID: {subtitle_id})',
+                        'current': processed_count,
+                        'total': total_subtitles,
+                        'subtitle_id': subtitle_id,
+                        'generating': True
+                    }
+                    yield f"data: {json.dumps(generating_data)}\n\n"
 
                     # --- Perform Inference ---
                     try:

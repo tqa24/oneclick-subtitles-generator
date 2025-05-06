@@ -562,13 +562,25 @@ export const generateNarration = async (
                 switch (data.type) {
                   case 'progress':
                     if (data.message) {
-                      onProgress(data.message, data.current || 0, data.total || 0);
+                      // Pass all available progress information to the callback
+                      onProgress(
+                        data.message,
+                        data.current || 0,
+                        data.total || 0,
+                        data.subtitle_id,
+                        data.subtitle_text
+                      );
                     }
                     break;
 
                   case 'result':
                     if (data.result) {
+                      // Add the result to our results array
                       results.push(data.result);
+
+                      // Call onResult to immediately update the UI with this result
+                      // This ensures each result is shown as soon as it's received
+                      console.log(`Received result for subtitle ID: ${data.result.subtitle_id}`);
                       onResult(data.result, data.progress || results.length, data.total || 0);
                     }
                     break;

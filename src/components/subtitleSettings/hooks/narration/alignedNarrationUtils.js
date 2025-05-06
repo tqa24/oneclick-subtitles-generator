@@ -22,7 +22,7 @@ export const createHash = (obj) => {
       .map(key => {
         // Only include specific properties we care about for comparison
         // Focus on timing-related properties to prevent unnecessary regeneration
-        if (['id', 'subtitle_id', 'start', 'end', 'filename', 'success'].includes(key)) {
+        if (['id', 'subtitle_id', 'start', 'end', 'filename', 'audioData', 'success'].includes(key)) {
           // For timing values, round to 2 decimal places to avoid tiny changes triggering regeneration
           if (key === 'start' || key === 'end') {
             const value = obj[key];
@@ -57,6 +57,12 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
   console.log('Enhancing narration with timing. Results count:', generationResults.length);
   console.log('Available subtitle IDs in map:', Object.keys(subtitleMap));
 
+  // Log the types of narrations we're processing
+  const f5ttsCount = generationResults.filter(r => r.filename && !r.audioData).length;
+  const geminiCount = generationResults.filter(r => r.audioData).length;
+  const unknownCount = generationResults.filter(r => !r.filename && !r.audioData).length;
+  console.log(`Narration types: F5-TTS: ${f5ttsCount}, Gemini: ${geminiCount}, Unknown: ${unknownCount}`);
+
   // Check if any narration has been retried recently
   const hasRecentRetry = generationResults.some(result =>
     result.retriedAt && result.retriedAt > Date.now() - 60000 // Consider retries in the last minute as "recent"
@@ -72,7 +78,8 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
     const subtitleId = result.subtitle_id;
 
     // Log the lookup attempt for debugging
-    console.log(`Looking up timing for subtitle ID: ${subtitleId}`);
+    const narrationType = result.filename ? 'F5-TTS' : (result.audioData ? 'Gemini' : 'Unknown');
+    console.log(`Looking up timing for subtitle ID: ${subtitleId} (${narrationType} narration)`);
 
     // Get the subtitle from the map using the exact ID from the result
     const subtitle = subtitleMap[subtitleId];
@@ -82,7 +89,7 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
     // If we found a matching subtitle, use its timing
     if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-      console.log(`Found timing for subtitle ${subtitleId}: ${subtitle.start}s - ${subtitle.end}s${wasRetried ? ' (RETRIED)' : ''}`);
+      console.log(`Found timing for subtitle ${subtitleId}: ${subtitle.start}s - ${subtitle.end}s${wasRetried ? ' (RETRIED)' : ''} (${narrationType} narration)`);
       return {
         ...result,
         start: subtitle.start,
@@ -91,7 +98,7 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
         forceRegenerate: wasRetried || hasRecentRetry
       };
     } else {
-      console.warn(`No timing found for subtitle ${subtitleId}. Using defaults.${wasRetried ? ' (RETRIED)' : ''}`);
+      console.warn(`No timing found for subtitle ${subtitleId}. Using defaults.${wasRetried ? ' (RETRIED)' : ''} (${narrationType} narration)`);
 
       // Otherwise, keep existing timing or use defaults
       return {

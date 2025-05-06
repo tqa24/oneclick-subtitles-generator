@@ -108,6 +108,9 @@ const fetchAudioFile = async (filename) => {
  * @param {Object} res - Express response object for streaming support
  * @returns {Promise<Object|null>} - Narration results or null if streaming
  */
+// Import the enhanceF5TTSNarrations function
+const { enhanceF5TTSNarrations } = require('../controllers/narration/audioFileController');
+
 const generateNarration = async (reference_audio, reference_text, subtitles, settings, res) => {
   const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration/generate`;
 
@@ -166,19 +169,109 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
       const pipe = async () => {
         try {
           console.log('Starting to pipe streaming response to client');
+
+          // Track all results for enhancement
+          const allResults = [];
+
           while (true) {
             const { done, value } = await reader.read();
 
             if (done) {
               console.log('Stream complete');
+
+              // Send a final enhanced complete event if we have results
+              if (allResults.length > 0) {
+                console.log(`Enhancing ${allResults.length} F5-TTS narration results with timing information`);
+                const enhancedResults = enhanceF5TTSNarrations(allResults, subtitles);
+
+                // Send the enhanced complete event
+                const completeEvent = {
+                  type: 'complete',
+                  results: enhancedResults,
+                  total: enhancedResults.length,
+                  enhanced: true
+                };
+
+                const completeEventData = `data: ${JSON.stringify(completeEvent)}\n\n`;
+                res.write(completeEventData);
+              }
+
               res.end();
               break;
             }
 
-            // Forward the chunk to the client
+            // Decode the chunk
             const chunk = new TextDecoder().decode(value);
-            console.log(`Forwarding chunk: ${chunk.substring(0, 50)}...`);
-            res.write(value);
+
+            // Check if this is a result event
+            try {
+              // Parse each line that starts with "data: "
+              const lines = chunk.split('\n');
+              let modifiedChunk = '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  // Extract the JSON data
+                  const jsonData = line.substring(6); // Remove "data: " prefix
+
+                  try {
+                    const eventData = JSON.parse(jsonData);
+
+                    // If this is a result event, track the result
+                    if (eventData.type === 'result' && eventData.result) {
+                      allResults.push(eventData.result);
+
+                      // Enhance the result with timing information
+                      const enhancedResult = enhanceF5TTSNarrations([eventData.result], subtitles)[0];
+                      eventData.result = enhancedResult;
+
+                      // Add more detailed progress information
+                      console.log(`Processing subtitle ${eventData.progress}/${eventData.total} (ID: ${eventData.result.subtitle_id})`);
+
+                      // Add a progress event before the result to provide more detailed status
+                      const progressEvent = {
+                        type: 'progress',
+                        message: `Processing subtitle ${eventData.progress}/${eventData.total} (ID: ${eventData.result.subtitle_id})`,
+                        current: eventData.progress,
+                        total: eventData.total,
+                        subtitle_id: eventData.result.subtitle_id
+                      };
+
+                      // Write the progress event first
+                      modifiedChunk += `data: ${JSON.stringify(progressEvent)}\n\n`;
+
+                      // Then write the result event
+                      modifiedChunk += `data: ${JSON.stringify(eventData)}\n\n`;
+                      continue;
+                    }
+
+                    // If this is a complete event, enhance all results
+                    if (eventData.type === 'complete' && eventData.results) {
+                      console.log(`Enhancing ${eventData.results.length} F5-TTS narration results with timing information`);
+                      eventData.results = enhanceF5TTSNarrations(eventData.results, subtitles);
+                      eventData.enhanced = true;
+
+                      // Replace the line with the enhanced data
+                      modifiedChunk += `data: ${JSON.stringify(eventData)}\n\n`;
+                      continue;
+                    }
+                  } catch (jsonError) {
+                    // If JSON parsing fails, just use the original line
+                    console.error(`Error parsing JSON in SSE chunk: ${jsonError.message}`);
+                  }
+                }
+
+                // If we didn't modify this line, add it as-is
+                modifiedChunk += line + '\n';
+              }
+
+              // Write the modified chunk
+              res.write(modifiedChunk);
+            } catch (parseError) {
+              // If parsing fails, just forward the original chunk
+              console.error(`Error processing SSE chunk: ${parseError.message}`);
+              res.write(chunk);
+            }
 
             // Flush the response to ensure it's sent immediately
             if (res.flush) {
@@ -226,6 +319,12 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
     const result = await response.json();
     console.log(`Narration service returned ${result.results ? result.results.length : 0} results`);
+
+    // Enhance F5-TTS narration results with timing information from subtitles
+    if (result.results && result.results.length > 0) {
+      console.log('Enhancing F5-TTS narration results with timing information');
+      result.results = enhanceF5TTSNarrations(result.results, subtitles);
+    }
 
     return result;
   } catch (error) {

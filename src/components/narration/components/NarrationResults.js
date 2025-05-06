@@ -20,16 +20,20 @@ const NarrationResults = ({
 }) => {
   const { t } = useTranslation();
 
-  if (!generationResults || generationResults.length === 0) {
-    return null;
-  }
+  // Always show the results section, even when there are no results yet
+  // This ensures the section is visible as soon as the first result comes in
 
   return (
     <div className="results-section">
       <h4>{t('narration.results', 'Generated Narration')}</h4>
 
       <div className="results-list">
-        {generationResults.map((result) => (
+        {(!generationResults || generationResults.length === 0) ? (
+          <div className="no-results-message">
+            {t('narration.waitingForResults', 'Waiting for narration results...')}
+          </div>
+        ) : (
+          generationResults.map((result) => (
           <div
             key={result.subtitle_id}
             className={`result-item ${result.success ? '' : 'failed'} ${currentAudio && currentAudio.id === result.subtitle_id ? 'playing' : ''}`}
@@ -83,7 +87,7 @@ const NarrationResults = ({
               )}
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

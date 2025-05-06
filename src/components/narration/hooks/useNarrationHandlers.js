@@ -505,23 +505,43 @@ const useNarrationHandlers = ({
       const tempResults = [];
 
       // Define callbacks for the streaming response
-      const handleProgress = (message, current, total) => {
-        setGenerationStatus(message);
+      const handleProgress = (message, current, total, subtitle_id, subtitle_text) => {
+        // Log the progress message for debugging
+        console.log(`Progress: ${message} (${current}/${total})${subtitle_id ? ` ID: ${subtitle_id}` : ''}${subtitle_text ? ` Text: ${subtitle_text}` : ''}`);
+
+        // Create a more detailed status message if we have subtitle text
+        let statusMessage = message;
+        if (subtitle_text) {
+          statusMessage = `${message} - "${subtitle_text}"`;
+        }
+
+        // Update the status with the progress message
+        setGenerationStatus(statusMessage);
+
+        // If we have current results, make sure they're displayed
+        if (tempResults.length > 0) {
+          setGenerationResults([...tempResults]);
+        }
       };
 
       const handleResult = (result, progress, total) => {
         // Add the result to the temporary results array
         tempResults.push(result);
+
         // Update the UI with the current results
+        // This ensures each result is shown immediately as it's received
+        console.log(`Updating UI with result for subtitle ID: ${result.subtitle_id} (${progress}/${total})`);
         setGenerationResults([...tempResults]);
-        // Update the status
+
+        // Update the status to show which subtitle is being processed
         setGenerationStatus(
           t(
-            'narration.generatingProgress',
-            'Generated {{progress}} of {{total}} narrations...',
+            'narration.generatingProgressWithId',
+            'Generated {{progress}} of {{total}} narrations (ID: {{id}})...',
             {
               progress,
-              total
+              total,
+              id: result.subtitle_id
             }
           )
         );

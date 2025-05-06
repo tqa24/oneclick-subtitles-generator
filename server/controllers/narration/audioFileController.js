@@ -59,6 +59,9 @@ const serveAudioFile = (req, res) => {
 /**
  * Download aligned narration audio (one file)
  *
+ * This function handles both F5-TTS and Gemini narrations in the same way,
+ * ensuring consistent alignment and playback in the video player.
+ *
  * Audio processing includes:
  * 1. Individual audio segments are boosted by 1.5x for clarity
  * 2. Using amix with normalize=0 to prevent automatic volume reduction during overlaps
@@ -104,19 +107,31 @@ const downloadAlignedAudio = async (req, res) => {
     });
 
     for (const narration of narrations) {
-      const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
-      if (!fs.existsSync(filePath)) {
-        console.log(`File not found: ${filePath}`);
-        // Clean up temp dir before exiting on error
-        // Consider adding a general cleanup function or try/finally block for robustness
-        return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
+      // Handle both F5-TTS and Gemini narrations
+      // F5-TTS narrations have a filename property
+      // Gemini narrations might have audioData property (base64 encoded audio)
+      if (narration.filename) {
+        const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+        if (!fs.existsSync(filePath)) {
+          console.log(`File not found: ${filePath}`);
+          // Clean up temp dir before exiting on error
+          // Consider adding a general cleanup function or try/finally block for robustness
+          return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
+        }
+      } else if (!narration.audioData) {
+        // If neither filename nor audioData is present, return an error
+        console.log(`No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}`);
+        return res.status(400).json({ error: `No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}` });
       }
 
-      // Check file size to ensure it's a valid audio file
-      const stats = fs.statSync(filePath);
-      if (stats.size === 0) {
-        console.log(`Empty file: ${filePath}`);
-        return res.status(400).json({ error: `Audio file is empty: ${narration.filename}` });
+      // Check file size to ensure it's a valid audio file (only for file-based narrations)
+      if (narration.filename) {
+        const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+        const stats = fs.statSync(filePath);
+        if (stats.size === 0) {
+          console.log(`Empty file: ${filePath}`);
+          return res.status(400).json({ error: `Audio file is empty: ${narration.filename}` });
+        }
       }
 
       // Ensure we have valid timing information
@@ -130,13 +145,53 @@ const downloadAlignedAudio = async (req, res) => {
         return res.status(400).json({ error: `Invalid duration for audio file: ${narration.filename}` });
       }
 
-      // Add to our segments list with timing information
-      audioSegments.push({
-        path: filePath,
-        start: start,
-        end: end,
-        subtitle_id: narration.subtitle_id
-      });
+      // For file-based narrations (F5-TTS)
+      if (narration.filename) {
+        const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+        audioSegments.push({
+          path: filePath,
+          start: start,
+          end: end,
+          subtitle_id: narration.subtitle_id,
+          type: 'file'
+        });
+      }
+      // For base64-encoded narrations (Gemini)
+      else if (narration.audioData) {
+        // Create a temporary file for the base64 audio data
+        const tempFilename = `temp_gemini_${narration.subtitle_id}_${Date.now()}.wav`;
+        const tempFilePath = path.join(TEMP_AUDIO_DIR, tempFilename);
+
+        // Ensure the temp directory exists
+        if (!fs.existsSync(TEMP_AUDIO_DIR)) {
+          fs.mkdirSync(TEMP_AUDIO_DIR, { recursive: true });
+        }
+
+        // Decode and write the base64 audio data to a temporary file
+        try {
+          // Extract the base64 data (remove data URL prefix if present)
+          let base64Data = narration.audioData;
+          if (base64Data.includes(',')) {
+            base64Data = base64Data.split(',')[1];
+          }
+
+          // Write the decoded data to a file
+          fs.writeFileSync(tempFilePath, Buffer.from(base64Data, 'base64'));
+
+          // Add to our segments list
+          audioSegments.push({
+            path: tempFilePath,
+            start: start,
+            end: end,
+            subtitle_id: narration.subtitle_id,
+            type: 'temp',
+            tempFile: tempFilePath // Track for cleanup later
+          });
+        } catch (error) {
+          console.error(`Error processing base64 audio data for subtitle ${narration.subtitle_id}:`, error);
+          return res.status(500).json({ error: `Failed to process audio data for subtitle ${narration.subtitle_id}` });
+        }
+      }
     }
 
     // Sort segments by start time (redundant if narrations already sorted, but safe)
@@ -262,23 +317,53 @@ const downloadAlignedAudio = async (req, res) => {
         console.log(`Successfully sent aligned narration audio file`);
       }
 
-      // Clean up the temporary output file AFTER sending is complete or failed
+      // Clean up the temporary files AFTER sending is complete or failed
       try {
-        // --- Removed cleanup for non-existent silentPath ---
+        // Clean up the output file
         if (fs.existsSync(outputPath)) {
           fs.unlinkSync(outputPath);
           console.log('Cleaned up temporary output file');
         }
+
+        // Clean up any temporary files created for base64 audio data
+        for (const segment of audioSegments) {
+          if (segment.type === 'temp' && segment.tempFile && fs.existsSync(segment.tempFile)) {
+            fs.unlinkSync(segment.tempFile);
+            console.log(`Cleaned up temporary file: ${segment.tempFile}`);
+          }
+        }
       } catch (cleanupError) {
-        console.error(`Error cleaning up temporary output file: ${cleanupError.message}`);
+        console.error(`Error cleaning up temporary files: ${cleanupError.message}`);
       }
     });
   } catch (error) {
     console.error('Error creating aligned audio file:', error);
+
+    // Clean up any temporary files that might have been created
+    try {
+      // Clean up the output file if it exists
+      if (outputPath && fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+        console.log('Cleaned up temporary output file after error');
+      }
+
+      // Clean up any temporary files created for base64 audio data
+      if (audioSegments) {
+        for (const segment of audioSegments) {
+          if (segment.type === 'temp' && segment.tempFile && fs.existsSync(segment.tempFile)) {
+            fs.unlinkSync(segment.tempFile);
+            console.log(`Cleaned up temporary file after error: ${segment.tempFile}`);
+          }
+        }
+      }
+    } catch (cleanupError) {
+      console.error(`Error cleaning up temporary files after error: ${cleanupError.message}`);
+    }
+
     // Ensure response is sent even if error happens before sending file
-     if (!res.headersSent) {
-        res.status(500).json({ error: `Failed to create aligned audio file: ${error.message}` });
-     }
+    if (!res.headersSent) {
+      res.status(500).json({ error: `Failed to create aligned audio file: ${error.message}` });
+    }
   }
 };
 
@@ -396,9 +481,64 @@ const downloadAllAudio = async (req, res) => {
   }
 };
 
+/**
+ * Enhance F5-TTS narration results with timing information
+ * This function ensures F5-TTS narrations have the same metadata as Gemini narrations
+ * for proper alignment and playback in the video player.
+ *
+ * @param {Array} narrationResults - Array of narration results from F5-TTS
+ * @param {Array} subtitles - Array of subtitles with timing information
+ * @returns {Array} - Enhanced narration results with timing information
+ */
+const enhanceF5TTSNarrations = (narrationResults, subtitles) => {
+  if (!narrationResults || !Array.isArray(narrationResults)) {
+    console.log('No narration results to enhance');
+    return narrationResults;
+  }
+
+  if (!subtitles || !Array.isArray(subtitles)) {
+    console.log('No subtitles provided for timing information');
+    return narrationResults;
+  }
+
+  console.log(`Enhancing ${narrationResults.length} F5-TTS narration results with timing information`);
+
+  // Create a map of subtitles by ID for quick lookup
+  const subtitleMap = {};
+  subtitles.forEach(subtitle => {
+    if (subtitle.id) {
+      subtitleMap[subtitle.id] = subtitle;
+    }
+  });
+
+  // Enhance each narration result with timing information
+  return narrationResults.map(result => {
+    // Find the corresponding subtitle for timing information
+    const subtitle = subtitleMap[result.subtitle_id];
+
+    // If we found a matching subtitle, use its timing
+    if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+      console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+      return {
+        ...result,
+        start: subtitle.start,
+        end: subtitle.end
+      };
+    }
+
+    // Otherwise, keep existing timing or use defaults
+    return {
+      ...result,
+      start: result.start || 0,
+      end: result.end || (result.start ? result.start + 5 : 5)
+    };
+  });
+};
+
 // Export functions
 module.exports = {
   serveAudioFile,
   downloadAlignedAudio,
-  downloadAllAudio
+  downloadAllAudio,
+  enhanceF5TTSNarrations
 };

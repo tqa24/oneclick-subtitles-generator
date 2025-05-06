@@ -34,25 +34,38 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 
     // Prepare the data for the aligned narration
     const narrationData = generationResults
-      .filter(result => result.success && result.filename)
+      .filter(result => result.success && (result.filename || result.audioData))
       .map(result => {
         // Ensure we have valid timing information
         const start = typeof result.start === 'number' ? result.start : 0;
         const end = typeof result.end === 'number' ? result.end : (start + 5); // Default 5 seconds if no end time
 
-        return {
-          filename: result.filename,
+        // Create a narration data object with common properties
+        const narration = {
           subtitle_id: result.subtitle_id,
           start: start,
           end: end,
           text: result.text || ''
         };
+
+        // Add either filename or audioData depending on what's available
+        if (result.filename) {
+          narration.filename = result.filename;
+        }
+        if (result.audioData) {
+          narration.audioData = result.audioData;
+          narration.mimeType = result.mimeType;
+          narration.sampleRate = result.sampleRate;
+        }
+
+        return narration;
       });
 
     // Log the timing information for debugging
     console.log('Narration data with timing information:');
     narrationData.forEach(item => {
-      console.log(`Subtitle ID: ${item.subtitle_id}, Start: ${item.start}s, End: ${item.end}s`);
+      const sourceType = item.filename ? 'F5-TTS' : (item.audioData ? 'Gemini' : 'Unknown');
+      console.log(`Subtitle ID: ${item.subtitle_id}, Start: ${item.start}s, End: ${item.end}s, Type: ${sourceType}`);
     });
 
     // Sort by start time to ensure correct order (more reliable than subtitle ID)
@@ -241,6 +254,16 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 
     console.log(`Created blob URL: ${url}`);
 
+    // Log the cache state for debugging
+    console.log('Updated aligned narration cache:', {
+      hasBlob: !!alignedNarrationCache.blob,
+      hasUrl: !!alignedNarrationCache.url,
+      blobType: alignedNarrationCache.blob?.type,
+      blobSize: alignedNarrationCache.blob?.size,
+      timestamp: alignedNarrationCache.timestamp,
+      subtitleTimestampsCount: Object.keys(alignedNarrationCache.subtitleTimestamps || {}).length
+    });
+
     // Always update the audio element with the new URL
     console.log('Updating audio element with new aligned narration URL');
     try {
@@ -295,7 +318,14 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 export const getAlignedAudioElement = () => {
   // Check if we have a URL in the cache
   if (!alignedNarrationCache.url) {
-    console.warn('No aligned narration URL available in cache');
+    console.warn('No aligned narration URL available in cache', {
+      cacheState: {
+        hasBlob: !!alignedNarrationCache.blob,
+        hasUrl: !!alignedNarrationCache.url,
+        timestamp: alignedNarrationCache.timestamp,
+        hasSubtitleTimestamps: Object.keys(alignedNarrationCache.subtitleTimestamps || {}).length > 0
+      }
+    });
     return null;
   }
 
@@ -396,9 +426,15 @@ export const getAlignedAudioElement = () => {
  * @returns {boolean} - Whether playback was successful
  */
 export const playAlignedNarration = (currentTime, isPlaying) => {
-  // Only log on significant events to reduce console spam
-  // console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
-  // console.log(`Cache status: URL=${alignedNarrationCache.url ? 'available' : 'not available'}, blob=${alignedNarrationCache.blob ? 'available' : 'not available'}`);
+  // Log more detailed information to help diagnose issues
+  console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
+  console.log(`Cache status:`, {
+    hasUrl: !!alignedNarrationCache.url,
+    hasBlob: !!alignedNarrationCache.blob,
+    blobType: alignedNarrationCache.blob?.type,
+    blobSize: alignedNarrationCache.blob?.size,
+    timestamp: alignedNarrationCache.timestamp
+  });
 
   // Try to get the audio element
   const audio = getAlignedAudioElement();
@@ -716,7 +752,13 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
  * @returns {boolean} - Whether aligned narration is available
  */
 export const isAlignedNarrationAvailable = () => {
-  return !!alignedNarrationCache.url;
+  const isAvailable = !!alignedNarrationCache.url;
+  console.log(`Checking if aligned narration is available: ${isAvailable}`, {
+    hasUrl: !!alignedNarrationCache.url,
+    hasBlob: !!alignedNarrationCache.blob,
+    timestamp: alignedNarrationCache.timestamp
+  });
+  return isAvailable;
 };
 
 /**
