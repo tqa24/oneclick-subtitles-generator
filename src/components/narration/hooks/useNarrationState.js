@@ -62,11 +62,11 @@ const useNarrationState = (initialReferenceAudio) => {
     } catch (error) {
       // Silently fail if settings can't be loaded
     }
-    
+
     // Default settings
     return {
       // Voice Style Controls - only speechRate is supported
-      speechRate: 1.0,
+      speechRate: 1.3,
 
       // Generation Quality Controls
       nfeStep: '32',  // Number of Function Evaluations (diffusion steps)

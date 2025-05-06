@@ -6,7 +6,7 @@ import '../../../styles/narration/advancedSettingsModal.css';
 // Default advanced settings
 const DEFAULT_ADVANCED_SETTINGS = {
   // Voice Style Controls
-  speechRate: 1.0,
+  speechRate: 1.3,
 
   // Generation Quality Controls
   nfeStep: '32',  // Number of Function Evaluations (diffusion steps)

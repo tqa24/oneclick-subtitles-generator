@@ -62,11 +62,11 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${calculateFillPercentage(settings.speechRate || 1.0, 0.5, 2.0)}%` }}
+                      style={{ width: `${calculateFillPercentage(settings.speechRate || 1.3, 0.5, 2.0)}%` }}
                     ></div>
                     <div
                       className="custom-slider-thumb"
-                      style={{ left: `${calculateFillPercentage(settings.speechRate || 1.0, 0.5, 2.0)}%` }}
+                      style={{ left: `${calculateFillPercentage(settings.speechRate || 1.3, 0.5, 2.0)}%` }}
                     ></div>
                   </div>
                   <input
@@ -76,13 +76,13 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
                     min="0.5"
                     max="2.0"
                     step="0.1"
-                    value={settings.speechRate || 1.0}
+                    value={settings.speechRate || 1.3}
                     onChange={handleSliderChange}
                     disabled={disabled}
                     className="custom-slider-input"
                   />
                 </div>
-                <div className="slider-value-display">{(settings.speechRate || 1.0).toFixed(1)}x</div>
+                <div className="slider-value-display">{(settings.speechRate || 1.3).toFixed(1)}x</div>
               </div>
             </div>
           </div>
