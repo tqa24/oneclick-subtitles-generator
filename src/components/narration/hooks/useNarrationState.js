@@ -19,7 +19,7 @@ const useNarrationState = (initialReferenceAudio) => {
   const [sleepTime, setSleepTime] = useState(() => {
     // Try to load from localStorage
     const savedSleepTime = localStorage.getItem('gemini_sleep_time');
-    return savedSleepTime ? parseInt(savedSleepTime) : 10000; // Default to 10 seconds
+    return savedSleepTime ? parseInt(savedSleepTime) : 0; // Default to 0 seconds (no delay)
   });
 
   const [selectedVoice, setSelectedVoice] = useState(() => {

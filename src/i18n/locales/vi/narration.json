@@ -128,7 +128,7 @@
   "femaleVoices": "Giọng nữ",
   "maleVoices": "Giọng nam",
   "sleepTime": "Thời gian nghỉ",
-  "sleepTimeHelp": "Thêm độ trễ giữa các yêu cầu thuyết minh để tránh vượt quá giới hạn tốc độ của Gemini. Giá trị cao hơn (10-30 giây) có thể ngăn lỗi nhưng sẽ làm chậm quá trình tạo.",
+  "sleepTimeHelp": "(Không còn quá cần thiết vì đã có các nút retry, đặt thời gian nghỉ quá cao cũng có thể dẫn đến hội thoại với Gemini quá lâu, WebSocket dễ bị đóng) Thêm độ trễ giữa các yêu cầu thuyết minh để tránh vượt quá giới hạn tốc độ của Gemini. Giá trị cao hơn (5-30 giây) có thể ngăn lỗi nhưng sẽ làm chậm quá trình tạo.",
   "generateWithGemini": "Tạo thuyết minh với Gemini",
   "geminiGeneratingProgress": "Đã tạo {{progress}} trên {{total}} thuyết minh với Gemini...",
   "geminiGenerationComplete": "Tạo thuyết minh Gemini hoàn tất",

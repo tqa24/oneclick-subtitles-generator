@@ -107,7 +107,7 @@
   "femaleVoices": "여성 음성",
   "maleVoices": "남성 음성",
   "sleepTime": "배치 간 지연 시간",
-  "sleepTimeHelp": "Gemini의 속도 제한을 초과하지 않도록 나레이션 요청 사이에 지연 시간을 추가합니다. 높은 값(10-30초)은 오류를 방지할 수 있지만 생성 속도가 느려집니다.",
+  "sleepTimeHelp": "Gemini의 속도 제한을 초과하지 않도록 나레이션 요청 사이에 지연 시간을 추가합니다. 높은 값(5-30초)은 오류를 방지할 수 있지만 생성 속도가 느려집니다.",
   "generateWithGemini": "Gemini로 나레이션 생성",
   "geminiGeneratingProgress": "Gemini로 {{total}}개 중 {{progress}}개 나레이션 생성됨...",
   "geminiGenerationComplete": "Gemini 나레이션 생성 완료",
