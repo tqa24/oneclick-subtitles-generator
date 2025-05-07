@@ -11,7 +11,7 @@
 /* Card styling for each settings group */
 .settings-card {
   background-color: var(--md-surface-1);
-  border-radius: 16px;
+  border-radius: 32px;
   padding: 20px;
   box-shadow: var(--md-elevation-level1);
   transition: all 0.3s var(--md-easing-standard);

@@ -116,7 +116,6 @@
 }
 
 .background-generator-collapsed-content {
-  padding: 0 24px 24px 24px;
   background-color: var(--md-surface-1);
   border-radius: 0 0 24px 24px;
   animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
@@ -164,7 +163,7 @@
 }
 
 .background-generator-container.collapsed {
-  max-height: 120px; /* Small enough to show just the header and collapsed content */
+  max-height: 128px; /* Small enough to show just the header and collapsed content */
   transition: max-height var(--md-duration-medium4) var(--md-easing-emphasized);
 }
 
