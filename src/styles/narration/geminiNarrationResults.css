@@ -89,6 +89,32 @@
   animation: pulse 2s infinite ease-in-out;
 }
 
+/* Loading from cache message styling */
+.gemini-results-list .loading-from-cache-message {
+  padding: 1rem;
+  background-color: var(--md-surface-2);
+  border-radius: 8px;
+  text-align: center;
+  color: var(--md-primary);
+  font-style: italic;
+  border: 1px dashed var(--md-primary-container);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Small loading spinner for cache loading */
+.loading-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--md-surface);
+  border-top: 3px solid var(--md-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
 @keyframes pulse {
   0% { opacity: 0.7; }
   50% { opacity: 1; }

@@ -7,6 +7,11 @@ import { VariableSizeList as List } from 'react-window';
 import { downloadAlignedAudio as downloadAlignedAudioUtil } from '../../../utils/narrationServerUtils';
 import { getAudioUrl } from '../../../services/narrationService';
 
+// Constants for localStorage keys
+const NARRATION_CACHE_KEY = 'gemini_narration_cache';
+const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
+const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
+
 /**
  * Component for displaying Gemini narration results with audio playback
  * @param {Object} props - Component props
@@ -176,6 +181,45 @@ const GeminiResultRow = ({ index, style, data }) => {
   );
 };
 
+/**
+ * Helper function to generate a hash for subtitles to use as a cache key
+ * @param {Array} subtitles - Array of subtitle objects
+ * @returns {string} - Hash string
+ */
+const generateSubtitleHash = (subtitles) => {
+  if (!subtitles || !subtitles.length) return '';
+
+  // Create a string representation of the subtitles (just IDs and text)
+  const subtitleString = subtitles.map(s => `${s.subtitle_id}:${s.text}`).join('|');
+
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < subtitleString.length; i++) {
+    const char = subtitleString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  return hash.toString(16);
+};
+
+/**
+ * Helper function to get the current video/file identifier
+ * @returns {string|null} - Current video/file ID or null if not found
+ */
+const getCurrentMediaId = () => {
+  // Check for YouTube URL first
+  const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
+  if (youtubeUrl) {
+    // Extract video ID from URL
+    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    return match ? match[1] : null;
+  }
+
+  // Check for file cache ID
+  return localStorage.getItem(CURRENT_FILE_ID_KEY);
+};
+
 const GeminiNarrationResults = ({
   generationResults,
   onRetry,
@@ -189,6 +233,7 @@ const GeminiNarrationResults = ({
   const audioRef = useRef(null);
   const listRef = useRef(null);
   const rowHeights = useRef({});
+  const [loadedFromCache, setLoadedFromCache] = useState(false);
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
@@ -223,7 +268,103 @@ const GeminiNarrationResults = ({
     if (listRef.current) {
       listRef.current.resetAfterIndex(0);
     }
+
+    // Save narrations to cache when they change
+    if (generationResults && generationResults.length > 0) {
+      try {
+        // Get current media ID
+        const mediaId = getCurrentMediaId();
+        if (!mediaId) return;
+
+        // Generate a hash of the subtitles
+        const subtitleHash = generateSubtitleHash(generationResults);
+
+        // Create cache entry
+        const cacheEntry = {
+          mediaId,
+          subtitleHash,
+          timestamp: Date.now(),
+          narrations: generationResults
+        };
+
+        // Save to localStorage
+        localStorage.setItem(NARRATION_CACHE_KEY, JSON.stringify(cacheEntry));
+        console.log('Saved narrations to cache:', cacheEntry);
+      } catch (error) {
+        console.error('Error saving narrations to cache:', error);
+      }
+    }
   }, [generationResults]);
+
+  // Load narrations from cache on component mount
+  useEffect(() => {
+    // Only try to load from cache if we don't have results yet
+    if (generationResults && generationResults.length > 0) return;
+
+    try {
+      // Get current media ID
+      const mediaId = getCurrentMediaId();
+      if (!mediaId) return;
+
+      // Get cache entry
+      const cacheEntryJson = localStorage.getItem(NARRATION_CACHE_KEY);
+      if (!cacheEntryJson) return;
+
+      const cacheEntry = JSON.parse(cacheEntryJson);
+
+      // Check if cache entry is for the current media
+      if (cacheEntry.mediaId !== mediaId) return;
+
+      // Check if we have narrations
+      if (!cacheEntry.narrations || !cacheEntry.narrations.length) return;
+
+      console.log('Found cached narrations for current media:', cacheEntry);
+
+      // Set loading state first
+      setLoadedFromCache(true);
+
+      // Use a small timeout to ensure the loading state is rendered
+      setTimeout(() => {
+        // Dispatch an event to notify other components about the loaded narrations
+        const event = new CustomEvent('narrations-loaded-from-cache', {
+          detail: {
+            narrations: cacheEntry.narrations,
+            timestamp: Date.now()
+          }
+        });
+        window.dispatchEvent(event);
+      }, 100);
+    } catch (error) {
+      console.error('Error loading narrations from cache:', error);
+    }
+  }, [generationResults]);
+
+  // Listen for narrations-updated event to update the component
+  useEffect(() => {
+    const handleNarrationsUpdated = (event) => {
+      if (event.detail && event.detail.narrations && event.detail.fromCache) {
+        console.log('GeminiNarrationResults received narrations-updated event with fromCache flag:', event.detail);
+        // Reset loading state since we now have the narrations
+        setLoadedFromCache(false);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('narrations-updated', handleNarrationsUpdated);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('narrations-updated', handleNarrationsUpdated);
+    };
+  }, []);
+
+  // Show a loading message while waiting for narrations to load
+  useEffect(() => {
+    // If we have loaded from cache but don't have results yet, show a loading message
+    if (loadedFromCache && (!generationResults || generationResults.length === 0)) {
+      console.log('Showing loading message while waiting for narrations to load from cache');
+    }
+  }, [loadedFromCache, generationResults]);
 
   // Play audio function - simplified approach like F5-TTS
   const playAudio = (result) => {
@@ -314,9 +455,18 @@ const GeminiNarrationResults = ({
 
       <div className="gemini-results-list">
         {(!generationResults || generationResults.length === 0) && !hasGenerationError ? (
-          <div className="no-results-message">
-            {t('narration.waitingForResults', 'Waiting for narration results...')}
-          </div>
+          loadedFromCache ? (
+            // Show loading indicator when loading from cache
+            <div className="loading-from-cache-message">
+              <div className="loading-spinner-small"></div>
+              {t('narration.loadingFromCache', 'Loading narrations from previous session...')}
+            </div>
+          ) : (
+            // Show waiting message when no results and not loading from cache
+            <div className="no-results-message">
+              {t('narration.waitingForResults', 'Waiting for narration results...')}
+            </div>
+          )
         ) : (
           // Use virtualized list for better performance with large datasets
           <List
@@ -324,11 +474,11 @@ const GeminiNarrationResults = ({
             className="gemini-results-virtualized-list"
             height={400} // Fixed height for the virtualized container
             width="100%"
-            itemCount={generationResults.length}
+            itemCount={generationResults ? generationResults.length : 0}
             itemSize={getRowHeight} // Dynamic row heights based on content
             overscanCount={5} // Number of items to render outside of the visible area
             itemData={{
-              generationResults,
+              generationResults: generationResults || [],
               onRetry,
               retryingSubtitleId,
               currentlyPlaying,
