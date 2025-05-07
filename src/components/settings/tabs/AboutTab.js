@@ -9,9 +9,6 @@ const AboutTab = ({ useAlternativeBackground }) => {
       <h3>{t('settings.about', 'About')}</h3>
       <div className="about-content">
         <h2 className="about-app-title">One-click Subtitles Generator</h2>
-        <p className="version-info">
-          <strong>{t('settings.version', 'Version')}:</strong> {new Date().toISOString().slice(0, 10).replace(/-/g, '')}
-        </p>
         <div className="creator-info">
           <p><strong>{t('settings.creator', 'Creator')}:</strong> nganlinh4</p>
           <p>
@@ -48,3 +45,4 @@ const AboutTab = ({ useAlternativeBackground }) => {
 };
 
 export default AboutTab;
+
