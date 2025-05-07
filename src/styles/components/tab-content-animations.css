@@ -70,7 +70,6 @@
   animation-duration: var(--md-duration-medium3);
   animation-timing-function: var(--md-easing-emphasized);
   animation-fill-mode: forwards;
-  overflow: hidden;
   will-change: transform, opacity;
 }
 

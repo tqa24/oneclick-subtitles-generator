@@ -2,6 +2,10 @@
 
 .about-section {
   padding: 1rem;
+  position: relative;
+  min-height: 500px; /* Ensure enough height for the background to display properly */
+  display: flex;
+  flex-direction: column;
 }
 
 .about-content {
@@ -12,22 +16,21 @@
   margin: 0 auto;
   position: relative;
   z-index: 1;
-}
-
-.about-section {
-  position: relative;
+  flex: 1;
 }
 
 .about-section::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 80%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
-  height: 146%;
-  background-size: cover;
+  height: 165%;
+  background-size: 80%;
   background-position: center;
-  opacity: 0.4;
+  background-repeat: no-repeat;
+  opacity: 0.25;
   z-index: 0;
 }
 
@@ -36,9 +39,29 @@
   background-image: url('../../assets/about-background.svg');
 }
 
-/* Alternative background */
+/* Alternative backgrounds */
 .about-section.alternative-bg::before {
   background-image: url('../../assets/about-background-alternative.svg');
+}
+
+.about-section.alternative-bg-1::before {
+  background-image: url('../../assets/about-background-alternative1.svg');
+}
+
+.about-section.alternative-bg-2::before {
+  background-image: url('../../assets/about-background-alternative2.svg');
+}
+
+.about-section.alternative-bg-3::before {
+  background-image: url('../../assets/about-background-alternative3.svg');
+}
+
+.about-section.alternative-bg-4::before {
+  background-image: url('../../assets/about-background-alternative4.svg');
+}
+
+.about-section.alternative-bg-5::before {
+  background-image: url('../../assets/about-background-alternative5.svg');
 }
 
 .about-app-title {

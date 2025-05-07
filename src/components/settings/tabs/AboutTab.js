@@ -1,11 +1,24 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const AboutTab = ({ useAlternativeBackground }) => {
+const AboutTab = ({ backgroundType }) => {
   const { t } = useTranslation();
 
+  // Determine the background class based on the backgroundType
+  const getBackgroundClass = () => {
+    if (!backgroundType || backgroundType === 'default') {
+      return '';
+    }
+
+    if (backgroundType === 'random') {
+      return '';  // This should never happen as random is resolved in the parent component
+    }
+
+    return `alternative-bg${backgroundType === 'alternative' ? '' : `-${backgroundType}`}`;
+  };
+
   return (
-    <div className={`settings-section about-section ${useAlternativeBackground ? 'alternative-bg' : ''}`}>
+    <div className={`settings-section about-section ${getBackgroundClass()}`}>
       <h3>{t('settings.about', 'About')}</h3>
       <div className="about-content">
         <h2 className="about-app-title">One-click Subtitles Generator</h2>
