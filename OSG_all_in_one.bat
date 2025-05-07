@@ -79,8 +79,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat voi Tinh nang Thuyet minh (Cai dat sach) ***
-ECHO *** (Luu y: Co the ton nhieu dung luong luu tru hon) ***
+ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -127,7 +126,7 @@ GOTO EndScript
 
 REM ==============================================================================
 :InstallNoNarration
-ECHO *** Tuy chon 2: Cai dat khong co Tinh nang Thuyet minh (Cai dat sach) ***
+ECHO *** Tuy chon 2: Cai dat (Thuyet minh thong thuong) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -249,7 +248,7 @@ GOTO EndScript
 
 REM ==============================================================================
 :RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Thuyet minh (CUDA) ***
+ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (CUDA) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
