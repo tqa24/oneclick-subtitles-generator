@@ -7,5 +7,7 @@
   "downloading": "Đang tải video...",
   "downloadAudio": "Tải Audio",
   "downloadingAudio": "Đang tải...",
-  "audioExtractionError": "Không thể trích xuất âm thanh từ video. Vui lòng thử lại."
+  "audioExtractionError": "Không thể trích xuất âm thanh từ video. Vui lòng thử lại.",
+  "refreshNarration": "Làm mới thuyết minh",
+  "refreshingNarration": "Đang làm mới thuyết minh..."
 }

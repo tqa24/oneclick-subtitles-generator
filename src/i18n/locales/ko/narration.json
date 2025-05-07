@@ -123,5 +123,15 @@
   "disabled": "비활성화됨",
   "generatingAligned": "정렬된 나레이션 생성 중...",
   "regenerateAligned": "정렬된 오디오 재생성",
-  "videoVolume": "비디오 오디오 볼륨"
+  "videoVolume": "비디오 오디오 볼륨",
+  "retry": "재시도",
+  "retrying": "재시도 중...",
+  "retryFailed": "실패한 나레이션 재시도",
+  "retryFailedTooltip": "모든 실패한 나레이션 재시도",
+  "noDelay": "지연 없음",
+  "seconds": "초",
+  "notGenerated": "생성되지 않음",
+  "pending": "생성 대기 중...",
+  "geminiGenerationIncomplete": "Gemini 나레이션 생성이 완료되지 않았습니다. {{total}}개 중 {{generated}}개 나레이션이 생성되었습니다.",
+  "geminiConnectionError": "Gemini 연결이 중단되었습니다. 실패한 나레이션을 개별적으로 재시도할 수 있습니다."
 }
