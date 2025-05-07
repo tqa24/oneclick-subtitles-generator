@@ -1017,27 +1017,8 @@ const useNarrationHandlers = ({
           });
           window.dispatchEvent(event);
 
-          // Also dispatch a subtitle-timing-changed event to ensure aligned narration is regenerated
-          window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
-            detail: {
-              action: 'narration-retry',
-              timestamp: Date.now(),
-              subtitleId: result.subtitle_id,
-              forceRegenerate: true // Add flag to force regeneration of aligned narration
-            }
-          }));
-
-          // CRITICAL FIX: Force regenerate aligned narration after a short delay
-          // This ensures that the aligned narration is regenerated with the new audio
-          setTimeout(() => {
-            console.log('CRITICAL FIX: Triggering aligned narration regeneration after retry');
-            window.dispatchEvent(new CustomEvent('regenerate-aligned-narration', {
-              detail: {
-                timestamp: Date.now(),
-                forceRegenerate: true
-              }
-            }));
-          }, 500);
+          // Removed automatic regeneration of aligned narration
+          // Users must now manually click the "Refresh Narration" button to regenerate aligned narration
 
           return updatedResults;
         });
@@ -1204,14 +1185,8 @@ const useNarrationHandlers = ({
                 }
               }));
 
-              window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
-                detail: {
-                  action: 'narration-retry',
-                  timestamp: Date.now(),
-                  subtitleId: result.subtitle_id,
-                  forceRegenerate: true
-                }
-              }));
+              // Removed automatic regeneration of aligned narration
+              // Users must now manually click the "Refresh Narration" button to regenerate aligned narration
 
               return updatedResults;
             });

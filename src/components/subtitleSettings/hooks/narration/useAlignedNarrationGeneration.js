@@ -84,6 +84,16 @@ const useAlignedNarrationGeneration = ({
       // Update state
       setIsAlignedAvailable(true);
 
+      // Dispatch an event to notify other components that the aligned narration generation is complete
+      // Include isStillGenerating flag to indicate if the notification is still showing
+      window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+        detail: {
+          status: 'complete',
+          message: 'Aligned narration generation complete',
+          isStillGenerating: isGeneratingAligned // Pass the current generation state
+        }
+      }));
+
       // If the video is playing, start playing the aligned narration
       if (videoRef?.current && !videoRef.current.paused) {
         playAlignedNarration(videoRef.current.currentTime, true);
@@ -94,8 +104,25 @@ const useAlignedNarrationGeneration = ({
         status: 'error',
         message: `Error: ${error.message}`
       });
+
+      // Dispatch an event to notify other components that there was an error during aligned narration generation
+      window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+        detail: {
+          status: 'error',
+          message: `Error: ${error.message}`,
+          isStillGenerating: isGeneratingAligned // Pass the current generation state
+        }
+      }));
     } finally {
+      // Update the isGeneratingAligned state
       setIsGeneratingAligned(false);
+
+      // Dispatch an event to notify other components that the generation state has changed
+      window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
+        detail: {
+          isGenerating: false
+        }
+      }));
     }
   }, [
     isGeneratingAligned,
@@ -140,16 +167,52 @@ const useAlignedNarrationGeneration = ({
 
             // Update state
             setIsAlignedAvailable(true);
-            setIsGeneratingAligned(false);
+
+            // Dispatch an event to notify other components that the aligned narration generation is complete
+            window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+              detail: {
+                status: 'complete',
+                message: 'Aligned narration generation complete',
+                isStillGenerating: true // Still generating until we set isGeneratingAligned to false
+              }
+            }));
 
             // If the video is playing, start playing the aligned narration
             if (videoRef?.current && !videoRef.current.paused) {
               playAlignedNarration(videoRef.current.currentTime, true);
             }
+
+            // Update the isGeneratingAligned state
+            setIsGeneratingAligned(false);
+
+            // Dispatch an event to notify other components that the generation state has changed
+            window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
+              detail: {
+                isGenerating: false
+              }
+            }));
           } catch (error) {
             console.error('Error generating aligned narration:', error);
             setAlignedStatus({ status: 'error', message: `Error: ${error.message}` });
+
+            // Dispatch an event to notify other components that there was an error during aligned narration generation
+            window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+              detail: {
+                status: 'error',
+                message: `Error: ${error.message}`,
+                isStillGenerating: true // Still generating until we set isGeneratingAligned to false
+              }
+            }));
+
+            // Update the isGeneratingAligned state
             setIsGeneratingAligned(false);
+
+            // Dispatch an event to notify other components that the generation state has changed
+            window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
+              detail: {
+                isGenerating: false
+              }
+            }));
           }
         };
 

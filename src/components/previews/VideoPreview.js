@@ -33,6 +33,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [downloadCheckInterval, setDownloadCheckInterval] = useState(null);
   const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+  const [isRefreshingNarration, setIsRefreshingNarration] = useState(false); // Track narration refresh state
   // Native track subtitles disabled - using only custom subtitle display
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') !== 'false';
@@ -472,6 +473,90 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
   // Native track subtitles disabled - using only custom subtitle display
 
+  // Listen for aligned narration generation events
+  useEffect(() => {
+    // Function to handle aligned narration status updates
+    const handleAlignedNarrationStatus = (event) => {
+      if (event.detail) {
+        const { status, message, isStillGenerating } = event.detail;
+
+        // If the status is 'complete' and isStillGenerating is false, the narration regeneration is fully done
+        if (status === 'complete' && !isStillGenerating) {
+          console.log('Aligned narration regeneration complete and no longer generating');
+          setIsRefreshingNarration(false);
+        }
+
+        // If the status is 'error' and isStillGenerating is false, there was an error during regeneration
+        if (status === 'error' && !isStillGenerating) {
+          console.error('Error during aligned narration regeneration:', message);
+          setIsRefreshingNarration(false);
+        }
+
+        // If isStillGenerating is true, keep the overlay visible
+        if (isStillGenerating) {
+          console.log('Aligned narration generation still in progress, keeping overlay visible');
+        }
+      }
+    };
+
+    // Function to handle aligned narration generation state changes
+    const handleAlignedNarrationGeneratingState = (event) => {
+      if (event.detail) {
+        const { isGenerating } = event.detail;
+
+        // If isGenerating is false, the narration generation is complete
+        if (!isGenerating && !isRefreshingNarration) {
+          return; // No need to update if we're not refreshing
+        }
+
+        if (!isGenerating) {
+          console.log('Aligned narration generation state changed to not generating');
+          setIsRefreshingNarration(false);
+        }
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('aligned-narration-status', handleAlignedNarrationStatus);
+    window.addEventListener('aligned-narration-generating-state', handleAlignedNarrationGeneratingState);
+
+    // Clean up event listeners
+    return () => {
+      window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
+      window.removeEventListener('aligned-narration-generating-state', handleAlignedNarrationGeneratingState);
+    };
+  }, [isRefreshingNarration]);
+
+  // Listen for aligned narration generation events
+  useEffect(() => {
+    // Function to handle aligned narration status updates
+    const handleAlignedNarrationStatus = (event) => {
+      if (event.detail) {
+        const { status, message } = event.detail;
+
+        // If the status is 'complete', the narration regeneration is done
+        if (status === 'complete') {
+          console.log('Aligned narration regeneration complete');
+          setIsRefreshingNarration(false);
+        }
+
+        // If the status is 'error', there was an error during regeneration
+        if (status === 'error') {
+          console.error('Error during aligned narration regeneration:', message);
+          setIsRefreshingNarration(false);
+        }
+      }
+    };
+
+    // Add event listener for aligned narration status updates
+    window.addEventListener('aligned-narration-status', handleAlignedNarrationStatus);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
+    };
+  }, []);
+
   // Handle fullscreen changes
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -791,6 +876,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 <div className="refresh-narration-button">
                   <button
                     onClick={() => {
+                      // Pause the video if it's playing
+                      if (videoRef.current && !videoRef.current.paused) {
+                        videoRef.current.pause();
+                      }
+
+                      // Set refreshing state to show loading overlay
+                      setIsRefreshingNarration(true);
+
                       // Force reset the aligned narration cache and regenerate
                       if (typeof window.resetAlignedNarration === 'function') {
                         console.log('Manually refreshing aligned narration');
@@ -804,33 +897,42 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           }
                         }));
 
-                        // Show a temporary message
-                        const tempMsg = document.createElement('div');
-                        tempMsg.className = 'temp-message';
-                        tempMsg.textContent = t('preview.refreshingNarration', 'Refreshing narration...');
-                        tempMsg.style.position = 'absolute';
-                        tempMsg.style.top = '50%';
-                        tempMsg.style.left = '50%';
-                        tempMsg.style.transform = 'translate(-50%, -50%)';
-                        tempMsg.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                        tempMsg.style.color = 'white';
-                        tempMsg.style.padding = '10px 15px';
-                        tempMsg.style.borderRadius = '4px';
-                        tempMsg.style.zIndex = '1000';
-                        document.body.appendChild(tempMsg);
+                        // Dispatch an event to notify other components that we're manually refreshing narration
+                        window.dispatchEvent(new CustomEvent('manual-refresh-narration-started', {
+                          detail: {
+                            timestamp: Date.now()
+                          }
+                        }));
 
-                        // Remove the message after 2 seconds
+                        // Set a timeout to automatically clear the refreshing state after 60 seconds
+                        // This is a fallback in case the aligned-narration-status event is not fired
                         setTimeout(() => {
-                          document.body.removeChild(tempMsg);
-                        }, 2000);
+                          if (setIsRefreshingNarration) {
+                            console.log('Fallback timeout: clearing refreshing narration state');
+                            setIsRefreshingNarration(false);
+                          }
+                        }, 60000); // Increased to 60 seconds to account for longer generation times
                       }
                     }}
+                    disabled={isRefreshingNarration}
                   >
-                    {/* Refresh icon */}
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                    </svg>
-                    <span className="button-text">{t('preview.refreshNarration', 'Refresh Narration')}</span>
+                    {isRefreshingNarration ? (
+                      // Show loading spinner when refreshing
+                      <>
+                        <svg className="spinner" width="24" height="24" viewBox="0 0 24 24">
+                          <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
+                        </svg>
+                        <span className="button-text">{t('preview.refreshingNarration', 'Refreshing Narration...')}</span>
+                      </>
+                    ) : (
+                      // Show refresh icon when not refreshing
+                      <>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                        </svg>
+                        <span className="button-text">{t('preview.refreshNarration', 'Refresh Narration')}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -887,40 +989,56 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   </button>
                 </div>
               )}
-              <video
-                ref={videoRef}
-                controls
-                className="video-player"
-                playsInline
-                src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
-                crossOrigin="anonymous"
-                onError={(e) => {
-                  console.error('Video error:', e);
-                  // If optimized video fails to load, fall back to original video
-                  if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
-                    console.log('Optimized video failed to load, falling back to original video');
-                    e.target.src = videoUrl;
-                    e.target.load();
-                  }
-                }}
-              >
-                <source
+              <div className="video-wrapper" style={{ position: 'relative' }}>
+                <video
+                  ref={videoRef}
+                  controls
+                  className="video-player"
+                  playsInline
                   src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
-                  type="video/mp4"
+                  crossOrigin="anonymous"
                   onError={(e) => {
-                    console.error('Source error:', e);
+                    console.error('Video error:', e);
                     // If optimized video fails to load, fall back to original video
                     if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
-                      console.log('Optimized video source failed to load, falling back to original video');
+                      console.log('Optimized video failed to load, falling back to original video');
                       e.target.src = videoUrl;
+                      e.target.load();
                     }
                   }}
-                />
+                >
+                  <source
+                    src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
+                    type="video/mp4"
+                    onError={(e) => {
+                      console.error('Source error:', e);
+                      // If optimized video fails to load, fall back to original video
+                      if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
+                        console.log('Optimized video source failed to load, falling back to original video');
+                        e.target.src = videoUrl;
+                      }
+                    }}
+                  />
 
-                {/* Native track subtitles disabled - using only custom subtitle display */}
+                  {/* Native track subtitles disabled - using only custom subtitle display */}
 
-                {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
-              </video>
+                  {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
+                </video>
+
+                {/* Loading overlay for narration refresh */}
+                {isRefreshingNarration && (
+                  <div className="narration-refresh-overlay">
+                    <div className="narration-refresh-content">
+                      <svg className="spinner-large" width="48" height="48" viewBox="0 0 24 24">
+                        <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
+                      </svg>
+                      <div className="narration-refresh-text">
+                        {t('preview.refreshingNarration', 'Refreshing narration...')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Apply subtitle styling to the video element */}
               <style>

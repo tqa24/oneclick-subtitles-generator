@@ -36,10 +36,8 @@ const useNarration = (videoRef, originalNarrations = [], translatedNarrations = 
     narrationState.setNarrationSource
   );
 
-  // Get the active narrations based on source
-  const activeNarrations = narrationState.narrationSource === 'original'
-    ? narrationState.internalOriginalNarrations
-    : narrationState.internalTranslatedNarrations;
+  // Always use original narrations since we removed the source selector
+  const activeNarrations = narrationState.internalOriginalNarrations;
 
   // Handle aligned narration
   const alignedNarration = useAlignedNarration(

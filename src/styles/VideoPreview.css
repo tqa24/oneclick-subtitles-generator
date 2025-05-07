@@ -51,6 +51,51 @@
   text-align: center;
 }
 
+/* Narration refresh overlay */
+.narration-refresh-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  pointer-events: all; /* Prevent interaction with the video */
+}
+
+.narration-refresh-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: white;
+  text-align: center;
+}
+
+.narration-refresh-text {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* Large spinner for narration refresh overlay */
+.spinner-large {
+  animation: rotate 2s linear infinite;
+  width: 48px;
+  height: 48px;
+}
+
+.spinner-large .path {
+  stroke: var(--md-primary, #4a6cf7);
+  stroke-linecap: round;
+  animation: dash 1.5s ease-in-out infinite;
+  stroke-width: 3;
+}
+
 .video-container {
   position: relative;
   width: 100%;

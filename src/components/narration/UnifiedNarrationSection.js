@@ -556,6 +556,7 @@ const UnifiedNarrationSection = ({
             retryingSubtitleId={retryingSubtitleId}
             onRetryFailed={retryFailedGeminiNarrations}
             hasGenerationError={!!error && error.includes('Gemini')}
+            subtitleSource={subtitleSource}
           />
 
           {/* No need for a separate audio element here as it's included in the GeminiNarrationResults component */}

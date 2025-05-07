@@ -112,6 +112,8 @@ const SubtitleSettings = ({
           hasAnyNarrations={hasAnyNarrations}
           isGeneratingAligned={isGeneratingAligned}
           alignedStatus={alignedStatus}
+          isSubtitleSettingsOpen={isOpen}
+          setIsSubtitleSettingsOpen={setIsOpen}
         />
       </div>
 

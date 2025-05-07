@@ -20,6 +20,7 @@ const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
  * @param {number|null} props.retryingSubtitleId - ID of the subtitle currently being retried
  * @param {Function} props.onRetryFailed - Function to retry all failed narrations
  * @param {boolean} props.hasGenerationError - Whether there was an error during generation
+ * @param {string} props.subtitleSource - Selected subtitle source ('original' or 'translated')
  * @returns {JSX.Element} - Rendered component
  */
 // Virtualized row renderer for Gemini narration results
@@ -92,8 +93,10 @@ const GeminiResultRow = ({ index, style, data }) => {
             <button
               className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
               onClick={() => onRetry(subtitle_id)}
-              title={t('narration.retry', 'Retry generation')}
-              disabled={retryingSubtitleId === subtitle_id}
+              title={!data.subtitleSource
+                ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+                : t('narration.retry', 'Retry generation')}
+              disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
             >
               {retryingSubtitleId === subtitle_id ? (
                 <>
@@ -123,8 +126,10 @@ const GeminiResultRow = ({ index, style, data }) => {
             <button
               className={`pill-button secondary generate-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
               onClick={() => onRetry(subtitle_id)}
-              title={t('narration.generate', 'Generate this narration')}
-              disabled={retryingSubtitleId === subtitle_id}
+              title={!data.subtitleSource
+                ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+                : t('narration.generate', 'Generate this narration')}
+              disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
             >
               {retryingSubtitleId === subtitle_id ? (
                 <>
@@ -153,8 +158,10 @@ const GeminiResultRow = ({ index, style, data }) => {
             <button
               className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
               onClick={() => onRetry(subtitle_id)}
-              title={t('narration.retry', 'Retry generation')}
-              disabled={retryingSubtitleId === subtitle_id}
+              title={!data.subtitleSource
+                ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+                : t('narration.retry', 'Retry generation')}
+              disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
             >
               {retryingSubtitleId === subtitle_id ? (
                 <>
@@ -225,7 +232,8 @@ const GeminiNarrationResults = ({
   onRetry,
   retryingSubtitleId,
   onRetryFailed,
-  hasGenerationError = false
+  hasGenerationError = false,
+  subtitleSource
 }) => {
   const { t } = useTranslation();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
@@ -441,8 +449,10 @@ const GeminiNarrationResults = ({
           <button
             className="pill-button secondary retry-failed-button"
             onClick={onRetryFailed}
-            disabled={retryingSubtitleId !== null}
-            title={t('narration.retryFailedTooltip', 'Retry all failed narrations')}
+            disabled={retryingSubtitleId !== null || !subtitleSource}
+            title={!subtitleSource
+              ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+              : t('narration.retryFailedTooltip', 'Retry all failed narrations')}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1 4v6h6" />
@@ -485,6 +495,7 @@ const GeminiNarrationResults = ({
               isPlaying,
               playAudio,
               downloadAudio,
+              subtitleSource,
               t
             }}
           >

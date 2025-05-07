@@ -17,6 +17,8 @@ import { useTranslation } from 'react-i18next';
  * @param {boolean} props.hasOriginalNarrations - Whether original narrations are available
  * @param {boolean} props.hasTranslatedNarrations - Whether translated narrations are available
  * @param {boolean} props.hasAnyNarrations - Whether any narrations are available
+ * @param {boolean} props.isSubtitleSettingsOpen - Whether subtitle settings panel is open
+ * @param {Function} props.setIsSubtitleSettingsOpen - Function to set isSubtitleSettingsOpen state
  * @returns {JSX.Element} - Rendered component
  */
 const NarrationMenu = ({
@@ -34,7 +36,10 @@ const NarrationMenu = ({
   hasAnyNarrations,
   // Aligned narration props (some are unused now that it's always enabled)
   isGeneratingAligned,
-  alignedStatus
+  alignedStatus,
+  // We need to access the subtitle settings state to close it when opening narration menu
+  isSubtitleSettingsOpen,
+  setIsSubtitleSettingsOpen
 }) => {
   const { t } = useTranslation();
   const menuRef = useRef(null);
@@ -72,6 +77,13 @@ const NarrationMenu = ({
           e.stopPropagation();
           const newShowNarrationMenu = !showNarrationMenu;
           setShowNarrationMenu(newShowNarrationMenu);
+
+          // Close subtitle settings if opening narration menu
+          if (newShowNarrationMenu && isSubtitleSettingsOpen) {
+            console.log('Closing subtitle settings when opening narration menu');
+            setIsSubtitleSettingsOpen(false);
+          }
+
           console.log(`Narration menu ${newShowNarrationMenu ? 'opened' : 'closed'}`);
         }}
         title={t('narration.settingsTooltip', 'Narration Settings')}
@@ -88,7 +100,7 @@ const NarrationMenu = ({
       {showNarrationMenu && (
         <div
           className="subtitle-settings-panel narration-panel"
-          style={{ position: 'absolute', top: 'calc(100%)', right: '-10px', height: '505px', width: '320px', zIndex: 9999 }}
+          style={{ position: 'absolute', top: 'calc(100%)', right: '-10px', height: '400px', width: '320px', zIndex: 9999 }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="settings-header">
@@ -107,56 +119,6 @@ const NarrationMenu = ({
           </div>
 
           <div className="settings-content">
-            {/* Narration Source Selection */}
-            <div className="setting-group subtitle-language-group">
-              <label>{t('narration.narrationSource', 'Source')}</label>
-              <div className="radio-pill-group">
-                <div className="radio-pill">
-                  <input
-                    type="radio"
-                    id="source-original"
-                    name="narration-source"
-                    checked={narrationSource === 'original'}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      if (hasOriginalNarrations) {
-                        setNarrationSource('original');
-                      }
-                    }}
-                    disabled={!hasOriginalNarrations}
-                  />
-                  <label
-                    htmlFor="source-original"
-                    className={!hasOriginalNarrations ? 'disabled' : ''}
-                  >
-                    {t('narration.original', 'Original')}
-                    {!hasOriginalNarrations ? ` (${t('narration.notAvailable', 'Not Available')})` : ''}
-                  </label>
-                </div>
-                <div className="radio-pill">
-                  <input
-                    type="radio"
-                    id="source-translated"
-                    name="narration-source"
-                    checked={narrationSource === 'translated'}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      if (hasTranslatedNarrations) {
-                        setNarrationSource('translated');
-                      }
-                    }}
-                    disabled={!hasTranslatedNarrations}
-                  />
-                  <label
-                    htmlFor="source-translated"
-                    className={!hasTranslatedNarrations ? 'disabled' : ''}
-                  >
-                    {t('narration.translated', 'Translated')}
-                    {!hasTranslatedNarrations ? ` (${t('narration.notAvailable', 'Not Available')})` : ''}
-                  </label>
-                </div>
-              </div>
-            </div>
 
             {/* Status message when no narrations are available */}
             {!hasAnyNarrations && (

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 /**
  * Hook to manage narration state
- * 
+ *
  * @param {Array} originalNarrations - Original narration audio files
  * @param {Array} translatedNarrations - Translated narration audio files
  * @returns {Object} - Narration state and setters
@@ -10,15 +10,16 @@ import { useState, useEffect } from 'react';
 const useNarrationState = (originalNarrations = [], translatedNarrations = []) => {
   // State for narration menu
   const [showNarrationMenu, setShowNarrationMenu] = useState(false);
-  const [narrationSource, setNarrationSource] = useState('');
+  // Always use 'original' as the narration source since we no longer have a source selector
+  const [narrationSource, setNarrationSource] = useState('original');
   const [narrationVolume, setNarrationVolume] = useState(0.8);
   const [videoVolume, setVideoVolume] = useState(0.3);
   const [currentNarration, setCurrentNarration] = useState(null);
-  
+
   // State to track narrations internally
   const [internalOriginalNarrations, setInternalOriginalNarrations] = useState(originalNarrations || []);
   const [internalTranslatedNarrations, setInternalTranslatedNarrations] = useState(translatedNarrations || []);
-  
+
   // Update internal state when props change
   useEffect(() => {
     if (originalNarrations && originalNarrations.length > 0) {
@@ -28,12 +29,12 @@ const useNarrationState = (originalNarrations = [], translatedNarrations = []) =
       setInternalTranslatedNarrations(translatedNarrations);
     }
   }, [originalNarrations, translatedNarrations]);
-  
+
   // Check if any narrations are available
   const hasOriginalNarrations = internalOriginalNarrations.length > 0;
   const hasTranslatedNarrations = internalTranslatedNarrations.length > 0;
   const hasAnyNarrations = hasOriginalNarrations || hasTranslatedNarrations;
-  
+
   return {
     showNarrationMenu,
     setShowNarrationMenu,

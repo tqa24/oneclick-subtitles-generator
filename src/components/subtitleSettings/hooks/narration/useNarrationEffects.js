@@ -22,23 +22,11 @@ const useNarrationEffects = (
   currentNarration,
   setNarrationSource
 ) => {
-  // Set narration source based on available narrations
+  // We no longer need to set narration source based on availability
+  // since we always use 'original' as the source
   useEffect(() => {
-    // If original narrations are available, set source to original
-    if (hasOriginalNarrations) {
-      setNarrationSource('original');
-      console.log('useNarration: Setting narration source to original');
-    }
-    // If original narrations are not available but translated narrations are, set source to translated
-    else if (!hasOriginalNarrations && hasTranslatedNarrations) {
-      setNarrationSource('translated');
-      console.log('useNarration: Setting narration source to translated');
-    }
-    // If no narrations are available, don't set any source
-    else {
-      setNarrationSource('');
-      console.log('useNarration: No narrations available, clearing narration source');
-
+    // Stop any currently playing narration if no narrations are available
+    if (!hasOriginalNarrations && !hasTranslatedNarrations) {
       // Also stop any currently playing narration
       if (currentNarration && audioRefs && audioRefs.current && audioRefs.current[currentNarration.subtitle_id]) {
         audioRefs.current[currentNarration.subtitle_id].pause();
@@ -48,7 +36,6 @@ const useNarrationEffects = (
     hasOriginalNarrations,
     hasTranslatedNarrations,
     currentNarration,
-    setNarrationSource,
     audioRefs
   ]);
 
