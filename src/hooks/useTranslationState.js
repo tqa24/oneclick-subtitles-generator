@@ -14,9 +14,10 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const [translatedSubtitles, setTranslatedSubtitles] = useState(null);
   const [error, setError] = useState('');
   const [translationStatus, setTranslationStatus] = useState('');
+  // Use a translation-specific model selection that's independent from settings
   const [selectedModel, setSelectedModel] = useState(() => {
-    // Get the model from localStorage or use default
-    return localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+    // Get the model from translation-specific localStorage key or use the global setting as default
+    return localStorage.getItem('translation_model') || localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
   });
   const [customTranslationPrompt, setCustomTranslationPrompt] = useState(
     localStorage.getItem('custom_prompt_translation') || null
@@ -41,18 +42,8 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   // Reference to the status message element for scrolling
   const statusRef = useRef(null);
 
-  // Update selectedModel when localStorage changes
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const storedModel = localStorage.getItem('gemini_model');
-      if (storedModel && storedModel !== selectedModel) {
-        setSelectedModel(storedModel);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [selectedModel]);
+  // No longer update selectedModel when localStorage changes
+  // This keeps the translation model independent from the settings
 
   // Listen for translation status updates
   useEffect(() => {
@@ -119,13 +110,15 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   }, []);
 
   /**
-   * Handle model selection
+   * Handle model selection for translation only
    * @param {string} modelId - Selected model ID
    */
   const handleModelSelect = (modelId) => {
+    // Update the local state
     setSelectedModel(modelId);
-    // Save to localStorage to persist the user's choice across page refreshes
-    localStorage.setItem('gemini_model', modelId);
+    // Save to translation-specific localStorage key to remember the choice
+    // This keeps the translation model independent from the settings
+    localStorage.setItem('translation_model', modelId);
   };
 
   /**
