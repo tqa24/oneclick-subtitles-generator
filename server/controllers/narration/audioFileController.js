@@ -4,7 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 
 // Import directory paths
 const { REFERENCE_AUDIO_DIR, OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('./directoryManager');
@@ -211,13 +211,10 @@ const downloadAlignedAudio = async (req, res) => {
 
     // Create a complex filter for precise audio placement
     let filterComplex = '';
-    let inputs = '';
     let amixInputs = []; // Will hold the names of the delayed streams like [a0], [a1], ...
 
-    // Add each audio file as an input
+    // Process each audio segment for the filter complex
     audioSegments.forEach((segment, index) => {
-      inputs += `-i "${segment.path}" `;
-
       // Calculate delay in milliseconds for the current segment
       const delayMs = Math.round(segment.start * 1000);
 
@@ -252,34 +249,83 @@ const downloadAlignedAudio = async (req, res) => {
     }
 
 
-    // Build the complete ffmpeg command
+    // Build the ffmpeg command arguments as an array
     // Input [0] is the silent anullsrc base track.
     // Inputs [1], [2], ... are the actual audio files.
     // The filter_complex positions inputs [1], [2], ... based on their timing.
-    const ffmpegCommand = `ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100:duration=${totalDuration} ${inputs} -filter_complex "${filterComplex}" -map "[aout]" -c:a pcm_s16le -ar 44100 "${outputPath}" -y`;
 
-    console.log(`Running ffmpeg command: ${ffmpegCommand}`);
+    // Start with the base arguments
+    const ffmpegArgs = [
+      '-f', 'lavfi',
+      '-i', `anullsrc=channel_layout=stereo:sample_rate=44100:duration=${totalDuration}`
+    ];
 
-    // Execute the ffmpeg command
+    // Add each audio file as an input
+    audioSegments.forEach(segment => {
+      ffmpegArgs.push('-i', segment.path);
+    });
+
+    // Add the filter complex and output options
+    ffmpegArgs.push(
+      '-filter_complex', filterComplex,
+      '-map', '[aout]',
+      '-c:a', 'pcm_s16le',
+      '-ar', '44100',
+      '-y',
+      outputPath
+    );
+
+    console.log(`Running ffmpeg with ${audioSegments.length} audio segments`);
+    console.log(`Filter complex: ${filterComplex}`);
+
+    // Execute the ffmpeg command using spawn
     await new Promise((resolve, reject) => {
-      // Increase maxBuffer size if commands/output might be very long
-      exec(ffmpegCommand, { maxBuffer: 1024 * 1024 * 5 }, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing ffmpeg: ${error.message}`);
-          console.error(`stderr: ${stderr}`);
-          reject(error);
+      const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+
+      let stdoutData = '';
+      let stderrData = '';
+
+      ffmpegProcess.stdout.on('data', (data) => {
+        const chunk = data.toString();
+        stdoutData += chunk;
+        // Log progress indicators
+        if (chunk.includes('size=')) {
+          process.stdout.write('.');
+        }
+      });
+
+      ffmpegProcess.stderr.on('data', (data) => {
+        const chunk = data.toString();
+        stderrData += chunk;
+        // Log progress indicators
+        if (chunk.includes('size=')) {
+          process.stdout.write('.');
+        }
+      });
+
+      ffmpegProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`ffmpeg process exited with code ${code}`);
+          console.error(`stderr: ${stderrData.substring(0, 500)}${stderrData.length > 500 ? '...' : ''}`);
+          reject(new Error(`ffmpeg process failed with code ${code}`));
           return;
         }
-        // Log only snippets of potentially long stdout/stderr
-        console.log(`ffmpeg stdout: ${stdout.substring(0, 200)}${stdout.length > 200 ? '...' : ''}`);
-        console.log(`ffmpeg stderr: ${stderr.substring(0, 200)}${stderr.length > 200 ? '...' : ''}`);
 
-        // Check stderr for potential warnings even if exec doesn't return an error code
-        if (stderr.toLowerCase().includes('error') || stderr.toLowerCase().includes('failed')) {
-            console.warn(`Potential ffmpeg warnings detected in stderr: ${stderr.substring(0, 500)}...`);
+        // Log only snippets of potentially long stdout/stderr
+        console.log(`ffmpeg stdout: ${stdoutData.substring(0, 200)}${stdoutData.length > 200 ? '...' : ''}`);
+        console.log(`ffmpeg stderr: ${stderrData.substring(0, 200)}${stderrData.length > 200 ? '...' : ''}`);
+
+        // Check stderr for potential warnings even if process doesn't return an error code
+        if (stderrData.toLowerCase().includes('error') || stderrData.toLowerCase().includes('failed')) {
+          console.warn(`Potential ffmpeg warnings detected in stderr: ${stderrData.substring(0, 500)}...`);
         }
 
         resolve();
+      });
+
+      ffmpegProcess.on('error', (err) => {
+        console.error(`Error spawning ffmpeg process: ${err.message}`);
+        reject(err);
       });
     });
 
@@ -412,20 +458,41 @@ const downloadAllAudio = async (req, res) => {
 
     console.log(`Found ${validFiles.length} valid files for download`);
 
-    // Create a zip file using the zip command
-    const zipCommand = `zip -j "${zipPath}" ${validFiles.map(file => `"${file}"`).join(' ')}`;
-    console.log(`Running zip command: ${zipCommand}`);
+    // Create a zip file using the zip command with spawn
+    console.log(`Creating zip file with ${validFiles.length} audio files`);
+
+    // Prepare arguments for zip command
+    const zipArgs = ['-j', zipPath, ...validFiles];
 
     await new Promise((resolve, reject) => {
-      exec(zipCommand, { maxBuffer: 1024 * 1024 * 5 }, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error executing zip: ${error.message}`);
-          console.error(`stderr: ${stderr}`);
-          reject(error);
+      const zipProcess = spawn('zip', zipArgs);
+
+      let stdoutData = '';
+      let stderrData = '';
+
+      zipProcess.stdout.on('data', (data) => {
+        stdoutData += data.toString();
+      });
+
+      zipProcess.stderr.on('data', (data) => {
+        stderrData += data.toString();
+      });
+
+      zipProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`zip process exited with code ${code}`);
+          console.error(`stderr: ${stderrData}`);
+          reject(new Error(`zip process failed with code ${code}`));
           return;
         }
-        console.log(`zip stdout: ${stdout}`);
+
+        console.log(`zip stdout: ${stdoutData}`);
         resolve();
+      });
+
+      zipProcess.on('error', (err) => {
+        console.error(`Error spawning zip process: ${err.message}`);
+        reject(err);
       });
     });
 
