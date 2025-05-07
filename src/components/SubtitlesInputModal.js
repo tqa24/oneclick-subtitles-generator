@@ -110,11 +110,18 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
               console.log('onGenerateBackground exists:', !!onGenerateBackground);
               console.log('albumArt:', albumArt);
               console.log('songName:', songName);
+              console.log('text length:', text.length);
 
+              // First save the text
               onSave(text);
+
+              // Then generate the background
               if (onGenerateBackground) {
-                console.log('Calling onGenerateBackground');
+                console.log('Calling onGenerateBackground with text, albumArt, and songName');
                 onGenerateBackground(text, albumArt, songName);
+                console.log('onGenerateBackground called successfully');
+              } else {
+                console.error('onGenerateBackground function is not available');
               }
             }}>
               <FiImage />

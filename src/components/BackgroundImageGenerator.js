@@ -187,9 +187,18 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
   // Sync isCollapsed state with isExpanded prop, but respect user's manual collapse
   useEffect(() => {
-    // Only update isCollapsed if the user hasn't manually collapsed it
-    if (!userHasCollapsed) {
-      setIsCollapsed(!isExpanded);
+    console.log('isExpanded changed:', { isExpanded, userHasCollapsed, isCollapsed });
+
+    // Always expand when isExpanded becomes true, regardless of userHasCollapsed
+    if (isExpanded) {
+      console.log('Forcing expansion of background generator');
+      setIsCollapsed(false);
+      // Reset userHasCollapsed when we force expand
+      setUserHasCollapsed(false);
+    }
+    // Only collapse if the user hasn't manually collapsed it
+    else if (!userHasCollapsed) {
+      setIsCollapsed(true);
     }
   }, [isExpanded, userHasCollapsed]);
 

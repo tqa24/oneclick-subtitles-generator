@@ -125,13 +125,11 @@
 
 .helper-message {
   padding: 16px;
-  background-color: var(--md-surface-2);
   border-radius: 16px;
   color: var(--md-on-surface);
   font-size: 0.95rem;
   margin: 0;
   text-align: center;
-  box-shadow: var(--md-elevation-level1);
   animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
 }
 
