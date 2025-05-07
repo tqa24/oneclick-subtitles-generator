@@ -17,6 +17,39 @@
   margin-bottom: 1.5rem;
 }
 
+/* Unavailable state for when Python server is not connecting */
+.model-management-unavailable-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: rgba(var(--md-error-rgb), 0.08);
+  border-radius: 16px;
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
+}
+
+.model-management-unavailable-message .warning-icon {
+  color: var(--md-error);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-management-unavailable-message .message {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.model-management-unavailable-message .method-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
 /* Model cards container */
 .model-cards-container {
   display: grid;

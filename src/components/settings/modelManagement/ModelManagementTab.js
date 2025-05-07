@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from '@mui/material';
 import {
@@ -10,6 +10,7 @@ import {
   cancelModelDownload
 } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
+import { checkNarrationStatus } from '../../../services/narrationService';
 import Toast from '../../common/Toast';
 import InstalledModelsList from './InstalledModelsList';
 import AvailableModelsList from './AvailableModelsList';
@@ -30,10 +31,48 @@ const ModelManagementTab = () => {
   const { models, loading, error, isScanning, modelSizes, fetchModels, scanForModels } = useModels();
   const { downloads, setDownloads, updateDownloads } = useDownloads(fetchModels);
 
+  // Service availability state - start with assumption that service is unavailable
+  const [isServiceAvailable, setIsServiceAvailable] = useState(false);
+  const [serviceError, setServiceError] = useState('');
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(true);
+
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+
+  // Check if narration service is available
+  useEffect(() => {
+    const checkAvailability = async () => {
+      setIsCheckingAvailability(true);
+      try {
+        console.log('Checking narration service availability for model management tab');
+        const status = await checkNarrationStatus();
+        console.log('Narration service status for model management tab:', status);
+
+        // Set availability based on the actual status
+        setIsServiceAvailable(status.available);
+
+        // Set error message if service is not available
+        if (!status.available && status.message) {
+          setServiceError(status.message);
+        } else {
+          // Clear any previous errors
+          setServiceError('');
+        }
+      } catch (error) {
+        console.error('Error checking narration status for model management tab:', error);
+        // Service is not available if there's an error
+        setIsServiceAvailable(false);
+        setServiceError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
+      } finally {
+        setIsCheckingAvailability(false);
+      }
+    };
+
+    // Check availability once when component mounts
+    checkAvailability();
+  }, [t]);
 
   // Model states
   const [modelToDelete, setModelToDelete] = useState(null);
@@ -352,45 +391,79 @@ const ModelManagementTab = () => {
     }));
   };
 
+  // Create a style for the unavailable or loading content
+  const unavailableContentStyle = !isServiceAvailable || isCheckingAvailability ? {
+    opacity: 0.38,
+    pointerEvents: 'none',
+    userSelect: 'none',
+    cursor: 'not-allowed'
+  } : {};
+
   return (
     <div className="model-management-section" id="model-management">
-      <p className="model-management-description">
-        {t('settings.modelManagement.description')}
-      </p>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+      {(isCheckingAvailability || !isServiceAvailable) && (
+        <div className="model-management-unavailable-message" style={{ maxWidth: 'fit-content', marginBottom: '1.5rem' }}>
+          <div className="warning-icon">
+            {isCheckingAvailability ? (
+              <div style={{ width: 24, height: 24, border: '2px solid rgba(var(--md-primary-rgb), 0.3)', borderRadius: '50%', borderTopColor: 'var(--md-primary)', animation: 'spin 1s linear infinite' }}></div>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            )}
+          </div>
+          <div className="message" style={{ display: 'flex', flexDirection: 'column' }}>
+            <strong>{t('settings.modelManagement.title', 'Narration Models')}</strong>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontStyle: 'italic' }}>
+              {isCheckingAvailability
+                ? t('narration.checkingAvailability', '(Checking availability...)')
+                : t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+            </span>
+          </div>
+        </div>
       )}
 
-      {/* Available Models List */}
-      <AvailableModelsList
-        onModelAdded={fetchModels}
-        downloads={downloads}
-        setDownloads={setDownloads}
-        installedModels={models}
-        onAddModelClick={handleOpenAddDialog}
-      />
+      <div style={unavailableContentStyle}>
+        <p className="model-management-description">
+          {t('settings.modelManagement.description')}
+        </p>
 
-      <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      {/* Installed Models List */}
-      <InstalledModelsList
-        models={models}
-        modelSizes={modelSizes}
-        downloads={downloads}
-        loading={loading}
-        isScanning={isScanning}
-        onScan={scanForModels}
-        onEdit={handleOpenEditDialog}
-        onDelete={handleOpenDeleteDialog}
-        onCancelDownload={handleCancelDownload}
-      />
+        {/* Available Models List */}
+        <AvailableModelsList
+          onModelAdded={fetchModels}
+          downloads={downloads}
+          setDownloads={setDownloads}
+          installedModels={models}
+          onAddModelClick={handleOpenAddDialog}
+        />
+
+        <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
+
+        {/* Installed Models List */}
+        <InstalledModelsList
+          models={models}
+          modelSizes={modelSizes}
+          downloads={downloads}
+          loading={loading}
+          isScanning={isScanning}
+          onScan={scanForModels}
+          onEdit={handleOpenEditDialog}
+          onDelete={handleOpenDeleteDialog}
+          onCancelDownload={handleCancelDownload}
+        />
+      </div>
 
       {/* Add Model Dialog */}
       <AddModelDialog
-        isOpen={openAddDialog}
+        isOpen={openAddDialog && isServiceAvailable && !isCheckingAvailability}
         onClose={handleCloseAddDialog}
         form={addModelForm}
         onFormChange={handleAddFormChange}
@@ -403,7 +476,7 @@ const ModelManagementTab = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteModelDialog
-        isOpen={openDeleteDialog}
+        isOpen={openDeleteDialog && isServiceAvailable && !isCheckingAvailability}
         onClose={handleCloseDeleteDialog}
         model={modelToDelete}
         onDelete={handleDeleteModel}
@@ -412,7 +485,7 @@ const ModelManagementTab = () => {
 
       {/* Edit Model Dialog */}
       <EditModelDialog
-        isOpen={openEditDialog}
+        isOpen={openEditDialog && isServiceAvailable && !isCheckingAvailability}
         onClose={handleCloseEditDialog}
         model={modelToEdit}
         form={editModelForm}
