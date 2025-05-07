@@ -693,7 +693,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           }}
           title={isCollapsed ? t('backgroundGenerator.expand', 'Expand') : t('backgroundGenerator.collapse', 'Collapse')}
         >
-          {isCollapsed ? <FiChevronDown /> : <FiChevronUp />}
+          <FiChevronDown />
         </button>
       </div>
 

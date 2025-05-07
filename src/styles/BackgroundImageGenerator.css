@@ -107,8 +107,12 @@
   transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
 }
 
-.background-generator-container.collapsed .collapse-button svg {
+.collapse-button svg {
   transform: rotate(180deg);
+}
+
+.background-generator-container.collapsed .collapse-button svg {
+  transform: rotate(0deg);
 }
 
 .background-generator-collapsed-content {

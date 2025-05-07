@@ -134,6 +134,52 @@ const FloatingScrollbar = () => {
     }
   };
 
+  // Handle document mouse move for edge detection
+  const handleEdgeDetection = (e) => {
+    // Check if scrolling is needed
+    const { scrollHeight, clientHeight } = document.documentElement;
+    const isScrollNeeded = scrollHeight > clientHeight;
+
+    if (!isScrollNeeded || !containerRef.current) return;
+
+    // Get viewport width
+    const viewportWidth = document.documentElement.clientWidth;
+
+    // Define the edge detection zone (pixels from right edge)
+    // This should match the width of the floating-scrollbar-container in CSS
+    const edgeThreshold = 30;
+
+    // Check if mouse is near the right edge
+    const isNearRightEdge = viewportWidth - e.clientX <= edgeThreshold;
+
+    if (isNearRightEdge) {
+      // Show the scrollbar when near the right edge
+      containerRef.current.classList.remove('fade-out');
+      containerRef.current.classList.remove('hidden');
+      containerRef.current.classList.add('scrolling');
+
+      // Clear any existing hide timeout
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+    } else if (containerRef.current.classList.contains('scrolling') && !isDragging) {
+      // Start hiding the scrollbar when mouse moves away from the edge (and not dragging)
+      if (!hideTimeoutRef.current) {
+        hideTimeoutRef.current = setTimeout(() => {
+          if (containerRef.current) {
+            containerRef.current.classList.add('fade-out');
+            setTimeout(() => {
+              if (containerRef.current) {
+                containerRef.current.classList.remove('scrolling');
+              }
+            }, 300);
+          }
+        }, 600);
+      }
+    }
+  };
+
   // Set up event listeners
   useEffect(() => {
     // Initial update
@@ -145,8 +191,15 @@ const FloatingScrollbar = () => {
     // Add resize event listener with passive option for better performance
     window.addEventListener('resize', updateThumbPosition, { passive: true });
 
-    // Add mouse move and mouse up listeners for dragging
-    document.addEventListener('mousemove', handleDocumentMouseMove);
+    // Store the combined mousemove handler for cleanup
+    const combinedMouseMoveHandler = (e) => {
+      handleDocumentMouseMove(e);
+      handleEdgeDetection(e);
+    };
+
+    // Add mouse move for dragging and edge detection
+    document.addEventListener('mousemove', combinedMouseMoveHandler);
+
     document.addEventListener('mouseup', handleDocumentMouseUp);
 
     // Add wheel event listener to detect mousewheel scrolling
@@ -196,7 +249,7 @@ const FloatingScrollbar = () => {
       window.removeEventListener('scroll', updateThumbPosition);
       window.removeEventListener('resize', updateThumbPosition);
       window.removeEventListener('wheel', updateThumbPosition);
-      document.removeEventListener('mousemove', handleDocumentMouseMove);
+      document.removeEventListener('mousemove', combinedMouseMoveHandler);
       document.removeEventListener('mouseup', handleDocumentMouseUp);
 
       // Disconnect the resize observer
