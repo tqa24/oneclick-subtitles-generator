@@ -192,6 +192,13 @@
   box-shadow: var(--md-elevation-level1);
 }
 
+/* Make F5-TTS buttons consistent with Gemini buttons */
+.results-list .pill-button,
+.advanced-settings-button {
+  height: 36px; /* Match height with audio control buttons in Gemini tab */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with Gemini tab buttons */
+}
+
 .pill-button:hover {
   background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
@@ -927,6 +934,8 @@ textarea.reference-text::-webkit-resizer {
   background-color: rgba(var(--md-error-rgb), 0.1);
   color: var(--md-error);
   border: 1px solid rgba(var(--md-error-rgb), 0.2);
+  height: 36px; /* Match height with audio control buttons in Gemini tab */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with Gemini tab buttons */
 }
 
 .retry-failed-button:hover {
@@ -946,6 +955,61 @@ textarea.reference-text::-webkit-resizer {
   /* Firefox scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Virtualized list container */
+.results-virtualized-list {
+  border-radius: 8px;
+  background-color: var(--md-surface-1);
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.results-virtualized-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-track {
+  background: var(--md-surface-1);
+  border-radius: 4px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb {
+  background-color: var(--md-outline-variant);
+  border-radius: 4px;
+  border: 2px solid var(--md-surface-1);
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb:hover {
+  background-color: var(--md-outline);
+}
+
+/* Small loading spinner for cache loading */
+.loading-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--md-surface);
+  border-top: 3px solid var(--md-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
+.loading-from-cache-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--md-on-surface-variant);
+  font-size: 0.9rem;
+  text-align: center;
+  animation: pulse 2s infinite ease-in-out;
 }
 
 /* Webkit (Chrome, Safari, Edge) scrollbar styling */
@@ -999,7 +1063,8 @@ textarea.reference-text::-webkit-resizer {
   border-radius: 8px;
   border-left: 4px solid var(--md-primary);
   transition: all 0.2s ease;
-  margin-right: 2px; /* Add margin to prevent items from touching the scrollbar */
+  margin: 0.375rem 2px 0.375rem 0; /* Add margin to prevent items from touching the scrollbar and provide spacing between items */
+  box-sizing: border-box; /* Include padding and border in height calculation */
 }
 
 .result-item:hover {

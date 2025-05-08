@@ -264,12 +264,66 @@ const UnifiedNarrationSection = ({
       }
     };
 
-    // Add event listener
+    // Handle F5-TTS narrations loaded from cache
+    const handleF5TTSNarrationsLoadedFromCache = (event) => {
+      if (event.detail && event.detail.narrations) {
+        console.log('Received F5-TTS narrations loaded from cache event:', event.detail);
+
+        // Only update if we don't already have results
+        if (!generationResults || generationResults.length === 0) {
+          // Get the narrations from the event
+          const cachedNarrations = event.detail.narrations;
+
+          // Immediately update the generation results
+          setGenerationResults(cachedNarrations);
+
+          // Show a status message
+          setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
+
+          // Update global narration references
+          if (subtitleSource === 'original') {
+            window.originalNarrations = [...cachedNarrations];
+            try {
+              localStorage.setItem('originalNarrations', JSON.stringify(cachedNarrations));
+            } catch (e) {
+              console.error('Error storing originalNarrations in localStorage:', e);
+            }
+          } else {
+            window.translatedNarrations = [...cachedNarrations];
+            try {
+              localStorage.setItem('translatedNarrations', JSON.stringify(cachedNarrations));
+            } catch (e) {
+              console.error('Error storing translatedNarrations in localStorage:', e);
+            }
+          }
+
+          // Dispatch a custom event to notify other components
+          const updateEvent = new CustomEvent('narrations-updated', {
+            detail: {
+              source: subtitleSource,
+              narrations: cachedNarrations,
+              fromCache: true
+            }
+          });
+          window.dispatchEvent(updateEvent);
+
+          // Force a re-render after a short delay to ensure the UI updates
+          setTimeout(() => {
+            console.log('Forcing re-render after loading F5-TTS narrations from cache');
+            setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded narrations from previous session'));
+          }, 200);
+        }
+      }
+    };
+
+    // Add event listeners
     window.addEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
+    window.addEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
 
     // Clean up
     return () => {
       window.removeEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
+      window.removeEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
     };
   }, [generationResults, setGenerationResults, setGenerationStatus, subtitleSource, t]);
 
