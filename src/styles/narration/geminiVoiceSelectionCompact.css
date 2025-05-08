@@ -16,6 +16,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
+  min-height: 36px; /* Match height with subtitle-selection-container buttons */
 }
 
 /* Voice dropdown */
@@ -25,17 +26,21 @@
 
 .voice-dropdown select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 0 12px; /* Adjusted padding for better vertical alignment */
   border-radius: var(--md-shape-pill);
   border: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-1);
   color: var(--md-on-surface);
-  font-size: 0.95rem;
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with subtitle-selection-container */
   appearance: none;
   cursor: pointer;
   padding-right: 32px; /* Space for the dropdown arrow */
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
+  height: 36px; /* Match height with subtitle-selection-container buttons */
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  text-align: left; /* Ensure text alignment is consistent */
+  line-height: 34px; /* Improve vertical alignment */
 }
 
 .voice-dropdown select:hover {
@@ -67,9 +72,9 @@
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid var(--md-on-surface-variant);
+  border-left: 4px solid transparent; /* Slightly smaller arrow */
+  border-right: 4px solid transparent; /* Slightly smaller arrow */
+  border-top: 4px solid var(--md-on-surface-variant); /* Slightly smaller arrow */
   pointer-events: none;
 }
 
@@ -94,16 +99,20 @@
 .voice-type-pill label {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
+  justify-content: center; /* Better center alignment */
+  padding: 0 12px; /* Adjusted padding to accommodate the height */
   border-radius: var(--md-shape-pill);
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with subtitle-selection-container */
   font-weight: 500;
   transition: all 0.2s ease;
   color: var(--md-on-surface-variant);
   box-shadow: var(--md-elevation-level1);
+  height: 36px; /* Match height with subtitle-selection-container buttons */
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  line-height: 1; /* Improve vertical text alignment */
 }
 
 .voice-type-pill label:hover {
@@ -148,8 +157,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 36px; /* Match width with height */
+  height: 36px; /* Match height with subtitle-selection-container buttons */
   border-radius: 50%;
   border: none;
   background-color: var(--md-surface-1);
@@ -158,6 +167,7 @@
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
   margin-left: 8px;
+  box-sizing: border-box; /* Include padding and border in height calculation */
 }
 
 .play-voice-sample:hover {
@@ -183,12 +193,12 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .voice-dropdown {
     width: 100%;
     max-width: none;
   }
-  
+
   .voice-type-pills {
     width: 100%;
     justify-content: flex-start;
