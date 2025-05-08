@@ -1,0 +1,17 @@
+/* Animation keyframes */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+/* Spinner animation for retry button */
+.spinner {
+  animation: spin 1.5s linear infinite;
+}

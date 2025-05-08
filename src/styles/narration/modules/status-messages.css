@@ -1,0 +1,75 @@
+/* Status messages */
+.status-message {
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.status-message.info {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.status-message.warning {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.status-message.error {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.status-message.success {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+/* Status message success inside reference-audio-container */
+.reference-audio-container .status-message.success {
+  position: absolute;
+  top: 4.5rem; /* Position below the header */
+  right: 1rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  max-width: 200px;
+  z-index: 1;
+  border-radius: 4px;
+  box-shadow: var(--md-elevation-level1);
+  font-size: 0.8rem;
+  border-left-width: 2px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+  /* Ensure it doesn't cover other elements */
+  height: fit-content;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reference-audio-container .status-message.success:hover {
+  opacity: 1;
+}
+
+/* Help icon container */
+.help-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.help-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--md-outline);
+  transition: color 0.2s ease;
+}
+
+.help-icon:hover {
+  color: var(--md-primary);
+}

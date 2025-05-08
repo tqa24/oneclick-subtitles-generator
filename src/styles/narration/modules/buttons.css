@@ -1,0 +1,142 @@
+/* Pill buttons for actions */
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 24px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  background-color: rgba(var(--md-surface-variant-rgb), 0.5);
+  color: var(--md-on-surface-variant);
+  border: 1px solid transparent;
+  height: 42px; /* Consistent height for all pill buttons - matched with translate button */
+  box-sizing: border-box; /* Include padding and border in height calculation */
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Make F5-TTS buttons consistent with Gemini buttons */
+.results-list .pill-button,
+.advanced-settings-button {
+  height: 36px; /* Match height with audio control buttons in Gemini tab */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with Gemini tab buttons */
+}
+
+/* Ensure all buttons in the generate button row have the same height */
+.generate-button-row .pill-button {
+  height: 42px; /* Fixed height for all buttons in the generate button row */
+}
+
+.pill-button:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.pill-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.pill-button.primary {
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border: 1px solid rgba(var(--md-primary-rgb), 0.2);
+}
+
+.pill-button.primary:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: transparent;
+}
+
+.pill-button.secondary {
+  background-color: rgba(var(--md-secondary-rgb), 0.1);
+  color: var(--md-secondary);
+  border: 1px solid rgba(var(--md-secondary-rgb), 0.2);
+}
+
+.pill-button.secondary:hover {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border-color: transparent;
+}
+
+.pill-button.error {
+  background-color: rgba(var(--md-error-rgb), 0.1);
+  color: var(--md-error);
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
+}
+
+.pill-button.error:hover {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: transparent;
+}
+
+.pill-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+}
+
+.pill-button:disabled:hover {
+  box-shadow: none;
+  transform: none;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+}
+
+/* Pill button group */
+.pill-button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Retry button styling */
+.retry-button {
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface);
+}
+
+.retry-button:hover {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.retry-button.retrying {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  cursor: not-allowed;
+}
+
+.retry-button.retrying:hover {
+  background-color: var(--md-surface-2);
+  transform: none;
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Retry failed narrations button */
+.retry-failed-button {
+  margin-left: auto;
+  background-color: rgba(var(--md-error-rgb), 0.1);
+  color: var(--md-error);
+  border: 1px solid rgba(var(--md-error-rgb), 0.2);
+  height: 36px; /* Match height with audio control buttons in Gemini tab */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with Gemini tab buttons */
+}
+
+.retry-failed-button:hover {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-color: transparent;
+}
