@@ -50,8 +50,14 @@ const OnboardingBanner = () => {
     // Get all SVG paths
     const paths = document.querySelectorAll('.svg-container svg path');
 
+    // Convert NodeList to Array for easier manipulation
+    const pathsArray = Array.from(paths);
+
+    // Shuffle the array to randomize the order of animations
+    const shuffledPaths = pathsArray.sort(() => Math.random() - 0.5);
+
     // Assign random fly-out directions to each path
-    paths.forEach((path, index) => {
+    shuffledPaths.forEach((path, index) => {
       // Random direction (positive or negative) - much larger values for more dramatic effect
       const randomX = (Math.random() - 0.5) * 1500; // -750px to 750px
       const randomY = (Math.random() - 0.5) * 1500; // -750px to 750px
@@ -59,14 +65,37 @@ const OnboardingBanner = () => {
       // Random rotation (-360deg to 360deg)
       const randomRotation = (Math.random() - 0.5) * 720;
 
-      // Random delay for staggered effect (0ms to 300ms)
-      const randomDelay = Math.random() * 300;
+      // Random transform origin for more natural movement
+      const randomOriginX = Math.random() * 100 + '%';
+      const randomOriginY = Math.random() * 100 + '%';
 
-      // Set custom properties for the fly-out direction, rotation and delay
+      // Random duration (0.8s to 1.5s) for varied speed
+      const randomDuration = 0.8 + Math.random() * 0.7;
+
+      // Random easing function for varied movement
+      const easings = [
+        'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'cubic-bezier(0.42, 0, 0.58, 1)',
+        'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        'cubic-bezier(0.55, 0.085, 0.68, 0.53)'
+      ];
+      const randomEasing = easings[Math.floor(Math.random() * easings.length)];
+
+      // Staggered delay based on shuffled index (0ms to 400ms)
+      // More paths at the beginning, fewer at the end for natural effect
+      const baseDelay = Math.pow(index / shuffledPaths.length, 1.5) * 400;
+      const randomVariation = Math.random() * 100; // Add some randomness
+      const finalDelay = baseDelay + randomVariation;
+
+      // Set custom properties for the animation
       path.style.setProperty('--fly-x', `${randomX}px`);
       path.style.setProperty('--fly-y', `${randomY}px`);
       path.style.setProperty('--fly-rotate', `${randomRotation}deg`);
-      path.style.setProperty('--fly-delay', `${randomDelay}ms`);
+      path.style.setProperty('--fly-delay', `${finalDelay}ms`);
+      path.style.setProperty('--origin-x', randomOriginX);
+      path.style.setProperty('--origin-y', randomOriginY);
+      path.style.setProperty('--duration', `${randomDuration}s`);
+      path.style.setProperty('--easing', randomEasing);
     });
   };
 
@@ -85,7 +114,7 @@ const OnboardingBanner = () => {
         localStorage.setItem('has_visited_site', 'true');
         // Update state to hide the banner
         setHasVisited(true);
-      }, 1800); // Wait for animations to complete (1.2s + 0.6s delay)
+      }, 2200); // Wait for animations to complete (up to 1.5s + 0.4s delay + 0.3s buffer)
     }
   };
 

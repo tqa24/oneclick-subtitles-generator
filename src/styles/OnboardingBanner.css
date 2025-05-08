@@ -131,13 +131,23 @@
   animation: fadeOut 0.3s ease-in-out forwards;
 }
 
+.svg-container svg path {
+  /* Default styles for all paths */
+  transform-origin: var(--origin-x, center) var(--origin-y, center) !important; /* Variable origin point */
+  backface-visibility: hidden !important; /* Prevent flickering */
+  -webkit-backface-visibility: hidden !important;
+  transform-style: preserve-3d !important;
+  -webkit-transform-style: preserve-3d !important;
+  will-change: transform, opacity !important; /* Optimize animation performance */
+}
+
 .onboarding-overlay.dismissing .svg-container svg path {
-  animation: flyOutAndZoom 1.2s ease-in-out forwards !important; /* Longer duration for more dramatic effect */
-  animation-delay: var(--fly-delay, 0ms) !important; /* Use the custom delay property */
+  /* Use cubic-bezier for smoother animation */
+  animation: flyOutAndZoom var(--duration, 1.2s) var(--easing, cubic-bezier(0.25, 0.1, 0.25, 1)) forwards !important;
+  animation-delay: var(--fly-delay, 0ms) !important; /* Variable delay for staggered effect */
   z-index: 100001 !important; /* Higher than the overlay to ensure visibility */
   position: relative !important; /* Needed for z-index to work */
-  transform-origin: center !important; /* Ensure scaling happens from center */
-  will-change: transform, opacity !important; /* Optimize animation performance */
+  opacity: 1 !important; /* Ensure full opacity at the start */
 }
 
 @keyframes fadeOut {
