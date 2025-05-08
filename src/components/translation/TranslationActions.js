@@ -33,13 +33,15 @@ const TranslationActions = ({
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span
-                  className="loading-spinner"
+                  className="loading-spinner translate-spinner"
                   aria-hidden="true"
                   style={{
                     position: 'relative',
                     top: '4px',
                     marginBottom: '4px',
-                    display: 'inline-block'
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px'
                   }}
                 ></span>
                 <span>{t('translation.translating', 'Translating...')}</span>

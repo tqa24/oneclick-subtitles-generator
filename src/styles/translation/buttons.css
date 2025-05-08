@@ -211,6 +211,9 @@
   top: 3px; /* Increased value to move the spinner down */
   margin-bottom: 3px; /* Add a small bottom margin to help with alignment */
   transform: translateY(0); /* Ensure no other transforms affect it */
+  width: 16px !important; /* Force the width to be 16px */
+  height: 16px !important; /* Force the height to be 16px */
+  border-width: 2px !important; /* Force the border width to be 2px */
 }
 
 @keyframes spin {
