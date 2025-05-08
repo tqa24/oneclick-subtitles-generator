@@ -61,8 +61,19 @@ const TranslationActions = ({
               className="translate-button generate-btn processing"
               disabled={true}
             >
-              <span className="loading-spinner"></span>
-              {t('translation.translating', 'Translating...')}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span
+                  className="loading-spinner"
+                  aria-hidden="true"
+                  style={{
+                    position: 'relative',
+                    top: '4px',
+                    marginBottom: '4px',
+                    display: 'inline-block'
+                  }}
+                ></span>
+                <span>{t('translation.translating', 'Translating...')}</span>
+              </div>
             </button>
             <button
               className="cancel-translation-button"
