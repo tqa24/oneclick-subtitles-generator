@@ -13,5 +13,7 @@
   "cancel": "Cancel",
   "retry": "Retry Segment",
   "customSubtitles": "Custom Subtitles",
-  "provideSubtitles": "Provide your own text"
+  "provideSubtitles": "Provide your own text",
+  "selectModel": "Select Model for Segment {{segmentNumber}}",
+  "modelExplanation": "Select which Gemini model to use for retrying this segment. Different models offer different balances of accuracy and speed."
 }

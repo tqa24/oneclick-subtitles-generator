@@ -13,5 +13,7 @@
   "cancel": "Hủy",
   "retry": "Thử Lại Phân Đoạn",
   "customSubtitles": "Phụ Đề Tùy Chỉnh",
-  "provideSubtitles": "Cung cấp văn bản của riêng bạn"
+  "provideSubtitles": "Cung cấp văn bản của riêng bạn",
+  "selectModel": "Chọn Mô Hình Cho Phân Đoạn {{segmentNumber}}",
+  "modelExplanation": "Chọn mô hình Gemini nào để sử dụng cho việc thử lại phân đoạn này. Các mô hình khác nhau cung cấp sự cân bằng khác nhau giữa độ chính xác và tốc độ."
 }
