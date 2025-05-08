@@ -256,6 +256,7 @@
   transition: all 0.2s ease;
   border: none;
   box-shadow: var(--md-elevation-level1);
+  height: 42px; /* Match height with translate button */
 }
 
 .pill-button.primary {
@@ -331,6 +332,7 @@
   transition: all 0.2s ease;
   border: none;
   box-shadow: var(--md-elevation-level1);
+  height: 42px; /* Match height with translate button */
 }
 
 .gemini-export-controls .pill-button:hover {

@@ -187,7 +187,7 @@
   background-color: rgba(var(--md-surface-variant-rgb), 0.5);
   color: var(--md-on-surface-variant);
   border: 1px solid transparent;
-  height: 36px; /* Consistent height for all pill buttons */
+  height: 42px; /* Consistent height for all pill buttons - matched with translate button */
   box-sizing: border-box; /* Include padding and border in height calculation */
   box-shadow: var(--md-elevation-level1);
 }

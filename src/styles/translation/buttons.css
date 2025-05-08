@@ -24,6 +24,8 @@
 .translate-button {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
+  position: relative; /* Required for absolute positioning of gemini-icon-container */
+  overflow: hidden; /* Required to contain the gemini effects */
 }
 
 .translate-button:hover:not(:disabled) {
@@ -36,6 +38,11 @@
 .translate-button:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
+}
+
+/* Override the generate-btn height to maintain translate button height */
+.translate-button.generate-btn {
+  height: 42px !important; /* Force 42px height */
 }
 
 .translate-button:disabled,
@@ -183,6 +190,23 @@
   width: 100%;
   max-width: 400px;
   /* Font family inherited from global styles */
+}
+
+/* Gemini effects specific styling for translate button */
+.translate-button.generate-btn .gemini-mini-icon {
+  stroke: var(--md-on-primary-container);
+}
+
+.translate-button.generate-btn:hover .gemini-mini-icon {
+  stroke: var(--md-on-primary);
+}
+
+.translate-button.format-button.generate-btn .gemini-mini-icon {
+  stroke: var(--md-on-tertiary-container);
+}
+
+.translate-button.format-button.generate-btn:hover .gemini-mini-icon {
+  stroke: var(--md-on-tertiary);
 }
 
 /* Responsive styles */

@@ -35,12 +35,14 @@ export const initGeminiButtonEffects = () => {
   const forceStopButtons = document.querySelectorAll('.force-stop-btn');
   const srtUploadButtons = document.querySelectorAll('.srt-upload-button');
   const addSubtitlesButtons = document.querySelectorAll('.add-subtitles-button');
+  const translateButtons = document.querySelectorAll('.translate-button.generate-btn');
+  const downloadButtons = document.querySelectorAll('.download-btn.generate-btn');
 
   // First, clean up any particles that are no longer in the DOM
   particles = cleanupParticles(particles);
 
   // Apply effects to all buttons
-  [...generateButtons, ...retryButtons, ...forceStopButtons, ...srtUploadButtons, ...addSubtitlesButtons].forEach(button => {
+  [...generateButtons, ...retryButtons, ...forceStopButtons, ...srtUploadButtons, ...addSubtitlesButtons, ...translateButtons, ...downloadButtons].forEach(button => {
     // Initialize the button and get updated particles array
     particles = initializeButton(button, initializedButtons, particles);
 

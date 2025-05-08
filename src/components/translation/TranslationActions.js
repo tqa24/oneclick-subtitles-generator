@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import initTranslateButtonEffects from '../../utils/translateButtonEffects';
 
 /**
  * Translation action buttons component
@@ -20,13 +21,44 @@ const TranslationActions = ({
 }) => {
   const { t } = useTranslation();
 
+  // Initialize Gemini effects for translate buttons
+  useEffect(() => {
+    // Small delay to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      initTranslateButtonEffects();
+
+      // Add a MutationObserver to detect when the button is clicked
+      // This ensures the effects are reinitialized after the button state changes
+      const translateButtons = document.querySelectorAll('.translate-button.generate-btn');
+      if (translateButtons.length > 0) {
+        const observer = new MutationObserver((mutations) => {
+          // When button attributes change (like disabled state), reinitialize effects
+          initTranslateButtonEffects();
+        });
+
+        // Observe each translate button for attribute changes
+        translateButtons.forEach(button => {
+          observer.observe(button, {
+            attributes: true,
+            attributeFilter: ['class', 'disabled']
+          });
+        });
+
+        // Return cleanup function
+        return () => observer.disconnect();
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isTranslating]); // Re-initialize when isTranslating changes
+
   return (
     <div className="translation-row action-row">
       <div className="row-content action-content">
         {isTranslating ? (
           <>
             <button
-              className="translate-button"
+              className="translate-button generate-btn processing"
               disabled={true}
             >
               <span className="loading-spinner"></span>
@@ -46,7 +78,7 @@ const TranslationActions = ({
           </>
         ) : (
           <button
-            className={`translate-button ${isFormatMode ? 'format-button' : ''}`}
+            className={`translate-button generate-btn ${isFormatMode ? 'format-button' : ''}`}
             onClick={onTranslate}
             disabled={disabled}
           >
