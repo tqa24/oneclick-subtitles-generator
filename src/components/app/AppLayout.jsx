@@ -9,6 +9,7 @@ import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
 import BackgroundImageGenerator from '../BackgroundImageGenerator';
 import FloatingScrollbar from '../FloatingScrollbar';
+import OnboardingBanner from '../OnboardingBanner';
 
 /**
  * Main application layout component

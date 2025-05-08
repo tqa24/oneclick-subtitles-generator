@@ -5,6 +5,7 @@ import { useAppState } from './AppState';
 import { useAppHandlers } from './AppHandlers';
 import { useModalHandlers } from './ModalHandlers';
 import { useAppEffects } from './AppEffects';
+import OnboardingBanner from '../OnboardingBanner';
 
 // Import CSS files
 import '../../styles/App.css';
@@ -13,6 +14,7 @@ import '../../styles/ProcessingTextAnimation.css';
 import '../../styles/SrtUploadButton.css';
 import '../../styles/VideoAnalysisModal.css';
 import '../../styles/TranscriptionRulesEditor.css';
+import '../../styles/OnboardingBanner.css';
 
 /**
  * Main App component
@@ -40,12 +42,17 @@ function App() {
   // State change effects removed to reduce console logs
 
   return (
-    <AppLayout
-      appState={appState}
-      appHandlers={appHandlers}
-      modalHandlers={modalHandlers}
-      t={t}
-    />
+    <>
+      {/* Onboarding banner for first-time visitors - rendered at the top level */}
+      <OnboardingBanner />
+
+      <AppLayout
+        appState={appState}
+        appHandlers={appHandlers}
+        modalHandlers={modalHandlers}
+        t={t}
+      />
+    </>
   );
 }
 
