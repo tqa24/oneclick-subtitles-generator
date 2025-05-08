@@ -13,5 +13,7 @@
   "invalidUrl": "Invalid URL format. Please enter a valid URL.",
   "downloadError": "Error downloading video: {{message}}",
   "regionRestricted": "This video is region-restricted and not available in your location.",
-  "privateVideo": "This video is private or has been deleted."
+  "privateVideo": "This video is private or has been deleted.",
+  "viewAllSupportedSites": "Click to view all supported sites",
+  "hundredsMoreWebsites": "...and hundreds more websites!"
 }

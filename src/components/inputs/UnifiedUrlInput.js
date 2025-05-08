@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiClock, FiX } from 'react-icons/fi';
+import { FiClock, FiX, FiExternalLink } from 'react-icons/fi';
 import {
   addYoutubeUrlToHistory,
   getYoutubeUrlHistory,
@@ -400,6 +400,11 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     }
   };
 
+  // Open the yt-dlp supported sites documentation
+  const openSupportedSitesDoc = () => {
+    window.open('https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md', '_blank');
+  };
+
   // Render examples based on URL type
   const renderExamples = () => {
     if (selectedVideo && selectedVideo.id) return null;
@@ -421,7 +426,17 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
           <div className="site-chip">soundcloud.com</div>
           <div className="site-chip">linkedin.com</div>
           <div className="site-chip">pinterest.com</div>
-          <div className="site-chip more-sites-chip">và hàng trăm website khác...</div>
+          <div
+            className="site-chip more-sites-chip"
+            onClick={openSupportedSitesDoc}
+            title={t('allSitesUrlInput.viewAllSupportedSites', 'Click to view all supported sites')}
+            role="button"
+            tabIndex="0"
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <span>{t('allSitesUrlInput.hundredsMoreWebsites', '...and hundreds more websites!')}</span>
+            <FiExternalLink size={14} />
+          </div>
         </div>
       </div>
     );

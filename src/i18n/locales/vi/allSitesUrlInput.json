@@ -13,5 +13,7 @@
   "invalidUrl": "Định dạng URL không hợp lệ. Vui lòng nhập URL hợp lệ.",
   "downloadError": "Lỗi tải video: {{message}}",
   "regionRestricted": "Video này bị giới hạn khu vực và không có sẵn ở vị trí của bạn.",
-  "privateVideo": "Video này là riêng tư hoặc đã bị xóa."
+  "privateVideo": "Video này là riêng tư hoặc đã bị xóa.",
+  "viewAllSupportedSites": "Nhấp để xem tất cả các trang web được hỗ trợ",
+  "hundredsMoreWebsites": "và hàng trăm website khác..."
 }

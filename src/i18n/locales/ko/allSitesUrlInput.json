@@ -1,0 +1,19 @@
+{
+  "placeholder": "비디오 URL 입력 (예: tiktok.com, dailymotion.com 등)",
+  "examplesTitle": "지원되는 사이트:",
+  "example1": "tiktok.com",
+  "example2": "vimeo.com",
+  "example3": "dailymotion.com",
+  "example4": "facebook.com",
+  "example5": "twitter.com",
+  "example6": "instagram.com",
+  "example7": "...그리고 더 많은 사이트!",
+  "ytDlpNote": "yt-dlp로 구동되며 1000개 이상의 사이트 지원",
+  "url": "URL:",
+  "invalidUrl": "잘못된 URL 형식입니다. 유효한 URL을 입력해주세요.",
+  "downloadError": "비디오 다운로드 오류: {{message}}",
+  "regionRestricted": "이 비디오는 지역 제한이 있어 현재 위치에서 사용할 수 없습니다.",
+  "privateVideo": "이 비디오는 비공개이거나 삭제되었습니다.",
+  "viewAllSupportedSites": "지원되는 모든 사이트 보기",
+  "hundredsMoreWebsites": "...그리고 수백 개의 다른 웹사이트!"
+}
