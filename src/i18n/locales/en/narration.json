@@ -128,6 +128,7 @@
   "generate": "Generate",
   "generating": "Generating...",
   "pending": "Pending generation...",
+  "waitingForResults": "Waiting for narration results...",
   "geminiGenerationIncomplete": "Gemini narration generation incomplete. Generated {{generated}} of {{total}} narrations.",
   "geminiConnectionError": "Connection to Gemini was interrupted. You can retry the failed narrations individually."
 }

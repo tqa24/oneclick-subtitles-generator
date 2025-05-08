@@ -147,6 +147,7 @@
 
   "notGenerated": "Chưa được tạo",
   "pending": "Đang chờ tạo...",
+  "waitingForResults": "Đang chờ kết quả thuyết minh...",
   "geminiGenerationIncomplete": "Tạo thuyết minh Gemini không hoàn tất. Đã tạo {{generated}} trên {{total}} thuyết minh.",
   "geminiConnectionError": "Kết nối với Gemini bị gián đoạn. Bạn có thể thử lại các thuyết minh thất bại một cách riêng lẻ.",
   "retry": "Thử lại",
