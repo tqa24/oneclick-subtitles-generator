@@ -17,6 +17,9 @@ const OnboardingBanner = () => {
   // State for countdown timer
   const [countdown, setCountdown] = useState(4);
 
+  // State for dismissing animation
+  const [isDismissing, setIsDismissing] = useState(false);
+
   useEffect(() => {
     // Check if user has visited before
     const hasVisitedBefore = localStorage.getItem('has_visited_site') === 'true';
@@ -42,13 +45,47 @@ const OnboardingBanner = () => {
     }
   }, []);
 
+  // Function to assign random fly-out directions to SVG paths
+  const assignRandomFlyDirections = () => {
+    // Get all SVG paths
+    const paths = document.querySelectorAll('.svg-container svg path');
+
+    // Assign random fly-out directions to each path
+    paths.forEach((path, index) => {
+      // Random direction (positive or negative) - much larger values for more dramatic effect
+      const randomX = (Math.random() - 0.5) * 1500; // -750px to 750px
+      const randomY = (Math.random() - 0.5) * 1500; // -750px to 750px
+
+      // Random rotation (-360deg to 360deg)
+      const randomRotation = (Math.random() - 0.5) * 720;
+
+      // Random delay for staggered effect (0ms to 300ms)
+      const randomDelay = Math.random() * 300;
+
+      // Set custom properties for the fly-out direction, rotation and delay
+      path.style.setProperty('--fly-x', `${randomX}px`);
+      path.style.setProperty('--fly-y', `${randomY}px`);
+      path.style.setProperty('--fly-rotate', `${randomRotation}deg`);
+      path.style.setProperty('--fly-delay', `${randomDelay}ms`);
+    });
+  };
+
   const handleDismiss = () => {
     // Only allow dismissal if the timer has elapsed
     if (canDismiss) {
-      // Mark that the user has visited the site
-      localStorage.setItem('has_visited_site', 'true');
-      // Update state to hide the banner
-      setHasVisited(true);
+      // Start dismissing animation
+      setIsDismissing(true);
+
+      // Assign random fly-out directions
+      assignRandomFlyDirections();
+
+      // After animation completes, mark as visited and hide
+      setTimeout(() => {
+        // Mark that the user has visited the site
+        localStorage.setItem('has_visited_site', 'true');
+        // Update state to hide the banner
+        setHasVisited(true);
+      }, 1800); // Wait for animations to complete (1.2s + 0.6s delay)
     }
   };
 
@@ -60,7 +97,7 @@ const OnboardingBanner = () => {
   // Render the banner for first-time visitors
   return (
     <div
-      className={`onboarding-overlay ${canDismiss ? 'can-dismiss' : 'wait-to-dismiss'}`}
+      className={`onboarding-overlay ${canDismiss ? 'can-dismiss' : 'wait-to-dismiss'} ${isDismissing ? 'dismissing' : ''}`}
       onClick={handleDismiss}
     >
       <div className="onboarding-banner-container">
