@@ -11,7 +11,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
   position: relative; /* Ensure proper positioning context for the subtitle settings panel */
 }
 
@@ -426,6 +425,18 @@ input:disabled + .toggle-slider:before {
   width: 100%;
   max-height: 500px;
   background-color: #000;
+  border-radius: 16px; /* Match the border-radius in video-player-dark-theme.css */
+}
+
+/* Hide borders in fullscreen mode */
+.video-player:fullscreen,
+.video-player:-webkit-full-screen,
+.video-player:-moz-full-screen,
+.video-player:-ms-fullscreen {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 /* Custom Video Player Styles (for YouTube fallback) */

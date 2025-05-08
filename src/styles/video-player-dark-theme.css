@@ -1,0 +1,290 @@
+/* Video Player Dark Theme Styles */
+
+/*
+ * This file contains styles to customize the appearance of HTML5 video elements.
+ * It targets both the native browser controls and provides
+ * consistent styling across browsers to match Material Design 3 aesthetics.
+ * Controls panel background is transparent in all themes.
+ */
+
+/*
+ * -----------------------------------------------------------------------------
+ * Base Video Player Styles (Common to all themes and browsers)
+ * -----------------------------------------------------------------------------
+ */
+video.video-player {
+  border-radius: 8px; /* Rounded corners for MD3 */
+  box-shadow: var(--md-elevation-level1);
+  color-scheme: auto; /* Respect the system/browser preference by default */
+  background-color: #000; /* Default background, overridden by themes */
+  transition:
+    box-shadow 0.2s var(--md-easing-standard),
+    background-color 0.3s var(--md-easing-standard),
+    border-color 0.3s var(--md-easing-standard);
+  overflow: hidden;
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Theme-Specific Styles (Light & Dark) - For the video player element itself
+ * -----------------------------------------------------------------------------
+ */
+[data-theme="light"] video.video-player {
+  border: 1px solid var(--md-outline-variant);
+}
+
+[data-theme="dark"] video.video-player {
+  color-scheme: dark; /* Still useful for browser understanding context */
+  background-color: #121212;
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Hover & Focus States - For the video player element itself
+ * -----------------------------------------------------------------------------
+ */
+video.video-player:hover {
+  box-shadow: var(--md-elevation-level2);
+}
+
+[data-theme="light"] video.video-player:hover {
+  border-color: var(--md-outline);
+}
+
+[data-theme="dark"] video.video-player:hover {
+  border-color: var(--md-primary);
+}
+
+video.video-player:focus,
+video.video-player:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+  box-shadow: var(--md-elevation-level2);
+}
+video.video-player:focus:not(:focus-visible) {
+    outline: none;
+}
+
+
+/*
+ * -----------------------------------------------------------------------------
+ * Chrome/Edge Specific Control Styles (-webkit-media-controls)
+ * UNIVERSAL APPEARANCE FOR CONTROLS (Transparent Panel)
+ * -----------------------------------------------------------------------------
+ */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  /* Controls Panel: Transparent in all themes */
+  video.video-player::-webkit-media-controls-panel {
+    background-color: transparent; /* Transparent panel background */
+    border-radius: 0 0 12px 12px; /* Kept for potential clipping, not visible */
+    padding: 4px 8px;             /* Affects control layout */
+  }
+
+  /* Slider Tracks: Transparent background in all themes */
+  video.video-player::-webkit-media-controls-timeline,
+  video.video-player::-webkit-media-controls-volume-slider {
+    background-color: transparent;
+    border-radius: 12px;
+    height: 4px;
+    margin: 0 8px;
+  }
+  video.video-player::-webkit-media-controls-volume-slider {
+    margin: 0;
+  }
+
+  /* Timer Display: White text with shadow in all themes */
+  video.video-player::-webkit-media-controls-current-time-display,
+  video.video-player::-webkit-media-controls-time-remaining-display {
+    color: #FFFFFF;
+    font-family: var(--font-primary);
+    font-size: 12px;
+    padding: 0 4px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 5px rgba(0,0,0,0.5);
+  }
+
+  /* Control Buttons: White icons with drop-shadow in all themes */
+  video.video-player::-webkit-media-controls-play-button,
+  video.video-player::-webkit-media-controls-mute-button,
+  video.video-player::-webkit-media-controls-fullscreen-button,
+  video.video-player::-webkit-media-controls-picture-in-picture-button,
+  video.video-player::-webkit-media-controls-overflow-button,
+  video.video-player::-webkit-media-controls-download-button,
+  video.video-player::-webkit-media-controls-cast-button {
+    filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  }
+
+  /*
+    Note: Styling the thumb (playhead/volume head) of sliders is crucial for visibility.
+    Example for a white thumb with shadow, apply to both timeline and volume slider thumbs:
+  */
+  video.video-player::-webkit-media-slider-thumb { /* General slider thumb */
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px; /* Or MD3 spec, e.g., 16px or 20px for touch */
+    height: 12px;
+    border-radius: 50%;
+    background-color: #FFFFFF;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+    /* box-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Alternative to filter drop-shadow */
+    cursor: pointer;
+  }
+  /* Ensure volume slider thumb is also styled if it has a more specific selector */
+  /* video.video-player::-webkit-media-controls-volume-slider::-webkit-slider-thumb { ... } */
+
+
+  /*
+   * Removed theme-specific overrides for controls panel background, timer color, and icon filters
+   * as they are now universally styled for a transparent panel.
+   */
+  /* [data-theme="dark"] video.video-player::-webkit-media-controls-panel { ... } // REMOVED */
+  /* [data-theme="dark"] video.video-player::-webkit-media-controls-current-time-display, ... { ... } // REMOVED */
+  /* [data-theme="dark"] video.video-player::-webkit-media-controls-play-button, ... { ... } // REMOVED */
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Firefox Specific Styles (If any truly unique styling is needed)
+ * -----------------------------------------------------------------------------
+ */
+@-moz-document url-prefix() {
+  /*
+   * For Firefox, to make the control panel transparent:
+   * video.video-player::-moz-media-controls-panel { background: transparent !important; }
+   * Then style icons (e.g., ::-moz-media-control-button) with fill: white; filter: drop-shadow(...);
+   * And time display (e.g., ::-moz-media-time-display) with color: white; text-shadow: ...;
+   */
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Safari Specific Styles (If any truly unique styling is needed)
+ * -----------------------------------------------------------------------------
+ */
+/* Safari specific control styling would go here if needed */
+
+
+/*
+ * -----------------------------------------------------------------------------
+ * Video Subtitle Styling
+ * -----------------------------------------------------------------------------
+ */
+.video-subtitle {
+  position: absolute;
+  bottom: 10px; /* Adjust if it overlaps with controls padding */
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 90%;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: clamp(1rem, 1.8vw, 1.25rem);
+  border-radius: 8px;
+  transition: background-color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+  /* Subtitle text shadow for visibility, as it overlays video directly or transparent controls */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 5px rgba(0,0,0,0.5);
+  /* Subtitle background is separate from video controls panel */
+  box-shadow: var(--md-elevation-level1); /* Shadow for the subtitle box itself */
+}
+
+[data-theme="light"] .video-subtitle {
+  background-color: rgba(var(--md-inverse-surface-rgb, 0, 0, 0), 0.75);
+  color: var(--md-inverse-on-surface, #ffffff);
+}
+
+[data-theme="dark"] .video-subtitle {
+  background-color: rgba(var(--md-surface-container-highest-rgb, 30, 30, 30), 0.85);
+  color: var(--md-on-surface, #ffffff);
+  /* text-shadow for dark theme can also use the one from the base .video-subtitle rule */
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Video Roll Class Specific Styling
+ * -----------------------------------------------------------------------------
+ */
+.video-roll-deg-scale {
+  transition: transform 0.3s var(--md-easing-standard);
+}
+
+/*
+ * -----------------------------------------------------------------------------
+ * Fullscreen Mode Styling
+ * -----------------------------------------------------------------------------
+ */
+/* Hide border in fullscreen mode - using more specific selectors and !important to override all other styles */
+:fullscreen video.video-player,
+:-webkit-full-screen video.video-player,
+:-moz-full-screen video.video-player,
+:-ms-fullscreen video.video-player,
+video.video-player:fullscreen,
+video.video-player:-webkit-full-screen,
+video.video-player:-moz-full-screen,
+video.video-player:-ms-fullscreen {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important; /* Remove any outline as well */
+}
+
+/* Also hide outline in fullscreen mode */
+:fullscreen video.video-player:focus,
+:-webkit-full-screen video.video-player:focus,
+:-moz-full-screen video.video-player:focus,
+:-ms-fullscreen video.video-player:focus,
+video.video-player:fullscreen:focus,
+video.video-player:-webkit-full-screen:focus,
+video.video-player:-moz-full-screen:focus,
+video.video-player:-ms-fullscreen:focus,
+:fullscreen video.video-player:focus-visible,
+:-webkit-full-screen video.video-player:focus-visible,
+:-moz-full-screen video.video-player:focus-visible,
+:-ms-fullscreen video.video-player:focus-visible,
+video.video-player:fullscreen:focus-visible,
+video.video-player:-webkit-full-screen:focus-visible,
+video.video-player:-moz-full-screen:focus-visible,
+video.video-player:-ms-fullscreen:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Override any browser-specific blue outline in fullscreen */
+:fullscreen *,
+:-webkit-full-screen *,
+:-moz-full-screen *,
+:-ms-fullscreen * {
+  outline-color: transparent !important;
+  outline: none !important;
+}
+
+/* Chrome-specific fix for blue outline in fullscreen */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  :fullscreen video.video-player,
+  :-webkit-full-screen video.video-player {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Target the ::backdrop pseudo-element to remove any blue outline */
+  :fullscreen::backdrop,
+  :-webkit-full-screen::backdrop {
+    background-color: black !important;
+  }
+}
+
+/* Adjust subtitle positioning in fullscreen mode */
+:fullscreen .video-subtitle,
+:-webkit-full-screen .video-subtitle,
+:-moz-full-screen .video-subtitle,
+:-ms-fullscreen .video-subtitle,
+video.video-player:fullscreen ~ .video-subtitle,
+video.video-player:-webkit-full-screen ~ .video-subtitle,
+video.video-player:-moz-full-screen ~ .video-subtitle,
+video.video-player:-ms-fullscreen ~ .video-subtitle {
+  bottom: 60px !important; /* Move up to avoid overlap with fullscreen controls */
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important; /* Larger font for fullscreen */
+  padding: 0.75rem 1.5rem !important; /* Larger padding for fullscreen */
+  max-width: 80% !important; /* Slightly narrower to avoid edges */
+  z-index: 9999 !important; /* Ensure subtitles are visible above all other elements */
+}
