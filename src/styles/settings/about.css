@@ -19,6 +19,70 @@
   flex: 1;
 }
 
+/* Replay Onboarding Button Styles - Material Design 3 */
+.replay-onboarding-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.replay-onboarding-button {
+  /* Transparent background with subtle outline - Material Design 3 Text Button */
+  background-color: transparent;
+  color: var(--md-primary, #5684D1); /* Use MD3 primary color variable if available */
+  border: none; /* No border for text buttons in MD3 */
+  border-radius: 20px; /* Pill shape for MD3 */
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500; /* Medium weight for MD3 */
+  letter-spacing: 0.1px; /* Subtle letter spacing */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* MD3 standard easing */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px; /* Standard height for MD3 text buttons */
+  position: relative;
+  overflow: hidden; /* For ripple effect */
+  min-width: 64px; /* MD3 minimum touch target */
+}
+
+/* State styles - Material Design 3 states */
+.replay-onboarding-button:hover {
+  background-color: rgba(86, 132, 209, 0.08); /* 8% opacity primary color - MD3 hover state */
+}
+
+.replay-onboarding-button:active {
+  background-color: rgba(86, 132, 209, 0.12); /* 12% opacity primary color - MD3 pressed state */
+}
+
+.replay-onboarding-button:focus-visible {
+  outline: none;
+  background-color: rgba(86, 132, 209, 0.12); /* 12% opacity - MD3 focus state */
+}
+
+/* Add state layer for better touch feedback */
+.replay-onboarding-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  border-radius: inherit;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Add an icon to the button - using a simple unicode symbol */
+.replay-onboarding-button::before {
+  content: "↻"; /* Unicode refresh symbol */
+  margin-right: 8px;
+  font-size: 16px;
+  line-height: 1;
+}
+
 .about-section::before {
   content: "";
   position: absolute;

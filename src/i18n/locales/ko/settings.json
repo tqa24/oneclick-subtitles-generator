@@ -185,6 +185,8 @@
   "creator": "제작자",
   "youtube": "YouTube",
   "appDescription": "원클릭 자막 생성기는 한 번의 클릭으로 비디오에 대한 자막을 생성, 편집 및 번역할 수 있는 도구입니다.",
+  "replayOnboarding": "환영 애니메이션 다시보기",
+  "replayOnboardingTooltip": "환영 애니메이션을 다시 표시합니다",
   "modelManagement": "내레이션 모델",
   "modelManagement.title": "내레이션 모델 관리",
   "modelManagement.description": "내레이션을 위한 F5-TTS 모델을 관리합니다. Hugging Face 또는 직접 URL에서 새 모델을 추가하고, 사용할 모델을 선택하고, 더 이상 필요하지 않은 모델을 삭제할 수 있습니다.",

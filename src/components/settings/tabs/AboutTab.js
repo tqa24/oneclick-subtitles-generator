@@ -1,4 +1,4 @@
-import React from 'react';
+// No need to import React with modern JSX transform
 import { useTranslation } from 'react-i18next';
 
 const AboutTab = ({ backgroundType }) => {
@@ -15,6 +15,15 @@ const AboutTab = ({ backgroundType }) => {
     }
 
     return `alternative-bg${backgroundType === 'alternative' ? '' : `-${backgroundType}`}`;
+  };
+
+  // Function to replay the onboarding animation
+  const handleReplayOnboarding = () => {
+    // Remove the flag from localStorage so the onboarding will show again
+    localStorage.removeItem('has_visited_site');
+
+    // Reload the page to show the onboarding
+    window.location.reload();
   };
 
   return (
@@ -51,6 +60,18 @@ const AboutTab = ({ backgroundType }) => {
         </div>
         <div className="app-description">
           <p>{t('settings.appDescription', 'One-click Subtitles Generator is a tool that helps you generate, edit, and translate subtitles for your videos with just one click.')}</p>
+        </div>
+
+        {/* Replay Onboarding Button */}
+        <div className="replay-onboarding-container">
+          <button
+            className="replay-onboarding-button"
+            onClick={handleReplayOnboarding}
+            title={t('settings.replayOnboardingTooltip', 'Show the welcome animation again')}
+            aria-label={t('settings.replayOnboardingTooltip', 'Show the welcome animation again')}
+          >
+            {t('settings.replayOnboarding', 'Replay Welcome Animation')}
+          </button>
         </div>
       </div>
     </div>

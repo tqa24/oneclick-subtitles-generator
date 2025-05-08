@@ -193,6 +193,8 @@
   "creator": "Tác giả",
   "youtube": "YouTube",
   "appDescription": "Trình Tạo Phụ Đề One-Click là công cụ giúp bạn tạo, chỉnh sửa, dịch phụ đề cũng như tạo thuyết minh cho video của bạn chỉ với một cú nhấp chuột.",
+  "replayOnboarding": "Xem lại hoạt ảnh chào mừng",
+  "replayOnboardingTooltip": "Hiển thị lại hoạt ảnh chào mừng",
   "modelManagement": "Mô hình thuyết minh",
   "modelManagement.title": "Quản lý mô hình thuyết minh",
   "modelManagement.description": "Quản lý các mô hình F5-TTS cho thuyết minh. Bạn có thể thêm mô hình mới từ Hugging Face hoặc URL trực tiếp, chọn mô hình để sử dụng và xóa các mô hình không cần thiết.",

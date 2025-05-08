@@ -185,6 +185,8 @@
   "creator": "Creator",
   "youtube": "YouTube",
   "appDescription": "One-click Subtitles Generator is a tool that helps you generate, edit, and translate subtitles for your videos with just one click.",
+  "replayOnboarding": "Replay Welcome Animation",
+  "replayOnboardingTooltip": "Show the welcome animation again",
   "modelManagement": "Narration Models",
   "modelManagement.title": "Narration Model Management",
   "modelManagement.description": "Manage F5-TTS models for narration. You can add new models from Hugging Face or direct URLs, select which model to use, and delete models you no longer need.",
