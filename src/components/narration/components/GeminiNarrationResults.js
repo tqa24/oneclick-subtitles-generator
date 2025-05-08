@@ -253,7 +253,7 @@ const GeminiNarrationResults = ({
     }
 
     const item = generationResults[index];
-    if (!item) return 80; // Default height
+    if (!item) return 60; // Default height
 
     // Calculate height based on text length
     const text = item.text || '';
@@ -262,7 +262,7 @@ const GeminiNarrationResults = ({
     const lines = Math.max(lineCount, estimatedLines);
 
     // Base height + additional height per line + space for controls
-    const height = 80 + (lines > 1 ? (lines - 1) * 20 : 0);
+    const height = 60 + (lines > 1 ? (lines - 1) * 20 : 0);
 
     // Cache the calculated height
     rowHeights.current[index] = height;

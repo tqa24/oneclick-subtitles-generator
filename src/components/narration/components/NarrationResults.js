@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VariableSizeList as List } from 'react-window';
 
@@ -205,7 +205,7 @@ const NarrationResults = ({
 
     // Calculate height based on content
     const result = generationResults[index];
-    if (!result) return 80; // Default height
+    if (!result) return 60; // Default height
 
     // Calculate height based on text length
     const text = result.text || '';
@@ -214,7 +214,7 @@ const NarrationResults = ({
     const lines = Math.max(lineCount, estimatedLines);
 
     // Base height + additional height per line + space for controls
-    const height = 80 + (lines > 1 ? (lines - 1) * 20 : 0);
+    const height = 60 + (lines > 1 ? (lines - 1) * 20 : 0);
 
     // Cache the calculated height
     rowHeights.current[index] = height;

@@ -1108,11 +1108,12 @@ textarea.reference-text::-webkit-resizer {
   align-items: center;
   padding: 0.75rem 1rem;
   background-color: var(--md-surface-2);
-  border-radius: 8px;
+  border-radius: 32px;
   border-left: 4px solid var(--md-primary);
   transition: all 0.2s ease;
   margin: 0.375rem 2px 0.375rem 0; /* Add margin to prevent items from touching the scrollbar and provide spacing between items */
   box-sizing: border-box; /* Include padding and border in height calculation */
+  height: 60px; /* Fixed height for result items */
 }
 
 .result-item:hover {
