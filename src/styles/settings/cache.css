@@ -3,9 +3,8 @@
 /* Cache section */
 .cache-section {
   min-height: 400px; /* Ensure the cache section has a minimum height */
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Create a 2-column layout */
-  grid-gap: 20px; /* Add gap between columns */
+  display: flex;
+  flex-direction: column;
   height: 100%; /* Take full height of parent */
 }
 
@@ -23,14 +22,23 @@
 }
 
 .cache-content {
-  grid-column: span 2; /* Header spans both columns */
+  width: 100%;
+}
+
+/* Cache actions row with buttons */
+.cache-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .cache-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  margin-top: 0; /* Removed top margin since it's now the first element */
+  align-items: center;
+  gap: 12px;
 }
 
 .empty-cache-info {
@@ -102,12 +110,30 @@
   border-radius: var(--card-border-radius);
   padding: 16px 20px;
   margin: 0;
-  height: 100%;
+  width: 100%;
   font-size: var(--md-body-medium-size);
   line-height: var(--md-body-medium-height);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
   box-shadow: var(--md-elevation-level1);
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
+  position: relative;
+}
+
+/* Subtle overlay for cache details when clearing */
+.cache-details.clearing {
+  opacity: 0.8;
+}
+
+.cache-details.clearing::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: var(--card-border-radius);
+  pointer-events: none;
 }
 
 .cache-details-header {
@@ -170,7 +196,25 @@
   transform: rotate(180deg);
 }
 
-/* Cache columns */
+/* Cache details grid layout */
+.cache-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 20px;
+  width: 100%;
+}
+
+.cache-details-grid-header {
+  grid-column: span 2;
+  margin-bottom: 24px;
+}
+
+.cache-details-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cache columns - legacy, keeping for compatibility */
 .cache-left-column {
   display: flex;
   flex-direction: column;
@@ -185,11 +229,13 @@
 /* Cache status message */
 .cache-status-message {
   padding: 12px 16px;
-  margin: 20px 0 0 0; /* Added top margin since it's now below the actions */
+  margin: 0; /* Reset margin */
   border-radius: var(--card-border-radius);
   font-size: var(--md-body-medium-size);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
   height: auto; /* Changed from 100% to auto to fit content */
+  flex: 1;
+  min-width: 200px;
 }
 
 .cache-status-message.status-success {
@@ -238,4 +284,33 @@
   font-size: var(--md-body-medium-size);
   line-height: var(--md-body-medium-height);
   transition: color var(--transition-speed);
+}
+
+/* Responsive styles for cache section */
+@media (max-width: 768px) {
+  .cache-details-grid {
+    grid-template-columns: 1fr; /* Single column on smaller screens */
+  }
+
+  .cache-actions-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cache-status-message {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cache-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .clear-cache-btn,
+  .refresh-cache-btn {
+    width: 100%;
+  }
 }

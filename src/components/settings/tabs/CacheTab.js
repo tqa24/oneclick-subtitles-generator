@@ -46,7 +46,7 @@ const CacheTab = () => {
   const handleClearCache = async () => {
     // No confirmation prompt as requested
     setClearingCache(true);
-    setCacheDetails(null); // Reset previous details
+    // Don't reset cacheDetails here to prevent UI flashing
     setCacheStatus({ message: '', type: '' }); // Reset status message
 
     try {
@@ -81,7 +81,8 @@ const CacheTab = () => {
           });
 
           // Fetch updated cache info if details weren't returned
-          fetchCacheInfo();
+          // Use a separate function to avoid state flashing
+          await fetchCacheInfoQuietly();
         }
       } else {
         throw new Error(data.error || 'Failed to clear cache');
@@ -94,9 +95,33 @@ const CacheTab = () => {
       });
 
       // Fetch updated cache info even if there was an error
-      fetchCacheInfo();
+      // Use a separate function to avoid state flashing
+      await fetchCacheInfoQuietly();
     } finally {
       setClearingCache(false);
+    }
+  };
+
+  // Fetch cache info without showing loading state (to prevent UI flashing)
+  const fetchCacheInfoQuietly = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cache-info`);
+      const data = await response.json();
+
+      if (data.success) {
+        setCacheDetails(data.details);
+
+        // If cache is empty, show a message
+        if (data.details.totalCount === 0) {
+          setCacheStatus({
+            message: t('settings.cacheEmpty', 'Cache is empty. No files to clear.'),
+            type: 'info'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching cache info quietly:', error);
+      // Don't update status message here to avoid overriding the clear cache status
     }
   };
 
@@ -108,94 +133,17 @@ const CacheTab = () => {
 
   return (
     <div className="settings-section cache-section">
+      {/* Header */}
       <div className="cache-content">
         <div className="cache-section-header">
-          <h3>{t('settings.cache', 'Cache')}</h3>
-          <button
-            className="refresh-cache-btn"
-            onClick={fetchCacheInfo}
-            disabled={loadingCacheInfo}
-            title={t('settings.refreshCacheTooltip', 'Refresh cache information')}
-          >
-            <span className="refresh-icon">↻</span>
-            {t('settings.refresh', 'Refresh')}
-          </button>
         </div>
         <p className="cache-description">
           {t('settings.cacheDescription', 'Clear all cached subtitles, downloaded videos, and narration audio files to free up space.')}
         </p>
       </div>
 
-      {/* Left Column */}
-      <div className="cache-left-column">
-        {/* Cache details */}
-        {cacheDetails && !loadingCacheInfo && (
-          <div className="cache-details">
-            <div className="cache-details-header">
-              <h4>{t('settings.cacheInformation', 'Cache Information')}</h4>
-            </div>
-
-            <div className="cache-details-summary">
-              <p className="cache-total">
-                <strong>{t('settings.totalCache', 'Total Cache: {{count}} files ({{size}})', { count: cacheDetails.totalCount, size: cacheDetails.formattedTotalSize })}</strong>
-              </p>
-            </div>
-
-            <div className="cache-details-item">
-              <h4>{t('settings.videos', 'Videos')}:</h4>
-              <p>
-                {t('settings.videosCount', '{{count}} files ({{size}})', { count: cacheDetails.videos?.count || 0, size: cacheDetails.videos?.formattedSize || '0 Bytes' })}
-              </p>
-            </div>
-
-            <div className="cache-details-item">
-              <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
-              <p>
-                {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
-              </p>
-            </div>
-
-            <div className="cache-details-item">
-              <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
-              <p>
-                {t('settings.narrationReferenceCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationReference?.count || 0, size: cacheDetails.narrationReference?.formattedSize || '0 Bytes' })}
-              </p>
-            </div>
-
-            <div className="cache-details-item">
-              <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
-              <p>
-                {t('settings.narrationOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationOutput?.count || 0, size: cacheDetails.narrationOutput?.formattedSize || '0 Bytes' })}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Loading indicator */}
-        {loadingCacheInfo && (
-          <div className="cache-loading">
-            <p>{t('settings.loadingCache', 'Loading cache information...')}</p>
-          </div>
-        )}
-
-        {/* Empty cache info when no details are shown */}
-        {!cacheDetails && !cacheStatus.message && !loadingCacheInfo && (
-          <div className="empty-cache-info">
-            <p>{t('settings.cacheEmpty', 'No cache information available.')}</p>
-            <button
-              className="refresh-cache-btn"
-              onClick={fetchCacheInfo}
-              disabled={loadingCacheInfo}
-            >
-              {t('settings.refreshCache', 'Refresh Cache Info')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Right Column */}
-      <div className="cache-right-column">
-        {/* Cache actions */}
+      {/* Action buttons row */}
+      <div className="cache-actions-row">
         <div className="cache-actions">
           <button
             className="clear-cache-btn"
@@ -206,6 +154,16 @@ const CacheTab = () => {
               ? t('settings.clearingCache', 'Clearing Cache...')
               : t('settings.clearCache', 'Clear Cache')}
           </button>
+
+          <button
+            className="refresh-cache-btn"
+            onClick={fetchCacheInfo}
+            disabled={loadingCacheInfo}
+            title={t('settings.refreshCacheTooltip', 'Refresh cache information')}
+          >
+            <span className="refresh-icon">↻</span>
+            {t('settings.refresh', 'Refresh')}
+          </button>
         </div>
 
         {/* Cache status message */}
@@ -215,6 +173,80 @@ const CacheTab = () => {
           </div>
         )}
       </div>
+
+      {/* Loading indicator - only show when not clearing cache */}
+      {loadingCacheInfo && !clearingCache && (
+        <div className="cache-loading">
+          <p>{t('settings.loadingCache', 'Loading cache information...')}</p>
+        </div>
+      )}
+
+      {/* Empty cache info when no details are shown */}
+      {!cacheDetails && !cacheStatus.message && !loadingCacheInfo && !clearingCache && (
+        <div className="empty-cache-info">
+          <p>{t('settings.cacheEmpty', 'No cache information available.')}</p>
+          <button
+            className="refresh-cache-btn"
+            onClick={fetchCacheInfo}
+            disabled={loadingCacheInfo}
+          >
+            {t('settings.refreshCache', 'Refresh Cache Info')}
+          </button>
+        </div>
+      )}
+
+      {/* Cache details with 2-column grid - show during clearing to prevent flashing */}
+      {cacheDetails && (!loadingCacheInfo || clearingCache) && (
+        <div className={`cache-details ${clearingCache ? 'clearing' : ''}`}>
+          <div className="cache-details-grid-header">
+            <div className="cache-details-header">
+              <h4>{t('settings.cacheInformation', 'Cache Information')}</h4>
+            </div>
+
+            <div className="cache-details-summary">
+              <p className="cache-total">
+                <strong>{t('settings.totalCache', 'Total Cache: {{count}} files ({{size}})', { count: cacheDetails.totalCount, size: cacheDetails.formattedTotalSize })}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="cache-details-grid">
+            {/* Left Column */}
+            <div className="cache-details-column">
+              <div className="cache-details-item">
+                <h4>{t('settings.videos', 'Videos')}:</h4>
+                <p>
+                  {t('settings.videosCount', '{{count}} files ({{size}})', { count: cacheDetails.videos?.count || 0, size: cacheDetails.videos?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
+                <p>
+                  {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="cache-details-column">
+              <div className="cache-details-item">
+                <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
+                <p>
+                  {t('settings.narrationReferenceCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationReference?.count || 0, size: cacheDetails.narrationReference?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
+                <p>
+                  {t('settings.narrationOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationOutput?.count || 0, size: cacheDetails.narrationOutput?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
