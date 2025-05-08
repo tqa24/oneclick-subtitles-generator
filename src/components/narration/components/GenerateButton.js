@@ -44,7 +44,7 @@ const GenerateButton = ({
             </button>
           ) : (
             <button
-              className="pill-button primary generate-btn"
+              className="pill-button primary"
               onClick={handleGenerateNarration}
               disabled={!referenceAudio || !subtitleSource}
               title={!subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') : ''}

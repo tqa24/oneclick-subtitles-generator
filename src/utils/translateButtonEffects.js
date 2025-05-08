@@ -7,33 +7,28 @@ import initGeminiButtonEffects from './geminiEffects';
 
 /**
  * Initialize Gemini effects for translate buttons
- * This function adds the necessary event listeners and DOM elements
- * to make translate buttons have the same Gemini effects as generate buttons
+ * This function has been modified to disable Gemini effects for translate buttons
+ * to reduce lag as requested by the user
  */
 export const initTranslateButtonEffects = () => {
+  // Gemini effects for translate buttons have been disabled to reduce lag
+
   // Find all translate buttons with the generate-btn class
   const translateButtons = document.querySelectorAll('.translate-button.generate-btn');
-  
+
   if (translateButtons.length === 0) {
     return; // No translate buttons found
   }
 
-  // For each translate button, ensure it has a gemini-icon-container
+  // Remove any existing gemini-icon-container from translate buttons
   translateButtons.forEach(button => {
-    // Check if the button already has a gemini-icon-container
-    if (!button.querySelector('.gemini-icon-container')) {
-      // Create a new gemini-icon-container
-      const iconContainer = document.createElement('div');
-      iconContainer.className = 'gemini-icon-container';
-      button.appendChild(iconContainer);
-      
-      // Add some static mini icons for fallback
-      addStaticMiniIcons(iconContainer);
+    const iconContainer = button.querySelector('.gemini-icon-container');
+    if (iconContainer) {
+      iconContainer.remove();
     }
   });
 
-  // Re-initialize all Gemini button effects to include the translate buttons
-  initGeminiButtonEffects();
+  // No need to initialize Gemini effects for translate buttons
 };
 
 /**
@@ -55,18 +50,18 @@ const addStaticMiniIcons = (container) => {
   iconPositions.forEach(pos => {
     const icon = document.createElement('div');
     icon.className = `gemini-mini-icon ${pos.class}`;
-    
+
     // Set position
     if (pos.top) icon.style.top = pos.top;
     if (pos.bottom) icon.style.bottom = pos.bottom;
     if (pos.left) icon.style.left = pos.left;
     if (pos.right) icon.style.right = pos.right;
-    
+
     // Add SVG content
     icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" />
     </svg>`;
-    
+
     // Add to container
     container.appendChild(icon);
   });

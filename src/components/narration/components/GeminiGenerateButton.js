@@ -48,7 +48,7 @@ const GeminiGenerateButton = ({
             </button>
           ) : (
             <button
-              className="pill-button primary generate-btn"
+              className="pill-button primary"
               onClick={handleGenerateNarration}
               disabled={!subtitleSource}
               title={!subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') : ''}

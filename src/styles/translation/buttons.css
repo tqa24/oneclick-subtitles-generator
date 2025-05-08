@@ -228,22 +228,7 @@
   /* Font family inherited from global styles */
 }
 
-/* Gemini effects specific styling for translate button */
-.translate-button.generate-btn .gemini-mini-icon {
-  stroke: var(--md-on-primary-container);
-}
-
-.translate-button.generate-btn:hover .gemini-mini-icon {
-  stroke: var(--md-on-primary);
-}
-
-.translate-button.format-button.generate-btn .gemini-mini-icon {
-  stroke: var(--md-on-tertiary-container);
-}
-
-.translate-button.format-button.generate-btn:hover .gemini-mini-icon {
-  stroke: var(--md-on-tertiary);
-}
+/* Gemini effects removed from translate button to reduce lag */
 
 /* Responsive styles */
 @media (max-width: 768px) {

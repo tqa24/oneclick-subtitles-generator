@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
-import initGeminiButtonEffects from '../utils/geminiEffects';
 import TimelineVisualization from './lyrics/TimelineVisualization';
 import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
@@ -199,35 +198,7 @@ const LyricsDisplay = ({
     };
   }, []);
 
-  // Initialize Gemini effects for the Download Center button
-  useEffect(() => {
-    // Small delay to ensure DOM is fully rendered
-    const timer = setTimeout(() => {
-      initGeminiButtonEffects();
-
-      // Add a MutationObserver to detect when the button state changes
-      const downloadButtons = document.querySelectorAll('.download-btn.generate-btn');
-      if (downloadButtons.length > 0) {
-        const observer = new MutationObserver(() => {
-          // When button attributes change (like disabled state), reinitialize effects
-          initGeminiButtonEffects();
-        });
-
-        // Observe each download button for attribute changes
-        downloadButtons.forEach(button => {
-          observer.observe(button, {
-            attributes: true,
-            attributeFilter: ['class', 'disabled']
-          });
-        });
-
-        // Return cleanup function
-        return () => observer.disconnect();
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [isModalOpen, matchedLyrics.length]); // Re-initialize when modal state or matchedLyrics change
+  // Gemini effects for the Download Center button have been removed to reduce lag
 
   const {
     lyrics,
@@ -637,14 +608,10 @@ const LyricsDisplay = ({
 
         <div className="download-buttons">
           <button
-            className="download-btn generate-btn"
+            className="download-btn"
             onClick={() => setIsModalOpen(true)}
             disabled={!lyrics.length}
           >
-            {/* Add gemini-icon-container for the Gemini effects */}
-            <div className="gemini-icon-container">
-              {/* Static mini icons will be added by the geminiEffects utility */}
-            </div>
             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>

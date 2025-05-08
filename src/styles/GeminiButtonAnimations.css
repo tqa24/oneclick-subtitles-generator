@@ -5,9 +5,7 @@
 .retry-gemini-btn .gemini-icon-container,
 .force-stop-btn .gemini-icon-container,
 .srt-upload-button .gemini-icon-container,
-.add-subtitles-button .gemini-icon-container,
-.translate-button.generate-btn .gemini-icon-container,
-.download-btn.generate-btn .gemini-icon-container {
+.add-subtitles-button .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -373,9 +371,7 @@
 .generate-btn:hover .gemini-icon-container,
 .retry-gemini-btn:hover .gemini-icon-container,
 .srt-upload-button:hover .gemini-icon-container,
-.add-subtitles-button:hover .gemini-icon-container,
-.translate-button.generate-btn:hover .gemini-icon-container,
-.download-btn.generate-btn:hover .gemini-icon-container {
+.add-subtitles-button:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
   background: transparent !important; /* Ensure transparent background to expose stars */
@@ -385,9 +381,7 @@
 .generate-btn:hover .gemini-mini-icon svg,
 .retry-gemini-btn:hover .gemini-mini-icon svg,
 .srt-upload-button:hover .gemini-mini-icon svg,
-.add-subtitles-button:hover .gemini-mini-icon svg,
-.translate-button.generate-btn:hover .gemini-mini-icon svg,
-.download-btn.generate-btn:hover .gemini-mini-icon svg {
+.add-subtitles-button:hover .gemini-mini-icon svg {
   transform: scale(1.2);
   transition: transform 0.3s ease-out;
   animation: hover-star-twinkle 1.5s infinite alternate ease-in-out !important;
@@ -422,19 +416,7 @@
   stroke: var(--md-on-tertiary);
 }
 
-/* Translate button icons */
-.translate-button.generate-btn .gemini-mini-icon {
-  stroke: var(--md-on-primary-container);
-}
-
-.translate-button.format-button.generate-btn .gemini-mini-icon {
-  stroke: var(--md-on-tertiary-container);
-}
-
-/* Download button icons */
-.download-btn.generate-btn .gemini-mini-icon {
-  stroke: var(--md-on-primary);
-}
+/* Translate and Download button icons styling removed to reduce lag */
 
 /* Change icon colors on hover to match text */
 .generate-btn:hover .gemini-mini-icon {
@@ -449,26 +431,14 @@
   stroke: var(--md-secondary);
 }
 
-.translate-button.generate-btn:hover .gemini-mini-icon {
-  stroke: var(--md-on-primary);
-}
-
-.translate-button.format-button.generate-btn:hover .gemini-mini-icon {
-  stroke: var(--md-on-tertiary);
-}
-
-.download-btn.generate-btn:hover .gemini-mini-icon {
-  stroke: var(--md-primary);
-}
+/* Translate and Download button hover styling removed to reduce lag */
 
 /* Add gradient effects to the icons */
 .generate-btn .gemini-mini-icon svg path,
 .retry-gemini-btn .gemini-mini-icon svg path,
 .force-stop-btn .gemini-mini-icon svg path,
 .srt-upload-button .gemini-mini-icon svg path,
-.add-subtitles-button .gemini-mini-icon svg path,
-.translate-button.generate-btn .gemini-mini-icon svg path,
-.download-btn.generate-btn .gemini-mini-icon svg path {
+.add-subtitles-button .gemini-mini-icon svg path {
   /* Removed stroke-dasharray and stroke-dashoffset */
   transition: opacity 0.3s var(--md-easing-emphasized);
 }
@@ -476,9 +446,7 @@
 .generate-btn:hover .gemini-mini-icon svg path,
 .retry-gemini-btn:hover .gemini-mini-icon svg path,
 .force-stop-btn:hover .gemini-mini-icon svg path,
-.add-subtitles-button:hover .gemini-mini-icon svg path,
-.translate-button.generate-btn:hover .gemini-mini-icon svg path,
-.download-btn.generate-btn:hover .gemini-mini-icon svg path {
+.add-subtitles-button:hover .gemini-mini-icon svg path {
   /* Removed stroke-dashoffset animation */
   opacity: 1;
 }
@@ -487,9 +455,7 @@
 .generate-btn.processing .gemini-mini-icon svg path,
 .retry-gemini-btn.processing .gemini-mini-icon svg path,
 .force-stop-btn.processing .gemini-mini-icon svg path,
-.add-subtitles-button.processing .gemini-mini-icon svg path,
-.translate-button.generate-btn.processing .gemini-mini-icon svg path,
-.download-btn.generate-btn.processing .gemini-mini-icon svg path {
+.add-subtitles-button.processing .gemini-mini-icon svg path {
   /* Removed dash animation */
   opacity: 0.9;
 }

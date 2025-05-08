@@ -29,14 +29,15 @@ export const initGeminiButtonEffects = () => {
   // Set up the MutationObserver to detect new buttons
   observerInitialized = setupButtonObserver(initGeminiButtonEffects, observerInitialized);
 
-  // Find all Gemini buttons
-  const generateButtons = document.querySelectorAll('.generate-btn');
+  // Find all Gemini buttons (excluding translate and download buttons to reduce lag)
+  const generateButtons = document.querySelectorAll('.generate-btn:not(.translate-button):not(.download-btn)');
   const retryButtons = document.querySelectorAll('.retry-gemini-btn');
   const forceStopButtons = document.querySelectorAll('.force-stop-btn');
   const srtUploadButtons = document.querySelectorAll('.srt-upload-button');
   const addSubtitlesButtons = document.querySelectorAll('.add-subtitles-button');
-  const translateButtons = document.querySelectorAll('.translate-button.generate-btn');
-  const downloadButtons = document.querySelectorAll('.download-btn.generate-btn');
+  // Translate and download buttons excluded to reduce lag
+  const translateButtons = [];
+  const downloadButtons = [];
 
   // First, clean up any particles that are no longer in the DOM
   particles = cleanupParticles(particles);
