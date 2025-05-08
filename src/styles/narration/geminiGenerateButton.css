@@ -2,6 +2,11 @@
 
 /* The styling for the generate-button-row is already handled in unifiedNarrationRedesign.css */
 
+/* Ensure the Generate Narration with Gemini button maintains its height */
+.generate-button-row .pill-button {
+  height: 42px; /* Fixed height for the Generate Narration button */
+}
+
 /* Add danger class for cancel button (similar to error class) */
 .pill-button.danger {
   background-color: rgba(var(--md-error-rgb), 0.1);

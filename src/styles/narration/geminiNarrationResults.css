@@ -244,19 +244,20 @@
 }
 
 /* Pill button styling for audio controls */
-.pill-button {
+.audio-controls .pill-button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: var(--md-shape-pill);
-  font-size: 0.85rem;
+  font-size: var(--md-body-medium-size, 14px); /* Consistent font size */
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
   box-shadow: var(--md-elevation-level1);
-  height: 42px; /* Match height with translate button */
+  height: 36px; /* Consistent height for audio control buttons */
+  box-sizing: border-box; /* Include padding and border in height calculation */
 }
 
 .pill-button.primary {
@@ -326,13 +327,14 @@
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: var(--md-shape-pill);
-  font-size: 0.9rem;
+  font-size: var(--md-body-medium-size, 14px); /* Consistent font size */
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
   box-shadow: var(--md-elevation-level1);
-  height: 42px; /* Match height with translate button */
+  height: 36px; /* Consistent height for audio control buttons */
+  box-sizing: border-box; /* Include padding and border in height calculation */
 }
 
 .gemini-export-controls .pill-button:hover {

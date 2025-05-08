@@ -16,7 +16,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 36px; /* Match height with subtitle-selection-container buttons */
+  min-height: 36px; /* Match height with audio control buttons */
 }
 
 /* Voice dropdown */
@@ -31,13 +31,13 @@
   border: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-1);
   color: var(--md-on-surface);
-  font-size: var(--md-body-medium-size, 14px); /* Match font size with subtitle-selection-container */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with pill buttons */
   appearance: none;
   cursor: pointer;
   padding-right: 32px; /* Space for the dropdown arrow */
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
-  height: 36px; /* Match height with subtitle-selection-container buttons */
+  height: 36px; /* Match height with audio control buttons */
   box-sizing: border-box; /* Include padding and border in height calculation */
   text-align: left; /* Ensure text alignment is consistent */
   line-height: 34px; /* Improve vertical alignment */
@@ -81,7 +81,7 @@
 /* Voice type pills */
 .voice-type-pills {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -105,12 +105,12 @@
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
   cursor: pointer;
-  font-size: var(--md-body-medium-size, 14px); /* Match font size with subtitle-selection-container */
+  font-size: var(--md-body-medium-size, 14px); /* Match font size with pill buttons */
   font-weight: 500;
   transition: all 0.2s ease;
   color: var(--md-on-surface-variant);
   box-shadow: var(--md-elevation-level1);
-  height: 36px; /* Match height with subtitle-selection-container buttons */
+  height: 36px; /* Match height with audio control buttons */
   box-sizing: border-box; /* Include padding and border in height calculation */
   line-height: 1; /* Improve vertical text alignment */
 }

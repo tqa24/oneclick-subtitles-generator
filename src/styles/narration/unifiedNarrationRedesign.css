@@ -289,7 +289,7 @@
   flex-wrap: nowrap; /* Keep buttons in a row */
   gap: 0.75rem;
   align-items: center;
-  height: 42px; /* Match the height of narration-row */
+  height: 36px; /* Match height with the buttons inside */
   /* Font family inherited from global styles */
 }
 
