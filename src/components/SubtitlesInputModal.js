@@ -20,6 +20,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
   const [albumArt, setAlbumArt] = useState('');
   const [showBackgroundPrompt, setShowBackgroundPrompt] = useState(false);
   const [songName, setSongName] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
 
 
 
@@ -48,6 +49,17 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
 
 
 
+  // Function to handle closing with animation
+  const handleClose = () => {
+    // Start the closing animation
+    setIsClosing(true);
+
+    // Wait for the animation to complete before actually closing
+    setTimeout(() => {
+      onClose();
+    }, 150); // Match this with the CSS transition duration
+  };
+
   // Handle keyboard shortcuts
   const handleKeyDown = (e) => {
     // Ctrl+Enter or Cmd+Enter to save
@@ -58,16 +70,16 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
     // Escape to close
     else if (e.key === 'Escape') {
       e.preventDefault();
-      onClose();
+      handleClose();
     }
   };
 
   return (
-    <div className="subtitles-input-modal-overlay">
-      <div className="subtitles-input-modal">
+    <div className={`subtitles-input-modal-overlay ${isClosing ? 'closing' : ''}`}>
+      <div className={`subtitles-input-modal ${isClosing ? 'closing' : ''}`}>
         <div className="subtitles-input-modal-header">
           <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
-          <button className="close-button" onClick={onClose}>
+          <button className="close-button" onClick={handleClose}>
             <FiX />
           </button>
         </div>
@@ -146,7 +158,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
         </div>
 
         <div className="subtitles-input-modal-footer">
-          <button className="cancel-button" onClick={onClose}>
+          <button className="cancel-button" onClick={handleClose}>
             {t('subtitlesInput.cancel', 'Cancel')}
           </button>
           <button className="save-button" onClick={handleSave}>

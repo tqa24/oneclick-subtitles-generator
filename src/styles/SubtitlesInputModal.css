@@ -9,21 +9,49 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(3px);
+  /* Removed backdrop-filter for better performance */
+  animation: overlay-appear 0.5s var(--md-easing-emphasized-decelerate);
+  transition: opacity 0.15s var(--md-easing-emphasized-accelerate);
+  will-change: opacity; /* Hint for browser to optimize opacity changes */
+  transform: translateZ(0); /* Enable hardware acceleration */
+}
+
+@keyframes overlay-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.subtitles-input-modal-overlay.closing {
+  opacity: 0;
 }
 
 .subtitles-input-modal {
   background-color: var(--md-surface-1);
-  border-radius: 12px;
+  border-radius: 32px;
   box-shadow: var(--md-elevation-level3);
   border: 1px solid var(--md-outline-variant);
   width: 90%;
-  max-width: 800px;
+  max-width: 900px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: modal-appear 0.3s ease-out;
+  animation: modal-appear 0.5s var(--md-easing-emphasized-decelerate);
+  transition: transform 0.2s var(--md-easing-emphasized-accelerate), opacity 0.2s var(--md-easing-emphasized-accelerate);
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  /* Improve rendering performance */
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.subtitles-input-modal.closing {
+  transform: scale(0.95) translateY(20px);
+  opacity: 0;
 }
 
 /* Specific adjustments for light theme */
@@ -35,11 +63,11 @@
 @keyframes modal-appear {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: scale(0.95) translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -408,11 +436,14 @@
   font-size: 14px;
   line-height: 1.5;
   resize: none; /* Remove resize handle */
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: rgba(var(--md-primary-rgb), 0.4) rgba(var(--md-outline-variant-rgb), 0.2); /* Firefox */
   overflow: auto; /* Ensure scrollbar is contained */
   box-shadow: var(--md-elevation-level1);
+  box-sizing: border-box; /* Ensure padding and border are included in the element's dimensions */
+  will-change: border-color, box-shadow, background-color; /* Hint for browser to optimize these properties */
+  transform: translateZ(0); /* Enable hardware acceleration */
 }
 
 /* Light theme textarea styling */
@@ -425,7 +456,7 @@
 /* Dark theme textarea styling */
 [data-theme="dark"] .subtitles-input-modal-content textarea {
   background-color: rgba(var(--md-surface-variant-rgb), 0.3);
-  backdrop-filter: blur(2px);
+  /* Removed backdrop-filter which can cause performance issues */
   border: none;
   box-shadow: var(--md-elevation-level1);
 }
@@ -472,7 +503,7 @@
   outline: none;
   box-shadow: var(--md-elevation-level2);
   border: 2px solid var(--primary-color);
-  padding: 15px; /* Adjust padding to maintain the same size */
+  /* No need to adjust padding with box-sizing: border-box */
 }
 
 /* Light theme focus state */
@@ -480,7 +511,6 @@
   background-color: var(--md-surface-1);
   box-shadow: var(--md-elevation-level2);
   border: 2px solid var(--primary-color);
-  padding: 15px; /* Adjust padding to maintain the same size */
 }
 
 /* Dark theme focus state */
@@ -488,7 +518,6 @@
   background-color: rgba(var(--md-surface-variant-rgb), 0.4);
   box-shadow: var(--md-elevation-level2);
   border: 2px solid var(--primary-color);
-  padding: 15px; /* Adjust padding to maintain the same size */
 }
 
 .keyboard-shortcuts {
