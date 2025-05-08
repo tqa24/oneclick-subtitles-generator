@@ -20,7 +20,7 @@ const TranslationPreview = ({ translatedSubtitles, targetLanguages }) => {
         <label>{t('translation.previewLabel', 'Preview')}:</label>
       </div>
       <div className="row-content">
-        <div className="translation-preview">
+        <div className="translation-preview translation-preview-animated">
           <h4>
             {t('translation.preview', 'Translation Preview')}
             {targetLanguages.length > 1

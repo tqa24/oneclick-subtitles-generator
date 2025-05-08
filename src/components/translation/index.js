@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { downloadSRT, downloadJSON, downloadTXT } from '../../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../../services/geminiService';
@@ -35,6 +35,10 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   const [txtContent, setTxtContent] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedDocument, setProcessedDocument] = useState(null);
+
+  // Refs for height animation
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
 
   // Use language chain hook for managing languages and delimiters
   const {
@@ -77,6 +81,34 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleRestTimeChange,
     handleIncludeRulesChange
   } = useTranslationState(subtitles, onTranslationComplete);
+
+  // Initialize container height on component mount
+  useEffect(() => {
+    if (containerRef.current && contentRef.current) {
+      // Small delay to ensure the DOM is fully rendered
+      setTimeout(() => {
+        // Set initial height with extra 100px to ensure enough space
+        const contentHeight = contentRef.current.offsetHeight;
+        containerRef.current.style.height = `${contentHeight + 150}px`;
+      }, 50);
+    }
+  }, []);
+
+  // Handle height animation when content changes
+  useEffect(() => {
+    // Use a small delay to ensure the new content is rendered
+    const animationTimeout = setTimeout(() => {
+      if (containerRef.current && contentRef.current) {
+        // Get the height of the content and add 100px for extra space
+        const contentHeight = contentRef.current.offsetHeight;
+
+        // Set the container height to match the content height plus extra space
+        containerRef.current.style.height = `${contentHeight + 150}px`;
+      }
+    }, 50); // Small delay to ensure content is rendered
+
+    return () => clearTimeout(animationTimeout);
+  }, [translatedSubtitles, isTranslating, error]); // Re-run when these state values change
 
   // Wrapper for handleTranslate to pass the current languages and delimiter settings
   const handleTranslate = () => {
@@ -267,7 +299,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   };
 
   return (
-    <div className="translation-section">
+    <div className="translation-section" ref={containerRef}>
       <TranslationHeader
         promptEditorButton={
           <TranslationPromptEditorButton
@@ -277,7 +309,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         }
       />
 
-      <div className="translation-controls">
+      <div className={`translation-controls ${translatedSubtitles ? 'state-results' : 'state-form'}`} ref={contentRef}>
         {/* Language Chain UI */}
         <div className="translation-row language-chain-row">
           <div className="row-label">

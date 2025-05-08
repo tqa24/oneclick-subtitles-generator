@@ -1,0 +1,198 @@
+/* Translation section animations */
+
+/* Fade in animation for translation section elements */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slide up animation for translation section elements */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade out animation for translation section elements */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Slide in from right animation */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from left animation */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* State transition animations */
+.translation-controls {
+  position: relative;
+}
+
+/* Form state animations */
+.translation-controls.state-form .translation-row,
+.translation-controls.state-form .model-selection-container,
+.translation-controls.state-form .slider-with-value,
+.translation-controls.state-form .translation-actions {
+  animation-name: fadeIn;
+  animation-duration: var(--md-duration-medium3);
+  animation-timing-function: var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Results state animations */
+.translation-controls.state-results .translation-row,
+.translation-controls.state-results .reset-translation-button,
+.translation-controls.state-results .translation-preview {
+  animation-name: fadeIn;
+  animation-duration: var(--md-duration-medium3);
+  animation-timing-function: var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for state transitions */
+.translation-controls.state-form .translation-row:nth-child(1),
+.translation-controls.state-results .translation-row:nth-child(1) {
+  animation-delay: 50ms;
+}
+
+.translation-controls.state-form .translation-row:nth-child(2),
+.translation-controls.state-results .translation-row:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.translation-controls.state-form .translation-row:nth-child(3),
+.translation-controls.state-results .translation-row:nth-child(3) {
+  animation-delay: 150ms;
+}
+
+.translation-controls.state-form .translation-row:nth-child(4),
+.translation-controls.state-results .translation-row:nth-child(4) {
+  animation-delay: 200ms;
+}
+
+.translation-controls.state-form .translation-row:nth-child(5),
+.translation-controls.state-results .translation-row:nth-child(5) {
+  animation-delay: 250ms;
+}
+
+/* Animation for translation form elements */
+.translation-row {
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for form rows */
+.translation-row:nth-child(1) { animation-delay: 0ms; }
+.translation-row:nth-child(2) { animation-delay: 50ms; }
+.translation-row:nth-child(3) { animation-delay: 100ms; }
+.translation-row:nth-child(4) { animation-delay: 150ms; }
+.translation-row:nth-child(5) { animation-delay: 200ms; }
+
+/* Animation for language chain items */
+.chain-item {
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for chain items */
+.chain-item:nth-child(1) { animation-delay: 100ms; }
+.chain-item:nth-child(2) { animation-delay: 150ms; }
+.chain-item:nth-child(3) { animation-delay: 200ms; }
+.chain-item:nth-child(4) { animation-delay: 250ms; }
+.chain-item:nth-child(5) { animation-delay: 300ms; }
+
+/* Animation for model selection */
+.model-selection-container {
+  animation: slideInLeft var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Animation for sliders */
+.slider-with-value {
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 150ms;
+}
+
+/* Animation for translation actions */
+.translation-actions {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 200ms;
+}
+
+/* Animation for translation complete */
+.translation-complete-row {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 100ms;
+}
+
+.reset-translation-button {
+  animation: slideInLeft var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 200ms;
+}
+
+/* Animation for translation preview */
+.translation-preview-animated {
+  animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 300ms;
+}
+
+/* Animations for preview content */
+.preview-subtitle {
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for preview subtitles */
+.preview-subtitle:nth-child(1) { animation-delay: 350ms; }
+.preview-subtitle:nth-child(2) { animation-delay: 400ms; }
+.preview-subtitle:nth-child(3) { animation-delay: 450ms; }
+.preview-subtitle:nth-child(4) { animation-delay: 500ms; }
+.preview-subtitle:nth-child(5) { animation-delay: 550ms; }
+
+.preview-more {
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
+  animation-fill-mode: both;
+  animation-delay: 600ms;
+}
+
+/* Animation for translation status */
+.translation-status {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-standard);
+  animation-fill-mode: both;
+}
+
+/* Animation for translation error */
+.translation-error {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-standard);
+  animation-fill-mode: both;
+}

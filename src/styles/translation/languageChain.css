@@ -32,7 +32,16 @@
   transition: all 0.2s ease;
   user-select: none;
   z-index: 1;
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
 }
+
+/* Staggered animations for chain items */
+.chain-item:nth-child(1) { animation-delay: 100ms; }
+.chain-item:nth-child(2) { animation-delay: 150ms; }
+.chain-item:nth-child(3) { animation-delay: 200ms; }
+.chain-item:nth-child(4) { animation-delay: 250ms; }
+.chain-item:nth-child(5) { animation-delay: 300ms; }
 
 /* Remove hover transform effect that causes z-index issues */
 .chain-item:hover {
@@ -204,6 +213,9 @@
   gap: 1rem;
   margin-top: 1rem;
   /* Font family inherited from global styles */
+  animation: fadeIn var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 350ms;
 }
 
 .add-chain-item-btn {
@@ -218,7 +230,14 @@
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
 }
+
+/* Staggered animations for add buttons */
+.add-chain-item-btn:nth-child(1) { animation-delay: 400ms; }
+.add-chain-item-btn:nth-child(2) { animation-delay: 450ms; }
+.add-chain-item-btn:nth-child(3) { animation-delay: 500ms; }
 
 .add-chain-item-btn:hover {
   background-color: var(--md-primary-container);

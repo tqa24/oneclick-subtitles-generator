@@ -26,7 +26,7 @@ const TranslationComplete = ({
   const { t } = useTranslation();
 
   return (
-    <div className="translation-row action-row">
+    <div className="translation-row action-row translation-complete-row">
       <div className="row-content action-content">
         {/* New Translation button */}
         <button
