@@ -94,7 +94,7 @@ const GeminiVoiceSelection = ({
   const filteredVoices = GEMINI_VOICES.filter(voice => voice.gender === selectedGender);
 
   return (
-    <div className="narration-row gemini-voice-row">
+    <div className="narration-row gemini-voice-row animated-row">
       <div className="row-label">
         <label>{t('narration.voice', 'Voice')}:</label>
       </div>

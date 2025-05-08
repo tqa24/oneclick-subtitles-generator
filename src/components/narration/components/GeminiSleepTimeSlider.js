@@ -36,7 +36,7 @@ const GeminiSleepTimeSlider = ({
   const sliderPercentage = (sleepTime / 30000) * 100;
 
   return (
-    <div className="narration-row gemini-sleep-time-row">
+    <div className="narration-row gemini-sleep-time-row animated-row">
       <div className="row-label">
         <label>{t('narration.sleepTime', 'Delay Between Batches')}:</label>
       </div>

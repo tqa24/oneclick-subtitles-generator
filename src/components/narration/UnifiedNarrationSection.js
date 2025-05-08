@@ -55,6 +55,9 @@ const UnifiedNarrationSection = ({
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
   const statusRef = useRef(null);
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
+  const sectionRef = useRef(null);
 
   // Use custom hooks for state management
   const narrationState = useNarrationState(initialReferenceAudio);
@@ -206,10 +209,119 @@ const UnifiedNarrationSection = ({
     setError
   });
 
+  // Initialize section height on component mount
+  useEffect(() => {
+    if (sectionRef.current) {
+      // Small delay to ensure the DOM is fully rendered
+      setTimeout(() => {
+        // Get the height of the container including header and method selection
+        const headerHeight = sectionRef.current.querySelector('.narration-header')?.offsetHeight || 0;
+        const methodSelectionHeight = sectionRef.current.querySelector('.narration-method-row')?.offsetHeight || 0;
+
+        // Get the content height based on which mode is active
+        let contentHeight = 0;
+        if (narrationMethod === 'f5tts') {
+          // Find the F5-TTS content container
+          const f5ttsContent = contentRef.current?.querySelector('.f5tts-content');
+          if (f5ttsContent) {
+            contentHeight = f5ttsContent.scrollHeight;
+          }
+        } else {
+          // Find the Gemini content container
+          const geminiContent = contentRef.current?.querySelector('.gemini-content');
+          if (geminiContent) {
+            contentHeight = geminiContent.scrollHeight;
+          }
+        }
+
+        // Calculate initial height with extra padding
+        const initialHeight = headerHeight + methodSelectionHeight + contentHeight + 100;
+
+        // Set initial height
+        sectionRef.current.style.height = `${initialHeight}px`;
+        console.log('Initial section height set to:', initialHeight, 'for method:', narrationMethod);
+      }, 100);
+    }
+  }, [narrationMethod]);
+
   // Update reference audio when initialReferenceAudio changes
   useEffect(() => {
     updateReferenceAudio(initialReferenceAudio);
   }, [initialReferenceAudio, updateReferenceAudio]);
+
+  // Handle height animation when narration method changes
+  useEffect(() => {
+    // Use a small delay to ensure the new content is rendered
+    const animationTimeout = setTimeout(() => {
+      if (containerRef.current && contentRef.current) {
+        // Get the height of the content based on which mode is active
+        if (narrationMethod === 'f5tts') {
+          // Find the F5-TTS content container
+          const f5ttsContent = contentRef.current.querySelector('.f5tts-content');
+          if (f5ttsContent) {
+            const contentHeight = f5ttsContent.offsetHeight;
+            // Set the container height to match the F5-TTS content height plus extra space
+            containerRef.current.style.height = `${contentHeight + 120}px`;
+            console.log('F5-TTS content height set to:', contentHeight + 120);
+          }
+        } else {
+          // Find the Gemini content container
+          const geminiContent = contentRef.current.querySelector('.gemini-content');
+          if (geminiContent) {
+            const contentHeight = geminiContent.offsetHeight;
+            // Set the container height to match the Gemini content height plus extra space
+            containerRef.current.style.height = `${contentHeight + 120}px`;
+            console.log('Gemini content height set to:', contentHeight + 120);
+          }
+        }
+      }
+    }, 50); // Small delay to ensure content is rendered
+
+    return () => clearTimeout(animationTimeout);
+  }, [narrationMethod, isGenerating, generationResults]);
+
+  // Handle overall section height animation
+  useEffect(() => {
+    // Use a small delay to ensure the new content is rendered
+    const animationTimeout = setTimeout(() => {
+      if (sectionRef.current && containerRef.current) {
+        // Get the height of the container including header and method selection
+        const headerHeight = sectionRef.current.querySelector('.narration-header').offsetHeight;
+        const methodSelectionHeight = sectionRef.current.querySelector('.narration-method-row').offsetHeight;
+        const errorMessageHeight = error ? sectionRef.current.querySelector('.status-message.error').offsetHeight : 0;
+
+        // Get the content height based on which mode is active
+        let contentHeight = 0;
+        if (narrationMethod === 'f5tts') {
+          // Find the F5-TTS content container
+          const f5ttsContent = contentRef.current.querySelector('.f5tts-content');
+          if (f5ttsContent) {
+            contentHeight = f5ttsContent.offsetHeight;
+          }
+        } else {
+          // Find the Gemini content container
+          const geminiContent = contentRef.current.querySelector('.gemini-content');
+          if (geminiContent) {
+            contentHeight = geminiContent.offsetHeight;
+          }
+        }
+
+        // Get status message height if generating
+        const statusMessageHeight = (isGenerating || generationResults?.length > 0) ?
+          (sectionRef.current.querySelector('.status-message.info')?.offsetHeight || 0) : 0;
+
+        // Calculate total height needed
+        const totalHeight = headerHeight + methodSelectionHeight + errorMessageHeight +
+                           contentHeight + statusMessageHeight + 100; // Add padding
+
+        // Set the section height
+        sectionRef.current.style.height = `${totalHeight}px`;
+        console.log('Section height set to:', totalHeight, 'for method:', narrationMethod);
+      }
+    }, 100); // Slightly longer delay to ensure container height is set first
+
+    return () => clearTimeout(animationTimeout);
+  }, [narrationMethod, isGenerating, generationResults, error]);
 
   // Listen for narrations loaded from cache event
   useEffect(() => {
@@ -389,7 +501,7 @@ const UnifiedNarrationSection = ({
   // Only show the unavailable message if both F5-TTS and Gemini are unavailable
   if (!isAvailable && !isGeminiAvailable) {
     return (
-      <div className="narration-section unavailable">
+      <div className="narration-section unavailable" ref={sectionRef}>
         <div className="narration-header">
           <h3>
             {t('narration.title', 'Generate Narration')}
@@ -415,7 +527,7 @@ const UnifiedNarrationSection = ({
   }
 
   return (
-    <div className="narration-section">
+    <div className="narration-section" ref={sectionRef}>
       <div className="narration-header">
         <h3>{t('narration.title', 'Generate Narration')}</h3>
         <p className="narration-description">
@@ -435,9 +547,10 @@ const UnifiedNarrationSection = ({
       {/* Error Message */}
       <StatusMessage message={error} type="error" />
 
+      <div className="narration-content-container" ref={contentRef}>
       {narrationMethod === 'f5tts' ? (
         // F5-TTS UI
-        <>
+        <div className="f5tts-content">
           {/* Audio Controls */}
           <AudioControls
             handleFileUpload={handleFileUpload}
@@ -547,10 +660,10 @@ const UnifiedNarrationSection = ({
             onEnded={handleAudioEnded}
             style={{ display: 'none' }}
           />
-        </>
+        </div>
       ) : (
         // Gemini UI
-        <>
+        <div className="gemini-content">
           {/* Simplified Subtitle Source Selection for Gemini */}
           <GeminiSubtitleSourceSelection
             subtitleSource={subtitleSource}
@@ -617,8 +730,9 @@ const UnifiedNarrationSection = ({
           />
 
           {/* No need for a separate audio element here as it's included in the GeminiNarrationResults component */}
-        </>
+        </div>
       )}
+      </div>
     </div>
   );
 };

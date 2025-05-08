@@ -11,7 +11,117 @@
   100% { opacity: 0.7; }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 /* Spinner animation for retry button */
 .spinner {
   animation: spin 1.5s linear infinite;
 }
+
+/* Narration method transition animations */
+.narration-content-container {
+  position: relative;
+  transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
+  overflow: hidden;
+}
+
+/* F5-TTS content animations */
+.f5tts-content {
+  animation: fadeIn var(--md-duration-medium3) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Gemini content animations */
+.gemini-content {
+  animation: fadeIn var(--md-duration-medium3) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for narration rows */
+.narration-row:nth-child(1) { animation-delay: 50ms; }
+.narration-row:nth-child(2) { animation-delay: 100ms; }
+.narration-row:nth-child(3) { animation-delay: 150ms; }
+.narration-row:nth-child(4) { animation-delay: 200ms; }
+.narration-row:nth-child(5) { animation-delay: 250ms; }
+
+/* Animation for individual elements */
+.f5tts-content .narration-row,
+.gemini-content .narration-row,
+.animated-row {
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Animation for reference audio section */
+.reference-audio-section {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 150ms;
+}
+
+/* Animation for generate button */
+.generate-button-row {
+  animation: slideUp var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 300ms;
+}
+
+/* Animation for results */
+.narration-results {
+  animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+  animation-delay: 100ms;
+}
+
+/* Animation for individual result items */
+.narration-result-item {
+  animation: slideInRight var(--md-duration-medium2) var(--md-easing-emphasized);
+  animation-fill-mode: both;
+}
+
+/* Staggered animations for result items */
+.narration-result-item:nth-child(1) { animation-delay: 150ms; }
+.narration-result-item:nth-child(2) { animation-delay: 200ms; }
+.narration-result-item:nth-child(3) { animation-delay: 250ms; }
+.narration-result-item:nth-child(4) { animation-delay: 300ms; }
+.narration-result-item:nth-child(5) { animation-delay: 350ms; }

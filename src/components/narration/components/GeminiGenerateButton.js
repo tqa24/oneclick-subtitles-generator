@@ -31,7 +31,7 @@ const GeminiGenerateButton = ({
                             generationResults.some(r => r.success && r.audioData);
 
   return (
-    <div className="narration-row generate-button-row">
+    <div className="narration-row generate-button-row animated-row">
       <div className="row-content generate-button-container">
         {/* Left side - Generate/Cancel button */}
         <div className="generate-button-left">

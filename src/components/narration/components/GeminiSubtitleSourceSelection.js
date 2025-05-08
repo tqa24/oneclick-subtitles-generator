@@ -148,7 +148,7 @@ const GeminiSubtitleSourceSelection = ({
   };
 
   return (
-    <div className="narration-row subtitle-source-row">
+    <div className="narration-row subtitle-source-row animated-row">
       <div className="row-label">
         <label>{t('narration.subtitleSource', 'Subtitle Source')}:</label>
       </div>
