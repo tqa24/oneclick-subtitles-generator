@@ -9,20 +9,32 @@ import '../../../styles/narration/geminiGenerateButton.css';
  * @param {boolean} props.isGenerating - Whether generation is in progress
  * @param {string} props.subtitleSource - Selected subtitle source
  * @param {Function} props.cancelGeneration - Function to cancel generation
+ * @param {Function} props.downloadAllAudio - Function to download all audio files
+ * @param {Function} props.downloadAlignedAudio - Function to download aligned audio
+ * @param {Array} props.generationResults - Generation results
  * @returns {JSX.Element} - Rendered component
  */
 const GeminiGenerateButton = ({
   handleGenerateNarration,
   isGenerating,
   subtitleSource,
-  cancelGeneration
+  cancelGeneration,
+  downloadAllAudio,
+  downloadAlignedAudio,
+  generationResults
 }) => {
   const { t } = useTranslation();
 
+  // Check if there are any successful narrations with audio data
+  const hasAudioToDownload = generationResults &&
+                            generationResults.length > 0 &&
+                            generationResults.some(r => r.success && r.audioData);
+
   return (
     <div className="narration-row generate-button-row">
-      <div className="row-content">
-        <div className="pill-button-group">
+      <div className="row-content generate-button-container">
+        {/* Left side - Generate/Cancel button */}
+        <div className="generate-button-left">
           {isGenerating ? (
             <button
               className="pill-button danger cancel-btn"
@@ -48,6 +60,41 @@ const GeminiGenerateButton = ({
             </button>
           )}
         </div>
+
+        {/* Right side - Download buttons */}
+        {!isGenerating && (
+          <div className="generate-button-right">
+            <div className="pill-button-group">
+              <button
+                className="pill-button secondary download-all-btn"
+                onClick={downloadAllAudio}
+                title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
+                disabled={!hasAudioToDownload}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                {t('narration.downloadAll', 'Download All')}
+              </button>
+
+              <button
+                className="pill-button secondary"
+                onClick={downloadAlignedAudio}
+                title={t('narration.downloadAlignedTooltip', 'Download a single aligned narration file')}
+                disabled={!hasAudioToDownload}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                {t('narration.downloadAligned', 'Download Aligned')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

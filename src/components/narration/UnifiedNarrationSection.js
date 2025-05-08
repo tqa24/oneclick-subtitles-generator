@@ -594,6 +594,9 @@ const UnifiedNarrationSection = ({
             isGenerating={isGenerating}
             subtitleSource={subtitleSource}
             cancelGeneration={cancelGeminiGeneration}
+            downloadAllAudio={downloadAllAudio}
+            downloadAlignedAudio={downloadAlignedAudio}
+            generationResults={generationResults}
           />
 
           {/* Generation Status */}

@@ -199,6 +199,11 @@
   font-size: var(--md-body-medium-size, 14px); /* Match font size with Gemini tab buttons */
 }
 
+/* Ensure all buttons in the generate button row have the same height */
+.generate-button-row .pill-button {
+  height: 42px; /* Fixed height for all buttons in the generate button row */
+}
+
 .pill-button:hover {
   background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
@@ -278,6 +283,49 @@
 
 .generate-button-row .row-content {
   justify-content: flex-start;
+}
+
+/* Container for the generate button and download buttons */
+.generate-button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Left side - Generate button */
+.generate-button-left {
+  flex: 0 1 auto;
+}
+
+/* Right side - Download buttons */
+.generate-button-right {
+  flex: 0 1 auto;
+  margin-left: auto; /* Push to the right */
+}
+
+/* Responsive styles for generate button row */
+@media (max-width: 768px) {
+  /* Stack the buttons vertically on small screens */
+  .generate-button-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .generate-button-left,
+  .generate-button-right {
+    width: 100%;
+  }
+
+  .generate-button-right .pill-button-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .generate-button-right .pill-button {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 /* Audio controls container */

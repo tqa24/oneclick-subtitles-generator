@@ -4,7 +4,6 @@ import '../../../styles/narration/geminiNarrationResults.css';
 import { VariableSizeList as List } from 'react-window';
 
 // Import utility functions
-import { downloadAlignedAudio as downloadAlignedAudioUtil } from '../../../utils/narrationServerUtils';
 import { getAudioUrl } from '../../../services/narrationService';
 
 // Constants for localStorage keys
@@ -424,20 +423,7 @@ const GeminiNarrationResults = ({
     }
   };
 
-  // Download all audio files
-  const downloadAllAudio = () => {
-    // Download each audio file individually
-    generationResults.forEach(result => {
-      if (result.success && result.filename) {
-        downloadAudio(result);
-      }
-    });
-  };
 
-  // Download aligned narration audio (one file)
-  const handleDownloadAlignedAudio = async () => {
-    await downloadAlignedAudioUtil(generationResults, t);
-  };
 
   return (
     <div className="gemini-narration-results">
@@ -504,37 +490,7 @@ const GeminiNarrationResults = ({
         )}
       </div>
 
-      {/* Download buttons - styled like the F5-TTS section */}
-      <div className="gemini-export-controls">
-        <div className="pill-button-group">
-          <button
-            className="pill-button secondary download-all-btn"
-            onClick={downloadAllAudio}
-            title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
-            disabled={!generationResults || generationResults.length === 0 || !generationResults.some(r => r.success && r.audioData)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {t('narration.downloadAll', 'Download All')}
-          </button>
-          <button
-            className="pill-button secondary"
-            onClick={handleDownloadAlignedAudio}
-            title={t('narration.downloadAlignedTooltip', 'Download a single aligned narration file')}
-            disabled={!generationResults || generationResults.length === 0 || !generationResults.some(r => r.success && r.audioData)}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {t('narration.downloadAligned', 'Download as aligned on timeline')}
-          </button>
-        </div>
-      </div>
+
 
       {/* Hidden audio player for playback */}
       <audio

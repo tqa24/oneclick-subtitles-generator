@@ -28,8 +28,9 @@ const GenerateButton = ({
 
   return (
     <div className="narration-row generate-button-row">
-      <div className="row-content">
-        <div className="pill-button-group">
+      <div className="row-content generate-button-container">
+        {/* Left side - Generate/Cancel button */}
+        <div className="generate-button-left">
           {isGenerating ? (
             <button
               className="pill-button danger cancel-btn"
@@ -54,9 +55,12 @@ const GenerateButton = ({
               {t('narration.generate', 'Generate Narration')}
             </button>
           )}
+        </div>
 
-          {generationResults.length > 0 && (
-            <>
+        {/* Right side - Download buttons */}
+        {!isGenerating && generationResults.length > 0 && (
+          <div className="generate-button-right">
+            <div className="pill-button-group">
               <button
                 className="pill-button secondary download-all-btn"
                 onClick={downloadAllAudio}
@@ -80,9 +84,9 @@ const GenerateButton = ({
                 </svg>
                 {t('narration.downloadAligned', 'Download Aligned')}
               </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

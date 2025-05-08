@@ -2,9 +2,28 @@
 
 /* The styling for the generate-button-row is already handled in unifiedNarrationRedesign.css */
 
-/* Ensure the Generate Narration with Gemini button maintains its height */
+/* Ensure all buttons in the generate button row have the same height */
 .generate-button-row .pill-button {
-  height: 42px; /* Fixed height for the Generate Narration button */
+  height: 42px; /* Fixed height for all buttons in the generate button row */
+}
+
+/* Container for the generate button and download buttons */
+.generate-button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Left side - Generate button */
+.generate-button-left {
+  flex: 0 1 auto;
+}
+
+/* Right side - Download buttons */
+.generate-button-right {
+  flex: 0 1 auto;
+  margin-left: auto; /* Push to the right */
 }
 
 /* Add danger class for cancel button (similar to error class) */
@@ -22,8 +41,25 @@
 
 /* Additional responsive adjustments specific to Gemini generate button */
 @media (max-width: 768px) {
-  .narration-row.generate-button-row .pill-button-group {
+  /* Stack the buttons vertically on small screens */
+  .generate-button-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .generate-button-left,
+  .generate-button-right {
     width: 100%;
+  }
+
+  .generate-button-right .pill-button-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .generate-button-right .pill-button {
+    flex: 1;
+    justify-content: center;
   }
 
   .narration-row.generate-button-row .pill-button {
