@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/index.css';
+import './styles/audio-player-dark-theme.css';
 import App from './App';
 import './i18n/i18n';
 

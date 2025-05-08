@@ -141,6 +141,7 @@
   width: 100%;
   margin-bottom: 0.5rem;
   max-width: 600px;
+  min-width: 300px;
 }
 
 .audio-player {
@@ -298,7 +299,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-left: auto;
-  max-width: 300px;
+  max-width: 350px; /* Increased to accommodate the wider audio player and clear button */
   flex-shrink: 0;
   height: 42px; /* Match the height of narration-row */
   position: relative; /* For absolute positioning of the clear button */
@@ -307,7 +308,8 @@
 .audio-preview .audio-player-container {
   flex: 1;
   margin-bottom: 0;
-  min-width: 200px;
+  min-width: 300px;
+  max-width: calc(100% - 40px); /* Ensure space for the clear button */
   height: 32px; /* Match height with clear button */
   display: flex;
   align-items: center;
@@ -316,11 +318,12 @@
 .audio-preview .audio-player {
   width: 100%;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 24px;
   background-color: var(--md-surface-1);
 }
 
 .audio-preview .clear-button {
+  top: 8px;
   padding: 0;
   min-width: 32px;
   width: 32px;
@@ -331,8 +334,8 @@
   margin-left: 0.5rem;
   border-radius: 50%; /* Make it circular for better visual balance */
   position: relative;
-  top: 8px; /* Ensure vertical alignment */
   flex-shrink: 0; /* Prevent shrinking */
+  align-self: center; /* Ensure vertical alignment */
 }
 
 .audio-preview .clear-button svg {
@@ -1130,11 +1133,15 @@ textarea.reference-text::-webkit-resizer {
   .audio-preview .audio-player-container {
     flex: 1;
     height: 32px;
+    min-width: 250px; /* Slightly smaller on mobile but still usable */
+    max-width: calc(100% - 40px); /* Ensure space for the clear button */
   }
 
   .audio-preview .clear-button {
     margin-left: 0.5rem;
     align-self: center;
+    position: relative;
+    right: 0;
   }
 
 
@@ -1159,6 +1166,7 @@ textarea.reference-text::-webkit-resizer {
   .reference-text-container,
   .audio-player-container {
     max-width: 100%;
+    min-width: 250px; /* Ensure minimum width on mobile */
   }
 
   /* Responsive status message in reference-audio-container */
