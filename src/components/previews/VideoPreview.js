@@ -1125,22 +1125,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         // Set up direct playback
                         setupDirectPlayback();
 
-                        // Add a test button to play the audio directly
-                        const testButton = document.createElement('button');
-                        testButton.textContent = 'Test Aligned Narration';
-                        testButton.style.position = 'fixed';
-                        testButton.style.top = '10px';
-                        testButton.style.right = '10px';
-                        testButton.style.zIndex = '9999';
-                        testButton.onclick = () => {
-                          console.log('Playing aligned narration directly');
-                          audio.currentTime = 0;
-                          audio.play().catch(error => {
-                            console.error('Error playing aligned narration:', error);
-                          });
-                        };
-                        document.body.appendChild(testButton);
-
                         console.log('Aligned narration regenerated successfully');
                       } catch (error) {
                         console.error('Error during aligned narration regeneration:', error);

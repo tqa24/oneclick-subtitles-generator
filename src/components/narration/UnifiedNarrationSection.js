@@ -275,19 +275,9 @@ const UnifiedNarrationSection = ({
     if (generationResults && generationResults.length > 0) {
       if (subtitleSource === 'original') {
         window.originalNarrations = [...generationResults];
-        try {
-          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
-        } catch (e) {
-          console.error('Error storing originalNarrations in localStorage:', e);
-        }
         console.log('Preserved originalNarrations in window object for aligned narration:', window.originalNarrations.length);
       } else if (subtitleSource === 'translated') {
         window.translatedNarrations = [...generationResults];
-        try {
-          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
-        } catch (e) {
-          console.error('Error storing translatedNarrations in localStorage:', e);
-        }
         console.log('Preserved translatedNarrations in window object for aligned narration:', window.translatedNarrations.length);
       }
     }
@@ -338,33 +328,9 @@ const UnifiedNarrationSection = ({
     if (generationResults && generationResults.length > 0) {
       if (subtitleSource === 'original') {
         window.originalNarrations = [...generationResults];
-        try {
-          // Extract only the necessary information to avoid localStorage quota issues
-          const essentialData = generationResults.map(result => ({
-            subtitle_id: result.subtitle_id,
-            filename: result.filename,
-            success: result.success,
-            text: result.text
-          }));
-          localStorage.setItem('originalNarrations', JSON.stringify(essentialData));
-        } catch (e) {
-          console.error('Error storing originalNarrations in localStorage:', e);
-        }
         console.log('Updated originalNarrations in window object with new results:', window.originalNarrations.length);
       } else if (subtitleSource === 'translated') {
         window.translatedNarrations = [...generationResults];
-        try {
-          // Extract only the necessary information to avoid localStorage quota issues
-          const essentialData = generationResults.map(result => ({
-            subtitle_id: result.subtitle_id,
-            filename: result.filename,
-            success: result.success,
-            text: result.text
-          }));
-          localStorage.setItem('translatedNarrations', JSON.stringify(essentialData));
-        } catch (e) {
-          console.error('Error storing translatedNarrations in localStorage:', e);
-        }
         console.log('Updated translatedNarrations in window object with new results:', window.translatedNarrations.length);
       }
     }
@@ -488,32 +454,8 @@ const UnifiedNarrationSection = ({
           // Update global narration references
           if (subtitleSource === 'original') {
             window.originalNarrations = [...cachedNarrations];
-            try {
-              // Extract only the necessary information to avoid localStorage quota issues
-              const essentialData = cachedNarrations.map(result => ({
-                subtitle_id: result.subtitle_id,
-                filename: result.filename,
-                success: result.success,
-                text: result.text
-              }));
-              localStorage.setItem('originalNarrations', JSON.stringify(essentialData));
-            } catch (e) {
-              console.error('Error storing originalNarrations in localStorage:', e);
-            }
           } else {
             window.translatedNarrations = [...cachedNarrations];
-            try {
-              // Extract only the necessary information to avoid localStorage quota issues
-              const essentialData = cachedNarrations.map(result => ({
-                subtitle_id: result.subtitle_id,
-                filename: result.filename,
-                success: result.success,
-                text: result.text
-              }));
-              localStorage.setItem('translatedNarrations', JSON.stringify(essentialData));
-            } catch (e) {
-              console.error('Error storing translatedNarrations in localStorage:', e);
-            }
           }
 
           // Dispatch a custom event to notify other components
@@ -554,32 +496,8 @@ const UnifiedNarrationSection = ({
           // Update global narration references
           if (subtitleSource === 'original') {
             window.originalNarrations = [...cachedNarrations];
-            try {
-              // Extract only the necessary information to avoid localStorage quota issues
-              const essentialData = cachedNarrations.map(result => ({
-                subtitle_id: result.subtitle_id,
-                filename: result.filename,
-                success: result.success,
-                text: result.text
-              }));
-              localStorage.setItem('originalNarrations', JSON.stringify(essentialData));
-            } catch (e) {
-              console.error('Error storing originalNarrations in localStorage:', e);
-            }
           } else {
             window.translatedNarrations = [...cachedNarrations];
-            try {
-              // Extract only the necessary information to avoid localStorage quota issues
-              const essentialData = cachedNarrations.map(result => ({
-                subtitle_id: result.subtitle_id,
-                filename: result.filename,
-                success: result.success,
-                text: result.text
-              }));
-              localStorage.setItem('translatedNarrations', JSON.stringify(essentialData));
-            } catch (e) {
-              console.error('Error storing translatedNarrations in localStorage:', e);
-            }
           }
 
           // Dispatch a custom event to notify other components
