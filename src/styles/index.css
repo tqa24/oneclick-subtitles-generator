@@ -216,7 +216,7 @@ input, select, textarea {
 }
 
 .spin {
-  animation: spin var(--md-duration-long2) linear infinite;
+  animation: spin var(--md-duration-long2) linear infinite !important;
 }
 
 .shake {
@@ -369,4 +369,11 @@ input, select, textarea {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Fix for loading spinners not rotating */
+.loading-spinner, .translate-spinner, .spinner-circle {
+  animation: spin 1s linear infinite !important;
+  transform-origin: center !important;
+  will-change: transform !important;
 }

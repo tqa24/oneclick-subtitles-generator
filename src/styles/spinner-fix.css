@@ -1,0 +1,54 @@
+/* spinner-fix.css - Fix for loading spinners not rotating */
+
+/* Global fix for all loading spinners */
+.loading-spinner,
+.spinner-circle,
+.spinner,
+[class*="spinner"]:not(.translate-spinner),
+[class*="-spinner"]:not(.translate-spinner) {
+  animation: spin 1s linear infinite !important;
+  transform-origin: center !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  -webkit-transform-style: preserve-3d !important;
+  transform-style: preserve-3d !important;
+}
+
+/* Special handling for translate spinner to maintain vertical alignment */
+.translate-spinner {
+  animation: spin 1s linear infinite !important;
+  transform-origin: center !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  -webkit-transform-style: preserve-3d !important;
+  transform-style: preserve-3d !important;
+  position: relative !important;
+  top: 2px !important; /* Adjusted for better vertical alignment */
+  margin-bottom: 0 !important;
+  vertical-align: middle !important;
+  display: inline-block !important;
+}
+
+/* Ensure the spin animation is properly defined */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Vendor prefixed animations for better browser compatibility */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@-moz-keyframes spin {
+  0% { -moz-transform: rotate(0deg); }
+  100% { -moz-transform: rotate(360deg); }
+}
+
+@-ms-keyframes spin {
+  0% { -ms-transform: rotate(0deg); }
+  100% { -ms-transform: rotate(360deg); }
+}

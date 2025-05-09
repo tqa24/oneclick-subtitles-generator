@@ -15,6 +15,7 @@ import '../../styles/SrtUploadButton.css';
 import '../../styles/VideoAnalysisModal.css';
 import '../../styles/TranscriptionRulesEditor.css';
 import '../../styles/OnboardingBanner.css';
+import '../../styles/spinner-fix.css'; // Fix for loading spinners not rotating
 
 /**
  * Main App component
