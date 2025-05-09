@@ -234,8 +234,8 @@ const UnifiedNarrationSection = ({
           }
         }
 
-        // Calculate initial height with extra padding
-        const initialHeight = headerHeight + methodSelectionHeight + contentHeight + 100;
+        // Calculate initial height with extra padding (added 400px as requested)
+        const initialHeight = headerHeight + methodSelectionHeight + contentHeight + 500; // Added 400px to the original 100px padding
 
         // Set initial height
         sectionRef.current.style.height = `${initialHeight}px`;
@@ -261,7 +261,7 @@ const UnifiedNarrationSection = ({
           if (f5ttsContent) {
             const contentHeight = f5ttsContent.offsetHeight;
             // Set the container height to match the F5-TTS content height plus extra space
-            containerRef.current.style.height = `${contentHeight + 120}px`;
+            containerRef.current.style.height = `${contentHeight + 120}px`; // Keeping original padding to avoid stacking extra height
             console.log('F5-TTS content height set to:', contentHeight + 120);
           }
         } else {
@@ -270,7 +270,7 @@ const UnifiedNarrationSection = ({
           if (geminiContent) {
             const contentHeight = geminiContent.offsetHeight;
             // Set the container height to match the Gemini content height plus extra space
-            containerRef.current.style.height = `${contentHeight + 120}px`;
+            containerRef.current.style.height = `${contentHeight + 120}px`; // Keeping original padding to avoid stacking extra height
             console.log('Gemini content height set to:', contentHeight + 120);
           }
         }
@@ -312,7 +312,7 @@ const UnifiedNarrationSection = ({
 
         // Calculate total height needed
         const totalHeight = headerHeight + methodSelectionHeight + errorMessageHeight +
-                           contentHeight + statusMessageHeight + 100; // Add padding
+                           contentHeight + statusMessageHeight + 100; // Keeping original padding to avoid stacking extra height
 
         // Set the section height
         sectionRef.current.style.height = `${totalHeight}px`;
