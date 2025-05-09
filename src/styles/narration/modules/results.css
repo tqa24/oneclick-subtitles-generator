@@ -48,6 +48,8 @@
   background-color: var(--md-surface-1);
   overflow-y: auto;
   overflow-x: hidden;
+  margin-bottom: 20px; /* Add margin to ensure it's counted in parent height */
+  min-height: 400px; /* Ensure minimum height is always accounted for */
 
   /* Firefox scrollbar styling */
   scrollbar-width: thin;

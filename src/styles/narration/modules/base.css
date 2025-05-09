@@ -10,6 +10,12 @@
   overflow: hidden; /* Ensure content doesn't overflow during height transition */
 }
 
+/* Add extra initial height to the narration section */
+.narration-section.extra-initial-height {
+  min-height: 800px; /* Add 400px to the typical initial height */
+  height: auto !important; /* Override any inline height when the class is present */
+}
+
 /* Unavailable narration section */
 .narration-section.unavailable {
   opacity: 0.8;

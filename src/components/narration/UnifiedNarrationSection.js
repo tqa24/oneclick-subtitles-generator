@@ -212,6 +212,9 @@ const UnifiedNarrationSection = ({
   // Initialize section height on component mount
   useEffect(() => {
     if (sectionRef.current) {
+      // Add a class to the section to give it extra initial height
+      sectionRef.current.classList.add('extra-initial-height');
+
       // Small delay to ensure the DOM is fully rendered
       setTimeout(() => {
         // Get the height of the container including header and method selection
@@ -234,8 +237,8 @@ const UnifiedNarrationSection = ({
           }
         }
 
-        // Calculate initial height with extra padding (added 400px as requested)
-        const initialHeight = headerHeight + methodSelectionHeight + contentHeight + 500; // Added 400px to the original 100px padding
+        // Calculate initial height with extra padding
+        const initialHeight = headerHeight + methodSelectionHeight + contentHeight + 100; // Use original padding
 
         // Set initial height
         sectionRef.current.style.height = `${initialHeight}px`;
@@ -253,6 +256,11 @@ const UnifiedNarrationSection = ({
   useEffect(() => {
     // Use a small delay to ensure the new content is rendered
     const animationTimeout = setTimeout(() => {
+      // Remove the extra-initial-height class when switching methods
+      if (sectionRef.current) {
+        sectionRef.current.classList.remove('extra-initial-height');
+      }
+
       if (containerRef.current && contentRef.current) {
         // Get the height of the content based on which mode is active
         if (narrationMethod === 'f5tts') {
@@ -285,6 +293,9 @@ const UnifiedNarrationSection = ({
     // Use a small delay to ensure the new content is rendered
     const animationTimeout = setTimeout(() => {
       if (sectionRef.current && containerRef.current) {
+        // Remove the extra-initial-height class when content changes
+        sectionRef.current.classList.remove('extra-initial-height');
+
         // Get the height of the container including header and method selection
         const headerHeight = sectionRef.current.querySelector('.narration-header').offsetHeight;
         const methodSelectionHeight = sectionRef.current.querySelector('.narration-method-row').offsetHeight;
@@ -310,18 +321,48 @@ const UnifiedNarrationSection = ({
         const statusMessageHeight = (isGenerating || generationResults?.length > 0) ?
           (sectionRef.current.querySelector('.status-message.info')?.offsetHeight || 0) : 0;
 
+        // Add height for virtualized list if results are present
+        let resultsHeight = 0;
+        if (generationResults?.length > 0) {
+          if (narrationMethod === 'f5tts') {
+            // Add height for F5-TTS results list
+            resultsHeight = 400; // Fixed height of the virtualized list
+          } else {
+            // Add height for Gemini results list
+            resultsHeight = 400; // Fixed height of the virtualized list
+          }
+        }
+
         // Calculate total height needed
         const totalHeight = headerHeight + methodSelectionHeight + errorMessageHeight +
-                           contentHeight + statusMessageHeight + 100; // Keeping original padding to avoid stacking extra height
+                           contentHeight + statusMessageHeight + resultsHeight + 100; // Added resultsHeight
 
         // Set the section height
         sectionRef.current.style.height = `${totalHeight}px`;
-        console.log('Section height set to:', totalHeight, 'for method:', narrationMethod);
+        console.log('Section height set to:', totalHeight, 'for method:', narrationMethod, 'with results height:', resultsHeight);
       }
     }, 100); // Slightly longer delay to ensure container height is set first
 
     return () => clearTimeout(animationTimeout);
   }, [narrationMethod, isGenerating, generationResults, error]);
+
+  // Special effect to handle height when generation starts
+  useEffect(() => {
+    if (isGenerating) {
+      // Add extra height when generation starts to accommodate the status message and future results
+      const extraHeightTimeout = setTimeout(() => {
+        if (sectionRef.current) {
+          // Get current height
+          const currentHeight = parseInt(sectionRef.current.style.height, 10) || sectionRef.current.offsetHeight;
+          // Add extra height for status message and future results
+          sectionRef.current.style.height = `${currentHeight + 500}px`;
+          console.log('Added extra height for generation process, new height:', currentHeight + 500);
+        }
+      }, 50);
+
+      return () => clearTimeout(extraHeightTimeout);
+    }
+  }, [isGenerating]);
 
   // Listen for narrations loaded from cache event
   useEffect(() => {
