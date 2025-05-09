@@ -1131,11 +1131,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 )}
               </div>
             </div>
-          ) : (
-            <div className="no-video-message">
-              {/* Empty state - SRT-only mode will be activated in App.js */}
-            </div>
-          )}
+          ) : null}
 
       </div>
     </div>
