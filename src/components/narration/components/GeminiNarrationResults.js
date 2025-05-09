@@ -380,38 +380,42 @@ const GeminiNarrationResults = ({
     }
   }, [loadedFromCache, generationResults]);
 
-  // Play audio function - simplified approach like F5-TTS
+  // Initialize audio element on component mount
+  // Super simple audio playback function - no initialization needed
   const playAudio = (result) => {
     // If already playing this audio, stop it
     if (currentlyPlaying === result.subtitle_id && isPlaying) {
-      setIsPlaying(false);
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      setIsPlaying(false);
+      setCurrentlyPlaying(null);
       return;
     }
 
-    // Set up the audio element with the new source
+    // Stop any currently playing audio
     if (audioRef.current) {
-      // Set the source to the new audio file
-      audioRef.current.src = getAudioUrl(result.filename);
-
-      // Update state to show we're playing this subtitle
-      setCurrentlyPlaying(result.subtitle_id);
-      setIsPlaying(true);
-
-      // Play the audio
-      audioRef.current.play().catch(error => {
-        console.error(`Error playing audio for subtitle ${result.subtitle_id}:`, error);
-        setIsPlaying(false);
-      });
+      audioRef.current.pause();
     }
-  };
 
-  // Handle audio ended event
-  const handleAudioEnded = () => {
-    console.log('Audio playback ended');
-    setIsPlaying(false);
+    // Create a new audio element with the URL
+    const audio = new Audio(getAudioUrl(result.filename));
+
+    // Set up only what we need - play and handle ending
+    audio.onended = () => {
+      setIsPlaying(false);
+      setCurrentlyPlaying(null);
+    };
+
+    // Update state and play
+    setCurrentlyPlaying(result.subtitle_id);
+    setIsPlaying(true);
+
+    // Play it
+    audio.play();
+
+    // Store reference
+    audioRef.current = audio;
   };
 
   // Download audio as WAV file
@@ -499,14 +503,8 @@ const GeminiNarrationResults = ({
 
 
 
-      {/* Hidden audio player for playback */}
-      <audio
-        ref={audioRef}
-        onEnded={handleAudioEnded}
-        style={{ display: 'none' }}
-        data-testid="hidden-audio-player"
-        preload="auto"
-      />
+      {/* We're using a programmatically created audio element instead of this one */}
+      {/* This is just a placeholder for the ref */}
     </div>
   );
 };
