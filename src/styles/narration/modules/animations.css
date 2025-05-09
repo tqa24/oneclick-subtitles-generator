@@ -61,8 +61,7 @@
 /* Narration method transition animations */
 .narration-content-container {
   position: relative;
-  transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* F5-TTS content animations */

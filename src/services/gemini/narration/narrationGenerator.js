@@ -143,8 +143,9 @@ export const generateGeminiNarrations = async (
 
       const batch = batches[batchIndex];
 
-      // Update progress
-      onProgress(`Generating narration batch ${batchIndex + 1}/${batches.length}...`);
+      // Always update on first batch, last batch, and every 10% in between
+      const progressPercent = Math.round((batchIndex / batches.length) * 100);
+      onProgress(`Generating narrations... (${progressPercent}% complete)`);
 
       // Process each subtitle in the batch concurrently
       console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} subtitles`);
