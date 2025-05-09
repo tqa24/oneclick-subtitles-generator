@@ -58,7 +58,7 @@ const GenerateButton = ({
         </div>
 
         {/* Right side - Download buttons */}
-        {!isGenerating && generationResults.length > 0 && (
+        {generationResults.length > 0 && (
           <div className="generate-button-right">
             <div className="pill-button-group">
               <button
