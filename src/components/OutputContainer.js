@@ -103,7 +103,18 @@ const OutputContainer = ({
 
     // Then check for YouTube video
     if (selectedVideo?.url) {
+      // Store the selected video URL in localStorage to maintain state
+      if (selectedVideo.source === 'youtube' || selectedVideo.source === 'douyin' || selectedVideo.source === 'all-sites') {
+        localStorage.setItem('current_video_url', selectedVideo.url);
+      }
       setVideoSource(selectedVideo.url);
+      return;
+    }
+
+    // Check if we have a video URL in localStorage but no selectedVideo object
+    const videoUrl = localStorage.getItem('current_video_url');
+    if (videoUrl && !selectedVideo) {
+      setVideoSource(videoUrl);
       return;
     }
 

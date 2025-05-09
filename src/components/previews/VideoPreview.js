@@ -81,7 +81,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     // Check if it's a YouTube URL
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       try {
-        setIsDownloading(true);
+        // Don't set downloading state to true until we know we need to download
+        // This prevents the downloading UI from showing unnecessarily
         setDownloadProgress(0);
 
         // Store the URL for future use
@@ -99,6 +100,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         if (initialStatus.status === 'completed') {
           setVideoUrl(initialStatus.url);
           setIsDownloading(false);
+        } else if (initialStatus.status === 'downloading') {
+          // Only set downloading state to true if we're actually downloading
+          setIsDownloading(true);
+          setDownloadProgress(initialStatus.progress || 1); // Set to at least 1% to show progress
         }
       } catch (err) {
         console.error('Error starting YouTube video download:', err);
@@ -120,6 +125,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       setOptimizedVideoUrl('');
       setError('');
       setOptimizedVideoInfo(null); // Reset optimized video info
+      setIsDownloading(false); // Reset downloading state
+      setDownloadProgress(0); // Reset download progress
 
       // Clear narration data when video source changes
       // Only log in development mode
@@ -241,7 +248,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     // Set up a new interval to check download status
     const interval = setInterval(() => {
       const status = checkDownloadStatus(videoId);
-      setDownloadProgress(status.progress);
 
       if (status.status === 'completed') {
         setVideoUrl(status.url);
@@ -251,6 +257,19 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         setError(t('preview.videoError', `Error loading video: ${status.error}`));
         setIsDownloading(false);
         clearInterval(interval);
+      } else if (status.status === 'not_found') {
+        // If the download was cancelled or doesn't exist, stop checking
+        setIsDownloading(false);
+        clearInterval(interval);
+      } else if (status.status === 'downloading') {
+        // Only update progress if we're actually downloading and progress is > 0
+        if (status.progress > 0) {
+          setIsDownloading(true);
+          setDownloadProgress(status.progress);
+        } else {
+          // If progress is 0, don't show the downloading UI
+          setIsDownloading(false);
+        }
       }
     }, 1000);
 
@@ -833,7 +852,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       <div className="video-container">
         {error && <div className="error">{error}</div>}
 
-        {isDownloading ? (
+        {/* Only show downloading UI if we're actually downloading and have progress > 0 */}
+        {isDownloading && downloadProgress > 0 && (
           <div className="video-downloading">
             <div className="download-progress">
               <div className="progress-bar" style={{ width: `${downloadProgress}%` }}></div>
@@ -842,9 +862,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               {t('preview.downloading', 'Downloading video...')} ({downloadProgress}%)
             </div>
           </div>
-        ) : (
-          videoUrl ? (
-            <div className="native-video-container">
+        )}
+
+        {/* Always show video player if we have a URL, regardless of download state */}
+        {videoUrl ? (
+          <div className="native-video-container">
               {/* Video quality toggle - only show when optimized video is available */}
               {optimizedVideoUrl && (
                 <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
@@ -1113,8 +1135,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             <div className="no-video-message">
               {/* Empty state - SRT-only mode will be activated in App.js */}
             </div>
-          )
-        )}
+          )}
+
       </div>
     </div>
   );

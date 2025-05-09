@@ -88,6 +88,8 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       const videoId = extractVideoId(url);
       if (videoId) {
         const title = await fetchVideoTitle(videoId) || 'YouTube Video';
+        // Store the video URL in localStorage to maintain state
+        localStorage.setItem('current_video_url', url);
         setSelectedVideo({
           id: videoId,
           url: url,
@@ -98,6 +100,8 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       }
     } else {
       setSelectedVideo(null);
+      // Clear the video URL from localStorage
+      localStorage.removeItem('current_video_url');
     }
   };
 
@@ -163,6 +167,8 @@ const YoutubeUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
               setUrl('');
               setSelectedVideo(null);
               setError('');
+              // Also clear the video URL from localStorage
+              localStorage.removeItem('current_video_url');
             }}
             aria-label="Clear input"
           >

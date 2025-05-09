@@ -19,6 +19,7 @@ export const useAppHandlers = (appState) => {
     setUploadedFile,
     apiKeysSet,
     setStatus,
+    subtitlesData,
     setSubtitlesData,
     isDownloading,
     setIsDownloading,
@@ -78,8 +79,20 @@ export const useAppHandlers = (appState) => {
         return;
       }
 
+      // Check if we have a valid video source
+      const hasYoutubeVideo = activeTab.includes('youtube') && selectedVideo !== null;
+      const hasUploadedFile = activeTab === 'file-upload' && uploadedFile !== null;
+      const hasDouyinVideo = activeTab === 'douyin-url' && selectedVideo !== null;
+      const hasAllSitesVideo = activeTab === 'all-sites-url' && selectedVideo !== null;
+      const hasUnifiedVideo = activeTab === 'unified-url' && selectedVideo !== null;
+
+      // Also check if we have a video URL in localStorage
+      const hasVideoUrlInStorage = localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
+
+      const hasVideoSource = hasYoutubeVideo || hasUploadedFile || hasDouyinVideo || hasAllSitesVideo || hasUnifiedVideo || hasVideoUrlInStorage;
+
       // If we don't have a video source, set SRT-only mode
-      if (!validateInput() || (!activeTab.includes('youtube') && !uploadedFile)) {
+      if (!hasVideoSource) {
         setIsSrtOnlyMode(true);
         setSubtitlesData(parsedSubtitles);
         setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
@@ -87,49 +100,22 @@ export const useAppHandlers = (appState) => {
       } else {
         // If we have a video source, make sure we're not in SRT-only mode
         setIsSrtOnlyMode(false);
+
+        // Always reset downloading state when uploading an SRT file
+        setIsDownloading(false);
+        setDownloadProgress(0);
       }
 
-      // If we're in YouTube tabs, we need to download the video first
+      // For YouTube tabs, we don't need to download the video immediately when uploading an SRT file
+      // Just set the subtitles data and show a success message
       if (activeTab.includes('youtube') && selectedVideo) {
-        try {
-          // Set downloading state to true to disable the generate button
-          setIsDownloading(true);
-          setDownloadProgress(0);
-          setStatus({ message: t('output.downloadingVideo', 'Downloading video...'), type: 'loading' });
+        // Make sure we're not in downloading state
+        setIsDownloading(false);
+        setDownloadProgress(0);
 
-          // We'll set the subtitles data after the video is downloaded and prepared
-
-          // Create a wrapper function that includes the additional parameters
-          const prepareVideoWrapper = async (file) => {
-            return prepareVideoForSegments(file, setStatus, setVideoSegments, setSegmentsStatus, t);
-          };
-
-          // Download and prepare the YouTube video
-          await downloadAndPrepareYouTubeVideo(
-            selectedVideo,
-            setIsDownloading,
-            setDownloadProgress,
-            setStatus,
-            setCurrentDownloadId,
-            setActiveTab,
-            setUploadedFile,
-            setIsSrtOnlyMode,
-            prepareVideoWrapper,
-            t
-          );
-
-          // Set the subtitles data directly after video is prepared
-          setSubtitlesData(parsedSubtitles);
-          setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
-
-        } catch (error) {
-          console.error('Error downloading video:', error);
-          // Reset downloading state
-          setIsDownloading(false);
-          setDownloadProgress(0);
-          setStatus({ message: `${t('errors.videoDownloadFailed', 'Video download failed')}: ${error.message}`, type: 'error' });
-          return;
-        }
+        // Set the subtitles data directly
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
       } else if (activeTab === 'file-upload' && uploadedFile) {
         try {
           // For file upload tab, set the subtitles data directly
@@ -154,7 +140,19 @@ export const useAppHandlers = (appState) => {
             type: 'warning'
           });
         }
+      } else if (hasDouyinVideo || hasAllSitesVideo || hasUnifiedVideo) {
+        // For other video sources (Douyin, All Sites, Unified), set the subtitles data directly
+        // We'll download the video when the user clicks "Generate Subtitles"
+
+        // Make sure we're not in downloading state
+        setIsDownloading(false);
+        setDownloadProgress(0);
+
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
       } else {
+        // This should not happen since we already checked hasVideoSource above,
+        // but keeping it as a fallback
         setStatus({ message: t('errors.noMediaSelected', 'Please select a video or audio file first'), type: 'error' });
       }
     } catch (error) {
@@ -246,8 +244,14 @@ export const useAppHandlers = (appState) => {
           return;
         }
 
-        // Start generating subtitles with the downloaded file
-        await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
+        // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
+        if (subtitlesData && subtitlesData.length > 0) {
+          // Just update the status to show that the video is ready
+          setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
+        } else {
+          // Otherwise, generate new subtitles
+          await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
+        }
       } catch (error) {
         console.error('Error downloading video:', error);
         // Reset downloading state
@@ -279,7 +283,14 @@ export const useAppHandlers = (appState) => {
         return;
       }
 
-      await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
+      // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
+      if (subtitlesData && subtitlesData.length > 0) {
+        // Just update the status to show that the video is ready
+        setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
+      } else {
+        // Otherwise, generate new subtitles
+        await generateSubtitles(input, inputType, apiKeysSet, subtitleOptions);
+      }
     }
 
     // Reset button animation state when generation is complete
@@ -363,8 +374,16 @@ export const useAppHandlers = (appState) => {
           return;
         }
 
-        // Start generating subtitles with the downloaded file
-        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+        // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
+        if (subtitlesData && subtitlesData.length > 0) {
+          // Just update the status to show that the video is ready
+          setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
+          // Reset retrying state
+          setIsRetrying(false);
+        } else {
+          // Otherwise, retry generating subtitles
+          await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+        }
       } catch (error) {
         console.error('Error downloading video:', error);
         // Reset downloading state
@@ -399,7 +418,14 @@ export const useAppHandlers = (appState) => {
           return;
         }
 
-        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+        // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
+        if (subtitlesData && subtitlesData.length > 0) {
+          // Just update the status to show that the video is ready
+          setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
+        } else {
+          // Otherwise, retry generating subtitles
+          await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+        }
       } finally {
         // Reset retrying state regardless of success or failure
         setIsRetrying(false);

@@ -226,6 +226,8 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       const videoId = extractYoutubeVideoId(inputUrl);
       if (videoId) {
         const title = await fetchYoutubeVideoTitle(videoId) || 'YouTube Video';
+        // Store the video URL in localStorage to maintain state
+        localStorage.setItem('current_video_url', inputUrl);
         setSelectedVideo({
           id: videoId,
           url: inputUrl,
@@ -242,6 +244,8 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       setUrlType('douyin');
       const videoId = extractDouyinVideoId(inputUrl);
       if (videoId) {
+        // Store the video URL in localStorage to maintain state
+        localStorage.setItem('current_video_url', inputUrl);
         setSelectedVideo({
           id: videoId,
           url: inputUrl,
@@ -260,6 +264,9 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
         const videoId = generateAllSitesVideoId(inputUrl);
         const hostname = new URL(inputUrl).hostname;
         const siteName = hostname.replace(/^www\./, '');
+
+        // Store the video URL in localStorage to maintain state
+        localStorage.setItem('current_video_url', inputUrl);
 
         setSelectedVideo({
           id: videoId,
@@ -477,6 +484,8 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
               setSelectedVideo(null);
               setError('');
               setUrlType('');
+              // Also clear the video URL from localStorage
+              localStorage.removeItem('current_video_url');
             }}
             aria-label="Clear input"
           >

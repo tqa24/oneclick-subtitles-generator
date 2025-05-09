@@ -165,12 +165,15 @@ const AppLayout = ({
 
   // Handle when video source is removed or added
   useEffect(() => {
+    // Check if we have a video URL in localStorage
+    const hasVideoUrlInStorage = localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
+
     // If we have subtitles data but no video source, switch to SRT-only mode
-    if (!selectedVideo && !uploadedFile && subtitlesData) {
+    if (!selectedVideo && !uploadedFile && !hasVideoUrlInStorage && subtitlesData) {
       setIsSrtOnlyMode(true);
     }
     // If we have a video source, switch to normal mode
-    else if ((selectedVideo || uploadedFile) && subtitlesData && isSrtOnlyMode) {
+    else if ((selectedVideo || uploadedFile || hasVideoUrlInStorage) && subtitlesData && isSrtOnlyMode) {
       setIsSrtOnlyMode(false);
     }
   }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode, setIsSrtOnlyMode]);
