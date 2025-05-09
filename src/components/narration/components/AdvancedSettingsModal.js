@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import NarrationAdvancedSettings from '../NarrationAdvancedSettings';
 import '../../../styles/narration/advancedSettingsModal.css';
@@ -53,15 +54,8 @@ const AdvancedSettingsModal = ({
     onSettingsChange(DEFAULT_ADVANCED_SETTINGS);
   };
 
-  // Handle click outside to close
+  // Handle ESC key to close
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-
-    // Handle ESC key to close
     const handleEscKey = (event) => {
       if (event.key === 'Escape') {
         onClose();
@@ -69,21 +63,25 @@ const AdvancedSettingsModal = ({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleEscKey);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscKey);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="advanced-settings-modal-overlay">
-      <div className="advanced-settings-modal" ref={modalRef}>
+  // Create a portal to render the modal at the root level of the DOM
+  return ReactDOM.createPortal(
+    <div className="advanced-settings-modal-overlay" onClick={(e) => {
+      // Close when clicking on the overlay (outside the modal)
+      if (e.target === e.currentTarget) {
+        onClose();
+      }
+    }}>
+      <div className="advanced-settings-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
         <div className="advanced-settings-modal-header">
           <h3>{t('narration.advancedSettings', 'Advanced Settings')}</h3>
           <button className="close-button" onClick={onClose}>×</button>
@@ -160,7 +158,8 @@ const AdvancedSettingsModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body // Render directly in the body element
   );
 };
 

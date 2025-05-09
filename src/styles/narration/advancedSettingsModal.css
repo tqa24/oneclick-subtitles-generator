@@ -10,8 +10,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 99999; /* Increased from 1000 to 99999 to ensure it appears above other elements */
   backdrop-filter: blur(8px);
+  isolation: isolate; /* Create a new stacking context */
 }
 
 .advanced-settings-modal {
@@ -26,6 +27,8 @@
   animation: modal-appear 0.4s var(--md-easing-emphasized);
   border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
   overflow: hidden;
+  position: relative; /* Ensure proper stacking context */
+  z-index: 1; /* Ensure it's above the overlay */
 }
 
 .advanced-settings-modal-header {
