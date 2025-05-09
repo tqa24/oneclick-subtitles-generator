@@ -16,6 +16,15 @@
   height: auto !important; /* Override any inline height when the class is present */
 }
 
+/* Ensure enough height when generating narrations */
+.narration-section.f5tts-generating {
+  min-height: 1300px; /* Increased height for F5-TTS to show more results */
+}
+
+.narration-section.gemini-generating {
+  min-height: 1000px; /* Reduced height for Gemini to avoid too much empty space */
+}
+
 /* Unavailable narration section */
 .narration-section.unavailable {
   opacity: 0.8;

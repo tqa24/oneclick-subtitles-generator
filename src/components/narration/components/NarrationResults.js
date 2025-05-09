@@ -358,7 +358,7 @@ const NarrationResults = ({
           <List
             ref={listRef}
             className="results-virtualized-list"
-            height={400} // Fixed height for the virtualized container
+            height={700} // Increased height for the F5-TTS virtualized container to show more results
             width="100%"
             itemCount={generationResults ? generationResults.length : 0}
             itemSize={getRowHeight} // Dynamic row heights based on content

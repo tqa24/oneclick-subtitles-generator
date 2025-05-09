@@ -252,6 +252,21 @@ const UnifiedNarrationSection = ({
     updateReferenceAudio(initialReferenceAudio);
   }, [initialReferenceAudio, updateReferenceAudio]);
 
+  // Clear results when switching narration methods
+  useEffect(() => {
+    // Clear generation results when switching methods
+    setGenerationResults([]);
+    setGenerationStatus('');
+    setError('');
+
+    // Remove any generating classes
+    if (sectionRef.current) {
+      sectionRef.current.classList.remove('f5tts-generating', 'gemini-generating');
+    }
+
+    console.log(`Switched to ${narrationMethod} method, cleared previous results`);
+  }, [narrationMethod, setGenerationResults, setGenerationStatus, setError]);
+
   // Handle height animation when narration method changes
   useEffect(() => {
     // Use a small delay to ensure the new content is rendered
@@ -326,10 +341,10 @@ const UnifiedNarrationSection = ({
         if (generationResults?.length > 0) {
           if (narrationMethod === 'f5tts') {
             // Add height for F5-TTS results list
-            resultsHeight = 400; // Fixed height of the virtualized list
+            resultsHeight = 700; // Increased height of the F5-TTS virtualized list
           } else {
             // Add height for Gemini results list
-            resultsHeight = 400; // Fixed height of the virtualized list
+            resultsHeight = 350; // Reduced height of the Gemini virtualized list
           }
         }
 
@@ -352,17 +367,39 @@ const UnifiedNarrationSection = ({
       // Add extra height when generation starts to accommodate the status message and future results
       const extraHeightTimeout = setTimeout(() => {
         if (sectionRef.current) {
-          // Get current height
-          const currentHeight = parseInt(sectionRef.current.style.height, 10) || sectionRef.current.offsetHeight;
-          // Add extra height for status message and future results
-          sectionRef.current.style.height = `${currentHeight + 500}px`;
-          console.log('Added extra height for generation process, new height:', currentHeight + 500);
+          // Reset the height to a base value first to avoid stacking
+          // This is important when switching between methods with existing results
+          const baseHeight = narrationMethod === 'gemini' ? 350 : 450; // Higher base for F5-TTS, lower for Gemini
+          sectionRef.current.style.height = `${baseHeight}px`;
+
+          // Add appropriate CSS class based on narration method
+          sectionRef.current.classList.remove('extra-initial-height');
+          sectionRef.current.classList.remove('f5tts-generating', 'gemini-generating');
+          sectionRef.current.classList.add(`${narrationMethod}-generating`);
+
+          // After a short delay, set the final height
+          setTimeout(() => {
+            // Get current height after reset
+            const currentHeight = parseInt(sectionRef.current.style.height, 10) || sectionRef.current.offsetHeight;
+
+            // Add extra height for status message and future results
+            // More height for F5-TTS to show more results, less for Gemini to reduce empty space
+            const extraHeight = narrationMethod === 'gemini' ? 500 : 800;
+
+            sectionRef.current.style.height = `${currentHeight + extraHeight}px`;
+            console.log(`Reset and added ${extraHeight}px extra height for ${narrationMethod} generation process, new height:`, currentHeight + extraHeight);
+          }, 20);
         }
       }, 50);
 
       return () => clearTimeout(extraHeightTimeout);
+    } else {
+      // Remove generating classes when generation stops
+      if (sectionRef.current) {
+        sectionRef.current.classList.remove('f5tts-generating', 'gemini-generating');
+      }
     }
-  }, [isGenerating]);
+  }, [isGenerating, narrationMethod]);
 
   // Listen for narrations loaded from cache event
   useEffect(() => {

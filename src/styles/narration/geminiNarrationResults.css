@@ -52,7 +52,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 20px; /* Add margin to ensure it's counted in parent height */
-  min-height: 400px; /* Ensure minimum height is always accounted for */
+  min-height: 350px; /* Reduced minimum height for Gemini results */
 
   /* Firefox scrollbar styling */
   scrollbar-width: thin;

@@ -468,7 +468,7 @@ const GeminiNarrationResults = ({
           <List
             ref={listRef}
             className="gemini-results-virtualized-list"
-            height={400} // Fixed height for the virtualized container
+            height={350} // Reduced height for the Gemini virtualized container to avoid empty space
             width="100%"
             itemCount={generationResults ? generationResults.length : 0}
             itemSize={getRowHeight} // Dynamic row heights based on content
