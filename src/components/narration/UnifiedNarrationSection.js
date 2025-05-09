@@ -252,10 +252,10 @@ const UnifiedNarrationSection = ({
     updateReferenceAudio(initialReferenceAudio);
   }, [initialReferenceAudio, updateReferenceAudio]);
 
-  // Clear results when switching narration methods
+  // Reset UI state when switching narration methods, but preserve results for aligned narration
   useEffect(() => {
-    // Clear generation results when switching methods
-    setGenerationResults([]);
+    // Clear status and error messages, but don't clear generation results
+    // This ensures aligned narration can still access the results
     setGenerationStatus('');
     setError('');
 
@@ -264,8 +264,36 @@ const UnifiedNarrationSection = ({
       sectionRef.current.classList.remove('f5tts-generating', 'gemini-generating');
     }
 
-    console.log(`Switched to ${narrationMethod} method, cleared previous results`);
-  }, [narrationMethod, setGenerationResults, setGenerationStatus, setError]);
+    // IMPORTANT: We intentionally do NOT clear generationResults here
+    // This is to ensure that the aligned narration feature can still access
+    // the narration results when the user clicks the "Refresh Narration" button
+    // in the video player. If we cleared the results, the aligned narration
+    // would fail with "no narration results available" error.
+
+    // Ensure the global window objects have the latest narration results
+    // This is critical for the aligned narration feature to work
+    if (generationResults && generationResults.length > 0) {
+      if (subtitleSource === 'original') {
+        window.originalNarrations = [...generationResults];
+        try {
+          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing originalNarrations in localStorage:', e);
+        }
+        console.log('Preserved originalNarrations in window object for aligned narration:', window.originalNarrations.length);
+      } else if (subtitleSource === 'translated') {
+        window.translatedNarrations = [...generationResults];
+        try {
+          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing translatedNarrations in localStorage:', e);
+        }
+        console.log('Preserved translatedNarrations in window object for aligned narration:', window.translatedNarrations.length);
+      }
+    }
+
+    console.log(`Switched to ${narrationMethod} method, UI reset but preserved results for aligned narration`);
+  }, [narrationMethod, setGenerationStatus, setError, generationResults, subtitleSource]);
 
   // Handle height animation when narration method changes
   useEffect(() => {
@@ -302,6 +330,31 @@ const UnifiedNarrationSection = ({
 
     return () => clearTimeout(animationTimeout);
   }, [narrationMethod, isGenerating, generationResults]);
+
+  // Update global window objects when generation results change
+  useEffect(() => {
+    // Ensure the global window objects have the latest narration results
+    // This is critical for the aligned narration feature to work
+    if (generationResults && generationResults.length > 0) {
+      if (subtitleSource === 'original') {
+        window.originalNarrations = [...generationResults];
+        try {
+          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing originalNarrations in localStorage:', e);
+        }
+        console.log('Updated originalNarrations in window object with new results:', window.originalNarrations.length);
+      } else if (subtitleSource === 'translated') {
+        window.translatedNarrations = [...generationResults];
+        try {
+          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
+        } catch (e) {
+          console.error('Error storing translatedNarrations in localStorage:', e);
+        }
+        console.log('Updated translatedNarrations in window object with new results:', window.translatedNarrations.length);
+      }
+    }
+  }, [generationResults, subtitleSource]);
 
   // Handle overall section height animation
   useEffect(() => {
