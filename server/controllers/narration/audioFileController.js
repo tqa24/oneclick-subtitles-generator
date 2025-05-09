@@ -73,6 +73,13 @@ const serveAudioFile = (req, res) => {
 const downloadAlignedAudio = async (req, res) => {
   console.log('Received download-aligned request');
 
+  // Define variables at the top level so they're available in the catch block
+  let outputPath;
+  let filterComplexPath;
+  let audioSegments = [];
+  let tempDir;
+  let timestamp;
+
   try {
     // Get the narration data from the request body
     const { narrations } = req.body;
@@ -87,18 +94,18 @@ const downloadAlignedAudio = async (req, res) => {
     narrations.sort((a, b) => a.start - b.start);
 
     // Create a temporary directory for the aligned audio files
-    const tempDir = path.join(TEMP_AUDIO_DIR);
+    tempDir = path.join(TEMP_AUDIO_DIR);
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
     // Create the output file path
-    const timestamp = Date.now();
+    timestamp = Date.now();
     const outputFilename = `aligned_narration_${timestamp}.wav`;
-    const outputPath = path.join(tempDir, outputFilename);
+    outputPath = path.join(tempDir, outputFilename);
 
-    // Check if all files exist and get their durations
-    const audioSegments = [];
+    // Reset the audioSegments array
+    audioSegments = [];
 
     // Log the received narrations for debugging
     console.log('Received narrations with timing info:');
@@ -265,9 +272,17 @@ const downloadAlignedAudio = async (req, res) => {
       ffmpegArgs.push('-i', segment.path);
     });
 
-    // Add the filter complex and output options
+    // Create a temporary file for the filter complex to avoid command line length limitations
+    const filterComplexFilename = `filter_complex_${timestamp}.txt`;
+    filterComplexPath = path.join(tempDir, filterComplexFilename);
+
+    // Write the filter complex to a file
+    fs.writeFileSync(filterComplexPath, filterComplex);
+    console.log(`Filter complex written to file: ${filterComplexPath}`);
+
+    // Add the filter complex script and output options
     ffmpegArgs.push(
-      '-filter_complex', filterComplex,
+      '-filter_complex_script', filterComplexPath,
       '-map', '[aout]',
       '-c:a', 'pcm_s16le',
       '-ar', '44100',
@@ -371,6 +386,12 @@ const downloadAlignedAudio = async (req, res) => {
           console.log('Cleaned up temporary output file');
         }
 
+        // Clean up the filter complex file
+        if (fs.existsSync(filterComplexPath)) {
+          fs.unlinkSync(filterComplexPath);
+          console.log('Cleaned up temporary filter complex file');
+        }
+
         // Clean up any temporary files created for base64 audio data
         for (const segment of audioSegments) {
           if (segment.type === 'temp' && segment.tempFile && fs.existsSync(segment.tempFile)) {
@@ -391,6 +412,12 @@ const downloadAlignedAudio = async (req, res) => {
       if (outputPath && fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
         console.log('Cleaned up temporary output file after error');
+      }
+
+      // Clean up the filter complex file if it exists
+      if (filterComplexPath && fs.existsSync(filterComplexPath)) {
+        fs.unlinkSync(filterComplexPath);
+        console.log('Cleaned up temporary filter complex file after error');
       }
 
       // Clean up any temporary files created for base64 audio data
