@@ -286,12 +286,19 @@ const GeminiNarrationResults = ({
         // Generate a hash of the subtitles
         const subtitleHash = generateSubtitleHash(generationResults);
 
-        // Create cache entry
+        // Create cache entry with only essential data
+        const essentialNarrations = generationResults.map(result => ({
+          subtitle_id: result.subtitle_id,
+          filename: result.filename,
+          success: result.success,
+          text: result.text
+        }));
+
         const cacheEntry = {
           mediaId,
           subtitleHash,
           timestamp: Date.now(),
-          narrations: generationResults
+          narrations: essentialNarrations
         };
 
         // Save to localStorage

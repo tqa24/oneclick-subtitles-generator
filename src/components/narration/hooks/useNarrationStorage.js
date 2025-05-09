@@ -17,13 +17,21 @@ const useNarrationStorage = ({
     console.log('useNarrationStorage - subtitleSource:', subtitleSource);
 
     if (generationResults.length > 0) {
-      // Store based on subtitle source
+      // Store full data in window object for immediate access
       if (subtitleSource === 'original') {
         // Create a new array to ensure reference changes trigger updates
         window.originalNarrations = [...generationResults];
-        // Also store in localStorage for more reliable access
+
+        // For localStorage, only store essential data (filenames and IDs)
         try {
-          localStorage.setItem('originalNarrations', JSON.stringify(generationResults));
+          // Extract only the necessary information to avoid localStorage quota issues
+          const essentialData = generationResults.map(result => ({
+            subtitle_id: result.subtitle_id,
+            filename: result.filename,
+            success: result.success,
+            text: result.text
+          }));
+          localStorage.setItem('originalNarrations', JSON.stringify(essentialData));
         } catch (e) {
           console.error('Error storing originalNarrations in localStorage:', e);
         }
@@ -31,9 +39,17 @@ const useNarrationStorage = ({
       } else {
         // Create a new array to ensure reference changes trigger updates
         window.translatedNarrations = [...generationResults];
-        // Also store in localStorage for more reliable access
+
+        // For localStorage, only store essential data (filenames and IDs)
         try {
-          localStorage.setItem('translatedNarrations', JSON.stringify(generationResults));
+          // Extract only the necessary information to avoid localStorage quota issues
+          const essentialData = generationResults.map(result => ({
+            subtitle_id: result.subtitle_id,
+            filename: result.filename,
+            success: result.success,
+            text: result.text
+          }));
+          localStorage.setItem('translatedNarrations', JSON.stringify(essentialData));
         } catch (e) {
           console.error('Error storing translatedNarrations in localStorage:', e);
         }
