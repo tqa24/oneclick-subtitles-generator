@@ -253,14 +253,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         setVideoUrl(status.url);
         setIsDownloading(false);
         clearInterval(interval);
+        setDownloadCheckInterval(null); // Reset the interval state
       } else if (status.status === 'error') {
         setError(t('preview.videoError', `Error loading video: ${status.error}`));
         setIsDownloading(false);
         clearInterval(interval);
+        setDownloadCheckInterval(null); // Reset the interval state
       } else if (status.status === 'not_found') {
         // If the download was cancelled or doesn't exist, stop checking
         setIsDownloading(false);
         clearInterval(interval);
+        setDownloadCheckInterval(null); // Reset the interval state
       } else if (status.status === 'downloading') {
         // Only update progress if we're actually downloading and progress is > 0
         if (status.progress > 0) {
@@ -276,19 +279,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     setDownloadCheckInterval(interval);
 
     // Clean up on unmount
-    return () => clearInterval(interval);
-  }, [videoId, t, downloadCheckInterval]);
+    return () => {
+      clearInterval(interval);
+      // Don't update state during cleanup to avoid React warnings
+    };
+  }, [videoId, t]); // Remove downloadCheckInterval from dependencies
 
   // processVideoUrl is now defined inside the useEffect above
 
-  // Clean up interval on component unmount
-  useEffect(() => {
-    return () => {
-      if (downloadCheckInterval) {
-        clearInterval(downloadCheckInterval);
-      }
-    };
-  }, [downloadCheckInterval]);
+  // We don't need a separate cleanup effect since we're handling cleanup in the main effect above
 
   // Handle native video element
   useEffect(() => {
@@ -546,35 +545,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, [isRefreshingNarration]);
 
-  // Listen for aligned narration generation events
-  useEffect(() => {
-    // Function to handle aligned narration status updates
-    const handleAlignedNarrationStatus = (event) => {
-      if (event.detail) {
-        const { status, message } = event.detail;
-
-        // If the status is 'complete', the narration regeneration is done
-        if (status === 'complete') {
-          console.log('Aligned narration regeneration complete');
-          setIsRefreshingNarration(false);
-        }
-
-        // If the status is 'error', there was an error during regeneration
-        if (status === 'error') {
-          console.error('Error during aligned narration regeneration:', message);
-          setIsRefreshingNarration(false);
-        }
-      }
-    };
-
-    // Add event listener for aligned narration status updates
-    window.addEventListener('aligned-narration-status', handleAlignedNarrationStatus);
-
-    // Clean up event listener
-    return () => {
-      window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
-    };
-  }, []);
+  // The duplicate event listener for aligned-narration-status has been removed
+  // We're now only using the more comprehensive listener above that includes isStillGenerating
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -926,14 +898,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           }
                         }));
 
-                        // Set a timeout to automatically clear the refreshing state after 60 seconds
+                        // Set a timeout to automatically clear the refreshing state after 5 seconds
                         // This is a fallback in case the aligned-narration-status event is not fired
+                        // Reduced from 60 seconds to 5 seconds to ensure the overlay is removed quickly if there's an error
                         setTimeout(() => {
                           if (setIsRefreshingNarration) {
                             console.log('Fallback timeout: clearing refreshing narration state');
                             setIsRefreshingNarration(false);
                           }
-                        }, 60000); // Increased to 60 seconds to account for longer generation times
+                        }, 5000); // Reduced to 5 seconds to ensure the overlay is removed quickly
                       }
                     }}
                     disabled={isRefreshingNarration}

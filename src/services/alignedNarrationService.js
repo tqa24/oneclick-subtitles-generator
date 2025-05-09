@@ -318,14 +318,10 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 export const getAlignedAudioElement = () => {
   // Check if we have a URL in the cache
   if (!alignedNarrationCache.url) {
-    console.warn('No aligned narration URL available in cache', {
-      cacheState: {
-        hasBlob: !!alignedNarrationCache.blob,
-        hasUrl: !!alignedNarrationCache.url,
-        timestamp: alignedNarrationCache.timestamp,
-        hasSubtitleTimestamps: Object.keys(alignedNarrationCache.subtitleTimestamps || {}).length > 0
-      }
-    });
+    // Only log in development mode to reduce console spam
+    if (process.env.NODE_ENV === 'development') {
+      console.log('No aligned narration URL available in cache');
+    }
     return null;
   }
 
@@ -601,9 +597,13 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
  * @param {number} volume - Volume level (0-1)
  */
 export const setAlignedNarrationVolume = (volume) => {
-  const audio = getAlignedAudioElement();
-  if (audio) {
-    audio.volume = volume;
+  // Only try to get the audio element if we have a URL in the cache
+  // This prevents unnecessary warning logs when no aligned narration is available
+  if (alignedNarrationCache.url) {
+    const audio = getAlignedAudioElement();
+    if (audio) {
+      audio.volume = volume;
+    }
   }
 };
 
@@ -677,13 +677,16 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
   preserveAudioElement = true;
   preserveCache = true;
 
-  // Skip cleanup entirely during normal operation to avoid stuttering
-  if (alignedAudioElement) {
-    console.log('Skipping unnecessary cleanup to avoid stuttering');
+  // Skip cleanup entirely during normal operation to avoid stuttering and console spam
+  if (alignedAudioElement || !alignedNarrationCache.url) {
+    // Don't log anything to avoid console spam
     return;
   }
 
-  console.log(`Cleaning up aligned narration resources (preserveAudioElement: ${preserveAudioElement}, preserveCache: ${preserveCache})`);
+  // Only log in development mode to reduce console spam
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Cleaning up aligned narration resources (preserveAudioElement: ${preserveAudioElement}, preserveCache: ${preserveCache})`);
+  }
 
   // Store the current cache if we're preserving it
   const oldCache = preserveCache ? { ...alignedNarrationCache } : null;
@@ -711,7 +714,10 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
         alignedAudioElement.load();
       }
     } catch (e) {
-      console.warn('Error during audio cleanup:', e);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Error during audio cleanup:', e);
+      }
     }
   }
 
@@ -719,16 +725,25 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
   if (!preserveCache && alignedNarrationCache.url) {
     try {
       URL.revokeObjectURL(alignedNarrationCache.url);
-      console.log('Revoked object URL:', alignedNarrationCache.url);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Revoked object URL');
+      }
     } catch (e) {
-      console.warn('Error revoking object URL:', e);
+      // Only log in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Error revoking object URL:', e);
+      }
     }
   }
 
   // Reset the cache, but restore it if we're preserving it
   if (preserveCache && oldCache) {
     // Keep the existing cache
-    console.log('Preserving aligned narration cache');
+    // Only log in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Preserving aligned narration cache');
+    }
   } else {
     // Reset the cache
     alignedNarrationCache = {
@@ -744,7 +759,10 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
     alignedAudioElement = null;
   }
 
-  console.log('Aligned narration resources cleaned up');
+  // Only log in development mode
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Aligned narration resources cleaned up');
+  }
 };
 
 /**
@@ -753,11 +771,10 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
  */
 export const isAlignedNarrationAvailable = () => {
   const isAvailable = !!alignedNarrationCache.url;
-  console.log(`Checking if aligned narration is available: ${isAvailable}`, {
-    hasUrl: !!alignedNarrationCache.url,
-    hasBlob: !!alignedNarrationCache.blob,
-    timestamp: alignedNarrationCache.timestamp
-  });
+  // Only log in development mode to reduce console spam
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Checking if aligned narration is available: ${isAvailable}`);
+  }
   return isAvailable;
 };
 

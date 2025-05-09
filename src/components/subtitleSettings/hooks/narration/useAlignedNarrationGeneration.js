@@ -47,10 +47,29 @@ const useAlignedNarrationGeneration = ({
     // Check if we have narration results to work with
     if (!generationResults || generationResults.length === 0) {
       console.error('Cannot generate aligned narration: no narration results available');
+
+      // Set the status to error
       setAlignedStatus({
         status: 'error',
         message: 'No narration results available for alignment'
       });
+
+      // Dispatch events to clear the overlay
+      window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+        detail: {
+          status: 'error',
+          message: 'No narration results available for alignment',
+          isStillGenerating: false
+        }
+      }));
+
+      // Also dispatch the generating-state event to ensure the overlay is removed
+      window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
+        detail: {
+          isGenerating: false
+        }
+      }));
+
       return;
     }
 
@@ -135,90 +154,19 @@ const useAlignedNarrationGeneration = ({
     playAlignedNarration
   ]);
 
-  // Generate aligned narration when needed
+  // Generate aligned narration when needed - DISABLED for automatic generation
+  // Only manual generation via the "Refresh Narration" button is allowed
   useEffect(() => {
-    // Only generate if aligned mode is enabled and we have narration results
-    if (useAlignedMode && generationResults && generationResults.length > 0) {
-      // Only generate if we don't already have aligned narration
-      if (!isAlignedAvailable || !isAlignedNarrationAvailable()) {
-        // Generate the aligned narration
-        const generateAlignedAudio = async () => {
-          try {
-            setIsGeneratingAligned(true);
-            setAlignedStatus({ status: 'generating', message: 'Generating aligned narration...' });
+    // This effect is intentionally disabled to prevent automatic generation
+    // Aligned narration will only be generated when the user clicks the "Refresh Narration" button
 
-            // Force reset any existing audio element to ensure we use the new one
-            console.log('Resetting audio element before initial generation');
-            resetAlignedAudioElement();
-
-            // Get all subtitles from the video for timing information
-            const allSubtitles = getAllSubtitles();
-
-            // Create a map of subtitles by ID for quick lookup
-            const subtitleMap = createSubtitleMap(allSubtitles);
-
-            // Add timing information to each narration result
-            const enhancedResults = enhanceNarrationWithTiming(generationResults, subtitleMap);
-
-            console.log('Enhanced narration results with timing information:', enhancedResults);
-
-            // Generate the aligned narration with the enhanced results
-            await generateAlignedNarrationService(enhancedResults, setAlignedStatus);
-
-            // Update state
-            setIsAlignedAvailable(true);
-
-            // Dispatch an event to notify other components that the aligned narration generation is complete
-            window.dispatchEvent(new CustomEvent('aligned-narration-status', {
-              detail: {
-                status: 'complete',
-                message: 'Aligned narration generation complete',
-                isStillGenerating: true // Still generating until we set isGeneratingAligned to false
-              }
-            }));
-
-            // If the video is playing, start playing the aligned narration
-            if (videoRef?.current && !videoRef.current.paused) {
-              playAlignedNarration(videoRef.current.currentTime, true);
-            }
-
-            // Update the isGeneratingAligned state
-            setIsGeneratingAligned(false);
-
-            // Dispatch an event to notify other components that the generation state has changed
-            window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
-              detail: {
-                isGenerating: false
-              }
-            }));
-          } catch (error) {
-            console.error('Error generating aligned narration:', error);
-            setAlignedStatus({ status: 'error', message: `Error: ${error.message}` });
-
-            // Dispatch an event to notify other components that there was an error during aligned narration generation
-            window.dispatchEvent(new CustomEvent('aligned-narration-status', {
-              detail: {
-                status: 'error',
-                message: `Error: ${error.message}`,
-                isStillGenerating: true // Still generating until we set isGeneratingAligned to false
-              }
-            }));
-
-            // Update the isGeneratingAligned state
-            setIsGeneratingAligned(false);
-
-            // Dispatch an event to notify other components that the generation state has changed
-            window.dispatchEvent(new CustomEvent('aligned-narration-generating-state', {
-              detail: {
-                isGenerating: false
-              }
-            }));
-          }
-        };
-
-        generateAlignedAudio();
-      }
+    // Log this only in development mode to avoid console spam
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Automatic aligned narration generation is disabled. Use the "Refresh Narration" button instead.');
     }
+
+    // No automatic generation code here - the regenerateAlignedNarration function is still available
+    // for the "Refresh Narration" button to use
   }, [
     useAlignedMode,
     generationResults,
