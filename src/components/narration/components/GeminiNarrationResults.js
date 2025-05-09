@@ -421,13 +421,51 @@ const GeminiNarrationResults = ({
   // Download audio as WAV file
   const downloadAudio = (result) => {
     if (result.filename) {
-      // Create a download link
-      const a = document.createElement('a');
-      a.href = getAudioUrl(result.filename);
-      a.download = `narration_${result.subtitle_id}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        console.log('Downloading audio file:', result.filename);
+
+        // Get the audio URL
+        const audioUrl = getAudioUrl(result.filename);
+        console.log('Audio URL for download:', audioUrl);
+
+        // Use fetch to get the file as a blob
+        fetch(audioUrl)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            // Create a blob URL
+            const blobUrl = URL.createObjectURL(blob);
+
+            // Create a download link
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `narration_${result.subtitle_id}.wav`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            // Trigger the download
+            a.click();
+
+            // Clean up
+            setTimeout(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(blobUrl);
+            }, 100);
+
+            console.log(`Downloaded WAV file for subtitle ${result.subtitle_id}`);
+          })
+          .catch(error => {
+            console.error('Error downloading audio file:', error);
+            alert(t('narration.downloadError', `Error downloading audio file: ${error.message}`));
+          });
+      } catch (error) {
+        console.error('Error initiating download:', error);
+        alert(t('narration.downloadError', `Error initiating download: ${error.message}`));
+      }
     } else {
       console.error('No filename available for download');
       alert(t('narration.downloadError', 'No audio file available for download'));

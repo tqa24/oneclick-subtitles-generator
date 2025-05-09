@@ -18,7 +18,7 @@ const ResultRow = ({ index, style, data }) => {
     currentAudio,
     isPlaying,
     playAudio,
-    getAudioUrl,
+    downloadAudio,
     t
   } = data;
 
@@ -62,10 +62,9 @@ const ResultRow = ({ index, style, data }) => {
                 </>
               )}
             </button>
-            <a
-              href={getAudioUrl(result.filename)}
-              download={`narration_${result.subtitle_id}.wav`}
+            <button
               className="pill-button secondary"
+              onClick={() => downloadAudio(result)}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -73,7 +72,7 @@ const ResultRow = ({ index, style, data }) => {
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
               {t('narration.download', 'Download')}
-            </a>
+            </button>
             {onRetry && (
               <button
                 className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
@@ -194,6 +193,60 @@ const NarrationResults = ({
   const listRef = useRef(null);
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+
+  // Download audio as WAV file
+  const downloadAudio = (result) => {
+    if (result.filename) {
+      try {
+        console.log('Downloading audio file:', result.filename);
+
+        // Get the audio URL
+        const audioUrl = getAudioUrl(result.filename);
+        console.log('Audio URL for download:', audioUrl);
+
+        // Use fetch to get the file as a blob
+        fetch(audioUrl)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+            }
+            return response.blob();
+          })
+          .then(blob => {
+            // Create a blob URL
+            const blobUrl = URL.createObjectURL(blob);
+
+            // Create a download link
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `narration_${result.subtitle_id}.wav`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            // Trigger the download
+            a.click();
+
+            // Clean up
+            setTimeout(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(blobUrl);
+            }, 100);
+
+            console.log(`Downloaded WAV file for subtitle ${result.subtitle_id}`);
+          })
+          .catch(error => {
+            console.error('Error downloading audio file:', error);
+            alert(t('narration.downloadError', `Error downloading audio file: ${error.message}`));
+          });
+      } catch (error) {
+        console.error('Error initiating download:', error);
+        alert(t('narration.downloadError', `Error initiating download: ${error.message}`));
+      }
+    } else {
+      console.error('No filename available for download');
+      alert(t('narration.downloadError', 'No audio file available for download'));
+    }
+  };
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
@@ -371,6 +424,7 @@ const NarrationResults = ({
               isPlaying,
               playAudio,
               getAudioUrl,
+              downloadAudio,
               t
             }}
           >
