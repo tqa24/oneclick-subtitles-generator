@@ -32,14 +32,12 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
 
-  // Check if narration service is available with multiple attempts
+  // Check if narration service is available - simplified version
   useEffect(() => {
     const checkAvailability = async () => {
       try {
-        console.log('Checking narration service availability with multiple attempts');
-        // Use 20 attempts with 10-second intervals and enable quiet mode
-        const status = await checkNarrationStatusWithRetry(20, 10000, true);
-        console.log('Final narration service status:', status);
+        // Use simplified version with no retries
+        const status = await checkNarrationStatusWithRetry();
 
         // Set availability based on the actual status
         setIsServiceAvailable(status.available);
@@ -52,7 +50,6 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
           setError('');
         }
       } catch (error) {
-        console.error('Error checking narration status:', error);
         // Service is not available if there's an error
         setIsServiceAvailable(false);
         setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));

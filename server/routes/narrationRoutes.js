@@ -55,12 +55,12 @@ router.use('/', async (req, res, next) => {
     return next();
   }
 
-  console.log(`Proxying ${req.method} request to narration service: ${req.url}`);
+  // Removed proxying log
 
   // Check if the narration service is available
   const serviceStatus = await narrationServiceClient.checkService();
   if (!serviceStatus.available) {
-    console.log(`Narration service not available, returning fallback response for ${req.url}`);
+    // Removed service not available log
     return res.status(503).json({
       success: false,
       error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
@@ -69,10 +69,7 @@ router.use('/', async (req, res, next) => {
 
   // Special handling for multipart form data (file uploads)
   if (req.headers['content-type']?.includes('multipart/form-data')) {
-    console.log('Handling multipart form data request');
-    console.log('Request URL:', req.url);
-    console.log('Request method:', req.method);
-    console.log('Request headers:', req.headers);
+    // Removed multipart form data logging
 
     // Create a proxy request
     const http = require('http');
@@ -84,8 +81,7 @@ router.use('/', async (req, res, next) => {
 
     // Handle proxy response
     proxyReq.on('response', (proxyRes) => {
-      console.log('Received proxy response:', proxyRes.statusCode);
-      console.log('Proxy response headers:', proxyRes.headers);
+      // Removed proxy response logging
 
       // Copy status and headers
       res.status(proxyRes.statusCode);
@@ -96,32 +92,22 @@ router.use('/', async (req, res, next) => {
       // Collect response data
       let responseData = [];
       proxyRes.on('data', (chunk) => {
-        console.log('Received chunk of size:', chunk.length);
+        // Removed chunk size logging
         responseData.push(chunk);
       });
 
       proxyRes.on('end', () => {
         const responseBody = Buffer.concat(responseData);
-        console.log('Response complete, total size:', responseBody.length);
+        // Removed response complete logging
 
-        // Try to parse as JSON for logging
-        if (proxyRes.headers['content-type']?.includes('application/json')) {
-          try {
-            const jsonResponse = JSON.parse(responseBody.toString());
-            console.log('JSON response:', jsonResponse);
-          } catch (error) {
-            console.error('Error parsing JSON response:', error);
-            console.log('Response body (first 200 chars):', responseBody.toString().substring(0, 200));
-          }
-        }
-
+        // No JSON parsing for logging
         res.end(responseBody);
       });
     });
 
     // Handle proxy errors
     proxyReq.on('error', (error) => {
-      console.error('Error proxying multipart request:', error);
+      // Removed proxy error logging
       res.status(502).json({
         error: 'Failed to connect to narration service',
         message: error.message
@@ -161,7 +147,7 @@ router.use('/', async (req, res, next) => {
         // Send the audio data
         res.send(audioData.buffer);
       } catch (error) {
-        console.error('Error proxying audio file:', error);
+        // Removed audio file error logging
         res.status(502).json({ error: 'Failed to fetch audio file' });
       }
       return;
@@ -177,7 +163,7 @@ router.use('/', async (req, res, next) => {
       res.json(data);
     }
   } catch (error) {
-    console.error('Error proxying to narration service:', error);
+    // Removed proxying error logging
     res.status(502).json({
       error: 'Failed to connect to narration service',
       message: error.message

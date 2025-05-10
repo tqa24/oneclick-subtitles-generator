@@ -60,7 +60,7 @@ const generateNarration = async (req, res) => {
       }
       // Otherwise, the response is being handled by the streaming logic
     } catch (error) {
-      console.error(`Error using narration service: ${error.message}`);
+      // Removed error logging
       return res.status(503).json({
         success: false,
         error: `Error connecting to narration service: ${error.message}. Please restart the application with npm run dev:cuda.`
