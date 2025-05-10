@@ -1,1 +1,0 @@
-[1]aresample=44100,adelay=0|0,volume=1.5[a0]; [2]aresample=44100,adelay=2000|2000,volume=1.5[a1]; [a0][a1]amix=inputs=2:dropout_transition=0:normalize=0[aout]

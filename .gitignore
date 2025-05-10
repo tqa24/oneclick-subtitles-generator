@@ -58,6 +58,7 @@ Desktop.ini
 videos/
 subtitles/
 narration/output/
+narration/temp/
 narration/reference/
 
 # Temporary files

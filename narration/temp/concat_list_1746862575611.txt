@@ -1,2 +1,0 @@
-file 'C:\WORK_win\subtitles-generator\narration\temp\test_batch_1_1746862574518.wav'
-file 'C:\WORK_win\subtitles-generator\narration\temp\test_batch_2_1746862574518.wav'
