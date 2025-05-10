@@ -21,12 +21,9 @@ net session >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ======================================================
     ECHO LOI: Yeu cau quyen quan tri vien.
-    ECHO Vui long nhap chuot phai vao tap tin script nay va chon
-    ECHO "Run as administrator".
-    ECHO ======================================================
-    ECHO.
-    PAUSE
-    GOTO :EOF
+    ECHO Dang yeu cau quyen quan tri vien...
+    powershell -Command "Start-Process '%~f0' -Verb RunAs"
+    EXIT /B
 )
 ECHO Da xac nhan quyen quan tri vien.
 ECHO.
@@ -103,7 +100,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Installing dependencies (using npm run install:all)...
-npm run install:all
+CALL npm run install:all
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed during 'npm run install:all'. Check messages above.
     POPD
@@ -111,7 +108,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Installing yt-dlp for YouTube video downloads...
-npm run install:yt-dlp
+CALL npm run install:yt-dlp
 IF %ERRORLEVEL% NEQ 0 (
     ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
     ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
@@ -120,9 +117,9 @@ IF %ERRORLEVEL% NEQ 0 (
 ECHO Cai dat hoan tat. Dang khoi chay ung dung voi CUDA...
 ECHO (Requires NVIDIA GPU and CUDA Toolkit installed separately)
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-npm run dev:cuda
+CALL npm run dev:cuda
 POPD
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNoNarration
@@ -150,7 +147,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Installing dependencies (using npm install)...
-npm install
+CALL npm install
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed during 'npm install'. Check messages above.
     POPD
@@ -158,7 +155,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Installing yt-dlp for YouTube video downloads...
-npm run install:yt-dlp
+CALL npm run install:yt-dlp
 IF %ERRORLEVEL% NEQ 0 (
     ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
     ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
@@ -166,9 +163,9 @@ IF %ERRORLEVEL% NEQ 0 (
 
 ECHO Cai dat hoan tat. Dang khoi chay ung dung...
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-npm run dev
+CALL npm run dev
 POPD
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UpdateApp
@@ -207,16 +204,17 @@ IF /I "%INSTALL_DEPS%"=="c" (
         GOTO ErrorOccurred
     )
     ECHO Running 'npm install'...
-    npm install
+    CALL npm install
      IF %ERRORLEVEL% NEQ 0 (
         ECHO WARNING: 'npm install' encountered errors. Check messages above.
     ) ELSE (
         ECHO 'npm install' completed.
     )
+	PAUSE
     POPD
 )
 
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunApp
@@ -237,14 +235,14 @@ IF %ERRORLEVEL% NEQ 0 (
 
 ECHO Dang khoi chay ung dung (using npm run dev)...
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-npm run dev
+CALL npm run dev
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed to start application using 'npm run dev'. Check messages above.
     POPD
     GOTO ErrorOccurred
 )
 POPD
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunAppCUDA
@@ -266,14 +264,14 @@ IF %ERRORLEVEL% NEQ 0 (
 ECHO Dang khoi chay ung dung voi CUDA (using npm run dev:cuda)...
 ECHO Luu y: Yeu cau GPU NVIDIA tuong thich va CUDA Toolkit da duoc cai dat.
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-npm run dev:cuda
+CALL npm run dev:cuda
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed to start application using 'npm run dev:cuda'. Check messages above.
     POPD
     GOTO ErrorOccurred
 )
 POPD
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UninstallApp
@@ -300,7 +298,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Go cai dat hoan tat. Thu muc du an da duoc xoa.
-GOTO EndScript
+GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :: Subroutine: Install Prerequisites (Choco, Git, Node, FFmpeg, uv)
@@ -434,12 +432,7 @@ ECHO Vui long tat di mo lai file bat va bam cai dat lan nua moi khi co loi,
 ECHO vi system PATH cho Chocolatey, Git, Node, FFmpeg, uv can duoc cap nhat lai.
 ECHO.
 PAUSE
-GOTO :EOF :: <<<<< Changed this line from GOTO %MENU_LABEL%
+GOTO %MENU_LABEL% :: <<<<< Changed this line from GOTO %MENU_LABEL%
 
-:EndScript
-ECHO.
-ECHO --- Hoat dong Hoan tat ---
-ECHO.
-PAUSE
 :ExitScript
 EXIT /B 0
