@@ -126,7 +126,7 @@ export const animateZoom = (
 
   // Log the zoom adjustment if it's different from the target
   if (effectiveTargetZoom !== targetZoom) {
-    console.log(`Adjusting zoom from ${targetZoom} to minimum ${effectiveTargetZoom}`);
+
   }
 
   // Let getVisibleTimeRange recalculate panOffset to center on playhead

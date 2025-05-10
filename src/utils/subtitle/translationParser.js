@@ -11,14 +11,14 @@ import { formatSecondsToSRTTime } from './timeUtils';
  * @returns {Array} - Array of subtitle objects
  */
 export const parseTranslatedSubtitles = (response) => {
-    console.log('Parsing translated subtitles, response type:', typeof response);
+
 
     // Check if this is a structured JSON response
     if (typeof response === 'object' && response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-        console.log('Found structuredJson in response');
+
         try {
             const result = parseStructuredJsonResponse(response);
-            console.log('Parsed structured JSON response:', result ? result.length : 0, 'subtitles');
+
             if (result && result.length > 0) {
                 return result;
             } else {
@@ -26,7 +26,7 @@ export const parseTranslatedSubtitles = (response) => {
             }
         } catch (error) {
             console.error('Error parsing structured JSON response:', error);
-            console.log('Falling back to text parsing');
+
         }
     }
 
@@ -34,11 +34,11 @@ export const parseTranslatedSubtitles = (response) => {
     if (typeof response === 'string') {
         try {
             const jsonData = JSON.parse(response);
-            console.log('Successfully parsed response string as JSON');
+
 
             // Check if it matches our expected format
             if (jsonData.translations && Array.isArray(jsonData.translations)) {
-                console.log('Found translations array in parsed JSON with', jsonData.translations.length, 'items');
+
 
                 // Process the translations
                 const subtitles = [];
@@ -71,12 +71,12 @@ export const parseTranslatedSubtitles = (response) => {
                 }
 
                 if (subtitles.length > 0) {
-                    console.log('Created', subtitles.length, 'translated subtitles from parsed JSON string');
+
                     return subtitles;
                 }
             }
         } catch (error) {
-            console.log('Response string is not valid JSON, proceeding with SRT parsing');
+
         }
     }
 
@@ -91,7 +91,6 @@ export const parseTranslatedSubtitles = (response) => {
     const lines = text.split('\n');
     let currentSubtitle = {};
     let index = 0;
-    let originalId = null;
 
     while (index < lines.length) {
         const line = lines[index].trim();
@@ -117,7 +116,7 @@ export const parseTranslatedSubtitles = (response) => {
 
             // Start a new subtitle
             currentSubtitle = { id: parseInt(line) };
-            originalId = null; // Reset originalId for the new subtitle
+            // Reset for the new subtitle
             index++;
         }
         // Check if this is a timestamp line
@@ -192,7 +191,7 @@ export const parseTranslatedSubtitles = (response) => {
         const originalSubtitlesMapJson = localStorage.getItem('original_subtitles_map');
         if (originalSubtitlesMapJson) {
             const originalSubtitlesMap = JSON.parse(originalSubtitlesMapJson);
-            console.log('Found original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
+
 
             // Fix timing for each subtitle based on originalId
             for (let i = 0; i < subtitles.length; i++) {
@@ -202,7 +201,7 @@ export const parseTranslatedSubtitles = (response) => {
                 if (sub.originalId) {
                     const originalSub = originalSubtitlesMap[sub.originalId];
                     if (originalSub) {
-                        console.log(`Found original subtitle for ID ${sub.originalId} at index ${i}`);
+
                         sub.start = originalSub.start;
                         sub.end = originalSub.end;
 
@@ -224,7 +223,7 @@ export const parseTranslatedSubtitles = (response) => {
 
                 if (i < originalSubsArray.length) {
                     const originalSub = originalSubsArray[i];
-                    console.log(`Using original subtitle at index ${i} as fallback for subtitle ${i+1}`);
+
                     sub.start = originalSub.start;
                     sub.end = originalSub.end;
                     sub.originalId = originalSub.id;

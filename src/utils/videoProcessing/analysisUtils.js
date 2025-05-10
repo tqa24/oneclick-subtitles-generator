@@ -20,15 +20,15 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
   });
 
   // Dispatch event to notify App.js to show the analysis modal
-  console.log('Dispatching videoAnalysisStarted event');
+
   const analysisEvent = new CustomEvent('videoAnalysisStarted');
   window.dispatchEvent(analysisEvent);
-  console.log('videoAnalysisStarted event dispatched');
+
 
   try {
     // Analyze the video
     const analysisResult = await analyzeVideoWithGemini(analysisFile, onStatusUpdate);
-    console.log('Video analysis result:', analysisResult);
+
 
     // Store the analysis result for the App component to use
     try {
@@ -72,12 +72,12 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
     }
 
     // Dispatch event with the analysis result
-    console.log('Dispatching videoAnalysisComplete event with result:', analysisResult);
+
     const analysisCompleteEvent = new CustomEvent('videoAnalysisComplete', {
       detail: analysisResult
     });
     window.dispatchEvent(analysisCompleteEvent);
-    console.log('videoAnalysisComplete event dispatched');
+
 
     // Force the modal to show by directly setting the state in localStorage
     localStorage.setItem('show_video_analysis', 'true');
@@ -87,7 +87,7 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
     setTimeout(() => {
       // Check if the modal should still be shown
       if (localStorage.getItem('show_video_analysis') === 'true') {
-        console.log('Forcing modal to show after delay');
+
         // Dispatch events again after a delay
         const startEvent = new CustomEvent('videoAnalysisStarted');
         window.dispatchEvent(startEvent);
@@ -97,7 +97,7 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
         });
         window.dispatchEvent(completeEvent);
       } else {
-        console.log('Not showing modal after delay because show_video_analysis is not true');
+
       }
     }, 500);
 
@@ -112,7 +112,7 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
 
     // Wait for the user's choice
     const userChoice = await userChoicePromise;
-    console.log('User choice:', userChoice);
+
 
     // Set the transcription rules globally
     if (userChoice.transcriptionRules) {

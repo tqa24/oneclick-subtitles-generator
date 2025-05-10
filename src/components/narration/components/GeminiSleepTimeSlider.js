@@ -19,7 +19,7 @@ const GeminiSleepTimeSlider = ({
 
   const handleSleepTimeChange = (e) => {
     const newValue = parseInt(e.target.value);
-    console.log('Sleep time changed:', newValue);
+
     setSleepTime(newValue);
 
     // Store in localStorage for persistence

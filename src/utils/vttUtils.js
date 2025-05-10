@@ -102,7 +102,7 @@ export const subtitlesToVtt = (subtitles, isTranslated = false, originalSubtitle
       if (subtitle.originalId) {
         const originalSub = originalSubtitles.find(s => s.id === subtitle.originalId);
         if (originalSub) {
-          console.log(`Found original subtitle by ID ${subtitle.originalId} for translated subtitle ${index + 1}`);
+
           startTime = secondsToVttTime(originalSub.start);
           endTime = secondsToVttTime(originalSub.end);
         }
@@ -111,14 +111,14 @@ export const subtitlesToVtt = (subtitles, isTranslated = false, originalSubtitle
       // Method 2: If no match by ID, try to match by index
       if (!startTime && index < originalSubtitles.length) {
         const originalSub = originalSubtitles[index];
-        console.log(`Using original subtitle at index ${index} for translated subtitle ${index + 1}`);
+
         startTime = secondsToVttTime(originalSub.start);
         endTime = secondsToVttTime(originalSub.end);
       }
 
       // Method 3: Fallback to the translated subtitle's own timing if available
       if (!startTime) {
-        console.log(`Falling back to subtitle's own timing for translated subtitle ${index + 1}`);
+
         startTime = subtitle.start !== undefined
           ? secondsToVttTime(subtitle.start)
           : srtTimeToVttTime(subtitle.startTime);

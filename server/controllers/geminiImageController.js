@@ -35,14 +35,14 @@ const generatePrompt = async (req, res) => {
     }
 
     // Use the Google GenAI library with gemini-2.0-flash-lite model
-    console.log('Using Google GenAI library with model: gemini-2.0-flash-lite');
+
 
     // Initialize the Google GenAI client
     const genAI = new GoogleGenAI({ apiKey: geminiApiKey });
-    console.log('Initialized Google GenAI client');
+
 
     // Get the model
-    console.log('Using models.generateContent API');
+
 
     // Prepare the content
     const content = `
@@ -62,18 +62,18 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
     };
 
     // Generate the prompt
-    console.log('Calling generateContent with config:', JSON.stringify(generationConfig));
+
     const response = await genAI.models.generateContent({
       model: 'gemini-2.0-flash-lite',
       contents: [{ text: content }],
       generationConfig,
     });
 
-    console.log('Gemini API response received');
-    console.log('Response structure:', JSON.stringify(Object.keys(response), null, 2));
+
+
 
     // Extract the prompt from the response
-    console.log('Response candidates:', JSON.stringify(response.candidates, null, 2));
+
     const prompt = response.candidates[0].content.parts[0].text.trim();
 
     return res.json({ prompt });
@@ -133,14 +133,14 @@ const generateImage = async (req, res) => {
       // First, try to read the file directly from the public directory
       try {
         const publicPath = path.join(process.cwd(), 'public', albumArtUrl.replace(/^\//, ''));
-        console.log(`Trying to read album art from public directory: ${publicPath}`);
+
         imageData = await fs.readFile(publicPath);
-        console.log(`Successfully read album art from public directory: ${publicPath}`);
+
       } catch (error) {
         // If that fails, try to fetch it as a URL
-        console.log(`Failed to read from public directory, trying as URL: ${error.message}`);
+
         const absoluteUrl = `http://127.0.0.1:3007${albumArtUrl.startsWith('/') ? '' : '/'}${albumArtUrl}`;
-        console.log(`Converting relative URL ${albumArtUrl} to absolute URL ${absoluteUrl}`);
+
         try {
           const response = await fetch(absoluteUrl);
           if (!response.ok) {
@@ -148,10 +148,10 @@ const generateImage = async (req, res) => {
           }
           imageData = await response.buffer();
         } catch (fetchError) {
-          console.log(`Failed to fetch as URL, trying with public prefix: ${fetchError.message}`);
+
           // Try one more time with /public prefix
           const publicUrl = `http://127.0.0.1:3007/public${albumArtUrl.startsWith('/') ? '' : '/'}${albumArtUrl}`;
-          console.log(`Trying with public prefix: ${publicUrl}`);
+
           const publicResponse = await fetch(publicUrl);
           if (!publicResponse.ok) {
             throw new Error(`Failed to fetch album art with public prefix: ${publicResponse.statusText}`);
@@ -195,26 +195,26 @@ const generateImage = async (req, res) => {
       }
     }
 
-    console.log(`Detected MIME type: ${mimeType} for file: ${albumArtUrl}`);
+
 
     // Call Gemini API to generate image
     const finalPrompt = `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with ${prompt}`;
 
-    console.log(`Using Gemini API key: ${geminiApiKey.substring(0, 5)}...`);
-    console.log(`Sending prompt: ${finalPrompt}`);
-    console.log(`Image mime type: ${mimeType}`);
-    console.log(`Image data length: ${base64Image.length} characters`);
+
+
+
+
 
     // Use the Google GenAI library as shown in the example
     try {
       // Initialize the Google GenAI client
       const genAI = new GoogleGenAI({ apiKey: geminiApiKey });
-      console.log('Initialized Google GenAI client');
 
-      console.log('Using Google GenAI library with model: gemini-2.0-flash-preview-image-generation');
+
+
 
       // Generate content with the model
-      console.log('Using models.generateContent API');
+
 
       // Follow the new instructions exactly
       const contents = [
@@ -227,7 +227,7 @@ const generateImage = async (req, res) => {
         },
       ];
 
-      console.log(`Sending request to Gemini with prompt: "${finalPrompt}" and image from: ${albumArtUrl}`);
+
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
@@ -241,8 +241,8 @@ const generateImage = async (req, res) => {
         }
       });
 
-      console.log('Gemini API response received');
-      console.log('Response structure:', JSON.stringify(Object.keys(response), null, 2));
+
+
 
       // Process the response parts exactly as in the example
       let imageBase64 = null;
@@ -250,49 +250,49 @@ const generateImage = async (req, res) => {
       let imageMimeType = 'image/png';
       let imageSaved = false;
 
-      console.log('Received response from Gemini.');
-      console.log('Response candidates:', JSON.stringify(response.candidates, null, 2));
+
+
 
       if (response.candidates && response.candidates.length > 0) {
-        console.log('Processing candidates...');
+
 
         for (const part of response.candidates[0].content.parts) {
           // Based on the part type, either store the text or save the image
           if (part.text) {
-            console.log('Text part received:', part.text);
+
             textResponse += part.text + '\n';
           } else if (part.inlineData) {
-            console.log('Image part received (inlineData format).');
+
             imageBase64 = part.inlineData.data;
             imageMimeType = part.inlineData.mimeType;
-            console.log(`Image extracted with mime type: ${imageMimeType}`);
+
             imageSaved = true;
           } else if (part['inline_data'] && part['inline_data'].data) {
-            console.log('Image part received (inline_data format).');
+
             imageBase64 = part['inline_data'].data;
             imageMimeType = part['inline_data'].mime_type;
-            console.log(`Image extracted with mime type: ${imageMimeType}`);
+
             imageSaved = true;
           }
         }
       } else {
-        console.log('No candidates found in the response.');
+
         if (response.promptFeedback) {
           console.error('Prompt Feedback:', response.promptFeedback);
         }
       }
 
       if (!imageSaved) {
-        console.log('No image was generated in the response.');
+
         if (textResponse) {
-          console.log('Received text output instead:\n', textResponse.trim());
+
         }
       }
 
       // If no image was found in the response, throw an error
       if (!imageBase64) {
-        console.log('No image found in response');
-        console.log('Text response from model:', textResponse);
+
+
         throw new Error('No image was generated in the response');
       }
 

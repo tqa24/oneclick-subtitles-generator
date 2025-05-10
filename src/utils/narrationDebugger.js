@@ -19,7 +19,7 @@ export const checkNarrationAudioFile = async (filename) => {
 
   try {
     const audioUrl = `${SERVER_URL}/api/narration/audio/${filename}`;
-    console.log(`Checking narration audio file: ${audioUrl}`);
+
     
     const response = await fetch(audioUrl, {
       method: 'HEAD',
@@ -83,7 +83,7 @@ export const debugNarrationPlayback = async (narration, audioRef, volume) => {
     debugInfo.fileCheck = await checkNarrationAudioFile(narration.filename);
   }
 
-  console.log('Narration playback debug info:', debugInfo);
+
   return debugInfo;
 };
 

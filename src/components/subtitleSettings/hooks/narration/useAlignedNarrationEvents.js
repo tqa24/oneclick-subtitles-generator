@@ -41,7 +41,7 @@ const useAlignedNarrationEvents = ({
 
     // Function to handle manual refresh narration button click
     const handleManualRefreshNarration = (event) => {
-      console.log('Manual refresh narration event detected', event.detail);
+
 
       // Clear any existing timeout
       if (regenerationTimeoutRef.current) {
@@ -50,14 +50,14 @@ const useAlignedNarrationEvents = ({
 
       // Force immediate regeneration without any debounce or cooldown
       try {
-        console.log('Manually refreshing aligned narration');
+
 
         // Reset the last regeneration time
         lastRegenerationTimeRef.current = 0;
 
         // Reset the aligned narration cache completely
         if (typeof window.resetAlignedNarration === 'function') {
-          console.log('Resetting aligned narration cache before manual regeneration');
+
           window.resetAlignedNarration();
         }
 

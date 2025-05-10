@@ -15,7 +15,7 @@ const useLanguageChain = (includeOriginal = false) => {
       const savedChain = localStorage.getItem('language_chain_items');
       if (savedChain) {
         const parsedChain = JSON.parse(savedChain);
-        console.log('Loaded saved chain from localStorage:', parsedChain);
+
 
         // Ensure the chain has at least one item
         if (parsedChain && Array.isArray(parsedChain) && parsedChain.length > 0) {
@@ -273,7 +273,7 @@ const useLanguageChain = (includeOriginal = false) => {
     // Clear saved chain from localStorage
     try {
       localStorage.removeItem('language_chain_items');
-      console.log('Cleared saved chain from localStorage');
+
     } catch (error) {
       console.error('Error clearing saved chain from localStorage:', error);
     }
@@ -310,7 +310,7 @@ const useLanguageChain = (includeOriginal = false) => {
       // Don't save if the chain is empty or only has default items
       if (chainItems.length > 0) {
         localStorage.setItem('language_chain_items', JSON.stringify(chainItems));
-        console.log('Saved chain to localStorage:', chainItems);
+
       }
     } catch (error) {
       console.error('Error saving chain to localStorage:', error);

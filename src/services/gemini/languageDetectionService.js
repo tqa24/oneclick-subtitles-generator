@@ -14,7 +14,7 @@ import i18n from '../../i18n/i18n';
  */
 export const detectSubtitleLanguage = async (subtitles, source = 'original', model = 'gemini-2.0-flash-lite') => {
     if (!subtitles || subtitles.length === 0) {
-        console.log('No subtitles provided for language detection');
+
         return {
             languageCode: 'en',
             languageName: 'English',
@@ -71,7 +71,7 @@ Respond with structured data only.
 
         // Add response schema
         requestData = addResponseSchema(requestData, createLanguageDetectionSchema());
-        console.log('Using structured output for language detection with schema:', JSON.stringify(requestData.generationConfig.responseSchema));
+
 
         // Dispatch event to update UI with status
         window.dispatchEvent(new CustomEvent('language-detection-status', {
@@ -97,7 +97,7 @@ Respond with structured data only.
         }
 
         const data = await response.json();
-        console.log('Raw language detection response:', JSON.stringify(data).substring(0, 500) + '...');
+
 
         // Extract the language detection result
         let result;
@@ -107,14 +107,14 @@ Respond with structured data only.
                 const parts = data.candidates[0].content.parts;
                 if (parts && parts.length > 0 && parts[0].functionCall) {
                     result = parts[0].functionCall.args;
-                    console.log('Structured language detection result:', result);
+
                 } else if (parts && parts.length > 0 && parts[0].text) {
                     // Try to parse JSON from text response
                     try {
                         const jsonMatch = parts[0].text.match(/\{[\s\S]*\}/);
                         if (jsonMatch) {
                             result = JSON.parse(jsonMatch[0]);
-                            console.log('Parsed language detection result from text:', result);
+
                         }
                     } catch (e) {
                         console.error('Error parsing JSON from text response:', e);

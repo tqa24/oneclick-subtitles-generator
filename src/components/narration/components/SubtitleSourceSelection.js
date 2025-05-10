@@ -75,7 +75,7 @@ const SubtitleSourceSelection = ({
 
     // Listen for model list changes
     const handleModelListChanged = () => {
-      console.log('Model list changed event received, reloading models');
+
       loadModels();
     };
 
@@ -95,7 +95,7 @@ const SubtitleSourceSelection = ({
     if (translatedSubtitles &&
         translatedSubtitles.length > 0 &&
         subtitleSource === 'translated') {
-      console.log('Translated subtitles changed, re-detecting language');
+
       setTranslatedLanguage(null); // Reset the language
       detectSubtitleLanguage(translatedSubtitles, 'translated');
     }
@@ -302,10 +302,10 @@ const SubtitleSourceSelection = ({
 
     // Listen for translation complete event to trigger language detection
     const handleTranslationComplete = () => {
-      console.log('Translation complete event detected');
+
       // If the user has selected translated subtitles, re-detect the language
       if (subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
-        console.log('Re-detecting language after translation complete');
+
         setTranslatedLanguage(null); // Reset the language
         detectSubtitleLanguage(translatedSubtitles, 'translated');
       }
@@ -313,13 +313,13 @@ const SubtitleSourceSelection = ({
 
     // Listen for translation reset event to clear translated language
     const handleTranslationReset = () => {
-      console.log('Translation reset event detected');
+
       // Reset the translated language state
       setTranslatedLanguage(null);
 
       // If the user had selected translated subtitles, switch to original
       if (subtitleSource === 'translated') {
-        console.log('Switching to original subtitles after translation reset');
+
         setSubtitleSource('original');
 
         // If we have original language info, update the model

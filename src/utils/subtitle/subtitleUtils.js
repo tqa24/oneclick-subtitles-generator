@@ -12,19 +12,19 @@ export const deduplicateAndSortSubtitles = (subtitles) => {
     const validSubtitles = subtitles.filter(sub => {
         // Skip subtitles with identical start and end times
         if (sub.start === sub.end) {
-            console.log(`Skipping subtitle with identical start and end time: ${sub.start}s, text: "${sub.text}"`);
+
             return false;
         }
 
         // Adjust subtitles with very short duration (less than 0.3 seconds)
         if (sub.end - sub.start < 0.3) {
-            console.log(`Adjusting very short subtitle: ${sub.start}s - ${sub.end}s (${(sub.end - sub.start).toFixed(3)}s), text: "${sub.text}"`);
+
             sub.end = sub.start + 0.5; // Set minimum duration to 0.5 seconds
         }
 
         // Skip subtitles with empty text
         if (!sub.text || sub.text.trim() === '') {
-            console.log(`Skipping subtitle with empty text at time: ${sub.start}s - ${sub.end}s`);
+
             return false;
         }
 
@@ -44,7 +44,7 @@ export const deduplicateAndSortSubtitles = (subtitles) => {
 
         // Handle overlapping subtitles
         if (next.start < current.end) {
-            console.log(`Fixing overlapping subtitles: "${current.text}" (${current.start}s-${current.end}s) and "${next.text}" (${next.start}s-${next.end}s)`);
+
 
             // If they have the same text, merge them
             if (next.text === current.text) {
@@ -60,7 +60,7 @@ export const deduplicateAndSortSubtitles = (subtitles) => {
         }
         // If there's a very small gap between subtitles (less than 0.1 seconds)
         else if (next.start - current.end > 0 && next.start - current.end < 0.1) {
-            console.log(`Adjusting small gap between subtitles: ${current.end}s to ${next.start}s (${(next.start - current.end).toFixed(3)}s)`);
+
             // Either extend the current subtitle or move the next one back
             if (next.text === current.text) {
                 // If they have the same text, extend the current one
@@ -91,7 +91,7 @@ export const deduplicateAndSortSubtitles = (subtitles) => {
                validSubtitles[j].start - current.end < 0.3) {
 
             // Merge this subtitle with the current one
-            console.log(`Merging consecutive identical subtitles: "${current.text}" at ${current.start}s-${current.end}s with ${validSubtitles[j].start}s-${validSubtitles[j].end}s`);
+
             current.end = validSubtitles[j].end;
 
             // Mark this key as seen
@@ -106,6 +106,6 @@ export const deduplicateAndSortSubtitles = (subtitles) => {
         uniqueSubtitles.push(current);
     }
 
-    console.log(`Extracted ${uniqueSubtitles.length} unique subtitles from ${subtitles.length} total`);
+
     return uniqueSubtitles;
 };

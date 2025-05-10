@@ -46,9 +46,9 @@ const ModelManagementTab = () => {
     const checkAvailability = async () => {
       setIsCheckingAvailability(true);
       try {
-        console.log('Checking narration service availability for model management tab');
+
         const status = await checkNarrationStatus();
-        console.log('Narration service status for model management tab:', status);
+
 
         // Set availability based on the actual status
         setIsServiceAvailable(status.available);
@@ -354,7 +354,7 @@ const ModelManagementTab = () => {
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
-        console.log(`Download cancelled for model ${modelId}`);
+
 
         // Update downloads state to remove the cancelled download
         setDownloads(prev => {

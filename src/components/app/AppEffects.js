@@ -47,7 +47,7 @@ export const useAppEffects = (props) => {
   useEffect(() => {
     // Sync localStorage to server for use by narration service
     syncLocalStorageToServer()
-      .then(() => console.log('localStorage synced to server successfully'))
+
       .catch(error => console.error('Error syncing localStorage to server:', error));
   }, []);
 
@@ -192,7 +192,7 @@ export const useAppEffects = (props) => {
       // Sync localStorage to server when API keys change
       if (event.key === 'gemini_api_key' || event.key === 'gemini_model') {
         syncLocalStorageToServer()
-          .then(() => console.log('localStorage synced to server after API key change'))
+
           .catch(error => console.error('Error syncing localStorage to server:', error));
       }
 
@@ -325,7 +325,7 @@ export const useAppEffects = (props) => {
     if (isCacheLoadMessage && subtitlesData) {
       // For file upload tab
       if (uploadedFile) {
-        console.log('Subtitles loaded from cache, preparing video for segments...');
+
 
         // Prepare the video for segments
         prepareVideoForSegments(uploadedFile).catch(error => {
@@ -339,7 +339,7 @@ export const useAppEffects = (props) => {
       }
       // For YouTube tab, we need to download the video first
       else if (handleDownloadAndPrepareYouTubeVideo) {
-        console.log('Subtitles loaded from cache for YouTube video, downloading video...');
+
 
         // We'll handle YouTube videos in a separate function to avoid making this effect too complex
         handleDownloadAndPrepareYouTubeVideo();

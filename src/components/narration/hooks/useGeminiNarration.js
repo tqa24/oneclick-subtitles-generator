@@ -72,7 +72,7 @@ const useGeminiNarration = ({
     // Convert to Gemini-compatible language code
     const language = getGeminiLanguageCode(detectedLanguageCode);
 
-    console.log(`Using language: ${detectedLanguageCode} (Gemini format: ${language}) for Gemini narration`);
+
 
     setIsGenerating(true);
     setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
@@ -97,7 +97,7 @@ const useGeminiNarration = ({
       setGenerationResults(initialResults);
 
       // Generate narration with Gemini
-      console.log(`Using Gemini API for narration with sleep time: ${sleepTime}ms and voice: ${selectedVoice}`);
+
 
       const response = await generateGeminiNarrations(
         subtitlesWithIds,
@@ -249,7 +249,7 @@ const useGeminiNarration = ({
     // Convert to Gemini-compatible language code
     const language = getGeminiLanguageCode(detectedLanguageCode);
 
-    console.log(`Retrying narration for subtitle ${subtitleId} with language: ${language}`);
+
 
     // Set status for this specific retry
     setGenerationStatus(t('narration.retryingGeminiGeneration', 'Retrying narration generation for subtitle {{id}}...', { id: subtitleId }));
@@ -262,7 +262,7 @@ const useGeminiNarration = ({
       };
 
       // Generate narration with Gemini for this single subtitle
-      console.log(`Retrying Gemini narration for subtitle ${subtitleId} with voice: ${selectedVoice}`);
+
 
       // Import the generateGeminiNarration function for a single subtitle
       const { generateGeminiNarration } = await import('../../../services/gemini/geminiNarrationService');
@@ -273,7 +273,7 @@ const useGeminiNarration = ({
       // If the result has audio data, save it to the server to get a filename
       if (result.success && result.audioData) {
         try {
-          console.log(`Saving retried audio for subtitle ${result.subtitle_id} to server...`);
+
 
           // Send the audio data to the server
           const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
@@ -292,7 +292,7 @@ const useGeminiNarration = ({
           if (response.ok) {
             const data = await response.json();
             if (data.success) {
-              console.log(`Successfully saved retried audio to server: ${data.filename}`);
+
               // Update the result with the filename
               result.filename = data.filename;
             } else {
@@ -329,7 +329,7 @@ const useGeminiNarration = ({
             const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
             if (globalIndex !== -1) {
               window.narrations[globalIndex] = result;
-              console.log('Updated window.narrations with retried narration:', result);
+
             }
           }
 
@@ -346,7 +346,7 @@ const useGeminiNarration = ({
           } catch (e) {
             console.error('Error storing updated originalNarrations in localStorage:', e);
           }
-          console.log('Updated window.originalNarrations with retried narration:', result);
+
         } else {
           // Update window.translatedNarrations
           window.translatedNarrations = [...updatedResults];
@@ -357,7 +357,7 @@ const useGeminiNarration = ({
             const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
             if (globalIndex !== -1) {
               window.narrations[globalIndex] = result;
-              console.log('Updated window.narrations with retried narration:', result);
+
             }
           }
 
@@ -374,7 +374,7 @@ const useGeminiNarration = ({
           } catch (e) {
             console.error('Error storing updated translatedNarrations in localStorage:', e);
           }
-          console.log('Updated window.translatedNarrations with retried narration:', result);
+
         }
 
         // Add a timestamp to the result to help identify retried narrations

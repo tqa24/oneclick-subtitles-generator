@@ -238,7 +238,7 @@ const drawLyricSegments = (
 
   // If we hit the segment limit, add an indicator
   if (segmentCount >= maxSegmentsToRender && optimizedLyrics.length > maxSegmentsToRender) {
-    console.log(`Timeline rendering limited to ${maxSegmentsToRender} segments out of ${optimizedLyrics.length} total`);
+
   }
 
   // Batch render all segments with same fill color
@@ -251,7 +251,6 @@ const drawLyricSegments = (
     const availableHeight = displayHeight - timeMarkerSpace;
 
     // For long videos, use a more efficient rendering approach
-    const isLongVideo = duration > 1800; // 30 minutes
     const isVeryLongVideo = duration > 7200; // 2 hours
 
     // For very long videos, skip random heights and use fixed heights for better performance

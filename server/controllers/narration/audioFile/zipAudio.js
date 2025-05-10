@@ -13,15 +13,15 @@ const { OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../directoryManager');
  * Download all narration audio files as a zip
  */
 const downloadAllAudio = async (req, res) => {
-  console.log('Received download-all request');
+
 
   try {
     // Get the filenames from the request body
     const { filenames } = req.body;
-    console.log(`Received ${filenames ? filenames.length : 0} filenames for download`);
+
 
     if (!filenames || filenames.length === 0) {
-      console.log('No filenames provided, returning 400');
+
       return res.status(400).json({ error: 'No filenames provided' });
     }
 
@@ -43,19 +43,19 @@ const downloadAllAudio = async (req, res) => {
       if (fs.existsSync(filePath)) {
         validFiles.push(filePath);
       } else {
-        console.log(`File not found: ${filePath}`);
+
       }
     }
 
     if (validFiles.length === 0) {
-      console.log('No valid files found, returning 404');
+
       return res.status(404).json({ error: 'No valid audio files found' });
     }
 
-    console.log(`Found ${validFiles.length} valid files for download`);
+
 
     // Create a zip file using the zip command with spawn
-    console.log(`Creating zip file with ${validFiles.length} audio files`);
+
 
     // Prepare arguments for zip command
     const zipArgs = ['-j', zipPath, ...validFiles];
@@ -82,7 +82,7 @@ const downloadAllAudio = async (req, res) => {
           return;
         }
 
-        console.log(`zip stdout: ${stdoutData}`);
+
         resolve();
       });
 
@@ -106,7 +106,7 @@ const downloadAllAudio = async (req, res) => {
       return res.status(500).json({ error: 'Created zip file is empty' });
     }
 
-    console.log(`Successfully created zip file: ${zipPath} (${zipStats.size} bytes)`);
+
 
     // Set the appropriate headers
     res.setHeader('Content-Type', 'application/zip');
@@ -122,14 +122,14 @@ const downloadAllAudio = async (req, res) => {
           res.status(500).json({ error: `Failed to send zip file: ${err.message}` });
         }
       } else {
-        console.log(`Successfully sent zip file`);
+
       }
 
       // Clean up the temporary zip file AFTER sending is complete or failed
       try {
         if (fs.existsSync(zipPath)) {
           fs.unlinkSync(zipPath);
-          console.log('Cleaned up temporary zip file');
+
         }
       } catch (cleanupError) {
         console.error(`Error cleaning up temporary zip file: ${cleanupError.message}`);

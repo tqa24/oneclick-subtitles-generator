@@ -47,7 +47,7 @@ export const useModels = () => {
       const newModels = data.models.filter(model => !currentModelIds.includes(model.id));
 
       if (newModels.length > 0) {
-        console.log(`Found ${newModels.length} new models during scan`);
+
         setModels(data.models || []);
         invalidateModelsCache();
       }

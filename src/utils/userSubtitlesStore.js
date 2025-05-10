@@ -20,7 +20,7 @@ let currentCacheId = null;
  */
 export const setCurrentCacheId = (cacheId) => {
   currentCacheId = cacheId;
-  console.log('User subtitles store: Current cache ID set to:', cacheId);
+
 };
 
 /**
@@ -54,7 +54,7 @@ export const setUserProvidedSubtitles = async (subtitlesText) => {
 
       const result = await response.json();
       if (result.success) {
-        console.log('User-provided subtitles saved to cache for ID:', currentCacheId);
+
       } else {
         console.error('Failed to save user-provided subtitles to cache:', result.error);
       }
@@ -65,14 +65,14 @@ export const setUserProvidedSubtitles = async (subtitlesText) => {
     // Fallback to localStorage if no cache ID is available
     try {
       localStorage.setItem(USER_SUBTITLES_KEY, subtitlesText);
-      console.log('User-provided subtitles saved to localStorage (fallback)');
+
     } catch (error) {
       console.error('Error saving user-provided subtitles to localStorage:', error);
     }
   } else {
     // If subtitlesText is null or empty, remove from localStorage
     localStorage.removeItem(USER_SUBTITLES_KEY);
-    console.log('User-provided subtitles removed from localStorage');
+
   }
 };
 
@@ -94,7 +94,7 @@ export const getUserProvidedSubtitles = async () => {
       
       if (data.exists && data.subtitlesText) {
         globalUserSubtitles = data.subtitlesText; // Update in-memory subtitles
-        console.log('User-provided subtitles loaded from cache for ID:', currentCacheId);
+
         return data.subtitlesText;
       }
     } catch (error) {
@@ -107,7 +107,7 @@ export const getUserProvidedSubtitles = async () => {
     const savedSubtitles = localStorage.getItem(USER_SUBTITLES_KEY);
     if (savedSubtitles) {
       globalUserSubtitles = savedSubtitles; // Update in-memory subtitles
-      console.log('User-provided subtitles loaded from localStorage (fallback)');
+
       return savedSubtitles;
     }
   } catch (error) {
@@ -132,7 +132,7 @@ export const getUserProvidedSubtitlesSync = () => {
     const savedSubtitles = localStorage.getItem(USER_SUBTITLES_KEY);
     if (savedSubtitles) {
       globalUserSubtitles = savedSubtitles; // Update in-memory subtitles
-      console.log('User-provided subtitles loaded from localStorage (sync fallback)');
+
       return savedSubtitles;
     }
   } catch (error) {
@@ -169,12 +169,12 @@ export const clearUserProvidedSubtitles = async () => {
 
       const result = await response.json();
       if (result.success) {
-        console.log('User-provided subtitles cleared from cache for ID:', currentCacheId);
+
       }
     } catch (error) {
       console.error('Error clearing user-provided subtitles from cache:', error);
     }
   }
   
-  console.log('User-provided subtitles cleared from memory, cache, and localStorage');
+
 };

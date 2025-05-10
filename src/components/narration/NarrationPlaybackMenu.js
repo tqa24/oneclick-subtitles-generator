@@ -117,22 +117,22 @@ const NarrationPlaybackMenu = ({
     // Get or create audio element for this narration
     if (!audioRefs.current[narration.subtitle_id]) {
       const audioUrl = getAudioUrl(narration.filename);
-      console.log(`Creating new audio element for URL: ${audioUrl} for narration ${narration.subtitle_id}`);
+
 
       const audio = new Audio(audioUrl);
 
       // Set volume immediately
       audio.volume = narrationVolume;
-      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+
 
       // Store the audio duration once it's loaded
       audio.addEventListener('loadedmetadata', () => {
-        console.log(`Audio loaded metadata, duration: ${audio.duration} for narration ${narration.subtitle_id}`);
+
         audioDurationsRef.current[narration.subtitle_id] = audio.duration;
 
         // Set volume again after metadata is loaded
         audio.volume = narrationVolume;
-        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+
       });
 
       // Add error handling
@@ -144,12 +144,12 @@ const NarrationPlaybackMenu = ({
 
       // Add play event listener
       audio.addEventListener('play', () => {
-        console.log(`Audio started playing for narration ${narration.subtitle_id} with volume ${audio.volume}`);
+
       });
 
       audioRefs.current[narration.subtitle_id] = audio;
     } else {
-      console.log(`Using existing audio element for narration: ${narration.subtitle_id}`);
+
     }
 
     // Play the narration
@@ -157,7 +157,7 @@ const NarrationPlaybackMenu = ({
 
     // Set volume again before playing
     audioElement.volume = narrationVolume;
-    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${narration.subtitle_id}`);
+
 
     // If we know the audio duration, calculate the correct start time to align the middle
     // of the audio with the middle of the subtitle
@@ -239,13 +239,13 @@ const NarrationPlaybackMenu = ({
   useEffect(() => {
     Object.values(audioRefs.current).forEach(audio => {
       audio.volume = narrationVolume;
-      console.log(`Updated volume to ${narrationVolume} for audio element`);
+
     });
 
     // If we have a current narration, log its volume
     if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
       const audio = audioRefs.current[currentNarration.subtitle_id];
-      console.log(`Current narration ${currentNarration.subtitle_id} volume is now: ${audio.volume}`);
+
     }
   }, [narrationVolume, currentNarration]);
 

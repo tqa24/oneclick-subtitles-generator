@@ -43,15 +43,15 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
         return reject(new Error(`Media file is too small or corrupted: ${mediaPath}`));
       }
 
-      console.log(`[SPLIT-MEDIA] Media file validated: ${mediaPath}, size: ${fileStats.size} bytes`);
+
 
       // Get the duration of the media file using our more robust getMediaDuration function
-      console.log(`[SPLIT-MEDIA] Getting duration for media file: ${mediaPath}`);
+
       const totalDuration = await getMediaDuration(mediaPath);
-      console.log(`[SPLIT-MEDIA] ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${totalDuration} seconds`);
+
 
       const numSegments = Math.ceil(totalDuration / segmentDuration);
-      console.log(`Splitting ${mediaType} into ${numSegments} segments of ${segmentDuration} seconds each`);
+
 
       const outputPattern = path.join(outputDir, `${batchId}_%03d.${outputExtension}`);
 
@@ -63,7 +63,7 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
 
       // Log the absolute file path for debugging
       const absolutePath = path.resolve(mediaPath);
-      console.log(`[SPLIT-MEDIA] Using absolute path for ffmpeg: ${absolutePath}`);
+
 
       // Construct ffmpeg command based on splitting mode
       const ffmpegArgs = [
@@ -81,7 +81,7 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
           '-segment_time_delta', '1.0',  // Allow 1 second flexibility
           '-c', 'copy'
         );
-        console.log('Using fast split mode with stream copy');
+
       } else if (isAudio) {
         // For audio, use high-quality audio encoding
         ffmpegArgs.push(
@@ -89,7 +89,7 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
           '-q:a', '2', // High quality (0 is best, 9 is worst)
           '-threads', '0'
         );
-        console.log('Using audio encoding mode');
+
       } else {
         // For video, use high-performance encoding settings
         ffmpegArgs.push(
@@ -99,7 +99,7 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
           '-force_key_frames', `expr:gte(t,n_forced*${segmentDuration})`, // Force keyframe at segment boundaries
           '-threads', '0'
         );
-        console.log('Using re-encoding mode with forced keyframes');
+
       }
 
       ffmpegArgs.push(outputPattern);
@@ -112,7 +112,7 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
         if (output.includes('frame=')) {
           process.stdout.write('.');
         }
-        console.log('ffmpeg stderr:', output);
+
       });
 
       segmentCmd.on('close', async (code) => {
@@ -169,9 +169,9 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
             let segmentResults = await Promise.all(segmentPromises);
 
             // Log the initial segment information
-            console.log('Initial segment information:');
+
             segmentResults.forEach((segment, i) => {
-              console.log(`Segment ${i} (file index ${segment.index}): startTime=${segment.startTime.toFixed(2)}s, duration=${segment.duration.toFixed(2)}s, endTime=${(segment.startTime + segment.duration).toFixed(2)}s`);
+
             });
 
             // Check if segments are in the correct order by start time
@@ -180,13 +180,13 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
               if (i === 0) return false;
               const isWrongOrder = segment.startTime < segmentResults[i-1].startTime;
               if (isWrongOrder) {
-                console.log(`Segment order issue detected: Segment ${i} starts at ${segment.startTime.toFixed(2)}s which is before segment ${i-1} at ${segmentResults[i-1].startTime.toFixed(2)}s`);
+
               }
               return isWrongOrder;
             });
 
             if (isOutOfOrder) {
-              console.log('WARNING: Segments are out of order by start time. Reordering...');
+
 
               // Sort segments by their file index first (this should be the intended order)
               segmentResults.sort((a, b) => a.index - b.index);
@@ -209,9 +209,9 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
               });
 
               // Log the reordered segment information
-              console.log('Segments reordered by file index. New segment information:');
+
               segmentResults.forEach((segment, i) => {
-                console.log(`Segment ${i} (file index ${segment.index}): startTime=${segment.startTime.toFixed(2)}s, duration=${segment.duration.toFixed(2)}s, endTime=${(segment.startTime + segment.duration).toFixed(2)}s`);
+
               });
             }
 

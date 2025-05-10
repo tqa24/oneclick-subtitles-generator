@@ -62,7 +62,7 @@ router.get('/segment-exists/:segmentId', (req, res) => {
 router.post('/download-video', async (req, res) => {
   const { videoId } = req.body;
 
-  console.log(`[QUALITY DEBUG] Received download request for videoId: ${videoId}`);
+
 
   if (!videoId) {
     return res.status(400).json({ error: 'Video ID is required' });
@@ -85,7 +85,7 @@ router.post('/download-video', async (req, res) => {
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
-      console.log(`Video downloaded successfully: ${videoId}.mp4`);
+
       return res.json({
         success: true,
         message: result.message || 'Video downloaded successfully',
@@ -131,7 +131,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
 
     // Save the uploaded media file
     fs.writeFileSync(mediaPath, req.body);
-    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} saved to ${mediaPath}`);
+
 
     // Get segment duration from query params or use default (10 minutes)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
@@ -145,7 +145,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
     // Optimize video if requested and it's a video (not audio)
     if (optimizeVideos && !isAudio) {
       try {
-        console.log(`Optimizing video to ${optimizedResolution} before splitting`);
+
         const optimizedFilename = `optimized_${timestamp}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
 
@@ -156,10 +156,10 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
 
         // Use the optimized video for splitting
         processPath = optimizedPath;
-        console.log(`Using optimized video for splitting: ${optimizedPath}`);
+
       } catch (error) {
         console.error('Error optimizing video:', error);
-        console.log('Falling back to previous video for splitting');
+
       }
     }
 
@@ -220,7 +220,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     mediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
 
     // Log the cleaned mediaId
-    console.log(`[SPLIT-VIDEO] Using mediaId: ${mediaId} (after removing any extensions)`);
+
 
     const fileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
     const filename = `${mediaId}.${fileExtension}`;
@@ -237,8 +237,8 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 
     // Save the uploaded media file
     fs.writeFileSync(mediaPath, req.body);
-    console.log(`[SPLIT-VIDEO] ${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} saved to ${mediaPath}`);
-    console.log(`[SPLIT-VIDEO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
+
+
 
     // Get segment duration from query params or use default (10 minutes = 600 seconds)
     const segmentDuration = parseInt(req.query.segmentDuration || '600');
@@ -246,7 +246,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     // Parse optimizeVideos parameter - default to false to avoid duplication
     // Check explicitly for 'true' string to ensure we don't optimize unless explicitly requested
     const optimizeVideos = req.query.optimizeVideos === 'true';
-    console.log(`[SPLIT-VIDEO] optimizeVideos parameter: ${req.query.optimizeVideos}, parsed as: ${optimizeVideos}`);
+
     const optimizedResolution = req.query.optimizedResolution || '360p';
 
     let processPath = mediaPath;
@@ -255,13 +255,13 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     // Optimize video if requested and it's a video (not audio)
     if (optimizeVideos && !isAudio) {
       try {
-        console.log(`[SPLIT-VIDEO] Optimizing video to ${optimizedResolution} before splitting`);
-        console.log(`[SPLIT-VIDEO] optimizeVideos=${optimizeVideos} (should be false if already optimized)`);
+
+
         // Ensure we don't have double extensions in the optimized filename
         const cleanMediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
         const optimizedFilename = `optimized_${cleanMediaId}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
-        console.log(`[SPLIT-VIDEO] Creating optimized video at: ${optimizedPath}`);
+
 
         optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
@@ -277,14 +277,14 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
         // Only use the optimized video if it actually exists
         if (fs.existsSync(optimizedPath)) {
           processPath = optimizedPath;
-          console.log(`[SPLIT-VIDEO] Using optimized video for splitting: ${optimizedPath}`);
+
         } else {
-          console.log(`[SPLIT-VIDEO] Optimized video not found at ${optimizedPath}, falling back to original video`);
+
           // Keep using the original video path
         }
       } catch (error) {
         console.error('[SPLIT-VIDEO] Error optimizing video:', error);
-        console.log('[SPLIT-VIDEO] Falling back to previous video for splitting');
+
       }
     }
 
@@ -369,20 +369,20 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
 
     // Save the uploaded file
     fs.writeFileSync(originalPath, req.body);
-    console.log(`[OPTIMIZE-VIDEO] Original ${mediaType} saved to ${originalPath}`);
-    console.log(`[OPTIMIZE-VIDEO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
+
+
 
     // If it's an audio file, convert it to video first
     let videoPath = originalPath;
 
     if (isAudio) {
       try {
-        console.log(`[OPTIMIZE-VIDEO] Converting audio to video at the start`);
+
         const videoFilename = `converted_${timestamp}.mp4`;
         videoPath = path.join(VIDEOS_DIR, videoFilename);
 
         await convertAudioToVideo(originalPath, videoPath);
-        console.log(`[OPTIMIZE-VIDEO] Audio successfully converted to video: ${videoPath}`);
+
       } catch (error) {
         console.error('[OPTIMIZE-VIDEO] Error converting audio to video:', error);
         return res.status(500).json({
@@ -393,8 +393,8 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     }
 
     // Optimize the video
-    console.log(`[OPTIMIZE-VIDEO] Optimizing ${isAudio ? 'converted audio' : 'video'} to ${resolution} at ${fps}fps`);
-    console.log(`[OPTIMIZE-VIDEO] Optimized video will be saved to: ${optimizedPath}`);
+
+
     const result = await optimizeVideo(videoPath, optimizedPath, {
       resolution,
       fps
@@ -405,16 +405,16 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     const videoForAnalysis = wasOptimized ? optimizedPath : videoPath;
 
     // Create an analysis video with 500 frames
-    console.log('[OPTIMIZE-VIDEO] Creating analysis video with 500 frames for Gemini analysis');
-    console.log(`[OPTIMIZE-VIDEO] Analysis video will be saved to: ${analysisPath}`);
-    console.log(`[OPTIMIZE-VIDEO] Using ${wasOptimized ? 'optimized' : 'original'} video for analysis`);
+
+
+
     const analysisResult = await createAnalysisVideo(videoForAnalysis, analysisPath);
 
     if (analysisResult.isOriginal) {
-      console.log(`[OPTIMIZE-VIDEO] Video has only ${analysisResult.frameCount} frames, using optimized video for analysis`);
+
     } else {
-      console.log(`[OPTIMIZE-VIDEO] Successfully created analysis video with 500 frames from ${analysisResult.originalFrameCount} original frames`);
-      console.log(`[OPTIMIZE-VIDEO] Analysis video saved to: ${analysisResult.path}`);
+
+
     }
 
     // Return the optimized and analysis video information
@@ -483,40 +483,40 @@ router.post('/extract-audio', async (req, res) => {
     // Resolve the actual file path
     let actualVideoPath;
 
-    console.log('Processing video path:', videoPath);
+
 
     if (isUrl) {
       // Extract the filename from the URL
       const urlParts = videoPath.split('/');
       const filename = urlParts[urlParts.length - 1];
       actualVideoPath = path.join(VIDEOS_DIR, filename);
-      console.log('URL detected, resolved to:', actualVideoPath);
+
     } else {
       // If it's a relative path like /videos/filename.mp4
       const relativePath = videoPath.startsWith('/') ? videoPath.substring(1) : videoPath;
       const pathParts = relativePath.split('/');
       const filename = pathParts[pathParts.length - 1];
       actualVideoPath = path.join(VIDEOS_DIR, filename);
-      console.log('Relative path detected, resolved to:', actualVideoPath);
+
     }
 
     // If the file doesn't exist, try to extract the filename from the path and look for it directly
     if (!fs.existsSync(actualVideoPath)) {
-      console.log('File not found at resolved path, trying alternative methods');
+
 
       // Try to get just the filename without query parameters
       const filenameWithoutQuery = videoPath.split('?')[0].split('/').pop();
       const alternativePath = path.join(VIDEOS_DIR, filenameWithoutQuery);
-      console.log('Trying alternative path:', alternativePath);
+
 
       if (fs.existsSync(alternativePath)) {
         actualVideoPath = alternativePath;
-        console.log('Found file at alternative path:', actualVideoPath);
+
       } else {
         // List all files in the videos directory to help with debugging
-        console.log('Available files in videos directory:');
+
         const files = fs.readdirSync(VIDEOS_DIR);
-        files.forEach(file => console.log(`- ${file}`));
+
       }
     }
 
@@ -545,7 +545,7 @@ router.post('/extract-audio', async (req, res) => {
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
         // Success
-        console.log(`Audio extracted successfully: ${audioPath}`);
+
 
         // Set the Content-Disposition header to force download with the provided filename
         res.setHeader('Content-Disposition', `attachment; filename="${filename}.mp3"`);
@@ -587,7 +587,7 @@ router.post('/extract-audio', async (req, res) => {
  */
 router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*' }), async (req, res) => {
   try {
-    console.log('Received blob data for audio extraction');
+
 
     // Get filename from query parameter
     const filename = req.query.filename || 'audio';
@@ -601,7 +601,7 @@ router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*
 
     // Save the uploaded video data to a temporary file
     fs.writeFileSync(videoPath, req.body);
-    console.log(`Temporary video saved to: ${videoPath}`);
+
 
     // Use ffmpeg to extract audio
     const { spawn } = require('child_process');
@@ -618,12 +618,12 @@ router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
         // Success
-        console.log(`Audio extracted successfully: ${audioPath}`);
+
 
         // Clean up the temporary video file
         try {
           fs.unlinkSync(videoPath);
-          console.log(`Temporary video file deleted: ${videoPath}`);
+
         } catch (err) {
           console.error(`Error deleting temporary video file: ${err.message}`);
         }
@@ -642,7 +642,7 @@ router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*
         // Clean up the temporary video file
         try {
           fs.unlinkSync(videoPath);
-          console.log(`Temporary video file deleted: ${videoPath}`);
+
         } catch (err) {
           console.error(`Error deleting temporary video file: ${err.message}`);
         }
@@ -661,7 +661,7 @@ router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*
       // Clean up the temporary video file
       try {
         fs.unlinkSync(videoPath);
-        console.log(`Temporary video file deleted: ${videoPath}`);
+
       } catch (deleteErr) {
         console.error(`Error deleting temporary video file: ${deleteErr.message}`);
       }
@@ -752,7 +752,7 @@ router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/
     const existingConvertedFile = files.find(file => file.startsWith(`converted_${audioHash}_`) && file.endsWith('.mp4'));
 
     if (existingConvertedFile) {
-      console.log(`[CONVERT-AUDIO] Found existing converted file for audio hash ${audioHash}: ${existingConvertedFile}`);
+
       const videoPath = path.join(VIDEOS_DIR, existingConvertedFile);
 
       try {
@@ -785,18 +785,18 @@ router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/
 
     // Save the uploaded audio file
     fs.writeFileSync(audioPath, req.body);
-    console.log(`[CONVERT-AUDIO] Audio saved to ${audioPath}`);
-    console.log(`[CONVERT-AUDIO] Content-Type: ${contentType}, File size: ${req.body.length} bytes`);
+
+
 
     // Convert the audio to video
-    console.log(`[CONVERT-AUDIO] Converting audio to video`);
+
     const result = await convertAudioToVideo(audioPath, videoPath);
-    console.log(`[CONVERT-AUDIO] Audio converted to video: ${videoPath}`);
+
 
     // Delete the original audio file - we don't need it anymore
     try {
       fs.unlinkSync(audioPath);
-      console.log(`[CONVERT-AUDIO] Deleted original audio file: ${audioPath}`);
+
     } catch (deleteError) {
       console.error(`[CONVERT-AUDIO] Error deleting audio file: ${deleteError.message}`);
     }

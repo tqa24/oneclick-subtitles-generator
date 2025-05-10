@@ -41,7 +41,7 @@ function httpsRequest(url) {
 // Main function to list models
 async function listModels() {
   try {
-    console.log('Fetching Gemini models...');
+
     
     const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
     const data = await httpsRequest(url);
@@ -52,7 +52,7 @@ async function listModels() {
     }
     
     if (!data.models || data.models.length === 0) {
-      console.log('No models found.');
+
       return;
     }
     
@@ -66,8 +66,8 @@ async function listModels() {
       model.supportedGenerationMethods.includes('streamGenerateContent')
     );
     
-    console.log(`Found ${data.models.length} models, ${compatibleModels.length} compatible with WebSocket API.`);
-    console.log('');
+
+
     
     // Display models
     data.models.forEach(model => {
@@ -77,28 +77,28 @@ async function listModels() {
         model.supportedGenerationMethods.includes('generateContent') && 
         model.supportedGenerationMethods.includes('streamGenerateContent');
       
-      console.log(`Model: ${modelName}`);
-      console.log(`Display Name: ${model.displayName || 'N/A'}`);
-      console.log(`Version: ${model.version || 'N/A'}`);
-      console.log(`WebSocket Compatible: ${isWebSocketCompatible ? 'Yes' : 'No'}`);
+
+
+
+
       
       if (model.supportedGenerationMethods && model.supportedGenerationMethods.length > 0) {
-        console.log('Supported Generation Methods:');
+
         model.supportedGenerationMethods.forEach(method => {
-          console.log(`  - ${method}`);
+
         });
       } else {
-        console.log('No generation methods specified');
+
       }
       
-      console.log(''); // Empty line for separation
+
     });
     
     // List WebSocket compatible models
-    console.log('WebSocket Compatible Models:');
+
     compatibleModels.forEach(model => {
       const modelName = model.name.split('/').pop();
-      console.log(`  - ${modelName}`);
+
     });
     
   } catch (error) {

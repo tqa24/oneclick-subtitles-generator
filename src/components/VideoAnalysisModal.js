@@ -26,7 +26,7 @@ const VideoAnalysisModal = ({
       localStorage.removeItem('show_video_analysis');
       localStorage.removeItem('video_analysis_timestamp');
       localStorage.removeItem('video_analysis_result');
-      console.log('VideoAnalysisModal: Cleared localStorage on page refresh');
+
     }
 
     // Clean up on unmount
@@ -63,7 +63,7 @@ const VideoAnalysisModal = ({
       return;
     }
 
-    console.log(`Initializing countdown for ${seconds} seconds`);
+
 
     // Set initial countdown value
     setCountdown(seconds);
@@ -283,7 +283,7 @@ const VideoAnalysisModal = ({
               <button
                 className="use-recommended-button"
                 onClick={() => {
-                  console.log('VideoAnalysisModal: Use Recommended button clicked');
+
                   handleUserInteraction();
                   onUsePreset(analysisResult.recommendedPreset.id);
                 }}

@@ -21,7 +21,7 @@ export const getProcessingForceStopped = () => _processingForceStopped;
  */
 export const setProcessingForceStopped = (value) => {
     _processingForceStopped = value;
-    console.log(`Force stop flag set to ${value}`);
+
 };
 
 /**
@@ -51,14 +51,14 @@ export const removeRequestController = (requestId) => {
  */
 export const abortAllRequests = () => {
     if (activeAbortControllers.size > 0) {
-        console.log(`Aborting all ongoing Gemini API requests (${activeAbortControllers.size} active)`);
+
 
         // Set the global flag to indicate processing should be completely stopped
         setProcessingForceStopped(true);
 
         // Abort all controllers in the map
         for (const [id, controller] of activeAbortControllers.entries()) {
-            console.log(`Aborting request ID: ${id}`);
+
             controller.abort();
         }
 

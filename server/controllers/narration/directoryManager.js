@@ -17,7 +17,7 @@ const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
  * Clear all narration output files
  */
 const clearNarrationOutputFiles = () => {
-  console.log('Clearing all narration output files for fresh generation');
+
   if (fs.existsSync(OUTPUT_AUDIO_DIR)) {
     const outputFiles = fs.readdirSync(OUTPUT_AUDIO_DIR);
     let deletedCount = 0;
@@ -28,7 +28,7 @@ const clearNarrationOutputFiles = () => {
         const stats = fs.statSync(filePath);
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -40,9 +40,9 @@ const clearNarrationOutputFiles = () => {
       }
     });
 
-    console.log(`Cleared ${deletedCount} narration output files`);
+
   } else {
-    console.log('Narration output directory does not exist');
+
   }
 };
 
@@ -52,22 +52,22 @@ const clearNarrationOutputFiles = () => {
 const ensureNarrationDirectories = () => {
   if (!fs.existsSync(NARRATION_DIR)) {
     fs.mkdirSync(NARRATION_DIR, { recursive: true });
-    console.log(`Created narration directory at ${NARRATION_DIR}`);
+
   }
 
   if (!fs.existsSync(REFERENCE_AUDIO_DIR)) {
     fs.mkdirSync(REFERENCE_AUDIO_DIR, { recursive: true });
-    console.log(`Created reference audio directory at ${REFERENCE_AUDIO_DIR}`);
+
   }
 
   if (!fs.existsSync(OUTPUT_AUDIO_DIR)) {
     fs.mkdirSync(OUTPUT_AUDIO_DIR, { recursive: true });
-    console.log(`Created output audio directory at ${OUTPUT_AUDIO_DIR}`);
+
   }
 
   if (!fs.existsSync(TEMP_AUDIO_DIR)) {
     fs.mkdirSync(TEMP_AUDIO_DIR, { recursive: true });
-    console.log(`Created temp audio directory at ${TEMP_AUDIO_DIR}`);
+
   }
 };
 

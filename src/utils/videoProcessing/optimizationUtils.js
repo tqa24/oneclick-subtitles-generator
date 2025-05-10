@@ -29,7 +29,7 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   }
 
   const result = await response.json();
-  console.log('Video optimization result:', result);
+
 
   // Store the optimization result in localStorage
   localStorage.setItem('split_result', JSON.stringify({
@@ -54,10 +54,10 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
 
   // Log which video we're using for analysis
   if (useAnalysisVideo) {
-    console.log(`Using analysis video with 500 frames for Gemini analysis`);
-    console.log(result.analysis.message);
+
+
   } else {
-    console.log('No analysis video available, using optimized video for analysis');
+
   }
 
   // Fetch the optimized video as a blob

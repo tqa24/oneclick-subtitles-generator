@@ -111,13 +111,13 @@ const SegmentRetryModal = ({
     // Find the save button
     const saveButton = document.querySelector('.lyrics-save-btn');
     if (saveButton) {
-      console.log('Auto-saving before segment retry');
+
 
       // Create a promise to track when the save is complete
       const savePromise = new Promise((resolve) => {
         // Create a one-time event listener for the save completion
         const handleSaveComplete = (event) => {
-          console.log('Save completed, proceeding with retry');
+
           resolve();
           // Remove the event listener
           window.removeEventListener('subtitles-saved', handleSaveComplete);

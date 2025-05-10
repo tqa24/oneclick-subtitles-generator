@@ -33,7 +33,7 @@ const MAX_SEGMENTS_PER_BATCH = 200;
  * ENAMETOOLONG errors when the FFmpeg command becomes too long.
  */
 const downloadAlignedAudio = async (req, res) => {
-  console.log('Received download-aligned request');
+
 
   // Define variables at the top level so they're available in the catch block
   let outputPath;
@@ -45,10 +45,10 @@ const downloadAlignedAudio = async (req, res) => {
   try {
     // Get the narration data from the request body
     const { narrations } = req.body;
-    console.log(`Received ${narrations ? narrations.length : 0} narrations for alignment`);
+
 
     if (!narrations || narrations.length === 0) {
-      console.log('No narrations provided, returning 400');
+
       return res.status(400).json({ error: 'No narrations provided' });
     }
 
@@ -70,9 +70,9 @@ const downloadAlignedAudio = async (req, res) => {
     audioSegments = [];
 
     // Log the received narrations for debugging
-    console.log('Received narrations with timing info:');
+
     narrations.forEach(n => {
-      console.log(`Subtitle ID: ${n.subtitle_id}, Start: ${n.start}s, End: ${n.end}s, Filename: ${n.filename}`);
+
     });
 
     for (const narration of narrations) {
@@ -82,14 +82,14 @@ const downloadAlignedAudio = async (req, res) => {
       if (narration.filename) {
         const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
         if (!fs.existsSync(filePath)) {
-          console.log(`File not found: ${filePath}`);
+
           // Clean up temp dir before exiting on error
           // Consider adding a general cleanup function or try/finally block for robustness
           return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
         }
       } else if (!narration.audioData) {
         // If neither filename nor audioData is present, return an error
-        console.log(`No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}`);
+
         return res.status(400).json({ error: `No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}` });
       }
 
@@ -98,7 +98,7 @@ const downloadAlignedAudio = async (req, res) => {
         const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
         const stats = fs.statSync(filePath);
         if (stats.size === 0) {
-          console.log(`Empty file: ${filePath}`);
+
           return res.status(400).json({ error: `Audio file is empty: ${narration.filename}` });
         }
       }
@@ -110,7 +110,7 @@ const downloadAlignedAudio = async (req, res) => {
       // Ensure each segment has a reasonable duration
       const duration = end - start;
       if (duration <= 0) {
-        console.log(`Invalid duration for ${narration.filename}: ${duration}s`);
+
         return res.status(400).json({ error: `Invalid duration for audio file: ${narration.filename}` });
       }
 
@@ -172,12 +172,12 @@ const downloadAlignedAudio = async (req, res) => {
       ? Math.max(...audioSegments.map(s => s.end)) + 1 // Add 1 second buffer at the end
       : 1; // Default to 1 second if no segments
 
-    console.log(`Creating aligned audio with total duration: ${totalDuration}s`);
-    console.log(`Using ${audioSegments.length} audio segments with precise timing`);
+
+
 
     // Check if we need to use batch processing
     if (audioSegments.length > MAX_SEGMENTS_PER_BATCH) {
-      console.log(`Large number of segments (${audioSegments.length}), using batch processing`);
+
       
       // Split the segments into batches
       const batches = [];
@@ -185,7 +185,7 @@ const downloadAlignedAudio = async (req, res) => {
         batches.push(audioSegments.slice(i, i + MAX_SEGMENTS_PER_BATCH));
       }
       
-      console.log(`Split into ${batches.length} batches`);
+
       
       // Process each batch
       for (let i = 0; i < batches.length; i++) {
@@ -206,7 +206,7 @@ const downloadAlignedAudio = async (req, res) => {
         try {
           if (fs.existsSync(batchFile)) {
             fs.unlinkSync(batchFile);
-            console.log(`Cleaned up batch file: ${batchFile}`);
+
           }
         } catch (cleanupError) {
           console.error(`Error cleaning up batch file: ${cleanupError.message}`);
@@ -214,7 +214,7 @@ const downloadAlignedAudio = async (req, res) => {
       }
     } else {
       // For smaller numbers of segments, process them all at once
-      console.log(`Small number of segments (${audioSegments.length}), processing in one batch`);
+
       await processBatch(audioSegments, outputPath, 0, totalDuration);
     }
 
@@ -233,7 +233,7 @@ const downloadAlignedAudio = async (req, res) => {
       return res.status(500).json({ error: 'Created aligned audio file is empty' });
     }
 
-    console.log(`Successfully created aligned audio file: ${outputPath} (${outputStats.size} bytes)`);
+
 
     // Set the appropriate headers
     res.setHeader('Content-Type', 'audio/wav');
@@ -249,7 +249,7 @@ const downloadAlignedAudio = async (req, res) => {
           res.status(500).json({ error: `Failed to send audio file: ${err.message}` });
         }
       } else {
-        console.log(`Successfully sent aligned narration audio file`);
+
       }
 
       // Clean up the temporary files AFTER sending is complete or failed
@@ -257,14 +257,14 @@ const downloadAlignedAudio = async (req, res) => {
         // Clean up the output file
         if (fs.existsSync(outputPath)) {
           fs.unlinkSync(outputPath);
-          console.log('Cleaned up temporary output file');
+
         }
 
         // Clean up any temporary files created for base64 audio data
         for (const segment of audioSegments) {
           if (segment.type === 'temp' && segment.tempFile && fs.existsSync(segment.tempFile)) {
             fs.unlinkSync(segment.tempFile);
-            console.log(`Cleaned up temporary file: ${segment.tempFile}`);
+
           }
         }
       } catch (cleanupError) {
@@ -279,7 +279,7 @@ const downloadAlignedAudio = async (req, res) => {
       // Clean up the output file if it exists
       if (outputPath && fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
-        console.log('Cleaned up temporary output file after error');
+
       }
 
       // Clean up any batch files
@@ -287,7 +287,7 @@ const downloadAlignedAudio = async (req, res) => {
         for (const batchFile of batchFiles) {
           if (fs.existsSync(batchFile)) {
             fs.unlinkSync(batchFile);
-            console.log(`Cleaned up batch file after error: ${batchFile}`);
+
           }
         }
       }
@@ -297,7 +297,7 @@ const downloadAlignedAudio = async (req, res) => {
         for (const segment of audioSegments) {
           if (segment.type === 'temp' && segment.tempFile && fs.existsSync(segment.tempFile)) {
             fs.unlinkSync(segment.tempFile);
-            console.log(`Cleaned up temporary file after error: ${segment.tempFile}`);
+
           }
         }
       }

@@ -34,7 +34,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
     // Log chain items if provided
     if (chainItems) {
-        console.log('Translation function received chain items:', JSON.stringify(chainItems, null, 2));
+
     }
 
     // Store the target language(s) for reference (except in format mode)
@@ -78,15 +78,15 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         });
 
         // Store the original subtitles map in localStorage for reference
-        console.log('Storing original subtitles map with', Object.keys(originalSubtitlesMap).length, 'entries');
+
         localStorage.setItem('original_subtitles_map', JSON.stringify(originalSubtitlesMap));
     } else if (splitDuration === 0) {
-        console.log('Using existing original subtitles map from localStorage');
+
     }
 
     // If in format mode, we don't need to call the API, just format the subtitles
     if (isFormatMode) {
-        console.log('Format mode: applying formatting to subtitles');
+
         // Dispatch event to update UI with status
         const message = i18n.t('translation.formattingSubtitles', 'Formatting {{count}} subtitles', {
             count: subtitles.length
@@ -103,7 +103,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
     // If splitDuration is specified and not 0, split subtitles into chunks based on duration
     if (splitDuration > 0) {
-        console.log(`Splitting translation into chunks of ${splitDuration} minutes`);
+
         // Dispatch event to update UI with status
         const message = i18n.t('translation.splittingSubtitles', 'Splitting {{count}} subtitles into chunks of {{duration}} minutes', {
             count: subtitles.length,
@@ -116,7 +116,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         // Get rest time from localStorage if available
         const restTime = parseInt(localStorage.getItem('translation_rest_time') || '0');
         if (restTime > 0) {
-            console.log(`Using rest time of ${restTime} seconds between chunks`);
+
         }
 
         return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems, restTime);
@@ -142,7 +142,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             const transcriptionRules = getTranscriptionRules();
 
             if (transcriptionRules && Object.keys(transcriptionRules).length > 0) {
-                console.log('Appending transcription rules to translation prompt');
+
                 let rulesText = '\n\nIMPORTANT CONTEXT: Use the following rules and context from the video analysis to ensure consistent translation:\n';
 
                 // Add atmosphere if available
@@ -185,7 +185,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                 // Append the rules to the translation prompt
                 translationPrompt += rulesText;
             } else {
-                console.log('No transcription rules found to append to translation prompt');
+
             }
         } catch (error) {
             console.error('Error retrieving transcription rules:', error);
@@ -226,7 +226,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
         // Always use structured output
         requestData = addResponseSchema(requestData, createTranslationSchema(isMultiLanguage));
-        console.log('Using structured output for translation with schema:', JSON.stringify(requestData));
+
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -243,7 +243,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         }
 
         const data = await response.json();
-        console.log('Raw translation response:', JSON.stringify(data).substring(0, 500) + '...');
+
 
         // Process the translation response
         let translatedTexts = [];
@@ -254,12 +254,12 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
         const processResponse = (responseData) => {
             // Check if this is a structured JSON response
             if (responseData.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-                console.log('Received structured JSON translation response');
+
                 const structuredJson = responseData.candidates[0].content.parts[0].structuredJson;
 
                 // For multi-language translation with the new schema
                 if (isMultiLanguage && structuredJson.translations && Array.isArray(structuredJson.translations)) {
-                    console.log('Processing multi-language translation response');
+
 
                     // Extract translations for each language
                     const languageTranslations = {};
@@ -374,7 +374,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             const translatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
             if (translatedText) {
                 // Log the full response for debugging
-                console.log('Full translation text response:', translatedText);
+
 
                 // Check if the response is a JSON object with translations array (multi-language format)
                 if (isMultiLanguage && translatedText.includes('"translations"') && translatedText.includes('"language"') && translatedText.includes('"texts"')) {
@@ -382,7 +382,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                         // Try to parse as JSON
                         const jsonObj = JSON.parse(translatedText);
                         if (jsonObj.translations && Array.isArray(jsonObj.translations)) {
-                            console.log('Detected multi-language JSON format with', jsonObj.translations.length, 'languages');
+
 
                             // Extract translations for each language
                             const languageTranslations = {};
@@ -398,8 +398,8 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
                             // Check if we have chain items for chain-based formatting
                             if (chainItems && chainItems.length > 0) {
-                                console.log('Using chain-based formatting with chain items:', JSON.stringify(chainItems, null, 2));
-                                console.log('Chain items length:', chainItems.length);
+
+
 
                                 // Get all translations for each subtitle
                                 for (let i = 0; i < subtitles.length; i++) {
@@ -426,7 +426,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                                         translationMap[lang] = translatedText;
                                     }
 
-                                    console.log(`Subtitle ${i+1} translation map:`, translationMap);
+
 
                                     // For chain-based formatting, we'll store the translation map for each subtitle
                                     // This allows us to access translations for each language in the final formatting step
@@ -436,11 +436,11 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                                     combinedTranslations.push(translationMap);
 
                                     // Log what we're storing for debugging
-                                    console.log(`Storing translation map for subtitle ${i+1}:`, translationMap);
+
                                 }
                             } else {
                                 // Traditional formatting (without chain items)
-                                console.log('Using traditional formatting with delimiter/parentheses');
+
 
                                 // Get the first language's translations as the base
                                 const primaryLang = languages[0];
@@ -511,7 +511,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                             return combinedTranslations;
                         }
                     } catch (e) {
-                        console.log('Failed to parse as multi-language JSON:', e);
+
                     }
                 }
 
@@ -521,7 +521,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                         // Try to parse as JSON
                         const jsonArray = JSON.parse(translatedText);
                         if (Array.isArray(jsonArray)) {
-                            console.log('Detected JSON array format with', jsonArray.length, 'items');
+
                             // Return the array items directly
                             return jsonArray.map(item => {
                                 // Check if this is the new format with original and translated properties
@@ -535,7 +535,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                             });
                         }
                     } catch (e) {
-                        console.log('Failed to parse as JSON array, continuing with text processing');
+
                     }
                 }
 
@@ -543,9 +543,9 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
                 const lines = translatedText.split('\n').map(line => line.trim()).filter(line => line.trim());
 
                 // Log the number of lines for debugging
-                console.log(`Number of lines in response: ${lines.length}`);
-                console.log(`First few lines: ${lines.slice(0, 5).join('\n')}`);
-                console.log(`Last few lines: ${lines.slice(-5).join('\n')}`);
+
+
+
 
                 // No filtering of lines - we'll rely on the retry mechanism if the count is wrong
                 return lines;
@@ -628,24 +628,24 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
             // Apply language chain formatting if chain items are provided
             if (chainItems && chainItems.length > 0) {
-                console.log(`Applying language chain format to subtitle ${index + 1}`);
+
 
                 // If we have a translation map, use it to get translations for each language
                 if (isTranslationMap) {
-                    console.log(`Using translation map for subtitle ${index + 1}:`, translationData);
+
 
                     // Build the formatted text by walking through the chain
                     let formattedText = '';
 
                     for (let j = 0; j < chainItems.length; j++) {
                         const item = chainItems[j];
-                        console.log(`Processing chain item ${j}:`, item);
+
 
                         if (item.type === 'language') {
                             if (item.isOriginal) {
                                 // Add the original text
                                 formattedText += originalSub.text;
-                                console.log(`Added original text: ${originalSub.text}`);
+
                             } else {
                                 // Get the language name
                                 const langName = item.value;
@@ -678,17 +678,17 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
                                 if (matchedTranslation) {
                                     formattedText += matchedTranslation;
-                                    console.log(`Added translation for ${langName}: ${matchedTranslation}`);
+
                                 } else {
                                     // If no matching translation found, use the language name as placeholder
                                     formattedText += langName;
-                                    console.log(`No translation found for ${langName}, using as placeholder`);
+
                                 }
                             }
                         } else if (item.type === 'delimiter') {
                             // Add the delimiter directly
                             formattedText += item.value || '';
-                            console.log(`Added delimiter: ${item.value || ''}`);
+
                         }
                     }
 
@@ -699,29 +699,29 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
                     for (let j = 0; j < chainItems.length; j++) {
                         const item = chainItems[j];
-                        console.log(`Processing chain item ${j}:`, item);
+
 
                         if (item.type === 'language') {
                             if (item.isOriginal) {
                                 // Add the original text
                                 formattedText += originalSub.text;
-                                console.log(`Added original text: ${originalSub.text}`);
+
                             } else {
                                 // Add the translated text
                                 formattedText += finalText;
-                                console.log(`Added translated text: ${finalText}`);
+
                             }
                         } else if (item.type === 'delimiter') {
                             // Add the delimiter directly
                             formattedText += item.value || '';
-                            console.log(`Added delimiter: ${item.value || ''}`);
+
                         }
                     }
 
                     finalText = formattedText;
                 }
 
-                console.log(`Final formatted text: ${finalText}`);
+
             }
 
             return {
@@ -736,10 +736,10 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             };
         });
 
-        console.log('Created', translatedSubtitles.length, 'translated subtitles');
+
         if (translatedSubtitles.length > 0) {
-            console.log('First translated subtitle:', JSON.stringify(translatedSubtitles[0]));
-            console.log('Last translated subtitle:', JSON.stringify(translatedSubtitles[translatedSubtitles.length - 1]));
+
+
         }
 
         // Remove this controller from the map after successful response
@@ -748,7 +748,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
     } catch (error) {
         // Check if this is an AbortError
         if (error.name === 'AbortError') {
-            console.log('Translation request was aborted');
+
             throw new Error('Translation request was aborted');
         } else {
             console.error('Translation error:', error);
@@ -805,7 +805,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
         chunks.push(currentChunk);
     }
 
-    console.log(`Split ${subtitles.length} subtitles into ${chunks.length} chunks`);
+
 
     // Dispatch event to update UI with status
     const splitMessage = i18n.t('translation.splitComplete', 'Split {{count}} subtitles into {{chunks}} chunks', {
@@ -821,12 +821,12 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
     for (let i = 0; i < chunks.length; i++) {
         // Check if processing has been force stopped
         if (getProcessingForceStopped()) {
-            console.log('Translation was cancelled, stopping chunk processing');
+
             throw new Error('Translation request was aborted');
         }
 
         const chunk = chunks[i];
-        console.log(`Translating chunk ${i + 1}/${chunks.length} with ${chunk.length} subtitles`);
+
 
         // Dispatch event to update UI with status
         const chunkMessage = i18n.t('translation.translatingChunk', 'Translating chunk {{current}}/{{total}} with {{count}} subtitles', {
@@ -846,7 +846,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
             // Add rest time between chunks if specified and not the last chunk
             if (restTime > 0 && i < chunks.length - 1) {
-                console.log(`Adding rest time of ${restTime} seconds before next chunk`);
+
                 // Dispatch event to update UI with status
                 const waitMessage = i18n.t('translation.waitingForNextChunk', 'Waiting {{seconds}} seconds before translating the next chunk...', {
                     seconds: restTime
@@ -859,7 +859,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
                 for (let second = restTime; second > 0; second--) {
                     // Check if processing has been force stopped
                     if (getProcessingForceStopped()) {
-                        console.log('Translation was cancelled during rest time, stopping chunk processing');
+
                         throw new Error('Translation request was aborted');
                     }
 
@@ -880,14 +880,14 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
             // Check if processing has been force stopped before retrying
             if (getProcessingForceStopped()) {
-                console.log('Translation was cancelled, stopping chunk processing during retry');
+
                 throw new Error('Translation request was aborted');
             }
 
             // If this is a count mismatch error, try one more time with a simplified prompt
             if (error.message && error.message.includes('received') && error.message.includes('expected')) {
                 try {
-                    console.log(`Retrying chunk ${i + 1} with simplified prompt...`);
+
                     // Create a simplified retry prompt for this chunk
                     const originalPrompt = customPrompt || getDefaultTranslationPrompt(chunk.map(sub => sub.text).join('\n'), targetLanguage, Array.isArray(targetLanguage) && targetLanguage.length > 0);
                     const simplifiedPrompt = `Here is my request: ${originalPrompt} with ${chunk.length} subtitle lines, but your last answer was incomplete, please make it ${chunk.length}`;
@@ -900,7 +900,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
                 } catch (retryError) {
                     // Check if this is an abort error
                     if (retryError.name === 'AbortError' || retryError.message.includes('aborted')) {
-                        console.log('Retry was aborted, stopping chunk processing');
+
                         throw retryError; // Re-throw to stop the entire process
                     }
                     console.error(`Retry for chunk ${i + 1} also failed:`, retryError);
@@ -917,7 +917,7 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
                 // Apply language chain formatting if chain items are provided
                 if (chainItems && chainItems.length > 0) {
-                    console.log(`Applying language chain format to failed subtitle`);
+
 
                     // Create a translation map for failed translations
                     // This will map each non-original language in the chain to a failure message
@@ -984,10 +984,10 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
     const result = translatedChunks.flat();
 
     // Log the result
-    console.log(`Translation completed with ${result.length} total subtitles across ${chunks.length} chunks`);
+
     if (result.length > 0) {
-        console.log('First translated subtitle:', JSON.stringify(result[0]));
-        console.log('Last translated subtitle:', JSON.stringify(result[result.length - 1]));
+
+
     }
 
     return result;
@@ -1050,7 +1050,7 @@ const formatSubtitles = (subtitles, delimiter = ' ', useParentheses = false, bra
  * @returns {Promise<Array>} - Promise resolving to array of formatted subtitles
  */
 const formatSubtitlesWithChain = (subtitles, chainItems) => {
-    console.log('Formatting with chain items:', JSON.stringify(chainItems, null, 2));
+
 
     // Create a copy of the subtitles to avoid modifying the original
     const formattedSubtitles = JSON.parse(JSON.stringify(subtitles));
@@ -1064,7 +1064,7 @@ const formatSubtitlesWithChain = (subtitles, chainItems) => {
     }
 
     // Log the subtitles for debugging
-    console.log('Subtitles to format:', formattedSubtitles.slice(0, 2));
+
 
     // Format each subtitle according to the chain
     for (let i = 0; i < formattedSubtitles.length; i++) {
@@ -1075,7 +1075,7 @@ const formatSubtitlesWithChain = (subtitles, chainItems) => {
 
         // Store the original text
         const originalText = subtitle.text;
-        console.log(`Subtitle ${i+1} original text:`, originalText);
+
 
         // Build the formatted text by directly concatenating based on chain order
         let formattedText = '';
@@ -1083,26 +1083,26 @@ const formatSubtitlesWithChain = (subtitles, chainItems) => {
         // Process each item in the chain in order
         for (let j = 0; j < chainItems.length; j++) {
             const item = chainItems[j];
-            console.log(`Processing chain item ${j}:`, item);
+
 
             if (item.type === 'language') {
                 if (item.isOriginal) {
                     // Add the original text directly
                     formattedText += originalText;
-                    console.log(`Added original text: ${originalText}`);
+
                 } else {
                     // Add the target language name as a placeholder
                     formattedText += item.value || '';
-                    console.log(`Added target language: ${item.value || ''}`);
+
                 }
             } else if (item.type === 'delimiter') {
                 // Add the delimiter directly
                 formattedText += item.value || '';
-                console.log(`Added delimiter: ${item.value || ''}`);
+
             }
         }
 
-        console.log(`Subtitle ${i+1} formatted text:`, formattedText);
+
 
         // Update the subtitle text with the formatted result
         subtitle.text = formattedText;
@@ -1124,11 +1124,11 @@ const formatSubtitlesWithChain = (subtitles, chainItems) => {
 
 // Function to cancel translation
 const cancelTranslation = () => {
-    console.log('Cancelling translation...');
+
     // Use the abortAllRequests function from requestManagement.js
     // This will abort all active controllers and set the processingForceStopped flag
     const aborted = abortAllRequests();
-    console.log(`Translation cancellation ${aborted ? 'successful' : 'had no active requests to cancel'}`);
+
     return aborted;
 };
 

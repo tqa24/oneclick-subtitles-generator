@@ -13,14 +13,14 @@ const { REFERENCE_AUDIO_DIR } = require('./directoryManager');
  * Record reference audio
  */
 const recordReference = (req, res) => {
-  console.log('Received record-reference request');
+
 
   if (!req.file) {
     console.error('No file uploaded');
     return res.status(400).json({ error: 'No audio data' });
   }
 
-  console.log('File uploaded successfully:', req.file);
+
 
   try {
     // Generate a unique filename
@@ -35,7 +35,7 @@ const recordReference = (req, res) => {
     const reference_text = req.body.reference_text || '';
 
     // We're now handling transcription directly in the frontend
-    console.log('Transcription is handled in frontend');
+
 
     // Return success response
     res.json({
@@ -55,14 +55,14 @@ const recordReference = (req, res) => {
  * Upload reference audio
  */
 const uploadReference = (req, res) => {
-  console.log('Received upload-reference request');
+
 
   if (!req.file) {
     console.error('No file uploaded');
     return res.status(400).json({ error: 'No file part' });
   }
 
-  console.log('File uploaded successfully:', req.file);
+
 
   try {
     // Generate a unique filename
@@ -77,7 +77,7 @@ const uploadReference = (req, res) => {
     const reference_text = req.body.reference_text || '';
 
     // We're now handling transcription directly in the frontend
-    console.log('Transcription is handled in frontend');
+
 
     // Return success response
     res.json({

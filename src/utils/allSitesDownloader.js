@@ -124,11 +124,11 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
   // Generate a unique ID for this URL
   const videoId = generateVideoId(url);
 
-  console.log(`Downloading generic video with ID: ${videoId}`);
+
 
   // If forceRefresh is true, remove any existing download from the queue
   if (forceRefresh && downloadQueue[videoId]) {
-    console.log('Forcing fresh download for video:', videoId);
+
     delete downloadQueue[videoId];
   }
 
@@ -145,16 +145,16 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
         });
 
         if (response.ok) {
-          console.log(`Fetched video file: ${videoId}.mp4, Content-Length: ${response.headers.get('Content-Length')} bytes`);
+
           const blob = await response.blob();
-          console.log(`Created blob from response: size: ${blob.size} bytes, type: ${blob.type}`);
+
 
           // Check if the blob has a reasonable size
           if (blob.size < 100 * 1024) { // Less than 100KB
             console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
 
             // Try one more time with a direct server URL
-            console.log(`Trying direct server URL: ${SERVER_URL}/videos/${videoId}.mp4`);
+
 
             const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
               method: 'GET',
@@ -162,9 +162,9 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
             });
 
             if (retryResponse.ok) {
-              console.log(`Retry fetched video file: ${videoId}.mp4, Content-Length: ${retryResponse.headers.get('Content-Length')} bytes`);
+
               const retryBlob = await retryResponse.blob();
-              console.log(`Retry created blob: size: ${retryBlob.size} bytes, type: ${retryBlob.type}`);
+
 
               // Final check on the blob size
               if (retryBlob.size < 100 * 1024) { // Less than 100KB
@@ -172,7 +172,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
               }
 
               const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
-              console.log(`Created File object: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
               return file;
             } else {
               throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
@@ -180,7 +180,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
           }
 
           const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-          console.log(`Created File object: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
           return file;
         } else {
           console.error(`Error fetching video file: ${response.status} ${response.statusText}`);
@@ -228,7 +228,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
     const isDownloaded = await isVideoAlreadyDownloaded(videoId);
 
     if (isDownloaded && !forceRefresh) {
-      console.log('Video already downloaded:', videoId);
+
       downloadQueue[videoId].status = 'completed';
       downloadQueue[videoId].progress = 100;
       onProgress(100);
@@ -242,16 +242,16 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
         });
 
         if (response.ok) {
-          console.log(`Fetched video file: ${videoId}.mp4, Content-Length: ${response.headers.get('Content-Length')} bytes`);
+
           const blob = await response.blob();
-          console.log(`Created blob from response: size: ${blob.size} bytes, type: ${blob.type}`);
+
 
           // Check if the blob has a reasonable size
           if (blob.size < 100 * 1024) { // Less than 100KB
             console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
 
             // Try one more time with a direct server URL
-            console.log(`Trying direct server URL: ${SERVER_URL}/videos/${videoId}.mp4`);
+
 
             const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
               method: 'GET',
@@ -259,9 +259,9 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
             });
 
             if (retryResponse.ok) {
-              console.log(`Retry fetched video file: ${videoId}.mp4, Content-Length: ${retryResponse.headers.get('Content-Length')} bytes`);
+
               const retryBlob = await retryResponse.blob();
-              console.log(`Retry created blob: size: ${retryBlob.size} bytes, type: ${retryBlob.type}`);
+
 
               // Final check on the blob size
               if (retryBlob.size < 100 * 1024) { // Less than 100KB
@@ -269,7 +269,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
               }
 
               const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
-              console.log(`Created File object: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
               return file;
             } else {
               throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
@@ -277,7 +277,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
           }
 
           const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-          console.log(`Created File object: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
           return file;
         } else {
           console.error(`Error fetching video file: ${response.status} ${response.statusText}`);
@@ -293,7 +293,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
     downloadQueue[videoId].status = 'downloading';
     downloadQueue[videoId].progress = 10;
 
-    console.log('Sending download request for video');
+
 
     // Request server to download the video
     const downloadResponse = await fetch(`${SERVER_URL}/api/download-generic-video`, {
@@ -386,28 +386,28 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
           })
             .then(response => {
               if (response.ok) {
-                console.log(`Fetched video file: ${videoId}.mp4, Content-Length: ${response.headers.get('Content-Length')} bytes`);
+
                 return response.blob();
               } else {
                 throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
               }
             })
             .then(blob => {
-              console.log(`Created blob from response: size: ${blob.size} bytes, type: ${blob.type}`);
+
 
               // Check if the blob has a reasonable size
               if (blob.size < 100 * 1024) { // Less than 100KB
                 console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
 
                 // Try one more time with a direct server URL
-                console.log(`Trying direct server URL: ${SERVER_URL}/videos/${videoId}.mp4`);
+
 
                 return fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
                   method: 'GET',
                   cache: 'no-cache'
                 }).then(retryResponse => {
                   if (retryResponse.ok) {
-                    console.log(`Retry fetched video file: ${videoId}.mp4, Content-Length: ${retryResponse.headers.get('Content-Length')} bytes`);
+
                     return retryResponse.blob();
                   } else {
                     throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
@@ -424,7 +424,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
               }
 
               const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-              console.log(`Created File object: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
               resolve(file);
             })
             .catch(error => {

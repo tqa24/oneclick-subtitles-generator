@@ -32,7 +32,7 @@ def update_download_status(model_id, status, progress=None, error=None, download
 
     # If status is 'completed', remove immediately and log 100%
     if status == 'completed':
-        logger.info(f"Download completed for {model_id}: 100.0%")
+
         # Remove the download status from the current registry object
         if model_id in registry["downloads"]:
             del registry["downloads"][model_id]
@@ -102,7 +102,7 @@ def update_download_status(model_id, status, progress=None, error=None, download
     # but a more robust check might compare the whole status_obj.
     # For now, let's log every update during download for debugging.
     # if status != 'downloading' or model_id not in previous_statuses or previous_statuses[model_id] != status_obj:
-    logger.info(log_message)
+
     # previous_statuses[model_id] = status_obj # Requires defining previous_statuses globally or passing it
 
     # --- Save Registry ---
@@ -122,19 +122,19 @@ def remove_download_status(model_id):
     try:
         registry = get_registry()
         if "downloads" not in registry:
-            logger.info(f"No 'downloads' section found in registry. Cannot remove status for {model_id}.")
+
             return True # Nothing to remove
 
         if model_id in registry["downloads"]:
-            logger.info(f"Removing download status for model {model_id}")
+
             del registry["downloads"][model_id]
             if not save_registry(registry):
                 logger.error(f"Failed to save registry after removing download status for {model_id}")
                 return False
-            logger.info(f"Successfully removed download status for model {model_id}")
+
             return True
         else:
-            logger.info(f"No download status found for model {model_id} to remove.")
+
             return True # Nothing to remove
     except Exception as e:
         logger.error(f"Error removing download status for model {model_id}: {e}")

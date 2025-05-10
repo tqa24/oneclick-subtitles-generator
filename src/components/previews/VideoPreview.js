@@ -72,7 +72,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
   // Process the video URL (download if it's YouTube)
   const processVideoUrl = useCallback(async (url) => {
-    console.log('Processing video URL:', url);
+
 
     // Reset states
     setError('');
@@ -131,7 +131,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       // Clear narration data when video source changes
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log('VideoPreview: Clearing narration data for new video source');
+
       }
       window.originalNarrations = [];
       window.translatedNarrations = [];
@@ -162,14 +162,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log('VideoPreview: Loading new video source:', videoSource);
+
       }
 
       // If it's a blob URL (from file upload), use it directly
       if (videoSource.startsWith('blob:')) {
         // Only log in development mode
         if (process.env.NODE_ENV === 'development') {
-          console.log('Loading file URL:', videoSource);
+
         }
         setVideoUrl(videoSource);
 
@@ -186,7 +186,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
             // Only log in development mode
             if (process.env.NODE_ENV === 'development') {
-              console.log('Found matching optimized video:', splitResult.optimized);
+
             }
             setOptimizedVideoUrl(`${SERVER_URL}${splitResult.optimized.video}`);
 
@@ -200,7 +200,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           } else {
             // Only log in development mode
             if (process.env.NODE_ENV === 'development') {
-              console.log('No matching optimized video found for current source');
+
             }
             setOptimizedVideoUrl('');
             setOptimizedVideoInfo(null);
@@ -296,7 +296,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     // Validate the video URL
     if (!videoUrl) {
-      console.log('Empty video URL provided');
+
       setError(t('preview.videoError', 'No video URL provided.'));
       return;
     }
@@ -305,7 +305,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const handleMetadataLoaded = () => {
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log('Video metadata loaded successfully for:', videoUrl);
+
       }
       setIsLoaded(true);
       setDuration(videoElement.duration);
@@ -375,7 +375,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               if (process.env.NODE_ENV === 'development') {
                 // Store the last logged subtitle to avoid logging the same one repeatedly
                 if (!window._lastLoggedSubtitle || window._lastLoggedSubtitle !== currentSub.text) {
-                  console.log(`Showing ${useTranslated ? 'translated' : 'original'} subtitle: ${currentSub.text}`);
+
                   window._lastLoggedSubtitle = currentSub.text;
                 }
               }
@@ -500,7 +500,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
         // If the status is 'complete' and isStillGenerating is false, the narration regeneration is fully done
         if (status === 'complete' && !isStillGenerating) {
-          console.log('Aligned narration regeneration complete and no longer generating');
+
           setIsRefreshingNarration(false);
         }
 
@@ -512,7 +512,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
         // If isStillGenerating is true, keep the overlay visible
         if (isStillGenerating) {
-          console.log('Aligned narration generation still in progress, keeping overlay visible');
+
         }
       }
     };
@@ -528,7 +528,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         }
 
         if (!isGenerating) {
-          console.log('Aligned narration generation state changed to not generating');
+
           setIsRefreshingNarration(false);
         }
       }
@@ -591,7 +591,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       setIsFullscreen(isVideoFullscreen);
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log('Fullscreen state changed:', isVideoFullscreen);
+
       }
 
       // If entering fullscreen, create the subtitle container
@@ -782,7 +782,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               window.subtitlesData = subtitlesArray;
               // Only log in development mode
               if (process.env.NODE_ENV === 'development' && !window._loggedSubtitlesData) {
-                console.log('VideoPreview - Storing subtitles data in window');
+
                 window._loggedSubtitlesData = true;
               }
             }
@@ -791,7 +791,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               window.originalSubtitles = subtitlesArray;
               // Only log in development mode
               if (process.env.NODE_ENV === 'development' && !window._loggedOriginalSubtitles) {
-                console.log('VideoPreview - Storing original subtitles in window');
+
                 window._loggedOriginalSubtitles = true;
               }
             }
@@ -800,7 +800,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               window.translatedSubtitles = translatedSubtitles;
               // Only log in development mode
               if (process.env.NODE_ENV === 'development' && !window._loggedTranslatedSubtitles) {
-                console.log('VideoPreview - Storing translated subtitles in window');
+
                 window._loggedTranslatedSubtitles = true;
               }
             }
@@ -888,7 +888,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           throw new Error('No narration results available for alignment');
                         }
 
-                        console.log('Manually refreshing aligned narration');
+
 
                         // Force reset the aligned narration cache
                         if (typeof window.resetAlignedNarration === 'function') {
@@ -906,7 +906,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           }
                         });
 
-                        console.log('Found subtitle timing information for IDs:', Object.keys(subtitleMap));
+
 
                         // Prepare the data for the aligned narration with correct timing
                         const narrationData = narrations
@@ -917,7 +917,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                             // If we found a matching subtitle, use its timing
                             if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-                              console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+
                               return {
                                 filename: result.filename,
                                 subtitle_id: result.subtitle_id,
@@ -941,7 +941,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         // Sort by start time to ensure correct order
                         narrationData.sort((a, b) => a.start - b.start);
 
-                        console.log('Generating aligned narration for:', narrationData);
+
 
                         // Get the server URL from config
                         const { SERVER_URL } = require('../../config');
@@ -950,7 +950,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
 
                         // Use fetch API to download the file
-                        console.log('Fetching:', downloadUrl);
+
                         const response = await fetch(downloadUrl, {
                           method: 'POST',
                           mode: 'cors',
@@ -961,7 +961,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           },
                           body: JSON.stringify({ narrations: narrationData })
                         });
-                        console.log('Response status:', response.status);
+
 
                         // Check if the response is successful
                         if (!response.ok) {
@@ -977,7 +977,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                         // Get the blob from the response
                         const blob = await response.blob();
-                        console.log('Blob size:', blob.size);
+
 
                         // Create a URL for the blob
                         const url = URL.createObjectURL(blob);
@@ -1003,8 +1003,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         audio.crossOrigin = 'anonymous';
 
                         // Add event listeners for debugging
-                        audio.oncanplay = () => console.log('Audio can play');
-                        audio.oncanplaythrough = () => console.log('Audio can play through without buffering');
+
+
                         audio.onerror = () => {
                           const errorMessage = audio.error
                             ? `Code: ${audio.error.code}, Message: ${audio.error.message}`
@@ -1060,7 +1060,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                           // Define event handlers
                           function handleVideoPlay() {
-                            console.log('Video play event - playing aligned narration');
+
                             if (audio) {
                               audio.currentTime = videoRef.current.currentTime;
                               const playPromise = audio.play();
@@ -1073,14 +1073,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           }
 
                           function handleVideoPause() {
-                            console.log('Video pause event - pausing aligned narration');
+
                             if (audio) {
                               audio.pause();
                             }
                           }
 
                           function handleVideoSeeked() {
-                            console.log('Video seeked event - seeking aligned narration');
+
                             if (audio) {
                               audio.currentTime = videoRef.current.currentTime;
                               if (!videoRef.current.paused) {
@@ -1117,7 +1117,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                           // If the video is playing, start playing the aligned narration
                           if (videoRef.current && !videoRef.current.paused) {
-                            console.log('Video is already playing - starting aligned narration');
+
                             handleVideoPlay();
                           }
                         };
@@ -1125,7 +1125,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         // Set up direct playback
                         setupDirectPlayback();
 
-                        console.log('Aligned narration regenerated successfully');
+
                       } catch (error) {
                         console.error('Error during aligned narration regeneration:', error);
                       } finally {
@@ -1174,7 +1174,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       setError('');
                       setIsAudioDownloading(true);
 
-                      console.log('Current video URL:', currentVideoUrl);
+
 
                       // Extract and download audio - our utility function now handles blob URLs properly
                       const success = await extractAndDownloadAudio(currentVideoUrl, videoTitle);
@@ -1220,7 +1220,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     console.error('Video error:', e);
                     // If optimized video fails to load, fall back to original video
                     if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
-                      console.log('Optimized video failed to load, falling back to original video');
+
                       e.target.src = videoUrl;
                       e.target.load();
                     }
@@ -1233,7 +1233,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       console.error('Source error:', e);
                       // If optimized video fails to load, fall back to original video
                       if (useOptimizedPreview && optimizedVideoUrl && e.target.src === optimizedVideoUrl) {
-                        console.log('Optimized video source failed to load, falling back to original video');
+
                         e.target.src = videoUrl;
                       }
                     }}

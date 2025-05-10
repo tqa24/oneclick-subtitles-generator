@@ -82,10 +82,10 @@ const SubtitleSettings = ({
             setIsOpen(newIsOpen);
             // Close narration menu if it's open
             if (showNarrationMenu) {
-              console.log('Closing narration menu when opening subtitle settings');
+
               setShowNarrationMenu(false);
             }
-            console.log(`Subtitle settings menu ${newIsOpen ? 'opened' : 'closed'}`);
+
           }}
           title={t('subtitleSettings.settingsTooltip', 'Customize subtitle appearance')}
         >

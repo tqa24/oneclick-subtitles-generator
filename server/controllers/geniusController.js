@@ -29,7 +29,7 @@ const getLyrics = async (req, res) => {
     const hash = crypto.createHash('md5').update(`${artist}_${song}`).digest('hex');
     const safeName = hash.substring(0, 10); // Use first 10 characters of hash for brevity
 
-    console.log(`Processing song: ${artist} - ${song} (hash: ${safeName})`);
+
 
     const lyricsFilePath = path.join(LYRICS_DIR, `${safeName}.txt`);
 
@@ -56,7 +56,7 @@ const getLyrics = async (req, res) => {
             cachedAlbumArtUrl = `/videos/album_art/${albumArtFile}`;
           }
 
-          console.log(`Using cached lyrics for ${artist} - ${song} (hash: ${safeName})`);
+
 
           if (cachedLyrics && cachedAlbumArtUrl) {
             return res.json({
@@ -88,7 +88,7 @@ const getLyrics = async (req, res) => {
 
     // Search for the song on Genius
     const searchUrl = `https://api.genius.com/search?q=${encodeURIComponent(`${artist} ${song}`)}`;
-    console.log(`Searching Genius for: ${artist} - ${song}`);
+
 
     const searchResponse = await axios.get(searchUrl, {
       headers: {
@@ -105,9 +105,9 @@ const getLyrics = async (req, res) => {
     const songUrl = hit.result.url;
     const albumArtUrl = hit.result.song_art_image_url || hit.result.header_image_url;
 
-    console.log(`Found song on Genius: ${hit.result.title} by ${hit.result.primary_artist.name}`);
-    console.log(`Song URL: ${songUrl}`);
-    console.log(`Album art URL: ${albumArtUrl}`);
+
+
+
 
     // Get the lyrics from the song page
     const lyricsPageResponse = await axios.get(songUrl);
@@ -123,7 +123,7 @@ const getLyrics = async (req, res) => {
     const lyricsDiv = $('.lyrics');
     if (lyricsDiv.length > 0) {
       lyrics = lyricsDiv.text().trim();
-      console.log('Found lyrics using method 1 (lyrics div)');
+
     }
 
     // Method 2: Look for lyrics in the new Genius format
@@ -137,7 +137,7 @@ const getLyrics = async (req, res) => {
           lyrics += $(el).text() + '\n';
         });
         lyrics = lyrics.trim();
-        console.log('Found lyrics using method 2 (data-lyrics-container)');
+
       }
     }
 
@@ -146,7 +146,7 @@ const getLyrics = async (req, res) => {
       const lyricsContainer = $('.song_body-lyrics');
       if (lyricsContainer.length > 0) {
         lyrics = lyricsContainer.text().trim();
-        console.log('Found lyrics using method 3 (song_body-lyrics)');
+
       }
     }
 
@@ -159,13 +159,13 @@ const getLyrics = async (req, res) => {
         }
       });
       if (lyrics) {
-        console.log('Found lyrics using method 4 (any lyrics class)');
+
       }
     }
 
     // If we still couldn't extract lyrics, return a placeholder
     if (!lyrics) {
-      console.log('Could not extract lyrics from Genius');
+
       lyrics = `Lyrics for "${song}" by ${artist}\n\nCouldn't extract lyrics from Genius.\nPlease visit ${songUrl} to view the lyrics.`;
     } else {
       // Clean up the lyrics
@@ -173,18 +173,18 @@ const getLyrics = async (req, res) => {
         .replace(/\\n/g, '\n')  // Replace escaped newlines with actual newlines
         .replace(/\n{3,}/g, '\n\n')  // Replace multiple newlines with just two
         .trim();
-      console.log(`Successfully extracted lyrics (${lyrics.length} characters)`);
+
     }
 
     // Save lyrics to file
     await fs.writeFile(lyricsFilePath, lyrics, 'utf-8');
-    console.log(`Saved lyrics to ${lyricsFilePath}`);
+
 
     // Download and save album art if available
     let localAlbumArtUrl = '';
     if (albumArtUrl) {
       try {
-        console.log(`Downloading album art from ${albumArtUrl}`);
+
 
         const imageResponse = await axios({
           method: 'get',
@@ -212,7 +212,7 @@ const getLyrics = async (req, res) => {
         await fs.writeFile(albumArtFilePath, Buffer.from(imageResponse.data), 'binary');
 
         localAlbumArtUrl = `/videos/album_art/${safeName}.${extension}`;
-        console.log(`Saved album art to ${albumArtFilePath} (${contentType}, ${imageResponse.data.length} bytes)`);
+
       } catch (imageError) {
         console.error('Error downloading album art:', imageError.message);
       }

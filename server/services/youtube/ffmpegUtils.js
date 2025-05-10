@@ -30,24 +30,24 @@ async function isFFmpegAvailable() {
  */
 async function mergeVideoAndAudio(videoPath, audioPath, outputPath) {
   try {
-    console.log(`[QUALITY DEBUG] Merging video and audio files:`);
-    console.log(`[QUALITY DEBUG] Video: ${videoPath}`);
-    console.log(`[QUALITY DEBUG] Audio: ${audioPath}`);
-    console.log(`[QUALITY DEBUG] Output: ${outputPath}`);
+
+
+
+
 
     // Use ffmpeg to merge the files
     const command = `ffmpeg -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -strict experimental "${outputPath}" -y`;
-    console.log(`[QUALITY DEBUG] Running command: ${command}`);
+
 
     const { stdout, stderr } = await exec(command);
 
     if (stderr) {
-      console.log(`[QUALITY DEBUG] FFmpeg stderr: ${stderr}`);
+
     }
 
     // Check if the output file exists
     if (fs.existsSync(outputPath)) {
-      console.log(`[QUALITY DEBUG] Merge successful, output file exists`);
+
       return true;
     } else {
       console.error(`[QUALITY DEBUG] Merge failed, output file does not exist`);

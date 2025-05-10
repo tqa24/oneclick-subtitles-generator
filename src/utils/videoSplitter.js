@@ -43,7 +43,7 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const fileName = mediaFile.name || `${mediaType}_${Date.now()}.${mediaType === 'audio' ? 'mp3' : 'mp4'}`;
 
     // Log the file details
-    console.log(`Splitting media file: ${fileName}, size: ${mediaFile.size} bytes, type: ${mediaFile.type || 'unknown'}`);
+
 
     // Check if the file name contains a site_ prefix, which means it's from the all-sites downloader
     let mediaId;
@@ -53,16 +53,16 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
       if (siteIdMatch) {
         // Use the site ID as the media ID to maintain consistency
         mediaId = siteIdMatch[0];
-        console.log(`Using site ID from filename as media ID: ${mediaId}`);
+
       } else {
         // Generate a unique ID for this media file
         mediaId = `${mediaType}_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        console.log(`Generated new media ID: ${mediaId}`);
+
       }
     } else {
       // Generate a unique ID for this media file
       mediaId = `${mediaType}_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      console.log(`Generated new media ID: ${mediaId}`);
+
     }
 
     // Get video optimization settings from options
@@ -75,8 +75,8 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const optimizeVideosStr = optimizeVideos ? 'true' : 'false';
     const url = `${SERVER_URL}/api/split-video?mediaId=${mediaId}&segmentDuration=${segmentDuration}&fastSplit=${fastSplit}&mediaType=${mediaType}&optimizeVideos=${optimizeVideosStr}&optimizedResolution=${optimizedResolution}`;
 
-    console.log(`Calling split-video endpoint with optimizeVideos=${optimizeVideosStr} (should be 'false' to avoid duplication)`);
-    console.log(`File being sent: ${fileName}, size: ${mediaFile.size} bytes, type: ${mediaFile.type || 'video/mp4'}`);
+
+
 
     // Upload the media file
     const response = await fetch(url, {
@@ -116,7 +116,7 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     onProgress(80, uploadedKey, uploadedDefaultMsg);
 
     const data = await response.json();
-    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split into segments:`, data);
+
 
     // Use the translation key for the segments ready message
     const readyKey = isAudio ? 'output.audioSegmentsReady' : 'output.videoSegmentsReady';
@@ -125,35 +125,22 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     onProgress(100, readyKey, readyDefaultMsg);
 
     // Log the actual segment durations for debugging
+    // Commented out to avoid unused variable warnings
+    /*
     if (data.segments && data.segments.length > 0) {
-      console.log('Segment details:');
       let totalActualDuration = 0;
       let totalTheoreticalDuration = 0;
 
-      data.segments.forEach((segment, index) => {
-        // Calculate and log the difference between actual and theoretical values
-        const actualStartTime = segment.startTime;
-        const theoreticalStartTime = segment.theoreticalStartTime;
-        const startTimeDiff = actualStartTime - theoreticalStartTime;
-
+      data.segments.forEach((segment) => {
+        // Calculate totals for actual and theoretical durations
         const actualDuration = segment.duration;
         const theoreticalDuration = segment.theoreticalDuration;
-        const durationDiff = actualDuration - theoreticalDuration;
 
         totalActualDuration += actualDuration;
         totalTheoreticalDuration += theoreticalDuration;
-
-        console.log(`Segment ${index}:\n` +
-          `  Actual:      startTime=${actualStartTime.toFixed(2)}s, duration=${actualDuration.toFixed(2)}s, endTime=${(actualStartTime + actualDuration).toFixed(2)}s\n` +
-          `  Theoretical: startTime=${theoreticalStartTime.toFixed(2)}s, duration=${theoreticalDuration.toFixed(2)}s, endTime=${(theoreticalStartTime + theoreticalDuration).toFixed(2)}s\n` +
-          `  Difference:  startTime=${startTimeDiff.toFixed(2)}s, duration=${durationDiff.toFixed(2)}s`);
       });
-
-      console.log(`Total ${mediaType} duration:\n` +
-        `  Actual: ${totalActualDuration.toFixed(2)}s\n` +
-        `  Theoretical: ${totalTheoreticalDuration.toFixed(2)}s\n` +
-        `  Difference: ${(totalActualDuration - totalTheoreticalDuration).toFixed(2)}s`);
     }
+    */
 
     return {
       success: true,
@@ -204,7 +191,7 @@ export const fetchSegment = async (segmentUrl, segmentIndex, mediaType = 'video'
 
     // Add segment metadata if we have an index
     if (index !== undefined) {
-      console.log(`Adding metadata for segment ${index}`);
+
       // Add segment index as a property
       file.segmentIndex = index;
 
@@ -217,23 +204,18 @@ export const fetchSegment = async (segmentUrl, segmentIndex, mediaType = 'video'
 
         if (startTime) {
           file.startTime = parseFloat(startTime);
-          console.log(`Segment ${index} startTime from URL: ${file.startTime.toFixed(2)}s`);
+
         }
 
         if (duration) {
           file.duration = parseFloat(duration);
-          console.log(`Segment ${index} duration from URL: ${file.duration.toFixed(2)}s`);
-          console.log(`Segment ${index} calculated end time: ${(file.startTime + file.duration).toFixed(2)}s`);
+
+
         }
 
-        // Log the theoretical values for comparison
-        // Use a default segment duration of 3 minutes (180 seconds) for theoretical calculation
-        const defaultSegmentDuration = 180;
-        const theoreticalStartTime = index * defaultSegmentDuration;
-        console.log(`Segment ${index} theoretical startTime: ${theoreticalStartTime.toFixed(2)}s (assuming ${defaultSegmentDuration}s segments)`);
+        // We already parsed startTime above, no need to recalculate
         if (startTime) {
-          const diff = file.startTime - theoreticalStartTime;
-          console.log(`Segment ${index} startTime difference: ${diff.toFixed(2)}s (${diff > 0 ? 'later' : 'earlier'} than theoretical)`);
+          // startTime is already set above at line 207
         }
       } catch (error) {
         console.warn('Could not parse segment URL for metadata:', error);

@@ -15,12 +15,12 @@ const RULES_DIR = path.join(SUBTITLES_DIR, 'rules');
 // Ensure directories exist
 if (!fs.existsSync(USER_SUBTITLES_DIR)) {
   fs.mkdirSync(USER_SUBTITLES_DIR, { recursive: true });
-  console.log(`Created directory: ${USER_SUBTITLES_DIR}`);
+
 }
 
 if (!fs.existsSync(RULES_DIR)) {
   fs.mkdirSync(RULES_DIR, { recursive: true });
-  console.log(`Created directory: ${RULES_DIR}`);
+
 }
 
 /**
@@ -31,7 +31,7 @@ router.get('/subtitle-exists/:cacheId', (req, res) => {
   const subtitlePath = path.join(SUBTITLES_DIR, `${cacheId}.json`);
 
   if (fs.existsSync(subtitlePath)) {
-    console.log(`Cached subtitles found for ${cacheId}`);
+
     try {
       const subtitlesData = JSON.parse(fs.readFileSync(subtitlePath, 'utf8'));
       res.json({
@@ -43,7 +43,7 @@ router.get('/subtitle-exists/:cacheId', (req, res) => {
       res.json({ exists: false });
     }
   } else {
-    console.log(`No cached subtitles found for ${cacheId}`);
+
     res.json({ exists: false });
   }
 });
@@ -64,7 +64,7 @@ router.post('/save-subtitles', (req, res) => {
   try {
     const subtitlePath = path.join(SUBTITLES_DIR, `${cacheId}.json`);
     fs.writeFileSync(subtitlePath, JSON.stringify(subtitles, null, 2));
-    console.log(`Saved subtitles to cache: ${cacheId}`);
+
 
     res.json({
       success: true,
@@ -87,7 +87,7 @@ router.get('/user-subtitles/:cacheId', (req, res) => {
   const subtitlePath = path.join(USER_SUBTITLES_DIR, `${cacheId}.txt`);
 
   if (fs.existsSync(subtitlePath)) {
-    console.log(`Cached user-provided subtitles found for ${cacheId}`);
+
     try {
       const subtitlesText = fs.readFileSync(subtitlePath, 'utf8');
       res.json({
@@ -99,7 +99,7 @@ router.get('/user-subtitles/:cacheId', (req, res) => {
       res.json({ exists: false });
     }
   } else {
-    console.log(`No cached user-provided subtitles found for ${cacheId}`);
+
     res.json({ exists: false });
   }
 });
@@ -120,7 +120,7 @@ router.post('/save-user-subtitles', (req, res) => {
   try {
     const subtitlePath = path.join(USER_SUBTITLES_DIR, `${cacheId}.txt`);
     fs.writeFileSync(subtitlePath, subtitlesText);
-    console.log(`Saved user-provided subtitles to cache: ${cacheId}`);
+
 
     res.json({
       success: true,
@@ -143,7 +143,7 @@ router.get('/rules/:cacheId', (req, res) => {
   const rulesPath = path.join(RULES_DIR, `${cacheId}.json`);
 
   if (fs.existsSync(rulesPath)) {
-    console.log(`Cached transcription rules found for ${cacheId}`);
+
     try {
       const rulesData = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
       res.json({
@@ -155,7 +155,7 @@ router.get('/rules/:cacheId', (req, res) => {
       res.json({ exists: false });
     }
   } else {
-    console.log(`No cached transcription rules found for ${cacheId}`);
+
     res.json({ exists: false });
   }
 });
@@ -176,7 +176,7 @@ router.post('/save-rules', (req, res) => {
   try {
     const rulesPath = path.join(RULES_DIR, `${cacheId}.json`);
     fs.writeFileSync(rulesPath, JSON.stringify(rules, null, 2));
-    console.log(`Saved transcription rules to cache: ${cacheId}`);
+
 
     res.json({
       success: true,

@@ -98,21 +98,21 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
 
     // Log which prompt is being used
     if (sessionPrompt) {
-        console.log('Using session-specific prompt from video analysis');
+
     }
 
     // If we have user-provided subtitles, replace the entire prompt with a simplified version
     if (userProvidedSubtitles && userProvidedSubtitles.trim() !== '') {
         // Use a very simple prompt that only focuses on timing the provided subtitles
         // No preset information, no transcription rules, just the core task
-        console.log('SIMPLIFIED PROMPT: Using simplified prompt for user-provided subtitles');
-        console.log('USER SUBTITLES:', userProvidedSubtitles);
-        console.log('CALLER INFO:', new Error().stack);
+
+
+
 
         // Split the subtitles into an array and count them
         const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
         const subtitleCount = subtitleLines.length;
-        console.log(`Found ${subtitleCount} subtitle lines to time`);
+
 
         // Create a numbered list of subtitles for the prompt
         const numberedSubtitles = subtitleLines.map((line, index) => `[${index}] ${line}`).join('\n');
@@ -183,7 +183,7 @@ IMPORTANT RULES:
 Here are the subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
         }
 
-        console.log('SIMPLIFIED PROMPT CONTENT:', simplifiedPrompt);
+
         return simplifiedPrompt;
     }
 

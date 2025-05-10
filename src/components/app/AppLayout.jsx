@@ -28,8 +28,8 @@ const AppLayout = ({
 
   // Handler for generating background image
   const handleGenerateBackground = (lyrics, albumArt, songName) => {
-    console.log('handleGenerateBackground called with:', { lyrics, albumArt, songName });
-    console.log('Current showBackgroundGenerator state:', showBackgroundGenerator);
+
+
 
     // Set the state variables immediately
     setBackgroundLyrics(lyrics);
@@ -38,22 +38,22 @@ const AppLayout = ({
 
     // Force expand the component
     setShowBackgroundGenerator(true);
-    console.log('Set showBackgroundGenerator to true');
+
 
     // Scroll to the BackgroundImageGenerator after it's rendered
     setTimeout(() => {
       const backgroundGenerator = document.querySelector('.background-generator-container');
       if (backgroundGenerator) {
-        console.log('Scrolling to BackgroundImageGenerator');
-        console.log('Background generator classes:', backgroundGenerator.className);
+
+
         backgroundGenerator.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else {
-        console.log('BackgroundImageGenerator not found in DOM');
+
       }
 
       // Check if the container is still collapsed
       const isStillCollapsed = backgroundGenerator?.classList.contains('collapsed');
-      console.log('Is background generator still collapsed?', isStillCollapsed);
+
     }, 500); // Increased timeout to ensure component is rendered
   };
 
@@ -320,7 +320,7 @@ const AppLayout = ({
           initialRules={transcriptionRules}
           onSave={handleSaveRules}
           onChangePrompt={(preset) => {
-            console.log('Prompt preset changed to:', preset.id);
+
             // If we're using a recommended preset from video analysis, update the session storage
             if (sessionStorage.getItem('current_session_preset_id')) {
               sessionStorage.setItem('current_session_preset_id', preset.id);

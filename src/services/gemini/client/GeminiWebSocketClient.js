@@ -5,9 +5,9 @@
 
 import { EventEmitter } from 'events';
 import { blobToJSON } from '../utils/blobUtils';
-import { 
-  base64ToArrayBuffer, 
-  convertPcmBase64ToWavBase64 
+import {
+  base64ToArrayBuffer,
+  convertPcmBase64ToWavBase64
 } from '../utils/audioUtils';
 
 /**
@@ -35,12 +35,6 @@ export class GeminiWebSocketClient extends EventEmitter {
   connect(config) {
     this.config = config;
 
-    // Log the configuration being used
-    console.log('Connecting with config:', JSON.stringify({
-      model: config.model,
-      responseModalities: config.generationConfig?.responseModalities,
-      voiceName: config.generationConfig?.speechConfig?.voiceConfig?.prebuiltVoiceConfig?.voiceName
-    }));
 
     const ws = new WebSocket(this.url);
 
@@ -57,7 +51,7 @@ export class GeminiWebSocketClient extends EventEmitter {
       if (evt.data instanceof Blob) {
         this.receive(evt.data);
       } else {
-        console.log('Non-blob message received:', evt);
+
       }
     });
 
@@ -80,7 +74,7 @@ export class GeminiWebSocketClient extends EventEmitter {
           return;
         }
 
-        console.log('Connected to Gemini WebSocket API');
+
         this.emit('open');
 
         this.ws = ws;
@@ -90,14 +84,14 @@ export class GeminiWebSocketClient extends EventEmitter {
           setup: this.config
         };
         this._sendDirect(setupMessage);
-        console.log('Setup message sent');
+
 
         ws.removeEventListener('error', onError);
 
         ws.addEventListener('close', (ev) => {
           this.disconnect(ws);
-          let reason = ev.reason || '';
-          console.log(`WebSocket disconnected ${reason ? `with reason: ${reason}` : ''}`);
+          // let reason = ev.reason || '';
+
           this.emit('close', ev);
         });
 
@@ -115,7 +109,7 @@ export class GeminiWebSocketClient extends EventEmitter {
     if ((!ws || this.ws === ws) && this.ws) {
       this.ws.close();
       this.ws = null;
-      console.log('Disconnected from Gemini WebSocket API');
+
       return true;
     }
     return false;
@@ -161,7 +155,7 @@ export class GeminiWebSocketClient extends EventEmitter {
 
         // Check if this is a turn complete event
         if (response.serverContent && response.serverContent.turnComplete) {
-          console.log(`Turn complete received for request ${requestId}`);
+
           turnCompleteReceived = true;
 
           // If we have audio data, resolve after a short delay to ensure we've received all chunks
@@ -169,26 +163,26 @@ export class GeminiWebSocketClient extends EventEmitter {
             turnCompleteTimeout = setTimeout(() => {
               // Combine all audio chunks
               const combinedAudioData = audioChunks.join('');
-              console.log(`Combined audio data: ${combinedAudioData.length} bytes for request ${requestId}`);
+
 
               // Convert PCM base64 to WAV base64 immediately
               try {
-                console.log(`Converting PCM to WAV for request ${requestId}`);
+
 
                 // Log a sample of the PCM data for debugging
                 if (combinedAudioData.length > 20) {
-                  console.log(`PCM data sample: ${combinedAudioData.substring(0, 20)}...`);
+
                 } else {
-                  console.log(`PCM data: ${combinedAudioData}`);
+
                 }
 
                 const wavAudioData = convertPcmBase64ToWavBase64(combinedAudioData, sampleRate);
-                console.log(`Converted to WAV format: ${wavAudioData.length} bytes for request ${requestId}`);
+
 
                 // Verify the WAV data starts with RIFF header
                 try {
                   const headerChars = atob(wavAudioData.substring(0, 8));
-                  console.log(`WAV header check in response: ${headerChars}`);
+
                   if (!headerChars.startsWith('RIFF')) {
                     console.warn(`WAV data does not start with RIFF header for request ${requestId}`);
                   }
@@ -254,7 +248,7 @@ export class GeminiWebSocketClient extends EventEmitter {
           );
 
           if (audioParts.length > 0) {
-            console.log(`Found ${audioParts.length} audio parts for request ${requestId}`);
+
 
             // Process all audio parts
             for (const part of audioParts) {
@@ -269,14 +263,14 @@ export class GeminiWebSocketClient extends EventEmitter {
                   const rateMatch = mimeType.match(/rate=(\d+)/);
                   if (rateMatch && rateMatch[1]) {
                     sampleRate = parseInt(rateMatch[1], 10);
-                    console.log(`Detected sample rate: ${sampleRate}Hz for request ${requestId}`);
+
                   }
                 }
               }
 
               // Add this chunk to our collection
               audioChunks.push(audioData);
-              console.log(`Added audio chunk: ${audioData.length} bytes, total chunks: ${audioChunks.length} for request ${requestId}`);
+
             }
 
             // If turn complete was already received, resolve now
@@ -285,26 +279,26 @@ export class GeminiWebSocketClient extends EventEmitter {
 
               // Combine all audio chunks
               const combinedAudioData = audioChunks.join('');
-              console.log(`Combined audio data: ${combinedAudioData.length} bytes for request ${requestId}`);
+
 
               // Convert PCM base64 to WAV base64 immediately
               try {
-                console.log(`Converting PCM to WAV for request ${requestId}`);
+
 
                 // Log a sample of the PCM data for debugging
                 if (combinedAudioData.length > 20) {
-                  console.log(`PCM data sample: ${combinedAudioData.substring(0, 20)}...`);
+
                 } else {
-                  console.log(`PCM data: ${combinedAudioData}`);
+
                 }
 
                 const wavAudioData = convertPcmBase64ToWavBase64(combinedAudioData, sampleRate);
-                console.log(`Converted to WAV format: ${wavAudioData.length} bytes for request ${requestId}`);
+
 
                 // Verify the WAV data starts with RIFF header
                 try {
                   const headerChars = atob(wavAudioData.substring(0, 8));
-                  console.log(`WAV header check in response: ${headerChars}`);
+
                   if (!headerChars.startsWith('RIFF')) {
                     console.warn(`WAV data does not start with RIFF header for request ${requestId}`);
                   }
@@ -371,33 +365,33 @@ export class GeminiWebSocketClient extends EventEmitter {
     try {
       const response = await blobToJSON(blob);
       if (!response) {
-        console.log('Received empty or invalid JSON response');
+
         return;
       }
 
       // Log the raw response for debugging
-      console.log('Received WebSocket message:', JSON.stringify(response, null, 2));
+
 
       // Emit the raw message for custom handlers
       this.emit('message', response);
 
       // Handle tool call messages
       if (response.toolCall) {
-        console.log('Tool call received:', response.toolCall);
+
         this.emit('toolcall', response.toolCall);
         return;
       }
 
       // Handle tool call cancellation messages
       if (response.toolCallCancellation) {
-        console.log('Tool call cancellation received:', response.toolCallCancellation);
+
         this.emit('toolcallcancellation', response.toolCallCancellation);
         return;
       }
 
       // Handle setup complete messages
       if (response.setupComplete) {
-        console.log('Setup complete');
+
         this.emit('setupcomplete');
         return;
       }
@@ -415,21 +409,21 @@ export class GeminiWebSocketClient extends EventEmitter {
 
         // Handle interruption
         if (serverContent.interrupted) {
-          console.log('Generation interrupted');
+
           this.emit('interrupted');
           return;
         }
 
         // Handle turn completion
         if (serverContent.turnComplete) {
-          console.log('Turn complete');
+
           this.emit('turncomplete');
         }
 
         // Handle model turn with audio
         if (serverContent.modelTurn) {
           let parts = serverContent.modelTurn.parts || [];
-          console.log('Received model turn with parts:', parts);
+
 
           // Extract audio parts
           const audioParts = parts.filter(
@@ -438,14 +432,14 @@ export class GeminiWebSocketClient extends EventEmitter {
                    p.inlineData.mimeType.includes('audio/pcm'))
           );
 
-          console.log(`Found ${audioParts.length} audio parts`);
+
 
           // Process audio data
           for (const part of audioParts) {
             if (part.inlineData && part.inlineData.data) {
               const audioData = part.inlineData.data; // Base64 encoded audio
               const mimeType = part.inlineData.mimeType;
-              console.log(`Processing audio data of type ${mimeType}`);
+
 
               // Extract sample rate from mime type if available
               let sampleRate = 24000; // Default sample rate
@@ -453,7 +447,7 @@ export class GeminiWebSocketClient extends EventEmitter {
                 const rateMatch = mimeType.match(/rate=(\d+)/);
                 if (rateMatch && rateMatch[1]) {
                   sampleRate = parseInt(rateMatch[1], 10);
-                  console.log(`Detected sample rate: ${sampleRate}Hz`);
+
                 }
               }
 
@@ -466,7 +460,7 @@ export class GeminiWebSocketClient extends EventEmitter {
           const textParts = parts.filter(p => p.text);
           if (textParts.length > 0) {
             const textContent = textParts.map(p => p.text).join(' ');
-            console.log(`Received text content: ${textContent}`);
+
             this.emit('text', textContent);
           }
 
@@ -474,7 +468,7 @@ export class GeminiWebSocketClient extends EventEmitter {
           this.emit('content', serverContent);
         }
       } else {
-        console.log('Unmatched message received:', response);
+
       }
     } catch (error) {
       console.error('Error processing WebSocket message:', error);
@@ -522,7 +516,7 @@ export class GeminiWebSocketClient extends EventEmitter {
 
     // Send the request
     this._sendDirect(clientContentRequest);
-    console.log(`Message sent with ID ${requestId}:`, JSON.stringify(clientContentRequest, null, 2));
+
 
     return requestId;
   }

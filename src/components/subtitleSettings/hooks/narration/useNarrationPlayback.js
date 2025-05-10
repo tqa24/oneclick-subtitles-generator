@@ -29,11 +29,11 @@ const useNarrationPlayback = (
    * @param {Object} narration - Narration to play
    */
   const playNarration = async (narration) => {
-    console.log('Playing narration:', narration);
+
 
     // If we're already playing this narration, don't restart it
     if (currentNarration && currentNarration.subtitle_id === narration.subtitle_id) {
-      console.log(`Already playing narration ${narration.subtitle_id}, not restarting`);
+
       return;
     }
 
@@ -57,12 +57,12 @@ const useNarrationPlayback = (
       }
 
       if (updatedNarration && updatedNarration.filename) {
-        console.log(`Found updated narration with filename in global array:`, updatedNarration);
+
         narration = updatedNarration;
       } else {
         console.error('Could not find updated narration with filename in global arrays');
-        console.log('window.originalNarrations:', window.originalNarrations);
-        console.log('window.translatedNarrations:', window.translatedNarrations);
+
+
         return;
       }
     }
@@ -73,7 +73,7 @@ const useNarrationPlayback = (
 
       if (subtitleData) {
         narration.subtitleData = subtitleData;
-        console.log('Added subtitle data to narration:', subtitleData);
+
       } else {
         console.warn('Could not find subtitle data for narration:', narration);
       }
@@ -81,7 +81,7 @@ const useNarrationPlayback = (
 
     // Stop any currently playing narration
     if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
-      console.log('Stopping current narration:', currentNarration.subtitle_id);
+
       audioRefs.current[currentNarration.subtitle_id].pause();
     }
 
@@ -109,7 +109,7 @@ const useNarrationPlayback = (
     );
 
     if (isRetried) {
-      console.log(`Detected retried narration for ${latestNarration.subtitle_id}, recreating audio element`);
+
 
       // Clean up the old audio element
       if (existingAudio) {
@@ -124,7 +124,7 @@ const useNarrationPlayback = (
     if (!audioRefs.current[latestNarration.subtitle_id]) {
       // Get the properly formatted audio URL
       const audioUrl = getAudioUrl(latestNarration, serverUrl);
-      console.log('Creating new audio element for URL:', audioUrl);
+
 
       // Create a new audio element with event handlers
       const audio = new Audio();
@@ -137,7 +137,7 @@ const useNarrationPlayback = (
 
       // Set volume immediately
       audio.volume = narrationVolume;
-      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
+
 
       // Add enhanced error handling
       audio.addEventListener('error', async (e) => {
@@ -147,7 +147,7 @@ const useNarrationPlayback = (
 
         // Clear current narration if there's an error
         if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
-          console.log(`Clearing current narration state for ${latestNarration.subtitle_id} due to error`);
+
           setCurrentNarration(null);
         }
 
@@ -162,24 +162,24 @@ const useNarrationPlayback = (
 
       // Store the audio duration once it's loaded
       audio.addEventListener('loadedmetadata', () => {
-        console.log('Audio loaded metadata, duration:', audio.duration);
+
         audioDurationsRef.current[latestNarration.subtitle_id] = audio.duration;
 
         // Set volume again after metadata is loaded
         audio.volume = narrationVolume;
-        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
+
       });
 
       // Add play event listener
       audio.addEventListener('play', () => {
-        console.log(`Audio started playing for narration ${latestNarration.subtitle_id} with volume ${audio.volume}`);
+
       });
 
       // Add ended event listener
       audio.addEventListener('ended', () => {
-        console.log(`Audio finished playing for narration ${latestNarration.subtitle_id}`);
+
         if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
-          console.log(`Clearing current narration state for ${latestNarration.subtitle_id}`);
+
           setCurrentNarration(null);
         }
       });
@@ -190,7 +190,7 @@ const useNarrationPlayback = (
         const duration = audio.duration || 10; // Default to 10 seconds if duration is unknown
         const safetyTimeout = setTimeout(() => {
           if (currentNarration && currentNarration.subtitle_id === latestNarration.subtitle_id) {
-            console.log(`Safety timeout: clearing current narration state for ${latestNarration.subtitle_id}`);
+
             setCurrentNarration(null);
           }
         }, (duration * 1000) + 1000); // Add 1 second buffer
@@ -209,7 +209,7 @@ const useNarrationPlayback = (
 
       audioRefs.current[latestNarration.subtitle_id] = audio;
     } else {
-      console.log('Using existing audio element for narration:', latestNarration.subtitle_id);
+
     }
 
     // Play the narration
@@ -217,11 +217,11 @@ const useNarrationPlayback = (
 
     // Set volume again before playing
     audioElement.volume = narrationVolume;
-    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${latestNarration.subtitle_id}`);
+
 
     // If we have the subtitle midpoint and audio duration, calculate the start time
     const audioDuration = audioDurationsRef.current[latestNarration.subtitle_id];
-    console.log('Audio duration:', audioDuration);
+
 
     // Calculate the start time for audio playback
     const audioStartTime = calculateAudioStartTime(videoRef, latestNarration, audioDuration);
@@ -229,16 +229,16 @@ const useNarrationPlayback = (
     // Set the audio start time
     if (audioStartTime > 0) {
       audioElement.currentTime = audioStartTime;
-      console.log('Setting audio currentTime to:', audioStartTime);
+
     } else {
       audioElement.currentTime = 0;
-      console.log('Starting audio from beginning');
+
     }
 
     // Try to play the audio
     try {
       // Log detailed information before attempting to play
-      console.log('About to play audio:', {
+
         audioElement: audioElement,
         src: audioElement.src,
         volume: audioElement.volume,
@@ -249,13 +249,13 @@ const useNarrationPlayback = (
 
       // Check if the audio is in a playable state
       if (audioElement.readyState < 2) { // HAVE_CURRENT_DATA = 2
-        console.log('Audio not ready yet, waiting for loadeddata event');
+
 
         // Set up a one-time event listener for when the audio is ready
         const loadHandler = () => {
-          console.log('Audio loaded data, now attempting to play');
+
           audioElement.play()
-            .then(() => console.log('Audio playback started successfully'))
+
             .catch(error => {
               console.error('Error playing audio:', error);
 
@@ -269,13 +269,13 @@ const useNarrationPlayback = (
 
               // If the error is about no supported sources, try to reload with a corrected URL
               if (error.name === 'NotSupportedError' && error.message.includes('no supported sources')) {
-                console.log('Attempting to reload audio with corrected URL');
+
 
                 // Get the properly formatted audio URL
                 const correctedUrl = getAudioUrl(latestNarration, serverUrl);
 
                 if (audioElement.src !== correctedUrl) {
-                  console.log(`Correcting URL from ${audioElement.src} to ${correctedUrl}`);
+
                   audioElement.src = correctedUrl;
 
                   // Try loading again
@@ -290,7 +290,7 @@ const useNarrationPlayback = (
 
         // Also listen for canplaythrough event which is more reliable
         const canPlayHandler = () => {
-          console.log('Audio can play through without buffering, now attempting to play');
+
 
           // Clear the timeout since we're ready to play
           if (audioElement._loadTimeoutId) {
@@ -299,7 +299,7 @@ const useNarrationPlayback = (
           }
 
           audioElement.play()
-            .then(() => console.log('Audio playback started successfully from canplaythrough event'))
+
             .catch(error => {
               console.error('Error playing audio from canplaythrough event:', error);
             });
@@ -314,7 +314,7 @@ const useNarrationPlayback = (
           // Clear the timeout ID since it's now executing
           audioElement._loadTimeoutId = null;
           if (audioElement.readyState < 2) {
-            console.log('Timeout waiting for audio to load, trying to play anyway');
+
             audioElement.removeEventListener('loadeddata', loadHandler);
             audioElement.removeEventListener('canplaythrough', canPlayHandler);
 
@@ -324,7 +324,7 @@ const useNarrationPlayback = (
             // Wait a bit more after reload
             setTimeout(() => {
               audioElement.play()
-                .then(() => console.log('Audio playback started after timeout and reload'))
+
                 .catch(error => {
                   console.error('Error playing audio after timeout:', error);
 
@@ -346,14 +346,14 @@ const useNarrationPlayback = (
                       correctedUrl = `http://${correctedUrl.startsWith('//') ? correctedUrl.slice(2) : correctedUrl}`;
                     }
 
-                    console.log(`Last attempt with fully corrected URL: ${correctedUrl}`);
+
                     audioElement.src = correctedUrl;
                     audioElement.load();
 
                     // Final attempt after a short delay
                     setTimeout(() => {
                       audioElement.play()
-                        .then(() => console.log('Audio playback finally started with corrected URL'))
+
                         .catch(finalError => {
                           console.error('Final error playing audio:', finalError);
                         });
@@ -366,7 +366,7 @@ const useNarrationPlayback = (
       } else {
         // Audio is ready, play it now
         audioElement.play()
-          .then(() => console.log('Audio playback started successfully'))
+
           .catch(error => {
             console.error('Error playing audio:', error);
 

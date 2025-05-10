@@ -39,7 +39,7 @@ const ButtonsContainer = ({
       />
 
       {/* Add Subtitles Button - always visible like SrtUploadButton */}
-      {console.log('ButtonsContainer: onGenerateBackground exists:', !!onGenerateBackground)}
+
       <AddSubtitlesButton
         onSubtitlesAdd={handleUserSubtitlesAdd}
         hasSubtitles={userProvidedSubtitles.trim() !== ''}

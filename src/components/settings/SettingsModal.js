@@ -420,7 +420,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         throw new Error('Failed to save settings to server');
       }
 
-      console.log('Settings saved to server successfully');
+
     } catch (error) {
       console.error('Error saving settings to server:', error);
     }

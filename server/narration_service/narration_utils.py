@@ -22,7 +22,7 @@ def load_tts_model(model_id=None):
              logger.warning("No specific or active model set, attempting to load default F5-TTS model.")
              # Initialize default F5-TTS
              tts_instance = F5TTS(device=device)
-             logger.info(f"Loaded default F5-TTS model instance on device: {device}")
+
              return tts_instance, "default" # Return instance and ID used
 
         # Find the model details from registry
@@ -34,12 +34,12 @@ def load_tts_model(model_id=None):
             logger.error(f"Model ID '{target_model_id}' not found in registry. Cannot load.")
             raise ValueError(f"Model ID '{target_model_id}' not found.")
 
-        logger.info(f"Loading F5-TTS model: '{target_model_id}' on device: {device}")
+
         logger.debug(f"Model Info: {model_info}")
 
         # Handle the default model marker explicitly
         if model_info.get("source") == "default" or model_info.get("model_path") == "default":
-             logger.info("Model identified as default, initializing F5TTS without explicit paths.")
+
              tts_instance = F5TTS(device=device)
         else:
              # Initialize with specific model paths
@@ -54,14 +54,14 @@ def load_tts_model(model_id=None):
                   # Depending on F5TTS, None might be acceptable if vocab is bundled or not needed
 
              # Only pass parameters that F5TTS actually accepts
-             logger.info(f"Initializing F5-TTS with ckpt_file='{model_path}', vocab_file='{vocab_path}'")
+
              tts_instance = F5TTS(
                  device=device,
                  ckpt_file=model_path,
                  vocab_file=vocab_path # Pass None if vocab_path is None or empty
              )
 
-        logger.info(f"Successfully loaded F5-TTS model '{target_model_id}'")
+
         return tts_instance, target_model_id
 
     except Exception as e:

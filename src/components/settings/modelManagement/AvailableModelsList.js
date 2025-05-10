@@ -37,7 +37,7 @@ const AvailableModelsList = ({
     try {
       // Check if the model is already installed
       if (isModelInstalled(model.id, installedModelIds)) {
-        console.log(`Model ${model.id} is already installed, skipping download`);
+
         return;
       }
 
@@ -92,7 +92,7 @@ const AvailableModelsList = ({
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
-        console.log(`Download cancelled for model ${modelId}`);
+
         
         // Remove from downloads state
         setDownloads(prev => {

@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # Try each port
     for port in ports_to_try:
         try:
-            logger.info(f"Attempting to start server on port {port}")
+
             # Write the port to a file so the main server can find it
             port_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration_port.txt')
             with open(port_file, 'w') as f:

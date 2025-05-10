@@ -53,7 +53,7 @@ export const findSuitableAudioModel = async (apiKey) => {
       );
 
       if (knownModel) {
-        console.log(`Using known WebSocket-compatible model: ${knownWorkingModel}`);
+
         // Return the full model path as used in the live-api-web-console
         return knownWorkingModel;
       }
@@ -65,7 +65,7 @@ export const findSuitableAudioModel = async (apiKey) => {
       );
 
       if (audioModel) {
-        console.log(`Using cached audio-capable model: ${audioModel.name}`);
+
         return audioModel.name; // Use the full model name with path
       }
     }
@@ -74,12 +74,6 @@ export const findSuitableAudioModel = async (apiKey) => {
     const models = await listGeminiModels(apiKey);
     supportedModelsCache = models;
 
-    // Log all models for debugging
-    console.log('Available Gemini models:', models.map(m => ({
-      name: m.name,
-      displayName: m.displayName,
-      supportedGenerationMethods: m.supportedGenerationMethods
-    })));
 
     // First, check if our known working model is available
     const knownModel = models.find(model =>
@@ -87,7 +81,7 @@ export const findSuitableAudioModel = async (apiKey) => {
     );
 
     if (knownModel) {
-      console.log(`Using known WebSocket-compatible model: ${knownWorkingModel}`);
+
       // Return the full model path as used in the live-api-web-console
       return knownWorkingModel;
     }
@@ -111,7 +105,7 @@ export const findSuitableAudioModel = async (apiKey) => {
     if (liveModel) {
       // Use the full model name with path
       const modelName = liveModel.name;
-      console.log(`Using live model: ${modelName}`);
+
       return modelName;
     }
 
@@ -123,14 +117,14 @@ export const findSuitableAudioModel = async (apiKey) => {
     if (flashModel) {
       // Use the full model name with path
       const modelName = flashModel.name;
-      console.log(`Using flash model: ${modelName}`);
+
       return modelName;
     }
 
     // Otherwise, use the first suitable model
     // Use the full model name with path
     const modelName = potentialModels[0].name;
-    console.log(`Using model: ${modelName}`);
+
     return modelName;
   } catch (error) {
     console.error('Error finding suitable audio model:', error);

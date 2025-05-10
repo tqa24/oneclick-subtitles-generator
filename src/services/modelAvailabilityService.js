@@ -153,7 +153,7 @@ export const isModelAvailable = async (modelId) => {
  * Call this function whenever models are added or removed
  */
 export const invalidateModelsCache = () => {
-  console.log('Invalidating models cache and notifying listeners');
+
   modelsCache = null;
   lastFetchTime = 0;
 

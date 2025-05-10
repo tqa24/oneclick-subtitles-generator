@@ -138,7 +138,7 @@ const ParallelProcessingStatus = ({
                   className="segment-generate-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('Generate button clicked for segment', index);
+
                     onGenerateSegment(index);
                   }}
                   title={t('output.generateSegmentTooltip', 'Process this segment')}

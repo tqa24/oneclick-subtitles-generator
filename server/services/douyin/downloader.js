@@ -22,12 +22,12 @@ function getYtDlpPath() {
   const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
   if (fs.existsSync(venvYtDlpPath)) {
-    console.log(`Found yt-dlp in virtual environment: ${venvYtDlpPath}`);
+
     return venvYtDlpPath;
   }
 
   // If not in venv, use the one in PATH
-  console.log('Using yt-dlp from PATH');
+
   return 'yt-dlp';
 }
 
@@ -40,7 +40,7 @@ async function checkYtDlpVersion() {
 
   try {
     const { stdout } = await execPromise(`"${ytDlpPath}" --version`);
-    console.log(`yt-dlp version: ${stdout.trim()}`);
+
     return stdout.trim();
   } catch (error) {
     console.error('Error checking yt-dlp version:', error.message);
@@ -78,7 +78,7 @@ function normalizeDouyinUrl(url) {
       normalizedUrl = `${normalizedUrl}/`;
     }
 
-    console.log(`Normalized short Douyin URL: ${normalizedUrl}`);
+
   }
 
   return normalizedUrl;
@@ -96,12 +96,12 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL) {
   // Normalize the URL
   const normalizedUrl = normalizeDouyinUrl(videoURL);
 
-  console.log(`Downloading Douyin video: ${videoId} from URL: ${normalizedUrl}`);
+
 
   try {
     // Check if yt-dlp is installed
     const ytdlpVersion = await checkYtDlpVersion();
-    console.log(`Using yt-dlp version: ${ytdlpVersion}`);
+
   } catch (error) {
     console.error('yt-dlp check failed:', error.message);
     throw error;
@@ -131,7 +131,7 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`yt-dlp stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -144,7 +144,7 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL) {
       if (code === 0) {
         // Check if the file was created successfully
         if (fs.existsSync(outputPath)) {
-          console.log(`Successfully downloaded Douyin video: ${videoId}`);
+
           resolve({
             success: true,
             path: outputPath,
@@ -192,7 +192,7 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
   // Normalize the URL
   const normalizedUrl = normalizeDouyinUrl(videoURL);
 
-  console.log(`Attempting fallback download for Douyin video: ${videoId} from URL: ${normalizedUrl}`);
+
 
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
@@ -219,7 +219,7 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`Fallback yt-dlp stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -232,7 +232,7 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
       if (code === 0) {
         // Check if the file was created successfully
         if (fs.existsSync(outputPath)) {
-          console.log(`Successfully downloaded Douyin video with fallback method: ${videoId}`);
+
           resolve({
             success: true,
             path: outputPath,
@@ -274,7 +274,7 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
     throw new Error('This fallback method is only for short URLs');
   }
 
-  console.log(`Attempting short URL fallback download for Douyin video: ${videoId} from URL: ${normalizedUrl}`);
+
 
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
@@ -300,7 +300,7 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`Short URL fallback stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -313,7 +313,7 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
       if (code === 0) {
         // Check if the file was created successfully
         if (fs.existsSync(outputPath)) {
-          console.log(`Successfully downloaded Douyin video with short URL fallback method: ${videoId}`);
+
           resolve({
             success: true,
             path: outputPath,
@@ -350,7 +350,7 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL) {
   // Normalize the URL
   const normalizedUrl = normalizeDouyinUrl(videoURL);
 
-  console.log(`Attempting simple fallback download for Douyin video: ${videoId} from URL: ${normalizedUrl}`);
+
 
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
@@ -370,7 +370,7 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`Simple fallback stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -383,7 +383,7 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL) {
       if (code === 0) {
         // Check if the file was created successfully
         if (fs.existsSync(outputPath)) {
-          console.log(`Successfully downloaded Douyin video with simple fallback method: ${videoId}`);
+
           resolve({
             success: true,
             path: outputPath,
@@ -420,8 +420,8 @@ async function downloadDouyinVideoPuppeteer(videoId, videoURL) {
   // Normalize the URL
   const normalizedUrl = normalizeDouyinUrl(videoURL);
 
-  console.log(`Attempting Puppeteer-based download for Douyin video: ${videoId} from URL: ${normalizedUrl}`);
-  console.log(`Output path: ${outputPath}`);
+
+
 
   try {
     // Use the Puppeteer-based downloader
@@ -429,7 +429,7 @@ async function downloadDouyinVideoPuppeteer(videoId, videoURL) {
 
     // Check if the file was created successfully
     if (fs.existsSync(outputPath)) {
-      console.log(`Successfully downloaded Douyin video with Puppeteer: ${videoId}`);
+
       return {
         success: true,
         path: outputPath,
@@ -452,10 +452,10 @@ async function downloadDouyinVideoPuppeteer(videoId, videoURL) {
  * @returns {Promise<Object>} - Result object with success status and path
  */
 async function downloadDouyinVideoWithRetry(videoId, videoURL) {
-  console.log(`Starting download process for Douyin video: ${videoId} from URL: ${videoURL}`);
+
 
   // Use the Puppeteer approach
-  console.log('Using Puppeteer approach for Douyin video download...');
+
   try {
     return await downloadDouyinVideoPuppeteer(videoId, videoURL);
   } catch (error) {

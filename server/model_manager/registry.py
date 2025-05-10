@@ -22,7 +22,7 @@ def initialize_registry():
                 "models": [],
                 "downloads": {}
             }, f, indent=2)
-        logger.info(f"Created new models registry at {MODELS_REGISTRY_FILE}")
+
 
     # Ensure the registry is valid
     try:
@@ -39,7 +39,7 @@ def initialize_registry():
             registry["downloads"] = {}
             with open(MODELS_REGISTRY_FILE, 'w') as f:
                 json.dump(registry, f, indent=2)
-            logger.info("Added 'downloads' field to registry.")
+
 
         # Check if F5-TTS v1 Base model is in the registry
         f5tts_base_exists = False
@@ -57,7 +57,7 @@ def initialize_registry():
 
         # Add F5-TTS v1 Base model if it's not in the registry
         if not f5tts_base_exists:
-            logger.info("F5-TTS v1 Base model not found in registry. Adding it.")
+
             registry.setdefault("models", []).append({ # Use setdefault for safety
                 "id": "f5tts-v1-base",
                 "name": "F5-TTS v1 Base",
@@ -87,7 +87,7 @@ def initialize_registry():
             # Save the updated registry
             with open(MODELS_REGISTRY_FILE, 'w') as f:
                 json.dump(registry, f, indent=2)
-            logger.info("Added F5-TTS v1 Base model to registry as the default model")
+
 
     except (json.JSONDecodeError, ValueError, TypeError, KeyError) as e:
         logger.error(f"Error reading or validating registry: {e}. Resetting registry.")
@@ -98,7 +98,7 @@ def initialize_registry():
                 "models": [],
                 "downloads": {}
             }, f, indent=2)
-        logger.info(f"Reset models registry due to error")
+
         # Re-run initialization after reset
         initialize_registry()
 

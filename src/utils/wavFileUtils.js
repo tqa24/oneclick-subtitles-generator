@@ -61,7 +61,7 @@ export const createWavFromPcm = (pcmData, sampleRate = 24000) => {
       wavDataView[i] = pcmView[i];
     }
 
-    console.log(`Created WAV file: ${wavBuffer.byteLength} bytes, sample rate: ${sampleRate}Hz`);
+
     return new Blob([wavBuffer], { type: 'audio/wav' });
   } catch (error) {
     console.error('Error creating WAV file:', error);
@@ -78,7 +78,7 @@ export const createWavFromPcm = (pcmData, sampleRate = 24000) => {
 export const createWavFromPcmForDownload = (pcmData, sampleRate = 24000) => {
   // This is a more reliable method for creating WAV files for download
   try {
-    console.log(`Creating WAV file from PCM data: ${pcmData.byteLength} bytes at ${sampleRate}Hz`);
+
 
     // Ensure we're working with 16-bit PCM data
     const numChannels = 1;
@@ -109,7 +109,7 @@ export const createWavFromPcmForDownload = (pcmData, sampleRate = 24000) => {
     view.setUint32(40, pcmData.byteLength, true);
 
     // Log header information for debugging
-    console.log('WAV header created:', {
+
       format: 'PCM',
       channels: numChannels,
       sampleRate: sampleRate,
@@ -122,7 +122,7 @@ export const createWavFromPcmForDownload = (pcmData, sampleRate = 24000) => {
     wavFile.set(new Uint8Array(header), 0);
     wavFile.set(new Uint8Array(pcmData), header.byteLength);
 
-    console.log(`WAV file created: ${wavFile.length} bytes total`);
+
 
     return new Blob([wavFile], { type: 'audio/wav' });
   } catch (error) {

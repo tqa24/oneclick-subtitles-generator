@@ -36,7 +36,7 @@ export const base64ToArrayBuffer = (base64) => {
  */
 export const convertPcmBase64ToWavBase64 = (pcmBase64, sampleRate = 24000) => {
   try {
-    console.log(`Converting PCM base64 to WAV base64 with sample rate: ${sampleRate}Hz`);
+
 
     // Validate input
     if (!pcmBase64 || pcmBase64.length === 0) {
@@ -46,7 +46,7 @@ export const convertPcmBase64ToWavBase64 = (pcmBase64, sampleRate = 24000) => {
 
     // Decode the base64 PCM data to an ArrayBuffer
     const pcmBuffer = base64ToArrayBuffer(pcmBase64);
-    console.log(`Decoded PCM data size: ${pcmBuffer.byteLength} bytes`);
+
 
     if (pcmBuffer.byteLength === 0) {
       console.error('Decoded PCM buffer is empty');
@@ -107,9 +107,9 @@ export const convertPcmBase64ToWavBase64 = (pcmBase64, sampleRate = 24000) => {
 
     // Log the first few bytes of the WAV data to verify the RIFF header
     const headerCheck = atob(wavBase64.substring(0, 8));
-    console.log(`WAV header check: ${headerCheck}`);
 
-    console.log(`Converted WAV data size: ${wavBuffer.byteLength} bytes, base64 length: ${wavBase64.length}`);
+
+
     return wavBase64;
   } catch (error) {
     console.error('Error converting PCM base64 to WAV base64:', error);
@@ -163,6 +163,6 @@ export const createWavFromPcm = (pcmData, sampleRate = 24000) => {
     wavDataView[i] = pcmView[i];
   }
 
-  console.log(`Created WAV file: ${wavBuffer.byteLength} bytes, sample rate: ${sampleRate}Hz`);
+
   return new Blob([wavBuffer], { type: 'audio/wav' });
 };

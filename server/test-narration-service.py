@@ -85,7 +85,7 @@ def generate_wav_file(filepath, duration_ms=1000):
         # Write audio data
         samples.tofile(f)
 
-    logger.info(f'Generated WAV file: {filepath}')
+
 
 # Default route
 @app.route('/')
@@ -107,7 +107,7 @@ def status():
 # Upload reference audio
 @app.route('/api/narration/upload-reference', methods=['POST'])
 def upload_reference():
-    logger.info('Received upload-reference request')
+
 
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -137,7 +137,7 @@ def upload_reference():
 # Record reference audio
 @app.route('/api/narration/record-reference', methods=['POST'])
 def record_reference():
-    logger.info('Received record-reference request')
+
 
     if 'audio_data' not in request.files:
         return jsonify({'error': 'No audio data'}), 400
@@ -165,9 +165,9 @@ def record_reference():
 # Extract audio segment
 @app.route('/api/narration/extract-segment', methods=['POST'])
 def extract_segment():
-    logger.info('Received extract-segment request')
+
     data = request.json
-    logger.info(f'Request data: {data}')
+
 
     # Generate a unique filename
     unique_id = str(uuid.uuid4())
@@ -187,17 +187,17 @@ def extract_segment():
 # Generate narration
 @app.route('/api/narration/generate', methods=['POST'])
 def generate_narration():
-    logger.info('Received generate request')
+
     data = request.json
-    logger.info(f'Request data: {data}')
+
 
     subtitles = data.get('subtitles', [])
     reference_audio = data.get('reference_audio')
     reference_text = data.get('reference_text', '')
 
-    logger.info(f'Generating narration for {len(subtitles)} subtitles')
-    logger.info(f'Reference audio: {reference_audio}')
-    logger.info(f'Reference text: {reference_text}')
+
+
+
 
     results = []
 
@@ -232,7 +232,7 @@ def generate_narration():
 # Serve audio files
 @app.route('/api/narration/audio/<path:filename>', methods=['GET'])
 def get_audio_file(filename):
-    logger.info(f'Received request for audio file: {filename}')
+
 
     # Check if the file is in the reference directory
     reference_path = os.path.join(REFERENCE_AUDIO_DIR, filename)
@@ -252,5 +252,5 @@ def get_audio_file(filename):
 
 if __name__ == '__main__':
     port = int(os.environ.get('NARRATION_PORT', 3006))
-    logger.info(f"Starting test narration service on port {port}")
+
     app.run(host='0.0.0.0', port=port, debug=True)

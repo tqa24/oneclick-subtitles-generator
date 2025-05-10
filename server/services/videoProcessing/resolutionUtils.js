@@ -32,7 +32,7 @@ function getVideoFrameCount(videoPath) {
       }
 
       const frameCount = parseInt(frameCountOutput.trim());
-      console.log(`Video frame count: ${frameCount}`);
+
       resolve(frameCount);
     });
 
@@ -73,7 +73,7 @@ function getVideoResolution(videoPath) {
       }
 
       const [width, height] = resolutionOutput.trim().split(',').map(Number);
-      console.log(`Video resolution: ${width}x${height}`);
+
       resolve({ width, height });
     });
 

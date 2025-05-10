@@ -25,7 +25,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
 
     // If splitDuration is specified and not 0, split text into chunks
     if (splitDuration > 0) {
-        console.log(`Splitting document into chunks of ${splitDuration} minutes`);
+
         // Dispatch event to update UI with status
         window.dispatchEvent(new CustomEvent('consolidation-status', {
             detail: { message: i18n.t('consolidation.splittingText', 'Splitting text into chunks of {{duration}} minutes', {
@@ -63,7 +63,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         if (source === 'translated' && translatedLanguage) {
             // If we're using translated subtitles, use the target language of the translation
             language = translatedLanguage;
-            console.log(`Using translated subtitles language: ${language}`);
+
         } else {
             // For original subtitles, try to detect the language from the first few lines
             // This is a simple approach - in a production environment, you might want to use
@@ -71,11 +71,11 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
             try {
                 // In a future enhancement, we could get a sample of the text for language detection
                 // const sampleText = subtitlesText.substring(0, 500);
-                console.log(`Attempting to detect language from original subtitles`);
+
                 // For now, we'll rely on the language instruction in the prompt
                 // A future enhancement could be to add actual language detection here
             } catch (error) {
-                console.log(`Error detecting language: ${error.message}`);
+
             }
         }
 
@@ -108,7 +108,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         if (language) {
             const languageCode = getLanguageCode(language);
             if (languageCode) {
-                console.log(`Setting language code for consolidation: ${languageCode}`);
+
                 requestData.generationConfig.stopSequences = [];
                 // Note: Gemini doesn't have a direct language parameter, but we can use this approach
                 // to help guide the model to maintain the correct language
@@ -117,7 +117,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
 
         // Always use structured output
         requestData = addResponseSchema(requestData, createConsolidationSchema());
-        console.log('Using structured output for consolidation with schema:', JSON.stringify(requestData));
+
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -137,9 +137,9 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
 
         // Check if this is a structured JSON response
         if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-            console.log('Received structured JSON document response');
+
             const structuredJson = data.candidates[0].content.parts[0].structuredJson;
-            console.log('Structured JSON content:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+
 
             // Process the structured JSON response
             const processedResponse = processStructuredJsonResponse(structuredJson, language);
@@ -163,7 +163,7 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
     } catch (error) {
         // Check if this is an AbortError
         if (error.name === 'AbortError') {
-            console.log('Document completion request was aborted');
+
             throw new Error('Document completion request was aborted');
         } else {
             console.error('Document completion error:', error);
@@ -213,7 +213,7 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
         chunks.push(currentChunk.join(' '));
     }
 
-    console.log(`Split text into ${chunks.length} chunks`);
+
 
     // Dispatch event to update UI with status
     const splitMessage = i18n.t('consolidation.splitComplete', 'Split text into {{chunks}} chunks', {
@@ -258,12 +258,12 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
     }));
 
     // Combine all processed chunks
-    console.log(`Combining ${processedChunks.length} processed chunks`);
+
 
     // Check if any chunks are empty or very short
     const validChunks = processedChunks.filter(chunk => chunk && chunk.trim().length > 10);
     if (validChunks.length < processedChunks.length) {
-        console.log(`Filtered out ${processedChunks.length - validChunks.length} empty or very short chunks`);
+
     }
 
     // If we have no valid chunks, return a message
@@ -273,32 +273,32 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
 
     // Process each chunk to extract content
     const processedTextChunks = validChunks.map(chunk => {
-        console.log('Processing chunk:', chunk.substring(0, 100) + '...');
+
 
         // Check if the chunk looks like JSON
         if (chunk.trim().startsWith('{') && chunk.trim().endsWith('}')) {
             try {
                 // Try to parse as JSON
                 const jsonData = JSON.parse(chunk);
-                console.log('Successfully parsed chunk as JSON with keys:', Object.keys(jsonData).join(', '));
+
 
                 // Extract content field if it exists
                 if (jsonData.content) {
-                    console.log('Extracted content field from JSON');
+
                     return jsonData.content;
                 } else if (jsonData.text) {
-                    console.log('Extracted text field from JSON');
+
                     return jsonData.text;
                 } else if (jsonData.document) {
-                    console.log('Extracted document field from JSON');
+
                     return jsonData.document;
                 } else {
                     // If no content field, stringify the entire object
-                    console.log('No content field found in JSON, using entire object');
+
                     return JSON.stringify(jsonData);
                 }
             } catch (error) {
-                console.log('Failed to parse as JSON:', error.message);
+
                 // If parsing fails, return the original chunk
                 return chunk;
             }
@@ -309,24 +309,24 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
         if (jsonBlockMatch && jsonBlockMatch[1]) {
             try {
                 const jsonData = JSON.parse(jsonBlockMatch[1].trim());
-                console.log('Successfully parsed JSON code block');
+
 
                 // Extract content field if it exists
                 if (jsonData.content) {
-                    console.log('Extracted content field from JSON code block');
+
                     return jsonData.content;
                 } else if (jsonData.text) {
-                    console.log('Extracted text field from JSON code block');
+
                     return jsonData.text;
                 } else if (jsonData.document) {
-                    console.log('Extracted document field from JSON code block');
+
                     return jsonData.document;
                 } else {
                     // If no content field, use the entire JSON block content
                     return jsonBlockMatch[1].trim();
                 }
             } catch (error) {
-                console.log('Failed to parse JSON code block:', error.message);
+
                 // If parsing fails, remove the code block markers
                 return jsonBlockMatch[1].trim();
             }
@@ -339,11 +339,11 @@ const completeDocumentByChunks = async (subtitlesText, model, customPrompt, spli
     // Filter out any empty chunks after processing
     const nonEmptyChunks = processedTextChunks.filter(chunk => chunk && chunk.trim().length > 0);
     if (nonEmptyChunks.length === 0) {
-        console.log('All chunks were empty after processing, returning original chunks');
+
         return validChunks.join('\n\n');
     }
 
     // Join the processed chunks into a single text
-    console.log(`Joining ${nonEmptyChunks.length} processed chunks`);
+
     return nonEmptyChunks.join('\n\n');
 };

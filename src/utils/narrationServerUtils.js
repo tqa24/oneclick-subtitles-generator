@@ -16,21 +16,21 @@ import { base64ToArrayBuffer } from './audioConversionUtils';
 export const saveAudioToServer = async (result, savedToServer, setSavedToServer, generationResults) => {
   // If already saved, don't save again
   if (savedToServer[result.subtitle_id]) {
-    console.log(`Audio for subtitle ${result.subtitle_id} already saved to server`);
+
     return savedToServer[result.subtitle_id];
   }
 
   if (result.audioData) {
     try {
-      console.log(`Saving audio for subtitle ${result.subtitle_id} to server...`);
-      console.log(`Audio data length: ${result.audioData.length} characters`);
-      console.log(`Sample rate: ${result.sampleRate || 24000}Hz`);
+
+
+
 
       // Validate the audio data
       try {
         // Test decode to make sure it's valid base64
         const testBuffer = base64ToArrayBuffer(result.audioData);
-        console.log(`Test decode successful, buffer size: ${testBuffer.byteLength} bytes`);
+
       } catch (decodeError) {
         console.error(`Error validating audio data: ${decodeError.message}`);
         throw new Error(`Invalid audio data: ${decodeError.message}`);
@@ -58,7 +58,7 @@ export const saveAudioToServer = async (result, savedToServer, setSavedToServer,
       const data = await response.json();
 
       if (data.success) {
-        console.log(`Successfully saved audio to server: ${data.filename}`);
+
         // Update the result with the filename
         result.filename = data.filename;
 
@@ -150,7 +150,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
   // Add the loading indicator to the document
   document.body.appendChild(loadingIndicator);
 
-  console.log('Loading indicator created and added to document');
+
 
   try {
     // Get all subtitles from the video for timing information
@@ -158,18 +158,18 @@ export const downloadAlignedAudio = async (generationResults, t) => {
 
     // Try to get subtitles from window.subtitles (main source)
     if (window.subtitles && Array.isArray(window.subtitles)) {
-      console.log('Using window.subtitles for timing information');
+
       allSubtitles.push(...window.subtitles);
     }
 
     // Also try original and translated subtitles
     if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-      console.log('Using window.originalSubtitles for timing information');
+
       allSubtitles.push(...window.originalSubtitles);
     }
 
     if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
-      console.log('Using window.translatedSubtitles for timing information');
+
       allSubtitles.push(...window.translatedSubtitles);
     }
 
@@ -181,7 +181,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
       }
     });
 
-    console.log('Found subtitle timing information for IDs:', Object.keys(subtitleMap));
+
 
     // Prepare the data for the aligned narration with correct timing
     const narrationData = generationResults
@@ -192,7 +192,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
 
         // If we found a matching subtitle, use its timing
         if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-          console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+
           return {
             filename: result.filename || `gemini_narration_${result.subtitle_id}.wav`,
             subtitle_id: result.subtitle_id,
@@ -215,13 +215,13 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     // Sort by start time to ensure correct order
     narrationData.sort((a, b) => a.start - b.start);
 
-    console.log('Generating aligned narration for:', narrationData);
+
 
     // Create a download link
     const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
 
     // Use fetch API to download the file
-    console.log('Fetching:', downloadUrl);
+
 
     // Update loading indicator text
     loadingIndicator.querySelector('.loading-text').textContent = t('narration.sendingRequest', 'Sending request to server...');
@@ -239,8 +239,8 @@ export const downloadAlignedAudio = async (generationResults, t) => {
         body: JSON.stringify({ narrations: narrationData })
       });
 
-      console.log('Response received:', response.status, response.statusText);
-      console.log('Response headers:', [...response.headers.entries()]);
+
+
     } catch (fetchError) {
       console.error('Network error during fetch:', fetchError);
       throw new Error(`Network error: ${fetchError.message}`);
@@ -265,7 +265,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     let blob;
     try {
       blob = await response.blob();
-      console.log(`Received blob: type=${blob.type}, size=${blob.size} bytes`);
+
 
       // Validate the blob
       if (!blob || blob.size === 0) {
@@ -283,7 +283,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     let url;
     try {
       url = URL.createObjectURL(blob);
-      console.log('Created blob URL:', url);
+
     } catch (urlError) {
       console.error('Error creating blob URL:', urlError);
       throw new Error(`Error creating download: ${urlError.message}`);
@@ -302,7 +302,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     // Trigger the download
     try {
       a.click();
-      console.log('Download triggered successfully');
+
     } catch (clickError) {
       console.error('Error triggering download:', clickError);
       throw new Error(`Error starting download: ${clickError.message}`);
@@ -317,7 +317,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
         if (url) {
           URL.revokeObjectURL(url);
         }
-        console.log('Download cleanup completed');
+
       }, 1000); // Increased timeout to ensure download starts
     } catch (cleanupError) {
       console.error('Error during cleanup:', cleanupError);
@@ -347,13 +347,13 @@ export const downloadAlignedAudio = async (generationResults, t) => {
       // Remove the loading indicator
       if (loadingIndicator && document.body.contains(loadingIndicator)) {
         document.body.removeChild(loadingIndicator);
-        console.log('Loading indicator removed');
+
       }
 
       // Remove the style element (animation keyframes)
       if (style && document.head.contains(style)) {
         document.head.removeChild(style);
-        console.log('Animation style element removed');
+
       }
     } catch (cleanupError) {
       console.error('Error during final cleanup:', cleanupError);

@@ -5,7 +5,7 @@ from .constants import logger
 
 def parse_hf_url(url):
     """Parse Hugging Face URL."""
-    logger.info(f"Parsing Hugging Face URL: {url}")
+
     if not url: return None, None
 
     # Try hf:// format
@@ -15,7 +15,7 @@ def parse_hf_url(url):
             repo_id, file_path = parts
             # Basic validation: repo_id should have one '/'
             if repo_id.count('/') == 1 and file_path:
-                logger.info(f"Parsed hf:// URL -> repo_id: {repo_id}, file_path: {file_path}")
+
                 return repo_id, file_path
             else:
                  logger.warning(f"Invalid hf:// format structure: {url}")
@@ -31,7 +31,7 @@ def parse_hf_url(url):
                 if '/' in branch_file:
                     _, file_path = branch_file.split('/', 1) # Skip branch
                     if repo_id.count('/') == 1 and file_path:
-                        logger.info(f"Parsed resolve URL -> repo_id: {repo_id}, file_path: {file_path}")
+
                         return repo_id, file_path
             # Format: repo_id/blob/branch/file_path
             elif '/blob/' in path_part:
@@ -39,7 +39,7 @@ def parse_hf_url(url):
                 if '/' in branch_file:
                     _, file_path = branch_file.split('/', 1) # Skip branch
                     if repo_id.count('/') == 1 and file_path:
-                        logger.info(f"Parsed blob URL -> repo_id: {repo_id}, file_path: {file_path}")
+
                         return repo_id, file_path
             # Add other potential formats if needed (e.g., direct file links without resolve/blob?)
             logger.warning(f"Could not extract repo_id/file_path from huggingface.co URL structure: {url}")

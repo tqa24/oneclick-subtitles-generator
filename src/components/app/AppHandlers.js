@@ -231,7 +231,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for generation');
+
         }
 
         // Check if we have a valid input file
@@ -270,7 +270,7 @@ export const useAppHandlers = (appState) => {
       // Add user-provided subtitles if available and enabled
       if (useUserProvidedSubtitles && userProvidedSubtitles) {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-        console.log('Using user-provided subtitles for generation');
+
       }
 
       // Check if we have a valid input file
@@ -359,7 +359,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for retry generation');
+
         }
 
         // Check if we have a valid input file
@@ -405,7 +405,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for retry generation');
+
         }
 
         // Check if we have a valid input file

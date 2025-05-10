@@ -58,7 +58,7 @@ const useSubtitleSettings = (initialSettings, onSettingsChange) => {
     localStorage.setItem('subtitle_language', value);
 
     // Log the change for debugging
-    console.log(`Subtitle language changed to: ${value}, showTranslatedSubtitles set to: ${showTranslated}`);
+
   };
 
   const resetToDefaults = () => {

@@ -239,7 +239,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
     try {
       // Check if the model is already installed
       if (isModelInstalled(model.id)) {
-        console.log(`Model ${model.id} is already installed, skipping download`);
+
         return;
       }
 
@@ -280,7 +280,7 @@ const ModelList = ({ onModelAdded, downloadingModels = {}, installedModels = [],
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
-        console.log(`Download cancelled for model ${modelId}`);
+
         // Remove from local downloading state
         setDownloading(prev => {
           const newState = { ...prev };

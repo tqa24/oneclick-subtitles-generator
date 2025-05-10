@@ -58,7 +58,7 @@ export const uploadAndSplitVideo = async (videoFile, segmentDuration = 600, onPr
     onProgress(50, 'output.videoUploaded', 'Video uploaded, processing segments...');
 
     const data = await response.json();
-    console.log('Video uploaded and split into segments:', data);
+
 
     // Use translation key for segments ready message
     onProgress(100, 'output.videoSegmentsReady', 'Video segments ready');

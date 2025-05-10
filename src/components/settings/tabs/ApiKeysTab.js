@@ -299,7 +299,7 @@ const ApiKeysTab = ({
                 onClick={() => {
                   setUseOAuth(false);
                   localStorage.setItem('use_youtube_oauth', 'false');
-                  console.log('Set OAuth to false');
+
                   // Update apiKeysSet to reflect the API key method
                   setApiKeysSet(prevState => ({
                     ...prevState,
@@ -314,7 +314,7 @@ const ApiKeysTab = ({
                 onClick={() => {
                   setUseOAuth(true);
                   localStorage.setItem('use_youtube_oauth', 'true');
-                  console.log('Set OAuth to true');
+
                   // Update apiKeysSet to reflect the OAuth method
                   setApiKeysSet(prevState => ({
                     ...prevState,

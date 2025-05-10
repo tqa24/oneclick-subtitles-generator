@@ -198,11 +198,11 @@ const NarrationResults = ({
   const downloadAudio = (result) => {
     if (result.filename) {
       try {
-        console.log('Downloading audio file:', result.filename);
+
 
         // Get the audio URL
         const audioUrl = getAudioUrl(result.filename);
-        console.log('Audio URL for download:', audioUrl);
+
 
         // Use fetch to get the file as a blob
         fetch(audioUrl)
@@ -232,7 +232,7 @@ const NarrationResults = ({
               URL.revokeObjectURL(blobUrl);
             }, 100);
 
-            console.log(`Downloaded WAV file for subtitle ${result.subtitle_id}`);
+
           })
           .catch(error => {
             console.error('Error downloading audio file:', error);
@@ -301,7 +301,7 @@ const NarrationResults = ({
 
         // Save to localStorage
         localStorage.setItem(NARRATION_CACHE_KEY, JSON.stringify(cacheEntry));
-        console.log('Saved F5-TTS narrations to cache:', cacheEntry);
+
       } catch (error) {
         console.error('Error saving F5-TTS narrations to cache:', error);
       }
@@ -330,7 +330,7 @@ const NarrationResults = ({
       // Check if we have narrations
       if (!cacheEntry.narrations || !cacheEntry.narrations.length) return;
 
-      console.log('Found cached F5-TTS narrations for current media:', cacheEntry);
+
 
       // Set loading state first
       setLoadedFromCache(true);
@@ -355,7 +355,7 @@ const NarrationResults = ({
   useEffect(() => {
     const handleNarrationsUpdated = (event) => {
       if (event.detail && event.detail.narrations && event.detail.fromCache) {
-        console.log('NarrationResults received narrations-updated event with fromCache flag:', event.detail);
+
         // Reset loading state since we now have the narrations
         setLoadedFromCache(false);
       }

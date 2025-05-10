@@ -21,11 +21,11 @@ import {
  * @returns {Array} - Array of subtitle objects
  */
 export const parseGeminiResponse = (response) => {
-    console.log('Parsing Gemini response:', response ? 'Response received' : 'No response');
+
 
     // Check if this is a structured JSON response
     if (response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-        console.log('Detected structured JSON response');
+
         try {
             return parseStructuredJsonResponse(response);
         } catch (error) {
@@ -40,25 +40,25 @@ export const parseGeminiResponse = (response) => {
     }
 
     const text = response.candidates[0].content.parts[0].text;
-    console.log('Raw text from Gemini:', text ? text.substring(0, 200) + '...' : 'Empty text');
+
 
     // Check if the text is a JSON string
     if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
         try {
-            console.log('Detected potential JSON array in text response');
+
             const jsonData = JSON.parse(text);
 
             if (Array.isArray(jsonData)) {
-                console.log('Successfully parsed JSON array with', jsonData.length, 'items');
+
 
                 // Check if it's a subtitle array
                 if (jsonData.length > 0) {
                     const firstItem = jsonData[0];
-                    console.log('First item in JSON array:', JSON.stringify(firstItem));
+
 
                     // Check for standard subtitle format with text
                     if (firstItem.startTime && firstItem.endTime && firstItem.text) {
-                        console.log('Detected subtitle format JSON array, parsing as structured data');
+
                         // Create a mock structured response
                         const mockResponse = {
                             candidates: [{
@@ -73,7 +73,7 @@ export const parseGeminiResponse = (response) => {
                     }
                     // Check for timing-only format with index (for user-provided subtitles)
                     else if (firstItem.startTime && firstItem.endTime && firstItem.index !== undefined) {
-                        console.log('Detected timing-only format JSON array with index, parsing as structured data');
+
                         // Create a mock structured response
                         const mockResponse = {
                             candidates: [{
@@ -90,7 +90,7 @@ export const parseGeminiResponse = (response) => {
             }
         } catch (e) {
             console.error('Failed to parse text as JSON:', e);
-            console.log('JSON parse error. Text starts with:', text.substring(0, 100));
+
         }
     }
 
@@ -150,7 +150,7 @@ export const parseGeminiResponse = (response) => {
                 if (Array.isArray(jsonData)) {
                     // Handle completely empty array
                     if (jsonData.length === 0) {
-                        console.log('Empty JSON array detected, returning empty subtitles');
+
                         return []; // Return empty array instead of throwing an error
                     }
 

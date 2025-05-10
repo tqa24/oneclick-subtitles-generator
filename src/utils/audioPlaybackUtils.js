@@ -12,7 +12,7 @@ import { pcmToFloat32 } from './audioConversionUtils';
  */
 export const playPcmWithAudioAPI = (pcmData, sampleRate = 24000) => {
   try {
-    console.log(`Playing PCM audio with Web Audio API: ${pcmData.byteLength} bytes at ${sampleRate}Hz`);
+
 
     // Convert PCM to float32 for Web Audio API
     const floatData = pcmToFloat32(pcmData);
@@ -22,7 +22,7 @@ export const playPcmWithAudioAPI = (pcmData, sampleRate = 24000) => {
       sampleRate: sampleRate
     });
 
-    console.log(`Created audio context with sample rate: ${audioContext.sampleRate}Hz`);
+
 
     // Create buffer with the float data
     const audioBuffer = audioContext.createBuffer(1, floatData.length, sampleRate);
@@ -31,7 +31,7 @@ export const playPcmWithAudioAPI = (pcmData, sampleRate = 24000) => {
     const channelData = audioBuffer.getChannelData(0);
     channelData.set(floatData);
 
-    console.log(`Created audio buffer: ${audioBuffer.duration} seconds, ${audioBuffer.length} samples`);
+
 
     // Create a buffer source and connect it to the destination
     const source = audioContext.createBufferSource();
@@ -54,12 +54,12 @@ export const playPcmWithAudioAPI = (pcmData, sampleRate = 24000) => {
       audioContext,
       gainNode,
       play: () => {
-        console.log('Starting audio playback');
+
         source.start(0);
         return Promise.resolve();
       },
       stop: () => {
-        console.log('Stopping audio playback');
+
 
         // Only try to stop the source if the context is not closed
         if (!isContextClosed) {

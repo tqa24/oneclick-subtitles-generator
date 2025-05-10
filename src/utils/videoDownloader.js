@@ -41,7 +41,7 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
   // Start the download process asynchronously
   (async () => {
     try {
-      console.log('Starting YouTube video download for:', videoId);
+
 
       // Check if the video already exists on the server (unless forceRefresh is true)
       if (!downloadQueue[videoId].forceRefresh) {
@@ -50,21 +50,21 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
 
         if (checkData.exists) {
           // Video already exists, no need to download
-          console.log('Video already exists on server:', videoId);
+
           downloadQueue[videoId].status = 'completed';
           downloadQueue[videoId].progress = 100;
           downloadQueue[videoId].url = `${SERVER_URL}${checkData.url}`;
           return;
         }
       } else {
-        console.log('Skipping cache check due to forceRefresh flag for video:', videoId);
+
       }
 
       // If not, start the download
       downloadQueue[videoId].status = 'downloading';
       downloadQueue[videoId].progress = 10;
 
-      console.log(`[QUALITY DEBUG] Sending download request for video with audio`);
+
 
       // Request server to download the video with audio prioritized
       const downloadResponse = await fetch(`${SERVER_URL}/api/download-video`, {
@@ -78,7 +78,7 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
         }),
       });
 
-      console.log(`[QUALITY DEBUG] Server response status: ${downloadResponse.status}`);
+
 
       if (!downloadResponse.ok) {
         const errorData = await downloadResponse.json();
@@ -91,7 +91,7 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
       downloadQueue[videoId].status = 'completed';
       downloadQueue[videoId].progress = 100;
       downloadQueue[videoId].url = `${SERVER_URL}${downloadData.url}`;
-      console.log('Video downloaded successfully:', videoId);
+
 
     } catch (error) {
       console.error('Error in background download process:', error);
@@ -134,7 +134,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
   const videoId = extractYoutubeVideoId(youtubeUrl);
 
   if (forceRefresh && downloadQueue[videoId]) {
-    console.log('Forcing fresh download for video:', videoId);
+
     delete downloadQueue[videoId];
   }
 
@@ -144,7 +144,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
   // Store the original URL for potential redownload
   const originalUrl = youtubeUrl;
 
-  console.log(`[QUALITY DEBUG] Starting download for video ${videoId} with audio prioritized`);
+
 
   // Poll for completion
   return new Promise((resolve, reject) => {
@@ -171,7 +171,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
           const checkResponse = await fetch(status.url, { method: 'HEAD' });
           if (!checkResponse.ok) {
             // Video file doesn't exist anymore, restart the download silently
-            console.log('Video file not found on server, restarting download...');
+
             clearInterval(checkInterval);
 
             // Remove the video from the download queue
@@ -234,7 +234,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
 
       // Log every 30 seconds to show we're still waiting
       if (attempts % 60 === 0) {
-        console.log(`[QUALITY DEBUG] Still waiting for download to complete. Attempts: ${attempts}`);
+
       }
     }, 500);
     // Store the interval for potential cancellation
@@ -250,7 +250,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
 export const cancelYoutubeVideoDownload = (videoId) => {
   // Check if the video is in the download queue
   if (!downloadQueue[videoId]) {
-    console.log('No download found for video ID:', videoId);
+
     return false;
   }
 
@@ -264,7 +264,7 @@ export const cancelYoutubeVideoDownload = (videoId) => {
   fetch(`${SERVER_URL}/api/cancel-download/${videoId}`, { method: 'POST' })
     .then(response => response.json())
     .then(data => {
-      console.log('Server response for cancel request:', data);
+
     })
     .catch(error => {
       console.error('Error cancelling download on server:', error);
@@ -274,7 +274,7 @@ export const cancelYoutubeVideoDownload = (videoId) => {
   downloadQueue[videoId].status = 'cancelled';
   downloadQueue[videoId].error = 'Download cancelled by user';
 
-  console.log('Download cancelled for video ID:', videoId);
+
   return true;
 };
 

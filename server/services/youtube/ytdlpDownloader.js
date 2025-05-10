@@ -17,7 +17,7 @@ const { safeMoveFile } = require('../../utils/fileOperations');
  */
 async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
   return new Promise((resolve, reject) => {
-    console.log(`[QUALITY DEBUG] Attempting to download with yt-dlp...`);
+
 
     // Convert quality string to resolution for yt-dlp
     let resolution;
@@ -31,7 +31,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
       default: resolution = '360'; // Default to 360p
     }
 
-    console.log(`[QUALITY DEBUG] Using yt-dlp with resolution: ${resolution}p`);
+
 
     // Create a temporary directory for the download
     const tempDir = path.dirname(outputPath);
@@ -49,7 +49,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
     const ytdlpExists = fs.existsSync(ytdlpInVenv);
     const ytdlpCommand = ytdlpExists ? ytdlpInVenv : 'yt-dlp';
 
-    console.log(`[QUALITY DEBUG] Using yt-dlp command: ${ytdlpCommand}`);
+
 
     // Build the yt-dlp command arguments
     const args = [
@@ -60,7 +60,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
       '--merge-output-format', 'mp4'
     ];
 
-    console.log(`[QUALITY DEBUG] yt-dlp command: ${ytdlpCommand} ${args.join(' ')}`);
+
 
     // Spawn the yt-dlp process
     const ytdlpProcess = spawn(ytdlpCommand, args);
@@ -71,7 +71,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdoutData += output;
-      console.log(`[yt-dlp] ${output.trim()}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -90,7 +90,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
             // This uses copy-then-delete instead of rename
             safeMoveFile(tempPath, outputPath)
               .then(() => {
-                console.log(`yt-dlp download successful: ${outputPath}`);
+
                 resolve(true);
               })
               .catch((err) => {

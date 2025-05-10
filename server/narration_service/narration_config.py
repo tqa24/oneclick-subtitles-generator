@@ -37,8 +37,8 @@ OUTPUT_AUDIO_DIR = os.path.join(NARRATION_DIR, 'output')
 os.makedirs(NARRATION_DIR, exist_ok=True)
 os.makedirs(REFERENCE_AUDIO_DIR, exist_ok=True)
 os.makedirs(OUTPUT_AUDIO_DIR, exist_ok=True)
-logger.info(f"Reference audio directory: {REFERENCE_AUDIO_DIR}")
-logger.info(f"Output audio directory: {OUTPUT_AUDIO_DIR}")
+
+
 
 # Initialize variables
 HAS_F5TTS = False
@@ -49,19 +49,19 @@ device = None
 try:
     # Check if CUDA is available
     cuda_available = torch.cuda.is_available()
-    logger.info(f"CUDA available: {cuda_available}")
+
 
     if cuda_available:
         try:
             # Explicitly set to device 0 if multiple GPUs exist
             if torch.cuda.device_count() > 1:
                 torch.cuda.set_device(0)
-                logger.info(f"Multiple CUDA devices found ({torch.cuda.device_count()}), using device 0.")
+
             device = "cuda:0"
-            logger.info(f"Attempting to use CUDA device: {torch.cuda.get_device_name(0)}")
+
             # Small test allocation to confirm CUDA is working
             _ = torch.tensor([1.0, 2.0]).to(device)
-            logger.info("CUDA device confirmed working.")
+
         except Exception as e:
             logger.error(f"CUDA available but failed to initialize/use: {e}. Falling back to CPU.", exc_info=True)
             device = "cpu"
@@ -70,18 +70,18 @@ try:
         logger.warning("CUDA not available, using CPU.")
         device = "cpu"
 
-    logger.info(f"F5-TTS will use device: {device}")
+
 
     # Import from model_manager package instead of modelManager.py
     from model_manager import initialize_registry
     # Initialize registry to ensure default model is registered
     initialize_registry()
-    logger.info("Model registry initialized")
+
 
     # Set flag to indicate F5-TTS is available
     HAS_F5TTS = True
     INIT_ERROR = None
-    logger.info("F5-TTS environment checks completed successfully.")
+
 
 except ImportError as e:
     logger.warning(f"F5-TTS library or dependencies not found. Narration features will be disabled. Error: {e}")

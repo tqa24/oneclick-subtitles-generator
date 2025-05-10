@@ -27,7 +27,7 @@ const GeminiVoiceSelection = ({
 
   const handleVoiceChange = (e) => {
     const newVoice = e.target.value;
-    console.log('Voice changed:', newVoice);
+
     setSelectedVoice(newVoice);
 
     // Store in localStorage for persistence

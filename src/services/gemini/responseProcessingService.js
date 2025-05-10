@@ -10,11 +10,11 @@
  * @returns {string} - Extracted text content
  */
 export const processStructuredJsonResponse = (structuredJson, language = null) => {
-    console.log('Processing structured JSON response');
+
     
     // Log the language information if available
     if (language) {
-        console.log(`Expected language: ${language}`);
+
     }
 
     // Convert structured JSON to plain text
@@ -23,11 +23,11 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
     } else if (typeof structuredJson === 'object') {
         // Special handling for title+content format
         if (structuredJson.title && structuredJson.content) {
-            console.log('Found title and content properties in structured JSON');
+
 
             // Check if the content appears to be in the expected language
             if (language) {
-                console.log(`Verifying content is in expected language: ${language}`);
+
                 // In a future enhancement, we could add language detection here
             }
 
@@ -36,16 +36,16 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
         }
         // If it's an object with a text or content property, use that
         else if (structuredJson.content) {
-            console.log('Found content property in structured JSON');
+
             return structuredJson.content;
         } else if (structuredJson.text) {
-            console.log('Found text property in structured JSON');
+
             return structuredJson.text;
         } else if (structuredJson.document) {
-            console.log('Found document property in structured JSON');
+
             return structuredJson.document;
         } else if (structuredJson.summary) {
-            console.log('Found summary property in structured JSON');
+
             let summaryText = structuredJson.summary;
             
             // Optionally add key points if available
@@ -59,7 +59,7 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
             return summaryText;
         } else {
             // Otherwise, stringify it and extract plain text
-            console.log('No direct text property found, extracting from object properties');
+
             // Extract any text fields from the JSON
             const textFields = [];
             const extractText = (obj, key = null) => {
@@ -78,11 +78,11 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
             extractText(structuredJson);
 
             if (textFields.length > 0) {
-                console.log(`Found ${textFields.length} text fields in structured JSON`);
+
                 return textFields.join('\n\n');
             } else {
                 // If no text fields found, return the stringified JSON as a last resort
-                console.log('No text fields found, returning stringified JSON');
+
                 return JSON.stringify(structuredJson, null, 2);
             }
         }
@@ -108,12 +108,12 @@ export const processTextResponse = (completedText) => {
             // Try to parse as JSON
             const jsonArray = JSON.parse(completedText);
             if (Array.isArray(jsonArray)) {
-                console.log('Detected JSON array format with', jsonArray.length, 'items');
+
                 // Join the array items into a single text
                 return jsonArray.join('\n\n');
             }
         } catch (e) {
-            console.log('Failed to parse as JSON array, continuing with text processing');
+
         }
     }
 
@@ -123,7 +123,7 @@ export const processTextResponse = (completedText) => {
         (completedText.includes('{"') && completedText.includes('"}') && completedText.trim().startsWith('{')) ||
         (completedText.includes('# ') && completedText.includes('## ') && completedText.trim().startsWith('#'))) {
 
-        console.log('Detected structured output in response, extracting plain text...');
+
 
         // Try to parse as JSON first if it looks like JSON
         if ((completedText.includes('{"') && completedText.includes('"}')) ||
@@ -138,20 +138,20 @@ export const processTextResponse = (completedText) => {
 
                 // Try to parse the JSON
                 const jsonData = JSON.parse(jsonText);
-                console.log('Successfully parsed text as JSON');
+
 
                 // Extract content from the JSON
                 if (jsonData.content) {
-                    console.log('Found content property in parsed JSON');
+
                     return jsonData.content;
                 } else if (jsonData.text) {
-                    console.log('Found text property in parsed JSON');
+
                     return jsonData.text;
                 } else if (jsonData.document) {
-                    console.log('Found document property in parsed JSON');
+
                     return jsonData.document;
                 } else if (jsonData.title && jsonData.content) {
-                    console.log('Found title and content properties in parsed JSON');
+
                     return `${jsonData.title}\n\n${jsonData.content}`;
                 } else {
                     // Extract text fields from the JSON object
@@ -171,12 +171,12 @@ export const processTextResponse = (completedText) => {
                     extractText(jsonData);
 
                     if (textFields.length > 0) {
-                        console.log(`Found ${textFields.length} text fields in parsed JSON`);
+
                         return textFields.join('\n\n');
                     }
                 }
             } catch (error) {
-                console.log('Failed to parse as JSON, falling back to text extraction', error);
+
             }
         }
 
@@ -202,7 +202,7 @@ export const processTextResponse = (completedText) => {
 
         // If after all this cleaning we have very little text left, return the original
         if (cleanedText.trim().length < completedText.trim().length * 0.3) {
-            console.log('Cleaned text is too short, returning original text');
+
             return completedText;
         }
 

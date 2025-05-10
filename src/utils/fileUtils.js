@@ -279,7 +279,7 @@ export const fileToBase64 = (file) => {
  */
 export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => {
   try {
-    console.log('Extracting audio from video:', videoPath);
+
 
     // Create a download link element that we'll use later
     const a = document.createElement('a');
@@ -288,12 +288,12 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
 
     // Handle blob URLs differently - we need to fetch the blob and send the actual data
     if (videoPath.startsWith('blob:')) {
-      console.log('Blob URL detected, fetching blob data...');
+
 
       try {
         // Fetch the blob data
         const videoBlob = await fetch(videoPath).then(r => r.blob());
-        console.log('Blob fetched successfully, size:', videoBlob.size);
+
 
         // Create a form for the file upload
         const formData = new FormData();

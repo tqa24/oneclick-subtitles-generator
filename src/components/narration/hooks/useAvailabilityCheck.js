@@ -23,18 +23,18 @@ const useAvailabilityCheck = ({
   useEffect(() => {
     const checkAvailability = async () => {
       try {
-        console.log('Checking narration service availability');
+
 
         // Check F5-TTS availability in the background
         const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
-        console.log('F5-TTS narration service status:', f5Status);
+
 
         // Set F5-TTS availability based on the actual status
         setIsAvailable(f5Status.available);
 
         // Check Gemini availability
         const geminiStatus = await checkGeminiAvailability();
-        console.log('Gemini API availability status:', geminiStatus);
+
 
         // Set Gemini availability
         setIsGeminiAvailable(geminiStatus.available);

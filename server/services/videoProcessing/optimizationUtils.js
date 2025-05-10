@@ -33,12 +33,12 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
         return reject(new Error(`Input video file is too small or corrupted: ${videoPath}`));
       }
 
-      console.log(`[OPTIMIZE-VIDEO] Input video file validated: ${videoPath}, size: ${fileStats.size} bytes`);
+
 
       // Make sure the output directory exists
       const outputDir = path.dirname(outputPath);
       if (!fs.existsSync(outputDir)) {
-        console.log(`[OPTIMIZE-VIDEO] Creating output directory: ${outputDir}`);
+
         fs.mkdirSync(outputDir, { recursive: true });
       }
       // Set default options
@@ -61,12 +61,12 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
 
       // Get the current video resolution
       const { width: sourceWidth, height: sourceHeight } = await getVideoResolution(videoPath);
-      console.log(`Source video resolution: ${sourceWidth}x${sourceHeight}`);
+
 
       // Only optimize if the source resolution is higher than the target resolution
       // For 360p, that means height > 360
       if (sourceHeight <= targetHeight) {
-        console.log(`Video resolution (${sourceWidth}x${sourceHeight}) is already ${sourceHeight}p or lower. Skipping optimization.`);
+
 
         // Return the original video path and metadata
         const duration = await getMediaDuration(videoPath);
@@ -82,7 +82,7 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
         return;
       }
 
-      console.log(`Optimizing video to ${resolution} (${targetWidth}x${targetHeight}) at ${fps}fps`);
+
 
       // Construct ffmpeg command for optimization
       const ffmpegArgs = [
@@ -111,7 +111,7 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
         if (output.includes('frame=')) {
           process.stdout.write('.');
         }
-        console.log('ffmpeg stderr:', output);
+
       });
 
       optimizeCmd.on('close', async (code) => {
@@ -133,7 +133,7 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
             return reject(new Error(`Output file is too small or corrupted: ${outputPath}`));
           }
 
-          console.log(`[OPTIMIZE-VIDEO] Output file validated: ${outputPath}, size: ${outputStats.size} bytes`);
+
 
           // Get the duration of the optimized video
           const duration = await getMediaDuration(outputPath);
@@ -176,8 +176,8 @@ function createAnalysisVideo(videoPath, outputPath) {
 
       // Only create analysis video if the frame count is greater than 500
       if (frameCount <= 500) {
-        console.log('[ANALYSIS-VIDEO] Video has 500 or fewer frames, using optimized video for analysis');
-        console.log(`[ANALYSIS-VIDEO] Frame count: ${frameCount}, path: ${videoPath}`);
+
+
         resolve({
           path: videoPath,
           duration,
@@ -189,9 +189,9 @@ function createAnalysisVideo(videoPath, outputPath) {
 
       // Calculate the frame selection interval to get exactly 500 frames
       const frameInterval = frameCount / 500;
-      console.log(`[ANALYSIS-VIDEO] Creating analysis video with 500 frames from ${frameCount} frames (interval: ${frameInterval.toFixed(2)})`);
-      console.log(`[ANALYSIS-VIDEO] Input path: ${videoPath}`);
-      console.log(`[ANALYSIS-VIDEO] Output path: ${outputPath}`);
+
+
+
 
       // Construct ffmpeg command to select frames and maintain audio
       const ffmpegArgs = [
@@ -219,7 +219,7 @@ function createAnalysisVideo(videoPath, outputPath) {
         if (output.includes('frame=')) {
           process.stdout.write('.');
         }
-        console.log('ffmpeg stderr:', output);
+
       });
 
       analysisCmd.on('close', async (code) => {
@@ -232,9 +232,9 @@ function createAnalysisVideo(videoPath, outputPath) {
           const analysisDuration = await getMediaDuration(outputPath);
           const analysisFrameCount = await getVideoFrameCount(outputPath);
 
-          console.log(`[ANALYSIS-VIDEO] Successfully created analysis video with ${analysisFrameCount} frames`);
-          console.log(`[ANALYSIS-VIDEO] Analysis video duration: ${analysisDuration.toFixed(2)}s`);
-          console.log(`[ANALYSIS-VIDEO] Analysis video path: ${outputPath}`);
+
+
+
 
           resolve({
             path: outputPath,

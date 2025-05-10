@@ -19,7 +19,7 @@ const blobToBase64 = (blob) => {
       return;
     }
 
-    console.log('Converting blob to base64, type:', blob.type, 'size:', blob.size);
+
 
     const reader = new FileReader();
 
@@ -32,7 +32,7 @@ const blobToBase64 = (blob) => {
         }
 
         // Log the first few characters of the result to help with debugging
-        console.log('FileReader result starts with:', reader.result.substring(0, 50) + '...');
+
 
         // Check if the result contains a comma (data URL format)
         if (reader.result.indexOf(',') === -1) {
@@ -50,7 +50,7 @@ const blobToBase64 = (blob) => {
           return;
         }
 
-        console.log('Successfully converted blob to base64, length:', base64String.length);
+
         resolve(base64String);
       } catch (error) {
         console.error('Error in FileReader onloadend:', error);

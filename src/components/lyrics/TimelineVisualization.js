@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Import utility modules
@@ -242,7 +242,7 @@ const TimelineVisualization = ({
       // Alt+S to toggle auto-scrolling
       if (e.altKey && e.key === 's') {
         disableAutoScroll.current = !disableAutoScroll.current;
-        console.log(`Auto-scrolling ${disableAutoScroll.current ? 'disabled' : 'enabled'}`);
+
 
         // Show a temporary message on the canvas
         const canvas = timelineRef.current;
@@ -312,7 +312,7 @@ const TimelineVisualization = ({
 
       isScrollingRef.current = true;
       debugCounter.current++;
-      console.log(`Auto-scroll triggered #${debugCounter.current}. Current time: ${currentTime}, Visible: ${visibleStart}-${visibleEnd}`);
+
 
       // Ensure we respect the minimum zoom level
       const minZoom = calculateMinZoom(timelineEnd);
@@ -343,7 +343,7 @@ const TimelineVisualization = ({
       // Release the scrolling lock immediately
       setTimeout(() => {
         isScrollingRef.current = false;
-        console.log('Auto-scroll completed');
+
       }, 50);
     }
 
