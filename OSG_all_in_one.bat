@@ -76,8 +76,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat voi Tinh nang Thuyet minh (Cai dat sach) ***
-ECHO *** (Luu y: Co the ton nhieu dung luong luu tru hon) ***
+ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -124,7 +123,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNoNarration
-ECHO *** Tuy chon 2: Cai dat khong co Tinh nang Thuyet minh (Cai dat sach) ***
+ECHO *** Tuy chon 2: Cai dat (Thuyet minh thong thuong) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -164,7 +163,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 ECHO Cai dat hoan tat. Dang khoi chay ung dung...
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-npm run dev
+CALL npm run dev
 POPD
 GOTO %MENU_LABEL%
 
@@ -209,7 +208,7 @@ IF /I "%INSTALL_DEPS%"=="c" (
      IF %ERRORLEVEL% NEQ 0 (
         ECHO WARNING: 'npm install' encountered errors. Check messages above.
     ) ELSE (
-        ECHO 'npm install' completed
+        ECHO 'npm install' completed.
     )
 	PAUSE
     POPD
@@ -247,7 +246,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Thuyet minh (CUDA) ***
+ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (CUDA) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
