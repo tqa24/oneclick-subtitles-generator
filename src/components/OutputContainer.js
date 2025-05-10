@@ -150,47 +150,17 @@ const OutputContainer = ({
     <div className="output-container">
       {/* Add Subtitles Button removed - now only in buttons-container */}
 
-      {/* Show status message or segments status */}
-      {status?.message && (
-        segmentsStatus.length > 0 && (!activeTab.includes('youtube') || subtitlesData) ? (
-          <ParallelProcessingStatus
-            segments={segmentsStatus}
-            overallStatus={
-              // Translate common status messages that might be hardcoded
-              status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-              status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-              status.message || t('output.segmentsReady', 'Video segments are ready for processing!')
-            }
-            statusType={status?.type || 'success'}
-            onRetrySegment={(segmentIndex, _, options) => {
-              onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
-            }}
-            userProvidedSubtitles={userProvidedSubtitles}
-            onRetryWithModel={(segmentIndex, modelId) => {
-              onRetryWithModel && onRetryWithModel(segmentIndex, modelId, videoSegments);
-            }}
-            onGenerateSegment={(segmentIndex) => {
-              onGenerateSegment && onGenerateSegment(segmentIndex, videoSegments);
-            }}
-            retryingSegments={retryingSegments}
-            onViewRules={onViewRules}
-          />
-        ) : (
-          <div className={`status ${status.type}`}>
-            {/* Translate common status messages that might be hardcoded */}
-            {status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-             status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-             status.message}
-          </div>
-        )
-      )}
-
-      {/* Show segments status when we have segments and subtitles but no status message */}
-      {!status?.message && segmentsStatus.length > 0 && subtitlesData && (
+      {/* Show status message or segments status - Combined logic to avoid duplicate rendering */}
+      {segmentsStatus.length > 0 && (subtitlesData || !activeTab.includes('youtube')) ? (
         <ParallelProcessingStatus
           segments={segmentsStatus}
-          overallStatus={t('output.segmentsReady', 'Video segments are ready for processing!')}
-          statusType="success"
+          overallStatus={
+            // Translate common status messages that might be hardcoded
+            status?.message?.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+            status?.message?.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+            status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')
+          }
+          statusType={status?.type || 'success'}
           onRetrySegment={(segmentIndex, _, options) => {
             onRetrySegment && onRetrySegment(segmentIndex, videoSegments, options);
           }}
@@ -204,6 +174,15 @@ const OutputContainer = ({
           retryingSegments={retryingSegments}
           onViewRules={onViewRules}
         />
+      ) : (
+        status?.message && (
+          <div className={`status ${status.type}`}>
+            {/* Translate common status messages that might be hardcoded */}
+            {status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+             status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+             status.message}
+          </div>
+        )
       )}
 
       {subtitlesData && (

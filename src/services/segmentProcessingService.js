@@ -279,15 +279,7 @@ export const updateSegmentStatus = (index, status, message, t, timeRange = null)
     // Log the status update for debugging
     console.log(`Updating segment ${index+1} status to: ${status}, message: ${message}, timeRange: ${timeRange}`);
 
-    // Debug translation
-    if (status === 'overloaded') {
-        const translatedText = translate('output.overloaded', 'Overloaded');
-        console.log(`Translation for 'output.overloaded': "${translatedText}"`);
-
-        // Check if we're getting the Vietnamese translation
-        const viText = translate('output.failed', 'Failed');
-        console.log(`Translation for 'output.failed' (for comparison): "${viText}"`);
-    }
+    // Remove debug translation logs to prevent console spam
 
     // Create the status object
     const segmentStatus = {

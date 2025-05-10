@@ -31,11 +31,7 @@ const ParallelProcessingStatus = ({
  }) => {
   const { t, i18n } = useTranslation();
 
-  // Debug translations
-  console.log(`Current language: ${i18n.language}`);
-  console.log(`Translation for 'output.overloaded': "${t('output.overloaded')}"`);
-  console.log(`Translation for 'output.failed': "${t('output.failed')}"`);
-  console.log(`Translation for 'output.done': "${t('output.done')}"`);
+  // Remove debug translation logs to prevent console spam
 
   const [rulesAvailable, setRulesAvailable] = useState(false);
   const [showRetryModal, setShowRetryModal] = useState(false);
