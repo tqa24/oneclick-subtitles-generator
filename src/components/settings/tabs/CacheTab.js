@@ -144,6 +144,13 @@ const CacheTab = () => {
 
       {/* Action buttons row */}
       <div className="cache-actions-row">
+        {/* Cache status message */}
+        {cacheStatus.message && (
+          <div className={`cache-status-message status-${cacheStatus.type}`}>
+            {cacheStatus.message}
+          </div>
+        )}
+
         <div className="cache-actions">
           <button
             className="clear-cache-btn"
@@ -165,13 +172,6 @@ const CacheTab = () => {
             {t('settings.refresh', 'Refresh')}
           </button>
         </div>
-
-        {/* Cache status message */}
-        {cacheStatus.message && (
-          <div className={`cache-status-message status-${cacheStatus.type}`}>
-            {cacheStatus.message}
-          </div>
-        )}
       </div>
 
       {/* Loading indicator - only show when not clearing cache */}

@@ -211,7 +211,7 @@ const generateImage = async (req, res) => {
       const genAI = new GoogleGenAI({ apiKey: geminiApiKey });
       console.log('Initialized Google GenAI client');
 
-      console.log('Using Google GenAI library with model: gemini-2.0-flash-exp-image-generation');
+      console.log('Using Google GenAI library with model: gemini-2.0-flash-preview-image-generation');
 
       // Generate content with the model
       console.log('Using models.generateContent API');
@@ -231,7 +231,7 @@ const generateImage = async (req, res) => {
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
+        model: 'gemini-2.0-flash-preview-image-generation',
         contents: contents,
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
