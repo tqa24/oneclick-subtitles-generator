@@ -345,5 +345,5 @@ export const useAppEffects = (props) => {
         handleDownloadAndPrepareYouTubeVideo();
       }
     }
-  }, [status, subtitlesData, uploadedFile, t, prepareVideoForSegments, handleDownloadAndPrepareYouTubeVideo]);
+  }, [status, subtitlesData, uploadedFile, t, prepareVideoForSegments, handleDownloadAndPrepareYouTubeVideo, setStatus]);
 };

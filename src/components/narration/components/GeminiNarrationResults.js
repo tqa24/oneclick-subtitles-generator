@@ -218,7 +218,7 @@ const getCurrentMediaId = () => {
   const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
   if (youtubeUrl) {
     // Extract video ID from URL
-    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
     return match ? match[1] : null;
   }
 

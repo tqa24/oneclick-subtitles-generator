@@ -33,7 +33,9 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [txtContent, setTxtContent] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [isProcessing, setIsProcessing] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [processedDocument, setProcessedDocument] = useState(null);
 
   // Refs for height animation

@@ -70,16 +70,6 @@ export const playAudio = async (
       const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
       const audioUrl = `${baseUrl}/api/narration/audio/${result.filename}`;
 
-
-      // Log additional information for debugging
-
-        filename: result.filename,
-        subtitle_id: result.subtitle_id,
-        serverUrl: baseUrl,
-        fullUrl: audioUrl,
-        configServerUrl: SERVER_URL
-      });
-
       // Create a new audio element
       const audioElement = new Audio();
 
@@ -392,15 +382,6 @@ export const downloadAudio = async (result, t) => {
       const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
       const audioUrl = `${baseUrl}/api/narration/audio/${result.filename}`;
 
-
-      // Log additional information for debugging
-
-        filename: result.filename,
-        subtitle_id: result.subtitle_id,
-        serverUrl: baseUrl,
-        fullUrl: audioUrl,
-        configServerUrl: SERVER_URL
-      });
 
       // Create download link
       const a = document.createElement('a');

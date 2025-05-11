@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getModels, getModelDownloadStatus, getModelStorageInfo } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
+import { checkNarrationStatus } from '../../../services/narrationService';
 
 /**
  * Custom hook for managing models
@@ -12,10 +13,31 @@ export const useModels = () => {
   const [error, setError] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [modelSizes, setModelSizes] = useState({});
+  const [isServiceAvailable, setIsServiceAvailable] = useState(false);
+
+  // Check if narration service is available
+  const checkServiceAvailability = useCallback(async () => {
+    try {
+      const status = await checkNarrationStatus();
+      setIsServiceAvailable(status.available);
+      return status.available;
+    } catch (error) {
+      console.error('Error checking narration service availability:', error);
+      setIsServiceAvailable(false);
+      return false;
+    }
+  }, []);
 
   // Fetch models from API
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     try {
+      // First check if service is available
+      const available = await checkServiceAvailability();
+      if (!available) {
+        setLoading(false);
+        return null;
+      }
+
       setLoading(true);
       const data = await getModels(false); // Never include cache models
       setModels(data.models || []);
@@ -32,11 +54,18 @@ export const useModels = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [checkServiceAvailability]);
 
   // Function to scan for models in the f5_tts directory
-  const scanForModels = async () => {
+  const scanForModels = useCallback(async () => {
+    // Don't scan if already scanning or if service is not available
     if (isScanning) return;
+
+    // Check if service is available before scanning
+    const available = await checkServiceAvailability();
+    if (!available) {
+      return;
+    }
 
     try {
       setIsScanning(true);
@@ -47,7 +76,6 @@ export const useModels = () => {
       const newModels = data.models.filter(model => !currentModelIds.includes(model.id));
 
       if (newModels.length > 0) {
-
         setModels(data.models || []);
         invalidateModelsCache();
       }
@@ -73,26 +101,36 @@ export const useModels = () => {
     } finally {
       setIsScanning(false);
     }
-  };
+  }, [isScanning, models, setIsScanning, setModels, setModelSizes, checkServiceAvailability]);
 
   // Fetch models on component mount
   useEffect(() => {
     fetchModels();
-  }, []);
+  }, [fetchModels]);
+
+  // Check service availability on component mount
+  useEffect(() => {
+    checkServiceAvailability();
+  }, [checkServiceAvailability]);
 
   // Set up periodic scanning for models in the f5_tts directory
   useEffect(() => {
-    // Initial scan
-    scanForModels();
+    // Initial scan with a 2-second delay to prevent immediate API calls
+    const initialScanTimeout = setTimeout(() => {
+      scanForModels();
+    }, 2000);
 
-    // Set up interval for periodic scanning (every 30 seconds)
+    // Set up interval for periodic scanning (every 2 minutes instead of 30 seconds)
     const intervalId = setInterval(() => {
       scanForModels();
-    }, 30000);
+    }, 120000); // 2 minutes
 
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
-  }, []);
+    // Clean up interval and timeout on component unmount
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(initialScanTimeout);
+    };
+  }, [scanForModels]);
 
   return {
     models,
@@ -100,8 +138,10 @@ export const useModels = () => {
     error,
     isScanning,
     modelSizes,
+    isServiceAvailable,
     fetchModels,
-    scanForModels
+    scanForModels,
+    checkServiceAvailability
   };
 };
 
@@ -112,10 +152,35 @@ export const useModels = () => {
  */
 export const useDownloads = (fetchModels) => {
   const [downloads, setDownloads] = useState({});
+  const [isServiceAvailable, setIsServiceAvailable] = useState(false);
+
+  // Check if narration service is available
+  const checkServiceAvailability = useCallback(async () => {
+    try {
+      const status = await checkNarrationStatus();
+      setIsServiceAvailable(status.available);
+      return status.available;
+    } catch (error) {
+      console.error('Error checking narration service availability in useDownloads:', error);
+      setIsServiceAvailable(false);
+      return false;
+    }
+  }, []);
+
+  // Check service availability on component mount
+  useEffect(() => {
+    checkServiceAvailability();
+  }, [checkServiceAvailability]);
 
   // Set up polling for download status
   useEffect(() => {
     const checkDownloadStatus = async () => {
+      // Skip if service is not available
+      const available = await checkServiceAvailability();
+      if (!available) {
+        return;
+      }
+
       // Check status of all downloads
       const downloadIds = Object.keys(downloads);
 
@@ -177,7 +242,7 @@ export const useDownloads = (fetchModels) => {
     const interval = setInterval(checkDownloadStatus, 2000);
 
     return () => clearInterval(interval);
-  }, [downloads, fetchModels]);
+  }, [downloads, fetchModels, checkServiceAvailability]);
 
   // Update downloads with server data
   const updateDownloads = (serverDownloads) => {
@@ -189,6 +254,7 @@ export const useDownloads = (fetchModels) => {
   return {
     downloads,
     setDownloads,
-    updateDownloads
+    updateDownloads,
+    isServiceAvailable
   };
 };

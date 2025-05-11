@@ -3,11 +3,18 @@
  */
 import { useCallback, useEffect } from 'react';
 import {
-  isAlignedNarrationAvailable,
+  // isAlignedNarrationAvailable is imported but not used
+  // isAlignedNarrationAvailable,
   generateAlignedNarration as generateAlignedNarrationService,
   resetAlignedAudioElement
 } from '../../../../services/alignedNarrationService';
-import { createHash, enhanceNarrationWithTiming, createSubtitleMap, getAllSubtitles } from './alignedNarrationUtils';
+import {
+  // createHash is imported but not used
+  // createHash,
+  enhanceNarrationWithTiming,
+  createSubtitleMap,
+  getAllSubtitles
+} from './alignedNarrationUtils';
 
 /**
  * Hook for handling aligned narration generation
@@ -27,13 +34,16 @@ const useAlignedNarrationGeneration = ({
   const {
     isGeneratingAligned,
     setIsGeneratingAligned,
-    alignedStatus,
+    // alignedStatus is destructured but not used directly
+    // alignedStatus,
     setAlignedStatus,
     isAlignedAvailable,
     setIsAlignedAvailable,
-    lastGenerationResultsHashRef,
+    // lastGenerationResultsHashRef is destructured but not used directly
+    // lastGenerationResultsHashRef,
     playAlignedNarration,
-    cleanupAlignedNarration
+    // cleanupAlignedNarration is destructured but not used directly
+    // cleanupAlignedNarration
   } = state;
 
   // Force regeneration of aligned narration
@@ -148,7 +158,6 @@ const useAlignedNarrationGeneration = ({
     generationResults,
     setIsGeneratingAligned,
     setIsAlignedAvailable,
-    cleanupAlignedNarration,
     setAlignedStatus,
     videoRef,
     playAlignedNarration

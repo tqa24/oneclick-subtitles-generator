@@ -66,7 +66,7 @@ const SubtitleSettings = ({
     if (hasTranslation && settings.showTranslatedSubtitles) {
       handleSubtitleLanguageChange({ target: { value: 'translated' } });
     }
-  }, [hasTranslation, settings.showTranslatedSubtitles]);
+  }, [hasTranslation, settings.showTranslatedSubtitles, handleSubtitleLanguageChange]);
 
   // No need for individual narration playback code anymore
   // Aligned narration is handled by the useAlignedNarration hook

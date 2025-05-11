@@ -74,7 +74,6 @@ export const createGeminiSVG = (isFilled, colorSchemeIndex = 0) => {
   // Create gradient ID with random number to avoid conflicts
   const gradientId = `gemini-gradient-${Math.floor(Math.random() * 10000)}`;
   const fillValue = isFilled ? `url(#${gradientId})` : 'none';
-  const strokeWidth = isFilled ? '1' : '1.5';
 
   // Generate gradient stops
   const gradientStops = scheme.stops.map(stop =>

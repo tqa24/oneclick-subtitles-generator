@@ -106,8 +106,8 @@ export const convertPcmBase64ToWavBase64 = (pcmBase64, sampleRate = 24000) => {
     }
 
     // Log the first few bytes of the WAV data to verify the RIFF header
-    const headerCheck = atob(wavBase64.substring(0, 8));
-
+    // const headerCheck = atob(wavBase64.substring(0, 8));
+    // Uncomment for debugging if needed
 
 
     return wavBase64;

@@ -371,7 +371,6 @@ const UnifiedNarrationSection = ({
     startRecording,
     stopRecording,
     // extractSegment is available but not used in this component
-    extractSegment: _extractSegment,
     clearReferenceAudio,
     handleGenerateNarration,
     playAudio,

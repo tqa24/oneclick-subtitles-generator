@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LanguageSelector.css';
 import { createPortal } from 'react-dom';
@@ -30,7 +30,7 @@ const LanguageSelector = ({ isDropup = false }) => {
   };
 
   // Calculate menu position when button is clicked
-  const calculateMenuPosition = () => {
+  const calculateMenuPosition = useCallback(() => {
     if (buttonRef.current) {
       const buttonRect = buttonRef.current.getBoundingClientRect();
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -50,7 +50,7 @@ const LanguageSelector = ({ isDropup = false }) => {
         });
       }
     }
-  };
+  }, [isDropup]);
 
   // Toggle menu open/closed
   const toggleMenu = () => {
@@ -91,7 +91,7 @@ const LanguageSelector = ({ isDropup = false }) => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [isOpen]);
+  }, [isOpen, calculateMenuPosition]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e, code) => {

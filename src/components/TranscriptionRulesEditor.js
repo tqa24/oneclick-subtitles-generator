@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/TranscriptionRulesEditor.css';
 import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService';
@@ -20,7 +20,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   const [userPromptPresets, setUserPromptPresets] = useState([]);
 
   // Get all available presets (built-in + user)
-  const allPresets = [...PROMPT_PRESETS, ...userPromptPresets];
+  const allPresets = useMemo(() => [...PROMPT_PRESETS, ...userPromptPresets], [userPromptPresets]);
 
   // Effect to determine the current preset
   useEffect(() => {
@@ -46,7 +46,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
     // Load user presets
     setUserPromptPresets(getUserPromptPresets());
-  }, []);
+  }, [allPresets]);
 
   // Handle atmosphere change
   const handleAtmosphereChange = (e) => {

@@ -1,8 +1,8 @@
-import { getVideoDuration, getMaxSegmentDurationSeconds } from '../../utils/durationUtils';
+import { getMaxSegmentDurationSeconds } from '../../utils/durationUtils';
 import { splitVideoOnServer } from '../../utils/videoSplitter';
 import { extractYoutubeVideoId, downloadYoutubeVideo } from '../../utils/videoDownloader';
 import { extractDouyinVideoId, downloadDouyinVideo } from '../../utils/douyinDownloader';
-import { downloadGenericVideo, cancelGenericVideoDownload } from '../../utils/allSitesDownloader';
+import { downloadGenericVideo } from '../../utils/allSitesDownloader';
 
 /**
  * Prepare video for segment processing by optimizing and splitting
@@ -29,18 +29,17 @@ export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegm
     }
 
     // Get video optimization settings from localStorage
-    const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
     const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
     // Set status to loading
     setStatus({ message: t('output.preparingVideo', 'Preparing video for segment processing...'), type: 'loading' });
 
-    // Get video duration
-    const duration = await getVideoDuration(videoFile);
+    // Get video duration (for future use)
+    // await getVideoDuration(videoFile);
 
 
-    // Calculate number of segments
-    const numSegments = Math.ceil(duration / getMaxSegmentDurationSeconds());
+    // Calculate number of segments (for future use)
+    // Math.ceil(duration / getMaxSegmentDurationSeconds());
 
 
     // For downloaded videos, ensure we have a proper file name and type

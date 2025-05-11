@@ -20,7 +20,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const seekLockRef = useRef(false);
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
-  const [isFullscreen, setIsFullscreen] = useState(false); // Track fullscreen state
+  // isFullscreen state is set but not directly used in rendering - used for event handling
+  const [, setIsFullscreen] = useState(false); // Track fullscreen state
   const [videoUrl, setVideoUrl] = useState('');
   const [optimizedVideoUrl, setOptimizedVideoUrl] = useState('');
   const [optimizedVideoInfo, setOptimizedVideoInfo] = useState(null);
@@ -283,7 +284,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       clearInterval(interval);
       // Don't update state during cleanup to avoid React warnings
     };
-  }, [videoId, t]); // Remove downloadCheckInterval from dependencies
+  }, [videoId, t, downloadCheckInterval, setVideoUrl, setIsDownloading, setError, setDownloadProgress, setDownloadCheckInterval]);
 
   // processVideoUrl is now defined inside the useEffect above
 
@@ -619,7 +620,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
-  }, []);
+  }, [subtitleSettings.boxWidth]);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {

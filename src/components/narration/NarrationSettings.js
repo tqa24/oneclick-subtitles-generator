@@ -21,7 +21,8 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
   const [referenceAudio, setReferenceAudio] = useState(null);
   const [referenceText, setReferenceText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState(null);
+  // recordedAudio state is set but used in the onstop handler of mediaRecorder
+  const [, setRecordedAudio] = useState(null);
   const [isExtractingSegment, setIsExtractingSegment] = useState(false);
   const [segmentStartTime, setSegmentStartTime] = useState('');
   const [segmentEndTime, setSegmentEndTime] = useState('');

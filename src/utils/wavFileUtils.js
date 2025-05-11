@@ -108,15 +108,6 @@ export const createWavFromPcmForDownload = (pcmData, sampleRate = 24000) => {
     writeString(view, 36, 'data');
     view.setUint32(40, pcmData.byteLength, true);
 
-    // Log header information for debugging
-
-      format: 'PCM',
-      channels: numChannels,
-      sampleRate: sampleRate,
-      bitsPerSample: bitsPerSample,
-      dataSize: pcmData.byteLength
-    });
-
     // Combine header and PCM data
     const wavFile = new Uint8Array(header.byteLength + pcmData.byteLength);
     wavFile.set(new Uint8Array(header), 0);

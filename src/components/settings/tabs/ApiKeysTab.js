@@ -2,13 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
 
+// Note: This function is defined but not used - the functionality is implemented inline
+// in the onKeyDown handlers of the contentEditable elements
 // Prevent form submission on Enter key
-const preventSubmit = (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    return false;
-  }
-};
+// const preventSubmit = (e) => {
+//   if (e.key === 'Enter') {
+//     e.preventDefault();
+//     return false;
+//   }
+// };
 
 const ApiKeysTab = ({
   geminiApiKey,

@@ -3,7 +3,6 @@
  * Handles prompt presets and custom prompts
  */
 
-import i18n from '../../i18n/i18n';
 import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
 
 // Default transcription prompts
@@ -271,7 +270,7 @@ const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLang
 
             // Use all subtitle lines as examples
             for (let i = 0; i < subtitleLines.length; i++) {
-                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, '\"') + '", "translated": "[Translation in ' + lang + ']" }' + (i < subtitleLines.length - 1 ? ',' : '');
+                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, "'") + '", "translated": "[Translation in ' + lang + ']" }' + (i < subtitleLines.length - 1 ? ',' : '');
             }
 
             exampleJson += '\n      ]\n    }' + (langIndex < targetLanguage.length - 1 ? ',' : '');
@@ -304,7 +303,9 @@ ${exampleJson}
         // Add up to 5 example lines using the actual subtitle content
         // Use all subtitle lines as examples
         for (let i = 0; i < subtitleLines.length; i++) {
-            exampleJson += `  { "original": "${subtitleLines[i].replace(/"/g, '\\"')}", "translated": "[Translation of this line in ${targetLanguage}]" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
+            // Use single quotes to avoid escaping issues
+            const escapedLine = subtitleLines[i].replace(/"/g, "'");
+            exampleJson += `  { "original": "${escapedLine}", "translated": "[Translation of this line in ${targetLanguage}]" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
         }
 
         exampleJson += ']';

@@ -544,6 +544,11 @@ export const generateNarration = async (
                     narrationServiceInitialized = true;
                     onComplete(data.results || results);
                     return { success: true, results: data.results || results };
+
+                  default:
+                    // Handle unknown event types
+                    console.warn(`Unknown event type received: ${data.type}`);
+                    break;
                 }
               } catch (eventError) {
                 // Silently handle event errors

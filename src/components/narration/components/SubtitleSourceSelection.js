@@ -99,7 +99,7 @@ const SubtitleSourceSelection = ({
       setTranslatedLanguage(null); // Reset the language
       detectSubtitleLanguage(translatedSubtitles, 'translated');
     }
-  }, [translatedSubtitles, subtitleSource]);
+  }, [translatedSubtitles, subtitleSource, setTranslatedLanguage]);
 
   // Position the dropdown relative to the button
   const positionDropdown = useCallback(() => {
@@ -357,7 +357,7 @@ const SubtitleSourceSelection = ({
       window.removeEventListener('translation-complete', handleTranslationComplete);
       window.removeEventListener('translation-reset', handleTranslationReset);
     };
-  }, [subtitleSource, onLanguageDetected, translatedSubtitles, t]);
+  }, [subtitleSource, onLanguageDetected, translatedSubtitles, t, originalLanguage, setOriginalLanguage, setSubtitleSource, setTranslatedLanguage]);
 
   // We're using an inline function for the button click handler
 

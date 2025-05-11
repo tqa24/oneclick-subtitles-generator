@@ -72,13 +72,13 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
           <div className="preset-view-content">
             <div className="preset-view-header">
               <h3>
-                {viewingPreset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
-                 viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                 viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
-                 viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                 viewingPreset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
-                 viewingPreset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
-                 viewingPreset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
+                {(viewingPreset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose')) ||
+                 (viewingPreset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text')) ||
+                 (viewingPreset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics')) ||
+                 (viewingPreset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video')) ||
+                 (viewingPreset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly')) ||
+                 (viewingPreset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering')) ||
+                 (viewingPreset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers')) ||
                  viewingPreset.title}
               </h3>
               <button
@@ -153,13 +153,13 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
             <div className="prompt-preset-card" key={preset.id}>
               <div className="preset-card-content">
                 <h5 className="preset-title">
-                  {preset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose') ||
-                   preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text') ||
-                   preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics') ||
-                   preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video') ||
-                   preset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly') ||
-                   preset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering') ||
-                   preset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers') ||
+                  {(preset.id === 'general' && t('settings.presetGeneralPurpose', 'General purpose')) ||
+                   (preset.id === 'extract-text' && t('settings.presetExtractText', 'Extract text')) ||
+                   (preset.id === 'focus-lyrics' && t('settings.presetFocusLyrics', 'Focus on Lyrics')) ||
+                   (preset.id === 'describe-video' && t('settings.presetDescribeVideo', 'Describe video')) ||
+                   (preset.id === 'translate-directly' && t('settings.presetTranslateDirectly', 'Translate directly')) ||
+                   (preset.id === 'chaptering' && t('settings.presetChaptering', 'Chaptering')) ||
+                   (preset.id === 'diarize-speakers' && t('settings.presetIdentifySpeakers', 'Identify Speakers')) ||
                    preset.title}
                 </h5>
                 {preset.id === 'translate-directly' ? (

@@ -57,8 +57,7 @@ export const abortAllRequests = () => {
         setProcessingForceStopped(true);
 
         // Abort all controllers in the map
-        for (const [id, controller] of activeAbortControllers.entries()) {
-
+        for (const [, controller] of activeAbortControllers.entries()) {
             controller.abort();
         }
 

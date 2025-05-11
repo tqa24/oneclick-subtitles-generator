@@ -29,8 +29,7 @@ export const saveAudioToServer = async (result, savedToServer, setSavedToServer,
       // Validate the audio data
       try {
         // Test decode to make sure it's valid base64
-        const testBuffer = base64ToArrayBuffer(result.audioData);
-
+        base64ToArrayBuffer(result.audioData);
       } catch (decodeError) {
         console.error(`Error validating audio data: ${decodeError.message}`);
         throw new Error(`Invalid audio data: ${decodeError.message}`);

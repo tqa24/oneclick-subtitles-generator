@@ -57,10 +57,10 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
 
 
-  // Log the types of narrations we're processing
-  const f5ttsCount = generationResults.filter(r => r.filename && !r.audioData).length;
-  const geminiCount = generationResults.filter(r => r.audioData).length;
-  const unknownCount = generationResults.filter(r => !r.filename && !r.audioData).length;
+  // These counts were used for debugging but are not currently used
+  // const f5ttsCount = generationResults.filter(r => r.filename && !r.audioData).length;
+  // const geminiCount = generationResults.filter(r => r.audioData).length;
+  // const unknownCount = generationResults.filter(r => !r.filename && !r.audioData).length;
 
 
   // Check if any narration has been retried recently

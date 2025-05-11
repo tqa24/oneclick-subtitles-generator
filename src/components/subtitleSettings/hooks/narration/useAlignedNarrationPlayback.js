@@ -131,23 +131,23 @@ const useAlignedNarrationPlayback = ({
     };
 
     // Add event listeners to the video element
-    videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
-    videoRef.current.addEventListener('seeking', handleSeeking);
-    videoRef.current.addEventListener('seeked', handleSeeked);
-    videoRef.current.addEventListener('play', handlePlay);
-    videoRef.current.addEventListener('pause', handlePause);
-    videoRef.current.addEventListener('ratechange', handleRateChange);
+    const video = videoRef.current; // Store reference to avoid closure issues
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('seeking', handleSeeking);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ratechange', handleRateChange);
 
     // Clean up event listeners
     return () => {
-      if (videoRef && videoRef.current) {
-        videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-        videoRef.current.removeEventListener('seeking', handleSeeking);
-        videoRef.current.removeEventListener('seeked', handleSeeked);
-        videoRef.current.removeEventListener('play', handlePlay);
-        videoRef.current.removeEventListener('pause', handlePause);
-        videoRef.current.removeEventListener('ratechange', handleRateChange);
-      }
+      // Use the same video reference from above to avoid closure issues
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('seeking', handleSeeking);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ratechange', handleRateChange);
     };
   }, [
     videoRef,

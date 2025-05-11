@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiCheck, FiAlertTriangle, FiZap, FiStar, FiAward, FiCpu, FiArrowRight } from 'react-icons/fi';
+import { FiX, FiCheck, FiZap, FiStar, FiCpu, FiArrowRight } from 'react-icons/fi';
 import '../styles/SegmentRetryModal.css';
 
 /**

@@ -29,7 +29,7 @@ const ParallelProcessingStatus = ({
   onViewRules,
   userProvidedSubtitles = ''
  }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // Remove debug translation logs to prevent console spam
 

@@ -299,9 +299,6 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
         const formData = new FormData();
         formData.append('video', videoBlob, 'video.mp4');
 
-        // Open the URL in a new tab/window to trigger the download
-        const downloadUrl = `${SERVER_URL}/api/extract-audio-from-blob?filename=${encodeURIComponent(filename)}`;
-
         // Use fetch with blob to download directly
         const response = await fetch(`${SERVER_URL}/api/extract-audio-from-blob`, {
           method: 'POST',
@@ -337,11 +334,8 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
     } else {
       // For regular URLs, use a direct download approach
       try {
-        // Open the URL in a new tab/window to trigger the download
-        const downloadUrl = `${SERVER_URL}/api/extract-audio?videoPath=${encodeURIComponent(videoPath)}&filename=${encodeURIComponent(filename)}`;
-
-        // Use fetch to download directly
-        const response = await fetch(downloadUrl, {
+        // Fetch the audio data directly
+        const response = await fetch(`${SERVER_URL}/api/extract-audio?videoPath=${encodeURIComponent(videoPath)}&filename=${encodeURIComponent(filename)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

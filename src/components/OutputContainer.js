@@ -7,7 +7,6 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';
 import { UnifiedNarrationSection } from './narration';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
-import AddSubtitlesButton from './AddSubtitlesButton';
 // BackgroundImageGenerator moved back to AppLayout
 
 const OutputContainer = ({

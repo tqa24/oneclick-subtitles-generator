@@ -237,15 +237,6 @@ const useNarrationPlayback = (
 
     // Try to play the audio
     try {
-      // Log detailed information before attempting to play
-
-        audioElement: audioElement,
-        src: audioElement.src,
-        volume: audioElement.volume,
-        readyState: audioElement.readyState,
-        networkState: audioElement.networkState,
-        error: audioElement.error
-      });
 
       // Check if the audio is in a playable state
       if (audioElement.readyState < 2) { // HAVE_CURRENT_DATA = 2

@@ -110,9 +110,6 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
         const videoResponse = await fetch(videoUrl);
         const videoBlob = await videoResponse.blob();
 
-        // Original audio filename for reference
-        const originalAudioName = audioFile.name;
-
         // Create a File object from the blob
         // We'll use a video extension internally, but keep the original name for display
         const videoFile = new File(

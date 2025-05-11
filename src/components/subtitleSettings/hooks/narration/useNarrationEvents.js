@@ -56,7 +56,8 @@ const useNarrationEvents = (
     // Handle narration retry events
     const handleNarrationRetried = (event) => {
 
-      const { source, narration, narrations } = event.detail;
+      // narration is destructured but not used directly
+      const { source, /* narration, */ narrations } = event.detail;
 
       // Update the appropriate narration array
       if (source === 'original') {

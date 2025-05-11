@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import useNarrationState from './useNarrationState';
 import useNarrationEffects from './useNarrationEffects';
 import useAlignedNarration from './useAlignedNarration';

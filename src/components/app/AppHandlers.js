@@ -21,9 +21,9 @@ export const useAppHandlers = (appState) => {
     setStatus,
     subtitlesData,
     setSubtitlesData,
-    isDownloading,
+    // isDownloading is used in validateInput
     setIsDownloading,
-    downloadProgress,
+    // downloadProgress is used in UI elsewhere
     setDownloadProgress,
     currentDownloadId,
     setCurrentDownloadId,
@@ -33,7 +33,7 @@ export const useAppHandlers = (appState) => {
     useUserProvidedSubtitles,
     generateSubtitles,
     retryGeneration,
-    isRetrying,
+    // isRetrying is used in UI elsewhere
     setIsRetrying,
     setSegmentsStatus,
     setVideoSegments,

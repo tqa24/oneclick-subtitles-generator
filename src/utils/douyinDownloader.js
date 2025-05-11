@@ -322,8 +322,7 @@ export const preloadDouyinVideo = (douyinUrl) => {
 
   // Start the background download process
   try {
-    const videoId = startDouyinVideoDownload(douyinUrl);
-
+    startDouyinVideoDownload(douyinUrl);
   } catch (error) {
     console.warn('Failed to start background download:', error);
   }

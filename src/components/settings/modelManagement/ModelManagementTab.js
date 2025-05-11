@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from '@mui/material';
 import {
@@ -9,8 +9,8 @@ import {
   getModelStorageInfo,
   cancelModelDownload
 } from '../../../services/modelService';
-import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
-import { checkNarrationStatus } from '../../../services/narrationService';
+// invalidateModelsCache is imported but not used in this component
+// import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
 import Toast from '../../common/Toast';
 import InstalledModelsList from './InstalledModelsList';
 import AvailableModelsList from './AvailableModelsList';
@@ -28,51 +28,27 @@ const ModelManagementTab = () => {
   const { t } = useTranslation();
 
   // Custom hooks for models and downloads
-  const { models, loading, error, isScanning, modelSizes, fetchModels, scanForModels } = useModels();
-  const { downloads, setDownloads, updateDownloads } = useDownloads(fetchModels);
+  const {
+    models,
+    loading,
+    error,
+    isScanning,
+    modelSizes,
+    isServiceAvailable,
+    fetchModels,
+    scanForModels
+  } = useModels();
 
-  // Service availability state - start with assumption that service is unavailable
-  const [isServiceAvailable, setIsServiceAvailable] = useState(false);
-  const [serviceError, setServiceError] = useState('');
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(true);
+  // updateDownloads is defined but not used in this component
+  const { downloads, setDownloads } = useDownloads(fetchModels);
+
+  // Track if we're checking availability
+  const [isCheckingAvailability] = useState(false);
 
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
-
-  // Check if narration service is available
-  useEffect(() => {
-    const checkAvailability = async () => {
-      setIsCheckingAvailability(true);
-      try {
-
-        const status = await checkNarrationStatus();
-
-
-        // Set availability based on the actual status
-        setIsServiceAvailable(status.available);
-
-        // Set error message if service is not available
-        if (!status.available && status.message) {
-          setServiceError(status.message);
-        } else {
-          // Clear any previous errors
-          setServiceError('');
-        }
-      } catch (error) {
-        console.error('Error checking narration status for model management tab:', error);
-        // Service is not available if there's an error
-        setIsServiceAvailable(false);
-        setServiceError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
-      } finally {
-        setIsCheckingAvailability(false);
-      }
-    };
-
-    // Check availability once when component mounts
-    checkAvailability();
-  }, [t]);
 
   // Model states
   const [modelToDelete, setModelToDelete] = useState(null);

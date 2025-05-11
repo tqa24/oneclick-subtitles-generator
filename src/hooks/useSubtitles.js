@@ -114,6 +114,7 @@ export const useSubtitles = (t) => {
                 if (input.type.startsWith('video/')) {
                     try {
                         const duration = await getVideoDuration(input);
+                        // eslint-disable-next-line no-unused-vars
                         const durationMinutes = Math.floor(duration / 60);
 
                         // If video is longer than 30 minutes, show warning and use special processing
@@ -152,10 +153,12 @@ export const useSubtitles = (t) => {
             if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
+                    // eslint-disable-next-line no-unused-vars
                     const durationMinutes = Math.floor(duration / 60);
 
                     // Determine if this is a video or audio file
                     const isAudio = input.type.startsWith('audio/');
+                    // eslint-disable-next-line no-unused-vars
                     const mediaType = isAudio ? 'audio' : 'video';
 
                     // Debug log to see the media duration
@@ -281,10 +284,12 @@ export const useSubtitles = (t) => {
             if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
+                    // eslint-disable-next-line no-unused-vars
                     const durationMinutes = Math.floor(duration / 60);
 
                     // Determine if this is a video or audio file
                     const isAudio = input.type.startsWith('audio/');
+                    // eslint-disable-next-line no-unused-vars
                     const mediaType = isAudio ? 'audio' : 'video';
 
                     // Debug log to see the media duration

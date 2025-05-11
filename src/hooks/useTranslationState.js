@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateSubtitles, abortAllRequests, cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
+import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
 
 /**
  * Custom hook to manage translation state
@@ -217,7 +217,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     // This will abort all active requests and set the processingForceStopped flag to true
     // Note: The processingForceStopped flag will be reset to false when starting a new translation
     // or when resetting the translation
-    const aborted = cancelTranslation();
+    /* const aborted = */ cancelTranslation();
 
 
     // Update UI state

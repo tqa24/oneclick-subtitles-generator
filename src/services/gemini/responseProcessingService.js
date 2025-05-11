@@ -11,7 +11,7 @@
  */
 export const processStructuredJsonResponse = (structuredJson, language = null) => {
 
-    
+
     // Log the language information if available
     if (language) {
 
@@ -47,7 +47,7 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
         } else if (structuredJson.summary) {
 
             let summaryText = structuredJson.summary;
-            
+
             // Optionally add key points if available
             if (structuredJson.keyPoints && Array.isArray(structuredJson.keyPoints) && structuredJson.keyPoints.length > 0) {
                 summaryText += '\n\nKey Points:\n';
@@ -55,7 +55,7 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
                     summaryText += `\n${index + 1}. ${point}`;
                 });
             }
-            
+
             return summaryText;
         } else {
             // Otherwise, stringify it and extract plain text
@@ -87,7 +87,7 @@ export const processStructuredJsonResponse = (structuredJson, language = null) =
             }
         }
     }
-    
+
     // Fallback if nothing else works
     return JSON.stringify(structuredJson, null, 2);
 };
@@ -195,7 +195,8 @@ export const processTextResponse = (completedText) => {
         }
 
         // Remove markdown formatting characters but preserve the text
-        cleanedText = cleanedText.replace(/[\*\#\`\[\]\(\)\|\>]/g, '');
+        cleanedText = cleanedText.replace(/[*#`[\]()>]/g, '');
+        cleanedText = cleanedText.replace(/\|/g, '');
 
         // Normalize whitespace
         cleanedText = cleanedText.replace(/\n\s*\n/g, '\n\n');
