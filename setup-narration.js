@@ -487,113 +487,8 @@ except Exception as e:
     process.exit(1);
 }
 
-// --- 8. Create run script for narration service using uv run ---
-console.log('\n🔧 Creating run script for narration service (using uv run)...');
-try {
-    const setupScriptName = path.basename(__filename);
-    const runScriptContent = `@echo off
-setlocal
-
-echo Running narration service using Python ${PYTHON_VERSION_TARGET} (via uv) and PyTorch (${gpuVendor} target)...
-echo Activating environment and running server/narrationApp.py with uv...
-echo.
-
-REM Ensure the script's directory is the current directory
-cd /d "%~dp0"
-
-REM Check if uv is available
-uv --version > nul 2>&1
-if %errorlevel% neq 0 (
-    echo Error: 'uv' command not found in PATH. Please install uv.
-    echo See: https://github.com/astral-sh/uv#installation
-    goto PauseAndExit
-)
-
-REM Check if the venv exists (Windows/Posix paths)
-if not exist "${VENV_DIR}\\Scripts\\python.exe" (
-    if not exist "${VENV_DIR}/bin/python" (
-      echo Error: Virtual environment '.${VENV_DIR}' not found or incomplete.
-      echo Please run the setup script again (e.g., node ${setupScriptName}).
-      goto PauseAndExit
-    )
-)
-
-REM uv automatically detects the .venv environment in the current dir
-echo Starting F5-TTS server (server/narrationApp.py)...
-uv run -- python server/narrationApp.py
-
-echo.
-echo Server stopped.
-goto End
-
-:PauseAndExit
-echo.
-pause
-exit /b 1
-
-:End
-endlocal
-pause
-`;
-
-    fs.writeFileSync('run-narration-service-uv.bat', runScriptContent);
-    console.log('✅ Created run-narration-service-uv.bat');
-
-    // Create combined run script
-    const combinedRunScriptContent = `@echo off
-setlocal
-echo Running the application with narration service (using uv)...
-
-REM Ensure the script's directory is the current directory
-cd /d "%~dp0"
-
-REM Check if the narration service run script exists
-if not exist "run-narration-service-uv.bat" (
-    echo Error: run-narration-service-uv.bat not found.
-    echo Please run the setup script again (e.g., node ${setupScriptName}).
-    goto PauseAndExit
-)
-
-REM Check if npm is available
-npm --version > nul 2>&1
-if %errorlevel% neq 0 (
-    echo Error: 'npm' command not found in PATH. Please install Node.js and npm.
-    echo See: https://nodejs.org/
-    goto PauseAndExit
-)
-
-REM Start the narration service in a new window using the uv script
-echo Starting Narration Service (uv - ${gpuVendor} target)...
-start "Narration Service (uv)" cmd /c "run-narration-service-uv.bat"
-
-REM Wait for the narration service to start (adjust time if needed)
-echo Waiting a few seconds for narration service to initialize...
-timeout /t 5 /nobreak > nul
-
-REM Start the application (assuming Node.js part remains the same)
-echo Starting the main application (npm run dev)...
-npm run dev
-
-echo.
-echo Main application stopped.
-goto End
-
-:PauseAndExit
-echo.
-pause
-exit /b 1
-
-:End
-endlocal
-pause
-`;
-
-    fs.writeFileSync('run-app-with-narration-uv.bat', combinedRunScriptContent);
-    console.log('✅ Created run-app-with-narration-uv.bat');
-
-} catch (error) {
-    console.error(`❌ Error creating run scripts: ${error.message}`);
-}
+// --- 8. Removed: Script generation for narration service ---
+// The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
 
 // --- 9. Update package.json ---
 console.log('\n🔧 Updating package.json with uv commands...');
@@ -648,12 +543,9 @@ if (installNotes) {
 }
 console.log('\n🚀 To run the application with narration service:');
 console.log('   1. Ensure `uv` and `npm` are in your PATH.');
-console.log('   2. Run the batch file: run-app-with-narration-uv.bat');
-console.log('   OR');
-console.log('   3. Run the npm script: npm run dev:uv');
+console.log('   2. Run the npm script: npm run dev:uv');
 console.log('\n💡 To just run the narration service:');
-console.log('   - run-narration-service-uv.bat');
-console.log('   - OR npm run python:start:uv');
+console.log('   - npm run python:start:uv');
 console.log('\n🔧 To re-run this setup (will delete F5-TTS and reinstall venv packages):');
 console.log(`   - node ${path.basename(__filename)}`);
 console.log(`   - OR npm run setup:narration:uv (if package.json was updated)`);
