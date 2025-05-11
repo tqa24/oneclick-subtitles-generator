@@ -15,7 +15,7 @@ const { downloadVideoWithRetry } = require('../services/allSites/downloader');
 router.post('/download-generic-video', async (req, res) => {
   const { videoId, url } = req.body;
 
-  console.log(`Received download request for generic video URL: ${url}, ID: ${videoId}`);
+
 
   if (!videoId || !url) {
     return res.status(400).json({ error: 'Video ID and URL are required' });
@@ -38,7 +38,7 @@ router.post('/download-generic-video', async (req, res) => {
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
-      console.log(`Video downloaded successfully: ${videoId}.mp4 using method: ${result.method}`);
+
       return res.json({
         success: true,
         message: result.message || 'Video downloaded successfully',
@@ -81,7 +81,7 @@ router.post('/cancel-generic-download/:videoId', (req, res) => {
     return res.status(400).json({ error: 'Video ID is required' });
   }
 
-  console.log(`Received request to cancel download for video ID: ${videoId}`);
+
 
   // Currently, we don't have a way to cancel an ongoing yt-dlp process
   // But we can return success to let the client know we received the request

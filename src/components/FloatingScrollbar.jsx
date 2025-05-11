@@ -17,7 +17,7 @@ const FloatingScrollbar = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [scrollStartPosition, setScrollStartPosition] = useState(null);
   const [initialScrollTop, setInitialScrollTop] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false); // Used in JSX className
   const scrollingTimeoutRef = useRef(null);
   const lastScrollTop = useRef(0);
   const scrollDirectionRef = useRef(null);
@@ -262,11 +262,13 @@ const FloatingScrollbar = () => {
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
       }
-      if (activityTimeoutRef.current) {
-        clearTimeout(activityTimeoutRef.current);
+      // Store ref value in a variable to avoid the cleanup function using a changed ref value
+      const activityTimeout = activityTimeoutRef.current;
+      if (activityTimeout) {
+        clearTimeout(activityTimeout);
       }
     };
-  }, [isDragging, scrollStartPosition, initialScrollTop]);
+  }, [isDragging, scrollStartPosition, initialScrollTop, handleDocumentMouseMove, handleDocumentMouseUp, handleEdgeDetection]);
 
   // Check if scrolling is needed for initial render
   const [isScrollNeededState, setIsScrollNeededState] = useState(false);

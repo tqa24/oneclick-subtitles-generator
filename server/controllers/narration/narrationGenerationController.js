@@ -12,7 +12,7 @@ const { clearNarrationOutputFiles } = require('./directoryManager');
  * Generate narration
  */
 const generateNarration = async (req, res) => {
-  console.log('Received generate request');
+
 
   // Check if we should skip clearing the output directory
   // This is used for retrying a single narration to avoid deleting all other narrations
@@ -20,24 +20,24 @@ const generateNarration = async (req, res) => {
 
   if (!skipClearOutput) {
     // Clear all existing narration output files for fresh generation
-    console.log('Clearing all narration output files for fresh generation');
+
     clearNarrationOutputFiles();
   } else {
-    console.log('CRITICAL FIX: Skipping clearing narration output files for retry');
+
   }
 
   try {
     const { reference_audio, reference_text, subtitles, settings } = req.body;
 
-    console.log(`Generating narration for ${subtitles.length} subtitles`);
-    console.log(`Reference audio: ${reference_audio}`);
-    console.log(`Reference text: ${reference_text}`);
+
+
+
 
     // Check if the narration service is available
     const serviceStatus = await narrationServiceClient.checkService(20, 10000);
 
     if (!serviceStatus.available) {
-      console.log('Narration service is required but not available');
+
       return res.status(503).json({
         success: false,
         error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
@@ -60,7 +60,7 @@ const generateNarration = async (req, res) => {
       }
       // Otherwise, the response is being handled by the streaming logic
     } catch (error) {
-      console.error(`Error using narration service: ${error.message}`);
+      // Removed error logging
       return res.status(503).json({
         success: false,
         error: `Error connecting to narration service: ${error.message}. Please restart the application with npm run dev:cuda.`

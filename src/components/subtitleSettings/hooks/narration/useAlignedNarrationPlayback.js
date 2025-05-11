@@ -62,7 +62,7 @@ const useAlignedNarrationPlayback = ({
       isSeekingRef.current = true;
 
       // We don't update audio position during seeking to avoid stuttering
-      console.log('Video seeking, waiting for seeked event');
+
     };
 
     const handleSeeked = () => {
@@ -77,7 +77,7 @@ const useAlignedNarrationPlayback = ({
 
       // Update the aligned narration to match the video after seeking
       // This is a critical sync point, so we always update here
-      console.log(`Video seeked to ${currentTime.toFixed(2)}s, syncing audio`);
+
       playAlignedNarration(currentTime, isPlaying);
 
       // Reset seeking state
@@ -90,7 +90,7 @@ const useAlignedNarrationPlayback = ({
       const currentTime = videoRef.current.currentTime;
       lastUpdateTimeRef.current = Date.now();
 
-      console.log(`Video play at ${currentTime.toFixed(2)}s`);
+
       playAlignedNarration(currentTime, true);
     };
 
@@ -99,7 +99,7 @@ const useAlignedNarrationPlayback = ({
 
       // Pause the audio without changing the time
       const currentTime = videoRef.current.currentTime;
-      console.log(`Video paused at ${currentTime.toFixed(2)}s`);
+
       playAlignedNarration(currentTime, false);
     };
 
@@ -116,7 +116,7 @@ const useAlignedNarrationPlayback = ({
         if (audio.playbackRate !== newRate) {
           const currentTime = videoRef.current.currentTime;
           const isPlaying = !videoRef.current.paused;
-          console.log(`Video playback rate changed to ${newRate}, updating audio`);
+
 
           // Update audio playback rate
           audio.playbackRate = newRate;
@@ -131,23 +131,23 @@ const useAlignedNarrationPlayback = ({
     };
 
     // Add event listeners to the video element
-    videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
-    videoRef.current.addEventListener('seeking', handleSeeking);
-    videoRef.current.addEventListener('seeked', handleSeeked);
-    videoRef.current.addEventListener('play', handlePlay);
-    videoRef.current.addEventListener('pause', handlePause);
-    videoRef.current.addEventListener('ratechange', handleRateChange);
+    const video = videoRef.current; // Store reference to avoid closure issues
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('seeking', handleSeeking);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ratechange', handleRateChange);
 
     // Clean up event listeners
     return () => {
-      if (videoRef && videoRef.current) {
-        videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-        videoRef.current.removeEventListener('seeking', handleSeeking);
-        videoRef.current.removeEventListener('seeked', handleSeeked);
-        videoRef.current.removeEventListener('play', handlePlay);
-        videoRef.current.removeEventListener('pause', handlePause);
-        videoRef.current.removeEventListener('ratechange', handleRateChange);
-      }
+      // Use the same video reference from above to avoid closure issues
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('seeking', handleSeeking);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ratechange', handleRateChange);
     };
   }, [
     videoRef,
@@ -163,7 +163,7 @@ const useAlignedNarrationPlayback = ({
   // Handle toggling aligned narration mode
   useEffect(() => {
     if (useAlignedMode) {
-      console.log('Aligned narration mode enabled');
+
 
       // If aligned narration is available and video is playing, start playing aligned narration
       if (isAlignedAvailable && videoRef?.current && !videoRef.current.paused) {
@@ -171,11 +171,11 @@ const useAlignedNarrationPlayback = ({
         playAlignedNarration(currentTime, true);
       }
     } else {
-      console.log('Aligned narration mode disabled');
+
 
       // When disabling aligned mode, completely stop the aligned narration
       if (isAlignedAvailable) {
-        console.log('Stopping aligned narration completely');
+
 
         // First pause it
         playAlignedNarration(0, false);

@@ -30,13 +30,13 @@ def process_base64_audio_reference():
             return jsonify({'error': 'Invalid JSON data received'}), 400
 
         # Log keys safely
-        logger.info(f"Received base64 reference request with keys: {list(data.keys()) if isinstance(data, dict) else 'Invalid data format'}")
+
 
         audio_data_base64 = data.get('audio_data') if isinstance(data, dict) else None
         reference_text = data.get('reference_text', '') if isinstance(data, dict) else ''
         should_transcribe = str(data.get('transcribe', 'false')).lower() == 'true' if isinstance(data, dict) else False
 
-        logger.info(f"Base64 Ref: Transcribe={should_transcribe}, Provided Text='{reference_text[:50]}...'")
+
 
         if not audio_data_base64 or not isinstance(audio_data_base64, str):
             logger.error("No 'audio_data' string found in request JSON.")
@@ -58,10 +58,10 @@ def process_base64_audio_reference():
         # Decode and save the audio data
         try:
             audio_bytes = base64.b64decode(audio_data_base64)
-            logger.info(f"Successfully decoded base64 data, size: {len(audio_bytes)} bytes")
+
             with open(filepath, 'wb') as f:
                 f.write(audio_bytes)
-            logger.info(f"Saved base64 audio to {filepath}")
+
         except base64.binascii.Error as decode_error:
             logger.error(f"Error decoding base64 data: {decode_error}")
             sample = audio_data_base64[:100] + '...' if len(audio_data_base64) > 100 else audio_data_base64
@@ -86,7 +86,7 @@ def process_base64_audio_reference():
 
         # Transcribe if requested OR if no reference text was provided
         if should_transcribe or not final_reference_text:
-            logger.info("Transcription needed (requested or text empty). Attempting with Gemini...")
+
             # Use the already decoded base64 data for speed
             transcription_result = transcribe_with_gemini_base64(audio_data_base64)
 
@@ -95,21 +95,22 @@ def process_base64_audio_reference():
             language = transcription_result.get("language", "Error during transcription") # Provide feedback
 
             if not final_reference_text and "Error" not in language:
-                 logger.warning("Gemini transcription returned empty text.")
-                 language = "Unknown (Empty Transcription)"
+                logger.warning("Gemini transcription returned empty text.")
+                language = "Unknown (Empty Transcription)"
             elif "Error" in language:
-                 logger.error(f"Gemini transcription failed: {language}")
-                 # Keep provided text if any, otherwise it remains empty
-                 final_reference_text = reference_text
+                logger.error(f"Gemini transcription failed: {language}")
+                # Keep provided text if any, otherwise it remains empty
+                final_reference_text = reference_text
             else:
-                 logger.info(f"Gemini transcription successful: Lang={language}, Text='{final_reference_text[:50]}...'")
+                # Transcription successful
+                logger.info("Gemini transcription successful")
 
         else:
-            logger.info("Using provided reference text, skipping transcription.")
+
             # Estimate language from provided text
             is_english = is_text_english(final_reference_text)
             language = "English" if is_english else "Non-English"
-            logger.info(f"Language estimated from provided text: {language}")
+
 
 
         response_data = {
@@ -120,7 +121,7 @@ def process_base64_audio_reference():
             'is_english': is_english,
             'language': language
         }
-        logger.info(f"Returning success response for base64 reference: {response_data}")
+
         return jsonify(response_data)
 
     except Exception as e:
@@ -149,15 +150,15 @@ def upload_reference_audio():
         unique_filename = f"{base}_{unique_id}{ext}"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, unique_filename)
 
-        logger.info(f"Saving uploaded file '{original_filename}' as '{unique_filename}'")
+
         file.save(filepath)
-        logger.info(f"File saved successfully to {filepath}")
+
 
         # Get reference text from form data
         reference_text = request.form.get('reference_text', '')
         # Allow explicit 'transcribe' flag from form data as well
         should_transcribe_form = request.form.get('transcribe', 'false').lower() == 'true'
-        logger.info(f"Upload Ref: Provided Text='{reference_text[:50]}...', Transcribe Flag={should_transcribe_form}")
+
 
         # --- Transcription Logic ---
         final_reference_text = reference_text
@@ -166,7 +167,7 @@ def upload_reference_audio():
 
         # Transcribe if flag set OR if no text provided
         if should_transcribe_form or not final_reference_text:
-            logger.info("Transcription needed for uploaded file. Attempting with Gemini...")
+
             # Transcribe using the saved file path
             transcription_result = transcribe_with_gemini(filepath)
             final_reference_text = transcription_result.get("text", "")
@@ -174,18 +175,20 @@ def upload_reference_audio():
             language = transcription_result.get("language", "Error during transcription")
 
             if not final_reference_text and "Error" not in language:
-                 logger.warning("Gemini transcription returned empty text for uploaded file.")
-                 language = "Unknown (Empty Transcription)"
+                logger.warning("Gemini transcription returned empty text for uploaded file.")
+                language = "Unknown (Empty Transcription)"
             elif "Error" in language:
-                 logger.error(f"Gemini transcription failed for uploaded file: {language}")
-                 final_reference_text = reference_text # Fallback to provided text if any
+                logger.error(f"Gemini transcription failed for uploaded file: {language}")
+                final_reference_text = reference_text # Fallback to provided text if any
             else:
-                 logger.info(f"Gemini transcription successful for uploaded file: Lang={language}, Text='{final_reference_text[:50]}...'")
+                # Transcription successful
+                logger.info("Gemini transcription successful for uploaded file")
+
         else:
-            logger.info("Using provided reference text for uploaded file, skipping transcription.")
+
             is_english = is_text_english(final_reference_text)
             language = "English" if is_english else "Non-English"
-            logger.info(f"Language estimated from provided text: {language}")
+
 
         return jsonify({
             'success': True,
@@ -205,45 +208,45 @@ def upload_reference_audio():
 @audio_bp.route('/record-reference', methods=['POST'])
 def record_reference_audio():
     """Handle reference audio potentially sent as form data (e.g., from recorder.js)"""
-    logger.info("Received request at /record-reference endpoint.")
+
 
     # Check if content type suggests base64 JSON first
     content_type = request.headers.get('Content-Type', '').lower()
     if 'application/json' in content_type:
-        logger.info("/record-reference received JSON content type, attempting to process as base64...")
+
         # Use the dedicated base64 handler
         return process_base64_audio_reference()
 
     # Fallback: Handle as form data file upload ('audio_data' field expected)
-    logger.info("/record-reference assuming form-data audio file upload.")
+
     try:
         if 'audio_data' not in request.files:
             # Check form fields as fallback if file isn't present
             if 'audio_data' in request.form:
-                 logger.warning("/record-reference: 'audio_data' found in form fields, not files. Might be base64 string?")
-                 # Attempt to handle as if it were base64 JSON payload
-                 try:
-                     mock_json_payload = {
-                         'audio_data': request.form['audio_data'],
-                         'reference_text': request.form.get('reference_text', ''),
-                         'transcribe': request.form.get('transcribe', 'false')
-                     }
-                     # Temporarily replace request data for the handler function
-                     # This is a bit hacky; ideally client sends consistent format.
-                     original_json = request.json
-                     request.json_data_override = mock_json_payload # Custom attribute to pass data
-                     response = process_base64_audio_reference_from_override()
-                     request.json_data_override = None # Clean up
-                     return response
-                 except Exception as form_b64_err:
-                     logger.error(f"Failed to process 'audio_data' from form field as base64: {form_b64_err}")
-                     return jsonify({'error': 'Received audio_data in form, but failed to process as base64'}), 400
+                logger.warning("/record-reference: 'audio_data' found in form fields, not files. Might be base64 string?")
+                # Attempt to handle as if it were base64 JSON payload
+                try:
+                    mock_json_payload = {
+                        'audio_data': request.form['audio_data'],
+                        'reference_text': request.form.get('reference_text', ''),
+                        'transcribe': request.form.get('transcribe', 'false')
+                    }
+                    # Temporarily replace request data for the handler function
+                    # This is a bit hacky; ideally client sends consistent format.
+                    original_json = request.json
+                    request.json_data_override = mock_json_payload # Custom attribute to pass data
+                    response = process_base64_audio_reference_from_override()
+                    request.json_data_override = None # Clean up
+                    return response
+                except Exception as form_b64_err:
+                    logger.error(f"Failed to process 'audio_data' from form field as base64: {form_b64_err}")
+                    return jsonify({'error': 'Received audio_data in form, but failed to process as base64'}), 400
 
             logger.error("/record-reference: No 'audio_data' found in request files.")
             return jsonify({'error': 'Missing audio_data file part'}), 400
 
         audio_file = request.files['audio_data']
-        logger.info(f"Received audio file via form data: {audio_file.filename}, size: {audio_file.content_length}")
+
 
         # Generate unique filename, save, and transcribe (similar to /upload-reference)
         unique_id = str(uuid.uuid4())
@@ -251,13 +254,13 @@ def record_reference_audio():
         filename = f"recorded_form_{unique_id}.wav"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
 
-        logger.info(f"Saving recorded form data file as '{filename}'")
+
         audio_file.save(filepath)
-        logger.info(f"File saved successfully to {filepath}")
+
 
         reference_text = request.form.get('reference_text', '')
         should_transcribe = request.form.get('transcribe', 'false').lower() == 'true'
-        logger.info(f"Record Ref (form): Provided Text='{reference_text[:50]}...', Transcribe Flag={should_transcribe}")
+
 
         # --- Transcription Logic ---
         final_reference_text = reference_text
@@ -265,17 +268,17 @@ def record_reference_audio():
         language = "Unknown"
 
         if should_transcribe or not final_reference_text:
-            logger.info("Transcription needed for recorded form data. Attempting with Gemini...")
+
             transcription_result = transcribe_with_gemini(filepath)
             final_reference_text = transcription_result.get("text", "")
             is_english = transcription_result.get("is_english", True)
             language = transcription_result.get("language", "Error during transcription")
             # Logging handled within transcribe function
         else:
-            logger.info("Using provided text for recorded form data, skipping transcription.")
+
             is_english = is_text_english(final_reference_text)
             language = "English" if is_english else "Non-English"
-            logger.info(f"Language estimated from provided text: {language}")
+
 
         return jsonify({
             'success': True,
@@ -319,7 +322,7 @@ def process_base64_audio_reference_from_override():
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
         audio_bytes = base64.b64decode(audio_data_base64)
         with open(filepath, 'wb') as f: f.write(audio_bytes)
-        logger.info(f"Saved override audio to {filepath}")
+
         # (Placeholder for Transcription logic)
         final_reference_text = reference_text or "Transcription Placeholder"
         is_english = True
@@ -346,15 +349,15 @@ def extract_audio_segment():
         end_time_raw = data.get('end_time')     # Can be seconds or HH:MM:SS.ms
         should_transcribe = data.get('transcribe', True)
 
-        logger.info(f"Extract segment request: video={video_path}, start={start_time_raw}, end={end_time_raw}, transcribe={should_transcribe}")
+
 
         if not video_path or start_time_raw is None or end_time_raw is None:
             return jsonify({'error': 'Missing required parameters (video_path, start_time, end_time)'}), 400
 
         # Ensure video path exists
         if not os.path.exists(video_path):
-             logger.error(f"Video file not found for extraction: {video_path}")
-             return jsonify({'error': f'Video file not found: {video_path}'}), 404
+            logger.error(f"Video file not found for extraction: {video_path}")
+            return jsonify({'error': f'Video file not found: {video_path}'}), 404
 
         # Convert times to seconds if needed (handle HH:MM:SS.ms format)
         def parse_time(time_raw):
@@ -385,7 +388,7 @@ def extract_audio_segment():
             return jsonify({'error': str(e)}), 400
 
         if start_time < 0 or end_time <= start_time:
-             return jsonify({'error': 'Invalid time range (start must be non-negative, end must be after start)'}), 400
+            return jsonify({'error': 'Invalid time range (start must be non-negative, end must be after start)'}), 400
 
         duration = end_time - start_time
 
@@ -412,18 +415,18 @@ def extract_audio_segment():
             '-ac', '1',
             output_path
         ]
-        logger.info(f"Running ffmpeg command: {' '.join(cmd)}")
+
 
         # Execute ffmpeg
         try:
             # Use capture_output=True to get stderr for debugging if needed
             result = subprocess.run(cmd, check=True, capture_output=True, text=True, encoding='utf-8')
-            logger.info("ffmpeg completed successfully.")
+
             logger.debug(f"ffmpeg stdout:\n{result.stdout}")
             logger.debug(f"ffmpeg stderr:\n{result.stderr}")
         except FileNotFoundError:
-             logger.error("ffmpeg command not found. Ensure ffmpeg is installed and in the system PATH.")
-             return jsonify({'error': 'ffmpeg not found. Please install ffmpeg.'}), 500
+            logger.error("ffmpeg command not found. Ensure ffmpeg is installed and in the system PATH.")
+            return jsonify({'error': 'ffmpeg not found. Please install ffmpeg.'}), 500
         except subprocess.CalledProcessError as e:
             logger.error(f"ffmpeg command failed with exit code {e.returncode}")
             logger.error(f"ffmpeg stderr:\n{e.stderr}")
@@ -437,15 +440,15 @@ def extract_audio_segment():
         language = "Unknown"
 
         if should_transcribe:
-            logger.info("Transcription requested for extracted segment. Attempting with Gemini...")
+
             transcription_result = transcribe_with_gemini(output_path)
             reference_text = transcription_result.get("text", "")
             is_english = transcription_result.get("is_english", True)
             language = transcription_result.get("language", "Error during transcription")
             # Logging handled within transcribe function
         else:
-            logger.info("Transcription not requested for extracted segment.")
             # Cannot determine language without transcription
+            language = "Unknown (No Transcription)"
 
         return jsonify({
             'success': True,

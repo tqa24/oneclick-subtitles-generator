@@ -3,7 +3,6 @@
  * Handles prompt presets and custom prompts
  */
 
-import i18n from '../../i18n/i18n';
 import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
 
 // Default transcription prompts
@@ -98,21 +97,21 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
 
     // Log which prompt is being used
     if (sessionPrompt) {
-        console.log('Using session-specific prompt from video analysis');
+
     }
 
     // If we have user-provided subtitles, replace the entire prompt with a simplified version
     if (userProvidedSubtitles && userProvidedSubtitles.trim() !== '') {
         // Use a very simple prompt that only focuses on timing the provided subtitles
         // No preset information, no transcription rules, just the core task
-        console.log('SIMPLIFIED PROMPT: Using simplified prompt for user-provided subtitles');
-        console.log('USER SUBTITLES:', userProvidedSubtitles);
-        console.log('CALLER INFO:', new Error().stack);
+
+
+
 
         // Split the subtitles into an array and count them
         const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
         const subtitleCount = subtitleLines.length;
-        console.log(`Found ${subtitleCount} subtitle lines to time`);
+
 
         // Create a numbered list of subtitles for the prompt
         const numberedSubtitles = subtitleLines.map((line, index) => `[${index}] ${line}`).join('\n');
@@ -183,7 +182,7 @@ IMPORTANT RULES:
 Here are the subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
         }
 
-        console.log('SIMPLIFIED PROMPT CONTENT:', simplifiedPrompt);
+
         return simplifiedPrompt;
     }
 
@@ -271,7 +270,7 @@ const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLang
 
             // Use all subtitle lines as examples
             for (let i = 0; i < subtitleLines.length; i++) {
-                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, '\"') + '", "translated": "[Translation in ' + lang + ']" }' + (i < subtitleLines.length - 1 ? ',' : '');
+                exampleJson += '\n        { "original": "' + subtitleLines[i].replace(/"/g, "'") + '", "translated": "[Translation in ' + lang + ']" }' + (i < subtitleLines.length - 1 ? ',' : '');
             }
 
             exampleJson += '\n      ]\n    }' + (langIndex < targetLanguage.length - 1 ? ',' : '');
@@ -304,7 +303,9 @@ ${exampleJson}
         // Add up to 5 example lines using the actual subtitle content
         // Use all subtitle lines as examples
         for (let i = 0; i < subtitleLines.length; i++) {
-            exampleJson += `  { "original": "${subtitleLines[i].replace(/"/g, '\\"')}", "translated": "[Translation of this line in ${targetLanguage}]" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
+            // Use single quotes to avoid escaping issues
+            const escapedLine = subtitleLines[i].replace(/"/g, "'");
+            exampleJson += `  { "original": "${escapedLine}", "translated": "[Translation of this line in ${targetLanguage}]" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
         }
 
         exampleJson += ']';

@@ -154,7 +154,7 @@ def add_model(model_info):
     if registry.get("active_model") is None or registry.get("active_model") == "f5tts-v1-base":
          if model_id != "f5tts-v1-base": # Don't reset active to default if adding default
             registry["active_model"] = model_id
-            logger.info(f"Setting newly added model {model_id} as active.")
+
 
     if save_registry(registry):
         return True, f"Model {model_id} added successfully"
@@ -191,7 +191,7 @@ def delete_model(model_id, delete_cache=False):
 
     # --- Update Registry ---
     registry["models"].pop(model_index)
-    logger.info(f"Removed model {model_id} from registry list.")
+
 
     # If model was active, set active to default or None
     if original_active_model == model_id:
@@ -199,11 +199,11 @@ def delete_model(model_id, delete_cache=False):
         default_exists = any(m.get("id") == 'f5tts-v1-base' for m in registry["models"])
         new_active_model = 'f5tts-v1-base' if default_exists else None
         registry["active_model"] = new_active_model
-        logger.info(f"Active model was {model_id}, setting active model to {new_active_model}")
+
 
     # Remove any download status
     if model_id in registry.get("downloads", {}):
-        logger.info(f"Removing download status for deleted model {model_id}")
+
         del registry["downloads"][model_id]
 
     # --- Save Registry Changes ---
@@ -219,7 +219,7 @@ def delete_model(model_id, delete_cache=False):
     try:
         # 1. Delete specific model/vocab files if paths are absolute and exist
         if model_path_to_delete and os.path.isabs(model_path_to_delete) and os.path.exists(model_path_to_delete):
-            logger.info(f"Deleting model file: {model_path_to_delete}")
+
             try:
                 os.remove(model_path_to_delete)
                 deleted_files_summary.append("Deleted model file.")
@@ -228,7 +228,7 @@ def delete_model(model_id, delete_cache=False):
                 deleted_files_summary.append(f"Error deleting model file: {e}")
 
         if vocab_path_to_delete and os.path.isabs(vocab_path_to_delete) and os.path.exists(vocab_path_to_delete):
-             logger.info(f"Deleting vocab file: {vocab_path_to_delete}")
+
              try:
                  os.remove(vocab_path_to_delete)
                  deleted_files_summary.append("Deleted vocab file.")
@@ -241,7 +241,7 @@ def delete_model(model_id, delete_cache=False):
             from .constants import MODELS_DIR
             project_model_dir = os.path.join(MODELS_DIR, model_id)
             if os.path.exists(project_model_dir) and os.path.isdir(project_model_dir):
-                 logger.info(f"Deleting project model directory: {project_model_dir}")
+
                  try:
                      shutil.rmtree(project_model_dir)
                      deleted_files_summary.append("Deleted project model directory.")
@@ -259,11 +259,11 @@ def delete_model(model_id, delete_cache=False):
         cache_deletion_result = None
         if delete_cache:
             if repo_id_to_delete:
-                logger.info(f"Attempting Hugging Face cache deletion for repo: {repo_id_to_delete}")
+
                 try:
                     success, message = delete_huggingface_cache_model(repo_id_to_delete)
                     if success:
-                        logger.info(f"Successfully initiated deletion from Hugging Face cache for {repo_id_to_delete}")
+
                         cache_deletion_result = f"Initiated Hugging Face cache deletion for {repo_id_to_delete}."
                     else:
                         logger.warning(f"Failed to delete from Hugging Face cache for {repo_id_to_delete}: {message}")
@@ -272,7 +272,7 @@ def delete_model(model_id, delete_cache=False):
                     logger.error(f"Error calling delete_huggingface_cache_model for {repo_id_to_delete}: {e}")
                     cache_deletion_result = f"Error during Hugging Face cache deletion for {repo_id_to_delete}: {e}"
             else:
-                logger.info(f"delete_cache=True but model {model_id} has no associated repo_id. Skipping HF cache deletion.")
+
                 cache_deletion_result = "Skipped Hugging Face cache deletion (no repo_id)."
 
         # Combine results

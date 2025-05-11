@@ -21,7 +21,8 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
   const [referenceAudio, setReferenceAudio] = useState(null);
   const [referenceText, setReferenceText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recordedAudio, setRecordedAudio] = useState(null);
+  // recordedAudio state is set but used in the onstop handler of mediaRecorder
+  const [, setRecordedAudio] = useState(null);
   const [isExtractingSegment, setIsExtractingSegment] = useState(false);
   const [segmentStartTime, setSegmentStartTime] = useState('');
   const [segmentEndTime, setSegmentEndTime] = useState('');
@@ -32,14 +33,12 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
 
-  // Check if narration service is available with multiple attempts
+  // Check if narration service is available - simplified version
   useEffect(() => {
     const checkAvailability = async () => {
       try {
-        console.log('Checking narration service availability with multiple attempts');
-        // Use 20 attempts with 10-second intervals and enable quiet mode
-        const status = await checkNarrationStatusWithRetry(20, 10000, true);
-        console.log('Final narration service status:', status);
+        // Use simplified version with no retries
+        const status = await checkNarrationStatusWithRetry();
 
         // Set availability based on the actual status
         setIsServiceAvailable(status.available);
@@ -52,7 +51,6 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
           setError('');
         }
       } catch (error) {
-        console.error('Error checking narration status:', error);
         // Service is not available if there's an error
         setIsServiceAvailable(false);
         setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
@@ -70,24 +68,24 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
 
   // Handle file upload
   const handleFileUpload = async (event) => {
-    console.log('File upload triggered');
+
     const file = event.target.files[0];
     if (!file) {
-      console.log('No file selected');
+
       return;
     }
 
-    console.log('File selected:', file.name, 'size:', file.size, 'type:', file.type);
+
 
     try {
-      console.log('Uploading reference audio file...');
+
       const result = await uploadReferenceAudio(file, referenceText);
-      console.log('Upload result:', result);
+
 
       if (result.success) {
-        console.log('File uploaded successfully');
+
         const audioUrl = getAudioUrl(result.filename);
-        console.log('Audio URL:', audioUrl);
+
 
         setReferenceAudio({
           filepath: result.filepath,
@@ -97,13 +95,13 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
 
         // Update reference text if it was empty and we got it from transcription
         if (!referenceText && result.reference_text) {
-          console.log('Setting reference text from result:', result.reference_text);
+
           setReferenceText(result.reference_text);
         }
 
         // Notify parent component
         if (onReferenceAudioChange) {
-          console.log('Notifying parent component of reference audio change');
+
           onReferenceAudioChange({
             filepath: result.filepath,
             filename: result.filename,
@@ -126,22 +124,22 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
       setError(''); // Clear any previous errors
       audioChunksRef.current = [];
 
-      console.log('Requesting microphone access');
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('Microphone access granted');
+
 
       mediaRecorderRef.current = new MediaRecorder(stream);
 
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log('Received audio chunk, size:', event.data.size);
+
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        console.log('Recording stopped, processing audio...');
-        console.log('Audio chunks:', audioChunksRef.current.length);
+
+
 
         if (audioChunksRef.current.length === 0) {
           setError(t('narration.noAudioData', 'No audio data recorded'));
@@ -149,7 +147,7 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
         }
 
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        console.log('Created audio blob, size:', audioBlob.size);
+
         const audioUrl = URL.createObjectURL(audioBlob);
 
         setRecordedAudio({
@@ -159,11 +157,11 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
 
         // Save the recorded audio
         try {
-          console.log('Saving recorded audio, size:', audioBlob.size);
+
           const result = await saveRecordedAudio(audioBlob, referenceText);
 
           if (result.success) {
-            console.log('Audio saved successfully:', result);
+
             setReferenceAudio({
               filepath: result.filepath,
               filename: result.filename,
@@ -194,7 +192,7 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
       };
 
       mediaRecorderRef.current.start();
-      console.log('Recording started');
+
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -204,15 +202,15 @@ const NarrationSettings = ({ videoPath, onReferenceAudioChange }) => {
 
   // Handle recording stop
   const stopRecording = () => {
-    console.log('Stopping recording...');
+
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      console.log('Recording stopped');
+
 
       // Stop all audio tracks
       if (mediaRecorderRef.current.stream) {
-        console.log('Stopping audio tracks...');
+
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
     } else {

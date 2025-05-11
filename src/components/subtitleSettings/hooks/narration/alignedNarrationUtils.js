@@ -54,14 +54,14 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
     return generationResults;
   }
 
-  console.log('Enhancing narration with timing. Results count:', generationResults.length);
-  console.log('Available subtitle IDs in map:', Object.keys(subtitleMap));
 
-  // Log the types of narrations we're processing
-  const f5ttsCount = generationResults.filter(r => r.filename && !r.audioData).length;
-  const geminiCount = generationResults.filter(r => r.audioData).length;
-  const unknownCount = generationResults.filter(r => !r.filename && !r.audioData).length;
-  console.log(`Narration types: F5-TTS: ${f5ttsCount}, Gemini: ${geminiCount}, Unknown: ${unknownCount}`);
+
+
+  // These counts were used for debugging but are not currently used
+  // const f5ttsCount = generationResults.filter(r => r.filename && !r.audioData).length;
+  // const geminiCount = generationResults.filter(r => r.audioData).length;
+  // const unknownCount = generationResults.filter(r => !r.filename && !r.audioData).length;
+
 
   // Check if any narration has been retried recently
   const hasRecentRetry = generationResults.some(result =>
@@ -70,7 +70,7 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
   // If any narration has been retried recently, force regeneration
   if (hasRecentRetry) {
-    console.log('Recent narration retry detected - will force regeneration of aligned narration');
+
   }
 
   return generationResults.map(result => {
@@ -79,7 +79,7 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
     // Log the lookup attempt for debugging
     const narrationType = result.filename ? 'F5-TTS' : (result.audioData ? 'Gemini' : 'Unknown');
-    console.log(`Looking up timing for subtitle ID: ${subtitleId} (${narrationType} narration)`);
+
 
     // Get the subtitle from the map using the exact ID from the result
     const subtitle = subtitleMap[subtitleId];
@@ -89,7 +89,7 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
     // If we found a matching subtitle, use its timing
     if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-      console.log(`Found timing for subtitle ${subtitleId}: ${subtitle.start}s - ${subtitle.end}s${wasRetried ? ' (RETRIED)' : ''} (${narrationType} narration)`);
+
       return {
         ...result,
         start: subtitle.start,
@@ -123,7 +123,7 @@ export const createSubtitleMap = (subtitles) => {
     return {};
   }
 
-  console.log(`Creating subtitle map from ${subtitles.length} subtitles`);
+
 
   const map = {};
   subtitles.forEach((subtitle, index) => {
@@ -133,14 +133,14 @@ export const createSubtitleMap = (subtitles) => {
 
       // Log the first few and last few for debugging
       if (index < 3 || index >= subtitles.length - 3) {
-        console.log(`Mapped subtitle ID ${subtitle.id} with timing ${subtitle.start}s - ${subtitle.end}s`);
+
       }
     } else {
       console.warn(`Subtitle at index ${index} has no ID or is invalid:`, subtitle);
     }
   });
 
-  console.log(`Created subtitle map with ${Object.keys(map).length} entries`);
+
   return map;
 };
 
@@ -154,25 +154,25 @@ export const getAllSubtitles = () => {
 
   // Try to get subtitles from window.subtitles (main source)
   if (window.subtitles && Array.isArray(window.subtitles)) {
-    console.log(`Found ${window.subtitles.length} subtitles in window.subtitles`);
+
     sources.subtitles = window.subtitles;
   }
 
   // Also check window.subtitlesData (alternative source)
   if (window.subtitlesData && Array.isArray(window.subtitlesData)) {
-    console.log(`Found ${window.subtitlesData.length} subtitles in window.subtitlesData`);
+
     sources.subtitlesData = window.subtitlesData;
   }
 
   // Also check window.originalSubtitles (for original language)
   if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-    console.log(`Found ${window.originalSubtitles.length} subtitles in window.originalSubtitles`);
+
     sources.originalSubtitles = window.originalSubtitles;
   }
 
   // Also check window.translatedSubtitles (for translated language)
   if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
-    console.log(`Found ${window.translatedSubtitles.length} subtitles in window.translatedSubtitles`);
+
     sources.translatedSubtitles = window.translatedSubtitles;
   }
 
@@ -189,7 +189,7 @@ export const getAllSubtitles = () => {
   }
 
   if (bestSource) {
-    console.log(`Using ${bestSource} as the primary source with ${maxLength} subtitles`);
+
     allSubtitles.push(...sources[bestSource]);
   } else {
     console.warn('No subtitle sources found');
@@ -209,7 +209,7 @@ export const getAllSubtitles = () => {
     return isValid;
   });
 
-  console.log(`Found ${validSubtitles.length} valid subtitles out of ${allSubtitles.length} total`);
+
 
   return validSubtitles;
 };

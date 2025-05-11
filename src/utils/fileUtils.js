@@ -279,7 +279,7 @@ export const fileToBase64 = (file) => {
  */
 export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => {
   try {
-    console.log('Extracting audio from video:', videoPath);
+
 
     // Create a download link element that we'll use later
     const a = document.createElement('a');
@@ -288,19 +288,16 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
 
     // Handle blob URLs differently - we need to fetch the blob and send the actual data
     if (videoPath.startsWith('blob:')) {
-      console.log('Blob URL detected, fetching blob data...');
+
 
       try {
         // Fetch the blob data
         const videoBlob = await fetch(videoPath).then(r => r.blob());
-        console.log('Blob fetched successfully, size:', videoBlob.size);
+
 
         // Create a form for the file upload
         const formData = new FormData();
         formData.append('video', videoBlob, 'video.mp4');
-
-        // Open the URL in a new tab/window to trigger the download
-        const downloadUrl = `${SERVER_URL}/api/extract-audio-from-blob?filename=${encodeURIComponent(filename)}`;
 
         // Use fetch with blob to download directly
         const response = await fetch(`${SERVER_URL}/api/extract-audio-from-blob`, {
@@ -337,11 +334,8 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
     } else {
       // For regular URLs, use a direct download approach
       try {
-        // Open the URL in a new tab/window to trigger the download
-        const downloadUrl = `${SERVER_URL}/api/extract-audio?videoPath=${encodeURIComponent(videoPath)}&filename=${encodeURIComponent(filename)}`;
-
-        // Use fetch to download directly
-        const response = await fetch(downloadUrl, {
+        // Fetch the audio data directly
+        const response = await fetch(`${SERVER_URL}/api/extract-audio?videoPath=${encodeURIComponent(videoPath)}&filename=${encodeURIComponent(filename)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

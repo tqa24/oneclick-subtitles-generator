@@ -8,7 +8,7 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video, 
 
 - Vào mục Release tải về OSG_all_in_one.bat phiên bản mới nhất.
 
-- Mở bằng quyền admin và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng thuyết minh)
+- Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng thuyết minh)
 
 - LƯU Ý: ĐỐI VỚI MÁY CHƯA TỪNG CÀI GIT, NODE, ... THÌ PHẢI MỞ ĐI MỞ LẠI FILE BAT CÀI NHIỀU LẦN THÌ SẼ THÀNH CÔNG
 
@@ -27,7 +27,7 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video, 
 ### Cập Nhật hoặc Chạy Ứng Dụng
 
 #### Windows
-- Mở OSG_all_in_one.bat bằng quyền admin và làm theo hướng dẫn.
+- Mở OSG_all_in_one.bat và làm theo hướng dẫn.
 
 #### macOS và Ubuntu
 - Mở Terminal và chạy lại file OSG_all_in_one.sh:

@@ -20,12 +20,12 @@ function getYtDlpPath() {
   const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
   if (fs.existsSync(venvYtDlpPath)) {
-    console.log(`Found yt-dlp in virtual environment: ${venvYtDlpPath}`);
+
     return venvYtDlpPath;
   }
 
   // If not in venv, use the one in PATH
-  console.log('Using yt-dlp from PATH');
+
   return 'yt-dlp';
 }
 
@@ -38,7 +38,7 @@ async function checkYtDlpVersion() {
 
   try {
     const { stdout } = await require('util').promisify(require('child_process').exec)(`"${ytDlpPath}" --version`);
-    console.log(`yt-dlp version: ${stdout.trim()}`);
+
     return stdout.trim();
   } catch (error) {
     console.error('Error checking yt-dlp version:', error.message);
@@ -57,12 +57,12 @@ async function downloadVideoWithYtDlp(videoId, videoURL) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
 
-  console.log(`Downloading video from URL: ${videoURL}`);
+
 
   try {
     // Check if yt-dlp is installed
     const ytdlpVersion = await checkYtDlpVersion();
-    console.log(`Using yt-dlp version: ${ytdlpVersion}`);
+
   } catch (error) {
     console.error('yt-dlp check failed:', error.message);
     throw error;
@@ -91,7 +91,7 @@ async function downloadVideoWithYtDlp(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`yt-dlp stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -115,7 +115,7 @@ async function downloadVideoWithYtDlp(videoId, videoURL) {
           // Move the temp file to the final location
           safeMoveFile(tempPath, outputPath)
             .then(() => {
-              console.log(`Successfully downloaded video: ${videoId}, size: ${fileStats.size} bytes`);
+
               resolve({
                 success: true,
                 path: outputPath,
@@ -199,7 +199,7 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL) {
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-      console.log(`Fallback stdout: ${dataStr}`);
+
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -223,7 +223,7 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL) {
           // Move the temp file to the final location
           safeMoveFile(tempPath, outputPath)
             .then(() => {
-              console.log(`Successfully downloaded video with fallback options: ${videoId}, size: ${fileStats.size} bytes`);
+
               resolve({
                 success: true,
                 path: outputPath,

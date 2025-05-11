@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 // Global cache for audio data to avoid reprocessing the same audio
 const audioDataCache = new Map();
@@ -29,13 +29,13 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
 
     // Skip YouTube URLs as they can't be directly processed due to CORS
     if (audioSource.includes('youtube.com') || audioSource.includes('youtu.be')) {
-      console.log('YouTube URLs cannot be directly analyzed for volume visualization');
+
       return;
     }
 
     // Check if we already have this audio data in cache
     if (audioDataCache.has(audioSource)) {
-      console.log('Using cached audio data for visualization');
+
       setAudioData(audioDataCache.get(audioSource));
       setIsProcessed(true);
       return;

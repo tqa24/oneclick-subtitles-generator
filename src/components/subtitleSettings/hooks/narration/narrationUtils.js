@@ -43,13 +43,13 @@ export const getLatestNarration = (narration, source) => {
     const updatedNarration = window.originalNarrations.find(n => n.subtitle_id === narration.subtitle_id);
     if (updatedNarration) {
       latestNarration = updatedNarration;
-      console.log('Using latest version of original narration:', latestNarration);
+
     }
   } else if (source === 'translated' && window.translatedNarrations) {
     const updatedNarration = window.translatedNarrations.find(n => n.subtitle_id === narration.subtitle_id);
     if (updatedNarration) {
       latestNarration = updatedNarration;
-      console.log('Using latest version of translated narration:', latestNarration);
+
     }
   }
 
@@ -60,7 +60,7 @@ export const getLatestNarration = (narration, source) => {
     _timestamp: Date.now() // Add a timestamp to ensure the audio URL is always different
   };
 
-  console.log('Created fresh narration with timestamp:', freshNarration);
+
 
   return freshNarration;
 };
@@ -100,7 +100,7 @@ export const calculateAudioStartTime = (videoRef, narration, audioDuration) => {
     // Otherwise, start from the beginning of the audio
     const audioStartTime = Math.max(0, timeFromSubtitleStart);
 
-    console.log('Calculated audio start time:', audioStartTime, 'from video time:', videoCurrentTime, 'and subtitle start:', subtitleStart);
+
 
     // Ensure the start time is within valid bounds
     if (audioStartTime >= 0 && audioStartTime < audioDuration) {

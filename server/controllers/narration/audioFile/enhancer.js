@@ -13,16 +13,16 @@
  */
 const enhanceF5TTSNarrations = (narrationResults, subtitles) => {
   if (!narrationResults || !Array.isArray(narrationResults)) {
-    console.log('No narration results to enhance');
+
     return narrationResults;
   }
 
   if (!subtitles || !Array.isArray(subtitles)) {
-    console.log('No subtitles provided for timing information');
+
     return narrationResults;
   }
 
-  console.log(`Enhancing ${narrationResults.length} F5-TTS narration results with timing information`);
+
 
   // Create a map of subtitles by ID for quick lookup
   const subtitleMap = {};
@@ -39,7 +39,7 @@ const enhanceF5TTSNarrations = (narrationResults, subtitles) => {
 
     // If we found a matching subtitle, use its timing
     if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-      console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+
       return {
         ...result,
         start: subtitle.start,

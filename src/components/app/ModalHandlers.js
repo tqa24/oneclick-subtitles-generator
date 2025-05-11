@@ -29,7 +29,7 @@ export const useModalHandlers = (appState) => {
    * without changing the user's chosen preset in settings
    */
   const handleUseRecommendedPreset = (presetId) => {
-    console.log('handleUseRecommendedPreset called with presetId:', presetId);
+
     // Find the preset
     const preset = PROMPT_PRESETS.find(p => p.id === presetId);
     if (preset) {
@@ -58,19 +58,19 @@ export const useModalHandlers = (appState) => {
         }
       });
       window.dispatchEvent(userChoiceEvent);
-      console.log('Dispatched videoAnalysisUserChoice event with presetId:', presetId);
+
 
       // Clear the localStorage flags and set processing flag
       localStorage.removeItem('show_video_analysis');
       localStorage.removeItem('video_analysis_timestamp');
       localStorage.removeItem('video_analysis_result'); // Also clear the result
       localStorage.setItem('video_processing_in_progress', 'true'); // Set processing flag
-      console.log('Removed video analysis data from localStorage and set processing flag');
+
 
       // Close the modal
       setShowVideoAnalysis(false);
       setVideoAnalysisResult(null); // Clear the result to prevent re-showing
-      console.log('Modal closed after using recommended preset');
+
     }
   };
 
@@ -79,12 +79,12 @@ export const useModalHandlers = (appState) => {
    * This will use the user's chosen preset from settings
    */
   const handleUseDefaultPreset = () => {
-    console.log('handleUseDefaultPreset called');
+
 
     // Clear any session-specific prompt to ensure we use the user's chosen preset
     sessionStorage.removeItem('current_session_prompt');
     sessionStorage.removeItem('current_session_preset_id');
-    console.log('Cleared session-specific prompt to use default preset from settings');
+
 
     // Update status to indicate we're moving forward
     setStatus({
@@ -100,7 +100,7 @@ export const useModalHandlers = (appState) => {
       }
     });
     window.dispatchEvent(userChoiceEvent);
-    console.log('Dispatched videoAnalysisUserChoice event with default preset');
+
 
     // Save the transcription rules
     if (videoAnalysisResult && videoAnalysisResult.transcriptionRules) {
@@ -113,19 +113,19 @@ export const useModalHandlers = (appState) => {
     localStorage.removeItem('video_analysis_timestamp');
     localStorage.removeItem('video_analysis_result'); // Also clear the result
     localStorage.setItem('video_processing_in_progress', 'true'); // Set processing flag
-    console.log('Removed video analysis data from localStorage and set processing flag');
+
 
     // Close the modal
     setShowVideoAnalysis(false);
     setVideoAnalysisResult(null); // Clear the result to prevent re-showing
-    console.log('Modal closed after using default preset');
+
   };
 
   /**
    * Handle editing the transcription rules
    */
   const handleEditRules = (rules) => {
-    console.log('handleEditRules called, closing VideoAnalysisModal and opening TranscriptionRulesEditor');
+
     // First, close the video analysis modal
     setShowVideoAnalysis(false);
 
@@ -134,12 +134,12 @@ export const useModalHandlers = (appState) => {
       // Then set the rules and open the editor
       setTranscriptionRulesState(rules);
       setShowRulesEditor(true);
-      console.log('TranscriptionRulesEditor should now be open, showRulesEditor:', true);
+
     }, 50); // Small delay to ensure proper transition
 
     // Save the current analysis result to state but don't clear localStorage flags
     // This allows us to reopen the modal when the rules editor is closed
-    console.log('VideoAnalysisModal should now be closed, showVideoAnalysis:', false);
+
   };
 
   /**
@@ -153,7 +153,7 @@ export const useModalHandlers = (appState) => {
     const cacheId = getCacheIdForCurrentVideo();
     if (cacheId) {
       setRulesCacheId(cacheId);
-      console.log('Set cache ID for transcription rules:', cacheId);
+
     }
 
     // Save to store (which will handle caching)
@@ -186,7 +186,7 @@ export const useModalHandlers = (appState) => {
     const cacheId = getCacheIdForCurrentVideo();
     if (cacheId) {
       setSubtitlesCacheId(cacheId);
-      console.log('Set cache ID for user-provided subtitles:', cacheId);
+
     }
 
     // Save to store (which will handle caching)
@@ -196,8 +196,6 @@ export const useModalHandlers = (appState) => {
     setUseUserProvidedSubtitles(true);
     localStorage.setItem('use_user_provided_subtitles', 'true');
 
-    console.log('User-provided subtitles saved:', subtitlesText.length > 100 ?
-      subtitlesText.substring(0, 100) + '...' : subtitlesText);
   };
 
   /**

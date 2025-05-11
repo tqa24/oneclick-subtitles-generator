@@ -9,11 +9,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
 
   // State for the two prompts
   const [promptOne, setPromptOne] = useState(
-    `song title: \${songName || 'Unknown Song'}
-
-\${lyrics}
-
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`
+    `song title: \${songName || 'Unknown Song'}\n\n\${lyrics}\n\ngenerate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`
   );
 
   const [promptTwo, setPromptTwo] = useState(
@@ -105,11 +101,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
   // Handle reset to default
   const handleReset = () => {
     setPromptOne(
-      `song title: \${songName || 'Unknown Song'}
-
-\${lyrics}
-
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`
+      `song title: \${songName || 'Unknown Song'}\n\n\${lyrics}\n\ngenerate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`
     );
 
     setPromptTwo(
@@ -122,7 +114,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
     const newValue = e.target.value;
 
     // Check if both protected variables are still present in the new value
-    if (!newValue.includes('${lyrics}') || !newValue.includes('${songName || \'Unknown Song\'}')) {
+    if (!newValue.includes(`\${lyrics}`) || !newValue.includes(`\${songName || 'Unknown Song'}`)) {
       // If any protected variable is missing, don't update the state
       // Just silently ignore the change - no popup needed
       return;
@@ -136,7 +128,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
     const newValue = e.target.value;
 
     // Check if ${prompt} is still present in the new value
-    if (!newValue.includes('${prompt}')) {
+    if (!newValue.includes(`\${prompt}`)) {
       // If not, don't update the state - silently ignore the change
       return;
     }
@@ -179,8 +171,8 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
             <div className="variables-info">
               <h5>{t('promptEditor.availableVariables', 'Available Variables:')}</h5>
               <ul>
-                <li className="required-variable"><code>${'{songName || \'Unknown Song\'}'}</code> - {t('promptEditor.songNameDesc', 'The name of the song (required, cannot be removed)')}</li>
-                <li className="required-variable"><code>${'{lyrics}'}</code> - {t('promptEditor.lyricsDesc', 'The lyrics of the song (required, cannot be removed)')}</li>
+                <li className="required-variable"><code>{`\${songName || 'Unknown Song'}`}</code> - {t('promptEditor.songNameDesc', 'The name of the song (required, cannot be removed)')}</li>
+                <li className="required-variable"><code>{`\${lyrics}`}</code> - {t('promptEditor.lyricsDesc', 'The lyrics of the song (required, cannot be removed)')}</li>
               </ul>
             </div>
           </div>
@@ -206,7 +198,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
               <h5>{t('promptEditor.availableVariables', 'Available Variables:')}</h5>
               <ul>
                 <li className="required-variable">
-                  <code>${'{prompt}'}</code> - {t('promptEditor.promptVarDesc', 'The generated description (required, cannot be removed)')}
+                  <code>{`\${prompt}`}</code> - {t('promptEditor.promptVarDesc', 'The generated description (required, cannot be removed)')}
                 </li>
               </ul>
             </div>

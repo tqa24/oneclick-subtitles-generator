@@ -23,13 +23,13 @@ const useNarrationEvents = (
   // Listen for narrations-updated and narration-retried events
   useEffect(() => {
     const handleNarrationsUpdated = (event) => {
-      console.log('useNarration - Received narrations-updated event:', event.detail);
+
       if (event.detail.source === 'original') {
         setInternalOriginalNarrations(event.detail.narrations);
 
         // If narrations were cleared (empty array), also clear any playing audio
         if (event.detail.narrations.length === 0) {
-          console.log('useNarration - Original narrations cleared, stopping any playing audio');
+
           // Stop any currently playing narration
           if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
             audioRefs.current[currentNarration.subtitle_id].pause();
@@ -43,7 +43,7 @@ const useNarrationEvents = (
 
         // If narrations were cleared (empty array), also clear any playing audio
         if (event.detail.narrations.length === 0 && narrationSource === 'translated') {
-          console.log('useNarration - Translated narrations cleared, stopping any playing audio');
+
           // Stop any currently playing narration
           if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
             audioRefs.current[currentNarration.subtitle_id].pause();
@@ -55,21 +55,22 @@ const useNarrationEvents = (
 
     // Handle narration retry events
     const handleNarrationRetried = (event) => {
-      console.log('useNarration - Received narration-retried event:', event.detail);
-      const { source, narration, narrations } = event.detail;
+
+      // narration is destructured but not used directly
+      const { source, /* narration, */ narrations } = event.detail;
 
       // Update the appropriate narration array
       if (source === 'original') {
         setInternalOriginalNarrations(narrations);
-        console.log('useNarration - Updated original narrations with retried narration:', narration);
+
       } else if (source === 'translated') {
         setInternalTranslatedNarrations(narrations);
-        console.log('useNarration - Updated translated narrations with retried narration:', narration);
+
       }
 
       // AGGRESSIVE FIX: Always clean up ALL audio elements when any narration is retried
       // This ensures that all audio elements are recreated with fresh URLs
-      console.log('useNarration - AGGRESSIVE FIX: Cleaning up ALL audio elements');
+
 
       // Stop any currently playing narration
       if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
@@ -83,7 +84,7 @@ const useNarrationEvents = (
       Object.keys(audioRefs.current).forEach(key => {
         const audio = audioRefs.current[key];
         if (audio) {
-          console.log(`useNarration - Cleaning up audio element for narration ${key}`);
+
           cleanupAudioElement(audio);
         }
       });
@@ -91,7 +92,7 @@ const useNarrationEvents = (
       // Reset the audio refs object
       audioRefs.current = {};
 
-      console.log('useNarration - All audio elements have been cleaned up and will be recreated on next playback');
+
     };
 
     // We're now using the narration-retried event for both Gemini and F5-TTS

@@ -21,9 +21,9 @@ export const useAppHandlers = (appState) => {
     setStatus,
     subtitlesData,
     setSubtitlesData,
-    isDownloading,
+    // isDownloading is used in validateInput
     setIsDownloading,
-    downloadProgress,
+    // downloadProgress is used in UI elsewhere
     setDownloadProgress,
     currentDownloadId,
     setCurrentDownloadId,
@@ -33,7 +33,7 @@ export const useAppHandlers = (appState) => {
     useUserProvidedSubtitles,
     generateSubtitles,
     retryGeneration,
-    isRetrying,
+    // isRetrying is used in UI elsewhere
     setIsRetrying,
     setSegmentsStatus,
     setVideoSegments,
@@ -231,7 +231,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for generation');
+
         }
 
         // Check if we have a valid input file
@@ -270,7 +270,7 @@ export const useAppHandlers = (appState) => {
       // Add user-provided subtitles if available and enabled
       if (useUserProvidedSubtitles && userProvidedSubtitles) {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-        console.log('Using user-provided subtitles for generation');
+
       }
 
       // Check if we have a valid input file
@@ -359,7 +359,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for retry generation');
+
         }
 
         // Check if we have a valid input file
@@ -405,7 +405,7 @@ export const useAppHandlers = (appState) => {
         // Add user-provided subtitles if available and enabled
         if (useUserProvidedSubtitles && userProvidedSubtitles) {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-          console.log('Using user-provided subtitles for retry generation');
+
         }
 
         // Check if we have a valid input file

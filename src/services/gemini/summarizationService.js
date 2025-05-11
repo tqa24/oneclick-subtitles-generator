@@ -49,7 +49,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         if (source === 'translated' && translatedLanguage) {
             // If we're using translated subtitles, use the target language of the translation
             language = translatedLanguage;
-            console.log(`Using translated subtitles language: ${language}`);
+
         } else {
             // For original subtitles, try to detect the language from the first few lines
             // This is a simple approach - in a production environment, you might want to use
@@ -57,11 +57,11 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
             try {
                 // In a future enhancement, we could get a sample of the text for language detection
                 // const sampleText = subtitlesText.substring(0, 500);
-                console.log(`Attempting to detect language from original subtitles`);
+
                 // For now, we'll rely on the language instruction in the prompt
                 // A future enhancement could be to add actual language detection here
             } catch (error) {
-                console.log(`Error detecting language: ${error.message}`);
+
             }
         }
 
@@ -94,7 +94,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         if (language) {
             const languageCode = getLanguageCode(language);
             if (languageCode) {
-                console.log(`Setting language code for summarization: ${languageCode}`);
+
                 requestData.generationConfig.stopSequences = [];
                 // Note: Gemini doesn't have a direct language parameter, but we can use this approach
                 // to help guide the model to maintain the correct language
@@ -103,7 +103,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
 
         // Always use structured output
         requestData = addResponseSchema(requestData, createSummarizationSchema());
-        console.log('Using structured output for summarization with schema:', JSON.stringify(requestData));
+
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -123,7 +123,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
 
         // Check if this is a structured JSON response
         if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-            console.log('Received structured JSON summary response');
+
             const structuredJson = data.candidates[0].content.parts[0].structuredJson;
 
             // Process the structured JSON response
@@ -148,7 +148,7 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
     } catch (error) {
         // Check if this is an AbortError
         if (error.name === 'AbortError') {
-            console.log('Summary request was aborted');
+
             throw new Error('Summary request was aborted');
         } else {
             console.error('Summary error:', error);

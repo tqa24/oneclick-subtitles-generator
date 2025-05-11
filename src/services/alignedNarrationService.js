@@ -62,11 +62,12 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       });
 
     // Log the timing information for debugging
-    console.log('Narration data with timing information:');
+    // Commented out to avoid unused variable warnings
+    /*
     narrationData.forEach(item => {
       const sourceType = item.filename ? 'F5-TTS' : (item.audioData ? 'Gemini' : 'Unknown');
-      console.log(`Subtitle ID: ${item.subtitle_id}, Start: ${item.start}s, End: ${item.end}s, Type: ${sourceType}`);
     });
+    */
 
     // Sort by start time to ensure correct order (more reliable than subtitle ID)
     narrationData.sort((a, b) => a.start - b.start);
@@ -74,7 +75,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     // No need to validate or adjust narration durations
     // Use the exact timing from the subtitles
 
-    console.log('Generating aligned narration for:', narrationData);
+
 
     // Store subtitle timestamps to detect changes
     const newSubtitleTimestamps = {};
@@ -90,7 +91,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 
     // If forceRegenerate is true, skip the cache check and always regenerate
     if (forceRegenerate) {
-      console.log('Force regenerating aligned narration due to narration retry');
+
     }
     // Otherwise, check if we already have a cached version with the same timestamps
     else if (alignedNarrationCache.url && alignedNarrationCache.subtitleTimestamps) {
@@ -111,9 +112,9 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
         );
 
         if (hasRetriedNarration) {
-          console.log('Regenerating aligned narration due to retried narration');
+
         } else {
-          console.log('Using cached aligned narration - no timestamp changes detected');
+
           if (onProgress) {
             onProgress({ status: 'complete', message: 'Using cached aligned narration' });
           }
@@ -130,7 +131,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
 
     // Use fetch API to download the file
-    console.log('Fetching:', downloadUrl);
+
 
     // Declare response variable outside the try block so it's accessible later
     let response;
@@ -213,11 +214,11 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       throw new Error('Received empty audio data from server');
     }
 
-    console.log(`Received aligned audio blob: type=${blob.type}, size=${blob.size} bytes`);
+
 
     // Always completely reset the audio element and cache when generating new audio
     // This ensures we don't use stale data
-    console.log('Completely resetting audio element and cache for new audio');
+
 
     // Reset the audio element
     if (alignedAudioElement) {
@@ -234,7 +235,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
     if (alignedNarrationCache.url) {
       try {
         URL.revokeObjectURL(alignedNarrationCache.url);
-        console.log('Revoked previous object URL');
+
       } catch (e) {
         console.warn('Error revoking previous object URL:', e);
       }
@@ -242,7 +243,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
 
     // Create a new URL for the blob
     const url = URL.createObjectURL(blob);
-    console.log('Created new blob URL:', url);
+
 
     // Update the cache
     alignedNarrationCache = {
@@ -252,20 +253,13 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       subtitleTimestamps: newSubtitleTimestamps
     };
 
-    console.log(`Created blob URL: ${url}`);
+
 
     // Log the cache state for debugging
-    console.log('Updated aligned narration cache:', {
-      hasBlob: !!alignedNarrationCache.blob,
-      hasUrl: !!alignedNarrationCache.url,
-      blobType: alignedNarrationCache.blob?.type,
-      blobSize: alignedNarrationCache.blob?.size,
-      timestamp: alignedNarrationCache.timestamp,
-      subtitleTimestampsCount: Object.keys(alignedNarrationCache.subtitleTimestamps || {}).length
-    });
+
 
     // Always update the audio element with the new URL
-    console.log('Updating audio element with new aligned narration URL');
+
     try {
       // If the audio element doesn't exist, create it
       if (!alignedAudioElement) {
@@ -280,7 +274,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
       // Always update the source to the new URL
       alignedAudioElement.src = url;
       alignedAudioElement.load();
-      console.log('Successfully updated audio element with new URL:', url);
+
     } catch (error) {
       console.error('Error updating audio element:', error);
       // Try to recreate the audio element if updating fails
@@ -290,7 +284,7 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
         alignedAudioElement.crossOrigin = 'anonymous';
         alignedAudioElement.src = url;
         alignedAudioElement.load();
-        console.log('Recreated audio element after error');
+
       } catch (recreateError) {
         console.error('Failed to recreate audio element:', recreateError);
         // Continue even if there's an error, as we can try to create the audio element later
@@ -320,7 +314,7 @@ export const getAlignedAudioElement = () => {
   if (!alignedNarrationCache.url) {
     // Only log in development mode to reduce console spam
     if (process.env.NODE_ENV === 'development') {
-      console.log('No aligned narration URL available in cache');
+
     }
     return null;
   }
@@ -333,7 +327,7 @@ export const getAlignedAudioElement = () => {
     if (alignedAudioElement) {
       // If the URL has changed or the audio element has no source, update it
       if (alignedAudioElement.src !== alignedNarrationCache.url) {
-        console.log('URL has changed, updating audio element source');
+
 
         try {
           // Pause first to avoid any playback issues during source change
@@ -346,7 +340,7 @@ export const getAlignedAudioElement = () => {
           // Reset any custom properties
           alignedAudioElement._customSeeking = false;
 
-          console.log('Updated audio element with new URL:', alignedNarrationCache.url);
+
         } catch (updateError) {
           console.error('Error updating audio element source:', updateError);
 
@@ -358,7 +352,7 @@ export const getAlignedAudioElement = () => {
 
     // If we don't have an audio element or it was nullified due to an error, create a new one
     if (!alignedAudioElement) {
-      console.log('Creating new audio element');
+
 
       // Create a new audio element
       alignedAudioElement = new Audio();
@@ -376,7 +370,7 @@ export const getAlignedAudioElement = () => {
 
         // Try to recover by reloading
         setTimeout(() => {
-          console.log('Attempting to recover from audio error');
+
           if (alignedNarrationCache.url && alignedAudioElement) {
             alignedAudioElement.src = alignedNarrationCache.url;
             alignedAudioElement.load();
@@ -393,19 +387,19 @@ export const getAlignedAudioElement = () => {
       };
 
       alignedAudioElement.onwaiting = () => {
-        console.log('Audio is waiting for more data');
+
       };
 
       // Add successful load handler
       alignedAudioElement.oncanplaythrough = () => {
-        console.log('Audio can play through without buffering');
+
       };
 
       // Set the source and load
       alignedAudioElement.src = alignedNarrationCache.url;
       alignedAudioElement.load();
 
-      console.log('Created new audio element with URL:', alignedNarrationCache.url);
+
     }
   } catch (error) {
     console.error('Error creating/updating audio element:', error);
@@ -422,15 +416,7 @@ export const getAlignedAudioElement = () => {
  * @returns {boolean} - Whether playback was successful
  */
 export const playAlignedNarration = (currentTime, isPlaying) => {
-  // Log more detailed information to help diagnose issues
-  console.log(`playAlignedNarration called with currentTime=${currentTime}, isPlaying=${isPlaying}`);
-  console.log(`Cache status:`, {
-    hasUrl: !!alignedNarrationCache.url,
-    hasBlob: !!alignedNarrationCache.blob,
-    blobType: alignedNarrationCache.blob?.type,
-    blobSize: alignedNarrationCache.blob?.size,
-    timestamp: alignedNarrationCache.timestamp
-  });
+
 
   // Try to get the audio element
   const audio = getAlignedAudioElement();
@@ -447,11 +433,11 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
         alignedAudioElement.crossOrigin = 'anonymous';
         alignedAudioElement.src = alignedNarrationCache.url;
         alignedAudioElement.load();
-        console.log('Created new audio element for aligned narration');
+
 
         // Add basic event listeners for debugging
-        alignedAudioElement.oncanplay = () => console.log('Audio can play');
-        alignedAudioElement.oncanplaythrough = () => console.log('Audio can play through without buffering');
+
+
         alignedAudioElement.onerror = () => {
           const errorMessage = alignedAudioElement?.error
             ? `Code: ${alignedAudioElement.error.code}, Message: ${alignedAudioElement.error.message}`
@@ -482,7 +468,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       // Log the current state for debugging, but only for significant differences
       // to reduce console spam during normal playback
       if (timeDifference > 0.5) {
-        console.log(`Aligned audio time: ${audio.currentTime.toFixed(2)}s, Video time: ${currentTime.toFixed(2)}s, Diff: ${timeDifference.toFixed(2)}s`);
+
       }
 
       // Only seek if the time difference is significant or we're in a paused state
@@ -491,7 +477,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
       if (timeDifference > seekThreshold || !isPlaying) {
         // Don't log every seek during normal playback to reduce console spam
         if (timeDifference > 1.0 || !isPlaying) {
-          console.log(`Seeking aligned audio to ${currentTime.toFixed(2)}s (diff: ${timeDifference.toFixed(2)}s)`);
+
         }
 
         // Set a flag to track our custom seeking state
@@ -505,12 +491,12 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
           audio.currentTime = safeTime;
 
           // Log the actual time after seeking for debugging
-          console.log(`After seeking, aligned audio time is now: ${audio.currentTime.toFixed(2)}s`);
+
         } catch (seekError) {
           console.error('Error seeking aligned narration:', seekError);
           // If seeking fails, try to recover by reloading the audio
           if (alignedNarrationCache.url) {
-            console.log('Attempting to recover from seek error by reloading audio');
+
             audio.src = alignedNarrationCache.url;
             audio.load();
             // After loading, try to set the time and play state again
@@ -529,7 +515,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
 
     // Handle play/pause state
     if (isPlaying && audio.paused) {
-      console.log(`Starting aligned narration playback at ${currentTime}s`);
+
 
       // Add a small delay before playing if we just performed a seek
       // This helps avoid playback issues after seeking
@@ -541,7 +527,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
 
             // Try to recover by reloading and playing again
             if (alignedNarrationCache.url) {
-              console.log('Attempting to recover from play error by reloading audio');
+
               audio.src = alignedNarrationCache.url;
               audio.load();
               setTimeout(() => {
@@ -562,7 +548,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
 
           // Try to recover by reloading and playing again
           if (alignedNarrationCache.url) {
-            console.log('Attempting to recover from play error by reloading audio');
+
             audio.src = alignedNarrationCache.url;
             audio.load();
             setTimeout(() => {
@@ -577,7 +563,7 @@ export const playAlignedNarration = (currentTime, isPlaying) => {
         });
       }
     } else if (!isPlaying && !audio.paused) {
-      console.log(`Pausing aligned narration at ${currentTime}s`);
+
       audio.pause();
     } else if (isPlaying && !audio.paused) {
       // Already playing, no need to log this common case
@@ -613,7 +599,7 @@ export const setAlignedNarrationVolume = (volume) => {
  */
 export const resetAlignedAudioElement = () => {
   if (alignedAudioElement) {
-    console.log('Resetting aligned audio element');
+
     try {
       alignedAudioElement.pause();
       alignedAudioElement.src = '';
@@ -629,7 +615,7 @@ export const resetAlignedAudioElement = () => {
  * Call this when you need to completely clear the cache and start fresh
  */
 export const resetAlignedNarration = () => {
-  console.log('Forcing reset of aligned narration cache and audio element');
+
 
   // Clean up the audio element
   if (alignedAudioElement) {
@@ -660,7 +646,7 @@ export const resetAlignedNarration = () => {
     subtitleTimestamps: {}
   };
 
-  console.log('Aligned narration reset complete');
+
 };
 
 // Make resetAlignedNarration available globally for direct access from event handlers
@@ -685,7 +671,7 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
 
   // Only log in development mode to reduce console spam
   if (process.env.NODE_ENV === 'development') {
-    console.log(`Cleaning up aligned narration resources (preserveAudioElement: ${preserveAudioElement}, preserveCache: ${preserveCache})`);
+
   }
 
   // Store the current cache if we're preserving it
@@ -727,7 +713,7 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
       URL.revokeObjectURL(alignedNarrationCache.url);
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log('Revoked object URL');
+
       }
     } catch (e) {
       // Only log in development mode
@@ -742,7 +728,7 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
     // Keep the existing cache
     // Only log in development mode
     if (process.env.NODE_ENV === 'development') {
-      console.log('Preserving aligned narration cache');
+
     }
   } else {
     // Reset the cache
@@ -761,7 +747,7 @@ export const cleanupAlignedNarration = (preserveAudioElement = false, preserveCa
 
   // Only log in development mode
   if (process.env.NODE_ENV === 'development') {
-    console.log('Aligned narration resources cleaned up');
+
   }
 };
 
@@ -773,7 +759,7 @@ export const isAlignedNarrationAvailable = () => {
   const isAvailable = !!alignedNarrationCache.url;
   // Only log in development mode to reduce console spam
   if (process.env.NODE_ENV === 'development') {
-    console.log(`Checking if aligned narration is available: ${isAvailable}`);
+
   }
   return isAvailable;
 };

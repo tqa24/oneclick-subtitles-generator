@@ -23,7 +23,7 @@ except ImportError:
 
 def cancel_download(model_id):
     """Cancel an ongoing download and attempt cleanup."""
-    logger.info(f"Initiating cancel request for model download: {model_id}")
+
     cancelled = False
     thread_found = False
 
@@ -31,14 +31,16 @@ def cancel_download(model_id):
     if model_id in download_threads:
         thread_info = download_threads[model_id]
         if not thread_info.get("cancel", False): # Check if not already cancelled
-            logger.info(f"Setting cancellation flag for active download thread: {model_id}")
             thread_info["cancel"] = True
             cancelled = True
         else:
-            logger.info(f"Cancellation flag already set for download thread: {model_id}")
+            # Already cancelled, nothing to do
+            pass
+
         thread_found = True
     else:
-        logger.info(f"No active download thread found in tracking for {model_id}. Will attempt cleanup based on registry status.")
+        # Thread not found for this model_id
+        pass
 
     # 2. Update registry status immediately to 'failed' or remove entry
     registry = get_registry()
@@ -46,15 +48,15 @@ def cancel_download(model_id):
 
     if download_entry:
         if download_entry.get("status") == 'downloading':
-            logger.info(f"Updating download status to 'failed' due to cancellation for {model_id}")
+
             update_download_status(model_id, 'failed', error="Download cancelled by user.")
             # Keep the failed status for a bit so UI can see it was cancelled
         else:
-             # If it wasn't downloading (e.g., already failed/completed), just remove it
-             logger.info(f"Removing non-downloading status entry for cancelled model {model_id}")
-             remove_download_status(model_id)
+            # If it wasn't downloading (e.g., already failed/completed), just remove it
+            remove_download_status(model_id)
     else:
-        logger.info(f"No download status found in registry for {model_id} during cancellation.")
+        # No download entry found
+        pass
 
     # 3. Attempt to clean up files (models dir and cache)
     cleanup_paths = []
@@ -70,7 +72,7 @@ def cancel_download(model_id):
             hf_cache_dir = get_cache_dir()
             custom_cache_dir = os.path.join(hf_cache_dir, "custom_models", model_id)
             if os.path.exists(custom_cache_dir):
-                 cleanup_paths.append(custom_cache_dir)
+                cleanup_paths.append(custom_cache_dir)
         except Exception as e:
             logger.warning(f"Could not check standard Hugging Face cache dir: {e}")
             # Fallback check (less reliable)
@@ -83,15 +85,14 @@ def cancel_download(model_id):
 
     # Perform deletion
     for path_to_delete in cleanup_paths:
-        logger.info(f"Attempting to delete directory during cancellation: {path_to_delete}")
+
         try:
             if os.path.isdir(path_to_delete):
-                 import shutil
-                 shutil.rmtree(path_to_delete)
-                 logger.info(f"Successfully deleted directory: {path_to_delete}")
+                import shutil
+                shutil.rmtree(path_to_delete)
             elif os.path.exists(path_to_delete): # Might be a file if download failed early
-                 os.remove(path_to_delete)
-                 logger.info(f"Successfully deleted file: {path_to_delete}")
+                os.remove(path_to_delete)
+
         except Exception as e:
             logger.error(f"Error deleting path {path_to_delete} during cancellation: {e}")
 
@@ -99,20 +100,19 @@ def cancel_download(model_id):
     model_info_from_registry = next((m for m in registry.get("models", []) if m.get("id") == model_id), None)
     repo_id_to_delete = None
     if download_entry and download_entry.get("repo_id"): # Check download entry first
-         repo_id_to_delete = download_entry["repo_id"]
+        repo_id_to_delete = download_entry["repo_id"]
     elif model_info_from_registry and model_info_from_registry.get("repo_id"): # Check model registry
-         repo_id_to_delete = model_info_from_registry["repo_id"]
+        repo_id_to_delete = model_info_from_registry["repo_id"]
 
     if repo_id_to_delete:
-         logger.info(f"Attempting Hugging Face cache deletion for repo {repo_id_to_delete} associated with {model_id}")
-         try:
-             success, message = delete_huggingface_cache_model(repo_id_to_delete)
-             if success:
-                 logger.info(f"Successfully initiated deletion from Hugging Face cache for repo: {repo_id_to_delete}")
-             else:
-                 logger.warning(f"Failed to delete model from Hugging Face cache for repo {repo_id_to_delete}: {message}")
-         except Exception as e:
-             logger.error(f"Error calling delete_huggingface_cache_model for {repo_id_to_delete}: {e}")
+        try:
+            success, message = delete_huggingface_cache_model(repo_id_to_delete)
+            if success:
+                logger.info(f"Successfully deleted model from Hugging Face cache for repo {repo_id_to_delete}")
+            else:
+                logger.warning(f"Failed to delete model from Hugging Face cache for repo {repo_id_to_delete}: {message}")
+        except Exception as e:
+            logger.error(f"Error calling delete_huggingface_cache_model for {repo_id_to_delete}: {e}")
 
 
     # 4. Clean up the thread tracking dictionary (after a delay to let the thread potentially exit)
@@ -120,7 +120,7 @@ def cancel_download(model_id):
         def cleanup_thread_entry():
             time.sleep(3) # Give thread time to see the flag
             if model_id in download_threads:
-                logger.info(f"Cleaning up download thread entry for {model_id}")
+
                 try:
                     # Optional: join the thread shortly before removing?
                     # thread_obj = download_threads[model_id].get("thread")
@@ -130,18 +130,18 @@ def cancel_download(model_id):
                 except KeyError:
                     logger.warning(f"Thread entry for {model_id} already removed during cleanup.")
             else:
-                logger.info(f"Thread entry for {model_id} already removed before cleanup function ran.")
+                logger.debug(f"Thread entry for {model_id} already removed during cleanup check.")
 
         cleanup_thread = threading.Thread(target=cleanup_thread_entry, daemon=True)
         cleanup_thread.start()
 
-    logger.info(f"Cancel request processing finished for model {model_id}. Cancel initiated: {cancelled}")
+
     return cancelled or bool(download_entry) # Return True if we did anything (flagged thread or modified registry)
 
 
 def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_id=None, language_codes=None):
     """Initiates download of a model from Hugging Face Hub."""
-    logger.info(f"Request to download HF model: repo={repo_id}, model={model_path}, vocab={vocab_path}")
+
 
     # Generate a model ID if not provided or invalid
     if not model_id:
@@ -149,7 +149,7 @@ def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_i
         model_id = f"{repo_id.split('/')[-1]}_{os.path.splitext(os.path.basename(model_path))[0]}"
         # Sanitize ID (replace non-alphanumeric with underscore)
         model_id = re.sub(r'[^a-zA-Z0-9_-]+', '_', model_id)
-        logger.info(f"Generated model_id: {model_id}")
+
 
     # --- Pre-download Checks ---
     registry = get_registry()
@@ -162,8 +162,8 @@ def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_i
         logger.warning(f"Download for model {model_id} is already in progress. Skipping new request.")
         return False, f"Download already in progress for {model_id}.", model_id
     if model_id in download_threads:
-         logger.warning(f"Download thread for model {model_id} is already active. Skipping new request.")
-         return False, f"Download thread already active for {model_id}.", model_id
+        logger.warning(f"Download thread for model {model_id} is already active. Skipping new request.")
+        return False, f"Download thread already active for {model_id}.", model_id
 
     # Update status to 'downloading' (initial state)
     update_download_status(model_id, 'downloading', progress=0)
@@ -180,14 +180,14 @@ def download_model_from_hf(repo_id, model_path, vocab_path, config=None, model_i
 
     download_threads[model_id]["thread"] = thread
     thread.start()
-    logger.info(f"Download thread started for model {model_id}.")
+
 
     return True, f"Model download started for {model_id}", model_id
 
 
 def download_model_from_url(model_url, vocab_url=None, config=None, model_id=None, language_codes=None):
     """Initiates download of a model from direct URLs."""
-    logger.info(f"Request to download URL model: model={model_url}, vocab={vocab_url}")
+
     import re # For sanitizing
 
     # Generate model ID if not provided
@@ -200,11 +200,11 @@ def download_model_from_url(model_url, vocab_url=None, config=None, model_id=Non
                 base_name = parsed_url.netloc.replace('.', '_')
             model_id = base_name
         except Exception:
-             model_id = f"url_model_{int(time.time())}" # Safe fallback ID
+            model_id = f"url_model_{int(time.time())}" # Safe fallback ID
 
         # Sanitize ID
         model_id = re.sub(r'[^a-zA-Z0-9_-]+', '_', model_id)
-        logger.info(f"Generated model_id for URL download: {model_id}")
+
 
 
     # --- Pre-download Checks ---
@@ -216,8 +216,8 @@ def download_model_from_url(model_url, vocab_url=None, config=None, model_id=Non
         logger.warning(f"Download for model {model_id} (from URL) already in progress.")
         return False, f"Download already in progress for {model_id}.", model_id
     if model_id in download_threads:
-         logger.warning(f"Download thread for model {model_id} (from URL) already active.")
-         return False, f"Download thread already active for {model_id}.", model_id
+        logger.warning(f"Download thread for model {model_id} (from URL) already active.")
+        return False, f"Download thread already active for {model_id}.", model_id
 
 
     # Update status to 'downloading'
@@ -235,6 +235,6 @@ def download_model_from_url(model_url, vocab_url=None, config=None, model_id=Non
 
     download_threads[model_id]["thread"] = thread
     thread.start()
-    logger.info(f"URL download thread started for model {model_id}.")
+
 
     return True, f"Model download started for {model_id} from URL", model_id

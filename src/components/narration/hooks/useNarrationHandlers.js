@@ -77,10 +77,10 @@ const useNarrationHandlers = ({
           }, 10000); // Reduced from 30s to 10s for faster feedback
 
           // Create a blob from the file for transcription
-          console.log('Transcribing uploaded audio file');
+
           try {
             const transcriptionResult = await transcribeAudio(file);
-            console.log('Transcription result:', transcriptionResult);
+
 
             // Add transcription data to the result
             result.reference_text = transcriptionResult.text;
@@ -88,11 +88,7 @@ const useNarrationHandlers = ({
             result.language = transcriptionResult.language;
 
             // Log the language detection result
-            console.log('Language detection result (upload):', {
-              text: transcriptionResult.text,
-              is_english: transcriptionResult.is_english,
-              language: transcriptionResult.language
-            });
+            
           } catch (transcriptionError) {
             console.error('Error during file upload transcription:', transcriptionError);
 
@@ -118,9 +114,9 @@ const useNarrationHandlers = ({
       }
 
       if (result && result.success) {
-        console.log('File uploaded successfully');
+
         const audioUrl = getAudioUrl(result.filename);
-        console.log('Audio URL:', audioUrl);
+
 
         setReferenceAudio({
           filepath: result.filepath,
@@ -508,7 +504,7 @@ const useNarrationHandlers = ({
       // Define callbacks for the streaming response
       const handleProgress = (message, current, total, subtitle_id, subtitle_text) => {
         // Log the progress message for debugging
-        console.log(`Progress: ${message} (${current}/${total})${subtitle_id ? ` ID: ${subtitle_id}` : ''}${subtitle_text ? ` Text: ${subtitle_text}` : ''}`);
+
 
         // Create a more detailed status message if we have subtitle text
         let statusMessage = message;
@@ -531,7 +527,7 @@ const useNarrationHandlers = ({
 
         // Update the UI with the current results
         // This ensures each result is shown immediately as it's received
-        console.log(`Updating UI with result for subtitle ID: ${result.subtitle_id} (${progress}/${total})`);
+
         setGenerationResults([...tempResults]);
 
         // Update the status to show which subtitle is being processed
@@ -638,13 +634,13 @@ const useNarrationHandlers = ({
 
       // Extract filenames from generation results
       const filenames = generationResults.map(result => result.filename);
-      console.log('Downloading files:', filenames);
+
 
       // Create a download link with the filenames as query parameters
       const downloadUrl = `${SERVER_URL}/api/narration/download-all`;
 
       // Use fetch API to download the file
-      console.log('Fetching:', downloadUrl);
+
       const response = await fetch(downloadUrl, {
         method: 'POST',
         mode: 'cors',
@@ -655,7 +651,7 @@ const useNarrationHandlers = ({
         },
         body: JSON.stringify({ filenames })
       });
-      console.log('Response status:', response.status);
+
 
       // Check if the response is successful
       if (!response.ok) {
@@ -671,7 +667,7 @@ const useNarrationHandlers = ({
 
       // Get the blob from the response
       const blob = await response.blob();
-      console.log('Blob size:', blob.size);
+
 
       // Create a URL for the blob
       const url = URL.createObjectURL(blob);
@@ -732,24 +728,24 @@ const useNarrationHandlers = ({
       // First try to get subtitles from the getSelectedSubtitles function
       const selectedSubtitles = getSelectedSubtitles();
       if (selectedSubtitles && Array.isArray(selectedSubtitles) && selectedSubtitles.length > 0) {
-        console.log('Using selected subtitles for timing information');
+
         allSubtitles.push(...selectedSubtitles);
       }
 
       // Also try window.subtitles (main source)
       if (window.subtitles && Array.isArray(window.subtitles)) {
-        console.log('Using window.subtitles for timing information');
+
         allSubtitles.push(...window.subtitles);
       }
 
       // Also try original and translated subtitles
       if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-        console.log('Using window.originalSubtitles for timing information');
+
         allSubtitles.push(...window.originalSubtitles);
       }
 
       if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
-        console.log('Using window.translatedSubtitles for timing information');
+
         allSubtitles.push(...window.translatedSubtitles);
       }
 
@@ -761,7 +757,7 @@ const useNarrationHandlers = ({
         }
       });
 
-      console.log('Found subtitle timing information for IDs:', Object.keys(subtitleMap));
+
 
       // Prepare the data for the aligned narration with correct timing
       const narrationData = generationResults
@@ -772,7 +768,7 @@ const useNarrationHandlers = ({
 
           // If we found a matching subtitle, use its timing
           if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-            console.log(`Found timing for subtitle ${result.subtitle_id}: ${subtitle.start}s - ${subtitle.end}s`);
+
             return {
               filename: result.filename,
               subtitle_id: result.subtitle_id,
@@ -795,13 +791,13 @@ const useNarrationHandlers = ({
       // Sort by start time to ensure correct order
       narrationData.sort((a, b) => a.start - b.start);
 
-      console.log('Generating aligned narration for:', narrationData);
+
 
       // Create a download link
       const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
 
       // Use fetch API to download the file
-      console.log('Fetching:', downloadUrl);
+
       const response = await fetch(downloadUrl, {
         method: 'POST',
         mode: 'cors',
@@ -812,7 +808,7 @@ const useNarrationHandlers = ({
         },
         body: JSON.stringify({ narrations: narrationData })
       });
-      console.log('Response status:', response.status);
+
 
       // Check if the response is successful
       if (!response.ok) {
@@ -828,7 +824,7 @@ const useNarrationHandlers = ({
 
       // Get the blob from the response
       const blob = await response.blob();
-      console.log('Blob size:', blob.size);
+
 
       // Create a URL for the blob
       const url = URL.createObjectURL(blob);
@@ -861,11 +857,11 @@ const useNarrationHandlers = ({
     if (isGenerating) {
       const cancelled = cancelNarrationGeneration();
       if (cancelled) {
-        console.log('Narration generation cancelled');
+
         // We don't set isGenerating to false here because the abort will trigger the error handler
         // which will set isGenerating to false
       } else {
-        console.log('No active narration generation to cancel');
+
       }
     }
   };
@@ -907,7 +903,7 @@ const useNarrationHandlers = ({
     try {
       // CRITICAL FIX: Force reset the aligned narration before retrying
       // This ensures that the aligned narration will be regenerated with the new audio
-      console.log('CRITICAL FIX: Force resetting aligned narration before retry');
+
       if (window.resetAlignedNarration) {
         window.resetAlignedNarration();
       }
@@ -971,7 +967,7 @@ const useNarrationHandlers = ({
               const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
               if (globalIndex !== -1) {
                 window.narrations[globalIndex] = result;
-                console.log('Updated window.narrations with retried narration:', result);
+
               }
             }
 
@@ -988,7 +984,7 @@ const useNarrationHandlers = ({
             } catch (e) {
               console.error('Error storing updated originalNarrations in localStorage:', e);
             }
-            console.log('Updated window.originalNarrations with retried narration:', result);
+
           } else {
             // Update window.translatedNarrations
             window.translatedNarrations = [...updatedResults];
@@ -999,7 +995,7 @@ const useNarrationHandlers = ({
               const globalIndex = window.narrations.findIndex(n => n.subtitle_id === result.subtitle_id);
               if (globalIndex !== -1) {
                 window.narrations[globalIndex] = result;
-                console.log('Updated window.narrations with retried narration:', result);
+
               }
             }
 
@@ -1016,7 +1012,7 @@ const useNarrationHandlers = ({
             } catch (e) {
               console.error('Error storing updated translatedNarrations in localStorage:', e);
             }
-            console.log('Updated window.translatedNarrations with retried narration:', result);
+
           }
 
           // Dispatch a custom event to notify other components about the updated narration
@@ -1122,7 +1118,7 @@ const useNarrationHandlers = ({
       try {
         // For F5-TTS models
         // CRITICAL FIX: Force reset the aligned narration before retrying
-        console.log('CRITICAL FIX: Force resetting aligned narration before retry');
+
         if (window.resetAlignedNarration) {
           window.resetAlignedNarration();
         }

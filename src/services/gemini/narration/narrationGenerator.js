@@ -14,7 +14,7 @@ let isCancelled = false;
  */
 export const cancelGeminiNarrations = () => {
   isCancelled = true;
-  console.log('Narration generation cancelled');
+
 };
 
 /**
@@ -35,34 +35,34 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
 
     // Convert the language code to a Gemini-compatible format
     const geminiLanguageCode = getGeminiLanguageCode(language);
-    console.log(`Converting language code "${language}" to Gemini format: "${geminiLanguageCode}"`);
+
 
     // Create the prompt for narration - explicitly instruct to speak in the target language
     const narrationPrompt = `READ the following text. DO NOT ASK ME ANYTHING FOLLOW UP, just read it exactly as written: "${subtitle.text}"`;
 
     // Get or create a WebSocket client
-    console.log(`Getting WebSocket client for subtitle ${subtitle.id}: "${subtitle.text}" with voice: ${voiceName || 'default'} and language: ${geminiLanguageCode}`);
+
     const client = await getWebSocketClient(apiKey, modelName, voiceName, geminiLanguageCode);
 
     // Create a unique request ID for this subtitle
     const requestId = `subtitle_${subtitle.id}_${Date.now()}`;
-    console.log(`Creating request ID: ${requestId} for subtitle: "${subtitle.text}"`);
+
 
     // Send the prompt and get the request ID
-    console.log(`Sending prompt to Gemini for subtitle ${subtitle.id}: "${narrationPrompt}"`);
+
     const sentRequestId = client.send(
       { text: narrationPrompt },
       true, // turnComplete
       { subtitleId: subtitle.id, requestId }
     );
 
-    console.log(`Sent request with ID ${sentRequestId} for subtitle ${subtitle.id}`);
+
 
     // Wait for the response
-    console.log(`Waiting for response to request ${sentRequestId} for subtitle ${subtitle.id}`);
+
     const audioResult = await client.waitForResponse(sentRequestId, 60000);
 
-    console.log(`Received response for request ${sentRequestId} for subtitle ${subtitle.id}`);
+
 
     // Return the result with audio data and metadata
     return {
@@ -136,7 +136,7 @@ export const generateGeminiNarrations = async (
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       // Check if generation has been cancelled
       if (isCancelled) {
-        console.log('Narration generation cancelled');
+
         onProgress('Narration generation cancelled');
         return { success: false, cancelled: true, results };
       }
@@ -148,22 +148,22 @@ export const generateGeminiNarrations = async (
       onProgress(`Generating narrations... (${progressPercent}% complete)`);
 
       // Process each subtitle in the batch concurrently
-      console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} subtitles`);
+
       const batchPromises = batch.map(subtitle => {
-        console.log(`Adding subtitle ${subtitle.id} to batch: "${subtitle.text}" with voice: ${voiceName || 'default'}`);
+
         return generateGeminiNarration(subtitle, language, modelName, voiceName);
       });
 
       // Wait for all narrations in this batch to complete
       const batchResults = await Promise.all(batchPromises);
-      console.log(`Completed batch ${batchIndex + 1}/${batches.length}`);
+
 
       // Process each result and automatically save to server
       for (const result of batchResults) {
         // If the result has audio data, save it to the server automatically
         if (result.success && result.audioData) {
           try {
-            console.log(`Automatically saving audio for subtitle ${result.subtitle_id} to server...`);
+
 
             // Send the audio data to the server
             const response = await fetch(`${SERVER_URL}/api/narration/save-gemini-audio`, {
@@ -182,7 +182,7 @@ export const generateGeminiNarrations = async (
             if (response.ok) {
               const data = await response.json();
               if (data.success) {
-                console.log(`Successfully saved audio to server: ${data.filename}`);
+
                 // Update the result with the filename
                 result.filename = data.filename;
 
@@ -212,14 +212,14 @@ export const generateGeminiNarrations = async (
 
       // Check if generation has been cancelled
       if (isCancelled) {
-        console.log('Narration generation cancelled after batch completion');
+
         onProgress('Narration generation cancelled');
         return { success: false, cancelled: true, results };
       }
 
       // Add a delay between batches to avoid rate limiting
       if (batchIndex < batches.length - 1) {
-        console.log(`Adding delay of ${sleepTime}ms between batches...`);
+
         onProgress(`Waiting ${sleepTime/1000} seconds before next batch...`);
         await new Promise(resolve => setTimeout(resolve, sleepTime));
       }

@@ -44,7 +44,7 @@ def generate_narration():
         settings = data.get('settings', {})
         requested_model_id = settings.get('modelId') # User can override active model
 
-        logger.info(f"Generate request: RefAudio={reference_audio}, #Subtitles={len(subtitles)}, Model={requested_model_id or 'active/default'}")
+
         logger.debug(f"Reference Text: '{reference_text[:100]}...'")
         logger.debug(f"Settings: {settings}")
 
@@ -60,7 +60,7 @@ def generate_narration():
         # Load model instance specifically for this request to ensure isolation
         try:
             tts_model_instance, loaded_model_id = load_tts_model(requested_model_id)
-            logger.info(f"Using TTS model '{loaded_model_id}' for this generation request.")
+
         except Exception as model_load_error:
              logger.error(f"Failed to load TTS model for generation: {model_load_error}", exc_info=True)
              # Return error before starting stream
@@ -77,7 +77,7 @@ def generate_narration():
         seed_val = settings.get('seed') # Can be None, int, or string convertible to int
         seed = int(seed_val) if seed_val is not None and str(seed_val).isdigit() else None
 
-        logger.info(f"Effective Generation Settings: model={loaded_model_id}, remove_silence={remove_silence}, speed={speed}, nfe_step={nfe_step}, sway_coef={sway_coef}, cfg_strength={cfg_strength}, seed={seed}")
+
 
         # --- Define Streaming Generator ---
         def generate_narration_stream():
@@ -91,7 +91,7 @@ def generate_narration():
 
             # Language mismatch check (simple version)
             ref_lang_is_english = is_text_english(reference_text)
-            logger.info(f"Reference text language heuristics: {'English' if ref_lang_is_english else 'Non-English'}")
+
             mismatch_warning_sent = False
 
             try:
@@ -115,7 +115,7 @@ def generate_narration():
                     yield f"data: {json.dumps(progress_data)}\n\n"
 
                     if not text:
-                        logger.info(f"Skipping empty subtitle (ID: {subtitle_id})")
+
                         result = {'subtitle_id': subtitle_id, 'text': '', 'success': True, 'skipped': True}
                         results.append(result)
                         # Send skip result immediately
@@ -151,7 +151,7 @@ def generate_narration():
                         'file_wave': output_path, 'remove_silence': remove_silence, 'speed': speed,
                         'nfe_step': nfe_step, 'sway_sampling_coef': sway_coef, 'cfg_strength': cfg_strength, 'seed': seed
                     }
-                    logger.info(f"Calling model.infer for subtitle ID {subtitle_id} with text: '{cleaned_text[:100]}...'")
+
                     logger.debug(f"Infer params: { {k: v for k, v in log_params.items() if k not in ['ref_text', 'gen_text']} }") # Avoid logging long texts at debug
 
 
@@ -175,7 +175,7 @@ def generate_narration():
                         with context_manager:
                              tts_model_instance.infer(**log_params)
 
-                        logger.info(f"Successfully generated narration for subtitle ID {subtitle_id}")
+
                         result = {
                             'subtitle_id': subtitle_id,
                             'text': cleaned_text, # Return the cleaned text used for generation
@@ -231,7 +231,7 @@ def generate_narration():
             finally:
                 # --- Signal Completion ---
                 total_time = time.time() - start_time_generation
-                logger.info(f"Narration generation stream completed in {total_time:.2f} seconds. Results: {len(results)} processed.")
+
                 complete_data = {'type': 'complete', 'results': results, 'total': len(results), 'duration_seconds': total_time}
                 try:
                     json_payload = json.dumps(complete_data, ensure_ascii=False)
@@ -242,20 +242,20 @@ def generate_narration():
                 # --- Resource Cleanup ---
                 # Explicitly delete model instance to release resources if loaded per-request
                 if tts_model_instance is not None:
-                    logger.info(f"Cleaning up TTS model instance '{loaded_model_id}' after request.")
+
                     del tts_model_instance
                     try:
                          gc.collect()
                          from .narration_config import device
                          if device.startswith("cuda") and torch.cuda.is_available():
                              torch.cuda.empty_cache()
-                             logger.info(f"Final CUDA cache clear. Mem allocated: {torch.cuda.memory_allocated(0)/1024**2:.2f}MB")
+
                     except Exception as final_clean_err:
                         logger.warning(f"Error during final resource cleanup: {final_clean_err}")
 
 
         # --- Return Streaming Response ---
-        logger.info("Starting narration generation stream response.")
+
         return Response(generate_narration_stream(), mimetype='text/event-stream', headers={'Cache-Control': 'no-cache'})
 
     except Exception as e:

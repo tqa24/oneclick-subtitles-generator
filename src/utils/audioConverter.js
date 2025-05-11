@@ -10,15 +10,15 @@
 export const convertAudioForGemini = async (audioFile) => {
     // Check if this is an audio file
     if (!audioFile.type.startsWith('audio/')) {
-        console.log('Not an audio file, no conversion needed');
+
         return audioFile;
     }
 
-    console.log('Converting audio file for Gemini API:', audioFile.name);
+
     
     // For audio/mpeg files, we need to change the MIME type to audio/mp3
     if (audioFile.type === 'audio/mpeg') {
-        console.log('Converting MIME type from audio/mpeg to audio/mp3');
+
         return new File([audioFile], audioFile.name.replace(/\.mp3$/, '.mp3'), {
             type: 'audio/mp3',
             lastModified: audioFile.lastModified

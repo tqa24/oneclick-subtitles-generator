@@ -21,25 +21,25 @@ let narrationProcess;
 const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
 
 if (isDevCuda) {
-  console.log('Running with npm run dev:cuda - starting Python narration service');
+
   try {
     narrationProcess = startNarrationService();
 
     // Set the narration service as running in the app
-    console.log('Setting narration service as running');
+
     app.set('narrationServiceRunning', true);
     app.set('narrationActualPort', NARRATION_PORT);
   } catch (error) {
     console.error('Failed to start narration service:', error);
-    console.log('Setting narration service as not available');
+
 
     // Set the narration service as not running in the app
     app.set('narrationServiceRunning', false);
     app.set('narrationActualPort', null);
   }
 } else {
-  console.log('Running with npm run dev - NOT starting Python narration service');
-  console.log('To start with Python narration service, use: npm run dev:cuda');
+
+
 
   // Set the narration service as not running in the app
   app.set('narrationServiceRunning', false);
@@ -48,19 +48,19 @@ if (isDevCuda) {
 
 // Start the server
 const server = app.listen(PORT, () => {
-  console.log(`YouTube download server running on port ${PORT}`);
-  console.log(`Narration service running on port ${NARRATION_PORT}`);
+
+
 });
 
 // Handle server shutdown
 process.on('SIGINT', () => {
-  console.log('Shutting down server...');
+
   server.close(() => {
-    console.log('Server stopped');
+
 
     // Kill the narration service process
     if (narrationProcess) {
-      console.log('Stopping narration service...');
+
       narrationProcess.kill();
     }
 

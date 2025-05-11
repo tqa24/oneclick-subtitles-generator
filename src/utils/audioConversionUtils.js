@@ -14,7 +14,7 @@ export const base64ToArrayBuffer = (base64) => {
 
     // Decode the Base64 string to a binary string
     const binaryString = atob(cleanBase64);
-    console.log(`Decoded binary string length: ${binaryString.length} bytes`);
+
 
     // Convert the binary string to a Uint8Array
     const bytes = new Uint8Array(binaryString.length);
@@ -37,7 +37,7 @@ export const base64ToArrayBuffer = (base64) => {
  */
 export const pcmToFloat32 = (pcmData, bitsPerSample = 16) => {
   try {
-    console.log(`Converting PCM data: ${pcmData.byteLength} bytes, ${bitsPerSample} bits per sample`);
+
 
     // For 16-bit PCM, we need to convert each pair of bytes to a float
     const pcmView = new DataView(pcmData);
@@ -49,7 +49,7 @@ export const pcmToFloat32 = (pcmData, bitsPerSample = 16) => {
       const int16 = pcmView.getInt16(i * 2, true);
       sampleValues.push(int16);
     }
-    console.log('PCM data sample values:', sampleValues);
+
 
     // Convert all samples to float
     for (let i = 0; i < floatArray.length; i++) {
@@ -59,7 +59,7 @@ export const pcmToFloat32 = (pcmData, bitsPerSample = 16) => {
       floatArray[i] = int16 / 32768.0;
     }
 
-    console.log(`Converted to Float32Array: ${floatArray.length} samples`);
+
     return floatArray;
   } catch (error) {
     console.error('Error converting PCM to Float32Array:', error);

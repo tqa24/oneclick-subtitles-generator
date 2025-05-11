@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiChevronDown, FiStar, FiAward, FiZap, FiCpu } from 'react-icons/fi';
+import { FiChevronDown, FiStar, FiZap, FiCpu } from 'react-icons/fi';
 import '../styles/ModelDropdown.css';
 
 /**

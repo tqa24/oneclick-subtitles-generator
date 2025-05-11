@@ -10,7 +10,7 @@ const { TEMP_AUDIO_DIR } = require('./controllers/narration/directoryManager');
 // Create a test function
 async function testBatchProcessing() {
   try {
-    console.log('Testing batch processing...');
+
     
     // Create a temporary directory for test files
     const tempDir = path.join(TEMP_AUDIO_DIR);
@@ -37,27 +37,27 @@ async function testBatchProcessing() {
     ];
     
     // Test the batch processor functions
-    console.log('Testing processBatch function...');
-    console.log('Note: This will fail as expected since the dummy files do not exist');
-    console.log('We are just testing that the function is exported correctly');
+
+
+
     
     try {
       await batchProcessor.processBatch(audioSegments1, outputPath1, 0, 10);
     } catch (error) {
-      console.log('Expected error from processBatch:', error.message);
+
     }
     
-    console.log('Testing concatenateAudioFiles function...');
-    console.log('Note: This will fail as expected since the input files do not exist');
-    console.log('We are just testing that the function is exported correctly');
+
+
+
     
     try {
       await batchProcessor.concatenateAudioFiles([outputPath1, outputPath2], finalOutputPath);
     } catch (error) {
-      console.log('Expected error from concatenateAudioFiles:', error.message);
+
     }
     
-    console.log('Batch processing test completed');
+
     
   } catch (error) {
     console.error('Error in batch processing test:', error);

@@ -16,23 +16,23 @@ async function downloadYouTubeVideo(videoId) {
   const videoURL = `https://www.youtube.com/watch?v=${videoId}`;
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
-  console.log(`[QUALITY DEBUG] Downloading YouTube video: ${videoId} using yt-dlp`);
+
 
   // Get video info first
   let videoInfo;
   try {
     videoInfo = await getVideoInfo(videoId);
-    console.log(`Video info retrieved: ${videoInfo.title}`);
+
   } catch (error) {
     console.warn(`Could not get video info from oEmbed API: ${error.message}`);
     videoInfo = { title: `YouTube Video ${videoId}` };
   }
 
   try {
-    console.log(`Attempting to download with yt-dlp...`);
+
     // Always pass '360p' as the quality parameter to ensure consistent behavior
     await downloadWithYtdlp(videoURL, outputPath, '360p');
-    console.log(`Successfully downloaded video with yt-dlp`);
+
 
     return {
       success: true,

@@ -27,7 +27,7 @@ const GeminiVoiceSelection = ({
 
   const handleVoiceChange = (e) => {
     const newVoice = e.target.value;
-    console.log('Voice changed:', newVoice);
+
     setSelectedVoice(newVoice);
 
     // Store in localStorage for persistence
@@ -74,14 +74,13 @@ const GeminiVoiceSelection = ({
     };
 
     if (audioRef.current) {
-      audioRef.current.addEventListener('ended', handleAudioEnded);
-    }
+      const audio = audioRef.current; // Store reference to avoid closure issues
+      audio.addEventListener('ended', handleAudioEnded);
 
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('ended', handleAudioEnded);
-      }
-    };
+      return () => {
+        audio.removeEventListener('ended', handleAudioEnded);
+      };
+    }
   }, []);
 
   // Get the currently selected voice object

@@ -238,14 +238,14 @@ const UnifiedNarrationSection = ({
     if (generationResults && generationResults.length > 0) {
       if (subtitleSource === 'original') {
         window.originalNarrations = [...generationResults];
-        console.log('Preserved originalNarrations in window object for aligned narration:', window.originalNarrations.length);
+
       } else if (subtitleSource === 'translated') {
         window.translatedNarrations = [...generationResults];
-        console.log('Preserved translatedNarrations in window object for aligned narration:', window.translatedNarrations.length);
+
       }
     }
 
-    console.log(`Switched to ${narrationMethod} method, UI reset but preserved results for aligned narration`);
+
   }, [narrationMethod, setGenerationStatus, setError, generationResults, subtitleSource]);
 
   // No height animation when narration method changes - let content flow naturally
@@ -257,10 +257,10 @@ const UnifiedNarrationSection = ({
     if (generationResults && generationResults.length > 0) {
       if (subtitleSource === 'original') {
         window.originalNarrations = [...generationResults];
-        console.log('Updated originalNarrations in window object with new results:', window.originalNarrations.length);
+
       } else if (subtitleSource === 'translated') {
         window.translatedNarrations = [...generationResults];
-        console.log('Updated translatedNarrations in window object with new results:', window.translatedNarrations.length);
+
       }
     }
   }, [generationResults, subtitleSource]);
@@ -273,7 +273,7 @@ const UnifiedNarrationSection = ({
   useEffect(() => {
     const handleNarrationsLoadedFromCache = (event) => {
       if (event.detail && event.detail.narrations) {
-        console.log('Received narrations loaded from cache event:', event.detail);
+
 
         // Only update if we don't already have results
         if (!generationResults || generationResults.length === 0) {
@@ -305,7 +305,7 @@ const UnifiedNarrationSection = ({
 
           // Force a re-render after a short delay to ensure the UI updates
           setTimeout(() => {
-            console.log('Forcing re-render after loading narrations from cache');
+
             setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded narrations from previous session'));
           }, 200);
         }
@@ -315,7 +315,7 @@ const UnifiedNarrationSection = ({
     // Handle F5-TTS narrations loaded from cache
     const handleF5TTSNarrationsLoadedFromCache = (event) => {
       if (event.detail && event.detail.narrations) {
-        console.log('Received F5-TTS narrations loaded from cache event:', event.detail);
+
 
         // Only update if we don't already have results
         if (!generationResults || generationResults.length === 0) {
@@ -347,7 +347,7 @@ const UnifiedNarrationSection = ({
 
           // Force a re-render after a short delay to ensure the UI updates
           setTimeout(() => {
-            console.log('Forcing re-render after loading F5-TTS narrations from cache');
+
             setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded narrations from previous session'));
           }, 200);
         }
@@ -371,7 +371,6 @@ const UnifiedNarrationSection = ({
     startRecording,
     stopRecording,
     // extractSegment is available but not used in this component
-    extractSegment: _extractSegment,
     clearReferenceAudio,
     handleGenerateNarration,
     playAudio,
@@ -514,8 +513,8 @@ const UnifiedNarrationSection = ({
             setOriginalLanguage={setOriginalLanguage}
             setTranslatedLanguage={setTranslatedLanguage}
             onLanguageDetected={(source, language, modelId, modelError) => {
-              console.log(`Language detected for ${source}: ${language.languageCode} (${language.languageName})`);
-              console.log(`Selected narration model: ${modelId}`);
+
+
               if (modelError) {
                 console.warn(`Model availability error: ${modelError}`);
               }
@@ -604,7 +603,7 @@ const UnifiedNarrationSection = ({
             setOriginalLanguage={setOriginalLanguage}
             setTranslatedLanguage={setTranslatedLanguage}
             onLanguageDetected={(source, language) => {
-              console.log(`Language detected for ${source}: ${language.languageCode} (${language.languageName})`);
+
 
               // Update the appropriate language state
               if (source === 'original') {

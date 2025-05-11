@@ -3,11 +3,18 @@
  */
 import { useCallback, useEffect } from 'react';
 import {
-  isAlignedNarrationAvailable,
+  // isAlignedNarrationAvailable is imported but not used
+  // isAlignedNarrationAvailable,
   generateAlignedNarration as generateAlignedNarrationService,
   resetAlignedAudioElement
 } from '../../../../services/alignedNarrationService';
-import { createHash, enhanceNarrationWithTiming, createSubtitleMap, getAllSubtitles } from './alignedNarrationUtils';
+import {
+  // createHash is imported but not used
+  // createHash,
+  enhanceNarrationWithTiming,
+  createSubtitleMap,
+  getAllSubtitles
+} from './alignedNarrationUtils';
 
 /**
  * Hook for handling aligned narration generation
@@ -27,20 +34,23 @@ const useAlignedNarrationGeneration = ({
   const {
     isGeneratingAligned,
     setIsGeneratingAligned,
-    alignedStatus,
+    // alignedStatus is destructured but not used directly
+    // alignedStatus,
     setAlignedStatus,
     isAlignedAvailable,
     setIsAlignedAvailable,
-    lastGenerationResultsHashRef,
+    // lastGenerationResultsHashRef is destructured but not used directly
+    // lastGenerationResultsHashRef,
     playAlignedNarration,
-    cleanupAlignedNarration
+    // cleanupAlignedNarration is destructured but not used directly
+    // cleanupAlignedNarration
   } = state;
 
   // Force regeneration of aligned narration
   const regenerateAlignedNarration = useCallback(async () => {
     // Prevent multiple simultaneous generation attempts
     if (isGeneratingAligned) {
-      console.log('Already generating aligned narration, skipping duplicate request');
+
       return;
     }
 
@@ -83,7 +93,7 @@ const useAlignedNarrationGeneration = ({
       });
 
       // Force reset any existing audio element to ensure we use the new one
-      console.log('Resetting audio element before regeneration');
+
       resetAlignedAudioElement();
 
       // Get all subtitles from the video for timing information
@@ -95,7 +105,7 @@ const useAlignedNarrationGeneration = ({
       // Add timing information to each narration result
       const enhancedResults = enhanceNarrationWithTiming(generationResults, subtitleMap);
 
-      console.log('Enhanced narration results with timing information:', enhancedResults);
+
 
       // Generate the aligned narration with the enhanced results
       await generateAlignedNarrationService(enhancedResults, setAlignedStatus);
@@ -148,7 +158,6 @@ const useAlignedNarrationGeneration = ({
     generationResults,
     setIsGeneratingAligned,
     setIsAlignedAvailable,
-    cleanupAlignedNarration,
     setAlignedStatus,
     videoRef,
     playAlignedNarration
@@ -162,7 +171,7 @@ const useAlignedNarrationGeneration = ({
 
     // Log this only in development mode to avoid console spam
     if (process.env.NODE_ENV === 'development') {
-      console.log('Automatic aligned narration generation is disabled. Use the "Refresh Narration" button instead.');
+
     }
 
     // No automatic generation code here - the regenerateAlignedNarration function is still available

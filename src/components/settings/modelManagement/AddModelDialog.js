@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import AddIcon from '@mui/icons-material/Add';
 import LanguageIcon from '@mui/icons-material/Language';
 import TuneIcon from '@mui/icons-material/Tune';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -22,16 +21,16 @@ import LanguageCodeInput from './LanguageCodeInput';
  * @param {boolean} props.isAdding - Whether a model is being added
  * @returns {JSX.Element} - Rendered component
  */
-const AddModelDialog = ({ 
-  isOpen, 
-  onClose, 
-  form, 
-  onFormChange, 
-  onSourceTypeChange, 
-  onToggleAdvanced, 
-  onLanguageCodesChange, 
-  onAddModel, 
-  isAdding 
+const AddModelDialog = ({
+  isOpen,
+  onClose,
+  form,
+  onFormChange,
+  onSourceTypeChange,
+  onToggleAdvanced,
+  onLanguageCodesChange,
+  onAddModel,
+  isAdding
 }) => {
   const { t } = useTranslation();
 
@@ -193,9 +192,9 @@ const AddModelDialog = ({
           {t('settings.modelManagement.languageCodesHelp', 'Enter the language codes this model supports (e.g., en, fr, zh). Add multiple codes for multilingual models.')}
         </div>
 
-        <LanguageCodeInput 
-          languageCodes={form.languageCodes} 
-          onChange={onLanguageCodesChange} 
+        <LanguageCodeInput
+          languageCodes={form.languageCodes}
+          onChange={onLanguageCodesChange}
         />
       </div>
 

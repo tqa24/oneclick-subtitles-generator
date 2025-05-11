@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/SettingsModal.css';
 import '../../styles/settings/checkbox-fix.css';
@@ -6,7 +6,7 @@ import '../../styles/components/tab-content-animations.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT } from '../../services/geminiService';
 import { getClientCredentials, hasValidTokens } from '../../services/youtubeApiService';
 import LanguageSelector from '../LanguageSelector';
-import { API_BASE_URL, SERVER_URL } from '../../config';
+import { API_BASE_URL } from '../../config';
 
 // Import modularized components
 import ApiKeysTab from './tabs/ApiKeysTab';
@@ -141,7 +141,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   }, [activeTab]);
 
   // Function to handle closing with animation
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     // Start the closing animation
     setIsClosing(true);
 
@@ -149,7 +149,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setTimeout(() => {
       onClose();
     }, 300); // Match this with the CSS transition duration
-  };
+  }, [onClose]);
 
   // Add ESC key handler to close the modal
   useEffect(() => {
@@ -166,7 +166,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [onClose, isClosing]);
+  }, [onClose, isClosing, handleClose]);
 
   // Store original settings for comparison
   const [originalSettings, setOriginalSettings] = useState({
@@ -420,7 +420,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         throw new Error('Failed to save settings to server');
       }
 
-      console.log('Settings saved to server successfully');
+
     } catch (error) {
       console.error('Error saving settings to server:', error);
     }

@@ -20,7 +20,7 @@ const MAX_TERMINOLOGY_ITEMS = 50;
  */
 export const abortVideoAnalysis = () => {
   if (activeAnalysisController) {
-    console.log('Aborting active video analysis request');
+
     activeAnalysisController.abort();
     activeAnalysisController = null;
     return true;
@@ -56,7 +56,7 @@ const sanitizeAnalysisResult = (analysisResult) => {
     if (sanitized.transcriptionRules.terminology &&
         Array.isArray(sanitized.transcriptionRules.terminology) &&
         sanitized.transcriptionRules.terminology.length > MAX_TERMINOLOGY_ITEMS) {
-      console.log(`Limiting terminology items from ${sanitized.transcriptionRules.terminology.length} to ${MAX_TERMINOLOGY_ITEMS}`);
+
       sanitized.transcriptionRules.terminology = sanitized.transcriptionRules.terminology.slice(0, MAX_TERMINOLOGY_ITEMS);
 
       // Add a note about truncation
@@ -109,7 +109,7 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
       // Import dynamically to avoid circular dependencies
       const { getVideoDuration } = await import('../utils/durationUtils');
       videoDuration = await getVideoDuration(videoFile);
-      console.log(`Video duration for analysis: ${videoDuration} seconds`);
+
     } catch (error) {
       console.warn('Could not determine video duration:', error);
     }
@@ -190,7 +190,7 @@ Provide your analysis in a structured format that can be used to guide the trans
     // Check if this is a structured JSON response
     let analysisResult;
     if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-      console.log('Received structured JSON analysis response');
+
       analysisResult = data.candidates[0].content.parts[0].structuredJson;
     } else {
       // If not structured, try to parse the text response
@@ -220,7 +220,7 @@ Provide your analysis in a structured format that can be used to guide the trans
 
     // Sanitize the result to prevent localStorage overflow
     const sanitizedResult = sanitizeAnalysisResult(analysisResult);
-    console.log('Sanitized analysis result:', sanitizedResult);
+
 
     return sanitizedResult;
   } catch (error) {

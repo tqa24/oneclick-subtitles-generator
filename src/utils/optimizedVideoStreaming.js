@@ -4,7 +4,7 @@
  */
 
 // Cache for video chunks to avoid redundant processing
-const chunkCache = new Map();
+// Using LRUCache implementation below instead of this Map
 
 // LRU (Least Recently Used) cache implementation for video chunks
 class LRUCache {
@@ -17,11 +17,11 @@ class LRUCache {
   // Get a chunk from cache
   get(key) {
     if (!this.cache.has(key)) return null;
-    
+
     // Update usage (move to end of array to mark as recently used)
     this.usage = this.usage.filter(k => k !== key);
     this.usage.push(key);
-    
+
     return this.cache.get(key);
   }
 
@@ -32,10 +32,10 @@ class LRUCache {
       const lruKey = this.usage.shift();
       this.cache.delete(lruKey);
     }
-    
+
     // Add new item
     this.cache.set(key, value);
-    
+
     // Update usage
     this.usage = this.usage.filter(k => k !== key);
     this.usage.push(key);
@@ -61,43 +61,43 @@ const videoChunkCache = new LRUCache(100); // Cache up to 100 chunks
  */
 export const preloadVideoChunks = async (videoUrl, currentTime, duration, chunkSize = 30, preloadAhead = 2) => {
   if (!videoUrl || !duration) return;
-  
+
   // Calculate current chunk and chunks to preload
   const currentChunk = Math.floor(currentTime / chunkSize);
   const chunksToPreload = [];
-  
+
   // Add current chunk and next chunks
   for (let i = 0; i <= preloadAhead; i++) {
     const chunkIndex = currentChunk + i;
     const chunkStart = chunkIndex * chunkSize;
-    
+
     // Skip if beyond video duration
     if (chunkStart >= duration) break;
-    
+
     chunksToPreload.push(chunkIndex);
   }
-  
+
   // Preload chunks in parallel
   await Promise.all(chunksToPreload.map(async (chunkIndex) => {
     const cacheKey = `${videoUrl}_chunk_${chunkIndex}`;
-    
+
     // Skip if already in cache
     if (videoChunkCache.get(cacheKey)) return;
-    
+
     try {
       // Create a range request for this chunk
       const chunkStart = chunkIndex * chunkSize;
       const chunkEnd = Math.min((chunkIndex + 1) * chunkSize, duration);
-      
+
       // Only preload if not already in browser cache
       // This is a dummy request that will be cached by the browser
-      const response = await fetch(videoUrl, {
+      await fetch(videoUrl, {
         method: 'HEAD',
         headers: {
           'Range': `bytes=${Math.floor(chunkStart * 1000000)}-${Math.floor(chunkEnd * 1000000)}`,
         },
       });
-      
+
       // Mark as preloaded in our cache
       videoChunkCache.set(cacheKey, true);
     } catch (error) {
@@ -115,9 +115,9 @@ export const preloadVideoChunks = async (videoUrl, currentTime, duration, chunkS
  */
 export const clearUnusedChunks = (videoUrl, currentTime, chunkSize = 30, keepChunks = 1) => {
   if (!videoUrl) return;
-  
+
   const currentChunk = Math.floor(currentTime / chunkSize);
-  
+
   // Clear chunks that are far behind current playback position
   for (let i = 0; i < currentChunk - keepChunks; i++) {
     const cacheKey = `${videoUrl}_chunk_${i}`;
@@ -131,18 +131,18 @@ export const clearUnusedChunks = (videoUrl, currentTime, chunkSize = 30, keepChu
  */
 export const optimizeVideoElement = (videoElement) => {
   if (!videoElement) return;
-  
+
   // Set optimal buffer size for long videos
   videoElement.preload = 'auto';
-  
+
   // Use lower quality initially for faster startup
   if ('fastSeek' in videoElement) {
     videoElement.fastSeek(0);
   }
-  
+
   // Disable picture-in-picture to save resources
   videoElement.disablePictureInPicture = true;
-  
+
   // Optimize memory usage
   videoElement.addEventListener('timeupdate', () => {
     // Clear video buffer when paused for a while
@@ -163,9 +163,11 @@ export const optimizeVideoElement = (videoElement) => {
   });
 };
 
-export default {
+const optimizedVideoStreaming = {
   preloadVideoChunks,
   clearUnusedChunks,
   optimizeVideoElement,
   videoChunkCache
 };
+
+export default optimizedVideoStreaming;

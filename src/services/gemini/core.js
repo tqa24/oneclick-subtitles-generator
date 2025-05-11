@@ -6,17 +6,13 @@ import { parseGeminiResponse } from '../../utils/subtitle';
 import { convertAudioForGemini, isAudioFormatSupportedByGemini } from '../../utils/audioConverter';
 import {
     createSubtitleSchema,
-    createTranslationSchema,
-    createConsolidationSchema,
-    createSummarizationSchema,
     addResponseSchema
 } from '../../utils/schemaUtils';
 import { getTranscriptionPrompt } from './promptManagement';
 import { fileToBase64 } from './utils';
 import {
     createRequestController,
-    removeRequestController,
-    getProcessingForceStopped
+    removeRequestController
 } from './requestManagement';
 
 /**
@@ -40,7 +36,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
     // Always use structured output, but with different schema based on whether we have user-provided subtitles
     const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
     requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
-    console.log('Using structured output with schema:', JSON.stringify(requestData));
+
 
     if (inputType === 'youtube') {
         requestData.contents = [
@@ -64,9 +60,9 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         // For audio files, convert to a format supported by Gemini
         let processedInput = input;
         if (isAudio) {
-            console.log('Processing audio file:', input.name);
-            console.log('Audio file type:', input.type);
-            console.log('Audio file size:', input.size);
+
+
+
 
             // Check if the audio format is supported by Gemini
             if (!isAudioFormatSupportedByGemini(input)) {
@@ -75,7 +71,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
             // Convert the audio file to a supported format
             processedInput = await convertAudioForGemini(input);
-            console.log('Processed audio file type:', processedInput.type);
+
         }
 
         const base64Data = await fileToBase64(processedInput);
@@ -83,13 +79,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         // Use the MIME type from the processed input
         const mimeType = processedInput.type;
 
-        // Log detailed information about the processed file
-        console.log('Processed file details:', {
-            name: processedInput.name,
-            type: processedInput.type,
-            size: processedInput.size,
-            lastModified: new Date(processedInput.lastModified).toISOString()
-        });
+
 
         // Check if we have user-provided subtitles
         const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
@@ -101,11 +91,11 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         const promptText = getTranscriptionPrompt(contentType, userProvidedSubtitles, { segmentInfo });
 
         // Log the prompt being used
-        console.log(`Using ${contentType} prompt: ${promptText.substring(0, 100)}...`);
+
 
         // Log if we're using user-provided subtitles
         if (isUserProvided) {
-            console.log('Using user-provided subtitles, skipping preset and rules');
+
 
             // When using user-provided subtitles, we want to use a very simple request
             // without any additional configuration or schema
@@ -129,22 +119,22 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
             // Still add the structured output schema, but with the user-provided flag
             requestData = addResponseSchema(requestData, createSubtitleSchema(true), true);
-            console.log('Using user-provided subtitles schema with low temperature to enforce timing-only response');
+
 
             // Count the number of subtitles for validation
             const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
             const expectedSubtitleCount = subtitleLines.length;
-            console.log(`Expecting ${expectedSubtitleCount} timing entries in the response`);
+
 
             // Store user-provided subtitles in localStorage for the parser to access
             localStorage.setItem('user_provided_subtitles', userProvidedSubtitles);
-            console.log('Stored user-provided subtitles in localStorage for parser access');
+
 
             // Skip the rest of the function since we've already set up the request data
-            console.log('Using simplified request for user-provided subtitles');
+
 
             // Log the MIME type being sent to the API
-            console.log('Using MIME type for Gemini API:', mimeType);
+
 
             // Return early to skip the rest of the function
             // Use the same API call logic as below but in a more direct way
@@ -178,7 +168,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (isUserProvided && data?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
                     const structuredJson = data.candidates[0].content.parts[0].structuredJson;
                     if (Array.isArray(structuredJson)) {
-                        console.log(`Received ${structuredJson.length} timing entries`);
+
 
                         // For segments, we expect a variable number of entries
                         const isSegment = options?.segmentInfo?.isSegment || false;
@@ -215,7 +205,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             } catch (error) {
                 // Check if this is an AbortError
                 if (error.name === 'AbortError') {
-                    console.log('Gemini API request was aborted');
+
                     throw new Error('Request was aborted');
                 } else {
                     console.error('Error calling Gemini API:', error);
@@ -242,7 +232,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         ];
 
         // Log the MIME type being sent to the API
-        console.log('Using MIME type for Gemini API:', mimeType);
+
     }
 
     // Create a unique ID for this request
@@ -250,8 +240,8 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
     try {
         // Log request data for debugging (without the actual base64 data to keep logs clean)
-        console.log('Gemini API request model:', MODEL);
-        console.log('Request MIME type:', inputType === 'file-upload' ? input.type : 'N/A');
+
+
 
         // Create a deep copy of the request data for logging
         const debugRequestData = JSON.parse(JSON.stringify(requestData));
@@ -269,7 +259,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 }
             }
         }
-        console.log('Gemini API request structure:', debugRequestData);
+
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
@@ -322,7 +312,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
                     // Check for 503 status code directly
                     if (response.status === 503) {
-                        console.log('Detected 503 Service Unavailable error - model overloaded');
+
                         const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                         overloadError.isOverloaded = true;
                         throw overloadError;
@@ -335,7 +325,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
                 // Check for 503 status code directly
                 if (response.status === 503) {
-                    console.log('Detected 503 Service Unavailable error - model overloaded');
+
                     const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                     overloadError.isOverloaded = true;
                     throw overloadError;
@@ -346,7 +336,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         }
 
         const data = await response.json();
-        console.log('Gemini API response:', data);
+
 
         // Check if the response contains empty subtitles
         if (data?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
@@ -377,7 +367,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
     } catch (error) {
         // Check if this is an AbortError
         if (error.name === 'AbortError') {
-            console.log('Gemini API request was aborted');
+
             throw new Error('Request was aborted');
         } else {
             console.error('Error calling Gemini API:', error);
@@ -389,10 +379,10 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 error.message.includes('overloaded') ||
                 error.message.includes('UNAVAILABLE')
             )) {
-                console.log('Detected overload error in message:', error.message);
+
                 if (!error.isOverloaded) {
                     error.isOverloaded = true;
-                    console.log('Marked error as overloaded');
+
                 }
             }
 

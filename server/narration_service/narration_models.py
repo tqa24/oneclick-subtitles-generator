@@ -98,7 +98,7 @@ def set_current_model():
     success, message = set_active_model(model_id)
 
     if success:
-        logger.info(f"Active model set to '{model_id}' (will be loaded on-demand)")
+
         return jsonify({'success': True, 'message': f'Active model set to {model_id}'})
     else:
         logger.error(f"Failed to set active model to '{model_id}': {message}")
@@ -116,7 +116,7 @@ def add_new_model():
     config = data.get('config', {})
     language_codes = data.get('languageCodes', [])
 
-    logger.info(f"Request to add model: type={source_type}, id={model_id_req}, languages={language_codes}, config={config}")
+
 
     try:
         if source_type == 'huggingface':
@@ -141,7 +141,7 @@ def add_new_model():
             if vocab_path and not vocab_repo_id:
                 vocab_repo_id = repo_id
 
-            logger.info(f"Parsed HF info: Repo={repo_id}, ModelPath={model_path}, VocabPath={vocab_path}")
+
 
             success, message, downloaded_model_id = download_model_from_hf(
                 repo_id=repo_id,
@@ -170,7 +170,7 @@ def add_new_model():
             return jsonify({'error': f'Invalid source_type: {source_type}. Must be "huggingface" or "url".'}), 400
 
         if success:
-            logger.info(f"Successfully added model '{downloaded_model_id}': {message}")
+
             return jsonify({
                 'success': True,
                 'message': message,
@@ -240,12 +240,12 @@ def remove_model(model_id):
     """Delete a model (handles potential slashes in ID)"""
     decoded_model_id = unquote(model_id)
     delete_cache = request.args.get('delete_cache', 'false').lower() == 'true'
-    logger.info(f"Request to delete model: '{decoded_model_id}', delete_cache={delete_cache}")
+
 
     success, message = delete_model(decoded_model_id, delete_cache)
 
     if success:
-        logger.info(f"Successfully deleted model '{decoded_model_id}': {message}")
+
         return jsonify({'success': True, 'message': message})
     else:
         logger.error(f"Failed to delete model '{decoded_model_id}': {message}")
@@ -264,11 +264,11 @@ def update_model(model_id):
     if not data:
         return jsonify({'error': 'No update data provided'}), 400
 
-    logger.info(f"Request to update model '{decoded_model_id}' with data: {data}")
+
     success, message = update_model_info(decoded_model_id, data)
 
     if success:
-        logger.info(f"Successfully updated model '{decoded_model_id}': {message}")
+
         return jsonify({'success': True, 'message': message})
     else:
         logger.error(f"Failed to update model '{decoded_model_id}': {message}")
@@ -304,12 +304,12 @@ def get_model_storage_info(model_id):
 def cancel_model_download(model_id):
     """Cancel an ongoing model download"""
     decoded_model_id = unquote(model_id)
-    logger.info(f"Received request to cancel download for model: {decoded_model_id}")
+
 
     success = cancel_download(decoded_model_id)
 
     if success:
-        logger.info(f"Successfully initiated download cancellation for model '{decoded_model_id}'")
+
         return jsonify({
             'success': True,
             'message': f'Download cancellation requested for model {decoded_model_id}'

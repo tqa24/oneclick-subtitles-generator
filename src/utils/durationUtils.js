@@ -60,7 +60,7 @@ export const getVideoDuration = (mediaFile) => {
                 console.error('Error loading video metadata:', e);
                 window.URL.revokeObjectURL(video.src);
                 // Use a fallback duration instead of failing
-                console.log('Using fallback duration of 600 seconds');
+
                 resolve(600); // 10 minutes fallback
             };
 
@@ -69,7 +69,7 @@ export const getVideoDuration = (mediaFile) => {
             } catch (error) {
                 console.error('Error creating object URL:', error);
                 // Use a fallback duration instead of failing
-                console.log('Using fallback duration of 600 seconds');
+
                 resolve(600); // 10 minutes fallback
             }
         } else if (isAudio) {
@@ -86,7 +86,7 @@ export const getVideoDuration = (mediaFile) => {
                 console.error('Error loading audio metadata:', e);
                 window.URL.revokeObjectURL(audio.src);
                 // Use a fallback duration instead of failing
-                console.log('Using fallback duration of 600 seconds');
+
                 resolve(600); // 10 minutes fallback
             };
 
@@ -95,7 +95,7 @@ export const getVideoDuration = (mediaFile) => {
             } catch (error) {
                 console.error('Error creating object URL:', error);
                 // Use a fallback duration instead of failing
-                console.log('Using fallback duration of 600 seconds');
+
                 resolve(600); // 10 minutes fallback
             }
         } else {

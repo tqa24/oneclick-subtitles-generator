@@ -6,63 +6,43 @@
 const { NARRATION_PORT } = require('../startNarrationService');
 
 /**
- * Check if the narration service is running with multiple attempts
- * @param {number} maxAttempts - Maximum number of connection attempts
- * @param {number} delayMs - Delay between attempts in milliseconds
+ * Check if the narration service is running - DRASTICALLY SIMPLIFIED VERSION
  * @returns {Promise<Object>} - Status object with available, device, and gpu_info properties
  */
-const checkService = async (maxAttempts = 20, delayMs = 10000) => {
-  console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
-  console.log(`This may take some time on first run as the Python server needs to initialize...`);
+const checkService = async () => {
+  // Completely simplified version with no retries to eliminate logs
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      console.log(`Attempt ${attempt}/${maxAttempts} to connect to narration service at http://localhost:${NARRATION_PORT}/api/narration/status`);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-      const response = await fetch(`http://127.0.0.1:${NARRATION_PORT}/api/narration/status`, {
-        signal: controller.signal,
-        mode: 'cors',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const statusData = await response.json();
-        if (statusData.available) {
-          console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}! Device: ${statusData.device}`);
-          return {
-            available: true,
-            device: statusData.device || 'cpu',
-            gpu_info: statusData.gpu_info || {}
-          };
-        }
+    const response = await fetch(`http://127.0.0.1:${NARRATION_PORT}/api/narration/status`, {
+      signal: controller.signal,
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
       }
+    });
 
-      // If we reach here, the service is not available yet
-      if (attempt < maxAttempts) {
-        console.log(`Narration service not available on attempt ${attempt}/${maxAttempts}, waiting ${delayMs}ms before next attempt...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      }
-    } catch (error) {
-      if (attempt < maxAttempts) {
-        console.log(`Error connecting to narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
-        console.log(`Waiting ${delayMs}ms before next attempt...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } else {
-        console.log(`Failed to connect to narration service after ${maxAttempts} attempts: ${error.message}`);
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const statusData = await response.json();
+      if (statusData.available) {
+        return {
+          available: true,
+          device: statusData.device || 'cpu',
+          gpu_info: statusData.gpu_info || {}
+        };
       }
     }
-  }
 
-  console.log(`Narration service not available after ${maxAttempts} attempts`);
-  return { available: false, device: 'none', gpu_info: {} };
+    // Service not available
+    return { available: false, device: 'none', gpu_info: {} };
+  } catch (error) {
+    // Error connecting to service
+    return { available: false, device: 'none', gpu_info: {} };
+  }
 };
 
 /**
@@ -72,7 +52,7 @@ const checkService = async (maxAttempts = 20, delayMs = 10000) => {
  */
 const fetchAudioFile = async (filename) => {
   const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration/audio/${filename}`;
-  console.log(`Proxying to: ${narrationUrl}`);
+  // Removed proxying log
 
   const response = await fetch(narrationUrl, {
     mode: 'cors',
@@ -83,7 +63,7 @@ const fetchAudioFile = async (filename) => {
   });
 
   if (!response.ok) {
-    console.error(`Error from narration service: ${response.status}`);
+    // Removed error logging
     throw new Error(`Audio file not found: ${response.status}`);
   }
 
@@ -132,7 +112,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
       headResponse.headers.get('content-type').includes('text/event-stream');
 
     if (isStreamingSupported) {
-      console.log('Narration service supports streaming, forwarding stream');
+      // Removed streaming support log
 
       // Forward the request to the F5-TTS service with streaming response
       const streamResponse = await fetch(narrationUrl, {
@@ -157,7 +137,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
       if (!streamResponse.ok) {
         const errorText = await streamResponse.text();
-        console.error(`Error from narration service: ${streamResponse.status} ${errorText}`);
+        // Removed error logging
         throw new Error(`Error from narration service: ${streamResponse.status} ${errorText}`);
       }
 
@@ -172,7 +152,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
       // Pipe the stream to the response
       const pipe = async () => {
         try {
-          console.log('Starting to pipe streaming response to client');
+          // Removed pipe start logging
 
           // Track all results for enhancement
           const allResults = [];
@@ -181,11 +161,11 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
             const { done, value } = await reader.read();
 
             if (done) {
-              console.log('Stream complete');
+              // Removed stream complete logging
 
               // Send a final enhanced complete event if we have results
               if (allResults.length > 0) {
-                console.log(`Enhancing ${allResults.length} F5-TTS narration results with timing information`);
+                // Removed enhancement logging
                 const enhancedResults = enhanceF5TTSNarrations(allResults, subtitles);
 
                 // Send the enhanced complete event
@@ -229,8 +209,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
                       const enhancedResult = enhanceF5TTSNarrations([eventData.result], subtitles)[0];
                       eventData.result = enhancedResult;
 
-                      // Add more detailed progress information
-                      console.log(`Processing subtitle ${eventData.progress}/${eventData.total} (ID: ${eventData.result.subtitle_id})`);
+                      // Removed progress logging
 
                       // Add a progress event before the result to provide more detailed status
                       const progressEvent = {
@@ -251,7 +230,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
                     // If this is a complete event, enhance all results
                     if (eventData.type === 'complete' && eventData.results) {
-                      console.log(`Enhancing ${eventData.results.length} F5-TTS narration results with timing information`);
+                      // Removed enhancement logging
                       eventData.results = enhanceF5TTSNarrations(eventData.results, subtitles);
                       eventData.enhanced = true;
 
@@ -261,7 +240,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
                     }
                   } catch (jsonError) {
                     // If JSON parsing fails, just use the original line
-                    console.error(`Error parsing JSON in SSE chunk: ${jsonError.message}`);
+                    // Removed JSON parsing error logging
                   }
                 }
 
@@ -273,7 +252,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
               res.write(modifiedChunk);
             } catch (parseError) {
               // If parsing fails, just forward the original chunk
-              console.error(`Error processing SSE chunk: ${parseError.message}`);
+              // Removed chunk processing error logging
               res.write(chunk);
             }
 
@@ -283,7 +262,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
             }
           }
         } catch (error) {
-          console.error('Error piping stream:', error);
+          // Removed pipe error logging
           res.end();
         }
       };
@@ -296,7 +275,7 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
     }
 
     // If streaming is not supported, fall back to regular JSON response
-    console.log('Narration service does not support streaming, using regular JSON response');
+    // Removed fallback logging
 
     // Forward the request to the F5-TTS service
     const response = await fetch(narrationUrl, {
@@ -321,22 +300,22 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error from narration service: ${response.status} ${errorText}`);
+      // Removed error logging
       throw new Error(`Error from narration service: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
-    console.log(`Narration service returned ${result.results ? result.results.length : 0} results`);
+    // Removed results count logging
 
     // Enhance F5-TTS narration results with timing information from subtitles
     if (result.results && result.results.length > 0) {
-      console.log('Enhancing F5-TTS narration results with timing information');
+      // Removed enhancement logging
       result.results = enhanceF5TTSNarrations(result.results, subtitles);
     }
 
     return result;
   } catch (error) {
-    console.error(`Error using narration service: ${error.message}`);
+    // Removed error logging
     throw error;
   }
 };
@@ -374,7 +353,7 @@ const proxyRequest = async (url, options) => {
       return await response.text();
     }
   } catch (error) {
-    console.error(`Error proxying to narration service: ${error.message}`);
+    // Removed error logging
     throw error;
   }
 };

@@ -33,7 +33,9 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [txtContent, setTxtContent] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [isProcessing, setIsProcessing] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [processedDocument, setProcessedDocument] = useState(null);
 
   // Refs for height animation
@@ -121,7 +123,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     }
 
     // Always pass the chain items to ensure the exact arrangement is preserved
-    console.log('Chain items for translation/formatting:', chainItems);
+
 
     if (isFormatMode) {
       // In format mode, pass empty languages array
@@ -213,7 +215,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       if (result && typeof result === 'string' && (result.trim().startsWith('{') || result.trim().startsWith('['))) {
         try {
           const jsonResult = JSON.parse(result);
-          console.log('Detected JSON response:', jsonResult);
+
 
           // For summarize feature
           if (jsonResult.summary) {
@@ -228,20 +230,20 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             }
 
             result = plainText;
-            console.log('Extracted plain text from summary JSON');
+
           }
           // For consolidate feature
           else if (jsonResult.content) {
             result = jsonResult.content;
-            console.log('Extracted plain text from content JSON');
+
           }
           // For any other JSON structure
           else if (jsonResult.text) {
             result = jsonResult.text;
-            console.log('Extracted plain text from text JSON');
+
           }
         } catch (e) {
-          console.log('Result looks like JSON but failed to parse:', e);
+
           // Keep the original result if parsing fails
         }
       }

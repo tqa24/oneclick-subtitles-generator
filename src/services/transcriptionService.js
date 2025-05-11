@@ -2,8 +2,7 @@
  * Transcription service for voice recognition using Gemini API
  */
 
-// Import the API base URL but not the API key
-import { API_BASE_URL } from '../config';
+// No need to import API_BASE_URL as it's not used in this file
 
 /**
  * Convert a Blob to base64 string
@@ -18,7 +17,7 @@ export const blobToBase64 = (blob) => {
       return;
     }
 
-    console.log('Converting blob to base64, type:', blob.type, 'size:', blob.size);
+
 
     const reader = new FileReader();
 
@@ -46,7 +45,7 @@ export const blobToBase64 = (blob) => {
           return;
         }
 
-        console.log('Successfully converted blob to base64, length:', base64String.length);
+
         resolve(base64String);
       } catch (error) {
         console.error('Error in FileReader onloadend:', error);
@@ -77,7 +76,7 @@ export const isTextEnglish = (text) => {
   if (!text) return true;
 
   // Normalize the text - remove punctuation and extra whitespace
-  const normalizedText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()\n]/g, '').replace(/\s+/g, ' ').trim();
+  const normalizedText = text.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()\n]/g, '').replace(/\s+/g, ' ').trim();
 
   // Simple detection based on common English words and characters
   const englishWords = ['the', 'and', 'is', 'in', 'to', 'of', 'a', 'for', 'that', 'this', 'you', 'it', 'with', 'on', 'at',
@@ -93,7 +92,7 @@ export const isTextEnglish = (text) => {
   // If the text is very short (1-3 words), assume it's English unless proven otherwise
   if (words.length <= 3) {
     // Check for non-Latin characters that would indicate non-English
-    const nonLatinPattern = /[^\u0000-\u007F\u00C0-\u00FF\u0100-\u017F]/;
+    const nonLatinPattern = /[^\u0020-\u007F\u00C0-\u00FF\u0100-\u017F]/;
     return !nonLatinPattern.test(normalizedText);
   }
 
@@ -104,18 +103,8 @@ export const isTextEnglish = (text) => {
   const englishPercentage = (englishWordCount / words.length) * 100;
 
   // Check for non-Latin characters
-  const nonLatinPattern = /[^\u0000-\u007F\u00C0-\u00FF\u0100-\u017F]/;
+  const nonLatinPattern = /[^\u0020-\u007F\u00C0-\u00FF\u0100-\u017F]/;
   const hasNonLatin = nonLatinPattern.test(normalizedText);
-
-  // Log the detection details for debugging
-  console.log('Language detection:', {
-    text: normalizedText,
-    wordCount: words.length,
-    englishWordCount,
-    englishPercentage: `${englishPercentage.toFixed(2)}%`,
-    hasNonLatin,
-    isEnglish: !hasNonLatin && (englishPercentage >= 30 || englishWordCount >= 2)
-  });
 
   // If there are non-Latin characters or very few English words, it's probably not English
   // For longer texts, require at least 30% English words
@@ -159,7 +148,7 @@ export const transcribeAudio = async (audioBlob) => {
       ]
     };
 
-    console.log('Sending transcription request to Gemini API');
+
 
     // Get API key dynamically from localStorage
     const geminiApiKey = localStorage.getItem('gemini_api_key');
@@ -170,7 +159,7 @@ export const transcribeAudio = async (audioBlob) => {
       throw new Error('Gemini API key is missing. Please go to Settings > API Keys to set your Gemini API key.');
     }
 
-    console.log('Using Gemini API key:', geminiApiKey ? `${geminiApiKey.substring(0, 4)}...` : 'Not set');
+
 
     // Call Gemini API
     const response = await fetch(
@@ -197,7 +186,7 @@ export const transcribeAudio = async (audioBlob) => {
     // Extract the transcription text from the response
     if (data.candidates && data.candidates[0] && data.candidates[0].content) {
       const transcriptionText = data.candidates[0].content.parts[0].text;
-      console.log('Transcription result:', transcriptionText);
+
 
       // Clean up the transcription text (remove extra whitespace, etc.)
       const cleanedText = transcriptionText.trim();
@@ -207,12 +196,6 @@ export const transcribeAudio = async (audioBlob) => {
 
       console.timeEnd('transcribeAudio');
 
-      // Log the final result
-      console.log('Final transcription result:', {
-        text: cleanedText,
-        is_english: isEnglish,
-        language: isEnglish ? 'English' : 'Unknown'
-      });
 
       return {
         text: cleanedText,

@@ -20,7 +20,7 @@ const { TEMP_AUDIO_DIR } = require('../directoryManager');
  * @returns {Promise<string>} - Path to the created audio file
  */
 const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration) => {
-  console.log(`Processing batch ${batchIndex} with ${audioSegments.length} segments`);
+
   
   // Create a temporary directory for the filter complex file
   const tempDir = path.join(TEMP_AUDIO_DIR);
@@ -38,7 +38,7 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
     const delayMs = Math.round(segment.start * 1000);
     
     // Log the delay being applied for each segment
-    console.log(`Segment ${index} (ID: ${segment.subtitle_id}): Input index [${index + 1}], Positioning at ${segment.start}s (delay: ${delayMs}ms)`);
+
     
     // Use `index + 1` because input [0] is anullsrc
     const inputIndex = index + 1;
@@ -73,7 +73,7 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
   
   // Write the filter complex to a file
   fs.writeFileSync(filterComplexPath, filterComplex);
-  console.log(`Filter complex written to file: ${filterComplexPath}`);
+
   
   // Build the ffmpeg command arguments as an array
   // Input [0] is the silent anullsrc base track.
@@ -100,7 +100,7 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
     outputPath
   );
   
-  console.log(`Running ffmpeg with ${audioSegments.length} audio segments for batch ${batchIndex}`);
+
   
   // Execute the ffmpeg command using spawn
   await new Promise((resolve, reject) => {
@@ -136,14 +136,14 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
       }
       
       // Log only snippets of potentially long stdout/stderr
-      console.log(`ffmpeg stdout: ${stdoutData.substring(0, 200)}${stdoutData.length > 200 ? '...' : ''}`);
-      console.log(`ffmpeg stderr: ${stderrData.substring(0, 200)}${stderrData.length > 200 ? '...' : ''}`);
+
+
       
       // Clean up the filter complex file
       try {
         if (fs.existsSync(filterComplexPath)) {
           fs.unlinkSync(filterComplexPath);
-          console.log(`Cleaned up temporary filter complex file for batch ${batchIndex}`);
+
         }
       } catch (cleanupError) {
         console.error(`Error cleaning up filter complex file: ${cleanupError.message}`);
@@ -169,7 +169,7 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
  * @returns {Promise<string>} - Path to the concatenated file
  */
 const concatenateAudioFiles = async (inputFiles, outputPath) => {
-  console.log(`Concatenating ${inputFiles.length} audio files into ${outputPath}`);
+
   
   // Create a temporary file list for ffmpeg
   const tempDir = path.join(TEMP_AUDIO_DIR);
@@ -213,13 +213,13 @@ const concatenateAudioFiles = async (inputFiles, outputPath) => {
         return;
       }
       
-      console.log(`ffmpeg concat stdout: ${stdoutData}`);
+
       
       // Clean up the file list
       try {
         if (fs.existsSync(fileListPath)) {
           fs.unlinkSync(fileListPath);
-          console.log('Cleaned up temporary file list');
+
         }
       } catch (cleanupError) {
         console.error(`Error cleaning up file list: ${cleanupError.message}`);

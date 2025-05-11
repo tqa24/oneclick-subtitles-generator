@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateSubtitles, abortAllRequests, cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
+import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
 
 /**
  * Custom hook to manage translation state
@@ -72,7 +72,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
           localStorage.setItem('translation_include_rules', 'false');
         }
 
-        console.log('Transcription rules available:', hasRules);
+
       } catch (error) {
         console.error('Error checking transcription rules availability:', error);
         setRulesAvailable(false);
@@ -99,7 +99,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
           localStorage.setItem('translation_include_rules', 'false');
         }
 
-        console.log('User-provided subtitles loaded:', subtitles ? 'yes' : 'no');
+
       } catch (error) {
         console.error('Error loading user-provided subtitles:', error);
         setUserProvidedSubtitles('');
@@ -153,7 +153,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     // Reset the processing force stopped flag before starting a new translation
     // This is important to ensure that previous cancellations don't affect new translations
     setProcessingForceStopped(false);
-    console.log('Reset processing force stopped flag before starting translation');
+
 
     setError('');
     setIsTranslating(true);
@@ -176,7 +176,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         bracketStyle, // Pass the bracket style
         chainItems // Pass the chain items for format mode
       );
-      console.log('Translation result received:', result ? result.length : 0, 'subtitles');
+
 
       // Check if result is valid
       if (!result || result.length === 0) {
@@ -196,7 +196,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
           translatedSubtitles: result
         }
       }));
-      console.log('Dispatched translation-complete event');
+
 
       // Save the split duration setting to localStorage
       localStorage.setItem('translation_split_duration', splitDuration.toString());
@@ -212,13 +212,13 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
    * Handle cancellation of translation
    */
   const handleCancelTranslation = () => {
-    console.log('Cancelling translation process...');
+
     // Call the cancelTranslation function from the translation service
     // This will abort all active requests and set the processingForceStopped flag to true
     // Note: The processingForceStopped flag will be reset to false when starting a new translation
     // or when resetting the translation
-    const aborted = cancelTranslation();
-    console.log(`Translation cancellation ${aborted ? 'successful' : 'had no active requests to cancel'}`);
+    /* const aborted = */ cancelTranslation();
+
 
     // Update UI state
     setIsTranslating(false);
@@ -237,7 +237,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
 
     // Reset the processing force stopped flag when resetting translation
     setProcessingForceStopped(false);
-    console.log('Reset processing force stopped flag during translation reset');
+
 
     if (onTranslationComplete) {
       onTranslationComplete(null);
@@ -249,7 +249,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         translatedSubtitles: null
       }
     }));
-    console.log('Dispatched translation-reset event');
+
   };
 
   /**

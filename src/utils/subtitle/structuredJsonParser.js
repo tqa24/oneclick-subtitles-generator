@@ -12,17 +12,17 @@ import { convertTimeStringToSeconds } from './timeUtils';
 export const parseStructuredJsonResponse = (response) => {
     try {
         const structuredJson = response.candidates[0].content.parts[0].structuredJson;
-        console.log('Structured JSON response:', JSON.stringify(structuredJson).substring(0, 200) + '...');
+
 
         // Check for translations array in the new schema format
         if (structuredJson.translations && Array.isArray(structuredJson.translations)) {
-            console.log('Found translations array in structured JSON with', structuredJson.translations.length, 'items');
+
 
             const subtitles = [];
 
             for (let i = 0; i < structuredJson.translations.length; i++) {
                 const item = structuredJson.translations[i];
-                console.log(`Processing translation item ${i + 1}:`, JSON.stringify(item));
+
 
                 if (!item || !item.text) {
                     console.warn(`Skipping item ${i + 1} - missing text property`);
@@ -37,7 +37,7 @@ export const parseStructuredJsonResponse = (response) => {
                         const originalSub = originalSubtitlesMap[item.id];
 
                         if (originalSub) {
-                            console.log(`Found original subtitle for ID ${item.id}:`, originalSub);
+
                             subtitles.push({
                                 id: parseInt(item.id),
                                 start: originalSub.start,
@@ -65,7 +65,7 @@ export const parseStructuredJsonResponse = (response) => {
 
                         if (i < originalSubsArray.length) {
                             const originalSub = originalSubsArray[i];
-                            console.log(`Using original subtitle at index ${i} for ID ${item.id}:`, originalSub);
+
                             subtitles.push({
                                 id: parseInt(item.id) || (i + 1),
                                 start: originalSub.start,
@@ -91,16 +91,16 @@ export const parseStructuredJsonResponse = (response) => {
                 });
             }
 
-            console.log(`Processed ${subtitles.length} out of ${structuredJson.translations.length} translation items`);
+
             return subtitles;
         }
         // If it's an array, assume it's a subtitle array
         else if (Array.isArray(structuredJson)) {
             // Log the first item to help with debugging
             if (structuredJson.length > 0) {
-                console.log('First item in structured JSON array:', JSON.stringify(structuredJson[0]));
-                console.log('Time format example:', structuredJson[0].startTime);
-                console.log('Total items in array:', structuredJson.length);
+
+
+
             }
 
             const subtitles = [];
@@ -130,12 +130,12 @@ export const parseStructuredJsonResponse = (response) => {
             } else {
                 // For timing-only format, we don't need to check for empty subtitles
                 allEmpty = false;
-                console.log('Skipping empty subtitle check for timing-only format');
+
             }
 
             // If all subtitles are empty or more than 90% are empty, this is likely an error
             if (allEmpty || (emptyCount > 0 && emptyCount / structuredJson.length > 0.9)) {
-                console.log(`Found ${emptyCount} empty subtitles out of ${structuredJson.length} total`);
+
                 if (allEmpty) {
                     console.error('All subtitles are empty with 00m00s000ms timestamps. This is likely an error.');
                     throw new Error('No valid subtitles found in the response. All subtitles have empty text and 00m00s000ms timestamps.');
@@ -153,11 +153,11 @@ export const parseStructuredJsonResponse = (response) => {
                        structuredJson[startIndex].startTime === '00m00s000ms' &&
                        structuredJson[startIndex].endTime === '00m00s000ms' &&
                        (!structuredJson[startIndex].text || structuredJson[startIndex].text.trim() === '')) {
-                    console.log(`Skipping empty subtitle at index ${startIndex}`);
+
                     startIndex++;
                 }
             } else {
-                console.log('Skipping empty subtitle check for timing-only format');
+
             }
 
             for (let i = startIndex; i < structuredJson.length; i++) {
@@ -171,7 +171,7 @@ export const parseStructuredJsonResponse = (response) => {
                         const end = convertTimeStringToSeconds(item.endTime);
                         const index = item.index;
 
-                        console.log(`Converted time for timing-only item ${index}: ${item.startTime} -> ${start}, ${item.endTime} -> ${end}`);
+
 
                         // Get the corresponding text from user-provided subtitles
                         const userProvidedSubtitles = localStorage.getItem('user_provided_subtitles');
@@ -179,7 +179,7 @@ export const parseStructuredJsonResponse = (response) => {
                             const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
                             if (index < subtitleLines.length) {
                                 const text = subtitleLines[index].trim();
-                                console.log(`Using user-provided subtitle text for index ${index}: ${text}`);
+
 
                                 subtitles.push({
                                     id: i + 1,
@@ -205,11 +205,11 @@ export const parseStructuredJsonResponse = (response) => {
                         const start = convertTimeStringToSeconds(item.startTime);
                         const end = convertTimeStringToSeconds(item.endTime);
 
-                        console.log(`Converted time for item ${i + 1}: ${item.startTime} -> ${start}, ${item.endTime} -> ${end}`);
+
 
                         // Skip empty subtitles at the beginning of the video
                         if (start === 0 && end === 0 && (!item.text || item.text.trim() === '')) {
-                            console.log(`Skipping empty subtitle at position ${i + 1}`);
+
                             continue;
                         }
 
@@ -234,7 +234,7 @@ export const parseStructuredJsonResponse = (response) => {
                             const originalSub = originalSubtitlesMap[item.id];
 
                             if (originalSub) {
-                                console.log(`Found original subtitle for ID ${item.id}:`, originalSub);
+
                                 subtitles.push({
                                     id: parseInt(item.id),
                                     start: originalSub.start,
@@ -266,7 +266,7 @@ export const parseStructuredJsonResponse = (response) => {
                             // If we have an original subtitle at this index, use its timing
                             if (i < originalSubsArray.length) {
                                 const originalSub = originalSubsArray[i];
-                                console.log(`Using original subtitle at index ${i} for ID ${item.id}:`, originalSub);
+
                                 subtitles.push({
                                     id: parseInt(item.id) || (i + 1),
                                     start: originalSub.start,
@@ -298,7 +298,7 @@ export const parseStructuredJsonResponse = (response) => {
                 }
             }
 
-            console.log(`Processed ${subtitles.length} out of ${structuredJson.length} items`);
+
             return subtitles;
         }
 
@@ -322,14 +322,14 @@ export const parseStructuredJsonResponse = (response) => {
         // Try to extract the text content as a fallback
         if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
             const text = response.candidates[0].content.parts[0].text;
-            console.log('Falling back to text parsing. Text starts with:', text.substring(0, 100));
+
 
             // Check if the text is a JSON string
             if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
                 try {
                     const jsonData = JSON.parse(text);
                     if (Array.isArray(jsonData) && jsonData.length > 0) {
-                        console.log('Successfully parsed JSON from text content');
+
                         const mockResponse = {
                             candidates: [{
                                 content: {
@@ -346,16 +346,16 @@ export const parseStructuredJsonResponse = (response) => {
                 }
             }
 
-            // Create a mock response with just the text
-            const mockResponse = {
-                candidates: [{
-                    content: {
-                        parts: [{
-                            text: text
-                        }]
-                    }
-                }]
-            };
+            // Create a response structure with just the text
+            // const mockResponse = {
+            //     candidates: [{
+            //         content: {
+            //             parts: [{
+            //                 text: text
+            //             }]
+            //         }
+            //     }]
+            // };
 
             // Import and use text parsing methods
             const { parseOriginalFormat, parseMillisecondsFormat, parseSingleTimestampFormat, parseBracketSpaceFormat } = require('./formatParsers');

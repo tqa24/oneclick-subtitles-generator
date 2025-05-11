@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/narration/narrationPlaybackMenuRedesign.css';
 
@@ -48,6 +48,81 @@ const NarrationPlaybackMenu = ({
   // Store audio durations
   const audioDurationsRef = useRef({});
 
+  // Play a specific narration
+  const playNarration = useCallback((narration, subtitleMidPoint) => {
+    // Stop any currently playing narration
+    if (currentNarration && audioRefs.current[currentNarration.id]) {
+      audioRefs.current[currentNarration.id].pause();
+    }
+
+    // Set the current narration
+    setCurrentNarration(narration);
+
+    // Get or create audio element for this narration
+    if (!audioRefs.current[narration.subtitle_id]) {
+      const audioUrl = getAudioUrl(narration.filename);
+
+      const audio = new Audio(audioUrl);
+
+      // Set volume immediately
+      audio.volume = narrationVolume;
+
+      // Store the audio duration once it's loaded
+      audio.addEventListener('loadedmetadata', () => {
+        audioDurationsRef.current[narration.subtitle_id] = audio.duration;
+
+        // Set volume again after metadata is loaded
+        audio.volume = narrationVolume;
+      });
+
+      // Add error handling
+      audio.addEventListener('error', (e) => {
+        console.error(`Audio error for narration ${narration.subtitle_id}:`, e);
+        console.error('Audio error code:', audio.error?.code);
+        console.error('Audio error message:', audio.error?.message);
+      });
+
+      // Add play event listener
+      audio.addEventListener('play', () => {
+        // Event handler can be empty
+      });
+
+      audioRefs.current[narration.subtitle_id] = audio;
+    }
+
+    // Play the narration
+    const audioElement = audioRefs.current[narration.subtitle_id];
+
+    // Set volume again before playing
+    audioElement.volume = narrationVolume;
+
+    // If we know the audio duration, calculate the correct start time to align the middle
+    // of the audio with the middle of the subtitle
+    if (audioDurationsRef.current[narration.subtitle_id] && subtitleMidPoint && videoRef?.current) {
+      const audioDuration = audioDurationsRef.current[narration.subtitle_id];
+      const currentVideoTime = videoRef.current.currentTime;
+
+      // Calculate how far we are from the subtitle midpoint
+      const timeFromMidPoint = subtitleMidPoint - currentVideoTime;
+
+      // Calculate where in the audio we should start playing
+      // If timeFromMidPoint is positive, we're before the midpoint
+      // If timeFromMidPoint is negative, we're after the midpoint
+      const audioStartTime = (audioDuration / 2) - timeFromMidPoint;
+
+      // Ensure the start time is within valid bounds
+      if (audioStartTime >= 0 && audioStartTime < audioDuration) {
+        audioElement.currentTime = audioStartTime;
+      } else {
+        audioElement.currentTime = 0;
+      }
+    } else {
+      audioElement.currentTime = 0;
+    }
+
+    audioElement.play();
+  }, [currentNarration, narrationVolume, getAudioUrl, videoRef]);
+
   // Handle video timeupdate to trigger narration playback
   useEffect(() => {
     const handleTimeUpdate = () => {
@@ -93,98 +168,15 @@ const NarrationPlaybackMenu = ({
 
     // Add event listener to video
     if (videoRef && videoRef.current && isPlaying) {
-      videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+      const video = videoRef.current; // Store reference to avoid closure issues
+      video.addEventListener('timeupdate', handleTimeUpdate);
+
+      return () => {
+        // Clean up event listener
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+      };
     }
-
-    return () => {
-      // Clean up event listener
-      if (videoRef && videoRef.current) {
-        videoRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-      }
-    };
-  }, [isPlaying, activeNarrations, currentNarration, videoRef, getAudioUrl]);
-
-  // Play a specific narration
-  const playNarration = (narration, subtitleMidPoint) => {
-    // Stop any currently playing narration
-    if (currentNarration && audioRefs.current[currentNarration.id]) {
-      audioRefs.current[currentNarration.id].pause();
-    }
-
-    // Set the current narration
-    setCurrentNarration(narration);
-
-    // Get or create audio element for this narration
-    if (!audioRefs.current[narration.subtitle_id]) {
-      const audioUrl = getAudioUrl(narration.filename);
-      console.log(`Creating new audio element for URL: ${audioUrl} for narration ${narration.subtitle_id}`);
-
-      const audio = new Audio(audioUrl);
-
-      // Set volume immediately
-      audio.volume = narrationVolume;
-      console.log(`Setting initial audio volume to: ${narrationVolume} for narration ${narration.subtitle_id}`);
-
-      // Store the audio duration once it's loaded
-      audio.addEventListener('loadedmetadata', () => {
-        console.log(`Audio loaded metadata, duration: ${audio.duration} for narration ${narration.subtitle_id}`);
-        audioDurationsRef.current[narration.subtitle_id] = audio.duration;
-
-        // Set volume again after metadata is loaded
-        audio.volume = narrationVolume;
-        console.log(`Setting audio volume after metadata to: ${narrationVolume} for narration ${narration.subtitle_id}`);
-      });
-
-      // Add error handling
-      audio.addEventListener('error', (e) => {
-        console.error(`Audio error for narration ${narration.subtitle_id}:`, e);
-        console.error('Audio error code:', audio.error?.code);
-        console.error('Audio error message:', audio.error?.message);
-      });
-
-      // Add play event listener
-      audio.addEventListener('play', () => {
-        console.log(`Audio started playing for narration ${narration.subtitle_id} with volume ${audio.volume}`);
-      });
-
-      audioRefs.current[narration.subtitle_id] = audio;
-    } else {
-      console.log(`Using existing audio element for narration: ${narration.subtitle_id}`);
-    }
-
-    // Play the narration
-    const audioElement = audioRefs.current[narration.subtitle_id];
-
-    // Set volume again before playing
-    audioElement.volume = narrationVolume;
-    console.log(`Setting audio volume before play to: ${narrationVolume} for narration ${narration.subtitle_id}`);
-
-    // If we know the audio duration, calculate the correct start time to align the middle
-    // of the audio with the middle of the subtitle
-    if (audioDurationsRef.current[narration.subtitle_id] && subtitleMidPoint && videoRef?.current) {
-      const audioDuration = audioDurationsRef.current[narration.subtitle_id];
-      const currentVideoTime = videoRef.current.currentTime;
-
-      // Calculate how far we are from the subtitle midpoint
-      const timeFromMidPoint = subtitleMidPoint - currentVideoTime;
-
-      // Calculate where in the audio we should start playing
-      // If timeFromMidPoint is positive, we're before the midpoint
-      // If timeFromMidPoint is negative, we're after the midpoint
-      const audioStartTime = (audioDuration / 2) - timeFromMidPoint;
-
-      // Ensure the start time is within valid bounds
-      if (audioStartTime >= 0 && audioStartTime < audioDuration) {
-        audioElement.currentTime = audioStartTime;
-      } else {
-        audioElement.currentTime = 0;
-      }
-    } else {
-      audioElement.currentTime = 0;
-    }
-
-    audioElement.play();
-  };
+  }, [isPlaying, activeNarrations, currentNarration, videoRef, getAudioUrl, playNarration]);
 
   // Toggle narration playback
   const togglePlayback = () => {
@@ -239,15 +231,8 @@ const NarrationPlaybackMenu = ({
   useEffect(() => {
     Object.values(audioRefs.current).forEach(audio => {
       audio.volume = narrationVolume;
-      console.log(`Updated volume to ${narrationVolume} for audio element`);
     });
-
-    // If we have a current narration, log its volume
-    if (currentNarration && audioRefs.current[currentNarration.subtitle_id]) {
-      const audio = audioRefs.current[currentNarration.subtitle_id];
-      console.log(`Current narration ${currentNarration.subtitle_id} volume is now: ${audio.volume}`);
-    }
-  }, [narrationVolume, currentNarration]);
+  }, [narrationVolume]);
 
 
 

@@ -2,7 +2,8 @@
  * Hook for handling aligned narration events
  */
 import { useEffect } from 'react';
-import { createHash, getAllSubtitles, createSubtitleMap, enhanceNarrationWithTiming } from './alignedNarrationUtils';
+// These imports are used in the commented-out code but not in the active code
+// import { createHash, getAllSubtitles, createSubtitleMap, enhanceNarrationWithTiming } from './alignedNarrationUtils';
 
 /**
  * Hook for handling aligned narration events
@@ -22,14 +23,15 @@ const useAlignedNarrationEvents = ({
   regenerateAlignedNarration
 }) => {
   const {
-    isGeneratingAligned,
-    isAlignedAvailable,
-    lastGenerationResultsHashRef,
-    lastSubtitleTimingsHashRef,
+    // These variables are used in the commented-out code but not in the active code
+    // isGeneratingAligned,
+    // isAlignedAvailable,
+    // lastGenerationResultsHashRef,
+    // lastSubtitleTimingsHashRef,
     regenerationTimeoutRef,
     lastRegenerationTimeRef,
-    playAlignedNarration,
-    getAlignedAudioElement
+    // playAlignedNarration,
+    // getAlignedAudioElement
   } = state;
 
   // Listen for manual refresh narration button events only
@@ -41,7 +43,7 @@ const useAlignedNarrationEvents = ({
 
     // Function to handle manual refresh narration button click
     const handleManualRefreshNarration = (event) => {
-      console.log('Manual refresh narration event detected', event.detail);
+
 
       // Clear any existing timeout
       if (regenerationTimeoutRef.current) {
@@ -50,14 +52,14 @@ const useAlignedNarrationEvents = ({
 
       // Force immediate regeneration without any debounce or cooldown
       try {
-        console.log('Manually refreshing aligned narration');
+
 
         // Reset the last regeneration time
         lastRegenerationTimeRef.current = 0;
 
         // Reset the aligned narration cache completely
         if (typeof window.resetAlignedNarration === 'function') {
-          console.log('Resetting aligned narration cache before manual regeneration');
+
           window.resetAlignedNarration();
         }
 
@@ -76,6 +78,9 @@ const useAlignedNarrationEvents = ({
       }
     });
 
+    // Store the timeout ID in a variable to avoid closure issues
+    const timeoutId = regenerationTimeoutRef.current;
+
     // Clean up event listeners
     return () => {
       window.removeEventListener('subtitle-timing-changed', (event) => {
@@ -84,8 +89,8 @@ const useAlignedNarrationEvents = ({
         }
       });
 
-      if (regenerationTimeoutRef.current) {
-        clearTimeout(regenerationTimeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, [

@@ -41,7 +41,7 @@ export const startDouyinVideoDownload = (douyinUrl, forceRefresh = false) => {
   // Start the download process asynchronously
   (async () => {
     try {
-      console.log('Starting Douyin video download for:', videoId);
+
 
       // Check if the video already exists on the server (unless forceRefresh is true)
       if (!downloadQueue[videoId].forceRefresh) {
@@ -50,21 +50,21 @@ export const startDouyinVideoDownload = (douyinUrl, forceRefresh = false) => {
 
         if (checkData.exists) {
           // Video already exists, no need to download
-          console.log('Video already exists on server:', videoId);
+
           downloadQueue[videoId].status = 'completed';
           downloadQueue[videoId].progress = 100;
           downloadQueue[videoId].url = `${SERVER_URL}${checkData.url}`;
           return;
         }
       } else {
-        console.log('Skipping cache check due to forceRefresh flag for video:', videoId);
+
       }
 
       // If not, start the download
       downloadQueue[videoId].status = 'downloading';
       downloadQueue[videoId].progress = 10;
 
-      console.log('Sending download request for Douyin video');
+
 
       // Request server to download the video
       const downloadResponse = await fetch(`${SERVER_URL}/api/download-douyin-video`, {
@@ -103,7 +103,7 @@ export const startDouyinVideoDownload = (douyinUrl, forceRefresh = false) => {
         downloadQueue[videoId].progress = 100;
         downloadQueue[videoId].url = `${SERVER_URL}${responseData.url}`;
         downloadQueue[videoId].method = responseData.method || 'unknown';
-        console.log(`Douyin video download completed (${responseData.method || 'unknown'} method):`, videoId);
+
       } else {
         // This should not happen with the current API, but handle it just in case
         const errorMessage = responseData.error || 'Unknown download error';
@@ -152,7 +152,7 @@ export const downloadDouyinVideo = async (douyinUrl, onProgress = () => {}, forc
   const videoId = extractDouyinVideoId(douyinUrl);
 
   if (forceRefresh && downloadQueue[videoId]) {
-    console.log('Forcing fresh download for Douyin video:', videoId);
+
     delete downloadQueue[videoId];
   }
 
@@ -186,7 +186,7 @@ export const downloadDouyinVideo = async (douyinUrl, onProgress = () => {}, forc
           const checkResponse = await fetch(status.url, { method: 'HEAD' });
           if (!checkResponse.ok) {
             // Video file doesn't exist anymore, restart the download silently
-            console.log('Video file not found on server, restarting download...');
+
             clearInterval(checkInterval);
 
             // Remove the video from the download queue
@@ -311,7 +311,7 @@ export const extractDouyinVideoId = (url) => {
  * @param {string} douyinUrl - The Douyin video URL
  */
 export const preloadDouyinVideo = (douyinUrl) => {
-  console.log('Preloading Douyin video:', douyinUrl);
+
 
   if (!douyinUrl || (!douyinUrl.includes('douyin.com'))) {
     return;
@@ -322,8 +322,7 @@ export const preloadDouyinVideo = (douyinUrl) => {
 
   // Start the background download process
   try {
-    const videoId = startDouyinVideoDownload(douyinUrl);
-    console.log('Started background download for Douyin video ID:', videoId);
+    startDouyinVideoDownload(douyinUrl);
   } catch (error) {
     console.warn('Failed to start background download:', error);
   }

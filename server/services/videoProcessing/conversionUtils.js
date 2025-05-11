@@ -16,9 +16,9 @@ function convertAudioToVideo(audioPath, outputPath) {
     try {
       // Get the duration of the audio file
       const duration = await getMediaDuration(audioPath);
-      console.log(`[AUDIO-TO-VIDEO] Converting audio file to video. Duration: ${duration.toFixed(2)}s`);
-      console.log(`[AUDIO-TO-VIDEO] Input path: ${audioPath}`);
-      console.log(`[AUDIO-TO-VIDEO] Output path: ${outputPath}`);
+
+
+
 
       // Construct ffmpeg command to create a video with black background and the audio
       // Using 144p resolution (256x144) instead of 360p
@@ -46,7 +46,7 @@ function convertAudioToVideo(audioPath, outputPath) {
         if (output.includes('frame=')) {
           process.stdout.write('.');
         }
-        console.log('ffmpeg stderr:', output);
+
       });
 
       convertCmd.on('close', async (code) => {
@@ -58,9 +58,9 @@ function convertAudioToVideo(audioPath, outputPath) {
           // Get the duration of the created video
           const videoDuration = await getMediaDuration(outputPath);
 
-          console.log(`[AUDIO-TO-VIDEO] Successfully converted audio to video`);
-          console.log(`[AUDIO-TO-VIDEO] Video duration: ${videoDuration.toFixed(2)}s`);
-          console.log(`[AUDIO-TO-VIDEO] Video path: ${outputPath}`);
+
+
+
 
           resolve({
             path: outputPath,

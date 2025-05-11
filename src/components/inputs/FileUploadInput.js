@@ -323,7 +323,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                   // if there's subtitles data in localStorage
                   const subtitlesData = localStorage.getItem('subtitles_data');
                   if (subtitlesData && setIsSrtOnlyMode) {
-                    console.log('Switching to SRT-only mode after removing video source');
+
                     setIsSrtOnlyMode(true);
                   }
                 }}

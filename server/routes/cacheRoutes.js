@@ -51,7 +51,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -71,7 +71,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -93,7 +93,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -113,7 +113,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -133,7 +133,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -153,7 +153,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -167,7 +167,7 @@ router.get('/cache-info', (req, res) => {
     // Get narration temp directory info (we don't include it in the totals)
     if (fs.existsSync(TEMP_AUDIO_DIR)) {
       const tempFiles = fs.readdirSync(TEMP_AUDIO_DIR);
-      console.log(`Found ${tempFiles.length} files in temp directory`);
+
     }
 
     // Get lyrics directory info
@@ -179,7 +179,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -199,7 +199,7 @@ router.get('/cache-info', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory in cache info: ${filePath}`);
+
           return;
         }
 
@@ -271,7 +271,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -297,7 +297,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -325,7 +325,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -351,7 +351,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -377,7 +377,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -403,7 +403,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -429,12 +429,12 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
         // We don't count temp files in the details
-        console.log(`Deleting temp file: ${filePath}`);
+
 
         try {
           fs.unlinkSync(filePath);
@@ -442,7 +442,7 @@ router.delete('/clear-cache', (req, res) => {
           console.error(`Error deleting file ${filePath}:`, error);
         }
       });
-      console.log(`Cleared ${tempFiles.length} files from temp directory`);
+
     }
 
     // Clear lyrics directory
@@ -454,7 +454,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 
@@ -480,7 +480,7 @@ router.delete('/clear-cache', (req, res) => {
 
         // Skip directories
         if (stats.isDirectory()) {
-          console.log(`Skipping directory: ${filePath}`);
+
           return;
         }
 

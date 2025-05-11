@@ -20,9 +20,9 @@ const debugLog = (message, data) => {
   if (!DEBUG_LOGGING) return;
 
   if (data !== undefined) {
-    console.log(message, data);
+
   } else {
-    console.log(message);
+
   }
 };
 

@@ -18,7 +18,7 @@ const http = require('http');
  */
 async function downloadFile(url, outputPath) {
   return new Promise((resolve, reject) => {
-    console.log(`Downloading file from ${url} to ${outputPath}`);
+
 
     // Create directory if it doesn't exist
     const dir = path.dirname(outputPath);
@@ -40,7 +40,7 @@ async function downloadFile(url, outputPath) {
     }, (response) => {
       // Check if response is a redirect
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        console.log(`Redirected to ${response.headers.location}`);
+
         // Recursively follow redirects
         downloadFile(response.headers.location, outputPath)
           .then(resolve)
@@ -62,7 +62,7 @@ async function downloadFile(url, outputPath) {
 
       fileStream.on('finish', () => {
         fileStream.close();
-        console.log(`Download completed: ${outputPath}`);
+
         resolve(true);
       });
 
@@ -97,7 +97,7 @@ async function downloadFile(url, outputPath) {
  * @returns {Promise<string>} - Direct video URL
  */
 async function extractVideoUrl(url) {
-  console.log(`Launching browser to extract video URL from: ${url}`);
+
 
   // Find Chrome executable path
   let executablePath;
@@ -113,7 +113,7 @@ async function extractVideoUrl(url) {
     for (const path of possiblePaths) {
       if (fs.existsSync(path)) {
         executablePath = path;
-        console.log(`Found Chrome at: ${executablePath}`);
+
         break;
       }
     }
@@ -186,21 +186,21 @@ async function extractVideoUrl(url) {
           (contentType.includes('video') || url.includes('mime/video'))
         )
       ) {
-        console.log(`Found potential video URL: ${url}`);
+
         videoUrls.push(url);
       }
     });
 
     // Navigate to the page
-    console.log(`Navigating to: ${url}`);
+
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
     // Check for login modal and close it if present
-    console.log('Checking for login modal...');
+
 
     // Take a screenshot before closing the modal
     await page.screenshot({ path: 'douyin_before_modal.png' });
-    console.log('Saved screenshot to douyin_before_modal.png');
+
 
     // Wait a moment for the modal to appear
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -252,22 +252,22 @@ async function extractVideoUrl(url) {
       try {
         const closeButton = await page.$(selector);
         if (closeButton) {
-          console.log(`Found close button with selector: ${selector}`);
+
           await closeButton.click();
-          console.log('Clicked close button on login modal');
+
           modalClosed = true;
           // Wait a moment for the modal to close
           await new Promise(resolve => setTimeout(resolve, 1000));
           break;
         }
       } catch (error) {
-        console.log(`Error trying selector ${selector}: ${error.message}`);
+
       }
     }
 
     // If we couldn't find a close button with selectors, try clicking at common positions
     if (!modalClosed) {
-      console.log('No close button found with selectors, trying to click at common positions');
+
 
       // Common positions for close buttons (top-right corner)
       const positions = [
@@ -283,27 +283,27 @@ async function extractVideoUrl(url) {
       for (const pos of positions) {
         try {
           await page.mouse.click(pos.x, pos.y);
-          console.log(`Clicked at position (${pos.x}, ${pos.y})`);
+
           await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
-          console.log(`Error clicking at position (${pos.x}, ${pos.y}): ${error.message}`);
+
         }
       }
     }
 
     // Take a screenshot after attempting to close the modal
     await page.screenshot({ path: 'douyin_after_modal.png' });
-    console.log('Saved screenshot to douyin_after_modal.png');
+
 
     // Try to press Escape key to close modal
     await page.keyboard.press('Escape');
-    console.log('Pressed Escape key to close any modal');
+
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Wait for video element to appear
-    console.log('Waiting for video element to appear...');
+
     await page.waitForSelector('video', { timeout: 30000 }).catch(() => {
-      console.log('Video element not found, continuing anyway');
+
     });
 
     // Wait a bit more for any additional requests
@@ -312,7 +312,7 @@ async function extractVideoUrl(url) {
     // If we haven't found any video URLs through network requests,
     // try to extract them from the page
     if (videoUrls.length === 0) {
-      console.log('No video URLs found in network requests, trying to extract from page');
+
 
       // Extract video URLs from video elements with more context
       const srcUrls = await page.evaluate(() => {
@@ -351,7 +351,7 @@ async function extractVideoUrl(url) {
           }
         });
 
-        console.log('Video elements found:', results);
+
 
         // Return URLs, prioritizing those that are likely main videos
         return results
@@ -367,7 +367,7 @@ async function extractVideoUrl(url) {
       });
 
       if (srcUrls.length > 0) {
-        console.log(`Found ${srcUrls.length} video URLs in video elements`);
+
         videoUrls = videoUrls.concat(srcUrls);
       }
 
@@ -378,7 +378,7 @@ async function extractVideoUrl(url) {
       });
 
       if (sourceUrls.length > 0) {
-        console.log(`Found ${sourceUrls.length} video URLs in source elements`);
+
         videoUrls = videoUrls.concat(sourceUrls);
       }
 
@@ -393,7 +393,7 @@ async function extractVideoUrl(url) {
           if (window.__INITIAL_STATE__) {
             const stateStr = JSON.stringify(window.__INITIAL_STATE__);
             if (stateStr.includes('playAddr') || stateStr.includes('play_addr') || stateStr.includes('url_list')) {
-              console.log('Found window.__INITIAL_STATE__ with video data');
+
 
               // Try to extract video URLs from the state
               const extractUrlsFromObj = (obj) => {
@@ -420,14 +420,14 @@ async function extractVideoUrl(url) {
             }
           }
         } catch (e) {
-          console.log('Error extracting from window.__INITIAL_STATE__:', e);
+
         }
 
         // Look for specific Douyin data patterns
         try {
           if (window.aweme_list || window.awemeList) {
             const awemeList = window.aweme_list || window.awemeList;
-            console.log('Found aweme_list with', awemeList.length, 'items');
+
 
             for (const aweme of awemeList) {
               if (aweme.video && aweme.video.play_addr && aweme.video.play_addr.url_list) {
@@ -436,7 +436,7 @@ async function extractVideoUrl(url) {
             }
           }
         } catch (e) {
-          console.log('Error extracting from aweme_list:', e);
+
         }
 
         // Look through script tags
@@ -504,21 +504,21 @@ async function extractVideoUrl(url) {
       });
 
       if (jsonUrls.length > 0) {
-        console.log(`Found ${jsonUrls.length} video URLs in JSON data`);
+
         videoUrls = videoUrls.concat(jsonUrls);
       }
     }
 
     // Take a screenshot for debugging
     await page.screenshot({ path: 'douyin_screenshot.png' });
-    console.log('Saved screenshot to douyin_screenshot.png');
+
 
     // Close browser
     await browser.close();
 
     // Filter and prioritize video URLs
     if (videoUrls.length > 0) {
-      console.log(`Found ${videoUrls.length} potential video URLs`);
+
 
       // Remove duplicates
       videoUrls = [...new Set(videoUrls)];
@@ -579,7 +579,7 @@ async function downloadDouyinVideo(url, outputPath) {
   try {
     // Extract video URL
     const videoUrl = await extractVideoUrl(url);
-    console.log(`Extracted video URL: ${videoUrl}`);
+
 
     // Download the video
     await downloadFile(videoUrl, outputPath);

@@ -18,20 +18,20 @@ def get_huggingface_cache_dir():
         try:
             from huggingface_hub import get_cache_dir
             cache_dir = os.path.join(get_cache_dir(), "hub")
-            logger.info(f"Using Hugging Face cache directory from get_cache_dir(): {cache_dir}")
+
         except (ImportError, AttributeError):
             # Fallback to default paths if the import fails
             # Default cache directory is ~/.cache/huggingface/hub on Linux/Mac
             # and C:\Users\<username>\.cache\huggingface\hub on Windows
             home_dir = os.path.expanduser("~")
             cache_dir = os.path.join(home_dir, ".cache", "huggingface", "hub")
-            logger.info(f"Using default Hugging Face cache directory: {cache_dir}")
+
 
         # Make sure the parent directory exists
         parent_dir = os.path.dirname(cache_dir)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir, exist_ok=True)
-            logger.info(f"Created parent directory: {parent_dir}")
+
     except Exception as e:
         logger.error(f"Error setting up cache directory: {e}")
         # Still return the default path as a fallback
@@ -47,9 +47,9 @@ def get_huggingface_cache_dir():
     # Log the directory contents for debugging
     try:
         if os.path.exists(cache_dir):
-            logger.info(f"Hugging Face cache directory exists: {cache_dir}")
+
             contents = os.listdir(cache_dir)
-            logger.info(f"Cache directory contents: {contents[:10]}{'...' if len(contents) > 10 else ''}")
+
     except Exception as e:
         logger.warning(f"Error listing cache directory contents: {e}")
 
@@ -166,7 +166,7 @@ def delete_huggingface_cache_model(model_id):
     # Delete the directory
     try:
         shutil.rmtree(model_dir)
-        logger.info(f"Deleted Hugging Face cache model: {model_id}")
+
         return True, f"Successfully deleted model {model_id} from Hugging Face cache"
     except Exception as e:
         logger.error(f"Error deleting Hugging Face cache model {model_id}: {e}")

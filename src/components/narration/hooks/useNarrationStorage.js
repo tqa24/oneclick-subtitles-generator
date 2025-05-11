@@ -13,8 +13,8 @@ const useNarrationStorage = ({
 }) => {
   // Store narration results in window object for access by other components
   useEffect(() => {
-    console.log('useNarrationStorage - generationResults:', generationResults);
-    console.log('useNarrationStorage - subtitleSource:', subtitleSource);
+
+
 
     if (generationResults.length > 0) {
       // Store full data in window object for immediate access
@@ -23,13 +23,13 @@ const useNarrationStorage = ({
         window.originalNarrations = [...generationResults];
 
         // No longer storing in localStorage to avoid quota issues
-        console.log('useNarrationStorage - Setting window.originalNarrations:', window.originalNarrations);
+
       } else {
         // Create a new array to ensure reference changes trigger updates
         window.translatedNarrations = [...generationResults];
 
         // No longer storing in localStorage to avoid quota issues
-        console.log('useNarrationStorage - Setting window.translatedNarrations:', window.translatedNarrations);
+
       }
 
       // Dispatch a custom event to notify other components
@@ -42,8 +42,8 @@ const useNarrationStorage = ({
       window.dispatchEvent(event);
     }
 
-    console.log('useNarrationStorage - After update - window.originalNarrations:', window.originalNarrations);
-    console.log('useNarrationStorage - After update - window.translatedNarrations:', window.translatedNarrations);
+
+
   }, [generationResults, subtitleSource]);
 
   // Load previously detected language from localStorage

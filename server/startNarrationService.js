@@ -13,16 +13,16 @@ const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 
 // Start the narration service
 function startNarrationService() {
-  console.log('Starting F5-TTS narration service...');
+
 
   try {
     // Check if uv is installed
     try {
       const uvVersionOutput = require('child_process').execSync(`${UV_EXECUTABLE} --version`, { encoding: 'utf8' });
-      console.log(`uv version: ${uvVersionOutput.trim()}`);
+
     } catch (error) {
       console.error(`Error checking uv version: ${error.message}`);
-      console.log('Make sure uv is installed and in your PATH');
+
       return null;
     }
 
@@ -41,22 +41,22 @@ function startNarrationService() {
 
     if (!fs.existsSync(narrationDir)) {
       fs.mkdirSync(narrationDir, { recursive: true });
-      console.log(`Created narration directory at ${narrationDir}`);
+
     }
 
     if (!fs.existsSync(referenceDir)) {
       fs.mkdirSync(referenceDir, { recursive: true });
-      console.log(`Created reference audio directory at ${referenceDir}`);
+
     }
 
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
-      console.log(`Created output audio directory at ${outputDir}`);
+
     }
 
     // Check for CUDA support
     try {
-      console.log('Checking for CUDA support...');
+
       // Create a temporary Python script to check CUDA
       const fs = require('fs');
       const os = require('os');
@@ -73,7 +73,7 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
 
       const checkCudaCmd = `${UV_EXECUTABLE} run ${tempFile}`;
       const cudaCheck = require('child_process').execSync(checkCudaCmd, { encoding: 'utf8' });
-      console.log(`CUDA check results: ${cudaCheck.trim()}`);
+
 
       // Clean up the temporary file
       try {
@@ -87,7 +87,7 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
         console.warn('WARNING: CUDA is not available. The narration service will run on CPU, which is much slower.');
         console.warn('Make sure your NVIDIA drivers and CUDA toolkit are properly installed.');
       } else {
-        console.log('CUDA is available and will be used for the narration service.');
+
       }
     } catch (error) {
       console.warn(`Warning: Unable to check CUDA availability: ${error.message}`);
@@ -95,7 +95,7 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
 
     // Spawn the Python process using uv
     const narrationAppPath = path.join(__dirname, 'narrationApp.py');
-    console.log(`Starting narration service with: ${UV_EXECUTABLE} run ${narrationAppPath}`);
+
 
     const narrationProcess = spawn(UV_EXECUTABLE, ['run', narrationAppPath], {
       env,

@@ -61,9 +61,9 @@ export const getWebSocketClient = async (apiKey, modelName = null, voiceName = n
 
   // Find a suitable model if not provided
   if (!modelName) {
-    console.log('Finding suitable model for audio generation...');
+
     modelName = await findSuitableAudioModel(apiKey);
-    console.log(`Selected model: ${modelName}`);
+
   }
 
   // Create a new client
@@ -75,12 +75,12 @@ export const getWebSocketClient = async (apiKey, modelName = null, voiceName = n
 
   // Set up event listeners
   clientCache.client.on('setupcomplete', () => {
-    console.log(`Gemini WebSocket setup complete with voice: ${voiceName}`);
+
     clientCache.setupComplete = true;
   });
 
   clientCache.client.on('close', (event) => {
-    console.log(`Gemini WebSocket connection closed: ${event?.reason || 'No reason provided'}`);
+
     clientCache.connected = false;
     clientCache.setupComplete = false;
   });
@@ -112,9 +112,9 @@ export const getWebSocketClient = async (apiKey, modelName = null, voiceName = n
       }
     };
 
-    console.log(`Using voice: ${voiceName} for Gemini narration`);
 
-    console.log(`Connecting to Gemini WebSocket API with model: ${modelName}`);
+
+
     await clientCache.client.connect(config);
     clientCache.connected = true;
     clientCache.connecting = false;

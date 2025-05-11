@@ -37,7 +37,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     while (!success && retryCount < maxRetries) {
         // Check if processing has been force stopped
         if (getProcessingForceStopped()) {
-            console.log(`Segment ${segmentIndex+1} processing was force stopped, aborting retries`);
+
             throw new Error('Processing was force stopped');
         }
         try {
@@ -45,27 +45,23 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             const segmentFile = await fetchSegment(segment.url, segmentIndex, mediaType);
 
             // Log the segment file details
-            console.log(`Processing ${mediaType} segment ${segmentIndex+1}:`, {
-                name: segmentFile.name,
-                type: segmentFile.type,
-                size: segmentFile.size
-            });
+
 
             // Only get transcription rules if we're not using user-provided subtitles
             if (!userProvidedSubtitles) {
                 // Get transcription rules from localStorage
                 const transcriptionRules = getTranscriptionRules();
                 if (transcriptionRules) {
-                    console.log(`Using transcription rules for segment ${segmentIndex+1}:`, transcriptionRules);
+
                 } else {
-                    console.log(`No transcription rules found for segment ${segmentIndex+1}`);
+
                 }
             } else {
-                console.log(`Skipping transcription rules for segment ${segmentIndex+1} because user-provided subtitles are present`);
+
             }
 
             // Process the segment with Gemini
-            console.log(`Processing segment ${segmentIndex+1} with${userProvidedSubtitles ? ' user-provided' : ''} subtitles`);
+
 
             // Get the total duration from the parent if available
             const totalDuration = options.totalDuration || null;
@@ -89,8 +85,8 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             console.error(`Error processing segment ${segmentIndex+1}, attempt ${retryCount+1}:`, error);
 
             // Log the error message and status code for debugging
-            console.log(`Error message: "${error.message}"`);
-            console.log(`Error has isOverloaded flag: ${error.isOverloaded ? 'yes' : 'no'}`);
+
+
 
             // More aggressive detection of overload errors
             const isOverloadError =
@@ -104,7 +100,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 ));
 
             if (isOverloadError) {
-                console.log('Model overload detected, stopping retries for this segment');
+
 
                 // Update segment status to show "Quá tải" instead of "Thất bại"
                 // Get the time range for this segment
@@ -138,7 +134,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             // Check if this is an empty response (empty JSON array)
             if (error.message && error.message.includes('Unrecognized subtitle format') &&
                 error.message.includes('rawText":"[]"')) {
-                console.log('Empty JSON array response detected, returning empty subtitles');
+
                 // Return empty array instead of retrying
                 return [];
             }
@@ -161,7 +157,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                     const manualSubtitles = parseRawTextManually(rawText, startTime);
 
                     if (manualSubtitles && manualSubtitles.length > 0) {
-                        console.log(`Manually parsed ${manualSubtitles.length} subtitles from segment ${segmentIndex+1}`);
+
                         segmentSubtitles = manualSubtitles;
                         success = true;
                         break; // Exit the retry loop, we've handled it
@@ -170,7 +166,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
 
                 // Handle the case where all subtitles are empty
                 if (errorData.type === 'empty_subtitles') {
-                    console.log(`Segment ${segmentIndex+1} has no speech content:`, errorData.message);
+
                     // Return an empty array for this segment
                     segmentSubtitles = [];
                     success = true;
@@ -224,7 +220,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
 
     // Handle the case where the API returned an empty array (no speech in segment)
     if (Array.isArray(segmentSubtitles) && segmentSubtitles.length === 0) {
-        console.log(`Segment ${segmentIndex+1} has no speech content (empty array returned)`);
+
         // Continue processing with an empty array
     }
 
@@ -232,16 +228,14 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
     const segmentDuration = segment.duration !== undefined ? segment.duration : null;
 
     // Log detailed information about this segment
-    console.log(`Adjusting timestamps for segment ${segmentIndex+1}:`);
-    console.log(`  Start time: ${startTime.toFixed(2)}s`);
+
+
     if (segmentDuration) {
-        console.log(`  Duration: ${segmentDuration.toFixed(2)}s`);
-        console.log(`  End time: ${(startTime + segmentDuration).toFixed(2)}s`);
+
+
     }
 
-    // Log the original timestamps for debugging
-    console.log(`  Original timestamps (first 3 subtitles):`,
-        segmentSubtitles.slice(0, 3).map(s => `${s.start.toFixed(2)}-${s.end.toFixed(2)}: ${s.text.substring(0, 20)}...`));
+
 
     // Adjust timestamps based on segment start time
     const adjustedSubtitles = segmentSubtitles.map(subtitle => {
@@ -256,10 +250,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
         };
     });
 
-    // Log the adjusted timestamps for debugging
-    console.log(`  Adjusted timestamps (first 3 subtitles):`,
-        adjustedSubtitles.slice(0, 3).map(s => `${s.start.toFixed(2)}-${s.end.toFixed(2)}: ${s.text.substring(0, 20)}...`));
-    console.log(`  Total subtitles in segment: ${adjustedSubtitles.length}`);
+
 
     return adjustedSubtitles;
 }
@@ -277,17 +268,9 @@ export const updateSegmentStatus = (index, status, message, t, timeRange = null)
     const translate = typeof t === 'function' ? t : (_, defaultValue) => defaultValue;
 
     // Log the status update for debugging
-    console.log(`Updating segment ${index+1} status to: ${status}, message: ${message}, timeRange: ${timeRange}`);
 
-    // Debug translation
-    if (status === 'overloaded') {
-        const translatedText = translate('output.overloaded', 'Overloaded');
-        console.log(`Translation for 'output.overloaded': "${translatedText}"`);
 
-        // Check if we're getting the Vietnamese translation
-        const viText = translate('output.failed', 'Failed');
-        console.log(`Translation for 'output.failed' (for comparison): "${viText}"`);
-    }
+    // Remove debug translation logs to prevent console spam
 
     // Create the status object
     const segmentStatus = {

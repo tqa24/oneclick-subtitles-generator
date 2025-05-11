@@ -66,7 +66,7 @@ export const useAppState = () => {
   const [transcriptionRules, setTranscriptionRulesState] = useState(() => {
     // Try to get rules synchronously via the utility function
     const savedRules = getTranscriptionRulesSync();
-    console.log('Initializing transcription rules from store:', savedRules ? 'found' : 'not found');
+
     return savedRules;
   });
 

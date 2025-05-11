@@ -66,7 +66,7 @@ const SubtitleSettings = ({
     if (hasTranslation && settings.showTranslatedSubtitles) {
       handleSubtitleLanguageChange({ target: { value: 'translated' } });
     }
-  }, [hasTranslation, settings.showTranslatedSubtitles]);
+  }, [hasTranslation, settings.showTranslatedSubtitles, handleSubtitleLanguageChange]);
 
   // No need for individual narration playback code anymore
   // Aligned narration is handled by the useAlignedNarration hook
@@ -82,10 +82,10 @@ const SubtitleSettings = ({
             setIsOpen(newIsOpen);
             // Close narration menu if it's open
             if (showNarrationMenu) {
-              console.log('Closing narration menu when opening subtitle settings');
+
               setShowNarrationMenu(false);
             }
-            console.log(`Subtitle settings menu ${newIsOpen ? 'opened' : 'closed'}`);
+
           }}
           title={t('subtitleSettings.settingsTooltip', 'Customize subtitle appearance')}
         >

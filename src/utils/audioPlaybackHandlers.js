@@ -61,7 +61,7 @@ export const playAudio = async (
     try {
       // Check if this is still the current playback request
       if (currentPlaybackId !== playbackId) {
-        console.log('Playback request superseded by a newer request');
+
         return;
       }
 
@@ -69,31 +69,21 @@ export const playAudio = async (
       // Ensure the URL is properly formatted with no double slashes
       const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
       const audioUrl = `${baseUrl}/api/narration/audio/${result.filename}`;
-      console.log(`Playing audio from server URL: ${audioUrl}`);
-
-      // Log additional information for debugging
-      console.log(`Audio file details:`, {
-        filename: result.filename,
-        subtitle_id: result.subtitle_id,
-        serverUrl: baseUrl,
-        fullUrl: audioUrl,
-        configServerUrl: SERVER_URL
-      });
 
       // Create a new audio element
       const audioElement = new Audio();
 
       // Set up event listeners before setting the source
-      console.log('Setting up audio element event listeners');
+
 
       // Add a canplaythrough event to know when the audio is ready to play
       audioElement.addEventListener('canplaythrough', () => {
-        console.log(`Audio can play through without buffering for subtitle ${result.subtitle_id}`);
+
       });
 
       // Add a loadeddata event to know when the audio data is loaded
       audioElement.addEventListener('loadeddata', () => {
-        console.log(`Audio data loaded for subtitle ${result.subtitle_id}`);
+
       });
 
       // Set volume and other properties
@@ -105,10 +95,10 @@ export const playAudio = async (
 
       // Set up event listeners
       audioElement.addEventListener('ended', () => {
-        console.log(`Audio playback ended for subtitle ${result.subtitle_id}`);
+
         // Only clear the currently playing if it's still this subtitle
         if (currentlyPlaying === result.subtitle_id) {
-          console.log(`Clearing currently playing state for subtitle ${result.subtitle_id}`);
+
           setCurrentlyPlaying(null);
           setActiveAudioPlayer(null);
         }
@@ -130,23 +120,23 @@ export const playAudio = async (
         // Try to fetch the file directly to check if it exists
         fetch(audioUrl, { method: 'HEAD' })
           .then(response => {
-            console.log(`File existence check: ${response.status} ${response.statusText}`);
+
             if (!response.ok) {
               console.error(`Audio file not found: ${audioUrl}`);
             } else {
-              console.log(`Audio file exists, trying to fetch content`);
+
               // Try to fetch the actual content
               return fetch(audioUrl)
                 .then(contentResponse => {
-                  console.log(`Content fetch status: ${contentResponse.status} ${contentResponse.statusText}`);
+
                   return contentResponse.blob();
                 })
                 .then(blob => {
-                  console.log(`Fetched audio blob: type=${blob.type}, size=${blob.size} bytes`);
+
 
                   // Try to play using the blob URL
                   if (blob.size > 0) {
-                    console.log(`Trying to play using blob URL`);
+
                     const blobUrl = URL.createObjectURL(blob);
 
                     // Create a new audio element with the blob URL
@@ -156,12 +146,12 @@ export const playAudio = async (
                     // Play the audio
                     blobAudioElement.play()
                       .then(() => {
-                        console.log(`Blob audio playback started for subtitle ${result.subtitle_id}`);
+
 
                         // Create a player object
                         const player = {
                           stop: () => {
-                            console.log(`Stopping blob audio playback for subtitle ${result.subtitle_id}`);
+
                             blobAudioElement.pause();
                             URL.revokeObjectURL(blobUrl);
                           }
@@ -169,7 +159,7 @@ export const playAudio = async (
 
                         // Set up ended event
                         blobAudioElement.addEventListener('ended', () => {
-                          console.log(`Blob audio playback ended for subtitle ${result.subtitle_id}`);
+
                           if (currentlyPlaying === result.subtitle_id) {
                             setCurrentlyPlaying(null);
                             setActiveAudioPlayer(null);
@@ -193,7 +183,7 @@ export const playAudio = async (
 
         // Only clear the currently playing if it's still this subtitle
         if (currentlyPlaying === result.subtitle_id) {
-          console.log(`Clearing currently playing state for subtitle ${result.subtitle_id} due to error`);
+
           setCurrentlyPlaying(null);
           setActiveAudioPlayer(null);
         }
@@ -204,10 +194,10 @@ export const playAudio = async (
         const audioDuration = audioElement.duration;
         if (audioDuration && audioDuration > 0) {
           const timeoutMs = (audioDuration * 1000) + 500; // Add 500ms buffer
-          console.log(`Setting backup timeout for ${timeoutMs}ms for subtitle ${result.subtitle_id}`);
+
           setTimeout(() => {
             if (currentlyPlaying === result.subtitle_id) {
-              console.log(`Backup timeout: clearing playing state for subtitle ${result.subtitle_id}`);
+
               setCurrentlyPlaying(null);
               setActiveAudioPlayer(null);
             }
@@ -222,16 +212,16 @@ export const playAudio = async (
       const tryPlayAudio = () => {
         // Only attempt to play once
         if (playAttempted) {
-          console.log(`Already attempted playback for subtitle ${result.subtitle_id}, skipping`);
+
           return;
         }
 
         playAttempted = true;
-        console.log(`Attempting to play audio for subtitle ${result.subtitle_id}`);
+
 
         // Check if this is still the current playback request
         if (currentPlaybackId !== playbackId) {
-          console.log('Playback request superseded by a newer request');
+
           return;
         }
 
@@ -243,7 +233,7 @@ export const playAudio = async (
 
         // Set up ended event
         hiddenAudioElement.addEventListener('ended', () => {
-          console.log(`Audio playback ended for subtitle ${result.subtitle_id}`);
+
           if (currentlyPlaying === result.subtitle_id) {
             setCurrentlyPlaying(null);
             setActiveAudioPlayer(null);
@@ -259,7 +249,7 @@ export const playAudio = async (
         // Create a player object
         const player = {
           stop: () => {
-            console.log(`Stopping audio playback for subtitle ${result.subtitle_id}`);
+
 
             // First, remove all event listeners to prevent any callbacks
             hiddenAudioElement.oncanplay = null;
@@ -296,7 +286,7 @@ export const playAudio = async (
         hiddenAudioElement.oncanplay = () => {
           // Check if this is still the current playback request
           if (currentPlaybackId !== playbackId) {
-            console.log('Playback request superseded by a newer request');
+
             return;
           }
 
@@ -311,12 +301,12 @@ export const playAudio = async (
             if (playPromise !== undefined) {
               playPromise
                 .then(() => {
-                  console.log(`Audio playback started for subtitle ${result.subtitle_id}`);
+
                 })
                 .catch(error => {
                   // Check if this is an AbortError (play interrupted by pause)
                   if (error.name === 'AbortError') {
-                    console.log(`Play was aborted for subtitle ${result.subtitle_id}, this is normal when stopping playback`);
+
                   } else {
                     console.error(`Error playing audio for subtitle ${result.subtitle_id}:`, error);
                     // Clear the currently playing state on error
@@ -349,9 +339,9 @@ export const playAudio = async (
 
         // Make sure we have an ended event handler
         const handleAudioEnded = () => {
-          console.log(`HTML Audio element ended for subtitle ${result.subtitle_id}`);
+
           if (currentlyPlaying === result.subtitle_id) {
-            console.log(`Clearing currently playing state for subtitle ${result.subtitle_id}`);
+
             setCurrentlyPlaying(null);
             setActiveAudioPlayer(null);
 
@@ -391,16 +381,7 @@ export const downloadAudio = async (result, t) => {
       // Ensure the URL is properly formatted with no double slashes
       const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL.slice(0, -1) : SERVER_URL;
       const audioUrl = `${baseUrl}/api/narration/audio/${result.filename}`;
-      console.log(`Downloading audio from server URL: ${audioUrl}`);
 
-      // Log additional information for debugging
-      console.log(`Audio file details for download:`, {
-        filename: result.filename,
-        subtitle_id: result.subtitle_id,
-        serverUrl: baseUrl,
-        fullUrl: audioUrl,
-        configServerUrl: SERVER_URL
-      });
 
       // Create download link
       const a = document.createElement('a');
@@ -410,7 +391,7 @@ export const downloadAudio = async (result, t) => {
       a.click();
       document.body.removeChild(a);
 
-      console.log(`Downloaded WAV file for subtitle ${result.subtitle_id}`);
+
     } else {
       console.error('No filename available for download');
       alert(t('narration.downloadError', 'No audio file available for download'));

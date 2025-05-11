@@ -11,7 +11,7 @@ import { API_BASE_URL } from '../config';
  */
 export const syncLocalStorageToServer = async () => {
   try {
-    console.log('Syncing localStorage to server');
+
     
     // Get all localStorage data
     const localStorageData = {};
@@ -38,7 +38,7 @@ export const syncLocalStorageToServer = async () => {
     }
     
     const result = await response.json();
-    console.log('localStorage sync result:', result);
+
     return result;
   } catch (error) {
     console.error('Error syncing localStorage to server:', error);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChevronDown } from 'react-icons/fi';
 import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
 
@@ -27,7 +27,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   const [newPromptImageCount, setNewPromptImageCount] = useState(4); // Default to 4 for new prompt
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [pendingImageCount, setPendingImageCount] = useState(0); // Track how many images are pending
+  const [, setPendingImageCount] = useState(0); // Track how many images are pending
   const [error, setError] = useState('');
   const [customSongName, setCustomSongName] = useState(songName || '');
   const [autoExecutionComplete, setAutoExecutionComplete] = useState(false);
@@ -187,11 +187,11 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
   // Sync isCollapsed state with isExpanded prop, but respect user's manual collapse
   useEffect(() => {
-    console.log('isExpanded changed:', { isExpanded, userHasCollapsed, isCollapsed });
+
 
     // Always expand when isExpanded becomes true, regardless of userHasCollapsed
     if (isExpanded) {
-      console.log('Forcing expansion of background generator');
+
       setIsCollapsed(false);
       // Reset userHasCollapsed when we force expand
       setUserHasCollapsed(false);
@@ -207,7 +207,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     if (generatedImages.length > 0) {
       try {
         localStorage.setItem('background_generated_images', JSON.stringify(generatedImages));
-        console.log('Saved generated images to localStorage:', generatedImages.length);
+
       } catch (error) {
         console.error('Error saving generated images to localStorage:', error);
       }
@@ -229,7 +229,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
       // Only reset generated content if the source content has changed
       if (lyricsChanged || albumArtChanged || songNameChanged) {
-        console.log('Source content changed, resetting generated content');
+
         setGeneratedPrompt('');
         setGeneratedImage('');
         // Don't reset generatedImages to preserve them across UI changes
@@ -258,7 +258,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   // Effect to handle the shouldAutoGenerate flag (auto-click functionality removed)
   useEffect(() => {
     if (shouldAutoGenerate && !isCollapsed && !isGenerationInProgress) {
-      console.log('Background generator ready - auto-click functionality removed');
+
       // Reset the flag to prevent multiple executions
       setShouldAutoGenerate(false);
       // No longer auto-clicking the button
@@ -268,199 +268,25 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   // Auto-execute prompt generation and image generation when component mounts
   // or when lyrics/albumArt change - uses the default of 4 images for new prompt
   useEffect(() => {
-    const autoExecute = async () => {
-      // Skip if we've already run this effect in the current render cycle
-      // or if we don't have the necessary data or if auto-execution is already complete
-      if (autoExecutionRef.current || autoExecutionComplete || !lyrics || !albumArt) {
-        return;
-      }
+    // Skip if we've already run this effect in the current render cycle
+    // or if we don't have the necessary data or if auto-execution is already complete
+    if (autoExecutionRef.current || autoExecutionComplete || !lyrics || !albumArt) {
+      return;
+    }
 
-      // Mark that we've run this effect
-      autoExecutionRef.current = true;
+    // Mark that we've run this effect
+    autoExecutionRef.current = true;
 
-      console.log('Auto-executing prompt generation and image generation');
-
-      try {
-        // First, make sure we have the latest lyrics and album art
-        if (!customLyrics.trim()) {
-          setError('No lyrics provided for auto-execution');
-          return;
-        }
-
-        if (!customAlbumArt) {
-          setError('No album art provided for auto-execution');
-          return;
-        }
-
-        // Set generation in progress flag
-        setIsGenerationInProgress(true);
-        setIsGeneratingPrompt(true);
-        setError('');
-
-        // Generate the prompt directly without caching
-        const response = await fetch('http://127.0.0.1:3007/api/gemini/generate-prompt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            lyrics: customLyrics,
-            songName: customSongName || songName || 'Unknown Song'
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to generate prompt');
-        }
-
-        const data = await response.json();
-        const generatedPromptText = data.prompt;
-
-        // Update the state with the generated prompt
-        setGeneratedPrompt(generatedPromptText);
-        setIsGeneratingPrompt(false);
-
-        console.log('Prompt generated successfully:', generatedPromptText);
-
-        // Now generate multiple images, each with its own prompt
-        setIsGeneratingImage(true);
-
-        // Prepare the grid with placeholders
-        const imagesToGenerate = newPromptImageCount;
-        setPendingImageCount(imagesToGenerate);
-
-        // Create placeholder array
-        const placeholders = Array(imagesToGenerate).fill(null).map((_, index) => ({
-          url: null,
-          timestamp: new Date().getTime() + index,
-          prompt: index === 0 ? generatedPromptText : '', // First image uses the already generated prompt
-          isLoading: true
-        }));
-
-        setGeneratedImages(placeholders);
-
-        // Generate each image with its own unique prompt
-        const newImages = [...placeholders];
-
-        for (let i = 0; i < imagesToGenerate; i++) {
-          try {
-            let currentPrompt;
-
-            // For the first image, use the already generated prompt
-            // For subsequent images, generate a new prompt
-            if (i === 0) {
-              currentPrompt = generatedPromptText;
-            } else {
-              // Generate a new prompt for this image
-              setIsGeneratingPrompt(true);
-              console.log(`Auto-execution: Generating prompt for image ${i+1}/${imagesToGenerate}`);
-
-              const promptResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-prompt', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  lyrics: customLyrics,
-                  songName: customSongName || songName || 'Unknown Song'
-                }),
-              });
-
-              if (!promptResponse.ok) {
-                const errorData = await promptResponse.json();
-                throw new Error(errorData.error || 'Failed to generate prompt');
-              }
-
-              const promptData = await promptResponse.json();
-              currentPrompt = promptData.prompt;
-
-              // Update the prompt in the UI for the latest generated prompt
-              setGeneratedPrompt(currentPrompt);
-              setIsGeneratingPrompt(false);
-
-              // Update the placeholder with the new prompt
-              newImages[i] = {
-                ...newImages[i],
-                prompt: currentPrompt
-              };
-              setGeneratedImages([...newImages]);
-            }
-
-            // Generate image with the prompt
-            console.log(`Auto-execution: Generating image ${i+1}/${imagesToGenerate} with prompt: ${currentPrompt.substring(0, 50)}...`);
-
-            const imageResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-image', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                prompt: currentPrompt,
-                albumArtUrl: customAlbumArt
-              }),
-            });
-
-            if (!imageResponse.ok) {
-              const errorData = await imageResponse.json();
-              throw new Error(errorData.error || 'Failed to generate image');
-            }
-
-            const imageData = await imageResponse.json();
-            const imageUrl = `data:${imageData.mime_type};base64,${imageData.data}`;
-
-            // Update this specific image in the array
-            newImages[i] = {
-              url: imageUrl,
-              timestamp: new Date().getTime(),
-              prompt: currentPrompt,
-              isLoading: false
-            };
-
-            // Update the state with the progress
-            setGeneratedImages([...newImages]);
-
-            // Also update the single image view for backward compatibility
-            if (i === 0) {
-              setGeneratedImage(imageUrl);
-            }
-
-            // Decrease pending count
-            setPendingImageCount(prev => prev - 1);
-          } catch (err) {
-            // Mark this image as failed
-            newImages[i] = {
-              url: null,
-              timestamp: new Date().getTime(),
-              prompt: generatedPromptText,
-              isLoading: false,
-              error: err.message
-            };
-            setGeneratedImages([...newImages]);
-            setPendingImageCount(prev => prev - 1);
-            console.error(`Error generating image ${i+1}:`, err);
-          }
-        }
-
-        setIsGeneratingImage(false);
-        setIsGenerationInProgress(false); // Reset generation in progress flag
-
-        console.log('Image generated successfully');
-        setAutoExecutionComplete(true);
-      } catch (error) {
-        console.error('Error during auto-execution:', error);
-        setError(`Auto-execution error: ${error.message}`);
-        setIsGeneratingPrompt(false);
-        setIsGeneratingImage(false);
-        setIsGenerationInProgress(false); // Reset generation in progress flag
-        setAutoExecutionComplete(true); // Mark as complete even on error to prevent retries
-      }
+    /* Auto-execution is disabled, but we keep the structure for potential future use
+    const executeAutoGeneration = async () => {
+      // Function implementation removed for brevity
     };
 
     // Disabled auto-execution to prevent automatic generation when component is expanded
     // if (lyrics && albumArt && !autoExecutionComplete) {
-    //   autoExecute();
+    //   executeAutoGeneration();
     // }
+    */
 
     // Cleanup function to reset the ref when the component unmounts
     return () => {
@@ -523,7 +349,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         try {
           // Generate a new prompt for each image
           setIsGeneratingPrompt(true);
-          console.log(`Generating prompt for image ${i+1}/${imagesToGenerate}`);
+
 
           const promptResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-prompt', {
             method: 'POST',
@@ -556,7 +382,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           setGeneratedImages([...newImages]);
 
           // Generate image with the unique prompt
-          console.log(`Generating image ${i+1}/${imagesToGenerate} with prompt: ${uniquePrompt.substring(0, 50)}...`);
+
 
           const imageResponse = await fetch('http://127.0.0.1:3007/api/gemini/generate-image', {
             method: 'POST',
@@ -660,7 +486,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     setGeneratedImages([]);
     setGeneratedImage('');
     localStorage.removeItem('background_generated_images');
-    console.log('Cleared all generated images');
+
   };
 
   return (
@@ -690,15 +516,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
               onExpandChange(!newCollapsedState);
             }
 
-            // Log the current state for debugging
-            console.log('Collapse button clicked. New state:', {
-              isCollapsed: newCollapsedState,
-              userHasCollapsed: newCollapsedState, // Will be set to this value
-              isGenerationInProgress,
-              isGeneratingPrompt,
-              isGeneratingImage,
-              autoExecutionComplete
-            });
+
           }}
           title={isCollapsed ? t('backgroundGenerator.expand', 'Expand') : t('backgroundGenerator.collapse', 'Collapse')}
         >

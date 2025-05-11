@@ -14,7 +14,7 @@ def get_gemini_api_key():
     # First try environment variable
     api_key = os.environ.get('GEMINI_API_KEY')
     if api_key:
-        logger.info("Found Gemini API key in environment variable.")
+
         return api_key
 
     # Try to read from a config file
@@ -25,7 +25,7 @@ def get_gemini_api_key():
                 config = json.load(config_file)
                 api_key = config.get('gemini_api_key')
                 if api_key:
-                    logger.info("Found Gemini API key in config.json.")
+
                     return api_key
     except Exception as e:
         logger.error(f"Error reading config file ({config_path}): {e}")
@@ -38,7 +38,7 @@ def get_gemini_api_key():
                 localStorage_data = json.load(localStorage_file)
                 api_key = localStorage_data.get('gemini_api_key')
                 if api_key:
-                    logger.info("Found Gemini API key in localStorage.json.")
+
                     return api_key
     except Exception as e:
         logger.error(f"Error reading localStorage file ({localStorage_path}): {e}")
@@ -49,7 +49,7 @@ def get_gemini_api_key():
 def transcribe_with_gemini(audio_path, model="gemini-1.5-flash-latest"):
     """Transcribe audio using Gemini API and detect language"""
     try:
-        logger.info(f"Transcribing audio with Gemini: {audio_path}, Model: {model}")
+
 
         # Read the audio file as binary data
         with open(audio_path, 'rb') as audio_file:
@@ -78,7 +78,7 @@ def transcribe_with_gemini(audio_path, model="gemini-1.5-flash-latest"):
 def transcribe_with_gemini_base64(audio_base64, model="gemini-1.5-flash-latest"):
     """Transcribe audio using Gemini API from base64 data"""
     try:
-        logger.info(f"Transcribing audio with Gemini from base64 data, Model: {model}")
+
 
         # Get Gemini API key
         api_key = get_gemini_api_key()
@@ -121,7 +121,7 @@ def transcribe_with_gemini_base64(audio_base64, model="gemini-1.5-flash-latest")
         start_time = time.time()
         response = requests.post(url, json=payload, timeout=30)  # Increased timeout for potentially longer audio
         duration = time.time() - start_time
-        logger.info(f"Gemini API request completed in {duration:.2f} seconds.")
+
 
         # Check if the request was successful
         if response.status_code != 200:
@@ -147,12 +147,12 @@ def transcribe_with_gemini_base64(audio_base64, model="gemini-1.5-flash-latest")
                 parts = candidate['content']['parts']
                 if len(parts) > 0 and 'text' in parts[0]:
                     full_response_text = parts[0]['text'].strip()
-                    logger.info(f"Raw Gemini response text: {full_response_text}")
+
                     # Simple extraction: assume the first part is transcription,
                     # might need refinement if Gemini includes language ID explicitly.
                     # Let's assume the transcription is the main part of the text.
                     transcription = full_response_text # May need parsing if language is included
-                    logger.info(f"Extracted Gemini transcription: {transcription}")
+
 
         if not transcription:
             logger.warning("Gemini API returned response but no transcription text found.")
@@ -165,7 +165,7 @@ def transcribe_with_gemini_base64(audio_base64, model="gemini-1.5-flash-latest")
         # Simple language detection based on the transcription
         is_english = is_text_english(transcription)
         language = "English" if is_english else "Non-English"
-        logger.info(f"Detected language based on transcription: {language}")
+
 
         return {
             "text": transcription,

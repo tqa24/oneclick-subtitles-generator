@@ -131,13 +131,13 @@ app.get('/api/health', (req, res) => {
 app.post('/api/save-local-storage', express.json(), (req, res) => {
   try {
     const localStorageData = req.body;
-    console.log('Received localStorage data:', Object.keys(localStorageData));
+
 
     // Save to a file
     const localStoragePath = path.join(__dirname, 'localStorage.json');
     fs.writeFileSync(localStoragePath, JSON.stringify(localStorageData, null, 2));
 
-    console.log('Saved localStorage data to:', localStoragePath);
+
     res.json({ success: true, message: 'localStorage data saved successfully' });
   } catch (error) {
     console.error('Error saving localStorage data:', error);

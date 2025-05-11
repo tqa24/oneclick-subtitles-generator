@@ -12,7 +12,7 @@ const { REFERENCE_AUDIO_DIR, OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../di
  * Serve audio file from narration directories
  */
 const serveAudioFile = (req, res) => {
-  console.log('Received request to serve audio file');
+
 
   try {
     // Get the filename from the request parameters
@@ -23,26 +23,26 @@ const serveAudioFile = (req, res) => {
       return res.status(400).json({ error: 'No filename provided' });
     }
 
-    console.log(`Looking for audio file: ${filename}`);
+
 
     // Check if the file is in the output directory
     const outputPath = path.join(OUTPUT_AUDIO_DIR, filename);
     if (fs.existsSync(outputPath)) {
-      console.log(`Serving audio file from output directory: ${outputPath}`);
+
       return res.sendFile(outputPath);
     }
 
     // Check if the file is in the reference directory
     const referencePath = path.join(REFERENCE_AUDIO_DIR, filename);
     if (fs.existsSync(referencePath)) {
-      console.log(`Serving audio file from reference directory: ${referencePath}`);
+
       return res.sendFile(referencePath);
     }
 
     // Check if the file is in the temp directory
     const tempPath = path.join(TEMP_AUDIO_DIR, filename);
     if (fs.existsSync(tempPath)) {
-      console.log(`Serving audio file from temp directory: ${tempPath}`);
+
       return res.sendFile(tempPath);
     }
 

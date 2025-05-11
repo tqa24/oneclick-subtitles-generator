@@ -218,7 +218,7 @@ const getCurrentMediaId = () => {
   const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
   if (youtubeUrl) {
     // Extract video ID from URL
-    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
     return match ? match[1] : null;
   }
 
@@ -303,7 +303,7 @@ const GeminiNarrationResults = ({
 
         // Save to localStorage
         localStorage.setItem(NARRATION_CACHE_KEY, JSON.stringify(cacheEntry));
-        console.log('Saved narrations to cache:', cacheEntry);
+
       } catch (error) {
         console.error('Error saving narrations to cache:', error);
       }
@@ -332,7 +332,7 @@ const GeminiNarrationResults = ({
       // Check if we have narrations
       if (!cacheEntry.narrations || !cacheEntry.narrations.length) return;
 
-      console.log('Found cached narrations for current media:', cacheEntry);
+
 
       // Set loading state first
       setLoadedFromCache(true);
@@ -357,7 +357,7 @@ const GeminiNarrationResults = ({
   useEffect(() => {
     const handleNarrationsUpdated = (event) => {
       if (event.detail && event.detail.narrations && event.detail.fromCache) {
-        console.log('GeminiNarrationResults received narrations-updated event with fromCache flag:', event.detail);
+
         // Reset loading state since we now have the narrations
         setLoadedFromCache(false);
       }
@@ -376,7 +376,7 @@ const GeminiNarrationResults = ({
   useEffect(() => {
     // If we have loaded from cache but don't have results yet, show a loading message
     if (loadedFromCache && (!generationResults || generationResults.length === 0)) {
-      console.log('Showing loading message while waiting for narrations to load from cache');
+
     }
   }, [loadedFromCache, generationResults]);
 
@@ -422,11 +422,11 @@ const GeminiNarrationResults = ({
   const downloadAudio = (result) => {
     if (result.filename) {
       try {
-        console.log('Downloading audio file:', result.filename);
+
 
         // Get the audio URL
         const audioUrl = getAudioUrl(result.filename);
-        console.log('Audio URL for download:', audioUrl);
+
 
         // Use fetch to get the file as a blob
         fetch(audioUrl)
@@ -456,7 +456,7 @@ const GeminiNarrationResults = ({
               URL.revokeObjectURL(blobUrl);
             }, 100);
 
-            console.log(`Downloaded WAV file for subtitle ${result.subtitle_id}`);
+
           })
           .catch(error => {
             console.error('Error downloading audio file:', error);

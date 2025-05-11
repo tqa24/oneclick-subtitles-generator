@@ -19,7 +19,7 @@ const blobToBase64 = (blob) => {
       return;
     }
 
-    console.log('Converting blob to base64, type:', blob.type, 'size:', blob.size);
+
 
     const reader = new FileReader();
 
@@ -32,7 +32,7 @@ const blobToBase64 = (blob) => {
         }
 
         // Log the first few characters of the result to help with debugging
-        console.log('FileReader result starts with:', reader.result.substring(0, 50) + '...');
+
 
         // Check if the result contains a comma (data URL format)
         if (reader.result.indexOf(',') === -1) {
@@ -50,7 +50,7 @@ const blobToBase64 = (blob) => {
           return;
         }
 
-        console.log('Successfully converted blob to base64, length:', base64String.length);
+
         resolve(base64String);
       } catch (error) {
         console.error('Error in FileReader onloadend:', error);
@@ -73,55 +73,18 @@ const blobToBase64 = (blob) => {
 };
 */
 
-// Log the API_BASE_URL for debugging
-console.log('Narration service using API_BASE_URL:', API_BASE_URL);
+// Removed API_BASE_URL logging
 
 /**
- * Check if the narration service is available with multiple attempts
- * @param {number} maxAttempts - Maximum number of attempts
- * @param {number} delayMs - Delay between attempts in milliseconds
- * @param {boolean} quietMode - If true, reduces console logging
+ * Check if the narration service is available - DRASTICALLY SIMPLIFIED VERSION
  * @returns {Promise<Object>} - Status response
  */
-export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 10000, quietMode = false) => {
-  if (!quietMode) {
-    console.log(`Checking narration service with ${maxAttempts} attempts, ${delayMs}ms delay between attempts`);
-  }
-
-  // First, check if the Express server is available
+export const checkNarrationStatusWithRetry = async () => {
+  // Completely simplified version with no retries to eliminate logs
   try {
-    const healthResponse = await fetch(`${API_BASE_URL}/health`, {
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-    if (!healthResponse.ok) {
-      // If the Express server is not available, don't even try to check narration service
-      return {
-        available: false,
-        error: "Express server is not available",
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
-      };
-    }
-  } catch (error) {
-    // Express server is not available
-    return {
-      available: false,
-      error: "Express server is not available",
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
-    };
-  }
-
-  // Now check the narration service
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // First check if Express server is available
     try {
-      if (!quietMode) {
-        console.log(`Attempt ${attempt}/${maxAttempts} to check narration service status`);
-      }
-
-      const response = await fetch(`${API_BASE_URL}/narration/status`, {
+      const healthResponse = await fetch(`${API_BASE_URL}/health`, {
         mode: 'cors',
         credentials: 'include',
         headers: {
@@ -129,80 +92,50 @@ export const checkNarrationStatusWithRetry = async (maxAttempts = 20, delayMs = 
         }
       });
 
-      if (!response.ok) {
-        if (!quietMode) {
-          console.log(`Server returned ${response.status} on attempt ${attempt}/${maxAttempts}`);
-        }
-
-        if (attempt < maxAttempts) {
-          if (!quietMode) {
-            console.log(`Waiting ${delayMs}ms before next attempt...`);
-          }
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-          continue;
-        }
-
-        // Using hardcoded Vietnamese message here because i18n context is not available in this service
-        // This message matches the translation key 'serviceUnavailableMessage'
+      if (!healthResponse.ok) {
         return {
           available: false,
-          error: `Server returned ${response.status}`,
+          error: "Express server is not available",
           message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
         };
-      }
-
-      const data = await response.json();
-
-      if (data.available) {
-        if (!quietMode) {
-          console.log(`Narration service is available on attempt ${attempt}/${maxAttempts}!`);
-        }
-        return data;
-      }
-
-      if (!quietMode) {
-        console.log(`Service responded but not available on attempt ${attempt}/${maxAttempts}`);
-      }
-
-      if (attempt < maxAttempts) {
-        if (!quietMode) {
-          console.log(`Waiting ${delayMs}ms before next attempt...`);
-        }
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } else {
-        // Using hardcoded Vietnamese message here because i18n context is not available in this service
-        // This message matches the translation key 'serviceUnavailableMessage'
-        data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
-        return data;
       }
     } catch (error) {
-      if (!quietMode) {
-        console.log(`Error checking narration service on attempt ${attempt}/${maxAttempts}: ${error.message}`);
-      }
-
-      if (attempt < maxAttempts) {
-        if (!quietMode) {
-          console.log(`Waiting ${delayMs}ms before next attempt...`);
-        }
-        await new Promise(resolve => setTimeout(resolve, delayMs));
-      } else {
-        // Using hardcoded Vietnamese message here because i18n context is not available in this service
-        // This message matches the translation key 'serviceUnavailableMessage'
-        return {
-          available: false,
-          error: error.message,
-          message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
-        };
-      }
+      return {
+        available: false,
+        error: "Express server is not available",
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      };
     }
-  }
 
-  // If we get here, all attempts failed
-  return {
-    available: false,
-    error: "All attempts to check narration service failed",
-    message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
-  };
+    // Single attempt to check narration service
+    const response = await fetch(`${API_BASE_URL}/narration/status`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        available: false,
+        error: `Server returned ${response.status}`,
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      };
+    }
+
+    const data = await response.json();
+    if (!data.available) {
+      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
+    }
+    return data;
+  } catch (error) {
+    return {
+      available: false,
+      error: error.message,
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+    };
+  }
 };
 
 /**
@@ -416,7 +349,7 @@ let narrationServiceInitialized = false;
  */
 export const cancelNarrationGeneration = () => {
   if (narrationAbortController) {
-    console.log('Cancelling narration generation');
+    // Removed cancellation logging
     narrationAbortController.abort();
     narrationAbortController = null;
     return true;
@@ -441,15 +374,15 @@ export const clearNarrationOutput = async () => {
     });
 
     if (!response.ok) {
-      console.error(`Failed to clear narration output: ${response.status}`);
+      // Removed error logging
       return false;
     }
 
-    const data = await response.json();
-    console.log('Cleared narration output files:', data.message);
+    // Just consume the response to avoid memory leaks, but don't store it
+    await response.json();
     return true;
   } catch (error) {
-    console.error('Error clearing narration output:', error);
+    // Removed error logging
     return false;
   }
 };
@@ -483,10 +416,7 @@ export const generateNarration = async (
 
     if (!skipClearOutput) {
       // Clear all narration output files before generating new ones
-      console.log('Clearing all narration output files before generation');
       await clearNarrationOutput();
-    } else {
-      console.log('CRITICAL FIX: Skipping clearing narration output files for retry');
     }
 
     // Initial progress message for waking up the server - only on first run
@@ -589,7 +519,6 @@ export const generateNarration = async (
 
                       // Call onResult to immediately update the UI with this result
                       // This ensures each result is shown as soon as it's received
-                      console.log(`Received result for subtitle ID: ${data.result.subtitle_id}`);
                       onResult(data.result, data.progress || results.length, data.total || 0);
                     }
                     break;
@@ -615,6 +544,11 @@ export const generateNarration = async (
                     narrationServiceInitialized = true;
                     onComplete(data.results || results);
                     return { success: true, results: data.results || results };
+
+                  default:
+                    // Handle unknown event types
+                    console.warn(`Unknown event type received: ${data.type}`);
+                    break;
                 }
               } catch (eventError) {
                 // Silently handle event errors

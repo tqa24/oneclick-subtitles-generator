@@ -98,7 +98,7 @@ export const useSubtitles = (t) => {
                 // Set cache ID for both stores
                 setRulesCacheId(cacheId);
                 setSubtitlesCacheId(cacheId);
-                console.log('Set cache ID for YouTube video:', cacheId);
+
             } else if (inputType === 'file-upload') {
                 cacheId = await generateFileCacheId(input);
 
@@ -108,12 +108,13 @@ export const useSubtitles = (t) => {
                 // Set cache ID for both stores
                 setRulesCacheId(cacheId);
                 setSubtitlesCacheId(cacheId);
-                console.log('Set cache ID for uploaded file:', cacheId);
+
 
                 // Check if this is a video file and get its duration
                 if (input.type.startsWith('video/')) {
                     try {
                         const duration = await getVideoDuration(input);
+                        // eslint-disable-next-line no-unused-vars
                         const durationMinutes = Math.floor(duration / 60);
 
                         // If video is longer than 30 minutes, show warning and use special processing
@@ -152,14 +153,16 @@ export const useSubtitles = (t) => {
             if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
+                    // eslint-disable-next-line no-unused-vars
                     const durationMinutes = Math.floor(duration / 60);
 
                     // Determine if this is a video or audio file
                     const isAudio = input.type.startsWith('audio/');
+                    // eslint-disable-next-line no-unused-vars
                     const mediaType = isAudio ? 'audio' : 'video';
 
                     // Debug log to see the media duration
-                    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${duration} seconds, ${durationMinutes} minutes`);
+
 
                     // Always use segmentation for media files
                     // Process long media file by splitting it into segments
@@ -281,14 +284,16 @@ export const useSubtitles = (t) => {
             if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
+                    // eslint-disable-next-line no-unused-vars
                     const durationMinutes = Math.floor(duration / 60);
 
                     // Determine if this is a video or audio file
                     const isAudio = input.type.startsWith('audio/');
+                    // eslint-disable-next-line no-unused-vars
                     const mediaType = isAudio ? 'audio' : 'video';
 
                     // Debug log to see the media duration
-                    console.log(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} duration: ${duration} seconds, ${durationMinutes} minutes`);
+
 
                     // Always use segmentation for media files to match generateSubtitles behavior
                     // Process long media file by splitting it into segments
@@ -315,7 +320,7 @@ export const useSubtitles = (t) => {
                 // Set cache ID for both stores
                 setRulesCacheId(cacheId);
                 setSubtitlesCacheId(cacheId);
-                console.log('Set cache ID for YouTube video (retry):', cacheId);
+
             } else if (inputType === 'file-upload') {
                 // For file uploads, generate and store the cache ID
                 const cacheId = await generateFileCacheId(input);
@@ -328,7 +333,7 @@ export const useSubtitles = (t) => {
                 // Set cache ID for both stores
                 setRulesCacheId(cacheId);
                 setSubtitlesCacheId(cacheId);
-                console.log('Set cache ID for uploaded file (retry):', cacheId);
+
             }
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
@@ -405,7 +410,7 @@ export const useSubtitles = (t) => {
                 // Try to get the latest subtitles from cache
                 const cachedSubtitles = await checkCachedSubtitles(cacheId);
                 if (cachedSubtitles) {
-                    console.log('Using latest subtitles from cache for segment retry');
+
                     currentSubtitles = cachedSubtitles;
                 } else {
                     // Fall back to current state if cache retrieval fails
@@ -430,7 +435,7 @@ export const useSubtitles = (t) => {
             (segments[segmentIndex].name?.toLowerCase().includes('audio') ||
              segments[segmentIndex].url?.toLowerCase().includes('audio'));
         const mediaType = isAudio ? 'audio' : 'video';
-        console.log(`Retrying segment ${segmentIndex} with mediaType: ${mediaType}`);
+
 
         // Mark this segment as retrying
         setRetryingSegments(prev => [...prev, segmentIndex]);
@@ -470,7 +475,7 @@ export const useSubtitles = (t) => {
             // Store the updated subtitles in localStorage to ensure they're not overwritten
             try {
                 localStorage.setItem('latest_segment_subtitles', JSON.stringify(updatedSubtitles));
-                console.log(`Saved ${updatedSubtitles.length} subtitles to localStorage from useSubtitles`);
+
             } catch (e) {
                 console.error('Error saving latest subtitles to localStorage:', e);
             }
@@ -479,13 +484,13 @@ export const useSubtitles = (t) => {
             // Find the save button
             const saveButton = document.querySelector('.lyrics-save-btn');
             if (saveButton) {
-                console.log('Auto-saving after segment subtitles arrived');
+
 
                 // Create a promise to track when the save is complete
                 const savePromise = new Promise((resolve) => {
                     // Create a one-time event listener for the save completion
                     const handleSaveComplete = () => {
-                        console.log('Save completed after segment subtitles arrived');
+
                         resolve();
                         // Remove the event listener
                         window.removeEventListener('subtitles-saved', handleSaveComplete);

@@ -42,7 +42,7 @@ def _custom_download_file(url, output_path, model_id, progress_start_pct=0, prog
         content_length = response_head.headers.get('Content-Length')
         if content_length and content_length.isdigit():
             total_size = int(content_length)
-            logger.info(f"Determined file size for {os.path.basename(output_path)}: {total_size / (1024*1024):.2f} MB")
+
         else:
             logger.warning(f"Could not determine file size for {os.path.basename(output_path)} from headers.")
 
@@ -66,7 +66,7 @@ def _custom_download_file(url, output_path, model_id, progress_start_pct=0, prog
                     try:
                         if os.path.exists(output_path):
                             os.remove(output_path)
-                            logger.info(f"Deleted partially downloaded file: {output_path}")
+
                     except OSError as e:
                         logger.error(f"Error deleting partial file {output_path}: {e}")
                     return False, downloaded_size, total_size # Indicate cancellation
@@ -106,7 +106,7 @@ def _custom_download_file(url, output_path, model_id, progress_start_pct=0, prog
                         last_update_time = current_time
 
 
-        logger.info(f"File downloaded successfully: {output_path} ({downloaded_size} bytes)")
+
         # Final update for this file - report exact downloaded size
         # Let the calling function decide the overall percentage completion
         update_download_status(
@@ -144,14 +144,14 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
         # Cannot update status without model_id
         return
 
-    logger.info(f"Starting download thread for model_id: {model_id} from repo: {repo_id}")
+
 
     # Use the models/f5_tts directory
     download_dir = None
     try:
         from .constants import MODELS_DIR
         download_dir = os.path.join(MODELS_DIR, model_id) # Specific dir for this model
-        logger.info(f"Target download directory: {download_dir}")
+
         os.makedirs(download_dir, exist_ok=True)
     except Exception as e:
         logger.error(f"Error setting up download directory {download_dir}: {e}")
@@ -163,7 +163,7 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
 
     # --- Check for Cancellation ---
     if model_id in download_threads and download_threads[model_id].get("cancel"):
-        logger.info(f"Download cancelled immediately upon starting thread for {model_id}")
+
         remove_download_status(model_id) # Clean up status
         # Attempt cleanup of the created directory
         try:
@@ -180,8 +180,8 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
 
     model_url = f"https://huggingface.co/{repo_id}/resolve/main/{model_filename_in_repo}"
     vocab_url = f"https://huggingface.co/{repo_id}/resolve/main/{vocab_filename_in_repo}"
-    logger.info(f"Model URL: {model_url}")
-    logger.info(f"Vocab URL: {vocab_url}")
+
+
 
     # --- File Paths ---
     final_model_path = os.path.join(download_dir, model_file_basename)
@@ -197,7 +197,7 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
     downloaded_sizes = {}
 
     # 1. Download Model File
-    logger.info(f"Starting download of model file...")
+
     model_success, d_size, t_size = _custom_download_file(
         url=model_url,
         output_path=final_model_path,
@@ -216,26 +216,26 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
         try:
             if os.path.exists(download_dir):
                 shutil.rmtree(download_dir)
-                logger.info(f"Cleaned up directory after failed model download: {download_dir}")
+
         except Exception as e:
              logger.error(f"Error cleaning up directory after failed model download: {e}")
         return # Exit thread
 
     # --- Check for Cancellation after model download ---
     if model_id in download_threads and download_threads[model_id].get("cancel"):
-        logger.info(f"Download cancelled after model file download for {model_id}")
+
         remove_download_status(model_id)
         # Attempt cleanup
         try:
             if os.path.exists(download_dir):
                 shutil.rmtree(download_dir)
-                logger.info(f"Cleaned up directory after cancellation: {download_dir}")
+
         except Exception as e:
              logger.error(f"Error cleaning up directory after cancellation: {e}")
         return
 
     # 2. Download Vocab File
-    logger.info(f"Starting download of vocab file...")
+
     vocab_success, d_size_v, t_size_v = _custom_download_file(
         url=vocab_url,
         output_path=final_vocab_path,
@@ -253,26 +253,26 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
         try:
             if os.path.exists(download_dir):
                 shutil.rmtree(download_dir)
-                logger.info(f"Cleaned up directory after failed vocab download: {download_dir}")
+
         except Exception as e:
              logger.error(f"Error cleaning up directory after failed vocab download: {e}")
         return # Exit thread
 
     # --- Check for Cancellation after all downloads ---
     if model_id in download_threads and download_threads[model_id].get("cancel"):
-        logger.info(f"Download cancelled after all files downloaded for {model_id}")
+
         remove_download_status(model_id)
         # Attempt cleanup
         try:
             if os.path.exists(download_dir):
                 shutil.rmtree(download_dir)
-                logger.info(f"Cleaned up directory after final cancellation check: {download_dir}")
+
         except Exception as e:
              logger.error(f"Error cleaning up directory after final cancellation check: {e}")
         return
 
     # --- Finalizing - Add to Registry ---
-    logger.info(f"All files downloaded for {model_id}. Preparing registry entry.")
+
 
     # Determine language (using existing logic)
     primary_language = "unknown"
@@ -280,7 +280,7 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
     if language_codes and len(language_codes) > 0:
         supported_languages = language_codes
         primary_language = language_codes[0]
-        logger.info(f"Using provided language codes: {language_codes}")
+
     else:
         # Fallback language detection logic (simplified for brevity)
         import re
@@ -290,11 +290,11 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
         if matches:
             primary_language = matches[0]
             supported_languages = list(set(matches))
-            logger.info(f"Detected languages: {supported_languages}")
+
         else:
             primary_language = "en"
             supported_languages = ["en"]
-            logger.info("No language detected, defaulting to 'en'")
+
 
     model_info = {
         "id": model_id,
@@ -327,7 +327,7 @@ def _download_model_from_hf_thread(repo_id, model_filename_in_repo, vocab_filena
     if success:
         # Status 'completed' will remove the entry from downloads
         update_download_status(model_id, 'completed')
-        logger.info(f"Model {model_id} download complete and added to registry.")
+
     else:
         update_download_status(model_id, 'failed', error=f"Registry add failed: {message}")
         logger.error(f"Failed to add model {model_id} to registry: {message}")
@@ -347,14 +347,14 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
         logger.error("Model ID is None in URL download thread, cannot proceed.")
         return
 
-    logger.info(f"Starting URL download thread for model_id: {model_id}")
+
 
     # Setup download directory within models/f5_tts structure
     download_dir = None
     try:
         from .constants import MODELS_DIR
         download_dir = os.path.join(MODELS_DIR, model_id)
-        logger.info(f"Target URL download directory: {download_dir}")
+
         os.makedirs(download_dir, exist_ok=True)
     except Exception as e:
         logger.error(f"Error setting up download directory {download_dir}: {e}")
@@ -366,7 +366,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
     # --- Check for Cancellation ---
     if model_id in download_threads and download_threads[model_id].get("cancel"):
-        logger.info(f"URL Download cancelled immediately upon starting thread for {model_id}")
+
         remove_download_status(model_id)
         try:
              if os.path.exists(download_dir): shutil.rmtree(download_dir)
@@ -394,7 +394,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
     downloaded_sizes = {}
 
     # 1. Download Model File
-    logger.info(f"Starting download of model file from URL: {model_url}")
+
     model_success, d_size, t_size = _custom_download_file(
         url=model_url,
         output_path=final_model_path,
@@ -416,7 +416,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
     # --- Check for Cancellation after model ---
     if model_id in download_threads and download_threads[model_id].get("cancel"):
-        logger.info(f"URL Download cancelled after model file download for {model_id}")
+
         remove_download_status(model_id)
         try:
             if os.path.exists(download_dir): shutil.rmtree(download_dir)
@@ -425,7 +425,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
     # 2. Download Vocab File (if applicable)
     if vocab_url:
-        logger.info(f"Starting download of vocab file from URL: {vocab_url}")
+
         vocab_success, d_size_v, t_size_v = _custom_download_file(
             url=vocab_url,
             output_path=final_vocab_path,
@@ -445,7 +445,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
         # --- Check for Cancellation after vocab ---
         if model_id in download_threads and download_threads[model_id].get("cancel"):
-            logger.info(f"URL Download cancelled after vocab file download for {model_id}")
+
             remove_download_status(model_id)
             try:
                  if os.path.exists(download_dir): shutil.rmtree(download_dir)
@@ -453,7 +453,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
             return
 
     # --- Finalizing - Add to Registry ---
-    logger.info(f"All URL files downloaded for {model_id}. Preparing registry entry.")
+
 
     # Determine language (using existing logic, checking ID and URL)
     primary_language = "unknown"
@@ -461,7 +461,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
     if language_codes and len(language_codes) > 0:
         supported_languages = language_codes
         primary_language = language_codes[0]
-        logger.info(f"Using provided language codes: {language_codes}")
+
     else:
         # Fallback logic
         import re
@@ -471,11 +471,11 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
         if matches:
             primary_language = matches[0]
             supported_languages = list(set(matches))
-            logger.info(f"Detected languages: {supported_languages}")
+
         else:
             primary_language = "en"
             supported_languages = ["en"]
-            logger.info("No language detected, defaulting to 'en'")
+
 
     model_info = {
         "id": model_id,
@@ -504,7 +504,7 @@ def _download_model_from_url_thread(model_url, vocab_url=None, config=None, mode
 
     if success:
         update_download_status(model_id, 'completed')
-        logger.info(f"Model {model_id} from URL download complete and added to registry.")
+
     else:
         update_download_status(model_id, 'failed', error=f"Registry add failed: {message}")
         logger.error(f"Failed to add model {model_id} from URL to registry: {message}")

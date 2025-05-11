@@ -112,7 +112,6 @@ const positionPillForActiveTab = (tabContainer) => {
 
   // Adjust the left position to account for the scaling effect
   // The scaling happens from the center, so we need to adjust the left position
-  const scaleAdjustment = 1.2;
   const widthDifference = tabRect.width - (naturalWidth);
   left = left + (widthDifference / 2);
 

@@ -21,7 +21,7 @@ let currentCacheId = null;
  */
 export const setCurrentCacheId = (cacheId) => {
   currentCacheId = cacheId;
-  console.log('Current cache ID set to:', cacheId);
+
 };
 
 /**
@@ -55,7 +55,7 @@ export const setTranscriptionRules = async (rules) => {
 
       const result = await response.json();
       if (result.success) {
-        console.log('Transcription rules saved to cache for ID:', currentCacheId);
+
       } else {
         console.error('Failed to save transcription rules to cache:', result.error);
       }
@@ -66,14 +66,14 @@ export const setTranscriptionRules = async (rules) => {
     // Fallback to localStorage if no cache ID is available
     try {
       localStorage.setItem(TRANSCRIPTION_RULES_KEY, JSON.stringify(rules));
-      console.log('Transcription rules saved to localStorage (fallback)');
+
     } catch (error) {
       console.error('Error saving transcription rules to localStorage:', error);
     }
   } else {
     // If rules are null, remove from localStorage
     localStorage.removeItem(TRANSCRIPTION_RULES_KEY);
-    console.log('Transcription rules removed from localStorage');
+
   }
 };
 
@@ -95,7 +95,7 @@ export const getTranscriptionRules = async () => {
 
       if (data.exists && data.rules) {
         globalTranscriptionRules = data.rules; // Update in-memory rules
-        console.log('Transcription rules loaded from cache for ID:', currentCacheId);
+
         return data.rules;
       }
     } catch (error) {
@@ -109,7 +109,7 @@ export const getTranscriptionRules = async () => {
     if (savedRules) {
       const parsedRules = JSON.parse(savedRules);
       globalTranscriptionRules = parsedRules; // Update in-memory rules
-      console.log('Transcription rules loaded from localStorage (fallback)');
+
       return parsedRules;
     }
   } catch (error) {
@@ -135,7 +135,7 @@ export const getTranscriptionRulesSync = () => {
     if (savedRules) {
       const parsedRules = JSON.parse(savedRules);
       globalTranscriptionRules = parsedRules; // Update in-memory rules
-      console.log('Transcription rules loaded from localStorage (sync fallback)');
+
       return parsedRules;
     }
   } catch (error) {
@@ -172,12 +172,12 @@ export const clearTranscriptionRules = async () => {
 
       const result = await response.json();
       if (result.success) {
-        console.log('Transcription rules cleared from cache for ID:', currentCacheId);
+
       }
     } catch (error) {
       console.error('Error clearing transcription rules from cache:', error);
     }
   }
 
-  console.log('Transcription rules cleared from memory, cache, and localStorage');
+
 };

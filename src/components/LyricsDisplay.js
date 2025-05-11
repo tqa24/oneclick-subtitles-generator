@@ -6,7 +6,6 @@ import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
 import { VariableSizeList as List } from 'react-window';
-import { convertToSRT } from '../utils/subtitleConverter';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
 import { downloadTXT, downloadSRT, downloadJSON } from '../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../services/geminiService';
@@ -101,8 +100,6 @@ const LyricsDisplay = ({
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const rowHeights = useRef({});
   const [txtContent, setTxtContent] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedDocument, setProcessedDocument] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [splitDuration, setSplitDuration] = useState(() => {
     // Get the split duration from localStorage or use default (0 = no split)
@@ -154,7 +151,7 @@ const LyricsDisplay = ({
 
       // Only update if the current zoom is less than the minimum
       if (zoom < minZoom) {
-        console.log(`Updating zoom from ${zoom} to minimum ${minZoom} based on duration ${duration}`);
+
         setZoom(minZoom);
       }
     }
@@ -302,7 +299,6 @@ const LyricsDisplay = ({
     // Update the state
     setSplitDuration(splitDurationToUse);
 
-    setIsProcessing(true);
     // Clear any previous status
     setConsolidationStatus('');
 
@@ -318,7 +314,7 @@ const LyricsDisplay = ({
       if (result && typeof result === 'string' && (result.trim().startsWith('{') || result.trim().startsWith('['))) {
         try {
           const jsonResult = JSON.parse(result);
-          console.log('Detected JSON response:', jsonResult);
+
 
           // For summarize feature
           if (jsonResult.summary) {
@@ -333,25 +329,25 @@ const LyricsDisplay = ({
             }
 
             result = plainText;
-            console.log('Extracted plain text from summary JSON');
+
           }
           // For consolidate feature
           else if (jsonResult.content) {
             result = jsonResult.content;
-            console.log('Extracted plain text from content JSON');
+
           }
           // For any other JSON structure
           else if (jsonResult.text) {
             result = jsonResult.text;
-            console.log('Extracted plain text from text JSON');
+
           }
         } catch (e) {
-          console.log('Result looks like JSON but failed to parse:', e);
+
           // Keep the original result if parsing fails
         }
       }
 
-      setProcessedDocument(result);
+      // Result is ready for download
 
       // Show a temporary success message
       const successMessage = document.createElement('div');
@@ -378,7 +374,7 @@ const LyricsDisplay = ({
       // Show error status
       setConsolidationStatus(t('consolidation.error', 'Error processing document: {{message}}', { message: error.message }));
     } finally {
-      setIsProcessing(false);
+      // Processing is complete
     }
   };
 
@@ -400,11 +396,7 @@ const LyricsDisplay = ({
 
       if (!cacheId) {
         console.error('No cache ID found for current media');
-        console.log('Debug info - localStorage values:', {
-          currentVideoUrl,
-          currentFileUrl,
-          currentFileCacheId: localStorage.getItem('current_file_cache_id')
-        });
+
         return;
       }
 
@@ -415,7 +407,7 @@ const LyricsDisplay = ({
         if (latestSubtitles) {
           const parsedSubtitles = JSON.parse(latestSubtitles);
           if (Array.isArray(parsedSubtitles) && parsedSubtitles.length > 0) {
-            console.log(`Found ${parsedSubtitles.length} subtitles in localStorage, using these for saving`);
+
             subtitlesToSave = parsedSubtitles;
             // Clear the localStorage entry to avoid using it again
             localStorage.removeItem('latest_segment_subtitles');
@@ -439,7 +431,7 @@ const LyricsDisplay = ({
 
       const result = await response.json();
       if (result.success) {
-        console.log('Subtitles saved successfully');
+
         // Show a temporary success message
         const saveMessage = document.createElement('div');
         saveMessage.className = 'save-success-message';

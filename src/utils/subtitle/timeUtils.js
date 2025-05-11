@@ -4,7 +4,7 @@
  * @returns {number} - Time in seconds
  */
 export const convertTimeStringToSeconds = (timeString) => {
-    console.log('Converting time string:', timeString);
+
 
     // Handle empty or invalid time strings
     if (!timeString || typeof timeString !== 'string') {
@@ -25,7 +25,7 @@ export const convertTimeStringToSeconds = (timeString) => {
         const milliseconds = parseInt(exactFormatMatch[3]) / 1000;
 
         const result = minutes * 60 + seconds + milliseconds;
-        console.log(`Parsed ${timeString} as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+
         return result;
     }
 
@@ -37,7 +37,7 @@ export const convertTimeStringToSeconds = (timeString) => {
         const milliseconds = parseInt(flexibleFormatMatch[3]) / 1000;
 
         const result = minutes * 60 + seconds + milliseconds;
-        console.log(`Parsed ${timeString} with flexible pattern as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+
         return result;
     }
 
@@ -50,7 +50,7 @@ export const convertTimeStringToSeconds = (timeString) => {
         const milliseconds = parseInt(looseFormatMatch[3]) / 1000;
 
         const result = minutes * 60 + seconds + milliseconds;
-        console.log(`Parsed ${timeString} with loose pattern as ${minutes}m ${seconds}s ${milliseconds}ms = ${result}s`);
+
         return result;
     }
 
