@@ -28,7 +28,7 @@ const MAX_SEGMENTS_PER_BATCH = 200;
  * The key setting is normalize=0 in the amix filter, which ensures that when audio segments
  * overlap (even partially), they maintain their full volume without any reduction.
  * By default, amix would reduce the volume of overlapping segments to prevent clipping.
- * 
+ *
  * For large numbers of segments, the function splits them into batches to avoid
  * ENAMETOOLONG errors when the FFmpeg command becomes too long.
  */
@@ -82,7 +82,7 @@ const downloadAlignedAudio = async (req, res) => {
       if (narration.filename) {
         const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
         if (!fs.existsSync(filePath)) {
-
+          console.error(`Audio file not found: ${filePath}`);
           // Clean up temp dir before exiting on error
           // Consider adding a general cleanup function or try/finally block for robustness
           return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
@@ -114,7 +114,7 @@ const downloadAlignedAudio = async (req, res) => {
         return res.status(400).json({ error: `Invalid duration for audio file: ${narration.filename}` });
       }
 
-      // For file-based narrations (F5-TTS)
+      // For file-based narrations (F5-TTS or Gemini)
       if (narration.filename) {
         const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
         audioSegments.push({
@@ -178,29 +178,29 @@ const downloadAlignedAudio = async (req, res) => {
     // Check if we need to use batch processing
     if (audioSegments.length > MAX_SEGMENTS_PER_BATCH) {
 
-      
+
       // Split the segments into batches
       const batches = [];
       for (let i = 0; i < audioSegments.length; i += MAX_SEGMENTS_PER_BATCH) {
         batches.push(audioSegments.slice(i, i + MAX_SEGMENTS_PER_BATCH));
       }
-      
 
-      
+
+
       // Process each batch
       for (let i = 0; i < batches.length; i++) {
         const batchOutputPath = path.join(tempDir, `batch_${i}_${timestamp}.wav`);
-        
+
         // Process the batch
         await processBatch(batches[i], batchOutputPath, i, totalDuration);
-        
+
         // Add the batch output file to the list of files to concatenate
         batchFiles.push(batchOutputPath);
       }
-      
+
       // Concatenate the batch files
       await concatenateAudioFiles(batchFiles, outputPath);
-      
+
       // Clean up the batch files
       for (const batchFile of batchFiles) {
         try {

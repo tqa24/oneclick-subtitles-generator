@@ -61,6 +61,9 @@ const CacheTab = () => {
         localStorage.removeItem('current_file_url');
         localStorage.removeItem('current_file_cache_id');
 
+        // Clear narration cache
+        localStorage.removeItem('narration_cache');
+
         // Check if details exist in the response
         if (data.details) {
           // Store the cache details for display

@@ -19,8 +19,14 @@ const { NARRATION_DIR } = require('../config');
 const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
 const upload = multer({ dest: REFERENCE_AUDIO_DIR });
 
-// Serve narration audio files
-router.get('/audio/:filename', narrationController.serveAudioFile);
+// Serve narration audio files - use * to capture all path segments
+router.get('/audio/*', (req, res) => {
+  // Extract the filename from the URL path
+  const filename = req.path.replace('/audio/', '');
+
+  // Call the controller with the extracted filename
+  narrationController.serveAudioFile({ params: { filename } }, res);
+});
 
 // Download all narration audio files as a zip
 router.post('/download-all', express.json(), narrationController.downloadAllAudio);

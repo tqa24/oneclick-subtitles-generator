@@ -10,6 +10,7 @@ from flask import Blueprint, request, jsonify, Response
 from .narration_config import HAS_F5TTS, OUTPUT_AUDIO_DIR
 from .narration_utils import load_tts_model
 from .narration_language import is_text_english
+from .directory_utils import ensure_subtitle_directory, get_next_file_number
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +134,20 @@ def generate_narration():
                              mismatch_warning_sent = True # Send warning only once
 
                     # --- Prepare for Generation ---
-                    unique_id = str(uuid.uuid4())
-                    output_filename = f"narration_{subtitle_id}_{unique_id}.wav"
-                    output_path = os.path.join(OUTPUT_AUDIO_DIR, output_filename)
+                    # Ensure the subtitle directory exists
+                    subtitle_dir = ensure_subtitle_directory(subtitle_id)
+
+                    # Get the next file number for this subtitle
+                    file_number = get_next_file_number(subtitle_dir)
+
+                    # Generate a filename with sequential numbering
+                    filename = f"{file_number}.wav"
+
+                    # Full path includes the subtitle directory - use forward slashes for URLs
+                    full_filename = f"subtitle_{subtitle_id}/{filename}"
+                    output_path = os.path.join(subtitle_dir, filename)
+
+                    logger.debug(f"Generating narration audio for subtitle {subtitle_id}, output path: {output_path}")
 
                     # Clean text: Remove control characters, ensure UTF-8
                     cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
@@ -180,7 +192,7 @@ def generate_narration():
                             'subtitle_id': subtitle_id,
                             'text': cleaned_text, # Return the cleaned text used for generation
                             'audio_path': output_path,
-                            'filename': output_filename,
+                            'filename': full_filename, # Return the path relative to OUTPUT_AUDIO_DIR
                             'success': True
                         }
                         results.append(result)

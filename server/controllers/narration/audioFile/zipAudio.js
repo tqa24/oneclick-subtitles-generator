@@ -39,11 +39,13 @@ const downloadAllAudio = async (req, res) => {
     // Check if all files exist
     const validFiles = [];
     for (const filename of filenames) {
+      // Handle both legacy and new directory structure
       const filePath = path.join(OUTPUT_AUDIO_DIR, filename);
       if (fs.existsSync(filePath)) {
         validFiles.push(filePath);
       } else {
-
+        // Log that file wasn't found
+        console.log(`Audio file not found: ${filePath}`);
       }
     }
 

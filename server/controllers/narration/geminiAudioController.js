@@ -6,15 +6,13 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-// Import directory paths
-const { OUTPUT_AUDIO_DIR } = require('./directoryManager');
+// Import directory paths and functions
+const { OUTPUT_AUDIO_DIR, ensureSubtitleDirectory } = require('./directoryManager');
 
 /**
  * Save Gemini audio data to disk
  */
 const saveGeminiAudio = (req, res) => {
-
-
   try {
     const { audioData, subtitle_id, sampleRate, mimeType } = req.body;
 
@@ -23,19 +21,26 @@ const saveGeminiAudio = (req, res) => {
       return res.status(400).json({ error: 'Missing required data (audioData or subtitle_id)' });
     }
 
-    // Generate a unique filename
-    const unique_id = uuidv4();
-    const filename = `gemini_${subtitle_id}_${unique_id}.wav`;
-    const filepath = path.join(OUTPUT_AUDIO_DIR, filename);
+    // Ensure the subtitle directory exists
+    const subtitleDir = ensureSubtitleDirectory(subtitle_id);
 
+    // Count existing files to determine the next file number
+    let fileNumber = 1;
+    if (fs.existsSync(subtitleDir)) {
+      const existingFiles = fs.readdirSync(subtitleDir);
+      fileNumber = existingFiles.length + 1;
+    }
 
+    // Generate a filename with sequential numbering
+    const filename = `${fileNumber}.wav`;
+
+    // Full path includes the subtitle directory - use forward slashes for URLs
+    const fullFilename = `subtitle_${subtitle_id}/${filename}`;
+    const filepath = path.join(subtitleDir, filename);
 
     try {
       // Decode the base64 audio data
       const audioBuffer = Buffer.from(audioData, 'base64');
-
-
-
 
       // Create file stream
       const fileStream = fs.createWriteStream(filepath);
@@ -43,20 +48,40 @@ const saveGeminiAudio = (req, res) => {
       // Ensure we're using the correct sample rate (defined here so it's available for all code paths)
       const actualSampleRate = sampleRate || 24000;
 
-
       // Check if the data is already in WAV format (converted on client side)
       if (mimeType === 'audio/wav') {
+        console.log(`[DEBUG] Writing WAV data directly for subtitle ${subtitle_id}, length: ${audioBuffer.length} bytes`);
 
+        // Check if the WAV header is valid
+        if (audioBuffer.length >= 44) {
+          const headerStr = audioBuffer.slice(0, 4).toString('utf8');
+          console.log(`[DEBUG] WAV header check: ${headerStr}`);
 
-        // Write the WAV file directly
-        fileStream.write(audioBuffer);
+          if (headerStr !== 'RIFF') {
+            console.warn(`[DEBUG] WAV data does not start with RIFF header for subtitle ${subtitle_id}`);
+
+            // If the header is invalid, add a proper WAV header
+            const wavHeader = createWavHeader(audioBuffer.length, actualSampleRate);
+            fileStream.write(wavHeader);
+            fileStream.write(audioBuffer);
+          } else {
+            // Write the WAV file directly
+            fileStream.write(audioBuffer);
+          }
+        } else {
+          console.warn(`[DEBUG] WAV data too short for subtitle ${subtitle_id}: ${audioBuffer.length} bytes`);
+
+          // Add a proper WAV header
+          const wavHeader = createWavHeader(audioBuffer.length, actualSampleRate);
+          fileStream.write(wavHeader);
+          fileStream.write(audioBuffer);
+        }
       } else {
         // If not in WAV format, assume it's PCM and add WAV header
-
+        console.log(`[DEBUG] Adding WAV header to PCM data for subtitle ${subtitle_id}, length: ${audioBuffer.length} bytes, sample rate: ${actualSampleRate}`);
 
         // Create WAV header with the correct format
         const wavHeader = createWavHeader(audioBuffer.length, actualSampleRate);
-
 
         // Write the WAV file with header
         fileStream.write(wavHeader);
@@ -68,17 +93,43 @@ const saveGeminiAudio = (req, res) => {
 
       // Wait for the file to be fully written
       fileStream.on('finish', () => {
-
-
         // Verify the file exists and has content
         try {
           const stats = fs.statSync(filepath);
+          console.log(`[DEBUG] Verified file saved: ${filepath}, size: ${stats.size} bytes`);
 
+          // Check if the file is a valid WAV file
+          if (stats.size >= 44) { // WAV header is 44 bytes
+            const header = Buffer.alloc(12);
+            const fd = fs.openSync(filepath, 'r');
+            fs.readSync(fd, header, 0, 12, 0);
+            fs.closeSync(fd);
+
+            const headerStr = header.toString('utf8', 0, 4);
+            console.log(`[DEBUG] WAV header check for saved file: ${headerStr}`);
+
+            if (headerStr !== 'RIFF') {
+              console.warn(`[DEBUG] WARNING: Saved file does not have a valid RIFF header: ${filepath}`);
+
+              // Try to fix the file by adding a proper WAV header
+              try {
+                const fileData = fs.readFileSync(filepath);
+                const wavHeader = createWavHeader(fileData.length, actualSampleRate);
+                const fixedData = Buffer.concat([wavHeader, fileData]);
+                fs.writeFileSync(filepath, fixedData);
+                console.log(`[DEBUG] Fixed WAV header for file: ${filepath}`);
+              } catch (fixError) {
+                console.error(`[DEBUG] Error fixing WAV header: ${fixError.message}`);
+              }
+            }
+          } else {
+            console.warn(`[DEBUG] WARNING: Saved file is too small to be a valid WAV file: ${filepath}, size: ${stats.size} bytes`);
+          }
 
           // Return success response with the filename
           res.json({
             success: true,
-            filename: filename,
+            filename: fullFilename, // Return the path relative to OUTPUT_AUDIO_DIR
             subtitle_id: subtitle_id,
             sampleRate: actualSampleRate
           });
@@ -115,7 +166,6 @@ const createWavHeader = (dataLength, sampleRate = 24000) => {
   const blockAlign = numChannels * (bitsPerSample / 8);
   const byteRate = sampleRate * blockAlign;
 
-
   // Create WAV header (44 bytes)
   const header = Buffer.alloc(44);
 
@@ -137,6 +187,8 @@ const createWavHeader = (dataLength, sampleRate = 24000) => {
   // "data" sub-chunk
   header.write('data', 36);
   header.writeUInt32LE(dataLength, 40); // Subchunk2 size (data size)
+
+  console.log(`[DEBUG] Created WAV header for ${dataLength} bytes of PCM data, sample rate: ${sampleRate}`);
 
   return header;
 };
