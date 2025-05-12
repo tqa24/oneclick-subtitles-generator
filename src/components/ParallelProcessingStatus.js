@@ -60,9 +60,11 @@ const ParallelProcessingStatus = ({
     return (
       <div className={`status ${statusType}`}>
         {/* Ensure the overall status is properly translated */}
-        {overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-         overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-         overallStatus}
+        {typeof overallStatus === 'string' ? (
+          overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+          overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+          overallStatus
+        ) : 'Processing...'}
       </div>
     );
   }
@@ -82,9 +84,11 @@ const ParallelProcessingStatus = ({
     <div className="parallel-processing-container">
       <div className={`status ${statusType}`}>
         {/* Ensure the overall status is properly translated */}
-        {overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-         overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-         overallStatus}
+        {typeof overallStatus === 'string' ? (
+          overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+          overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+          overallStatus
+        ) : 'Processing...'}
       </div>
 
       {/* Segment Retry Modal */}
@@ -126,7 +130,7 @@ const ParallelProcessingStatus = ({
                 <span className="segment-message">
                   {segment.status === 'overloaded'
                     ? t('output.overloaded')
-                    : (segment.shortMessage || t(`output.${segment.status}`, segment.status))}
+                    : (segment.shortMessage || (typeof segment.status === 'string' ? t(`output.${segment.status}`, segment.status) : 'Unknown status'))}
                 </span>
                 {segment.timeRange && (
                   <span className="segment-time-range">{segment.timeRange}</span>

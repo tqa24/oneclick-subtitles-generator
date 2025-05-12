@@ -155,9 +155,11 @@ const OutputContainer = ({
           segments={segmentsStatus}
           overallStatus={
             // Translate common status messages that might be hardcoded
-            status?.message?.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-            status?.message?.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-            status?.message || t('output.segmentsReady', 'Video segments are ready for processing!')
+            typeof status?.message === 'string' ? (
+              status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+              status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+              status.message
+            ) : t('output.segmentsReady', 'Video segments are ready for processing!')
           }
           statusType={status?.type || 'success'}
           onRetrySegment={(segmentIndex, _, options) => {
@@ -177,9 +179,11 @@ const OutputContainer = ({
         status?.message && (
           <div className={`status ${status.type}`}>
             {/* Translate common status messages that might be hardcoded */}
-            {status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-             status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-             status.message}
+            {typeof status.message === 'string' ? (
+              status.message.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+              status.message.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+              status.message
+            ) : 'Processing...'}
           </div>
         )
       )}
