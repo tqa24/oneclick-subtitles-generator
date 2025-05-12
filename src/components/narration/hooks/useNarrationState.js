@@ -28,6 +28,12 @@ const useNarrationState = (initialReferenceAudio) => {
     return savedVoice || 'Aoede'; // Default to Aoede if not set
   });
 
+  const [concurrentClients, setConcurrentClients] = useState(() => {
+    // Try to load from localStorage
+    const savedConcurrentClients = localStorage.getItem('gemini_concurrent_clients');
+    return savedConcurrentClients ? parseInt(savedConcurrentClients, 10) : 5; // Default to 5 concurrent clients
+  });
+
   // Narration Settings state (for F5-TTS)
   const [referenceAudio, setReferenceAudio] = useState(initialReferenceAudio);
   const [referenceText, setReferenceText] = useState(initialReferenceAudio?.text || '');
@@ -116,6 +122,8 @@ const useNarrationState = (initialReferenceAudio) => {
     setSleepTime,
     selectedVoice,
     setSelectedVoice,
+    concurrentClients,
+    setConcurrentClients,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio,

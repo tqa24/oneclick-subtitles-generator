@@ -7,11 +7,17 @@ import { findSuitableAudioModel } from '../models/modelSelector';
 
 // Default number of concurrent WebSocket clients
 const DEFAULT_CONCURRENT_CLIENTS = 5;
+// Maximum number of concurrent WebSocket clients
+const MAX_CONCURRENT_CLIENTS = 10;
 
 // Get the configured number of concurrent clients
 const getConcurrentClientsCount = () => {
   const configuredCount = parseInt(localStorage.getItem('gemini_concurrent_clients'), 10);
-  return !isNaN(configuredCount) ? configuredCount : DEFAULT_CONCURRENT_CLIENTS;
+  if (!isNaN(configuredCount)) {
+    // Ensure the count is within valid range (1 to MAX_CONCURRENT_CLIENTS)
+    return Math.min(Math.max(configuredCount, 1), MAX_CONCURRENT_CLIENTS);
+  }
+  return DEFAULT_CONCURRENT_CLIENTS;
 };
 
 // Client pool for managing multiple WebSocket connections

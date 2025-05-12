@@ -18,6 +18,7 @@ import SubtitleSourceSelection from './components/SubtitleSourceSelection';
 import GeminiSubtitleSourceSelection from './components/GeminiSubtitleSourceSelection';
 import GeminiSleepTimeSlider from './components/GeminiSleepTimeSlider';
 import GeminiVoiceSelection from './components/GeminiVoiceSelection';
+import GeminiConcurrentClientsSlider from './components/GeminiConcurrentClientsSlider';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
 import GenerateButton from './components/GenerateButton';
 import GeminiGenerateButton from './components/GeminiGenerateButton';
@@ -70,6 +71,7 @@ const UnifiedNarrationSection = ({
     // Gemini-specific settings
     sleepTime, setSleepTime,
     selectedVoice, setSelectedVoice,
+    concurrentClients, setConcurrentClients,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio, setReferenceAudio,
@@ -128,6 +130,7 @@ const UnifiedNarrationSection = ({
     translatedLanguage,
     sleepTime,
     selectedVoice,
+    concurrentClients,
     t,
     setRetryingSubtitleId
   });
@@ -625,6 +628,13 @@ const UnifiedNarrationSection = ({
           <GeminiSleepTimeSlider
             sleepTime={sleepTime}
             setSleepTime={setSleepTime}
+            isGenerating={isGenerating}
+          />
+
+          {/* Concurrent Clients Slider for Gemini */}
+          <GeminiConcurrentClientsSlider
+            concurrentClients={concurrentClients}
+            setConcurrentClients={setConcurrentClients}
             isGenerating={isGenerating}
           />
 

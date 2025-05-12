@@ -22,6 +22,7 @@ import {
  * @param {Object} params.translatedLanguage - Translated language
  * @param {number} params.sleepTime - Sleep time between requests
  * @param {string} params.selectedVoice - Selected voice
+ * @param {number} params.concurrentClients - Number of concurrent WebSocket clients
  * @param {Function} params.t - Translation function
  * @param {Function} params.setRetryingSubtitleId - Function to set the ID of the subtitle being retried
  * @returns {Object} - Gemini narration handlers
@@ -40,6 +41,7 @@ const useGeminiNarration = ({
   translatedLanguage,
   sleepTime,
   selectedVoice,
+  concurrentClients,
   t,
   setRetryingSubtitleId
 }) => {
@@ -130,6 +132,9 @@ const useGeminiNarration = ({
 
       // Generate narration with Gemini
 
+
+      // Update the client pool size based on the concurrentClients setting
+      localStorage.setItem('gemini_concurrent_clients', concurrentClients.toString());
 
       const response = await generateGeminiNarrations(
         subtitlesWithIds,

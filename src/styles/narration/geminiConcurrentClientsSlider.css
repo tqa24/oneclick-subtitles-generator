@@ -1,0 +1,67 @@
+/* Gemini Concurrent Clients Slider Styles */
+
+/* The row styling is already handled by .narration-row in unifiedNarrationRedesign.css */
+
+/* Fix for disabled sliders in narration gemini concurrent clients row */
+.narration-row.gemini-concurrent-clients-row .slider-with-value .custom-slider-container.disabled {
+  position: relative;
+  overflow: hidden;
+  background: none;
+}
+
+/* Add a semi-transparent overlay to prevent ghost effect */
+.narration-row.gemini-concurrent-clients-row .slider-with-value .custom-slider-container.disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Ensure the input is completely hidden in disabled state */
+.narration-row.gemini-concurrent-clients-row .slider-with-value .custom-slider-container.disabled .custom-slider-input {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Ensure the thumb doesn't create ghost effect */
+.narration-row.gemini-concurrent-clients-row .slider-with-value .custom-slider-container.disabled .custom-slider-thumb {
+  box-shadow: none;
+}
+
+/* Additional fix for ghost duplicate effect */
+.narration-row.gemini-concurrent-clients-row .slider-with-value .custom-slider-container.disabled {
+  filter: grayscale(30%);
+}
+
+/* Ensure gemini concurrent clients slider doesn't have ghost effect */
+.gemini-concurrent-clients-slider {
+  z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .narration-row.gemini-concurrent-clients-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .narration-row.gemini-concurrent-clients-row .row-label {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    margin-bottom: 0.5rem;
+  }
+
+  .narration-row.gemini-concurrent-clients-row .row-content {
+    width: 100%;
+  }
+
+  .narration-row.gemini-concurrent-clients-row .slider-with-value {
+    width: 100%;
+  }
+}

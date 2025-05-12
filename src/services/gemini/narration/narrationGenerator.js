@@ -209,9 +209,10 @@ const processNarrationQueue = async (results, total, onProgress, onResult, onErr
   try {
     // Process narrations in batches to maintain concurrency
     while (narrationQueue.length > 0 && !isCancelled) {
-      // Get up to 5 tasks from the queue (or however many are left)
+      // Get up to the configured number of tasks from the queue (or however many are left)
       const tasksToProcess = [];
-      const batchSize = Math.min(5, narrationQueue.length);
+      const concurrentClients = parseInt(localStorage.getItem('gemini_concurrent_clients'), 10) || 5;
+      const batchSize = Math.min(concurrentClients, narrationQueue.length);
 
       console.log(`Processing batch of ${batchSize} narrations concurrently`);
 
