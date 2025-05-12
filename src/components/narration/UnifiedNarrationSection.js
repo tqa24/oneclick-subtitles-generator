@@ -223,10 +223,8 @@ const UnifiedNarrationSection = ({
           console.log("Progress update:", message);
           setGenerationStatus(message);
 
-          // If the message indicates completion, set isGenerating to false
-          if (message.includes('complete') || message.includes('cancelled')) {
-            setIsGenerating(false);
-          }
+          // We'll only set isGenerating to false in the onComplete callback
+          // This ensures the Cancel button stays visible until all narrations are complete
         },
         (result, progress, total) => {
           console.log(`Result received for subtitle ${result.subtitle_id}, progress: ${progress}/${total}`);

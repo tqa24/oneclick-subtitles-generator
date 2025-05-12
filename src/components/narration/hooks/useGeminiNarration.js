@@ -153,10 +153,8 @@ const useGeminiNarration = ({
           console.log("Progress update:", message);
           setGenerationStatus(message);
 
-          // If the message indicates completion, set isGenerating to false
-          if (message.includes('complete') || message.includes('cancelled')) {
-            setIsGenerating(false);
-          }
+          // We'll only set isGenerating to false in the onComplete callback
+          // This ensures the Cancel button stays visible until all narrations are complete
         },
         (result, progress, total) => {
           console.log(`Result received for subtitle ${result.subtitle_id}, progress: ${progress}/${total}`);
@@ -291,8 +289,20 @@ const useGeminiNarration = ({
       });
     });
 
-    // We don't set isGenerating to false here because the service will call the completion callback
-    // which will set isGenerating to false when it's done
+    // Explicitly set isGenerating to false to ensure the Cancel button disappears
+    // This is important because the completion callback might not be called if the WebSocket is closed
+    setTimeout(() => {
+      setIsGenerating(false);
+      setGenerationStatus(t('narration.geminiGenerationCancelled', 'Gemini narration generation cancelled'));
+
+      // Dispatch a custom event to notify other components
+      const event = new CustomEvent('gemini-narration-cancelled', {
+        detail: {
+          timestamp: Date.now()
+        }
+      });
+      window.dispatchEvent(event);
+    }, 500); // Short delay to allow the UI to update
   };
 
   // Retry Gemini narration generation for a specific subtitle
