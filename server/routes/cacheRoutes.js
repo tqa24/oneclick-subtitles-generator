@@ -146,21 +146,43 @@ router.get('/cache-info', (req, res) => {
 
     // Get narration output audio directory info
     if (fs.existsSync(OUTPUT_AUDIO_DIR)) {
-      const outputFiles = fs.readdirSync(OUTPUT_AUDIO_DIR);
-      outputFiles.forEach(file => {
-        const filePath = path.join(OUTPUT_AUDIO_DIR, file);
-        const stats = fs.statSync(filePath);
+      const outputItems = fs.readdirSync(OUTPUT_AUDIO_DIR);
+      outputItems.forEach(item => {
+        const itemPath = path.join(OUTPUT_AUDIO_DIR, item);
+        try {
+          const stats = fs.statSync(itemPath);
 
-        // Skip directories
-        if (stats.isDirectory()) {
+          if (stats.isDirectory()) {
+            // For directories (subtitle folders), calculate size and count files
+            const subtitleFiles = fs.readdirSync(itemPath);
+            let directorySize = 0;
 
-          return;
+            // Process each file in the subtitle directory
+            subtitleFiles.forEach(file => {
+              const filePath = path.join(itemPath, file);
+              try {
+                const fileStats = fs.statSync(filePath);
+                const fileSize = fileStats.size;
+                directorySize += fileSize;
+                details.narrationOutput.count++;
+                details.narrationOutput.files.push({ name: `${item}/${file}`, size: fileSize });
+              } catch (fileError) {
+                console.error(`Error processing file ${filePath}:`, fileError);
+              }
+            });
+
+            // Add directory size to total
+            details.narrationOutput.size += directorySize;
+          } else {
+            // For files in the root output directory (legacy files)
+            const fileSize = stats.size;
+            details.narrationOutput.count++;
+            details.narrationOutput.size += fileSize;
+            details.narrationOutput.files.push({ name: item, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing item ${itemPath}:`, error);
         }
-
-        const fileSize = stats.size;
-        details.narrationOutput.count++;
-        details.narrationOutput.size += fileSize;
-        details.narrationOutput.files.push({ name: file, size: fileSize });
       });
     }
 
@@ -396,26 +418,59 @@ router.delete('/clear-cache', (req, res) => {
 
     // Clear narration output audio directory
     if (fs.existsSync(OUTPUT_AUDIO_DIR)) {
-      const outputFiles = fs.readdirSync(OUTPUT_AUDIO_DIR);
-      outputFiles.forEach(file => {
-        const filePath = path.join(OUTPUT_AUDIO_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.narrationOutput.count++;
-        details.narrationOutput.size += fileSize;
-        details.narrationOutput.files.push({ name: file, size: fileSize });
-
+      const outputItems = fs.readdirSync(OUTPUT_AUDIO_DIR);
+      outputItems.forEach(item => {
+        const itemPath = path.join(OUTPUT_AUDIO_DIR, item);
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(itemPath);
+
+          if (stats.isDirectory()) {
+            // For directories (subtitle folders), calculate size and count files
+            const subtitleFiles = fs.readdirSync(itemPath);
+            let directorySize = 0;
+
+            // Process each file in the subtitle directory
+            subtitleFiles.forEach(file => {
+              const filePath = path.join(itemPath, file);
+              try {
+                const fileStats = fs.statSync(filePath);
+                const fileSize = fileStats.size;
+                directorySize += fileSize;
+                details.narrationOutput.count++;
+                details.narrationOutput.files.push({ name: `${item}/${file}`, size: fileSize });
+
+                // Delete the file
+                fs.unlinkSync(filePath);
+              } catch (fileError) {
+                console.error(`Error processing file ${filePath}:`, fileError);
+              }
+            });
+
+            // Add directory size to total
+            details.narrationOutput.size += directorySize;
+
+            // Remove the now-empty directory
+            try {
+              fs.rmdirSync(itemPath);
+              console.log(`Removed subtitle directory: ${itemPath}`);
+            } catch (rmError) {
+              console.error(`Error removing directory ${itemPath}:`, rmError);
+            }
+          } else {
+            // For files in the root output directory (legacy files)
+            const fileSize = stats.size;
+            details.narrationOutput.count++;
+            details.narrationOutput.size += fileSize;
+            details.narrationOutput.files.push({ name: item, size: fileSize });
+
+            try {
+              fs.unlinkSync(itemPath);
+            } catch (error) {
+              console.error(`Error deleting file ${itemPath}:`, error);
+            }
+          }
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing item ${itemPath}:`, error);
         }
       });
     }
