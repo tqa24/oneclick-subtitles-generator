@@ -191,6 +191,13 @@
   font-size: 0.9rem;
 }
 
+.error-details {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  color: var(--md-error-container);
+  font-style: italic;
+}
+
 /* Style for unprocessed subtitles */
 .gemini-result-item.unprocessed .gemini-error-message {
   color: var(--md-on-surface-variant);

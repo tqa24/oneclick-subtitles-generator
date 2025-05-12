@@ -606,9 +606,13 @@ export const generateNarration = async (
 
 /**
  * Get audio file URL
- * @param {string} filename - Audio filename
+ * @param {string} filename - Audio filename or path (can include subtitle directory)
  * @returns {string} - Audio file URL
  */
 export const getAudioUrl = (filename) => {
+  if (!filename) return '';
+
+  // Handle both legacy filenames and new directory structure
+  // The filename might already include the subtitle directory path
   return `${SERVER_URL}/api/narration/audio/${filename}`;
 };
