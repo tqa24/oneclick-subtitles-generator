@@ -145,44 +145,156 @@ const UnifiedNarrationSection = ({
       return;
     }
 
+    // Get the appropriate subtitles based on the selected source
+    const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
+      ? translatedSubtitles
+      : originalSubtitles || subtitles;
+
+    if (!selectedSubtitles || selectedSubtitles.length === 0) {
+      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
+      return;
+    }
+
+    // Filter the subtitles to only include those that failed
+    const subtitlesToRetry = selectedSubtitles.filter(subtitle => {
+      const subtitleId = subtitle.id || subtitle.index;
+      return failedNarrations.some(failedNarration =>
+        failedNarration.subtitle_id === subtitleId
+      );
+    });
+
+    if (subtitlesToRetry.length === 0) {
+      setError(t('narration.noFailedNarrationsError', 'Could not match failed narrations with subtitles'));
+      return;
+    }
+
     // Clear any previous errors
     setError('');
 
     // Set status for retrying failed narrations
-    setGenerationStatus(t('narration.retryingFailedNarrations', 'Retrying {{count}} failed narrations...', { count: failedNarrations.length }));
+    setGenerationStatus(t('narration.retryingFailedNarrations', 'Retrying {{count}} failed narrations...', { count: subtitlesToRetry.length }));
 
-    // Process each failed narration one by one
-    for (let i = 0; i < failedNarrations.length; i++) {
-      const failedNarration = failedNarrations[i];
-      const subtitleId = failedNarration.subtitle_id;
+    // Create a new array of generation results, keeping successful ones and marking failed ones as pending
+    const updatedResults = generationResults.map(result => {
+      if (!result.success) {
+        return {
+          ...result,
+          pending: true,
+          error: null
+        };
+      }
+      return result;
+    });
 
-      // Set retrying state
-      setRetryingSubtitleId(subtitleId);
+    // Update the generation results
+    setGenerationResults(updatedResults);
 
-      // Update status
-      setGenerationStatus(t('narration.retryingFailedNarrationProgress', 'Retrying failed narration {{current}} of {{total}} (ID: {{id}})...', {
-        current: i + 1,
-        total: failedNarrations.length,
-        id: subtitleId
+    // Use a modified version of the handleGeminiNarration function to process all failed narrations at once
+    try {
+      // Set isGenerating to true to show the Cancel button
+      setIsGenerating(true);
+      setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
+
+      // Get the language code for the selected subtitles
+      const detectedLanguageCode = subtitleSource === 'original'
+        ? (originalLanguage?.languageCode || 'en')
+        : (translatedLanguage?.languageCode || 'en');
+
+      // Import the necessary functions
+      const {
+        generateGeminiNarrations,
+        getGeminiLanguageCode
+      } = await import('../../services/gemini/geminiNarrationService');
+
+      // Convert to Gemini-compatible language code
+      const language = getGeminiLanguageCode(detectedLanguageCode);
+
+      // Prepare subtitles with IDs for tracking
+      const subtitlesWithIds = subtitlesToRetry.map((subtitle, index) => ({
+        ...subtitle,
+        id: subtitle.id || index + 1
       }));
 
-      try {
-        // Retry this specific narration
-        await retryGeminiNarration(subtitleId);
+      // Generate narration with Gemini
+      await generateGeminiNarrations(
+        subtitlesWithIds,
+        language,
+        (message) => {
+          console.log("Progress update:", message);
+          setGenerationStatus(message);
 
-        // Add a small delay between retries to avoid overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`Error retrying Gemini narration for subtitle ${subtitleId}:`, error);
-        // Continue with the next failed narration
-      }
+          // If the message indicates completion, set isGenerating to false
+          if (message.includes('complete') || message.includes('cancelled')) {
+            setIsGenerating(false);
+          }
+        },
+        (result, progress, total) => {
+          console.log(`Result received for subtitle ${result.subtitle_id}, progress: ${progress}/${total}`);
+
+          // Update the existing result in the array
+          setGenerationResults(prev => {
+            return prev.map(item =>
+              item.subtitle_id === result.subtitle_id ? { ...result, pending: false } : item
+            );
+          });
+
+          // Update the status
+          setGenerationStatus(
+            t(
+              'narration.geminiGeneratingProgress',
+              'Generated {{progress}} of {{total}} narrations with Gemini...',
+              {
+                progress,
+                total
+              }
+            )
+          );
+        },
+        (error) => {
+          console.error('Error in Gemini narration generation:', error);
+          setError(`${t('narration.geminiGenerationError', 'Error generating narration with Gemini')}: ${error.message || error}`);
+          setIsGenerating(false);
+        },
+        (results) => {
+          console.log("Retry generation complete, total results:", results.length);
+
+          // Update the generation results, marking any pending items as failed
+          setGenerationResults(prev => {
+            return prev.map(item => {
+              // If this item is in the results, use that result
+              const resultItem = results.find(r => r.subtitle_id === item.subtitle_id);
+              if (resultItem) {
+                return { ...resultItem, pending: false };
+              }
+
+              // If this item is still pending and was in the retry list, mark it as failed
+              if (item.pending && failedNarrations.some(f => f.subtitle_id === item.subtitle_id)) {
+                return {
+                  ...item,
+                  pending: false,
+                  success: false,
+                  error: 'Generation was interrupted'
+                };
+              }
+
+              // Otherwise, keep the item as is
+              return item;
+            });
+          });
+
+          setGenerationStatus(t('narration.retryingFailedNarrationsComplete', 'Completed retrying all failed narrations'));
+          setIsGenerating(false);
+        },
+        null, // Use default model
+        sleepTime, // Use the configured sleep time
+        selectedVoice, // Use the selected voice
+        concurrentClients // Use the configured concurrent clients
+      );
+    } catch (error) {
+      console.error('Error retrying failed narrations:', error);
+      setError(t('narration.retryError', 'Error retrying failed narrations'));
+      setIsGenerating(false);
     }
-
-    // Clear retrying state
-    setRetryingSubtitleId(null);
-
-    // Update status
-    setGenerationStatus(t('narration.retryingFailedNarrationsComplete', 'Completed retrying all failed narrations'));
   };
 
   // Use audio playback hook

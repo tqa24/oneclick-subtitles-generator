@@ -373,7 +373,21 @@ export const generateGeminiNarrations = async (
     }
 
     // Start processing the queue
-    processNarrationQueue(results, total, onProgress, onResult, onError, onComplete);
+    // Use setTimeout to ensure the UI updates before we start processing
+    setTimeout(() => {
+      processNarrationQueue(results, total, onProgress, onResult, onError, onComplete);
+    }, 0);
+
+    // Dispatch an event to notify that narration generation has started
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('gemini-narration-started', {
+        detail: {
+          timestamp: Date.now(),
+          total: subtitles.length
+        }
+      });
+      window.dispatchEvent(event);
+    }
 
     // Return immediately with a pending status
     return {

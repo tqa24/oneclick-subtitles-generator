@@ -20,6 +20,14 @@ import {
   cancelGeminiNarrations
 } from './narration/narrationGenerator';
 
+// Import client manager functions
+import {
+  initializeClientPool,
+  getNextAvailableClient,
+  markClientAsNotBusy,
+  disconnectAllClients
+} from './client/clientManager';
+
 // Import availability checker
 import { checkGeminiAvailability } from './availability/availabilityChecker';
 
@@ -40,6 +48,12 @@ export {
   generateGeminiNarration,
   generateGeminiNarrations,
   cancelGeminiNarrations,
+
+  // Client management
+  initializeClientPool,
+  getNextAvailableClient,
+  markClientAsNotBusy,
+  disconnectAllClients,
 
   // Availability checking
   checkGeminiAvailability

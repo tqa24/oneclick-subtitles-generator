@@ -45,8 +45,14 @@ const useGeminiNarration = ({
   t,
   setRetryingSubtitleId
 }) => {
-  // Listen for the gemini-narration-cancelled event
+  // Listen for the gemini-narration events (started and cancelled)
   useEffect(() => {
+    const handleNarrationStarted = (event) => {
+      console.log("Received gemini-narration-started event", event.detail);
+      setIsGenerating(true);
+      setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
+    };
+
     const handleNarrationCancelled = () => {
       console.log("Received gemini-narration-cancelled event");
       setIsGenerating(false);
@@ -68,11 +74,13 @@ const useGeminiNarration = ({
       });
     };
 
-    // Add event listener
+    // Add event listeners
+    window.addEventListener('gemini-narration-started', handleNarrationStarted);
     window.addEventListener('gemini-narration-cancelled', handleNarrationCancelled);
 
     // Clean up
     return () => {
+      window.removeEventListener('gemini-narration-started', handleNarrationStarted);
       window.removeEventListener('gemini-narration-cancelled', handleNarrationCancelled);
     };
   }, [t, setIsGenerating, setGenerationStatus, setGenerationResults]);
@@ -108,6 +116,8 @@ const useGeminiNarration = ({
 
 
 
+    // We'll set isGenerating to true here, but it will also be set by the event listener
+    // This ensures the UI updates immediately
     setIsGenerating(true);
     setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
     setError('');
@@ -339,16 +349,58 @@ const useGeminiNarration = ({
       };
 
       // Generate narration with Gemini for this single subtitle
+      // We'll use generateGeminiNarrations with a single subtitle to leverage the concurrent implementation
 
+      // Import the necessary functions
+      const {
+        generateGeminiNarrations
+      } = await import('../../../services/gemini/geminiNarrationService');
 
-      // Import the generateGeminiNarration function for a single subtitle
-      const { generateGeminiNarration } = await import('../../../services/gemini/geminiNarrationService');
+      // Create a promise to resolve when the narration is complete
+      let resolvePromise;
+      const completionPromise = new Promise(resolve => {
+        resolvePromise = resolve;
+      });
 
-      // Generate narration for the single subtitle
-      const result = await generateGeminiNarration(subtitleWithId, language, null, selectedVoice);
+      let result = null;
+
+      // Generate narration for the single subtitle using the concurrent implementation
+      generateGeminiNarrations(
+        [subtitleWithId], // Array with just one subtitle
+        language,
+        (message) => {
+          console.log("Single retry progress update:", message);
+          // No need to update UI here as the parent component is handling it
+        },
+        (singleResult, progress, total) => {
+          console.log(`Single retry result received for subtitle ${singleResult.subtitle_id}`);
+          // Save the result
+          result = singleResult;
+        },
+        (error) => {
+          console.error('Error in single retry Gemini narration generation:', error);
+          // Resolve the promise with an error
+          resolvePromise({ success: false, error: error.message });
+        },
+        (results) => {
+          console.log("Single retry complete, results:", results);
+          // Resolve the promise with the result
+          if (results && results.length > 0) {
+            resolvePromise(results[0]);
+          } else {
+            resolvePromise({ success: false, error: 'No result returned' });
+          }
+        },
+        null, // Use default model
+        0, // No sleep time for single retries
+        selectedVoice // Use the selected voice
+      );
+
+      // Wait for the narration to complete
+      result = await completionPromise;
 
       // If the result has audio data, save it to the server to get a filename
-      if (result.success && result.audioData) {
+      if (result && result.success && result.audioData) {
         try {
 
 
