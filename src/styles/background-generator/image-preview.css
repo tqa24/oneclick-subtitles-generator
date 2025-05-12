@@ -1,0 +1,139 @@
+/* Image preview and grid styles */
+.image-preview {
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-surface-2);
+  margin-bottom: 16px;
+  position: relative; /* For positioning the floating button */
+  box-shadow: var(--md-elevation-level2);
+  transition: all 0.2s ease;
+}
+
+.image-preview img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-placeholder,
+.loading-placeholder,
+.error-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary);
+  gap: 12px;
+}
+
+.loading-placeholder {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.error-placeholder {
+  color: var(--error-color);
+}
+
+.image-preview.loading {
+  border-color: var(--md-primary-container);
+  background-color: rgba(var(--md-primary-rgb), 0.05);
+}
+
+.preview-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Floating buttons for image preview */
+.image-preview .floating-download-button {
+  position: absolute;
+  top: 12px; /* Positioned at top */
+  right: 12px; /* Positioned at right */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background-color: var(--md-tertiary, #9c27b0);
+  color: var(--md-on-tertiary, white);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level2);
+  opacity: 0.9; /* Always visible */
+}
+
+/* Hover effects for image preview buttons */
+.image-preview .floating-download-button:hover {
+  opacity: 1 !important;
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level3);
+}
+
+/* Image grid styles */
+.image-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.image-grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.image-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.image-grid-3,
+.image-grid-4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.image-grid-5,
+.image-grid-6,
+.image-grid-7,
+.image-grid-8 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+.image-grid-item {
+  position: relative;
+}
+
+.image-grid-item .image-preview {
+  margin-bottom: 0;
+}
+
+.image-number {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: var(--md-elevation-level1);
+}

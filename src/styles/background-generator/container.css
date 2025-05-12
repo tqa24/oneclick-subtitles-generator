@@ -1,0 +1,56 @@
+/* Base container styles */
+.background-generator-container {
+  background-color: var(--md-surface-1);
+  border-radius: 24px;
+  box-shadow: var(--md-elevation-level3);
+  width: 100%;
+  max-width: 1200px;
+  margin: 20px auto 40px auto; /* Increased bottom margin */
+  overflow: hidden;
+  animation: fade-in 0.3s ease-out;
+  /* Font family inherited from global styles */
+  position: relative;
+  scroll-margin-top: 20px; /* For smooth scrolling */
+  transition: height var(--md-duration-medium4) var(--md-easing-emphasized);
+}
+
+/* Transition for container height */
+.background-generator-container {
+  transition: max-height var(--md-duration-medium4) var(--md-easing-emphasized);
+  max-height: 2000px; /* Large enough to contain all content when expanded */
+  will-change: max-height;
+}
+
+.background-generator-container.collapsed {
+  max-height: 128px; /* Small enough to show just the header and collapsed content */
+  transition: max-height var(--md-duration-medium4) var(--md-easing-emphasized);
+}
+
+.background-generator-collapsed-content {
+  background-color: var(--md-surface-1);
+  border-radius: 0 0 24px 24px;
+  animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
+  transform-origin: top center;
+}
+
+.background-generator-content {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  background-color: var(--md-surface-1);
+  animation: expandContent var(--md-duration-medium4) var(--md-easing-emphasized);
+  transform-origin: top center;
+  transition: opacity var(--md-duration-medium3) var(--md-easing-emphasized),
+              transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.helper-message {
+  padding: 16px;
+  border-radius: 16px;
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  margin: 0;
+  text-align: center;
+  animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
+}

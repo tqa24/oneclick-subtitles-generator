@@ -1,0 +1,67 @@
+/* Animation and utility styles */
+@keyframes expandContent {
+  from {
+    opacity: 0.7;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.loading-spinner {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+  position: relative;
+  top: -1px; /* Slight adjustment to align with text */
+}
+
+.loading-spinner.large {
+  width: 36px;
+  height: 36px;
+  border-width: 3px;
+  border: 3px solid rgba(var(--md-primary-rgb), 0.3);
+  border-top-color: var(--md-primary);
+  top: 0; /* Reset for large spinner */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: rgba(var(--error-color-rgb), 0.1);
+  border-radius: 16px;
+  color: var(--error-color);
+  margin-top: 16px;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.background-prompt-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  border-radius: 16px;
+  color: var(--primary-color);
+  margin-top: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.background-prompt-message:hover {
+  background-color: rgba(var(--md-primary-rgb), 0.15);
+}

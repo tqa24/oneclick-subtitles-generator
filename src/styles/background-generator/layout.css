@@ -1,0 +1,131 @@
+/* Layout and grid styles */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+  width: 100%;
+  transition: opacity var(--md-duration-medium3) var(--md-easing-emphasized),
+              transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+/* Grid for generated image */
+.media-content-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Single column for the image */
+  gap: 24px;
+  width: 100%;
+  transition: opacity var(--md-duration-medium3) var(--md-easing-emphasized),
+              transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+/* Special grid for top inputs - base styles, will be overridden by media queries */
+.top-inputs-grid {
+  display: grid;
+  grid-template-columns: 6fr 4fr 200px; /* 6:4 ratio for lyrics:prompt, plus 200px for album art */
+  gap: 24px;
+}
+
+/* Right side container for song name and prompt */
+.right-inputs-container {
+  grid-column: 2 / 3; /* Second column */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 0; /* No need to account for h3 height anymore */
+}
+
+/* Component containers with grid positioning */
+.lyrics-input-container {
+  grid-column: 1 / 2; /* First column */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-top: 0;
+}
+
+.song-name-input {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 0;
+  gap: 12px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.prompt-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.album-art-container {
+  grid-column: 3 / 4; /* Position in the third column of the grid */
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-section {
+  grid-column: 1 / -1; /* Take the full width of the grid */
+}
+
+.song-name-field-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.prompt-container {
+  display: flex;
+  height: calc(100% - 38px); /* Subtract the height of the header */
+}
+
+.image-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.prompt-header,
+.image-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  /* Font family inherited from global styles */
+}
+
+.prompt-header h3,
+.image-section-header h3 {
+  margin: 0;
+}
+
+.image-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.image-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.generate-button-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}

@@ -1,0 +1,81 @@
+/* Album art styles */
+.album-art-preview {
+  width: 200px;
+  height: 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-surface-2);
+  box-sizing: border-box;
+  margin: 0 auto;
+  position: relative; /* For positioning floating buttons */
+  min-height: 200px; /* Ensure minimum height */
+  max-height: 200px; /* Ensure maximum height */
+  box-shadow: var(--md-elevation-level2);
+  transition: all 0.2s ease;
+}
+
+.album-art-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary);
+  gap: 12px;
+}
+
+.upload-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Floating buttons for album art */
+.floating-upload-button,
+.floating-download-button {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-tertiary, #9c27b0);
+  color: var(--md-on-tertiary, white);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level2);
+  opacity: 0.9; /* Always visible */
+  z-index: 10;
+}
+
+.floating-upload-button {
+  bottom: 12px;
+  left: 12px;
+}
+
+.floating-download-button {
+  bottom: 12px;
+  right: 12px;
+}
+
+.floating-upload-button:hover,
+.floating-download-button:hover {
+  opacity: 1 !important;
+  transform: scale(1.1);
+  box-shadow: var(--md-elevation-level3);
+}
+
+/* Original album art actions - now hidden */
+.album-art-actions {
+  display: none;
+}

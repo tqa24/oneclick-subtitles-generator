@@ -1,0 +1,164 @@
+/* Media queries */
+@media (max-width: 768px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .top-inputs-grid {
+    grid-template-columns: 1fr; /* Single column on mobile */
+  }
+
+  .album-art-container {
+    grid-column: 1 / -1;
+    margin-top: 16px;
+  }
+
+  .lyrics-input-container,
+  .album-art-container,
+  .image-section {
+    grid-column: 1 / -1;
+  }
+
+  .right-inputs-container {
+    grid-column: 1 / -1;
+    gap: 12px;
+    padding-top: 0;
+    margin-top: 16px;
+  }
+
+  .lyrics-input-container {
+    padding-top: 0;
+  }
+
+  /* Keep song name input on one line even on mobile */
+  .song-name-input {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .song-name-input h3 {
+    width: auto;
+    margin-right: 8px;
+    font-size: 0.9rem;
+  }
+
+  .song-name-field-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .prompt-header,
+  .image-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .image-title-container {
+    width: 100%;
+    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .image-header-buttons {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .prompt-header .generate-button,
+  .image-section-header .generate-button {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .image-header-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .prompt-container {
+    flex-direction: column;
+  }
+
+  .image-actions {
+    flex-direction: column;
+  }
+
+  /* Always show floating buttons on mobile for better usability */
+  .floating-download-button,
+  .floating-upload-button,
+  .image-preview .floating-download-button {
+    opacity: 0.9;
+  }
+
+  /* Adjust image grid for mobile */
+  .image-grid-2,
+  .image-grid-3,
+  .image-grid-4,
+  .image-grid-5,
+  .image-grid-6,
+  .image-grid-7,
+  .image-grid-8 {
+    grid-template-columns: 1fr;
+  }
+
+  .generate-button-group {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .dropdown-label {
+    font-size: 12px;
+  }
+}
+
+/* Medium-sized screens (tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .top-inputs-grid {
+    grid-template-columns: 6fr 4fr 200px; /* Maintain 6:4 ratio on tablets */
+  }
+
+  .album-art-container {
+    grid-column: 3 / 4;
+  }
+
+  .lyrics-input-container {
+    grid-column: 1 / 2;
+  }
+
+  .right-inputs-container {
+    grid-column: 2 / 3;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1025px) {
+  .top-inputs-grid {
+    grid-template-columns: 6fr 4fr 200px; /* Maintain 6:4 ratio on large screens */
+  }
+
+  .album-art-container {
+    grid-column: 3 / 4;
+  }
+
+  .lyrics-input-container {
+    grid-column: 1 / 2;
+  }
+
+  .right-inputs-container {
+    grid-column: 2 / 3;
+  }
+}
