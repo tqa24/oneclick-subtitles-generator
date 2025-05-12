@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { SERVER_URL } from '../../../config';
 import {
   generateGeminiNarrations,
@@ -42,6 +43,37 @@ const useGeminiNarration = ({
   t,
   setRetryingSubtitleId
 }) => {
+  // Listen for the gemini-narration-cancelled event
+  useEffect(() => {
+    const handleNarrationCancelled = () => {
+      console.log("Received gemini-narration-cancelled event");
+      setIsGenerating(false);
+      setGenerationStatus(t('narration.geminiGenerationCancelled', 'Gemini narration generation cancelled'));
+
+      // Mark any pending narrations as cancelled
+      setGenerationResults(prev => {
+        return prev.map(item => {
+          if (item.pending) {
+            return {
+              ...item,
+              pending: false,
+              success: false,
+              error: 'Generation was cancelled'
+            };
+          }
+          return item;
+        });
+      });
+    };
+
+    // Add event listener
+    window.addEventListener('gemini-narration-cancelled', handleNarrationCancelled);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('gemini-narration-cancelled', handleNarrationCancelled);
+    };
+  }, [t, setIsGenerating, setGenerationStatus, setGenerationResults]);
   // Handle Gemini narration generation
   const handleGeminiNarration = async () => {
     if (!subtitleSource) {
@@ -102,8 +134,18 @@ const useGeminiNarration = ({
       const response = await generateGeminiNarrations(
         subtitlesWithIds,
         language,
-        (message) => setGenerationStatus(message),
+        (message) => {
+          console.log("Progress update:", message);
+          setGenerationStatus(message);
+
+          // If the message indicates completion, set isGenerating to false
+          if (message.includes('complete') || message.includes('cancelled')) {
+            setIsGenerating(false);
+          }
+        },
         (result, progress, total) => {
+          console.log(`Result received for subtitle ${result.subtitle_id}, progress: ${progress}/${total}`);
+
           // Update the existing result in the array
           setGenerationResults(prev => {
             return prev.map(item =>
@@ -126,8 +168,11 @@ const useGeminiNarration = ({
         (error) => {
           console.error('Error in Gemini narration generation:', error);
           setError(`${t('narration.geminiGenerationError', 'Error generating narration with Gemini')}: ${error.message || error}`);
+          setIsGenerating(false);
         },
         (results) => {
+          console.log("Generation complete, total results:", results.length);
+
           // Update the generation results, marking any pending items as failed
           setGenerationResults(prev => {
             return prev.map(item => {
@@ -173,36 +218,63 @@ const useGeminiNarration = ({
           } else {
             setGenerationStatus(t('narration.geminiGenerationComplete', 'Gemini narration generation complete'));
           }
+
+          // Ensure isGenerating is set to false when complete
+          setIsGenerating(false);
         },
         null, // Use default model
         sleepTime, // Use the configured sleep time
         selectedVoice // Use the selected voice
       );
 
-      // If the response indicates an incomplete generation, set an error
-      if (response && response.incomplete) {
+      // Handle the pending response from our concurrent implementation
+      if (response && response.pending) {
+        console.log("Narration generation started in background mode");
+        // Keep isGenerating true since the generation is happening in the background
+        // The callbacks will handle setting isGenerating to false when complete
+      } else if (response && response.incomplete) {
         setError(
           t(
             'narration.geminiConnectionError',
             'Connection to Gemini was interrupted. You can retry the failed narrations individually.'
           )
         );
+        setIsGenerating(false);
       }
     } catch (error) {
       console.error('Error generating Gemini narration:', error);
       setError(t('narration.geminiGenerationError', 'Error generating narration with Gemini'));
-    } finally {
       setIsGenerating(false);
     }
+    // Note: We don't set isGenerating to false in the finally block anymore
+    // because our concurrent implementation will set it to false when all narrations are complete
+    // through the callbacks
   };
 
   // Cancel Gemini narration generation
   const cancelGeminiGeneration = () => {
+    console.log("Cancelling Gemini narration generation");
+
     // Call the cancel function from the service
     cancelGeminiNarrations();
 
     // Update UI
     setGenerationStatus(t('narration.geminiGenerationCancelling', 'Cancelling Gemini narration generation...'));
+
+    // Mark any pending narrations as cancelled
+    setGenerationResults(prev => {
+      return prev.map(item => {
+        if (item.pending) {
+          return {
+            ...item,
+            pending: false,
+            success: false,
+            error: 'Generation was cancelled'
+          };
+        }
+        return item;
+      });
+    });
 
     // We don't set isGenerating to false here because the service will call the completion callback
     // which will set isGenerating to false when it's done

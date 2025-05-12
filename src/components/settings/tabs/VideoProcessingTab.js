@@ -67,44 +67,7 @@ const VideoProcessingTab = ({
           </div>
         </div>
 
-        {/* AI Model Card */}
-        <div className="settings-card ai-model-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <ModelIcon />
-            </div>
-            <h4>{t('settings.modelSettings', 'AI Model')}</h4>
-          </div>
-          <div className="settings-card-content">
-            <div className="compact-setting">
-              <label htmlFor="gemini-model">
-                {t('settings.geminiModel', 'Gemini Model')}
-              </label>
-              <p className="setting-description">
-                {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
-              </p>
-              <select
-                id="gemini-model"
-                value={geminiModel}
-                onChange={(e) => setGeminiModel(e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="gemini-2.5-pro-exp-03-25">
-                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Best accuracy, slowest, easily overloaded)')}
-                </option>
-                <option value="gemini-2.5-flash-preview-04-17">
-                  {t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)')}
-                </option>
-                <option value="gemini-2.0-flash">
-                  {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
-                </option>
-                <option value="gemini-2.0-flash-lite">
-                  {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - for testing only)')}
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
+
 
         {/* Video Analysis Card */}
         <div className="settings-card analysis-card">

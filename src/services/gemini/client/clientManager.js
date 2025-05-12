@@ -5,19 +5,295 @@
 import { GeminiWebSocketClient } from './GeminiWebSocketClient';
 import { findSuitableAudioModel } from '../models/modelSelector';
 
-// Cache for WebSocket clients to avoid creating multiple connections
-const clientCache = {
-  client: null,
+// Default number of concurrent WebSocket clients
+const DEFAULT_CONCURRENT_CLIENTS = 5;
+
+// Get the configured number of concurrent clients
+const getConcurrentClientsCount = () => {
+  const configuredCount = parseInt(localStorage.getItem('gemini_concurrent_clients'), 10);
+  return !isNaN(configuredCount) ? configuredCount : DEFAULT_CONCURRENT_CLIENTS;
+};
+
+// Client pool for managing multiple WebSocket connections
+const clientPool = {
+  clients: [],
   apiKey: null,
-  connected: false,
-  connecting: false,
-  setupComplete: false,
+  modelName: null,
   voiceName: null,
-  languageCode: null
+  languageCode: null,
+  initialized: false,
+  initializing: false
 };
 
 /**
- * Get or create a WebSocket client
+ * Initialize the client pool with multiple WebSocket clients
+ * @param {string} apiKey - Gemini API key
+ * @param {string} modelName - Model name to use
+ * @param {string} voiceName - Voice name to use
+ * @param {string} languageCode - Language code for speech synthesis
+ * @returns {Promise<boolean>} - Whether initialization was successful
+ */
+export const initializeClientPool = async (apiKey, modelName, voiceName, languageCode) => {
+  // If already initialized with the same parameters, return immediately
+  if (clientPool.initialized &&
+      clientPool.apiKey === apiKey &&
+      clientPool.modelName === modelName &&
+      clientPool.voiceName === voiceName &&
+      clientPool.languageCode === languageCode) {
+    return true;
+  }
+
+  // If already initializing, wait for it to complete
+  if (clientPool.initializing) {
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (clientPool.initialized) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (!clientPool.initializing) {
+          clearInterval(checkInterval);
+          reject(new Error('Client pool initialization failed'));
+        }
+      }, 100);
+    });
+  }
+
+  try {
+    clientPool.initializing = true;
+
+    // Close any existing clients
+    await disconnectAllClients();
+
+    // Reset the client pool
+    clientPool.clients = [];
+    clientPool.apiKey = apiKey;
+    clientPool.modelName = modelName;
+    clientPool.voiceName = voiceName;
+    clientPool.languageCode = languageCode;
+
+    // Create the specified number of clients
+    const concurrentClients = getConcurrentClientsCount();
+    console.log(`Initializing pool with ${concurrentClients} WebSocket clients`);
+
+    // Create all clients in parallel
+    const clientPromises = [];
+    for (let i = 0; i < concurrentClients; i++) {
+      clientPromises.push(createClient(apiKey, modelName, voiceName, languageCode, i));
+    }
+
+    // Wait for all clients to be created
+    const results = await Promise.allSettled(clientPromises);
+
+    // Filter out any failed clients
+    const successfulClients = results
+      .filter(result => result.status === 'fulfilled')
+      .map(result => result.value);
+
+    if (successfulClients.length === 0) {
+      throw new Error('Failed to create any WebSocket clients');
+    }
+
+    // Log how many clients were successfully created
+    console.log(`Successfully created ${successfulClients.length} of ${concurrentClients} WebSocket clients`);
+
+    clientPool.clients = successfulClients;
+    clientPool.initialized = true;
+    clientPool.initializing = false;
+
+    return true;
+  } catch (error) {
+    console.error('Error initializing client pool:', error);
+    clientPool.initializing = false;
+    clientPool.initialized = false;
+    throw error;
+  }
+};
+
+/**
+ * Create a single WebSocket client
+ * @param {string} apiKey - Gemini API key
+ * @param {string} modelName - Model name to use
+ * @param {string} voiceName - Voice name to use
+ * @param {string} languageCode - Language code for speech synthesis
+ * @param {number} index - Client index for identification
+ * @returns {Promise<Object>} - Client object with client instance and status
+ */
+const createClient = async (apiKey, modelName, voiceName, languageCode, index) => {
+  const client = new GeminiWebSocketClient(apiKey);
+
+  // Create the client object
+  const clientObj = {
+    client,
+    index,
+    busy: false,
+    connected: false,
+    setupComplete: false,
+    lastUsed: 0
+  };
+
+  // Set up event listeners
+  client.on('setupcomplete', () => {
+    clientObj.setupComplete = true;
+    console.log(`WebSocket client ${index} setup complete`);
+  });
+
+  client.on('close', (event) => {
+    clientObj.connected = false;
+    clientObj.setupComplete = false;
+    console.log(`WebSocket client ${index} closed`);
+  });
+
+  // Connect to the WebSocket API
+  try {
+    // Use the same configuration format as in the live-api-web-console
+    const config = {
+      model: modelName,
+      generationConfig: {
+        temperature: 0.2,
+        topK: 32,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+        responseModalities: "audio",
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: voiceName
+            }
+          },
+          languageCode: languageCode
+        }
+      },
+      systemInstruction: {
+        parts: [
+          { text: "You are a narrator. When asked to read a text, YOU MUST ONLY READ IT OUT LOUD AND DO NOT ASK BACK ANY QUESTIONS." }
+        ]
+      }
+    };
+
+    await client.connect(config);
+    clientObj.connected = true;
+
+    // Wait for setup to complete
+    if (!clientObj.setupComplete) {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error(`Setup completion timeout for client ${index}`));
+        }, 10000); // 10 second timeout
+
+        client.once('setupcomplete', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+
+        // Also listen for close events during setup
+        const closeHandler = (event) => {
+          clearTimeout(timeout);
+          reject(new Error(`Connection closed during setup for client ${index}: ${event?.reason || 'No reason provided'}`));
+        };
+
+        client.once('close', closeHandler);
+
+        // Remove the close handler once setup is complete
+        client.once('setupcomplete', () => {
+          client.removeListener('close', closeHandler);
+        });
+      });
+    }
+
+    return clientObj;
+  } catch (error) {
+    console.error(`Error creating WebSocket client ${index}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Disconnect all WebSocket clients in the pool
+ */
+export const disconnectAllClients = async () => {
+  if (clientPool.clients.length > 0) {
+    console.log(`Disconnecting ${clientPool.clients.length} WebSocket clients`);
+
+    for (const clientObj of clientPool.clients) {
+      try {
+        if (clientObj.client && clientObj.connected) {
+          clientObj.client.disconnect();
+        }
+      } catch (error) {
+        console.error(`Error disconnecting client ${clientObj.index}:`, error);
+      }
+    }
+
+    clientPool.clients = [];
+    clientPool.initialized = false;
+  }
+};
+
+/**
+ * Get the next available WebSocket client from the pool
+ * @param {number} maxRetries - Maximum number of retries (default: 5)
+ * @param {number} retryDelayMs - Delay between retries in milliseconds (default: 100)
+ * @returns {Promise<Object>} - Client object with client instance and status
+ */
+export const getNextAvailableClient = async (maxRetries = 5, retryDelayMs = 100) => {
+  if (!clientPool.initialized) {
+    throw new Error('Client pool not initialized. Call initializeClientPool first.');
+  }
+
+  let retries = 0;
+
+  while (retries <= maxRetries) {
+    // First, try to find a non-busy client
+    let availableClient = clientPool.clients.find(c => !c.busy && c.connected && c.setupComplete);
+
+    // If no non-busy client is found, get the least recently used client
+    if (!availableClient) {
+      // Sort by last used timestamp (ascending)
+      const sortedClients = [...clientPool.clients]
+        .filter(c => c.connected && c.setupComplete)
+        .sort((a, b) => a.lastUsed - b.lastUsed);
+
+      // Find the first client that's not busy, or the least recently used client if all are busy
+      availableClient = sortedClients.find(c => !c.busy) || (sortedClients.length > 0 ? sortedClients[0] : null);
+    }
+
+    // If we found an available client
+    if (availableClient) {
+      // Mark the client as busy and update last used timestamp
+      availableClient.busy = true;
+      availableClient.lastUsed = Date.now();
+
+      console.log(`Assigned client ${availableClient.index} (retry attempt: ${retries})`);
+      return availableClient;
+    }
+
+    // If we've reached the maximum number of retries, throw an error
+    if (retries === maxRetries) {
+      throw new Error(`No available WebSocket clients in the pool after ${maxRetries} retry attempts`);
+    }
+
+    // Wait before trying again
+    console.log(`No available clients, retrying in ${retryDelayMs}ms (attempt ${retries + 1}/${maxRetries})`);
+    await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+    retries++;
+  }
+
+  // This should never be reached due to the throw in the loop, but just in case
+  throw new Error('No available WebSocket clients in the pool');
+};
+
+/**
+ * Mark a client as no longer busy
+ * @param {Object} clientObj - Client object to mark as not busy
+ */
+export const markClientAsNotBusy = (clientObj) => {
+  if (clientObj && clientPool.clients.includes(clientObj)) {
+    clientObj.busy = false;
+  }
+};
+
+/**
+ * Get or create a WebSocket client (legacy method for backward compatibility)
  * @param {string} apiKey - Gemini API key
  * @param {string} modelName - Optional model name to use
  * @param {string} voiceName - Optional voice name to use
@@ -35,122 +311,19 @@ export const getWebSocketClient = async (apiKey, modelName = null, voiceName = n
     languageCode = 'en-US';
   }
 
-  // If we already have a connected client with the same API key, voice, and language, return it
-  if (clientCache.client &&
-      clientCache.apiKey === apiKey &&
-      clientCache.connected &&
-      clientCache.voiceName === voiceName &&
-      clientCache.languageCode === languageCode) {
-    return clientCache.client;
-  }
-
-  // If we're in the process of connecting, wait for it to complete
-  if (clientCache.connecting) {
-    return new Promise((resolve, reject) => {
-      const checkInterval = setInterval(() => {
-        if (clientCache.connected && clientCache.setupComplete) {
-          clearInterval(checkInterval);
-          resolve(clientCache.client);
-        } else if (!clientCache.connecting) {
-          clearInterval(checkInterval);
-          reject(new Error('Connection failed'));
-        }
-      }, 100);
-    });
-  }
-
   // Find a suitable model if not provided
   if (!modelName) {
-
     modelName = await findSuitableAudioModel(apiKey);
-
   }
 
-  // Create a new client
-  clientCache.connecting = true;
-  clientCache.apiKey = apiKey;
-  clientCache.voiceName = voiceName; // Store the voice name
-  clientCache.languageCode = languageCode; // Store the language code
-  clientCache.client = new GeminiWebSocketClient(apiKey);
-
-  // Set up event listeners
-  clientCache.client.on('setupcomplete', () => {
-
-    clientCache.setupComplete = true;
-  });
-
-  clientCache.client.on('close', (event) => {
-
-    clientCache.connected = false;
-    clientCache.setupComplete = false;
-  });
-
-  // Connect to the WebSocket API
-  try {
-    // Use the same configuration format as in the live-api-web-console
-    const config = {
-      model: modelName,
-      generationConfig: {
-        temperature: 0.2,
-        topK: 32,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-        responseModalities: "audio",
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: voiceName // Use the selected voice
-            }
-          },
-          languageCode: languageCode // Set the language code for speech synthesis
-        }
-      },
-      systemInstruction: {
-        parts: [
-          { text: "You are a narrator. When asked to read a text, YOU MUST ONLY READ IT OUT LOUD AND DO NOT ASK BACK ANY QUESTIONS." }
-        ]
-      }
-    };
-
-
-
-
-    await clientCache.client.connect(config);
-    clientCache.connected = true;
-    clientCache.connecting = false;
-
-    // Wait for setup to complete
-    if (!clientCache.setupComplete) {
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Setup completion timeout'));
-        }, 10000); // 10 second timeout
-
-        clientCache.client.once('setupcomplete', () => {
-          clearTimeout(timeout);
-          resolve();
-        });
-
-        // Also listen for close events during setup
-        const closeHandler = (event) => {
-          clearTimeout(timeout);
-          reject(new Error(`Connection closed during setup: ${event?.reason || 'No reason provided'}`));
-        };
-
-        clientCache.client.once('close', closeHandler);
-
-        // Remove the close handler once setup is complete
-        clientCache.client.once('setupcomplete', () => {
-          clientCache.client.removeListener('close', closeHandler);
-        });
-      });
-    }
-
-    return clientCache.client;
-  } catch (error) {
-    clientCache.connecting = false;
-    clientCache.connected = false;
-    clientCache.setupComplete = false;
-    throw error;
+  // Initialize the client pool if needed
+  if (!clientPool.initialized) {
+    await initializeClientPool(apiKey, modelName, voiceName, languageCode);
   }
+
+  // Get the next available client
+  const clientObj = await getNextAvailableClient();
+
+  // Return just the client instance for backward compatibility
+  return clientObj.client;
 };
