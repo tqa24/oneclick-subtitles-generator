@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 import '../../styles/translation/languageChain.css';
 
 /**
@@ -60,19 +61,19 @@ const LanguageChain = ({
     { id: 'closeAngle', value: '>', label: '>' }
   ];
 
-  // Close delimiter dropdown when clicking outside
+  // Add ESC key handler to close the modal
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (chainRef.current && !chainRef.current.contains(event.target)) {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && activeDelimiter !== null) {
         setActiveDelimiter(null);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscKey);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
     };
-  }, []);
+  }, [activeDelimiter]);
 
   // Handle drag start
   const handleDragStart = (e, index) => {
@@ -125,9 +126,17 @@ const LanguageChain = ({
   };
 
   // Toggle delimiter dropdown
-  const toggleDelimiterDropdown = (id) => {
+  const toggleDelimiterDropdown = (id, event) => {
     if (disabled) return;
-    setActiveDelimiter(activeDelimiter === id ? null : id);
+
+    // If we're closing the dropdown
+    if (activeDelimiter === id) {
+      setActiveDelimiter(null);
+      return;
+    }
+
+    // If we're opening the dropdown, set the active delimiter
+    setActiveDelimiter(id);
   };
 
   // Handle delimiter selection
@@ -224,7 +233,7 @@ const LanguageChain = ({
               <>
                 <div
                   className={`delimiter-display ${activeDelimiter === item.id ? 'active' : ''}`}
-                  onClick={() => toggleDelimiterDropdown(item.id)}
+                  onClick={(e) => toggleDelimiterDropdown(item.id, e)}
                 >
                   {getDelimiterDisplay(item)}
                 </div>
@@ -244,40 +253,44 @@ const LanguageChain = ({
                   </svg>
                 </button>
 
-                {activeDelimiter === item.id && (
-                  <div className="delimiter-dropdown">
-                    {delimiters.map(delimiterOption => (
-                      <button
-                        type="button"
-                        key={delimiterOption.id}
-                        className={`delimiter-option ${item.value === delimiterOption.value ? 'active' : ''}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleDelimiterSelect(item, delimiterOption);
-                        }}
-                        title={t(`translation.delimiter${delimiterOption.id.charAt(0).toUpperCase() + delimiterOption.id.slice(1)}`, delimiterOption.label)}
-                      >
-                        {delimiterOption.label}
-                      </button>
-                    ))}
-
-                    {/* Custom delimiter input */}
-                    <div className="delimiter-custom-input">
-                      <input
-                        type="text"
-                        value={item.value}
-                        onChange={(e) => handleCustomDelimiterChange(item, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                {/* Render the modal using createPortal to ensure it's at the root level */}
+                {activeDelimiter === item.id && createPortal(
+                  <div className="delimiter-modal-overlay" onClick={() => setActiveDelimiter(null)}>
+                    <div className="delimiter-dropdown" onClick={(e) => e.stopPropagation()}>
+                      {delimiters.map(delimiterOption => (
+                        <button
+                          type="button"
+                          key={delimiterOption.id}
+                          className={`delimiter-option ${item.value === delimiterOption.value ? 'active' : ''}`}
+                          onClick={(e) => {
                             e.preventDefault();
-                          }
-                        }}
-                        placeholder={t('translation.customDelimiterPlaceholder', 'Enter custom delimiter')}
-                        disabled={disabled}
-                        maxLength={10}
-                      />
+                            handleDelimiterSelect(item, delimiterOption);
+                          }}
+                          title={t(`translation.delimiter${delimiterOption.id.charAt(0).toUpperCase() + delimiterOption.id.slice(1)}`, delimiterOption.label)}
+                        >
+                          {delimiterOption.label}
+                        </button>
+                      ))}
+
+                      {/* Custom delimiter input */}
+                      <div className="delimiter-custom-input">
+                        <input
+                          type="text"
+                          value={item.value}
+                          onChange={(e) => handleCustomDelimiterChange(item, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                            }
+                          }}
+                          placeholder={t('translation.customDelimiterPlaceholder', 'Enter custom delimiter')}
+                          disabled={disabled}
+                          maxLength={10}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </>
             )}

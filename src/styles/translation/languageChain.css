@@ -36,6 +36,15 @@
   animation-fill-mode: both;
 }
 
+/* Increase z-index when hovered or active to ensure proper stacking */
+.chain-item:hover,
+.chain-item:focus-within {
+  z-index: 9000;
+  position: relative; /* Ensure z-index works properly */
+}
+
+/* No additional z-index rules needed with modal approach */
+
 /* Staggered animations for chain items */
 .chain-item:nth-child(1) { animation-delay: 100ms; }
 .chain-item:nth-child(2) { animation-delay: 150ms; }
@@ -61,6 +70,7 @@
   min-width: 80px;
   max-width: 120px;
   padding: 0.5rem 0.75rem;
+  z-index: 1; /* Lower z-index than delimiter dropdown */
 }
 
 .language-item.original {
@@ -133,24 +143,52 @@
   background-color: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
   border-color: var(--md-secondary);
-  z-index: 15; /* Increased z-index when active to ensure proper stacking */
 }
 
+/* Modal overlay for delimiter dropdown */
+.delimiter-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 9999999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 100px; /* Position from top */
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* New delimiter dropdown as a modal */
 .delimiter-dropdown {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative; /* Changed from fixed to relative */
   background-color: var(--md-surface-3);
-  border-radius: 8px;
+  border-radius: 24px;
   box-shadow: var(--md-elevation-level3);
-  padding: 0.5rem;
-  z-index: 20; /* Increased z-index to ensure it stays on top */
+  padding: 0.75rem;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 0.5rem;
-  min-width: 250px;
+  min-width: 280px;
   border: 1px solid var(--md-outline-variant);
+  pointer-events: auto; /* Ensure clicks are captured */
+  animation: scaleIn 0.2s ease-out; /* Add a scale-in animation */
+  backdrop-filter: blur(3px); /* Add a slight blur effect to the background */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); /* Enhanced shadow for better visibility */
+}
+
+/* Scale in animation for modal content */
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .delimiter-option {
