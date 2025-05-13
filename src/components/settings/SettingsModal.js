@@ -15,10 +15,9 @@ import PromptsTab from './tabs/PromptsTab';
 import CacheTab from './tabs/CacheTab';
 import AboutTab from './tabs/AboutTab';
 import ModelManagementTab from './ModelManagementTab';
-import GeminiSettingsTab from './tabs/GeminiSettingsTab';
 
 // Import icons
-import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon, GeminiIcon } from './icons/TabIcons';
+import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
 
 // Import theme utilities
 import { toggleTheme as toggleThemeUtil, getThemeIcon, getThemeLabel, initializeTheme, setupSystemThemeListener } from './utils/themeUtils';
@@ -29,7 +28,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(() => {
     // Load last active tab from localStorage or default to 'api-keys'
-    return localStorage.getItem('settings_last_active_tab') || 'api-keys';
+    const savedTab = localStorage.getItem('settings_last_active_tab');
+    // If the saved tab is 'gemini-settings', redirect to 'api-keys' since we removed that tab
+    return (savedTab === 'gemini-settings') ? 'api-keys' : (savedTab || 'api-keys');
   });
 
   // Reference to the tabs container
@@ -81,7 +82,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
       // Determine animation direction based on tab order
       if (previousTab) {
-        const tabOrder = ['api-keys', 'video-processing', 'prompts', 'cache', 'model-management', 'gemini-settings', 'about'];
+        const tabOrder = ['api-keys', 'video-processing', 'prompts', 'cache', 'model-management', 'about'];
         const prevIndex = tabOrder.indexOf(previousTab);
         const currentIndex = tabOrder.indexOf(activeTab);
 
@@ -503,13 +504,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               {t('settings.modelManagement', 'Narration Models')}
             </button>
             <button
-              className={`settings-tab ${activeTab === 'gemini-settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('gemini-settings')}
-            >
-              <GeminiIcon />
-              {t('settings.geminiSettings', 'Gemini Settings')}
-            </button>
-            <button
               className={`settings-tab ${activeTab === 'about' ? 'active' : ''}`}
               onClick={() => {
                 // Select a random background when clicking on the About tab
@@ -657,14 +651,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           {/* Model Management Tab Content */}
           <div key={`settings-tab-model-management-${activeTab}`} className={`settings-tab-content ${activeTab === 'model-management' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <ModelManagementTab />
-          </div>
-
-          {/* Gemini Settings Tab Content */}
-          <div key={`settings-tab-gemini-settings-${activeTab}`} className={`settings-tab-content ${activeTab === 'gemini-settings' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
-            <GeminiSettingsTab
-              geminiModel={geminiModel}
-              setGeminiModel={setGeminiModel}
-            />
           </div>
 
           {/* About Tab Content */}
