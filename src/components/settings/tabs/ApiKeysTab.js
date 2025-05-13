@@ -207,8 +207,8 @@ const ApiKeysTab = ({
     <div className="settings-section api-key-section">
       {/* Grid layout for API keys */}
       <div className="api-keys-grid">
-        {/* Gemini API Keys - First column */}
-        <div className="api-key-input">
+        {/* Gemini API Keys - Left column (spans two rows) */}
+        <div className="api-key-input gemini-column">
           <label htmlFor="gemini-api-keys">
             {t('settings.geminiApiKeys', 'Gemini API Keys')}
             <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
@@ -225,7 +225,7 @@ const ApiKeysTab = ({
                 {geminiApiKeys.map((key, index) => (
                   <div
                     key={`gemini-key-${index}`}
-                    className={`gemini-key-item ${index === activeKeyIndex ? 'active' : ''}`}
+                    className={`gemini-key-item ${index === activeKeyIndex ? 'active' : ''} ${geminiApiKeys.length === 1 ? 'single-key' : ''}`}
                   >
                     <div className="gemini-key-content">
                       {visibleKeyIndices[index] ? (
@@ -399,7 +399,7 @@ const ApiKeysTab = ({
           </div>
         </div>
 
-        {/* Genius API Key - Second column */}
+        {/* Genius API Key - Right column, first row */}
         <div className="api-key-input">
           <label htmlFor="genius-api-key">
             {t('settings.geniusApiKey', 'Genius API Key')}
@@ -476,7 +476,7 @@ const ApiKeysTab = ({
           </div>
         </div>
 
-        {/* YouTube API Key - Full width on second row */}
+        {/* YouTube API Key - Right column, second row */}
         <div className="api-key-input full-width">
           <div className="auth-method-toggle">
             <label className="auth-method-label">{t('settings.youtubeAuthMethod', 'YouTube Authentication Method')}</label>
