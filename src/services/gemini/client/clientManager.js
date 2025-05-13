@@ -4,6 +4,7 @@
 
 import { GeminiWebSocketClient } from './GeminiWebSocketClient';
 import { findSuitableAudioModel } from '../models/modelSelector';
+import { getNextAvailableKey, blacklistKey } from '../keyManager';
 
 // Default number of concurrent WebSocket clients
 const DEFAULT_CONCURRENT_CLIENTS = 5;
@@ -33,13 +34,21 @@ const clientPool = {
 
 /**
  * Initialize the client pool with multiple WebSocket clients
- * @param {string} apiKey - Gemini API key
+ * @param {string} apiKey - Gemini API key (optional, will use key manager if not provided)
  * @param {string} modelName - Model name to use
  * @param {string} voiceName - Voice name to use
  * @param {string} languageCode - Language code for speech synthesis
  * @returns {Promise<boolean>} - Whether initialization was successful
  */
 export const initializeClientPool = async (apiKey, modelName, voiceName, languageCode) => {
+  // Get API key from key manager if not provided
+  if (!apiKey) {
+    apiKey = getNextAvailableKey();
+    if (!apiKey) {
+      throw new Error('No valid Gemini API key available. Please add at least one API key in Settings.');
+    }
+  }
+
   // If already initialized with the same parameters, return immediately
   if (clientPool.initialized &&
       clientPool.apiKey === apiKey &&
@@ -209,6 +218,19 @@ const createClient = async (apiKey, modelName, voiceName, languageCode, index) =
     return clientObj;
   } catch (error) {
     console.error(`Error creating WebSocket client ${index}:`, error);
+
+    // Blacklist the API key if there's a connection error
+    if (error.message && (
+      error.message.includes('Could not connect') ||
+      error.message.includes('403') ||
+      error.message.includes('401') ||
+      error.message.includes('Forbidden') ||
+      error.message.includes('Unauthorized')
+    )) {
+      console.warn(`Blacklisting API key due to connection error: ${error.message}`);
+      blacklistKey(apiKey);
+    }
+
     throw error;
   }
 };
@@ -300,13 +322,21 @@ export const markClientAsNotBusy = (clientObj) => {
 
 /**
  * Get or create a WebSocket client (legacy method for backward compatibility)
- * @param {string} apiKey - Gemini API key
+ * @param {string} apiKey - Gemini API key (optional, will use key manager if not provided)
  * @param {string} modelName - Optional model name to use
  * @param {string} voiceName - Optional voice name to use
  * @param {string} languageCode - Optional language code for speech synthesis
  * @returns {Promise<GeminiWebSocketClient>} - WebSocket client
  */
 export const getWebSocketClient = async (apiKey, modelName = null, voiceName = null, languageCode = null) => {
+  // Get API key from key manager if not provided
+  if (!apiKey) {
+    apiKey = getNextAvailableKey();
+    if (!apiKey) {
+      throw new Error('No valid Gemini API key available. Please add at least one API key in Settings.');
+    }
+  }
+
   // Get the voice name from localStorage if not provided
   if (!voiceName) {
     voiceName = localStorage.getItem('gemini_voice') || 'Aoede'; // Default to Aoede if not set

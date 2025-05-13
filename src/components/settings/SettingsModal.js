@@ -5,6 +5,7 @@ import '../../styles/settings/checkbox-fix.css';
 import '../../styles/components/tab-content-animations.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT } from '../../services/geminiService';
 import { getClientCredentials, hasValidTokens } from '../../services/youtubeApiService';
+import { getAllKeys, saveAllKeys, getCurrentKey } from '../../services/gemini/keyManager';
 import LanguageSelector from '../LanguageSelector';
 import { API_BASE_URL } from '../../config';
 
@@ -207,7 +208,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Load saved settings on component mount
   useEffect(() => {
     const loadSettings = () => {
-      const savedGeminiKey = localStorage.getItem('gemini_api_key') || '';
+      // Get the current active Gemini API key from the key manager
+      const savedGeminiKey = getCurrentKey() || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
       const savedGeniusKey = localStorage.getItem('genius_token') || '';
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
@@ -393,7 +395,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
-    localStorage.setItem('gemini_api_key', geminiApiKey);
+    // Save the Gemini API key to the key manager
+    // The key manager will handle updating the legacy key for backward compatibility
+    const allKeys = getAllKeys();
+    if (geminiApiKey && !allKeys.includes(geminiApiKey)) {
+      const updatedKeys = [...allKeys, geminiApiKey];
+      saveAllKeys(updatedKeys);
+    }
+
     localStorage.setItem('youtube_api_key', youtubeApiKey);
 
     // Save localStorage data to server

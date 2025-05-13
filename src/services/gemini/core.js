@@ -15,6 +15,8 @@ import {
     removeRequestController
 } from './requestManagement';
 
+import { getNextAvailableKey, blacklistKey } from './keyManager';
+
 /**
  * Call the Gemini API with various input types
  * @param {File|string} input - Input file or URL
@@ -25,8 +27,13 @@ import {
 export const callGeminiApi = async (input, inputType, options = {}) => {
     // Extract options
     const { userProvidedSubtitles } = options;
-    const geminiApiKey = localStorage.getItem('gemini_api_key');
     const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
+
+    // Get the next available API key
+    const geminiApiKey = getNextAvailableKey();
+    if (!geminiApiKey) {
+        throw new Error('No valid Gemini API key available. Please add at least one API key in Settings.');
+    }
 
     let requestData = {
         model: MODEL,
@@ -298,6 +305,8 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                         if (errorData.error.code === 503 ||
                             errorData.error.status === 'UNAVAILABLE' ||
                             errorData.error.message.includes('overloaded')) {
+                            // Blacklist the current API key
+                            blacklistKey(geminiApiKey);
                             const overloadError = new Error(`API error: ${errorData.error.message || response.statusText}`);
                             overloadError.isOverloaded = true;
                             throw overloadError;
@@ -312,7 +321,8 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
                     // Check for 503 status code directly
                     if (response.status === 503) {
-
+                        // Blacklist the current API key
+                        blacklistKey(geminiApiKey);
                         const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                         overloadError.isOverloaded = true;
                         throw overloadError;
@@ -325,7 +335,8 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
                 // Check for 503 status code directly
                 if (response.status === 503) {
-
+                    // Blacklist the current API key
+                    blacklistKey(geminiApiKey);
                     const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                     overloadError.isOverloaded = true;
                     throw overloadError;
@@ -379,10 +390,11 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 error.message.includes('overloaded') ||
                 error.message.includes('UNAVAILABLE')
             )) {
+                // Blacklist the current API key
+                blacklistKey(geminiApiKey);
 
                 if (!error.isOverloaded) {
                     error.isOverloaded = true;
-
                 }
             }
 

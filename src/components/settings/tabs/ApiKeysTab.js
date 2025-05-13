@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
+import { getAllKeys, addKey, removeKey, getActiveKeyIndex, setActiveKeyIndex } from '../../../services/gemini/keyManager';
 
 // Note: This function is defined but not used - the functionality is implemented inline
 // in the onKeyDown handlers of the contentEditable elements
@@ -42,8 +43,71 @@ const ApiKeysTab = ({
 }) => {
   const { t } = useTranslation();
 
+  // State for multiple Gemini API keys
+  const [geminiApiKeys, setGeminiApiKeys] = useState([]);
+  const [newGeminiKey, setNewGeminiKey] = useState('');
+  const [showNewGeminiKey, setShowNewGeminiKey] = useState(false);
+  const [activeKeyIndex, setActiveKeyIndexState] = useState(0);
+  const [visibleKeyIndices, setVisibleKeyIndices] = useState({});
+
+  // Load all Gemini API keys on mount
+  useEffect(() => {
+    const keys = getAllKeys();
+    setGeminiApiKeys(keys);
+    setActiveKeyIndexState(getActiveKeyIndex());
+  }, []);
+
+  // Update the active key when it changes
+  const handleSetActiveKey = (index) => {
+    setActiveKeyIndex(index);
+    setActiveKeyIndexState(index);
+    // Update the single key for backward compatibility
+    setGeminiApiKey(geminiApiKeys[index]);
+  };
+
+  // Add a new Gemini API key
+  const handleAddGeminiKey = () => {
+    if (newGeminiKey && newGeminiKey.trim()) {
+      if (addKey(newGeminiKey)) {
+        const updatedKeys = getAllKeys();
+        setGeminiApiKeys(updatedKeys);
+        setNewGeminiKey('');
+        setShowNewGeminiKey(false);
+
+        // Update API keys set status
+        setApiKeysSet(prevState => ({
+          ...prevState,
+          gemini: true
+        }));
+      }
+    }
+  };
+
+  // Remove a Gemini API key
+  const handleRemoveGeminiKey = (key) => {
+    if (removeKey(key)) {
+      const updatedKeys = getAllKeys();
+      setGeminiApiKeys(updatedKeys);
+
+      // Update API keys set status
+      setApiKeysSet(prevState => ({
+        ...prevState,
+        gemini: updatedKeys.length > 0
+      }));
+    }
+  };
+
+  // Toggle key visibility
+  const toggleKeyVisibility = (index) => {
+    setVisibleKeyIndices(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
   // Refs for editable fields
   const geminiKeyRef = useRef(null);
+  const newGeminiKeyRef = useRef(null);
   const geniusKeyRef = useRef(null);
   const youtubeKeyRef = useRef(null);
   const clientIdRef = useRef(null);
@@ -55,6 +119,12 @@ const ApiKeysTab = ({
       geminiKeyRef.current.focus();
     }
   }, [showGeminiKey]);
+
+  useEffect(() => {
+    if (showNewGeminiKey && newGeminiKeyRef.current) {
+      newGeminiKeyRef.current.focus();
+    }
+  }, [showNewGeminiKey]);
 
   useEffect(() => {
     if (showGeniusKey && geniusKeyRef.current) {
@@ -137,59 +207,169 @@ const ApiKeysTab = ({
     <div className="settings-section api-key-section">
       {/* Grid layout for API keys */}
       <div className="api-keys-grid">
-        {/* Gemini API Key - First column */}
+        {/* Gemini API Keys - First column */}
         <div className="api-key-input">
-          <label htmlFor="gemini-api-key">
-            {t('settings.geminiApiKey', 'Gemini API Key')}
+          <label htmlFor="gemini-api-keys">
+            {t('settings.geminiApiKeys', 'Gemini API Keys')}
             <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
               {apiKeysSet.gemini
-                ? t('settings.keySet', 'Set')
+                ? t('settings.keysSet', `${geminiApiKeys.length} Key(s)`)
                 : t('settings.keyNotSet', 'Not Set')}
             </span>
           </label>
 
-          {/* Custom non-password input implementation for Gemini */}
-          <div className="custom-api-key-input">
-            <div
-              className="custom-input-field"
-              onClick={() => setShowGeminiKey(true)}
-            >
-              {showGeminiKey ? (
-                <div
-                  id="gemini-key-display"
-                  className="editable-key-field"
-                  contentEditable="true"
-                  onInput={(e) => setGeminiApiKey(e.currentTarget.textContent || '')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  suppressContentEditableWarning={true}
-                  ref={geminiKeyRef}
+          {/* Multiple Gemini API keys list */}
+          <div className="gemini-keys-container">
+            {geminiApiKeys.length > 0 ? (
+              <div className="gemini-keys-list">
+                {geminiApiKeys.map((key, index) => (
+                  <div
+                    key={`gemini-key-${index}`}
+                    className={`gemini-key-item ${index === activeKeyIndex ? 'active' : ''}`}
+                  >
+                    <div className="gemini-key-content">
+                      {visibleKeyIndices[index] ? (
+                        <>
+                          <div className="gemini-key-display">
+                            <div className="gemini-key-text">
+                              <div className="gemini-key-visible">
+                                {key}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="gemini-key-actions expanded">
+                            <button
+                              type="button"
+                              className="gemini-key-button"
+                              onClick={() => toggleKeyVisibility(index)}
+                              title={t('settings.hideKey', 'Hide key')}
+                            >
+                              {t('settings.hide', 'Hide')}
+                            </button>
+                            <div className="gemini-key-actions-right">
+                              <button
+                                type="button"
+                                className={`gemini-key-button ${index === activeKeyIndex ? 'active' : ''}`}
+                                onClick={() => handleSetActiveKey(index)}
+                                disabled={index === activeKeyIndex}
+                                title={t('settings.setAsActive', 'Set as active key')}
+                              >
+                                {index === activeKeyIndex ?
+                                  t('settings.activeKey', 'Active') :
+                                  t('settings.setActive', 'Set Active')}
+                              </button>
+                              <button
+                                type="button"
+                                className="remove-key"
+                                onClick={() => handleRemoveGeminiKey(key)}
+                                title={t('settings.removeKey', 'Remove key')}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="gemini-key-row">
+                          <div
+                            className="gemini-key-text gemini-key-masked"
+                            title={key}
+                          >
+                            {key ? `${key.substring(0, 4)}••••••${key.substring(key.length - 4)}` : ''}
+                          </div>
+                          <div className="gemini-key-actions">
+                            <button
+                              type="button"
+                              className="gemini-key-button"
+                              onClick={() => toggleKeyVisibility(index)}
+                              title={t('settings.showKey', 'Show key')}
+                            >
+                              {t('settings.show', 'Show')}
+                            </button>
+                            <button
+                              type="button"
+                              className={`gemini-key-button ${index === activeKeyIndex ? 'active' : ''}`}
+                              onClick={() => handleSetActiveKey(index)}
+                              disabled={index === activeKeyIndex}
+                              title={t('settings.setAsActive', 'Set as active key')}
+                            >
+                              {index === activeKeyIndex ?
+                                t('settings.activeKey', 'Active') :
+                                t('settings.setActive', 'Set Active')}
+                            </button>
+                            <button
+                              type="button"
+                              className="remove-key"
+                              onClick={() => handleRemoveGeminiKey(key)}
+                              title={t('settings.removeKey', 'Remove key')}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-keys-message">
+                {t('settings.noGeminiKeys', 'No Gemini API keys added yet. Add your first key below.')}
+              </div>
+            )}
+
+            {/* Add new key input */}
+            <div className="add-new-key-container">
+              <div className="add-key-input-row">
+                <div className="custom-api-key-input">
+                  <div
+                    className="custom-input-field"
+                    onClick={() => setShowNewGeminiKey(true)}
+                  >
+                    {showNewGeminiKey ? (
+                      <div
+                        id="new-gemini-key-display"
+                        className="editable-key-field"
+                        contentEditable="true"
+                        onInput={(e) => setNewGeminiKey(e.currentTarget.textContent || '')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                            handleAddGeminiKey();
+                          }
+                        }}
+                        suppressContentEditableWarning={true}
+                        ref={newGeminiKeyRef}
+                      >
+                        {newGeminiKey}
+                      </div>
+                    ) : (
+                      <div className="key-placeholder">
+                        {t('settings.addGeminiKeyPlaceholder', 'Enter a new Gemini API key')}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="toggle-visibility"
+                    onClick={() => setShowNewGeminiKey(!showNewGeminiKey)}
+                    aria-label={showNewGeminiKey ? t('settings.hide') : t('settings.show')}
+                  >
+                    {showNewGeminiKey ? t('settings.hide') : t('settings.show')}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="add-key-button"
+                  onClick={handleAddGeminiKey}
+                  disabled={!newGeminiKey}
                 >
-                  {geminiApiKey}
-                </div>
-              ) : (
-                <div className="masked-key-field">
-                  {geminiApiKey ? '•'.repeat(Math.min(geminiApiKey.length, 24)) : ''}
-                </div>
-              )}
-              {!geminiApiKey && !showGeminiKey && (
-                <div className="key-placeholder">
-                  {t('settings.geminiApiKeyPlaceholder', 'Enter your Gemini API key')}
-                </div>
-              )}
+                  {t('settings.addKey', 'Add Key')}
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              className="toggle-visibility"
-              onClick={() => setShowGeminiKey(!showGeminiKey)}
-              aria-label={showGeminiKey ? t('settings.hide') : t('settings.show')}
-            >
-              {showGeminiKey ? t('settings.hide') : t('settings.show')}
-            </button>
           </div>
 
           <p className="api-key-help">
@@ -211,6 +391,11 @@ const ApiKeysTab = ({
               <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
               <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
             </ol>
+            <div className="multiple-keys-info">
+              <h4>{t('settings.multipleKeysInfo', 'About Multiple API Keys')}</h4>
+              <p>{t('settings.multipleKeysDescription', 'Adding multiple Gemini API keys enables automatic failover. If one key encounters an error, the system will automatically try another key.')}</p>
+              <p>{t('settings.activeKeyDescription', 'The active key is used first. If it fails, other keys will be tried in sequence.')}</p>
+            </div>
           </div>
         </div>
 

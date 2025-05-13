@@ -9,6 +9,7 @@ import {
   base64ToArrayBuffer,
   convertPcmBase64ToWavBase64
 } from '../utils/audioUtils';
+import { blacklistKey } from '../keyManager';
 
 /**
  * Client for connecting to Gemini WebSocket API
@@ -61,6 +62,11 @@ export class GeminiWebSocketClient extends EventEmitter {
         this.disconnect(ws);
         const message = `Could not connect to "${this.url}"`;
         console.error(`WebSocket error: ${message}`, ev);
+
+        // Blacklist the API key on connection errors
+        console.warn('Blacklisting API key due to WebSocket connection error');
+        blacklistKey(this.apiKey);
+
         reject(new Error(message));
       };
 
@@ -399,7 +405,20 @@ export class GeminiWebSocketClient extends EventEmitter {
       // Handle error messages
       if (response.error) {
         console.error('Error received from Gemini API:', response.error);
-        this.emit('error', new Error(response.error.message || 'Unknown error from Gemini API'));
+        const errorMessage = response.error.message || 'Unknown error from Gemini API';
+
+        // Check for API key related errors
+        if (errorMessage.includes('API key') ||
+            errorMessage.includes('invalid key') ||
+            errorMessage.includes('unauthorized') ||
+            errorMessage.includes('permission') ||
+            errorMessage.includes('quota') ||
+            errorMessage.includes('rate limit')) {
+          console.warn('Blacklisting API key due to error:', errorMessage);
+          blacklistKey(this.apiKey);
+        }
+
+        this.emit('error', new Error(errorMessage));
         return;
       }
 
