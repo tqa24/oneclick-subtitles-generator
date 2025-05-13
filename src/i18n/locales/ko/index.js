@@ -14,7 +14,6 @@ import language from './language.json';
 import youtube from './youtube.json';
 import youtubeUrlInput from './youtubeUrlInput.json';
 import unifiedUrlInput from './unifiedUrlInput.json';
-import allSitesUrlInput from './allSitesUrlInput.json';
 import timeline from './timeline.json';
 import subtitleSettings from './subtitleSettings.json';
 import onboarding from './onboarding.json';
@@ -49,7 +48,6 @@ const koTranslations = {
   youtube,
   youtubeUrlInput,
   unifiedUrlInput,
-  allSitesUrlInput,
   timeline,
   subtitleSettings,
   onboarding,

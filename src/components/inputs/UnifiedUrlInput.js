@@ -357,9 +357,9 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       case 'youtube':
         return t('youtubeUrlInput.placeholder', 'Enter YouTube URL (e.g., youtube.com/watch?v=...)');
       case 'douyin':
-        return t('douyinUrlInput.placeholder', 'Enter Douyin URL (e.g., douyin.com/video/...)');
+        return t('unifiedUrlInput.placeholder', 'Enter any video URL (YouTube, Douyin, TikTok, etc.)');
       case 'all-sites':
-        return t('allSitesUrlInput.placeholder', 'Enter any video URL (e.g., tiktok.com, dailymotion.com, etc.)');
+        return t('unifiedUrlInput.placeholder', 'Enter any video URL (YouTube, Douyin, TikTok, etc.)');
       default:
         return t('unifiedUrlInput.placeholder', 'Enter any video URL (YouTube, Douyin, TikTok, etc.)');
     }
@@ -389,7 +389,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
           <div className="selected-video-preview">
             <div className="video-info">
               <h3 className="video-title">{videoTitle}</h3>
-              <p className="video-id">{t('douyinUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+              <p className="video-id">{t('unifiedUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
             </div>
           </div>
         );
@@ -398,7 +398,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
           <div className="selected-video-preview">
             <div className="video-info">
               <h3 className="video-title">{videoTitle}</h3>
-              <p className="video-url">{t('allSitesUrlInput.url', 'URL:')} <span className="video-url-value">{url}</span></p>
+              <p className="video-url">{t('unifiedUrlInput.url', 'URL:')} <span className="video-url-value">{url}</span></p>
             </div>
           </div>
         );
@@ -436,12 +436,12 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
           <div
             className="site-chip more-sites-chip"
             onClick={openSupportedSitesDoc}
-            title={t('allSitesUrlInput.viewAllSupportedSites', 'Click to view all supported sites')}
+            title={t('unifiedUrlInput.viewAllSupportedSites', 'Click to view all supported sites')}
             role="button"
             tabIndex="0"
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <span>{t('allSitesUrlInput.hundredsMoreWebsites', '...and hundreds more websites!')}</span>
+            <span>{t('unifiedUrlInput.hundredsMoreWebsites', '...and hundreds more websites!')}</span>
             <FiExternalLink size={14} />
           </div>
         </div>

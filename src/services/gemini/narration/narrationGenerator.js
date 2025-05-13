@@ -4,7 +4,6 @@
 
 import { SERVER_URL } from '../../../config';
 import {
-  getWebSocketClient,
   initializeClientPool,
   getNextAvailableClient,
   markClientAsNotBusy
@@ -56,7 +55,6 @@ export const cancelGeminiNarrations = () => {
  */
 export const generateGeminiNarration = async (subtitle, language, modelName = null, voiceName = null, clientObj = null) => {
   let client = null;
-  let releaseClient = false;
 
   try {
     // Get API key from localStorage
@@ -64,9 +62,6 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
     if (!apiKey) {
       throw new Error('Gemini API key not found');
     }
-
-    // Convert the language code to a Gemini-compatible format
-    const geminiLanguageCode = getGeminiLanguageCode(language);
 
     // Create the prompt for narration - explicitly instruct to speak in the target language
     const narrationPrompt = `READ the following text. DO NOT ASK ME ANYTHING FOLLOW UP, just read it exactly as written: "${subtitle.text}"`;
@@ -78,7 +73,6 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
       // Get a client from the pool
       clientObj = await getNextAvailableClient();
       client = clientObj.client;
-      releaseClient = true; // Mark that we need to release this client when done
     }
 
     // Create a unique request ID for this subtitle
@@ -301,7 +295,6 @@ const processNarrationQueue = async (results, total, onProgress, onResult, onErr
  * @param {Function} onError - Callback for errors
  * @param {Function} onComplete - Callback for completion
  * @param {string} modelName - Optional model name to use
- * @param {number} sleepTime - Time to sleep between requests in milliseconds (not used with concurrent processing)
  * @param {string} voiceName - Optional voice name to use
  * @returns {Promise<Object>} - Generation response
  */
@@ -313,7 +306,7 @@ export const generateGeminiNarrations = async (
   onError = () => {},
   onComplete = () => {},
   modelName = null,
-  sleepTime = 10000,
+  // sleepTime parameter removed as it's not used with concurrent processing
   voiceName = null
 ) => {
   // Reset cancellation flag

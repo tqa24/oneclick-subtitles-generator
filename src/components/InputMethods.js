@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import YoutubeUrlInput from './inputs/YoutubeUrlInput';
 import YoutubeSearchInput from './inputs/YoutubeSearchInput';
 import FileUploadInput from './inputs/FileUploadInput';
-import DouyinUrlInput from './inputs/DouyinUrlInput';
-import AllSitesUrlInput from './inputs/AllSitesUrlInput';
 import UnifiedUrlInput from './inputs/UnifiedUrlInput';
 import { initTabPillAnimation } from '../utils/tabPillAnimation';
 import '../styles/InputMethods.css';
@@ -125,11 +123,14 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
             />
           </div>
         );
-      // Keep the old tabs for backward compatibility, but they won't be shown in the UI
+      // For backward compatibility, redirect old tabs to the unified URL input
       case 'all-sites-url':
+      case 'douyin-url':
+        // Redirect to unified URL input
+        setTimeout(() => setActiveTab('unified-url'), 0);
         return (
           <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
-            <AllSitesUrlInput
+            <UnifiedUrlInput
               selectedVideo={selectedVideo}
               setSelectedVideo={setSelectedVideo}
             />
@@ -140,15 +141,6 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
           <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
             <YoutubeUrlInput
               onVideoSelect={onVideoSelect}
-              selectedVideo={selectedVideo}
-              setSelectedVideo={setSelectedVideo}
-            />
-          </div>
-        );
-      case 'douyin-url':
-        return (
-          <div key={`tab-${activeTab}`} className={`tab-content ${animationClass}`}>
-            <DouyinUrlInput
               selectedVideo={selectedVideo}
               setSelectedVideo={setSelectedVideo}
             />

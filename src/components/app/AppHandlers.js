@@ -56,10 +56,6 @@ export const useAppHandlers = (appState) => {
       return selectedVideo !== null;
     } else if (activeTab === 'youtube-search') {
       return selectedVideo !== null;
-    } else if (activeTab === 'douyin-url') {
-      return selectedVideo !== null;
-    } else if (activeTab === 'all-sites-url') {
-      return selectedVideo !== null;
     } else if (activeTab === 'file-upload') {
       return uploadedFile !== null;
     }
@@ -82,14 +78,12 @@ export const useAppHandlers = (appState) => {
       // Check if we have a valid video source
       const hasYoutubeVideo = activeTab.includes('youtube') && selectedVideo !== null;
       const hasUploadedFile = activeTab === 'file-upload' && uploadedFile !== null;
-      const hasDouyinVideo = activeTab === 'douyin-url' && selectedVideo !== null;
-      const hasAllSitesVideo = activeTab === 'all-sites-url' && selectedVideo !== null;
       const hasUnifiedVideo = activeTab === 'unified-url' && selectedVideo !== null;
 
       // Also check if we have a video URL in localStorage
       const hasVideoUrlInStorage = localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
 
-      const hasVideoSource = hasYoutubeVideo || hasUploadedFile || hasDouyinVideo || hasAllSitesVideo || hasUnifiedVideo || hasVideoUrlInStorage;
+      const hasVideoSource = hasYoutubeVideo || hasUploadedFile || hasUnifiedVideo || hasVideoUrlInStorage;
 
       // If we don't have a video source, set SRT-only mode
       if (!hasVideoSource) {
@@ -140,8 +134,8 @@ export const useAppHandlers = (appState) => {
             type: 'warning'
           });
         }
-      } else if (hasDouyinVideo || hasAllSitesVideo || hasUnifiedVideo) {
-        // For other video sources (Douyin, All Sites, Unified), set the subtitles data directly
+      } else if (hasUnifiedVideo) {
+        // For unified URL input, set the subtitles data directly
         // We'll download the video when the user clicks "Generate Subtitles"
 
         // Make sure we're not in downloading state
@@ -181,8 +175,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube, Douyin, All Sites, or Unified URL tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url' || activeTab === 'unified-url') && selectedVideo) {
+    // For YouTube or Unified URL tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'unified-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -320,8 +314,8 @@ export const useAppHandlers = (appState) => {
 
     let input, inputType;
 
-    // For YouTube, Douyin, All Sites, or Unified URL tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'douyin-url' || activeTab === 'all-sites-url' || activeTab === 'unified-url') && selectedVideo) {
+    // For YouTube or Unified URL tabs, download the video first and switch to upload tab
+    if ((activeTab.includes('youtube') || activeTab === 'unified-url') && selectedVideo) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -441,10 +435,10 @@ export const useAppHandlers = (appState) => {
   const handleCancelDownload = () => {
     if (currentDownloadId) {
       // Check the source of the download
-      if (activeTab === 'douyin-url' || (activeTab === 'unified-url' && selectedVideo?.source === 'douyin')) {
+      if (activeTab === 'unified-url' && selectedVideo?.source === 'douyin') {
         // Cancel Douyin download
         cancelDouyinVideoDownload(currentDownloadId);
-      } else if (activeTab === 'all-sites-url' || (activeTab === 'unified-url' && selectedVideo?.source === 'all-sites')) {
+      } else if (activeTab === 'unified-url' && selectedVideo?.source === 'all-sites') {
         // Cancel generic URL download
         cancelGenericVideoDownload(currentDownloadId);
       } else {
