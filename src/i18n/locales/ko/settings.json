@@ -13,7 +13,7 @@
   "save": "설정 저장",
   "cancel": "취소",
   "keySet": "설정됨",
-  "keysSet": "{{count}}개 키",
+  "keysSet": "{{count}}개 키 설정됨",
   "keyNotSet": "설정되지 않음",
   "geminiApiKeyPlaceholder": "Gemini API 키 입력",
   "addGeminiKeyPlaceholder": "새 Gemini API 키 입력",

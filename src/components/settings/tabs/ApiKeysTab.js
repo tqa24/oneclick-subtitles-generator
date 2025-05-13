@@ -213,7 +213,7 @@ const ApiKeysTab = ({
             {t('settings.geminiApiKeys', 'Gemini API Keys')}
             <span className={`api-key-status ${apiKeysSet.gemini ? 'set' : 'not-set'}`}>
               {apiKeysSet.gemini
-                ? t('settings.keysSet', `${geminiApiKeys.length} Key(s)`)
+                ? t('settings.keysSet', {count: geminiApiKeys.length})
                 : t('settings.keyNotSet', 'Not Set')}
             </span>
           </label>

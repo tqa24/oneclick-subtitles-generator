@@ -14,7 +14,7 @@
   "save": "Lưu cài đặt",
   "cancel": "Hủy bỏ",
   "keySet": "Đã cài đặt",
-  "keysSet": "{{count}} Khóa",
+  "keysSet": "{{count}} khóa",
   "keyNotSet": "Chưa cài đặt",
   "geminiApiKeyPlaceholder": "Nhập khóa API Gemini của bạn",
   "addGeminiKeyPlaceholder": "Nhập khóa API Gemini mới",
