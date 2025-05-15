@@ -115,6 +115,11 @@ export const initializeClientPool = async (apiKey, modelName, voiceName, languag
     clientPool.initialized = true;
     clientPool.initializing = false;
 
+    // If we have fewer clients than requested, log a warning
+    if (successfulClients.length < concurrentClients) {
+      console.warn(`Warning: Only ${successfulClients.length} of ${concurrentClients} requested WebSocket clients were created successfully. The system will operate with reduced concurrency.`);
+    }
+
     return true;
   } catch (error) {
     console.error('Error initializing client pool:', error);
@@ -348,6 +353,14 @@ export const markClientAsNotBusy = (clientObj) => {
   if (clientObj && clientPool.clients.includes(clientObj)) {
     clientObj.busy = false;
   }
+};
+
+/**
+ * Get the client pool for direct access to client information
+ * @returns {Object} - The client pool object
+ */
+export const getClientPool = () => {
+  return clientPool;
 };
 
 /**

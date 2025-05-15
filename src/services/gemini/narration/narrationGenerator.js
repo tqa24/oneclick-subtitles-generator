@@ -6,7 +6,8 @@ import { SERVER_URL } from '../../../config';
 import {
   initializeClientPool,
   getNextAvailableClient,
-  markClientAsNotBusy
+  markClientAsNotBusy,
+  getClientPool
 } from '../client/clientManager';
 import { getGeminiLanguageCode } from '../utils/languageUtils';
 
@@ -203,12 +204,25 @@ const processNarrationQueue = async (results, total, onProgress, onResult, onErr
   try {
     // Process narrations in batches to maintain concurrency
     while (narrationQueue.length > 0 && !isCancelled) {
-      // Get up to the configured number of tasks from the queue (or however many are left)
-      const tasksToProcess = [];
-      const concurrentClients = parseInt(localStorage.getItem('gemini_concurrent_clients'), 10) || 5;
-      const batchSize = Math.min(concurrentClients, narrationQueue.length);
+      // Get the actual number of available clients in the pool
+      const clientPool = getClientPool();
+      const availableClientsCount = clientPool.clients.length;
 
-      console.log(`Processing batch of ${batchSize} narrations concurrently`);
+      // Check if we have any available clients
+      if (availableClientsCount === 0) {
+        console.error("No available WebSocket clients in the pool. Cannot process narrations.");
+        const error = new Error("No available WebSocket clients in the pool. Please check your API key and try again.");
+        onError(error);
+        break;
+      }
+
+      // Use the actual number of available clients for batch size, not the configured number
+      // This ensures we only process as many narrations as we have clients for
+      const tasksToProcess = [];
+      const configuredConcurrentClients = parseInt(localStorage.getItem('gemini_concurrent_clients'), 10) || 5;
+      const batchSize = Math.min(availableClientsCount, narrationQueue.length);
+
+      console.log(`Processing batch of ${batchSize} narrations concurrently (using ${availableClientsCount} of ${configuredConcurrentClients} configured clients)`);
 
       for (let i = 0; i < batchSize; i++) {
         if (narrationQueue.length > 0) {
@@ -243,8 +257,30 @@ const processNarrationQueue = async (results, total, onProgress, onResult, onErr
           })
           .catch(error => {
             console.error('Error processing narration task:', error);
+
+            // Create a failed result object to maintain the correct order
+            const failedResult = {
+              subtitle_id: task.subtitle.id,
+              text: task.subtitle.text,
+              audioData: null,
+              success: false,
+              error: error.message,
+              gemini: true,
+              failed: true // Flag to indicate this narration failed
+            };
+
+            // Add the failed result to the results array to maintain order
+            results.push(failedResult);
+
+            // Update progress
+            const progressPercent = Math.round((results.length / total) * 100);
+            onProgress(`Generating narrations... (${progressPercent}% complete, with errors)`);
+
+            // Call the error callback
             onError(error);
-            return null;
+
+            // Return the failed result to maintain the correct order in the results array
+            return failedResult;
           });
       });
 
