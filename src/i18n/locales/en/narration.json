@@ -144,5 +144,15 @@
   "groupTime": "Group Time",
   "groupedSubtitles": "Grouped Subtitles",
   "subtitleGroupingTitle": "Subtitle Grouping Comparison",
-  "subtitleGroupingExplanation": "This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row represents an original subtitle, and the grouped column shows how they've been combined."
+  "subtitleGroupingExplanation": "This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row represents an original subtitle, and the grouped column shows how they've been combined.",
+
+  "subtitleGrouping": "Subtitle Grouping",
+  "groupingIntensity": "Grouping Intensity",
+  "intensityMinimal": "Minimal",
+  "intensityLight": "Light",
+  "intensityBalanced": "Balanced",
+  "intensityModerate": "Moderate",
+  "intensityEnhanced": "Enhanced",
+  "intensityAggressive": "Aggressive",
+  "intensityChangeTooltip": "Changing intensity will require regrouping"
 }

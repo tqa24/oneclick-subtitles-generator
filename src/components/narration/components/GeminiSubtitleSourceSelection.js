@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
@@ -22,6 +22,8 @@ import SubtitleGroupingModal from './SubtitleGroupingModal';
  * @param {boolean} props.isGroupingSubtitles - Whether subtitles are currently being grouped
  * @param {Array} props.originalSubtitles - Original subtitles
  * @param {Array} props.groupedSubtitles - Grouped subtitles
+ * @param {string} props.groupingIntensity - Intensity level for subtitle grouping
+ * @param {Function} props.setGroupingIntensity - Function to set grouping intensity
  * @returns {JSX.Element} - Rendered component
  */
 const GeminiSubtitleSourceSelection = ({
@@ -38,7 +40,9 @@ const GeminiSubtitleSourceSelection = ({
   useGroupedSubtitles = false,
   setUseGroupedSubtitles = () => {},
   isGroupingSubtitles = false,
-  groupedSubtitles = null
+  groupedSubtitles = null,
+  groupingIntensity = 'moderate',
+  setGroupingIntensity = () => {}
 }) => {
   const { t } = useTranslation();
 
@@ -49,9 +53,13 @@ const GeminiSubtitleSourceSelection = ({
 
   // Function to handle subtitle grouping toggle
   const handleGroupingToggle = (checked) => {
+    // Simply update the useGroupedSubtitles state
+    // The useGeminiNarration hook will handle the grouping logic
     setUseGroupedSubtitles(checked);
-    // No need to set isGroupingSubtitles here as it will be handled by the useGeminiNarration hook
   };
+
+  // We don't need to define onGroupedSubtitlesGenerated here
+  // It's passed as a prop from the parent component
 
   // Functions to handle modal
   const openModal = () => setIsModalOpen(true);
@@ -246,6 +254,31 @@ const GeminiSubtitleSourceSelection = ({
         </div>
         <div className="row-content">
           <div className="subtitle-grouping-container">
+            {/* Grouping Intensity Dropdown */}
+            <div
+              className="grouping-intensity-container"
+              data-tooltip={t('narration.intensityChangeTooltip', 'Changing intensity will require regrouping')}
+            >
+              <label htmlFor="grouping-intensity" className="grouping-intensity-label">
+                {t('narration.groupingIntensity', 'Grouping Intensity')}:
+              </label>
+              <select
+                id="grouping-intensity"
+                className="grouping-intensity-select"
+                value={groupingIntensity}
+                onChange={(e) => setGroupingIntensity(e.target.value)}
+                disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles || useGroupedSubtitles}
+              >
+                <option value="minimal">{t('narration.intensityMinimal', 'Minimal')}</option>
+                <option value="light">{t('narration.intensityLight', 'Light')}</option>
+                <option value="balanced">{t('narration.intensityBalanced', 'Balanced')}</option>
+                <option value="moderate">{t('narration.intensityModerate', 'Moderate')}</option>
+                <option value="enhanced">{t('narration.intensityEnhanced', 'Enhanced')}</option>
+                <option value="aggressive">{t('narration.intensityAggressive', 'Aggressive')}</option>
+              </select>
+            </div>
+
+            {/* Toggle Switch */}
             <div className="toggle-switch-container">
               <label className="toggle-switch" htmlFor="subtitle-grouping">
                 <input

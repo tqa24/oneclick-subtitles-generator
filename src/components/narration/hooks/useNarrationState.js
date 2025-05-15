@@ -65,6 +65,7 @@ const useNarrationState = (initialReferenceAudio) => {
   const [useGroupedSubtitles, setUseGroupedSubtitles] = useState(false);
   const [groupedSubtitles, setGroupedSubtitles] = useState(null);
   const [isGroupingSubtitles, setIsGroupingSubtitles] = useState(false);
+  const [groupingIntensity, setGroupingIntensity] = useState('moderate');
   const [advancedSettings, setAdvancedSettings] = useState(() => {
     // Try to load from localStorage
     try {
@@ -185,6 +186,8 @@ const useNarrationState = (initialReferenceAudio) => {
     setGroupedSubtitles,
     isGroupingSubtitles,
     setIsGroupingSubtitles,
+    groupingIntensity,
+    setGroupingIntensity,
     advancedSettings,
     setAdvancedSettings,
 

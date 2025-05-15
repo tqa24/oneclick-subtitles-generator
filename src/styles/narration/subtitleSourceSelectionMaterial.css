@@ -100,6 +100,84 @@
   width: 100%;
 }
 
+/* Grouping Intensity Container */
+.grouping-intensity-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.grouping-intensity-label {
+  font-size: 0.9rem;
+  color: var(--md-on-surface);
+  min-width: 120px;
+}
+
+.grouping-intensity-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+  min-width: 120px;
+}
+
+.grouping-intensity-select:hover:not(:disabled) {
+  border-color: var(--md-primary);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.grouping-intensity-select:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+}
+
+.grouping-intensity-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline-variant);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Add a tooltip to explain that changing intensity requires regrouping */
+.grouping-intensity-container {
+  position: relative;
+}
+
+.grouping-intensity-container::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -30px;
+  left: 120px;
+  background-color: rgba(var(--md-surface-variant-rgb), 0.9);
+  color: var(--md-on-surface-variant);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.grouping-intensity-container:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Toggle Switch Container */
 .subtitle-grouping-container .toggle-switch-container {
   display: flex;

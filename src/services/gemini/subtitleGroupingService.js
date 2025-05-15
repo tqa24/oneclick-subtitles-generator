@@ -12,9 +12,10 @@
  * @param {Array} subtitles - Array of subtitle objects
  * @param {string} language - Language code of the subtitles
  * @param {string} model - Gemini model to use
+ * @param {string} intensity - Grouping intensity level (minimal, moderate, aggressive)
  * @returns {Promise<Object>} - Object with grouped subtitles and mapping
  */
-export const groupSubtitlesForNarration = async (subtitles, language = 'en', model = 'gemini-2.0-flash') => {
+export const groupSubtitlesForNarration = async (subtitles, language = 'en', model = 'gemini-2.0-flash', intensity = 'moderate') => {
   if (!subtitles || subtitles.length === 0) {
     return {
       success: false,
@@ -36,17 +37,78 @@ export const groupSubtitlesForNarration = async (subtitles, language = 'en', mod
 
     const maxOutputTokens = 8192; // Adjusted from 65536, which is very high.
 
+    // Define grouping intensity guidelines
+    let intensityGuidelines = '';
+
+    switch (intensity) {
+      case 'minimal':
+        intensityGuidelines = `
+Grouping Intensity: MINIMAL
+- Be extremely conservative in grouping subtitles.
+- Only combine subtitles that are clearly part of the same incomplete sentence.
+- Prioritize keeping subtitles separate unless they absolutely need to be combined.
+- Aim for very small groups of 1-2 subtitles at most.
+- When in doubt, always keep subtitles separate.`;
+        break;
+      case 'light':
+        intensityGuidelines = `
+Grouping Intensity: LIGHT
+- Be conservative in grouping subtitles.
+- Combine subtitles only when they clearly form part of the same sentence.
+- Prefer smaller groups over larger ones.
+- Aim for small groups of 2-3 subtitles at most.
+- Maintain frequent breaks between groups.`;
+        break;
+      case 'balanced':
+        intensityGuidelines = `
+Grouping Intensity: BALANCED
+- Find a middle ground between light and moderate grouping.
+- Combine subtitles that are likely part of the same sentence or closely related thoughts.
+- Create groups that balance readability with natural flow.
+- Aim for groups of 2-4 subtitles, favoring the lower end when in doubt.
+- Pay close attention to natural speech patterns and pauses.`;
+        break;
+      case 'moderate':
+      default:
+        intensityGuidelines = `
+Grouping Intensity: MODERATE
+- Balance between keeping subtitles separate and combining them.
+- Combine subtitles that form part of the same thought or sentence.
+- Create natural groupings that sound good when read aloud.
+- Aim for groups of 3-4 subtitles on average.
+- Respect natural pauses and topic changes.`;
+        break;
+      case 'enhanced':
+        intensityGuidelines = `
+Grouping Intensity: ENHANCED
+- Be somewhat liberal in grouping subtitles.
+- Actively look for opportunities to combine related subtitles.
+- Create fuller, more complete sentences where possible.
+- Aim for groups of 4-5 subtitles on average.
+- Maintain flow between related thoughts.`;
+        break;
+      case 'aggressive':
+        intensityGuidelines = `
+Grouping Intensity: AGGRESSIVE
+- Be very liberal in grouping subtitles.
+- Combine as many subtitles as possible into coherent units.
+- Look for opportunities to create longer, more complete thoughts.
+- Aim for larger groups of 5-7 subtitles where possible.
+- Only create breaks when there's a clear topic change or natural pause.`;
+        break;
+    }
+
     const groupingPrompt = `
 You are an expert in natural language processing. Your task is to group the following subtitles into fuller, more coherent sentences for narration purposes.
 
 Each subtitle line may only contain a few words, which is suitable for displaying as subtitles but not ideal for generating narration. Please combine these subtitles into logical groups that form complete thoughts or sentences.
 
-Guidelines:
-1. Group subtitles that form part of the same sentence or thought.
-2. Respect natural pauses and topic changes.
-3. Each original subtitle should appear in exactly one group.
-4. Maintain the original order of subtitles.
-5. Group IDs should be strings (e.g., "1", "2", ..., "N").
+${intensityGuidelines}
+
+General Guidelines:
+1. Each original subtitle should appear in exactly one group.
+2. Maintain the original order of subtitles.
+3. Group IDs should be strings (e.g., "1", "2", ..., "N").
 
 Subtitles:
 ${subtitleText}

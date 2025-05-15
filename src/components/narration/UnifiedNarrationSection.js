@@ -99,6 +99,7 @@ const UnifiedNarrationSection = ({
     useGroupedSubtitles, setUseGroupedSubtitles,
     groupedSubtitles, setGroupedSubtitles,
     isGroupingSubtitles, setIsGroupingSubtitles,
+    groupingIntensity, setGroupingIntensity,
     selectedNarrationModel,
 
     // Helper functions
@@ -141,6 +142,7 @@ const UnifiedNarrationSection = ({
     setGroupedSubtitles,
     isGroupingSubtitles,
     setIsGroupingSubtitles,
+    groupingIntensity,
     t,
     setRetryingSubtitleId
   });
@@ -737,6 +739,9 @@ const UnifiedNarrationSection = ({
             setUseGroupedSubtitles={setUseGroupedSubtitles}
             isGroupingSubtitles={isGroupingSubtitles}
             groupedSubtitles={groupedSubtitles}
+            groupingIntensity={groupingIntensity}
+            setGroupingIntensity={setGroupingIntensity}
+            onGroupedSubtitlesGenerated={setGroupedSubtitles}
             onLanguageDetected={(source, language) => {
               // Update the appropriate language state
               if (source === 'original') {
