@@ -48,6 +48,7 @@
   "unavailable": "(사용 불가)",
   "detectingLanguage": "언어 감지 중...",
   "narrationModel": "나레이션 모델",
+  "subtitleGrouping": "자막 그룹화",
   "noSourceSelectedError": "자막 소스를 선택하세요 (원본 또는 번역)",
   "checkingModelAvailability": "모델 가용성 확인 중...",
   "modelNotAvailableError": "설정의 내레이션 모델 관리 탭에서 {{language}}을(를) 지원하는 모델을 하나 이상 다운로드하세요.",

@@ -1,21 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import ReactDOM from 'react-dom';
 import '../../../styles/narration/subtitleGroupingModal.css';
 
 /**
@@ -85,81 +70,91 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
   };
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      aria-labelledby="subtitle-grouping-dialog-title"
-    >
-      <DialogTitle id="subtitle-grouping-dialog-title">
-        {t('narration.subtitleGroupingTitle', 'Subtitle Grouping Comparison')}
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          {t('narration.subtitleGroupingExplanation', 'This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row on the left represents an original subtitle, while the merged cells on the right show how they have been combined.')}
-        </Typography>
-        <Box sx={{ mt: 2 }}>
-          <TableContainer component={Paper} sx={{ maxHeight: 500 }}>
-            <Table stickyHeader aria-label="subtitle grouping table">
-              <TableHead>
-                <TableRow>
-                  <TableCell width="5%" className="id-cell">{t('narration.id', 'ID')}</TableCell>
-                  <TableCell width="10%" className="time-cell">{t('narration.time', 'Time')}</TableCell>
-                  <TableCell width="35%">{t('narration.originalSubtitles', 'Original Subtitles')}</TableCell>
-                  <TableCell width="5%" className="id-cell">{t('narration.groupId', 'Group')}</TableCell>
-                  <TableCell width="10%" className="time-cell">{t('narration.groupTime', 'Group Time')}</TableCell>
-                  <TableCell width="35%">{t('narration.groupedSubtitles', 'Grouped Subtitles')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+  // Use useEffect to prevent body scrolling when modal is open
+  React.useEffect(() => {
+    if (open) {
+      // Disable scrolling on body when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Re-enable scrolling when modal is closed
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  // Create portal content
+  const modalContent = (
+    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+      <div className="subtitle-grouping-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>{t('narration.subtitleGroupingTitle', 'Subtitle Grouping Comparison')}</h2>
+            <button className="close-button" onClick={onClose} aria-label="close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        <div className="modal-content">
+          <p className="subtitle-grouping-explanation">
+            {t('narration.subtitleGroupingExplanation', 'This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row on the left represents an original subtitle, while the merged cells on the right show how they have been combined.')}
+          </p>
+          <div className="table-container">
+            <table className="subtitle-grouping-table">
+              <thead>
+                <tr>
+                  <th width="5%" className="id-cell">{t('narration.id', 'ID')}</th>
+                  <th width="10%" className="time-cell">{t('narration.time', 'Time')}</th>
+                  <th width="35%">{t('narration.originalSubtitles', 'Original Subtitles')}</th>
+                  <th width="5%" className="id-cell">{t('narration.groupId', 'Group')}</th>
+                  <th width="10%" className="time-cell">{t('narration.groupTime', 'Group Time')}</th>
+                  <th width="35%">{t('narration.groupedSubtitles', 'Grouped Subtitles')}</th>
+                </tr>
+              </thead>
+              <tbody>
                 {tableData.map((row, index) => (
-                  <TableRow
+                  <tr
                     key={row.original.subtitle_id || row.original.id || index}
                     className={index % 2 === 0 ? 'original-subtitle' : ''}
                   >
-                    <TableCell className="id-cell">{row.original.subtitle_id || row.original.id}</TableCell>
-                    <TableCell className="time-cell">{formatTime(row.original.start)} - {formatTime(row.original.end)}</TableCell>
-                    <TableCell>{row.original.text}</TableCell>
+                    <td className="id-cell">{row.original.subtitle_id || row.original.id}</td>
+                    <td className="time-cell">{formatTime(row.original.start)} - {formatTime(row.original.end)}</td>
+                    <td>{row.original.text}</td>
                     {shouldRenderCell(index, row.grouped) ? (
                       <>
-                        <TableCell className="id-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
+                        <td className="id-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
                           {row.grouped ? (row.grouped.subtitle_id || row.grouped.id) : '-'}
-                        </TableCell>
-                        <TableCell className="time-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
+                        </td>
+                        <td className="time-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
                           {row.grouped ? `${formatTime(row.grouped.start)} - ${formatTime(row.grouped.end)}` : '-'}
-                        </TableCell>
-                        <TableCell className="grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
+                        </td>
+                        <td className="grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
                           {row.grouped ? row.grouped.text : '-'}
-                        </TableCell>
+                        </td>
                       </>
                     ) : null}
-                  </TableRow>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          {t('common.close', 'Close')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="pill-button close-button-primary" onClick={onClose}>
+            {t('common.close', 'Close')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Use ReactDOM.createPortal to render the modal directly to the document body
+  return ReactDOM.createPortal(
+    modalContent,
+    document.body
   );
 };
 

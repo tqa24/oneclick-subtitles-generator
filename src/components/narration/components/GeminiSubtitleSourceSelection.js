@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
-import Switch from '@mui/material/Switch';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import InfoIcon from '@mui/icons-material/Info';
 import SubtitleGroupingModal from './SubtitleGroupingModal';
 
 /**
@@ -178,125 +173,135 @@ const GeminiSubtitleSourceSelection = ({
   };
 
   return (
-    <div className="narration-row subtitle-source-row animated-row">
-      <div className="row-label">
-        <label>{t('narration.subtitleSource', 'Subtitle Source')}:</label>
-      </div>
-      <div className="row-content">
-        <div className="subtitle-selection-container">
-          <div className="radio-pill-group">
-            <div className="radio-pill">
-              <input
-                type="radio"
-                id="source-original"
-                name="subtitle-source"
-                value="original"
-                checked={subtitleSource === 'original'}
-                onChange={() => handleSourceChange('original')}
-                disabled={isGenerating}
-              />
-              <label htmlFor="source-original">
-                {isDetectingOriginal ? (
-                  <span className="loading-animation">
-                    <span className="spinner-circle"></span>
-                    {t('narration.detectingLanguage', 'Detecting language...')}
-                  </span>
-                ) : (
-                  <>
-                    {t('narration.originalSubtitles', 'Original Subtitles')}
-                    {originalLanguage && renderLanguageBadge(originalLanguage)}
-                  </>
-                )}
-              </label>
-            </div>
-            <div className="radio-pill">
-              <input
-                type="radio"
-                id="source-translated"
-                name="subtitle-source"
-                value="translated"
-                checked={subtitleSource === 'translated'}
-                onChange={() => handleSourceChange('translated')}
-                disabled={isGenerating || !hasTranslatedSubtitles}
-              />
-              <label htmlFor="source-translated">
-                {isDetectingTranslated ? (
-                  <span className="loading-animation">
-                    <span className="spinner-circle"></span>
-                    {t('narration.detectingLanguage', 'Detecting language...')}
-                  </span>
-                ) : (
-                  <>
-                    {t('narration.translatedSubtitles', 'Translated Subtitles')}
-                    {translatedLanguage && renderLanguageBadge(translatedLanguage)}
-                    {!hasTranslatedSubtitles && (
-                      <span className="unavailable-indicator">
-                        {t('narration.unavailable', '(unavailable)')}
-                      </span>
-                    )}
-                  </>
-                )}
-              </label>
+    <>
+      <div className="narration-row subtitle-source-row animated-row">
+        <div className="row-label">
+          <label>{t('narration.subtitleSource', 'Subtitle Source')}:</label>
+        </div>
+        <div className="row-content">
+          <div className="subtitle-selection-container">
+            <div className="radio-pill-group">
+              <div className="radio-pill">
+                <input
+                  type="radio"
+                  id="source-original"
+                  name="subtitle-source"
+                  value="original"
+                  checked={subtitleSource === 'original'}
+                  onChange={() => handleSourceChange('original')}
+                  disabled={isGenerating}
+                />
+                <label htmlFor="source-original">
+                  {isDetectingOriginal ? (
+                    <span className="loading-animation">
+                      <span className="spinner-circle"></span>
+                      {t('narration.detectingLanguage', 'Detecting language...')}
+                    </span>
+                  ) : (
+                    <>
+                      {t('narration.originalSubtitles', 'Original Subtitles')}
+                      {originalLanguage && renderLanguageBadge(originalLanguage)}
+                    </>
+                  )}
+                </label>
+              </div>
+              <div className="radio-pill">
+                <input
+                  type="radio"
+                  id="source-translated"
+                  name="subtitle-source"
+                  value="translated"
+                  checked={subtitleSource === 'translated'}
+                  onChange={() => handleSourceChange('translated')}
+                  disabled={isGenerating || !hasTranslatedSubtitles}
+                />
+                <label htmlFor="source-translated">
+                  {isDetectingTranslated ? (
+                    <span className="loading-animation">
+                      <span className="spinner-circle"></span>
+                      {t('narration.detectingLanguage', 'Detecting language...')}
+                    </span>
+                  ) : (
+                    <>
+                      {t('narration.translatedSubtitles', 'Translated Subtitles')}
+                      {translatedLanguage && renderLanguageBadge(translatedLanguage)}
+                      {!hasTranslatedSubtitles && (
+                        <span className="unavailable-indicator">
+                          {t('narration.unavailable', '(unavailable)')}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </label>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Subtitle Grouping Switch */}
-          <div className="subtitle-grouping-switch" style={{ marginTop: '10px' }}>
-            <FormControlLabel
-              control={
-                <Switch
+      {/* Subtitle Grouping as a separate row */}
+      <div className="narration-row subtitle-grouping-row animated-row">
+        <div className="row-label">
+          <label>{t('narration.subtitleGrouping', 'Subtitle Grouping')}:</label>
+        </div>
+        <div className="row-content">
+          <div className="subtitle-grouping-container">
+            <div className="toggle-switch-container">
+              <label className="toggle-switch" htmlFor="subtitle-grouping">
+                <input
+                  type="checkbox"
+                  id="subtitle-grouping"
                   checked={useGroupedSubtitles}
                   onChange={(e) => handleGroupingToggle(e.target.checked)}
                   disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
-                  color="primary"
-                  size="small"
                 />
-              }
-              label={
-                <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
-                  {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
-                  {isGroupingSubtitles && (
-                    <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
-                      <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
-                      <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
-                    </span>
-                  )}
-                </span>
-              }
-            />
+                <span className="toggle-slider"></span>
+              </label>
+              <span className="toggle-label">
+                {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                {isGroupingSubtitles && (
+                  <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
+                    <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
+                    <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
+                  </span>
+                )}
+              </span>
+            </div>
 
             {/* Show comparison button when grouped subtitles are available */}
             {useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0 && (
-              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
-                <Button
-                  startIcon={<InfoIcon />}
+              <div className="grouping-info-container">
+                <button
+                  className="pill-button view-grouping-button"
                   onClick={openModal}
-                  size="small"
-                  variant="contained"
-                  color="primary"
                 >
+                  <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
                   {t('narration.viewGrouping', 'View Grouping')}
-                </Button>
-                <Typography variant="caption" color="textSecondary" style={{ marginLeft: '10px' }}>
+                </button>
+                <span className="grouping-stats">
                   {t('narration.groupedSubtitlesCount', 'Grouped {{original}} subtitles into {{grouped}} sentences', {
                     original: originalSubtitles?.length || 0,
                     grouped: groupedSubtitles?.length || 0
                   })}
-                </Typography>
+                </span>
               </div>
             )}
           </div>
-
-          {/* Subtitle Grouping Comparison Modal */}
-          <SubtitleGroupingModal
-            open={isModalOpen}
-            onClose={closeModal}
-            originalSubtitles={originalSubtitles}
-            groupedSubtitles={groupedSubtitles}
-          />
         </div>
       </div>
-    </div>
+
+      {/* Subtitle Grouping Comparison Modal */}
+      <SubtitleGroupingModal
+        open={isModalOpen}
+        onClose={closeModal}
+        originalSubtitles={originalSubtitles}
+        groupedSubtitles={groupedSubtitles}
+      />
+    </>
   );
 };
 
