@@ -79,32 +79,63 @@ export const enhanceNarrationWithTiming = (generationResults, subtitleMap) => {
 
     // Log the lookup attempt for debugging
     const narrationType = result.filename ? 'F5-TTS' : (result.audioData ? 'Gemini' : 'Unknown');
-
+    const isGrouped = result.original_ids && result.original_ids.length > 1;
 
     // Get the subtitle from the map using the exact ID from the result
-    const subtitle = subtitleMap[subtitleId];
+    let subtitle = subtitleMap[subtitleId];
+
+    // If this is a grouped subtitle and we couldn't find it directly in the map,
+    // we might need to calculate its timing from the original subtitles
+    if (!subtitle && isGrouped && result.original_ids) {
+      console.log(`Handling grouped subtitle ${subtitleId} with ${result.original_ids.length} original IDs`);
+
+      // Get all the original subtitles that are part of this group
+      const originalSubtitles = result.original_ids
+        .map(id => subtitleMap[id])
+        .filter(Boolean);
+
+      if (originalSubtitles.length > 0) {
+        // Calculate start and end times from the original subtitles
+        const start = Math.min(...originalSubtitles.map(sub => sub.start));
+        const end = Math.max(...originalSubtitles.map(sub => sub.end));
+
+        // Create a synthetic subtitle with the calculated timing
+        subtitle = {
+          id: subtitleId,
+          start,
+          end,
+          text: result.text
+        };
+
+        console.log(`Created synthetic timing for grouped subtitle ${subtitleId}: start=${start}, end=${end}`);
+      }
+    }
 
     // Check if this specific narration has been retried
     const wasRetried = result.retriedAt && result.retriedAt > Date.now() - 60000; // Within the last minute
 
-    // If we found a matching subtitle, use its timing
+    // If we found a matching subtitle or created synthetic timing, use it
     if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-
+      // For grouped subtitles, make sure to include the original_ids in the result
       return {
         ...result,
         start: subtitle.start,
         end: subtitle.end,
+        // Preserve original_ids if they exist
+        original_ids: result.original_ids || [subtitleId],
         // Add forceRegenerate flag if this narration was retried or any narration was retried recently
         forceRegenerate: wasRetried || hasRecentRetry
       };
     } else {
-      console.warn(`No timing found for subtitle ${subtitleId}. Using defaults.${wasRetried ? ' (RETRIED)' : ''} (${narrationType} narration)`);
+      console.warn(`No timing found for ${isGrouped ? 'grouped ' : ''}subtitle ${subtitleId}. Using defaults.${wasRetried ? ' (RETRIED)' : ''} (${narrationType} narration)`);
 
       // Otherwise, keep existing timing or use defaults
       return {
         ...result,
         start: result.start || 0,
         end: result.end || (result.start ? result.start + 5 : 5),
+        // Preserve original_ids if they exist
+        original_ids: result.original_ids || [subtitleId],
         // Add forceRegenerate flag if this narration was retried or any narration was retried recently
         forceRegenerate: wasRetried || hasRecentRetry
       };

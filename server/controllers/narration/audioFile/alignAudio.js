@@ -119,6 +119,12 @@ const downloadAlignedAudio = async (req, res) => {
         return res.status(400).json({ error: `Invalid duration for audio file: ${narration.filename}` });
       }
 
+      // Check if this is a grouped subtitle
+      const isGrouped = narration.original_ids && narration.original_ids.length > 1;
+      if (isGrouped) {
+        console.log(`Processing grouped subtitle ${narration.subtitle_id} with ${narration.original_ids.length} original subtitles`);
+      }
+
       // For file-based narrations (F5-TTS or Gemini)
       if (narration.filename) {
         const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
@@ -127,7 +133,9 @@ const downloadAlignedAudio = async (req, res) => {
           start: start,
           end: end,
           subtitle_id: narration.subtitle_id,
-          type: 'file'
+          original_ids: narration.original_ids, // Include original_ids for grouped subtitles
+          type: 'file',
+          isGrouped: isGrouped
         });
       }
       // For base64-encoded narrations (Gemini)
@@ -158,11 +166,13 @@ const downloadAlignedAudio = async (req, res) => {
             start: start,
             end: end,
             subtitle_id: narration.subtitle_id,
+            original_ids: narration.original_ids, // Include original_ids for grouped subtitles
             type: 'temp',
+            isGrouped: isGrouped,
             tempFile: tempFilePath // Track for cleanup later
           });
         } catch (error) {
-          console.error(`Error processing base64 audio data for subtitle ${narration.subtitle_id}:`, error);
+          console.error(`Error processing base64 audio data for ${isGrouped ? 'grouped ' : ''}subtitle ${narration.subtitle_id}:`, error);
           return res.status(500).json({ error: `Failed to process audio data for subtitle ${narration.subtitle_id}` });
         }
       }

@@ -77,9 +77,12 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
       const overlapAmount = previousSegment.naturalEnd - segment.start;
 
       // Log the overlap detection
+      const prevIsGrouped = previousSegment.isGrouped ? ` (grouped with ${previousSegment.original_ids?.length || 0} original IDs)` : '';
+      const currIsGrouped = segment.isGrouped ? ` (grouped with ${segment.original_ids?.length || 0} original IDs)` : '';
+
       console.log(`Detected overlap of ${overlapAmount.toFixed(2)}s between segments:
-        - Previous: ID ${previousSegment.subtitle_id}, Start: ${previousSegment.start.toFixed(2)}, Natural End: ${previousSegment.naturalEnd.toFixed(2)}
-        - Current: ID ${segment.subtitle_id}, Start: ${segment.start.toFixed(2)}, End: ${segment.end.toFixed(2)}`);
+        - Previous: ID ${previousSegment.subtitle_id}${prevIsGrouped}, Start: ${previousSegment.start.toFixed(2)}, Natural End: ${previousSegment.naturalEnd.toFixed(2)}
+        - Current: ID ${segment.subtitle_id}${currIsGrouped}, Start: ${segment.start.toFixed(2)}, End: ${segment.end.toFixed(2)}`);
 
       // Adjust the start time of the current segment to avoid overlap
       // Add a small gap (0.1s) between segments for natural pacing
@@ -166,7 +169,8 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
 
     // Log the delay being applied for each segment
     const wasAdjusted = segment.shiftAmount ? ` (adjusted by ${segment.shiftAmount.toFixed(2)}s)` : '';
-    console.log(`Segment ${segment.subtitle_id}: Applying delay of ${delayMs}ms${wasAdjusted}`);
+    const isGrouped = segment.isGrouped ? ` (grouped subtitle with ${segment.original_ids?.length || 0} original IDs)` : '';
+    console.log(`Segment ${segment.subtitle_id}: Applying delay of ${delayMs}ms${wasAdjusted}${isGrouped}`);
 
     // Use `index + 1` because input [0] is anullsrc
     const inputIndex = index + 1;

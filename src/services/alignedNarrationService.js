@@ -652,6 +652,17 @@ export const resetAlignedNarration = () => {
 // Make resetAlignedNarration available globally for direct access from event handlers
 window.resetAlignedNarration = resetAlignedNarration;
 
+// Add an event listener for subtitle timing changes
+window.addEventListener('subtitle-timing-changed', (event) => {
+  console.log('Subtitle timing changed event received:', event.detail);
+
+  // Reset the aligned narration cache to force regeneration
+  resetAlignedNarration();
+
+  // Log that the cache was reset
+  console.log('Aligned narration cache reset due to subtitle grouping change');
+});
+
 /**
  * Clean up aligned narration resources
  * @param {boolean} preserveAudioElement - Whether to preserve the audio element for reuse

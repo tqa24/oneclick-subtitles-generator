@@ -97,7 +97,12 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
       mimeType: audioResult.mimeType,   // MIME type of the audio
       sampleRate: audioResult.sampleRate, // Sample rate of the audio
       success: !!audioResult.audioData,
-      gemini: true // Flag to indicate this is a Gemini narration
+      gemini: true, // Flag to indicate this is a Gemini narration
+      // Include original_ids if this is a grouped subtitle
+      original_ids: subtitle.original_ids || [subtitle.id],
+      // Include start and end times if available
+      start: subtitle.start,
+      end: subtitle.end
     };
   } catch (error) {
     console.error(`Error generating Gemini narration for subtitle ${subtitle.id}:`, error);
@@ -108,7 +113,12 @@ export const generateGeminiNarration = async (subtitle, language, modelName = nu
       audioData: null,
       success: false,
       error: error.message,
-      gemini: true
+      gemini: true,
+      // Include original_ids if this is a grouped subtitle
+      original_ids: subtitle.original_ids || [subtitle.id],
+      // Include start and end times if available
+      start: subtitle.start,
+      end: subtitle.end
     };
   } finally {
     // We no longer release the client here
@@ -266,7 +276,12 @@ const processNarrationQueue = async (results, total, onProgress, onResult, onErr
               success: false,
               error: error.message,
               gemini: true,
-              failed: true // Flag to indicate this narration failed
+              failed: true, // Flag to indicate this narration failed
+              // Include original_ids if this is a grouped subtitle
+              original_ids: task.subtitle.original_ids || [task.subtitle.id],
+              // Include start and end times if available
+              start: task.subtitle.start,
+              end: task.subtitle.end
             };
 
             // Add the failed result to the results array to maintain order

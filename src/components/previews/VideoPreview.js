@@ -881,7 +881,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         setIsRefreshingNarration(true);
 
                         // Get narrations from window object
-                        const narrations = window.originalNarrations || [];
+                        // First check if we're using grouped subtitles
+                        const isUsingGroupedSubtitles = window.useGroupedSubtitles || false;
+                        const groupedNarrations = window.groupedNarrations || [];
+                        const originalNarrations = window.originalNarrations || [];
+
+                        // Use grouped narrations if available and enabled, otherwise use original narrations
+                        const narrations = (isUsingGroupedSubtitles && groupedNarrations.length > 0)
+                          ? groupedNarrations
+                          : originalNarrations;
+
+                        console.log(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
 
                         // Check if we have any narration results
                         if (!narrations || narrations.length === 0) {
@@ -897,7 +907,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         }
 
                         // Get all subtitles from the window object
-                        const allSubtitles = window.subtitlesData || window.originalSubtitles || [];
+                        // Use grouped subtitles if we're using grouped narrations
+                        // Reuse the isUsingGroupedSubtitles variable from above
+                        const allSubtitles = isUsingGroupedSubtitles && window.groupedSubtitles ?
+                          window.groupedSubtitles :
+                          (window.subtitlesData || window.originalSubtitles || []);
+
+                        console.log(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} subtitles for subtitle map. Found ${allSubtitles.length} subtitles.`);
 
                         // Create a map for faster lookup
                         const subtitleMap = {};

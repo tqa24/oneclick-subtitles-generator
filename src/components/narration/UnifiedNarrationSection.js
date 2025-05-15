@@ -96,6 +96,9 @@ const UnifiedNarrationSection = ({
     originalLanguage, setOriginalLanguage,
     translatedLanguage, setTranslatedLanguage,
     retryingSubtitleId, setRetryingSubtitleId,
+    useGroupedSubtitles, setUseGroupedSubtitles,
+    groupedSubtitles, setGroupedSubtitles,
+    isGroupingSubtitles, setIsGroupingSubtitles,
     selectedNarrationModel,
 
     // Helper functions
@@ -115,7 +118,8 @@ const UnifiedNarrationSection = ({
   const {
     handleGeminiNarration,
     cancelGeminiGeneration,
-    retryGeminiNarration
+    retryGeminiNarration,
+    groupSubtitles
   } = useGeminiNarration({
     setIsGenerating,
     setGenerationStatus,
@@ -131,6 +135,12 @@ const UnifiedNarrationSection = ({
     sleepTime,
     selectedVoice,
     concurrentClients,
+    useGroupedSubtitles,
+    setUseGroupedSubtitles,
+    groupedSubtitles,
+    setGroupedSubtitles,
+    isGroupingSubtitles,
+    setIsGroupingSubtitles,
     t,
     setRetryingSubtitleId
   });
@@ -145,10 +155,18 @@ const UnifiedNarrationSection = ({
       return;
     }
 
-    // Get the appropriate subtitles based on the selected source
-    const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
-      ? translatedSubtitles
-      : originalSubtitles || subtitles;
+    // Determine which subtitles to use based on whether we're using grouped subtitles
+    let selectedSubtitles;
+
+    if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+      // Use the grouped subtitles if available
+      selectedSubtitles = groupedSubtitles;
+    } else {
+      // Otherwise use the original or translated subtitles
+      selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
+        ? translatedSubtitles
+        : originalSubtitles || subtitles;
+    }
 
     if (!selectedSubtitles || selectedSubtitles.length === 0) {
       setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
@@ -715,9 +733,11 @@ const UnifiedNarrationSection = ({
             translatedLanguage={translatedLanguage}
             setOriginalLanguage={setOriginalLanguage}
             setTranslatedLanguage={setTranslatedLanguage}
+            useGroupedSubtitles={useGroupedSubtitles}
+            setUseGroupedSubtitles={setUseGroupedSubtitles}
+            isGroupingSubtitles={isGroupingSubtitles}
+            groupedSubtitles={groupedSubtitles}
             onLanguageDetected={(source, language) => {
-
-
               // Update the appropriate language state
               if (source === 'original') {
                 setOriginalLanguage(language);

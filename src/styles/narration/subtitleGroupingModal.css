@@ -1,0 +1,82 @@
+/* Styles for the subtitle grouping modal */
+
+.subtitle-grouping-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.subtitle-grouping-table th {
+  background-color: #f5f5f5;
+  font-weight: bold;
+  text-align: left;
+  padding: 8px;
+  border-bottom: 2px solid #ddd;
+}
+
+.subtitle-grouping-table td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+  vertical-align: top;
+}
+
+.subtitle-grouping-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.subtitle-grouping-table .original-subtitle {
+  background-color: #f8f8f8;
+}
+
+.subtitle-grouping-table .grouped-subtitle {
+  background-color: #f0f7ff;
+}
+
+.subtitle-grouping-table .time-cell {
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.subtitle-grouping-table .id-cell {
+  text-align: center;
+  font-weight: bold;
+}
+
+.subtitle-grouping-button {
+  margin-top: 8px;
+  margin-left: 10px;
+}
+
+.subtitle-grouping-modal-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subtitle-grouping-modal-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.subtitle-grouping-explanation {
+  margin-bottom: 16px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+/* Highlight matching subtitles */
+.subtitle-grouping-table .highlight {
+  background-color: #fffde7;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .subtitle-grouping-table {
+    font-size: 0.9em;
+  }
+  
+  .subtitle-grouping-table td,
+  .subtitle-grouping-table th {
+    padding: 6px;
+  }
+}

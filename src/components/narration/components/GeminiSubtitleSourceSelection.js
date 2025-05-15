@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import InfoIcon from '@mui/icons-material/Info';
+import SubtitleGroupingModal from './SubtitleGroupingModal';
 
 /**
  * Simplified subtitle source selection component for Gemini narration
@@ -16,6 +22,11 @@ import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
  * @param {Function} props.setOriginalLanguage - Function to set original language
  * @param {Function} props.setTranslatedLanguage - Function to set translated language
  * @param {Function} props.onLanguageDetected - Callback when language is detected
+ * @param {boolean} props.useGroupedSubtitles - Whether to use grouped subtitles for narration
+ * @param {Function} props.setUseGroupedSubtitles - Function to set whether to use grouped subtitles
+ * @param {boolean} props.isGroupingSubtitles - Whether subtitles are currently being grouped
+ * @param {Array} props.originalSubtitles - Original subtitles
+ * @param {Array} props.groupedSubtitles - Grouped subtitles
  * @returns {JSX.Element} - Rendered component
  */
 const GeminiSubtitleSourceSelection = ({
@@ -28,14 +39,33 @@ const GeminiSubtitleSourceSelection = ({
   translatedLanguage,
   setOriginalLanguage,
   setTranslatedLanguage,
-  onLanguageDetected
+  onLanguageDetected,
+  useGroupedSubtitles = false,
+  setUseGroupedSubtitles = () => {},
+  isGroupingSubtitles = false,
+  groupedSubtitles = null
 }) => {
   const { t } = useTranslation();
-  const hasTranslatedSubtitles = translatedSubtitles && translatedSubtitles.length > 0;
 
-  // State for language detection
+  // State for language detection and modal
   const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
   const [isDetectingTranslated, setIsDetectingTranslated] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Function to handle subtitle grouping toggle
+  const handleGroupingToggle = (checked) => {
+    setUseGroupedSubtitles(checked);
+    // No need to set isGroupingSubtitles here as it will be handled by the useGeminiNarration hook
+  };
+
+  // Functions to handle modal
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
+
+  // Check if subtitles are available
+  const hasTranslatedSubtitles = translatedSubtitles && translatedSubtitles.length > 0;
+  const hasOriginalSubtitles = originalSubtitles && originalSubtitles.length > 0;
+  const hasSubtitles = hasOriginalSubtitles || hasTranslatedSubtitles;
 
   // Listen for language detection events
   useEffect(() => {
@@ -209,6 +239,61 @@ const GeminiSubtitleSourceSelection = ({
               </label>
             </div>
           </div>
+
+          {/* Subtitle Grouping Switch */}
+          <div className="subtitle-grouping-switch" style={{ marginTop: '10px' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useGroupedSubtitles}
+                  onChange={(e) => handleGroupingToggle(e.target.checked)}
+                  disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
+                  color="primary"
+                  size="small"
+                />
+              }
+              label={
+                <span style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                  {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                  {isGroupingSubtitles && (
+                    <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
+                      <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
+                      <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
+                    </span>
+                  )}
+                </span>
+              }
+            />
+
+            {/* Show comparison button when grouped subtitles are available */}
+            {useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0 && (
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
+                <Button
+                  startIcon={<InfoIcon />}
+                  onClick={openModal}
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                >
+                  {t('narration.viewGrouping', 'View Grouping')}
+                </Button>
+                <Typography variant="caption" color="textSecondary" style={{ marginLeft: '10px' }}>
+                  {t('narration.groupedSubtitlesCount', 'Grouped {{original}} subtitles into {{grouped}} sentences', {
+                    original: originalSubtitles?.length || 0,
+                    grouped: groupedSubtitles?.length || 0
+                  })}
+                </Typography>
+              </div>
+            )}
+          </div>
+
+          {/* Subtitle Grouping Comparison Modal */}
+          <SubtitleGroupingModal
+            open={isModalOpen}
+            onClose={closeModal}
+            originalSubtitles={originalSubtitles}
+            groupedSubtitles={groupedSubtitles}
+          />
         </div>
       </div>
     </div>
