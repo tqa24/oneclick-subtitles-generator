@@ -14,17 +14,18 @@ const enhancer = require('./enhancer');
 module.exports = {
   // Serve audio files
   serveAudioFile: serveAudio.serveAudioFile,
-  
+
   // Aligned audio processing
   downloadAlignedAudio: alignAudio.downloadAlignedAudio,
-  
+
   // Batch processing for large numbers of segments
   processBatch: batchProcessor.processBatch,
   concatenateAudioFiles: batchProcessor.concatenateAudioFiles,
-  
+  analyzeAndAdjustSegments: batchProcessor.analyzeAndAdjustSegments,
+
   // Zip file creation
   downloadAllAudio: zipAudio.downloadAllAudio,
-  
+
   // Utility functions
   enhanceF5TTSNarrations: enhancer.enhanceF5TTSNarrations
 };

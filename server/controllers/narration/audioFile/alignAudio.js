@@ -1,6 +1,7 @@
 /**
  * Module for aligning audio segments with precise timing
  * Includes batch processing to handle large numbers of segments
+ * Features smart overlap detection and resolution for natural narration
  */
 
 const path = require('path');
@@ -22,8 +23,16 @@ const MAX_SEGMENTS_PER_BATCH = 200;
  * ensuring consistent alignment and playback in the video player.
  *
  * Audio processing includes:
- * 1. Individual audio segments are boosted by 1.5x for clarity
- * 2. Using amix with normalize=0 to prevent automatic volume reduction during overlaps
+ * 1. Smart overlap detection and resolution to prevent narrations from talking over each other
+ * 2. Individual audio segments are boosted by 1.5x for clarity
+ * 3. Using amix with normalize=0 to prevent automatic volume reduction during any remaining overlaps
+ *
+ * The smart overlap detection:
+ * - Analyzes the actual duration of each audio segment
+ * - Detects when segments would naturally overlap based on their timing and duration
+ * - Adjusts the timing of overlapping segments to ensure they play sequentially
+ * - Maintains a small gap between segments for natural pacing
+ * - Preserves the relationship with subtitle timing while ensuring comprehensibility
  *
  * The key setting is normalize=0 in the amix filter, which ensures that when audio segments
  * overlap (even partially), they maintain their full volume without any reduction.
@@ -69,11 +78,7 @@ const downloadAlignedAudio = async (req, res) => {
     // Reset the audioSegments array
     audioSegments = [];
 
-    // Log the received narrations for debugging
-
-    narrations.forEach(n => {
-
-    });
+    // Narrations will be processed below
 
     for (const narration of narrations) {
       // Handle both F5-TTS and Gemini narrations

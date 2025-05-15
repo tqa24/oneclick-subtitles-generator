@@ -295,6 +295,36 @@ export const getNextAvailableClient = async (maxRetries = 5, retryDelayMs = 100)
       return availableClient;
     }
 
+    // Check if we can create a new client
+    if (clientPool.clients.length < MAX_CONCURRENT_CLIENTS) {
+      try {
+        console.log(`All clients busy, creating a new client (current count: ${clientPool.clients.length})`);
+
+        // Create a new client with the same parameters as the existing ones
+        const newClientIndex = clientPool.clients.length;
+        const newClient = await createClient(
+          clientPool.apiKey,
+          clientPool.modelName,
+          clientPool.voiceName,
+          clientPool.languageCode,
+          newClientIndex
+        );
+
+        // Add the new client to the pool
+        clientPool.clients.push(newClient);
+
+        // Mark the client as busy and update last used timestamp
+        newClient.busy = true;
+        newClient.lastUsed = Date.now();
+
+        console.log(`Created and assigned new client ${newClientIndex}`);
+        return newClient;
+      } catch (error) {
+        console.error('Error creating new client:', error);
+        // Continue with retries if we can't create a new client
+      }
+    }
+
     // If we've reached the maximum number of retries, throw an error
     if (retries === maxRetries) {
       throw new Error(`No available WebSocket clients in the pool after ${maxRetries} retry attempts`);
