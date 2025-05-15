@@ -2,6 +2,50 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProcessingForceStopped } from '../services/geminiService';
 
+// Constants for localStorage keys
+const TRANSLATION_CACHE_KEY = 'translated_subtitles_cache';
+const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
+const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
+
+/**
+ * Helper function to generate a hash for subtitles to use as a cache key
+ * @param {Array} subtitles - Array of subtitle objects
+ * @returns {string} - Hash string
+ */
+const generateSubtitleHash = (subtitles) => {
+  if (!subtitles || !subtitles.length) return '';
+
+  // Create a string representation of the subtitles (just IDs and text)
+  const subtitleString = subtitles.map(s => `${s.id || s.subtitle_id || ''}:${s.text}`).join('|');
+
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < subtitleString.length; i++) {
+    const char = subtitleString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+
+  return hash.toString(16);
+};
+
+/**
+ * Helper function to get the current video/file identifier
+ * @returns {string|null} - Current video/file ID or null if not found
+ */
+const getCurrentMediaId = () => {
+  // Check for YouTube URL first
+  const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
+  if (youtubeUrl) {
+    // Extract video ID from URL
+    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
+    return match ? match[1] : null;
+  }
+
+  // Check for file cache ID
+  return localStorage.getItem(CURRENT_FILE_ID_KEY);
+};
+
 /**
  * Custom hook to manage translation state
  * @param {Array} subtitles - Subtitles to translate
@@ -14,6 +58,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const [translatedSubtitles, setTranslatedSubtitles] = useState(null);
   const [error, setError] = useState('');
   const [translationStatus, setTranslationStatus] = useState('');
+  const [loadedFromCache, setLoadedFromCache] = useState(false);
   // Use a translation-specific model selection that's independent from settings
   const [selectedModel, setSelectedModel] = useState(() => {
     // Get the model from translation-specific localStorage key or use the global setting as default
@@ -55,6 +100,60 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     window.addEventListener('translation-status', handleTranslationStatus);
     return () => window.removeEventListener('translation-status', handleTranslationStatus);
   }, []);
+
+  // Load translations from cache on component mount
+  useEffect(() => {
+    // Only try to load from cache if we don't have results yet and have subtitles to translate
+    if (translatedSubtitles || !subtitles || subtitles.length === 0) return;
+
+    try {
+      // Get current media ID
+      const mediaId = getCurrentMediaId();
+      if (!mediaId) return;
+
+      // Generate a hash of the subtitles
+      const subtitleHash = generateSubtitleHash(subtitles);
+
+      // Get cache entry
+      const cacheEntryJson = localStorage.getItem(TRANSLATION_CACHE_KEY);
+      if (!cacheEntryJson) return;
+
+      const cacheEntry = JSON.parse(cacheEntryJson);
+
+      // Check if cache entry is for the current media and subtitles
+      if (cacheEntry.mediaId !== mediaId || cacheEntry.subtitleHash !== subtitleHash) return;
+
+      // Check if we have translations
+      if (!cacheEntry.translations || !cacheEntry.translations.length) return;
+
+      // Set loading state first
+      setLoadedFromCache(true);
+
+      // Use a small timeout to ensure the loading state is rendered
+      setTimeout(() => {
+        // Set the translated subtitles
+        setTranslatedSubtitles(cacheEntry.translations);
+
+        // Call the callback
+        if (onTranslationComplete) {
+          onTranslationComplete(cacheEntry.translations);
+        }
+
+        // Dispatch a custom event to notify other components that translation is complete
+        window.dispatchEvent(new CustomEvent('translation-complete', {
+          detail: {
+            translatedSubtitles: cacheEntry.translations,
+            loadedFromCache: true
+          }
+        }));
+
+        // Show a status message
+        setTranslationStatus(t('translation.loadedFromCache', 'Translations loaded from cache'));
+      }, 100);
+    } catch (error) {
+      console.error('Error loading translations from cache:', error);
+    }
+  }, [subtitles, translatedSubtitles, onTranslationComplete, t]);
 
   // Check if transcription rules are available
   useEffect(() => {
@@ -185,6 +284,29 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
         return;
       }
 
+      // Save translations to cache
+      try {
+        // Get current media ID
+        const mediaId = getCurrentMediaId();
+        if (mediaId) {
+          // Generate a hash of the subtitles
+          const subtitleHash = generateSubtitleHash(subtitles);
+
+          // Create cache entry
+          const cacheEntry = {
+            mediaId,
+            subtitleHash,
+            timestamp: Date.now(),
+            translations: result
+          };
+
+          // Save to localStorage
+          localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(cacheEntry));
+        }
+      } catch (error) {
+        console.error('Error saving translations to cache:', error);
+      }
+
       setTranslatedSubtitles(result);
       if (onTranslationComplete) {
         onTranslationComplete(result);
@@ -193,7 +315,8 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       // Dispatch a custom event to notify other components that translation is complete
       window.dispatchEvent(new CustomEvent('translation-complete', {
         detail: {
-          translatedSubtitles: result
+          translatedSubtitles: result,
+          loadedFromCache: false
         }
       }));
 
@@ -234,6 +357,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const handleReset = () => {
     setTranslatedSubtitles(null);
     setError('');
+    setLoadedFromCache(false);
 
     // Reset the processing force stopped flag when resetting translation
     setProcessingForceStopped(false);
@@ -291,6 +415,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     includeRules,
     rulesAvailable,
     hasUserProvidedSubtitles,
+    loadedFromCache,
     statusRef,
     handleModelSelect,
     handleSavePrompt,

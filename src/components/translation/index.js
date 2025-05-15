@@ -73,6 +73,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     includeRules,
     rulesAvailable,
     hasUserProvidedSubtitles,
+    loadedFromCache,
     statusRef,
     handleModelSelect,
     handleSavePrompt,
@@ -407,6 +408,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         <TranslationPreview
           translatedSubtitles={translatedSubtitles}
           targetLanguages={targetLanguages}
+          loadedFromCache={loadedFromCache}
         />
 
         {/* Narration Section moved to OutputContainer */}
