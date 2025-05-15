@@ -372,6 +372,9 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             }
         }
 
+        // Print the raw response to the console for debugging
+        console.log('Raw Gemini API response:', JSON.stringify(data, null, 2));
+
         // Remove this controller from the map after successful response
         removeRequestController(requestId);
         return parseGeminiResponse(data);
