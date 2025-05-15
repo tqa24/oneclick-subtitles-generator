@@ -10,5 +10,7 @@
   "bothKeysRequired": "Please set your Gemini API key and configure YouTube authentication in the settings to use this application.",
   "quotaExceeded": "Quota exceeded, please wait tomorrow, or create a new Google Cloud project and update API or OAuth.",
   "youtubeApiNotEnabled": "YouTube Data API v3 is not enabled in your Google Cloud project. Please enable it by visiting the Google Cloud Console and enabling the YouTube Data API v3 service.",
-  "noMediaSelected": "Please select a video or audio file first"
+  "noMediaSelected": "Please select a video or audio file first",
+  "contentBlocked": "Video content is not safe and was blocked by Gemini",
+  "paidTierRequired": "This model is currently requiring paid tier of Gemini API"
 }

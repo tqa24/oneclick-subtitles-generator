@@ -187,14 +187,19 @@ Provide your analysis in a structured format that can be used to guide the trans
 
     const data = await response.json();
 
+    // Check if content was blocked by Gemini
+    if (data?.promptFeedback?.blockReason) {
+      console.error('Content blocked by Gemini:', data.promptFeedback);
+      throw new Error(t('errors.contentBlocked', 'Video content is not safe and was blocked by Gemini'));
+    }
+
     // Check if this is a structured JSON response
     let analysisResult;
-    if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-
+    if (data.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
       analysisResult = data.candidates[0].content.parts[0].structuredJson;
     } else {
       // If not structured, try to parse the text response
-      const resultText = data.candidates[0]?.content?.parts[0]?.text;
+      const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!resultText) {
         throw new Error('No analysis returned from Gemini');
       }

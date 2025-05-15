@@ -14,7 +14,7 @@ import {
     createRequestController,
     removeRequestController
 } from './requestManagement';
-
+import i18n from '../../i18n/i18n';
 import { getNextAvailableKey, blacklistKey } from './keyManager';
 
 /**
@@ -311,6 +311,15 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                             overloadError.isOverloaded = true;
                             throw overloadError;
                         }
+
+                        // Check for quota exceeded errors (429 status code)
+                        if (errorData.error.code === 429 ||
+                            errorData.error.status === 'RESOURCE_EXHAUSTED' ||
+                            (errorData.error.message && errorData.error.message.includes('quota'))) {
+                            // Blacklist the current API key
+                            blacklistKey(geminiApiKey);
+                            throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                        }
                     }
 
                     throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
@@ -328,6 +337,13 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                         throw overloadError;
                     }
 
+                    // Check for 429 status code (quota exceeded)
+                    if (response.status === 429) {
+                        // Blacklist the current API key
+                        blacklistKey(geminiApiKey);
+                        throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                    }
+
                     throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                 }
             } catch (error) {
@@ -340,6 +356,13 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
                     overloadError.isOverloaded = true;
                     throw overloadError;
+                }
+
+                // Check for 429 status code (quota exceeded)
+                if (response.status === 429) {
+                    // Blacklist the current API key
+                    blacklistKey(geminiApiKey);
+                    throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
                 }
 
                 throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
@@ -375,6 +398,14 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         // Print the raw response to the console for debugging
         console.log('Raw Gemini API response:', JSON.stringify(data, null, 2));
 
+        // Check if content was blocked by Gemini
+        if (data?.promptFeedback?.blockReason) {
+            console.error('Content blocked by Gemini:', data.promptFeedback);
+            // Remove this controller from the map
+            removeRequestController(requestId);
+            throw new Error(i18n.t('errors.contentBlocked', 'Video content is not safe and was blocked by Gemini'));
+        }
+
         // Remove this controller from the map after successful response
         removeRequestController(requestId);
         return parseGeminiResponse(data);
@@ -399,6 +430,19 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (!error.isOverloaded) {
                     error.isOverloaded = true;
                 }
+            }
+
+            // Check for quota exceeded errors in the error message
+            if (error.message && (
+                error.message.includes('429') ||
+                error.message.includes('quota') ||
+                error.message.includes('RESOURCE_EXHAUSTED')
+            )) {
+                // Blacklist the current API key
+                blacklistKey(geminiApiKey);
+
+                // Replace the error with a more user-friendly message
+                error = new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
             }
 
             // Remove this controller from the map on error

@@ -8,12 +8,13 @@ import { parseStructuredJsonResponse } from './structuredJsonParser';
 import { parseTranslatedSubtitles } from './translationParser';
 import { convertTimeStringToSeconds, formatSecondsToSRTTime } from './timeUtils';
 import { deduplicateAndSortSubtitles } from './subtitleUtils';
-import { 
-    parseOriginalFormat, 
-    parseMillisecondsFormat, 
-    parseSingleTimestampFormat, 
-    parseBracketSpaceFormat 
+import {
+    parseOriginalFormat,
+    parseMillisecondsFormat,
+    parseSingleTimestampFormat,
+    parseBracketSpaceFormat
 } from './formatParsers';
+import i18n from '../../i18n/i18n';
 
 /**
  * Parse Gemini API response to extract subtitles
@@ -21,11 +22,14 @@ import {
  * @returns {Array} - Array of subtitle objects
  */
 export const parseGeminiResponse = (response) => {
-
+    // Check if content was blocked by Gemini
+    if (response?.promptFeedback?.blockReason) {
+        console.error('Content blocked by Gemini:', response.promptFeedback);
+        throw new Error(i18n.t('errors.contentBlocked', 'Video content is not safe and was blocked by Gemini'));
+    }
 
     // Check if this is a structured JSON response
     if (response?.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-
         try {
             return parseStructuredJsonResponse(response);
         } catch (error) {
