@@ -94,7 +94,7 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
       aria-labelledby="subtitle-grouping-dialog-title"
     >
       <DialogTitle id="subtitle-grouping-dialog-title">
-        {t('narration.subtitleGroupingComparison', 'Subtitle Grouping Comparison')}
+        {t('narration.subtitleGroupingTitle', 'Subtitle Grouping Comparison')}
         <IconButton
           aria-label="close"
           onClick={onClose}

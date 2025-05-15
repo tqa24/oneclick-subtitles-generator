@@ -130,5 +130,19 @@
   "pending": "Pending generation...",
   "waitingForResults": "Waiting for narration results...",
   "geminiGenerationIncomplete": "Gemini narration generation incomplete. Generated {{generated}} of {{total}} narrations.",
-  "geminiConnectionError": "Connection to Gemini was interrupted. You can retry the failed narrations individually."
+  "geminiConnectionError": "Connection to Gemini was interrupted. You can retry the failed narrations individually.",
+
+  "groupSubtitles": "Smartly group subtitles into fuller sentences for narration",
+  "groupingSubtitles": "Grouping...",
+  "viewGrouping": "View Grouping",
+  "groupedSubtitlesCount": "Grouped {{original}} subtitles into {{grouped}} sentences",
+  "subtitlesGrouped": "Grouped {{original}} subtitles into {{grouped}} fuller sentences for better narration.",
+
+  "id": "ID",
+  "time": "Time",
+  "groupId": "Group",
+  "groupTime": "Group Time",
+  "groupedSubtitles": "Grouped Subtitles",
+  "subtitleGroupingTitle": "Subtitle Grouping Comparison",
+  "subtitleGroupingExplanation": "This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row represents an original subtitle, and the grouped column shows how they've been combined."
 }
