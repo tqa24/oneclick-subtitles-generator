@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import '../../../styles/narration/geminiNarrationResults.css';
 import '../../../styles/narration/speedControlSlider.css';
 import { VariableSizeList as List } from 'react-window';
-import axios from 'axios';
 
 // Import utility functions and config
 import { getAudioUrl } from '../../../services/narrationService';
@@ -251,6 +250,7 @@ const GeminiNarrationResults = ({
   const [speedValue, setSpeedValue] = useState(1.0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [currentFile, setCurrentFile] = useState('');
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
@@ -265,6 +265,7 @@ const GeminiNarrationResults = ({
       // Start processing
       setIsProcessing(true);
       setProcessingProgress({ current: 0, total: generationResults.length });
+      setCurrentFile('');
 
       // Get all successful narrations with filenames
       const successfulNarrations = generationResults.filter(
@@ -283,48 +284,117 @@ const GeminiNarrationResults = ({
       const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
       console.log(`Sending request to: ${apiUrl}`);
 
-      const response = await axios.post(apiUrl, {
-        filenames: successfulNarrations.map(result => result.filename),
-        speedFactor: speedValue
+      // Use fetch with streaming response to get real-time progress updates
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filenames: successfulNarrations.map(result => result.filename),
+          speedFactor: speedValue
+        })
       });
 
-      if (response.data.success) {
-        // Update progress
-        setProcessingProgress({
-          current: response.data.processed,
-          total: successfulNarrations.length
-        });
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
 
-        console.log(`Successfully modified speed of ${response.data.processed} narration files`);
+      // Set up a reader to read the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-        // Force reload of audio files by adding a timestamp to the URLs
-        // This will be handled by the existing cache-busting in playAudio and downloadAudio
+      // Process the stream
+      while (true) {
+        const { done, value } = await reader.read();
 
-        // Reset the aligned narration to use the new speed-modified files
-        if (typeof window.resetAlignedNarration === 'function') {
-          console.log('Resetting aligned narration to use speed-modified files');
-          window.resetAlignedNarration();
+        if (done) {
+          // Process any remaining data in the buffer
+          if (buffer) {
+            try {
+              const finalData = JSON.parse(buffer);
+              console.log('Final update:', finalData);
 
-          // Dispatch an event to notify that narration should be refreshed
-          window.dispatchEvent(new CustomEvent('narration-speed-modified', {
-            detail: {
-              speed: speedValue,
-              timestamp: Date.now()
+              if (finalData.success && finalData.status === 'complete') {
+                // Update progress with the final count
+                setProcessingProgress({
+                  current: finalData.processed,
+                  total: finalData.total
+                });
+
+                // Reset the aligned narration to use the new speed-modified files
+                if (typeof window.resetAlignedNarration === 'function') {
+                  console.log('Resetting aligned narration to use speed-modified files');
+                  window.resetAlignedNarration();
+
+                  // Dispatch an event to notify that narration should be refreshed
+                  window.dispatchEvent(new CustomEvent('narration-speed-modified', {
+                    detail: {
+                      speed: speedValue,
+                      timestamp: Date.now()
+                    }
+                  }));
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing final JSON chunk:', e);
             }
-          }));
+          }
+          break;
         }
 
-        // Show a success message
-        alert(t('narration.speedModifySuccess', 'Narration speed successfully changed to {{speed}}x', { speed: speedValue }));
-      } else {
-        console.error('Error modifying audio speed:', response.data.error);
-        alert(t('narration.speedModifyError', 'Error changing narration speed: {{error}}', { error: response.data.error || 'Unknown error' }));
+        // Decode the chunk and add it to our buffer
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+
+        // Process complete JSON objects in the buffer
+        let startIndex = 0;
+        let endIndex;
+
+        // Find each complete JSON object in the buffer
+        while ((endIndex = buffer.indexOf('}', startIndex)) !== -1) {
+          try {
+            // Extract a complete JSON object
+            const jsonStr = buffer.substring(startIndex, endIndex + 1);
+            const data = JSON.parse(jsonStr);
+
+            // Update progress based on the data
+            if (data.success && data.processed !== undefined) {
+              console.log(`Progress update: ${data.processed}/${data.total}`);
+              setProcessingProgress({
+                current: data.processed,
+                total: data.total
+              });
+
+              // Update current file being processed if available
+              if (data.current) {
+                // Extract just the filename without the path
+                const filename = data.current.split('/').pop();
+                setCurrentFile(filename);
+              }
+            }
+
+            // Move past this JSON object
+            startIndex = endIndex + 1;
+          } catch (e) {
+            // If we can't parse it yet, it might be incomplete
+            // Just move to the next character and try again
+            startIndex++;
+          }
+        }
+
+        // Keep any remaining incomplete data in the buffer
+        buffer = buffer.substring(startIndex);
       }
+
+      console.log(`Successfully modified narration speed to ${speedValue}x`);
     } catch (error) {
       console.error('Error calling audio speed modification API:', error);
     } finally {
       // End processing
       setIsProcessing(false);
+      setCurrentFile('');
     }
   };
 
@@ -729,7 +799,14 @@ const GeminiNarrationResults = ({
             {isProcessing ? (
               <div className="speed-control-progress">
                 <div className="speed-control-spinner"></div>
-                <span>{processingProgress.current}/{processingProgress.total}</span>
+                <div className="speed-control-progress-info">
+                  <span>{processingProgress.current}/{processingProgress.total}</span>
+                  {currentFile && (
+                    <span className="speed-control-filename" title={currentFile}>
+                      {currentFile.length > 10 ? currentFile.substring(0, 10) + '...' : currentFile}
+                    </span>
+                  )}
+                </div>
               </div>
             ) : (
               <button

@@ -40,7 +40,7 @@ const modifyAudioSpeed = async (req, res) => {
     // Create a backup of the original file if it doesn't exist already
     const backupFilename = `${path.dirname(filename)}/backup_${path.basename(filename)}`;
     const backupPath = path.join(OUTPUT_AUDIO_DIR, backupFilename);
-    
+
     if (!fs.existsSync(backupPath)) {
       // Copy the original file to the backup location
       fs.copyFileSync(audioPath, backupPath);
@@ -53,7 +53,7 @@ const modifyAudioSpeed = async (req, res) => {
     // atempo filter allows speed adjustment between 0.5 and 2.0
     // For values outside this range, we can chain multiple atempo filters
     let filterComplex = '';
-    
+
     if (speed >= 0.5 && speed <= 2.0) {
       // Simple case: single atempo filter
       filterComplex = `atempo=${speed}`;
@@ -139,12 +139,26 @@ const batchModifyAudioSpeed = async (req, res) => {
       return res.status(400).json({ error: 'Speed factor must be between 0.5 and 2.0' });
     }
 
+    // Set up response headers for streaming
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    // Send initial response
+    res.write(JSON.stringify({
+      success: true,
+      status: 'processing',
+      total: filenames.length,
+      processed: 0,
+      message: 'Starting audio speed modification'
+    }));
+
     // Process each file
     const results = [];
     const errors = [];
+    let processedCount = 0;
 
     // Process files sequentially to avoid overwhelming the system
-    for (const filename of filenames) {
+    for (const [index, filename] of filenames.entries()) {
       try {
         // Get the full path to the audio file
         const audioPath = path.join(OUTPUT_AUDIO_DIR, filename);
@@ -152,13 +166,25 @@ const batchModifyAudioSpeed = async (req, res) => {
         // Check if the file exists
         if (!fs.existsSync(audioPath)) {
           errors.push({ filename, error: 'File not found' });
+          processedCount++;
+
+          // Send progress update
+          res.write(JSON.stringify({
+            success: true,
+            status: 'processing',
+            total: filenames.length,
+            processed: processedCount,
+            current: filename,
+            message: `File not found: ${filename}`
+          }));
+
           continue;
         }
 
         // Create a backup of the original file if it doesn't exist already
         const backupFilename = `${path.dirname(filename)}/backup_${path.basename(filename)}`;
         const backupPath = path.join(OUTPUT_AUDIO_DIR, backupFilename);
-        
+
         if (!fs.existsSync(backupPath)) {
           // Copy the original file to the backup location
           fs.copyFileSync(audioPath, backupPath);
@@ -169,7 +195,7 @@ const batchModifyAudioSpeed = async (req, res) => {
 
         // Construct ffmpeg filter complex
         let filterComplex = '';
-        
+
         if (speed >= 0.5 && speed <= 2.0) {
           filterComplex = `atempo=${speed}`;
         } else if (speed > 2.0 && speed <= 4.0) {
@@ -180,6 +206,18 @@ const batchModifyAudioSpeed = async (req, res) => {
           filterComplex = `atempo=${halfSpeed},atempo=${halfSpeed}`;
         } else {
           errors.push({ filename, error: 'Speed factor must be between 0.25 and 4.0' });
+          processedCount++;
+
+          // Send progress update
+          res.write(JSON.stringify({
+            success: true,
+            status: 'processing',
+            total: filenames.length,
+            processed: processedCount,
+            current: filename,
+            message: `Invalid speed factor for ${filename}`
+          }));
+
           continue;
         }
 
@@ -193,44 +231,114 @@ const batchModifyAudioSpeed = async (req, res) => {
           audioPath
         ];
 
+        // Send progress update before starting ffmpeg
+        res.write(JSON.stringify({
+          success: true,
+          status: 'processing',
+          total: filenames.length,
+          processed: processedCount,
+          current: filename,
+          message: `Processing file ${index + 1}/${filenames.length}: ${filename}`
+        }));
+
         // Execute the ffmpeg command and wait for it to complete
         await new Promise((resolve, reject) => {
           const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
-          
+
           ffmpegProcess.on('close', (code) => {
             if (code === 0) {
               results.push({ filename, success: true });
+              processedCount++;
+
+              // Send progress update
+              res.write(JSON.stringify({
+                success: true,
+                status: 'processing',
+                total: filenames.length,
+                processed: processedCount,
+                current: filename,
+                message: `Successfully processed ${filename}`
+              }));
+
               resolve();
             } else {
               errors.push({ filename, error: `ffmpeg process exited with code ${code}` });
+              processedCount++;
+
+              // Send progress update
+              res.write(JSON.stringify({
+                success: true,
+                status: 'processing',
+                total: filenames.length,
+                processed: processedCount,
+                current: filename,
+                message: `Error processing ${filename}: ffmpeg exited with code ${code}`
+              }));
+
               resolve(); // Still resolve to continue with other files
             }
           });
-          
+
           ffmpegProcess.on('error', (err) => {
             errors.push({ filename, error: err.message });
+            processedCount++;
+
+            // Send progress update
+            res.write(JSON.stringify({
+              success: true,
+              status: 'processing',
+              total: filenames.length,
+              processed: processedCount,
+              current: filename,
+              message: `Error processing ${filename}: ${err.message}`
+            }));
+
             resolve(); // Still resolve to continue with other files
           });
         });
       } catch (error) {
         errors.push({ filename, error: error.message });
+        processedCount++;
+
+        // Send progress update
+        res.write(JSON.stringify({
+          success: true,
+          status: 'processing',
+          total: filenames.length,
+          processed: processedCount,
+          current: filename,
+          message: `Error processing ${filename}: ${error.message}`
+        }));
       }
     }
 
-    // Return the results
-    res.json({
+    // Send final results
+    res.end(JSON.stringify({
       success: true,
-      processed: results.length,
-      failed: errors.length,
+      status: 'complete',
+      total: filenames.length,
+      processed: processedCount,
       results,
-      errors
-    });
+      errors,
+      message: 'Audio speed modification complete'
+    }));
   } catch (error) {
     console.error(`Error in batchModifyAudioSpeed: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: `Server error: ${error.message}`
-    });
+
+    // If headers haven't been sent yet, send a regular error response
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: `Server error: ${error.message}`
+      });
+    } else {
+      // If we've already started streaming, end with an error
+      res.end(JSON.stringify({
+        success: false,
+        status: 'error',
+        error: `Server error: ${error.message}`
+      }));
+    }
   }
 };
 
