@@ -185,6 +185,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Pulling latest changes from repository...
+git reset --hard origin/main
 git pull
 IF %ERRORLEVEL% NEQ 0 (
     ECHO ERROR: Failed to pull updates using 'git pull'. Check messages above.

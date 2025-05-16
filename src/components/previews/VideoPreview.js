@@ -893,10 +893,60 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                         console.log(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
 
+                        // Debug: Log the structure of the first few narrations to understand what properties are available
+                        if (narrations.length > 0) {
+                          console.log('First narration structure:', JSON.stringify(narrations[0], null, 2));
+                          console.log('Narrations with success but no filename:', narrations.filter(n => n.success && !n.filename).length);
+                          console.log('Narrations with success and filename:', narrations.filter(n => n.success && n.filename).length);
+                        } else {
+                          console.log('No narrations found in window.originalNarrations or window.groupedNarrations');
+                          console.log('window.originalNarrations exists:', !!window.originalNarrations);
+                          console.log('window.groupedNarrations exists:', !!window.groupedNarrations);
+
+                          // Check if we have subtitles data
+                          const subtitlesData = window.subtitlesData || window.originalSubtitles || [];
+                          console.log('Subtitles data available:', subtitlesData.length);
+                        }
+
                         // Check if we have any narration results
                         if (!narrations || narrations.length === 0) {
-                          console.error('No narration results available for alignment');
-                          throw new Error('No narration results available for alignment');
+                          console.error('No narration results available in window objects');
+
+                          // Try to reconstruct narration results from the file system
+                          // This is a fallback for when window.originalNarrations is empty
+                          // but we know narrations exist on the server
+
+                          // Get all subtitles
+                          const allSubtitles = window.subtitlesData || window.originalSubtitles || [];
+
+                          if (allSubtitles.length === 0) {
+                            console.error('No subtitles available to reconstruct narrations');
+                            throw new Error('No narration results or subtitles available for alignment');
+                          }
+
+                          console.log('Attempting to reconstruct narrations from subtitles');
+
+                          // Create synthetic narration objects based on subtitles
+                          const syntheticNarrations = allSubtitles.map(subtitle => ({
+                            subtitle_id: subtitle.id,
+                            filename: `subtitle_${subtitle.id}/1.wav`, // Use correct F5-TTS filename pattern
+                            success: true, // Assume success
+                            start: subtitle.start,
+                            end: subtitle.end,
+                            text: subtitle.text
+                          }));
+
+                          // Use these synthetic narrations
+                          console.log(`Created ${syntheticNarrations.length} synthetic narrations from subtitles`);
+
+                          // Replace the narrations array with our synthetic one
+                          narrations.length = 0; // Clear the array
+                          narrations.push(...syntheticNarrations); // Add synthetic narrations
+
+                          // Also update the window object for future use
+                          window.originalNarrations = [...syntheticNarrations];
+
+                          console.log('Synthetic narrations created successfully');
                         }
 
 
@@ -927,7 +977,23 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                         // Prepare the data for the aligned narration with correct timing
                         const narrationData = narrations
-                          .filter(result => result.success && result.filename)
+                          .filter(result => {
+                            // Check if the result has success and filename
+                            if (result.success && result.filename) {
+                              console.log(`Using existing filename for subtitle ${result.subtitle_id}: ${result.filename}`);
+                              return true;
+                            }
+
+                            // If it has success but no filename, try to construct a default filename
+                            if (result.success && !result.filename && result.subtitle_id) {
+                              // Try the correct filename pattern for F5-TTS (1.wav instead of f5tts_1.wav)
+                              result.filename = `subtitle_${result.subtitle_id}/1.wav`;
+                              console.log(`Added correct F5-TTS filename for subtitle ${result.subtitle_id}: ${result.filename}`);
+                              return true;
+                            }
+
+                            return false;
+                          })
                           .map(result => {
                             // Find the corresponding subtitle for timing information
                             const subtitle = subtitleMap[result.subtitle_id];
@@ -960,14 +1026,22 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
 
 
-                        // Get the server URL from config
-                        const { SERVER_URL } = require('../../config');
+                        // Check if we have any narration data
+                        if (narrationData.length === 0) {
+                          throw new Error('No valid narration files found. Please generate narrations first.');
+                        }
 
-                        // Create a download link
+                        // Log the narration data for debugging
+                        console.log(`Found ${narrationData.length} narration files to align`);
+
+                        // Create a download link using the imported SERVER_URL
                         const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
 
-                        // Use fetch API to download the file
+                        console.log('Using download URL:', downloadUrl);
+                        console.log('Sending request to:', downloadUrl);
+                        console.log('Request payload:', JSON.stringify({ narrations: narrationData }, null, 2).substring(0, 200) + '...');
 
+                        // Use fetch API to download the file
                         const response = await fetch(downloadUrl, {
                           method: 'POST',
                           mode: 'cors',
@@ -979,15 +1053,34 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           body: JSON.stringify({ narrations: narrationData })
                         });
 
+                        console.log('Response status:', response.status);
+                        console.log('Response headers:', [...response.headers.entries()]);
 
                         // Check if the response is successful
                         if (!response.ok) {
-                          // Try to parse error message if it's JSON
+                          // Try to get more detailed error information
                           try {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Failed to generate aligned audio');
-                          } catch (jsonError) {
-                            // If it's not JSON, use the status text
+                            const errorText = await response.text();
+                            console.error('Error response body:', errorText);
+
+                            // Try to parse the error as JSON for more details
+                            try {
+                              const errorJson = JSON.parse(errorText);
+                              console.error('Error details:', errorJson.details || 'No details available');
+
+                              if (errorJson.error && errorJson.error.includes('Audio file not found')) {
+                                // Show a more user-friendly error message
+                                throw new Error(`Some narration files are missing. Please regenerate narrations before refreshing.`);
+                              } else {
+                                throw new Error(`Failed to generate aligned audio: ${errorJson.error || response.statusText}`);
+                              }
+                            } catch (jsonError) {
+                              // If it's not valid JSON, use the raw text
+                              throw new Error(`Failed to generate aligned audio: ${errorText || response.statusText}`);
+                            }
+                          } catch (textError) {
+                            console.error('Could not read error response body:', textError);
+                            // If we couldn't read the response at all, use the status text
                             throw new Error(`Failed to generate aligned audio: ${response.statusText}`);
                           }
                         }

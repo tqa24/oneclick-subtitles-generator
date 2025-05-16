@@ -85,12 +85,94 @@ const downloadAlignedAudio = async (req, res) => {
       // F5-TTS narrations have a filename property
       // Gemini narrations might have audioData property (base64 encoded audio)
       if (narration.filename) {
-        const filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+        // First, try the filename as provided
+        let filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
+        console.log(`Checking for audio file: ${filePath}`);
+
+        // List the contents of the subtitle directory to help debug
+        const subtitleDir = path.dirname(filePath);
+        try {
+          if (fs.existsSync(subtitleDir)) {
+            const dirContents = fs.readdirSync(subtitleDir);
+            console.log(`Contents of ${subtitleDir}:`, dirContents);
+
+            // If the file doesn't exist but we have a pattern like "subtitle_X/f5tts_1.wav",
+            // try looking for "subtitle_X/1.wav" instead
+            if (!fs.existsSync(filePath) && narration.filename.includes('f5tts_1.wav')) {
+              const alternativeFilename = narration.filename.replace('f5tts_1.wav', '1.wav');
+              const alternativePath = path.join(OUTPUT_AUDIO_DIR, alternativeFilename);
+
+              console.log(`Trying alternative path: ${alternativePath}`);
+
+              if (fs.existsSync(alternativePath)) {
+                console.log(`Found file at alternative path: ${alternativePath}`);
+                filePath = alternativePath;
+                narration.filename = alternativeFilename;
+              }
+            }
+          } else {
+            console.log(`Subtitle directory does not exist: ${subtitleDir}`);
+          }
+        } catch (dirError) {
+          console.error(`Error listing directory: ${dirError.message}`);
+        }
+
         if (!fs.existsSync(filePath)) {
           console.error(`Audio file not found: ${filePath}`);
+
+          // Try to find the file with a different naming pattern
+          // Sometimes F5-TTS files might be named differently
+          const subtitleDir = path.dirname(filePath);
+
+          if (fs.existsSync(subtitleDir)) {
+            // Check if there are any wav files in the directory
+            const files = fs.readdirSync(subtitleDir);
+            const wavFiles = files.filter(file => file.endsWith('.wav'));
+
+            if (wavFiles.length > 0) {
+              console.log(`Found alternative wav files in ${subtitleDir}:`, wavFiles);
+
+              // Use the first wav file as an alternative
+              const alternativeFilePath = path.join(subtitleDir, wavFiles[0]);
+              console.log(`Using alternative file: ${alternativeFilePath}`);
+
+              // Update the narration object with the new filename
+              narration.filename = `${path.basename(subtitleDir)}/${wavFiles[0]}`;
+
+              // Ensure we have valid timing information
+              const start = typeof narration.start === 'number' ? narration.start : 0;
+              const end = typeof narration.end === 'number' ? narration.end : (start + 5); // Default 5 seconds if no end time
+
+              // Check if this is a grouped subtitle
+              const isGrouped = narration.original_ids && narration.original_ids.length > 1;
+
+              // Continue with the updated filename
+              audioSegments.push({
+                path: alternativeFilePath,
+                start: start,
+                end: end,
+                subtitle_id: narration.subtitle_id,
+                original_ids: narration.original_ids,
+                type: 'file',
+                isGrouped: isGrouped
+              });
+
+              // Skip the error and continue processing
+              continue;
+            }
+          }
+
+          // If no alternative found, return a more detailed error
           // Clean up temp dir before exiting on error
-          // Consider adding a general cleanup function or try/finally block for robustness
-          return res.status(404).json({ error: `Audio file not found: ${narration.filename}` });
+          return res.status(404).json({
+            error: `Audio file not found: ${narration.filename}`,
+            details: {
+              subtitle_id: narration.subtitle_id,
+              expected_path: filePath,
+              subtitle_dir_exists: fs.existsSync(subtitleDir),
+              subtitle_dir: subtitleDir
+            }
+          });
         }
       } else if (!narration.audioData) {
         // If neither filename nor audioData is present, return an error

@@ -15,31 +15,70 @@ except ImportError:
 
 def initialize_registry():
     """Initialize the models registry if it doesn't exist."""
-    if not os.path.exists(MODELS_REGISTRY_FILE):
-        with open(MODELS_REGISTRY_FILE, 'w') as f:
-            json.dump({
-                "active_model": None,
-                "models": [],
-                "downloads": {}
-            }, f, indent=2)
+    max_retries = 3
+    retry_delay = 1  # seconds
+    default_registry = {
+        "active_model": None,
+        "models": [],
+        "downloads": {}
+    }
 
+    # Create registry file if it doesn't exist
+    if not os.path.exists(MODELS_REGISTRY_FILE):
+        for attempt in range(max_retries):
+            try:
+                with open(MODELS_REGISTRY_FILE, 'w') as f:
+                    json.dump(default_registry, f, indent=2)
+                break
+            except PermissionError as e:
+                logger.warning(f"Permission error creating registry (attempt {attempt+1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"Failed to create registry file after {max_retries} attempts")
+                    return
+            except Exception as e:
+                logger.error(f"Error creating registry file: {e}")
+                return
 
     # Ensure the registry is valid
-    try:
-        with open(MODELS_REGISTRY_FILE, 'r') as f:
-            registry = json.load(f)
+    registry = None
+    for attempt in range(max_retries):
+        try:
+            with open(MODELS_REGISTRY_FILE, 'r') as f:
+                registry = json.load(f)
+            break
+        except PermissionError as e:
+            logger.warning(f"Permission error reading registry (attempt {attempt+1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to read registry file after {max_retries} attempts")
+                return
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            logger.error(f"Error parsing registry file: {e}. Will reset registry.")
+            registry = default_registry
+            break
+        except Exception as e:
+            logger.error(f"Unexpected error reading registry: {e}")
+            return
 
+    if registry is None:
+        logger.error("Failed to read registry after retries")
+        return
+
+    try:
         # Check if registry has required fields
         if "active_model" not in registry or "models" not in registry:
             logger.warning("Registry missing 'active_model' or 'models' field. Resetting.")
-            raise ValueError("Invalid registry format")
+            registry = default_registry.copy()
 
         # Add downloads field if it doesn't exist
         if "downloads" not in registry:
             registry["downloads"] = {}
-            with open(MODELS_REGISTRY_FILE, 'w') as f:
-                json.dump(registry, f, indent=2)
-
+            save_registry(registry)
 
         # Check if F5-TTS v1 Base model is in the registry
         f5tts_base_exists = False
@@ -57,7 +96,6 @@ def initialize_registry():
 
         # Add F5-TTS v1 Base model if it's not in the registry
         if not f5tts_base_exists:
-
             registry.setdefault("models", []).append({ # Use setdefault for safety
                 "id": "f5tts-v1-base",
                 "name": "F5-TTS v1 Base",
@@ -84,67 +122,112 @@ def initialize_registry():
             if registry.get("active_model") is None: # Use .get for safety
                 registry["active_model"] = "f5tts-v1-base"
 
-            # Save the updated registry
-            with open(MODELS_REGISTRY_FILE, 'w') as f:
-                json.dump(registry, f, indent=2)
+            # Save the updated registry using our improved save_registry function
+            save_registry(registry)
 
-
-    except (json.JSONDecodeError, ValueError, TypeError, KeyError) as e:
-        logger.error(f"Error reading or validating registry: {e}. Resetting registry.")
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error(f"Error validating registry: {e}. Resetting registry.")
         # Reset registry if invalid
-        with open(MODELS_REGISTRY_FILE, 'w') as f:
-            json.dump({
-                "active_model": None,
-                "models": [],
-                "downloads": {}
-            }, f, indent=2)
-
-        # Re-run initialization after reset
-        initialize_registry()
+        save_registry(default_registry)
 
 
 def get_registry():
     """Get the current models registry."""
     initialize_registry() # Ensure it's initialized and valid before reading
-    try:
-        with open(MODELS_REGISTRY_FILE, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        logger.error(f"Error reading registry file: {e}. Returning default empty registry.")
-        # Return a default structure in case of error
-        return {"active_model": None, "models": [], "downloads": {}}
-    except Exception as e:
-        logger.error(f"Unexpected error reading registry: {e}")
-        return {"active_model": None, "models": [], "downloads": {}}
+
+    max_retries = 3
+    retry_delay = 1  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            with open(MODELS_REGISTRY_FILE, 'r') as f:
+                return json.load(f)
+        except PermissionError as e:
+            logger.warning(f"Permission error reading registry (attempt {attempt+1}/{max_retries}): {e}")
+            # Wait before retrying
+            import time
+            time.sleep(retry_delay)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logger.error(f"Error reading registry file: {e}. Returning default empty registry.")
+            # Return a default structure in case of error
+            return {"active_model": None, "models": [], "downloads": {}}
+        except Exception as e:
+            logger.error(f"Unexpected error reading registry: {e}")
+            return {"active_model": None, "models": [], "downloads": {}}
+
+    # If we've exhausted all retries
+    logger.error(f"Failed to read registry after {max_retries} attempts. Returning default empty registry.")
+    return {"active_model": None, "models": [], "downloads": {}}
 
 
 def save_registry(registry):
     """Save the models registry."""
-    try:
-        # Create a temporary file path
-        temp_file_path = MODELS_REGISTRY_FILE + ".tmp"
+    temp_file_path = MODELS_REGISTRY_FILE + ".tmp"
+    max_retries = 3
+    retry_delay = 1  # seconds
 
-        # Write to the temporary file
-        with open(temp_file_path, 'w') as f:
-            json.dump(registry, f, indent=2)
+    for attempt in range(max_retries):
+        try:
+            # Direct write approach - try this first if we've had issues with atomic replace
+            if attempt > 0:
+                logger.info(f"Retry {attempt}: Attempting direct write to registry file")
+                with open(MODELS_REGISTRY_FILE, 'w') as f:
+                    json.dump(registry, f, indent=2)
+                logger.debug(f"Registry saved successfully via direct write to {MODELS_REGISTRY_FILE}")
+                return True
 
-        # Atomically replace the original file with the temporary file
-        # On Windows, os.replace might fail if the target exists, so remove first.
-        if os.path.exists(MODELS_REGISTRY_FILE):
-            os.remove(MODELS_REGISTRY_FILE)
-        os.replace(temp_file_path, MODELS_REGISTRY_FILE) # Atomic on POSIX, near-atomic on Windows
+            # Atomic approach with temporary file (first attempt)
+            # Write to the temporary file
+            with open(temp_file_path, 'w') as f:
+                json.dump(registry, f, indent=2)
 
-        logger.debug(f"Registry saved successfully to {MODELS_REGISTRY_FILE}")
-        return True
-    except Exception as e:
-        logger.error(f"Error saving registry: {e}")
-        # Clean up temp file if it exists
-        if os.path.exists(temp_file_path):
-            try:
-                os.remove(temp_file_path)
-            except OSError as rm_err:
-                logger.error(f"Error removing temporary registry file {temp_file_path}: {rm_err}")
-        return False
+            # Ensure file is fully written and closed before proceeding
+            import time
+            time.sleep(0.1)
+
+            # Atomically replace the original file with the temporary file
+            # On Windows, os.replace might fail if the target exists, so remove first.
+            if os.path.exists(MODELS_REGISTRY_FILE):
+                try:
+                    os.remove(MODELS_REGISTRY_FILE)
+                except PermissionError:
+                    logger.warning(f"Permission denied when removing original registry file. Trying direct write.")
+                    # If we can't remove the original, try direct write
+                    with open(MODELS_REGISTRY_FILE, 'w') as f:
+                        json.dump(registry, f, indent=2)
+                    # Clean up temp file
+                    if os.path.exists(temp_file_path):
+                        try:
+                            os.remove(temp_file_path)
+                        except:
+                            pass
+                    return True
+
+            os.replace(temp_file_path, MODELS_REGISTRY_FILE)  # Atomic on POSIX, near-atomic on Windows
+
+            logger.debug(f"Registry saved successfully to {MODELS_REGISTRY_FILE}")
+            return True
+
+        except PermissionError as e:
+            logger.warning(f"Permission error saving registry (attempt {attempt+1}/{max_retries}): {e}")
+            # Wait before retrying
+            import time
+            time.sleep(retry_delay)
+
+        except Exception as e:
+            logger.error(f"Error saving registry: {e}")
+            break
+
+        finally:
+            # Clean up temp file if it exists
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except OSError as rm_err:
+                    logger.warning(f"Error removing temporary registry file {temp_file_path}: {rm_err}")
+
+    logger.error(f"Failed to save registry after {max_retries} attempts")
+    return False
 
 
 def get_models(include_cache=False):

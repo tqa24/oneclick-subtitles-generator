@@ -12,6 +12,7 @@ import '../../../styles/narration/languageBadges.css';
 import '../../../styles/narration/narrationModelDropdown.css';
 import '../../../styles/ModelDropdown.css';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
+import SubtitleGroupingModal from './SubtitleGroupingModal';
 
 /**
  * Subtitle Source Selection component
@@ -26,6 +27,12 @@ import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
  * @param {Function} props.setOriginalLanguage - Function to set original language
  * @param {Function} props.setTranslatedLanguage - Function to set translated language
  * @param {Function} props.onLanguageDetected - Callback when language is detected
+ * @param {boolean} props.useGroupedSubtitles - Whether to use grouped subtitles for narration
+ * @param {Function} props.setUseGroupedSubtitles - Function to set whether to use grouped subtitles
+ * @param {boolean} props.isGroupingSubtitles - Whether subtitles are currently being grouped
+ * @param {Array} props.groupedSubtitles - Grouped subtitles
+ * @param {string} props.groupingIntensity - Intensity level for subtitle grouping
+ * @param {Function} props.setGroupingIntensity - Function to set grouping intensity
  * @returns {JSX.Element} - Rendered component
  */
 const SubtitleSourceSelection = ({
@@ -38,10 +45,89 @@ const SubtitleSourceSelection = ({
   translatedLanguage,
   setOriginalLanguage,
   setTranslatedLanguage,
-  onLanguageDetected
+  onLanguageDetected,
+  useGroupedSubtitles = false,
+  setUseGroupedSubtitles = () => {},
+  isGroupingSubtitles = false,
+  groupedSubtitles = null,
+  groupingIntensity = 'moderate',
+  setGroupingIntensity = () => {}
 }) => {
   const { t } = useTranslation();
   const hasTranslatedSubtitles = translatedSubtitles && translatedSubtitles.length > 0;
+  const hasOriginalSubtitles = originalSubtitles && originalSubtitles.length > 0;
+  const hasSubtitles = hasOriginalSubtitles || hasTranslatedSubtitles;
+
+  // State for subtitle grouping modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Function to handle subtitle grouping toggle
+  const handleGroupingToggle = async (checked) => {
+    if (checked) {
+      // If turning on, we need to group the subtitles
+      try {
+        // Set grouping state to true to show loading indicator
+        if (typeof window.setIsGroupingSubtitles === 'function') {
+          window.setIsGroupingSubtitles(true);
+        }
+
+        // We don't need to update the local isGroupingSubtitles prop
+        // as it's handled by the parent component through window.setIsGroupingSubtitles
+
+        // Import the subtitle grouping service
+        const { groupSubtitlesForNarration } = await import('../../../services/gemini/subtitleGroupingService');
+
+        // Get the appropriate subtitles based on the selected source
+        const subtitlesToGroup = subtitleSource === 'translated' && hasTranslatedSubtitles
+          ? translatedSubtitles
+          : originalSubtitles;
+
+        // Get the language code for the selected subtitles
+        const languageCode = subtitleSource === 'translated' && translatedLanguage
+          ? translatedLanguage.languageCode
+          : originalLanguage?.languageCode || 'en';
+
+        // Group the subtitles
+        const result = await groupSubtitlesForNarration(
+          subtitlesToGroup,
+          languageCode,
+          'gemini-2.0-flash',
+          groupingIntensity
+        );
+
+        // Update the grouped subtitles
+        if (result && result.success && result.groupedSubtitles) {
+          // Update the grouped subtitles state in the parent component
+          window.groupedSubtitles = result.groupedSubtitles;
+          // If the parent component provided a function to update grouped subtitles, call it
+          if (typeof window.setGroupedSubtitles === 'function') {
+            window.setGroupedSubtitles(result.groupedSubtitles);
+          }
+          setUseGroupedSubtitles(true);
+        } else {
+          // If grouping failed, don't enable the toggle
+          setUseGroupedSubtitles(false);
+        }
+      } catch (error) {
+        console.error('Error grouping subtitles:', error);
+        setUseGroupedSubtitles(false);
+      } finally {
+        // Reset grouping state after a short delay to ensure the UI updates properly
+        setTimeout(() => {
+          if (typeof window.setIsGroupingSubtitles === 'function') {
+            window.setIsGroupingSubtitles(false);
+          }
+        }, 500);
+      }
+    } else {
+      // If turning off, just update the state
+      setUseGroupedSubtitles(false);
+    }
+  };
+
+  // Functions to handle modal
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   // State for language detection
   const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
@@ -545,224 +631,314 @@ const SubtitleSourceSelection = ({
   };
 
   return (
-    <div className="narration-row subtitle-source-row">
-      <div className="row-label">
-        <label>{t('narration.subtitleSource', 'Subtitle Source')}:</label>
-      </div>
-      <div className="row-content">
-        <div className="subtitle-selection-container">
-          <div className="radio-pill-group">
-            <div className="radio-pill">
-              <input
-                type="radio"
-                id="source-original"
-                name="subtitle-source"
-                value="original"
-                checked={subtitleSource === 'original'}
-                onChange={() => handleSourceChange('original')}
-                disabled={isGenerating}
-              />
-              <label htmlFor="source-original">
-                {isDetectingOriginal ? (
-                  <span className="loading-animation">
-                    <span className="spinner-circle"></span>
-                    {t('narration.detectingLanguage', 'Detecting language...')}
-                  </span>
-                ) : (
-                  <>
-                    {t('narration.originalSubtitles', 'Original Subtitles')}
-                    {originalLanguage && renderLanguageBadge(originalLanguage)}
-                  </>
-                )}
-              </label>
+    <>
+      <div className="narration-row subtitle-source-row animated-row">
+        <div className="row-label">
+          <label>{t('narration.subtitleSource', 'Subtitle Source')}:</label>
+        </div>
+        <div className="row-content">
+          <div className="subtitle-selection-container">
+            <div className="radio-pill-group">
+              <div className="radio-pill">
+                <input
+                  type="radio"
+                  id="source-original"
+                  name="subtitle-source"
+                  value="original"
+                  checked={subtitleSource === 'original'}
+                  onChange={() => handleSourceChange('original')}
+                  disabled={isGenerating}
+                />
+                <label htmlFor="source-original">
+                  {isDetectingOriginal ? (
+                    <span className="loading-animation">
+                      <span className="spinner-circle"></span>
+                      {t('narration.detectingLanguage', 'Detecting language...')}
+                    </span>
+                  ) : (
+                    <>
+                      {t('narration.originalSubtitles', 'Original Subtitles')}
+                      {originalLanguage && renderLanguageBadge(originalLanguage)}
+                    </>
+                  )}
+                </label>
+              </div>
+              <div className="radio-pill">
+                <input
+                  type="radio"
+                  id="source-translated"
+                  name="subtitle-source"
+                  value="translated"
+                  checked={subtitleSource === 'translated'}
+                  onChange={() => handleSourceChange('translated')}
+                  disabled={isGenerating || !hasTranslatedSubtitles}
+                />
+                <label htmlFor="source-translated">
+                  {isDetectingTranslated ? (
+                    <span className="loading-animation">
+                      <span className="spinner-circle"></span>
+                      {t('narration.detectingLanguage', 'Detecting language...')}
+                    </span>
+                  ) : (
+                    <>
+                      {t('narration.translatedSubtitles', 'Translated Subtitles')}
+                      {translatedLanguage && renderLanguageBadge(translatedLanguage)}
+                      {!hasTranslatedSubtitles && (
+                        <span className="unavailable-indicator">
+                          {t('narration.unavailable', '(unavailable)')}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </label>
+              </div>
             </div>
-            <div className="radio-pill">
-              <input
-                type="radio"
-                id="source-translated"
-                name="subtitle-source"
-                value="translated"
-                checked={subtitleSource === 'translated'}
-                onChange={() => handleSourceChange('translated')}
-                disabled={isGenerating || !hasTranslatedSubtitles}
-              />
-              <label htmlFor="source-translated">
-                {isDetectingTranslated ? (
-                  <span className="loading-animation">
-                    <span className="spinner-circle"></span>
-                    {t('narration.detectingLanguage', 'Detecting language...')}
-                  </span>
-                ) : (
-                  <>
-                    {t('narration.translatedSubtitles', 'Translated Subtitles')}
-                    {translatedLanguage && renderLanguageBadge(translatedLanguage)}
-                    {!hasTranslatedSubtitles && (
-                      <span className="unavailable-indicator">
-                        {t('narration.unavailable', '(unavailable)')}
-                      </span>
-                    )}
-                  </>
-                )}
-              </label>
-            </div>
-          </div>
 
-          {/* Model information and error messages */}
-          {isCheckingModel && (
-            <div className="model-checking">
-              <span className="spinner-circle"></span>
-              <span>{t('narration.checkingModelAvailability', 'Checking model availability...')}</span>
-            </div>
-          )}
+            {/* Model information and error messages */}
+            {isCheckingModel && (
+              <div className="model-checking">
+                <span className="spinner-circle"></span>
+                <span>{t('narration.checkingModelAvailability', 'Checking model availability...')}</span>
+              </div>
+            )}
 
-          {selectedModel && (subtitleSource === 'original' ? originalLanguage : translatedLanguage) && !isCheckingModel && (
-            <div className={`model-dropdown-container narration-model-dropdown-container ${isModelDropdownOpen ? 'dropdown-open' : ''}`}>
-              <button
-                className="model-dropdown-btn narration-model-dropdown-btn"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsModelDropdownOpen(prev => !prev);
-                }}
-                title={t('narration.selectNarrationModel', 'Select narration model')}
-                ref={modelButtonRef}
-                aria-haspopup="true"
-                aria-expanded={isModelDropdownOpen}
-                disabled={isGenerating}
-              >
-                <span className="model-dropdown-label">{t('narration.narrationModel', 'Model')}:</span>
-                <span className="model-dropdown-selected">
-                  <span className="model-name">{selectedModel}</span>
-                </span>
-                <FiChevronDown size={14} className={`dropdown-icon ${isModelDropdownOpen ? 'active' : ''}`} />
-              </button>
-
-              {isModelDropdownOpen && (
-                <div
-                  className="model-options-dropdown"
-                  ref={modelDropdownRef}
-                  role="menu"
+            {selectedModel && (subtitleSource === 'original' ? originalLanguage : translatedLanguage) && !isCheckingModel && (
+              <div className={`model-dropdown-container narration-model-dropdown-container ${isModelDropdownOpen ? 'dropdown-open' : ''}`}>
+                <button
+                  className="model-dropdown-btn narration-model-dropdown-btn"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsModelDropdownOpen(prev => !prev);
+                  }}
+                  title={t('narration.selectNarrationModel', 'Select narration model')}
+                  ref={modelButtonRef}
+                  aria-haspopup="true"
+                  aria-expanded={isModelDropdownOpen}
+                  disabled={isGenerating}
                 >
-                  <div className="model-options-header">
-                    {t('narration.selectNarrationModel', 'Select narration model')}
+                  <span className="model-dropdown-label">{t('narration.narrationModel', 'Model')}:</span>
+                  <span className="model-dropdown-selected">
+                    <span className="model-name">{selectedModel}</span>
+                  </span>
+                  <FiChevronDown size={14} className={`dropdown-icon ${isModelDropdownOpen ? 'active' : ''}`} />
+                </button>
+
+                {isModelDropdownOpen && (
+                  <div
+                    className="model-options-dropdown"
+                    ref={modelDropdownRef}
+                    role="menu"
+                  >
+                    <div className="model-options-header">
+                      {t('narration.selectNarrationModel', 'Select narration model')}
+                    </div>
+                    <div className="model-options-list">
+                      {isLoadingModels ? (
+                        <div className="loading-animation dropdown-loading">
+                          <span className="spinner-circle"></span>
+                          <span>{t('narration.loadingModels', 'Loading models...')}</span>
+                        </div>
+                      ) : availableModels.length > 0 ? (
+                        <>
+                          {/* Group 1: Models matching the detected language */}
+                          <div className="model-group-label">
+                            {t('narration.matchingLanguageModels', 'Matching Language')}
+                          </div>
+                          {availableModels
+                            .filter(model => {
+                              const currentLanguageObj = subtitleSource === 'original'
+                                ? originalLanguage
+                                : translatedLanguage;
+
+                              if (!currentLanguageObj) return false;
+
+                              // Get all language codes to check (primary + secondary)
+                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                                currentLanguageObj.secondaryLanguages.length > 0
+                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                  : [currentLanguageObj.languageCode]; // Just use primary language
+
+                              // Check if model supports any of the detected languages
+                              return languagesToCheck.some(langCode =>
+                                model.language === langCode ||
+                                (Array.isArray(model.languages) && model.languages.includes(langCode))
+                              );
+                            })
+                            .map(model => (
+                              <button
+                                key={model.id}
+                                className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
+                                onClick={() => handleModelSelect(model.id)}
+                                role="menuitem"
+                              >
+                                <div className="model-option-text">
+                                  <div className="model-option-name">{model.id}</div>
+                                  <div className="model-option-description">{renderModelLanguages(model)}</div>
+                                </div>
+                              </button>
+                            ))
+                          }
+
+                          {/* Group 2: All other models */}
+                          <div className="model-group-label">
+                            {t('narration.otherModels', 'Other Models')}
+                          </div>
+                          {availableModels
+                            .filter(model => {
+                              const currentLanguageObj = subtitleSource === 'original'
+                                ? originalLanguage
+                                : translatedLanguage;
+
+                              if (!currentLanguageObj) return true;
+
+                              // Get all language codes to check (primary + secondary)
+                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                                currentLanguageObj.secondaryLanguages.length > 0
+                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                                  : [currentLanguageObj.languageCode]; // Just use primary language
+
+                              // Check if model does NOT support any of the detected languages
+                              return !languagesToCheck.some(langCode =>
+                                model.language === langCode ||
+                                (Array.isArray(model.languages) && model.languages.includes(langCode))
+                              );
+                            })
+                            .map(model => (
+                              <button
+                                key={model.id}
+                                className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
+                                onClick={() => handleModelSelect(model.id)}
+                                role="menuitem"
+                              >
+                                <div className="model-option-text">
+                                  <div className="model-option-name">{model.id}</div>
+                                  <div className="model-option-description">{renderModelLanguages(model)}</div>
+                                </div>
+                              </button>
+                            ))
+                          }
+                        </>
+                      ) : (
+                        <div className="model-option-btn">
+                          <div className="model-option-text">
+                            <div className="model-option-name">{selectedModel}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="model-options-list">
-                    {isLoadingModels ? (
-                      <div className="loading-animation dropdown-loading">
-                        <span className="spinner-circle"></span>
-                        <span>{t('narration.loadingModels', 'Loading models...')}</span>
-                      </div>
-                    ) : availableModels.length > 0 ? (
-                      <>
-                        {/* Group 1: Models matching the detected language */}
-                        <div className="model-group-label">
-                          {t('narration.matchingLanguageModels', 'Matching Language')}
-                        </div>
-                        {availableModels
-                          .filter(model => {
-                            const currentLanguageObj = subtitleSource === 'original'
-                              ? originalLanguage
-                              : translatedLanguage;
+                )}
 
-                            if (!currentLanguageObj) return false;
-
-                            // Get all language codes to check (primary + secondary)
-                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                              currentLanguageObj.secondaryLanguages.length > 0
-                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                : [currentLanguageObj.languageCode]; // Just use primary language
-
-                            // Check if model supports any of the detected languages
-                            return languagesToCheck.some(langCode =>
-                              model.language === langCode ||
-                              (Array.isArray(model.languages) && model.languages.includes(langCode))
-                            );
-                          })
-                          .map(model => (
-                            <button
-                              key={model.id}
-                              className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
-                              onClick={() => handleModelSelect(model.id)}
-                              role="menuitem"
-                            >
-                              <div className="model-option-text">
-                                <div className="model-option-name">{model.id}</div>
-                                <div className="model-option-description">{renderModelLanguages(model)}</div>
-                              </div>
-                            </button>
-                          ))
-                        }
-
-                        {/* Group 2: All other models */}
-                        <div className="model-group-label">
-                          {t('narration.otherModels', 'Other Models')}
-                        </div>
-                        {availableModels
-                          .filter(model => {
-                            const currentLanguageObj = subtitleSource === 'original'
-                              ? originalLanguage
-                              : translatedLanguage;
-
-                            if (!currentLanguageObj) return true;
-
-                            // Get all language codes to check (primary + secondary)
-                            const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                              Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                              currentLanguageObj.secondaryLanguages.length > 0
-                                ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                : [currentLanguageObj.languageCode]; // Just use primary language
-
-                            // Check if model does NOT support any of the detected languages
-                            return !languagesToCheck.some(langCode =>
-                              model.language === langCode ||
-                              (Array.isArray(model.languages) && model.languages.includes(langCode))
-                            );
-                          })
-                          .map(model => (
-                            <button
-                              key={model.id}
-                              className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
-                              onClick={() => handleModelSelect(model.id)}
-                              role="menuitem"
-                            >
-                              <div className="model-option-text">
-                                <div className="model-option-name">{model.id}</div>
-                                <div className="model-option-description">{renderModelLanguages(model)}</div>
-                              </div>
-                            </button>
-                          ))
-                        }
-                      </>
-                    ) : (
-                      <div className="model-option-btn">
-                        <div className="model-option-text">
-                          <div className="model-option-name">{selectedModel}</div>
-                        </div>
-                      </div>
-                    )}
+                {modelError && (
+                  <div className="model-error">
+                    <span className="error-icon">⚠️</span>
+                    <span>{modelError}</span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {modelError && (
-                <div className="model-error">
-                  <span className="error-icon">⚠️</span>
-                  <span>{modelError}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {modelError && !selectedModel && !isCheckingModel && (
-            <div className="model-error-standalone">
-              <span className="error-icon">⚠️</span>
-              <span>{modelError}</span>
-            </div>
-          )}
+            {modelError && !selectedModel && !isCheckingModel && (
+              <div className="model-error-standalone">
+                <span className="error-icon">⚠️</span>
+                <span>{modelError}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Subtitle Grouping as a separate row */}
+      <div className="narration-row subtitle-grouping-row animated-row">
+        <div className="row-label">
+          <label>{t('narration.subtitleGrouping', 'Subtitle Grouping')}:</label>
+        </div>
+        <div className="row-content">
+          <div className="subtitle-grouping-container">
+            {/* Grouping Intensity Dropdown */}
+            <div
+              className="grouping-intensity-container"
+              data-tooltip={t('narration.intensityChangeTooltip', 'Changing intensity will require regrouping')}
+            >
+              <label htmlFor="grouping-intensity" className="grouping-intensity-label">
+                {t('narration.groupingIntensity', 'Grouping Intensity')}:
+              </label>
+              <select
+                id="grouping-intensity"
+                className="grouping-intensity-select"
+                value={groupingIntensity}
+                onChange={(e) => setGroupingIntensity(e.target.value)}
+                disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles || useGroupedSubtitles}
+              >
+                <option value="minimal">{t('narration.intensityMinimal', 'Minimal')}</option>
+                <option value="light">{t('narration.intensityLight', 'Light')}</option>
+                <option value="balanced">{t('narration.intensityBalanced', 'Balanced')}</option>
+                <option value="moderate">{t('narration.intensityModerate', 'Moderate')}</option>
+                <option value="enhanced">{t('narration.intensityEnhanced', 'Enhanced')}</option>
+                <option value="aggressive">{t('narration.intensityAggressive', 'Aggressive')}</option>
+              </select>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="toggle-switch-container">
+              <label className="toggle-switch" htmlFor="subtitle-grouping">
+                <input
+                  type="checkbox"
+                  id="subtitle-grouping"
+                  checked={useGroupedSubtitles}
+                  onChange={(e) => handleGroupingToggle(e.target.checked)}
+                  disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              <span className="toggle-label">
+                {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                {isGroupingSubtitles && (
+                  <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
+                    <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
+                    <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
+                  </span>
+                )}
+              </span>
+            </div>
+
+            {/* Show comparison button when grouped subtitles are available */}
+            {useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0 && (
+              <div className="grouping-info-container">
+                <button
+                  className="pill-button view-grouping-button"
+                  onClick={openModal}
+                >
+                  <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  {t('narration.viewGrouping', 'View Grouping')}
+                </button>
+                <span className="grouping-stats">
+                  {t('narration.groupedSubtitlesCount', 'Grouped {{original}} subtitles into {{grouped}} sentences', {
+                    original: originalSubtitles?.length || 0,
+                    grouped: groupedSubtitles?.length || 0
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Subtitle Grouping Comparison Modal */}
+      <SubtitleGroupingModal
+        open={isModalOpen}
+        onClose={closeModal}
+        originalSubtitles={originalSubtitles}
+        groupedSubtitles={groupedSubtitles}
+      />
+    </>
   );
 };
 

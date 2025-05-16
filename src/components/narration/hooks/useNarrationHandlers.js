@@ -88,7 +88,7 @@ const useNarrationHandlers = ({
             result.language = transcriptionResult.language;
 
             // Log the language detection result
-            
+
           } catch (transcriptionError) {
             console.error('Error during file upload transcription:', transcriptionError);
 
@@ -410,7 +410,9 @@ const useNarrationHandlers = ({
     }
 
     // Get the appropriate subtitles based on the selected source
-    const selectedSubtitles = getSelectedSubtitles();
+    // If grouped subtitles are available and enabled, use them instead
+    const useGrouped = window.useGroupedSubtitles && window.groupedSubtitles && window.groupedSubtitles.length > 0;
+    const selectedSubtitles = useGrouped ? window.groupedSubtitles : getSelectedSubtitles();
 
     if (!selectedSubtitles || selectedSubtitles.length === 0) {
       // If translated subtitles are selected but not available, show a specific error
@@ -874,7 +876,9 @@ const useNarrationHandlers = ({
     }
 
     // Get the appropriate subtitles based on the selected source
-    const selectedSubtitles = getSelectedSubtitles();
+    // If grouped subtitles are available and enabled, use them instead
+    const useGrouped = window.useGroupedSubtitles && window.groupedSubtitles && window.groupedSubtitles.length > 0;
+    const selectedSubtitles = useGrouped ? window.groupedSubtitles : getSelectedSubtitles();
 
     if (!selectedSubtitles || selectedSubtitles.length === 0) {
       setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VariableSizeList as List } from 'react-window';
+import { SERVER_URL } from '../../../config';
+import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
 
 // Constants for localStorage keys
-const NARRATION_CACHE_KEY = 'f5tts_narration_cache';
 const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
 const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
 
@@ -274,6 +275,43 @@ const NarrationResults = ({
     return height;
   };
 
+  // Function to save audio to server
+  const saveAudioToServer = async (result) => {
+    if (!result || !result.audioData) return null;
+
+    try {
+      // Send the audio data to the server
+      const response = await fetch(`${SERVER_URL}/api/narration/save-f5tts-audio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audioData: result.audioData,
+          subtitle_id: result.subtitle_id,
+          sampleRate: result.sampleRate || 24000,
+          mimeType: result.mimeType || 'audio/pcm'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Return the filename
+        return data.filename;
+      } else {
+        throw new Error(data.error || 'Unknown error saving audio to server');
+      }
+    } catch (error) {
+      console.error(`Error saving audio for subtitle ${result.subtitle_id}:`, error);
+      return null;
+    }
+  };
+
   // Reset row heights when results change
   useEffect(() => {
     rowHeights.current = {};
@@ -281,74 +319,92 @@ const NarrationResults = ({
       listRef.current.resetAfterIndex(0);
     }
 
-    // Save narrations to cache when they change
+    // Save narrations to file system when they change
     if (generationResults && generationResults.length > 0) {
       try {
-        // Get current media ID
-        const mediaId = getCurrentMediaId();
-        if (!mediaId) return;
+        // Process each narration result that has audioData but no filename
+        const savePromises = generationResults
+          .filter(result => result.success && result.audioData && !result.filename)
+          .map(async (result) => {
+            const filename = await saveAudioToServer(result);
+            if (filename) {
+              // Update the result with the filename
+              result.filename = filename;
+              // Remove the audioData to save memory once it's saved to the server
+              delete result.audioData;
+            }
+            return result;
+          });
 
-        // Generate a hash of the subtitles
-        const subtitleHash = generateSubtitleHash(generationResults);
+        // Wait for all save operations to complete
+        Promise.all(savePromises)
+          .then(updatedResults => {
+            if (updatedResults.length > 0) {
+              // Get subtitles from window object for enhancing narrations with timing information
+              const subtitles = window.originalSubtitles || window.subtitlesData || [];
 
-        // Create cache entry
-        const cacheEntry = {
-          mediaId,
-          subtitleHash,
-          timestamp: Date.now(),
-          narrations: generationResults
-        };
+              // Enhance narrations with timing information from subtitles
+              const enhancedResults = enhanceF5TTSNarrations(generationResults, subtitles);
 
-        // Save to localStorage
-        localStorage.setItem(NARRATION_CACHE_KEY, JSON.stringify(cacheEntry));
+              // Make sure all narrations have the filename property set
+              // This is critical for the "Refresh Narration" button to work
+              const resultsWithFilenames = enhancedResults.map(result => {
+                // If the result already has a filename, use it
+                if (result.filename) {
+                  return result;
+                }
+
+                // If the result doesn't have a filename but has audioData, it means
+                // we're still in the process of saving it to the server
+                if (result.audioData) {
+                  console.warn(`Narration for subtitle ${result.subtitle_id} has audioData but no filename yet`);
+                  return result;
+                }
+
+                // If the result has neither filename nor audioData, it's likely a failed narration
+                if (!result.success) {
+                  return result;
+                }
+
+                // For any other case, construct a default filename based on the subtitle_id
+                return {
+                  ...result,
+                  filename: `subtitle_${result.subtitle_id}/f5tts_1.wav`
+                };
+              });
+
+              // Update window.originalNarrations with enhanced results for alignment
+              window.originalNarrations = [...resultsWithFilenames];
+
+              // Dispatch an event to notify other components that narrations have been updated
+              const event = new CustomEvent('narrations-updated', {
+                detail: {
+                  source: 'original', // Assuming F5-TTS narrations are for original subtitles
+                  narrations: resultsWithFilenames
+                }
+              });
+              window.dispatchEvent(event);
+            }
+          })
+          .catch(error => {
+            console.error('Error saving F5-TTS narrations to server:', error);
+          });
 
       } catch (error) {
-        console.error('Error saving F5-TTS narrations to cache:', error);
+        console.error('Error processing F5-TTS narrations for saving:', error);
       }
     }
   }, [generationResults]);
 
-  // Load narrations from cache on component mount
+  // We no longer need to load narrations from localStorage cache
+  // The narrations will be loaded from the file system by the parent component
+  // This useEffect is kept as a placeholder for future enhancements
   useEffect(() => {
-    // Only try to load from cache if we don't have results yet
+    // Only try to load if we don't have results yet
     if (generationResults && generationResults.length > 0) return;
 
-    try {
-      // Get current media ID
-      const mediaId = getCurrentMediaId();
-      if (!mediaId) return;
-
-      // Get cache entry
-      const cacheEntryJson = localStorage.getItem(NARRATION_CACHE_KEY);
-      if (!cacheEntryJson) return;
-
-      const cacheEntry = JSON.parse(cacheEntryJson);
-
-      // Check if cache entry is for the current media
-      if (cacheEntry.mediaId !== mediaId) return;
-
-      // Check if we have narrations
-      if (!cacheEntry.narrations || !cacheEntry.narrations.length) return;
-
-
-
-      // Set loading state first
-      setLoadedFromCache(true);
-
-      // Use a small timeout to ensure the loading state is rendered
-      setTimeout(() => {
-        // Dispatch an event to notify other components about the loaded narrations
-        const event = new CustomEvent('f5tts-narrations-loaded-from-cache', {
-          detail: {
-            narrations: cacheEntry.narrations,
-            timestamp: Date.now()
-          }
-        });
-        window.dispatchEvent(event);
-      }, 100);
-    } catch (error) {
-      console.error('Error loading F5-TTS narrations from cache:', error);
-    }
+    // No need to do anything here - narrations are loaded from the file system
+    // by the parent component (UnifiedNarrationSection.js)
   }, [generationResults]);
 
   // Listen for narrations-updated event to update the component

@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAudioUrl } from '../../services/narrationService';
+import { enhanceF5TTSNarrations } from '../../utils/narrationEnhancer';
 import useNarrationHandlers from './hooks/useNarrationHandlers';
 
 // Import custom hooks
@@ -389,14 +390,51 @@ const UnifiedNarrationSection = ({
     // This is critical for the aligned narration feature to work
     if (generationResults && generationResults.length > 0) {
       if (subtitleSource === 'original') {
-        window.originalNarrations = [...generationResults];
+        // If this is F5-TTS narration (not Gemini), enhance with timing information
+        if (narrationMethod === 'f5tts') {
+          // Get subtitles for enhancing narrations with timing information
+          const subtitlesForEnhancement = originalSubtitles || subtitles || [];
 
+          // Enhance F5-TTS narrations with timing information from subtitles
+          const enhancedNarrations = enhanceF5TTSNarrations(generationResults, subtitlesForEnhancement);
+          window.originalNarrations = [...enhancedNarrations];
+        } else {
+          // For Gemini narrations, just use as is (they already have timing info)
+          window.originalNarrations = [...generationResults];
+        }
       } else if (subtitleSource === 'translated') {
-        window.translatedNarrations = [...generationResults];
+        // For translated narrations, similar enhancement if needed
+        if (narrationMethod === 'f5tts') {
+          // Get subtitles for enhancing narrations with timing information
+          const subtitlesForEnhancement = translatedSubtitles || [];
 
+          // Enhance F5-TTS narrations with timing information from subtitles
+          const enhancedNarrations = enhanceF5TTSNarrations(generationResults, subtitlesForEnhancement);
+          window.translatedNarrations = [...enhancedNarrations];
+        } else {
+          // For Gemini narrations, just use as is
+          window.translatedNarrations = [...generationResults];
+        }
       }
     }
-  }, [generationResults, subtitleSource]);
+  }, [generationResults, subtitleSource, narrationMethod, originalSubtitles, translatedSubtitles, subtitles]);
+
+  // Effect to update window variables for subtitle grouping
+  useEffect(() => {
+    // Make grouped subtitles available to the narration service
+    window.useGroupedSubtitles = useGroupedSubtitles;
+    window.groupedSubtitles = groupedSubtitles;
+
+    // Make the setter functions available to the SubtitleSourceSelection component
+    window.setGroupedSubtitles = setGroupedSubtitles;
+    window.setIsGroupingSubtitles = setIsGroupingSubtitles;
+
+    return () => {
+      // Clean up when component unmounts
+      delete window.setGroupedSubtitles;
+      delete window.setIsGroupingSubtitles;
+    };
+  }, [useGroupedSubtitles, groupedSubtitles, setGroupedSubtitles, setIsGroupingSubtitles]);
 
   // No overall section height animation - let content flow naturally
 
@@ -455,24 +493,33 @@ const UnifiedNarrationSection = ({
           // Get the narrations from the event
           const cachedNarrations = event.detail.narrations;
 
+          // Get subtitles for enhancing narrations with timing information
+          const subtitles = originalSubtitles || subtitles || [];
+
+          // Enhance F5-TTS narrations with timing information from subtitles
+          const enhancedNarrations = enhanceF5TTSNarrations(cachedNarrations, subtitles);
+
+          // Log the enhanced narrations for debugging
+          console.log('Enhanced F5-TTS narrations from cache:', enhancedNarrations);
+
           // Immediately update the generation results
-          setGenerationResults(cachedNarrations);
+          setGenerationResults(enhancedNarrations);
 
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
 
           // Update global narration references
           if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
+            window.originalNarrations = [...enhancedNarrations];
           } else {
-            window.translatedNarrations = [...cachedNarrations];
+            window.translatedNarrations = [...enhancedNarrations];
           }
 
           // Dispatch a custom event to notify other components
           const updateEvent = new CustomEvent('narrations-updated', {
             detail: {
               source: subtitleSource,
-              narrations: cachedNarrations,
+              narrations: enhancedNarrations,
               fromCache: true
             }
           });
@@ -645,6 +692,12 @@ const UnifiedNarrationSection = ({
             translatedLanguage={translatedLanguage}
             setOriginalLanguage={setOriginalLanguage}
             setTranslatedLanguage={setTranslatedLanguage}
+            useGroupedSubtitles={useGroupedSubtitles}
+            setUseGroupedSubtitles={setUseGroupedSubtitles}
+            isGroupingSubtitles={isGroupingSubtitles}
+            groupedSubtitles={groupedSubtitles}
+            groupingIntensity={groupingIntensity}
+            setGroupingIntensity={setGroupingIntensity}
             onLanguageDetected={(source, language, modelId, modelError) => {
 
 
