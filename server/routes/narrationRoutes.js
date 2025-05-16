@@ -55,13 +55,20 @@ router.post('/save-gemini-audio', express.json({ limit: '10mb' }), narrationCont
 // Save F5-TTS audio data to disk
 router.post('/save-f5tts-audio', express.json({ limit: '10mb' }), narrationController.saveF5TTSAudio);
 
+// Modify audio speed
+router.post('/modify-audio-speed', express.json(), narrationController.modifyAudioSpeed);
+
+// Batch modify audio speed for multiple files
+router.post('/batch-modify-audio-speed', express.json(), narrationController.batchModifyAudioSpeed);
+
 // Proxy all other narration requests to the Python service
 router.use('/', async (req, res, next) => {
   // Skip endpoints we handle directly
   if (req.url === '/status' || req.url === '/download-all' || req.url === '/download-aligned' ||
       req.url === '/generate' || req.url === '/record-reference' || req.url === '/upload-reference' ||
       req.url === '/clear-output' || req.url === '/save-gemini-audio' ||
-      req.url === '/save-f5tts-audio' || req.url.startsWith('/audio/')) {
+      req.url === '/save-f5tts-audio' || req.url === '/modify-audio-speed' ||
+      req.url === '/batch-modify-audio-speed' || req.url.startsWith('/audio/')) {
     return next();
   }
 

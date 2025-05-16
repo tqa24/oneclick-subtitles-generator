@@ -549,6 +549,30 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   // The duplicate event listener for aligned-narration-status has been removed
   // We're now only using the more comprehensive listener above that includes isStillGenerating
 
+  // Clean up aligned narration resources when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up aligned narration audio
+      if (typeof window.resetAlignedNarration === 'function') {
+        console.log('Cleaning up aligned narration on component unmount');
+        window.resetAlignedNarration();
+      }
+
+      // Also clean up any other audio elements that might be playing
+      if (window.alignedAudioElement) {
+        try {
+          console.log('Cleaning up alignedAudioElement on component unmount');
+          window.alignedAudioElement.pause();
+          window.alignedAudioElement.src = '';
+          window.alignedAudioElement.load();
+          window.alignedAudioElement = null;
+        } catch (e) {
+          console.warn('Error cleaning up window.alignedAudioElement on unmount:', e);
+        }
+      }
+    };
+  }, []);
+
   // Handle fullscreen changes
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -951,9 +975,23 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
 
 
-                        // Force reset the aligned narration cache
+                        // Force reset the aligned narration cache and clean up any existing audio elements
                         if (typeof window.resetAlignedNarration === 'function') {
+                          console.log('Calling resetAlignedNarration to clean up existing audio elements');
                           window.resetAlignedNarration();
+                        }
+
+                        // Also clean up any other audio elements that might be playing
+                        if (window.alignedAudioElement) {
+                          try {
+                            console.log('Cleaning up existing alignedAudioElement');
+                            window.alignedAudioElement.pause();
+                            window.alignedAudioElement.src = '';
+                            window.alignedAudioElement.load();
+                            window.alignedAudioElement = null;
+                          } catch (e) {
+                            console.warn('Error cleaning up window.alignedAudioElement:', e);
+                          }
                         }
 
                         // Get all subtitles from the window object
@@ -1163,10 +1201,23 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         // Set up direct playback of the audio
                         const setupDirectPlayback = () => {
                           // Remove any existing event listeners
-                          videoRef.current.removeEventListener('play', handleVideoPlay);
-                          videoRef.current.removeEventListener('pause', handleVideoPause);
-                          videoRef.current.removeEventListener('seeked', handleVideoSeeked);
-                          videoRef.current.removeEventListener('timeupdate', handleVideoTimeUpdate);
+                          // First check if we have stored handlers from a previous setup
+                          if (window.alignedNarrationEventHandlers) {
+                            console.log('Removing existing event handlers from previous setup');
+                            const { handleVideoPlay, handleVideoPause, handleVideoSeeked, handleVideoTimeUpdate } = window.alignedNarrationEventHandlers;
+
+                            videoRef.current.removeEventListener('play', handleVideoPlay);
+                            videoRef.current.removeEventListener('pause', handleVideoPause);
+                            videoRef.current.removeEventListener('seeked', handleVideoSeeked);
+                            videoRef.current.removeEventListener('timeupdate', handleVideoTimeUpdate);
+                          } else {
+                            // If we don't have stored handlers, try to remove generic ones
+                            console.log('No existing handlers found, removing generic event listeners');
+                            videoRef.current.removeEventListener('play', window.handleVideoPlay);
+                            videoRef.current.removeEventListener('pause', window.handleVideoPause);
+                            videoRef.current.removeEventListener('seeked', window.handleVideoSeeked);
+                            videoRef.current.removeEventListener('timeupdate', window.handleVideoTimeUpdate);
+                          }
 
                           // Define event handlers
                           function handleVideoPlay() {

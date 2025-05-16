@@ -615,14 +615,30 @@ export const resetAlignedAudioElement = () => {
  * Call this when you need to completely clear the cache and start fresh
  */
 export const resetAlignedNarration = () => {
-
+  console.log('Resetting aligned narration completely');
 
   // Clean up the audio element
   if (alignedAudioElement) {
     try {
+      // First pause playback
       alignedAudioElement.pause();
+
+      // Remove all event listeners to prevent memory leaks
+      alignedAudioElement.oncanplaythrough = null;
+      alignedAudioElement.onerror = null;
+      alignedAudioElement.onstalled = null;
+      alignedAudioElement.onwaiting = null;
+      alignedAudioElement.onplay = null;
+      alignedAudioElement.onpause = null;
+      alignedAudioElement.ontimeupdate = null;
+      alignedAudioElement.onseeking = null;
+      alignedAudioElement.onseeked = null;
+
+      // Clear the source
       alignedAudioElement.src = '';
       alignedAudioElement.load();
+
+      console.log('Successfully cleaned up existing audio element');
     } catch (e) {
       console.warn('Error cleaning up audio element during reset:', e);
     }
@@ -633,6 +649,7 @@ export const resetAlignedNarration = () => {
   if (alignedNarrationCache.url) {
     try {
       URL.revokeObjectURL(alignedNarrationCache.url);
+      console.log('Successfully revoked previous object URL');
     } catch (e) {
       console.warn('Error revoking URL during reset:', e);
     }
@@ -646,7 +663,7 @@ export const resetAlignedNarration = () => {
     subtitleTimestamps: {}
   };
 
-
+  console.log('Aligned narration cache has been reset');
 };
 
 // Make resetAlignedNarration available globally for direct access from event handlers

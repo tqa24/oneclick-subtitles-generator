@@ -23,10 +23,17 @@ const {
   enhanceF5TTSNarrations
 } = require('./audioFile/enhancer');
 
+const {
+  modifyAudioSpeed,
+  batchModifyAudioSpeed
+} = require('./audioFile/speedModifier');
+
 // Export all functions
 module.exports = {
   serveAudioFile,
   downloadAlignedAudio,
   downloadAllAudio,
-  enhanceF5TTSNarrations
+  enhanceF5TTSNarrations,
+  modifyAudioSpeed,
+  batchModifyAudioSpeed
 };

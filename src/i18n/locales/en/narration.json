@@ -154,5 +154,11 @@
   "intensityModerate": "Moderate",
   "intensityEnhanced": "Enhanced",
   "intensityAggressive": "Aggressive",
-  "intensityChangeTooltip": "Changing intensity will require regrouping"
+  "intensityChangeTooltip": "Changing intensity will require regrouping",
+
+  "speed": "Speed",
+  "apply": "Apply",
+  "processingSpeed": "Processing {{current}} of {{total}}",
+  "speedModifySuccess": "Narration speed successfully changed to {{speed}}x",
+  "speedModifyError": "Error changing narration speed: {{error}}"
 }

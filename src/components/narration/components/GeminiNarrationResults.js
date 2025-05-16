@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../../styles/narration/geminiNarrationResults.css';
+import '../../../styles/narration/speedControlSlider.css';
 import { VariableSizeList as List } from 'react-window';
+import axios from 'axios';
 
-// Import utility functions
+// Import utility functions and config
 import { getAudioUrl } from '../../../services/narrationService';
+import { SERVER_URL } from '../../../config';
 
 // Constants for localStorage keys
 const NARRATION_CACHE_KEY = 'gemini_narration_cache';
@@ -244,8 +247,86 @@ const GeminiNarrationResults = ({
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
 
+  // Speed control state
+  const [speedValue, setSpeedValue] = useState(1.0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
+
+  // Function to modify audio speed
+  const modifyAudioSpeed = async () => {
+    if (!generationResults || generationResults.length === 0) {
+      return;
+    }
+
+    try {
+      // Start processing
+      setIsProcessing(true);
+      setProcessingProgress({ current: 0, total: generationResults.length });
+
+      // Get all successful narrations with filenames
+      const successfulNarrations = generationResults.filter(
+        result => result.success && result.filename
+      );
+
+      if (successfulNarrations.length === 0) {
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
+
+      // Use batch endpoint to process all files at once
+      // Make sure to use the correct URL format
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
+      console.log(`Sending request to: ${apiUrl}`);
+
+      const response = await axios.post(apiUrl, {
+        filenames: successfulNarrations.map(result => result.filename),
+        speedFactor: speedValue
+      });
+
+      if (response.data.success) {
+        // Update progress
+        setProcessingProgress({
+          current: response.data.processed,
+          total: successfulNarrations.length
+        });
+
+        console.log(`Successfully modified speed of ${response.data.processed} narration files`);
+
+        // Force reload of audio files by adding a timestamp to the URLs
+        // This will be handled by the existing cache-busting in playAudio and downloadAudio
+
+        // Reset the aligned narration to use the new speed-modified files
+        if (typeof window.resetAlignedNarration === 'function') {
+          console.log('Resetting aligned narration to use speed-modified files');
+          window.resetAlignedNarration();
+
+          // Dispatch an event to notify that narration should be refreshed
+          window.dispatchEvent(new CustomEvent('narration-speed-modified', {
+            detail: {
+              speed: speedValue,
+              timestamp: Date.now()
+            }
+          }));
+        }
+
+        // Show a success message
+        alert(t('narration.speedModifySuccess', 'Narration speed successfully changed to {{speed}}x', { speed: speedValue }));
+      } else {
+        console.error('Error modifying audio speed:', response.data.error);
+        alert(t('narration.speedModifyError', 'Error changing narration speed: {{error}}', { error: response.data.error || 'Unknown error' }));
+      }
+    } catch (error) {
+      console.error('Error calling audio speed modification API:', error);
+    } finally {
+      // End processing
+      setIsProcessing(false);
+    }
+  };
 
   // Function to calculate row height based on text content
   const getRowHeight = index => {
@@ -617,6 +698,50 @@ const GeminiNarrationResults = ({
     <div className="gemini-narration-results">
       <div className="results-header">
         <h4>{t('narration.geminiResults', 'Generated Narration (Gemini)')}</h4>
+
+        {/* Speed Control Slider */}
+        {generationResults && generationResults.length > 0 && (
+          <div className="speed-control-container">
+            <span className="speed-control-label">{t('narration.speed', 'Speed')}:</span>
+            <div className="speed-control-slider-container">
+              <div className="speed-control-slider-track">
+                <div
+                  className="speed-control-slider-fill"
+                  style={{ width: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                ></div>
+                <div
+                  className="speed-control-slider-thumb"
+                  style={{ left: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                ></div>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={speedValue}
+                onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
+                className="speed-control-slider-input"
+                disabled={isProcessing}
+              />
+            </div>
+            <div className="speed-control-value">{speedValue.toFixed(1)}x</div>
+            {isProcessing ? (
+              <div className="speed-control-progress">
+                <div className="speed-control-spinner"></div>
+                <span>{processingProgress.current}/{processingProgress.total}</span>
+              </div>
+            ) : (
+              <button
+                className="speed-control-apply-button"
+                onClick={modifyAudioSpeed}
+                disabled={!generationResults || generationResults.length === 0}
+              >
+                {t('narration.apply', 'Apply')}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Retry Failed Narrations button */}
         {hasFailedNarrations && onRetryFailed && (
