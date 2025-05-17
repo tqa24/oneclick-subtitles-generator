@@ -120,8 +120,7 @@ const UnifiedNarrationSection = ({
   const {
     handleGeminiNarration,
     cancelGeminiGeneration,
-    retryGeminiNarration,
-    groupSubtitles
+    retryGeminiNarration
   } = useGeminiNarration({
     setIsGenerating,
     setGenerationStatus,
@@ -336,7 +335,6 @@ const UnifiedNarrationSection = ({
     statusRef,
     t,
     referenceAudio,
-    referenceText,
     segmentStartTime,
     segmentEndTime,
     setError

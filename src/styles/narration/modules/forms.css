@@ -8,11 +8,7 @@
   height: 100%;
 }
 
-/* Add a subtle animation when the text area is being edited */
-.reference-text-container:has(.reference-text:focus) {
-  transform: translateY(-2px);
-  transition: transform 0.2s ease;
-}
+/* Remove animation that might be causing issues */
 
 /* Reference text */
 .reference-text {
@@ -113,11 +109,21 @@ textarea.reference-text {
   border-radius: 20px !important;
   -webkit-border-radius: 20px !important;
   -moz-border-radius: 20px !important;
+  /* Ensure the textarea is always on top and can receive input */
+  position: relative;
+  z-index: 5;
 }
 
 /* Hide the resize handle in WebKit browsers */
 textarea.reference-text::-webkit-resizer {
   display: none !important;
+}
+
+/* Simple fix for textarea focus issues */
+.reference-text-container textarea {
+  /* Ensure the textarea is always on top */
+  position: relative;
+  z-index: 5;
 }
 
 /* Switch component */

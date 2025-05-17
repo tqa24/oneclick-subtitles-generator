@@ -12,6 +12,14 @@
   border-radius: 8px;
 }
 
+/* Prevent audio elements from stealing focus */
+audio.audio-player {
+  /* Ensure audio elements don't interfere with text input */
+  z-index: 1;
+  /* Prevent audio from stealing focus */
+  outline: none !important;
+}
+
 /* Audio status container */
 .audio-status-container {
   display: flex;

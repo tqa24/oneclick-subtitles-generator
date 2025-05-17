@@ -15,6 +15,7 @@ import { SERVER_URL } from '../../../config';
  * @param {Function} props.clearReferenceAudio - Function to clear reference audio
  * @returns {JSX.Element} - Rendered component
  */
+
 const AudioControls = ({
   handleFileUpload,
   fileInputRef,
@@ -86,7 +87,12 @@ const AudioControls = ({
             <div className="audio-preview">
               <div className="audio-player-container">
                 {referenceAudio.url ? (
-                  <audio controls src={referenceAudio.url} className="audio-player">
+                  <audio
+                    controls
+                    src={referenceAudio.url}
+                    className="audio-player"
+                    tabIndex="-1"
+                  >
                     {t('narration.audioNotSupported', 'Your browser does not support the audio element.')}
                   </audio>
                 ) : referenceAudio.filename ? (
@@ -94,6 +100,7 @@ const AudioControls = ({
                     controls
                     src={`${SERVER_URL}/api/narration/audio/${referenceAudio.filename}`}
                     className="audio-player"
+                    tabIndex="-1"
                   >
                     {t('narration.audioNotSupported', 'Your browser does not support the audio element.')}
                   </audio>

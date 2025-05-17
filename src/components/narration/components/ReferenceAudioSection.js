@@ -2,6 +2,54 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
+ * Isolated Text Input component that doesn't get affected by parent re-renders
+ */
+class IsolatedTextInput extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      value: props.value || ''
+    };
+    this.textareaRef = React.createRef();
+  }
+
+  // Update local state when props change, but only if not focused
+  componentDidUpdate(prevProps) {
+    // Only update if the value prop changed and the textarea is not focused
+    if (prevProps.value !== this.props.value &&
+        document.activeElement !== this.textareaRef.current) {
+      this.setState({ value: this.props.value || '' });
+    }
+  }
+
+  handleChange = (e) => {
+    const newValue = e.target.value;
+    // Update local state immediately
+    this.setState({ value: newValue });
+    // Notify parent component
+    if (this.props.onChange) {
+      this.props.onChange(newValue);
+    }
+  };
+
+  render() {
+    const { placeholder, disabled, rows } = this.props;
+
+    return (
+      <textarea
+        ref={this.textareaRef}
+        className="reference-text"
+        value={this.state.value}
+        onChange={this.handleChange}
+        placeholder={placeholder}
+        rows={rows || 2}
+        disabled={disabled}
+      />
+    );
+  }
+}
+
+/**
  * Reference Audio Section component
  * @param {Object} props - Component props
  * @param {Object} props.referenceAudio - Reference audio object
@@ -28,6 +76,14 @@ const ReferenceAudioSection = ({
 }) => {
   const { t } = useTranslation();
 
+  // Function to handle text changes from the isolated component
+  const handleTextChange = (newText) => {
+    // Use setTimeout to avoid immediate state updates that might cause issues
+    setTimeout(() => {
+      setReferenceText(newText);
+    }, 0);
+  };
+
   return (
     <div className="narration-row reference-audio-row">
       <div className="row-label">
@@ -39,10 +95,9 @@ const ReferenceAudioSection = ({
           <div className="reference-content-row">
             {/* Reference Text */}
             <div className="reference-text-container">
-              <textarea
-                className="reference-text"
+              <IsolatedTextInput
                 value={referenceText}
-                onChange={(e) => setReferenceText(e.target.value)}
+                onChange={handleTextChange}
                 placeholder={t('narration.referenceTextPlaceholder', 'Enter text that matches the reference audio...')}
                 rows={2}
                 disabled={isRecognizing}
@@ -79,8 +134,6 @@ const ReferenceAudioSection = ({
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
