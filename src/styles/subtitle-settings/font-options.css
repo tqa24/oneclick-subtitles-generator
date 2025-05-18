@@ -98,7 +98,7 @@ select option:focus {
 .font-select option[value*="Gowun Dodum"] { font-family: 'Gowun Dodum', sans-serif; }
 
 /* Vietnamese fonts */
-.font-select option[value*="Rubik"] { font-family: 'Rubik', 'Be Vietnam Pro', sans-serif; }
+.font-select option[value*="Google Sans"] { font-family: 'Google Sans', 'Be Vietnam Pro', sans-serif; }
 .font-select option[value*="Noto Sans Vietnamese"] { font-family: 'Noto Sans Vietnamese', sans-serif; }
 .font-select option[value*="Be Vietnam Pro"] { font-family: 'Be Vietnam Pro', sans-serif; }
 .font-select option[value*="Sarabun"] { font-family: 'Sarabun', sans-serif; }

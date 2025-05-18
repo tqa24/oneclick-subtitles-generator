@@ -15,7 +15,7 @@ export const fontOptions = [
   { value: "'Gowun Dodum', sans-serif", label: 'Gowun Dodum', group: 'Korean Optimized', koreanSupport: true, vietnameseSupport: false },
 
   // Vietnamese optimized fonts
-  { value: "'Rubik', 'Be Vietnam Pro', sans-serif", label: 'Rubik', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Google Sans', 'Be Vietnam Pro', sans-serif", label: 'Google Sans', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Noto Sans Vietnamese', sans-serif", label: 'Noto Sans Vietnamese', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Be Vietnam Pro', sans-serif", label: 'Be Vietnam Pro', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Sarabun', sans-serif", label: 'Sarabun', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },

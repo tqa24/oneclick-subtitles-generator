@@ -5,7 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans:wght@400;500;700&family=Noto+Serif:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap');
-/* Vietnamese fonts (except Be Vietnam Pro which is replaced by Rubik) */
+/* Vietnamese fonts (except Be Vietnam Pro which is replaced by Google Sans) */
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&family=Montserrat+Alternates:wght@400;500;600&family=Sarabun:wght@400;500;600&family=Josefin+Sans:wght@400;500;600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Vietnamese:wght@400;500;600&display=swap');
 @import url('./material-tokens.css');
@@ -43,7 +43,7 @@
 
   /* Font variables */
   --font-primary: 'Google Sans', 'Open Sans', sans-serif;
-  --font-title: 'Rubik', 'Be Vietnam Pro', sans-serif;
+  --font-title: 'Google Sans', 'Be Vietnam Pro', sans-serif;
   --font-code: 'JetBrains Mono', monospace;
 
   /* Additional Material Design 3 mappings */

@@ -1,11 +1,11 @@
 /* Local font definitions */
 
-/* Google Sans (replacement for Open Sans) */
+/* Product Sans (used as Google Sans) */
 @font-face {
   font-family: 'Google Sans';
   font-style: normal;
   font-weight: 400;
-  src: url('../assets/fonts/GoogleSans-Regular.ttf') format('truetype');
+  src: url('../assets/fonts/Product Sans Regular.otf') format('opentype');
   font-display: swap;
 }
 
@@ -13,55 +13,22 @@
   font-family: 'Google Sans';
   font-style: italic;
   font-weight: 400;
-  src: url('../assets/fonts/GoogleSans-Italic.ttf') format('truetype');
-  font-display: swap;
-}
-
-/* Rubik (replacement for Be Vietnam Pro) */
-@font-face {
-  font-family: 'Rubik';
-  font-style: normal;
-  font-weight: 400;
-  src: url('../assets/fonts/Rubik-Regular.ttf') format('truetype');
+  src: url('../assets/fonts/Product Sans Italic.otf') format('opentype');
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Rubik';
-  font-style: normal;
-  font-weight: 500;
-  src: url('../assets/fonts/Rubik-Medium.ttf') format('truetype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Rubik';
+  font-family: 'Google Sans';
   font-style: normal;
   font-weight: 700;
-  src: url('../assets/fonts/Rubik-Bold.ttf') format('truetype');
+  src: url('../assets/fonts/Product Sans Bold.otf') format('opentype');
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Rubik';
-  font-style: italic;
-  font-weight: 400;
-  src: url('../assets/fonts/Rubik-MediumItalic.ttf') format('truetype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Rubik';
-  font-style: italic;
-  font-weight: 500;
-  src: url('../assets/fonts/Rubik-MediumItalic.ttf') format('truetype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Rubik';
+  font-family: 'Google Sans';
   font-style: italic;
   font-weight: 700;
-  src: url('../assets/fonts/Rubik-BoldItalic.ttf') format('truetype');
+  src: url('../assets/fonts/Product Sans Bold Italic.otf') format('opentype');
   font-display: swap;
 }
