@@ -16,7 +16,7 @@
   white-space: nowrap;
   letter-spacing: 0.1px;
   box-shadow: var(--md-elevation-level2);
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Google Sans', 'Open Sans', sans-serif;
 }
 
 .prompt-header .generate-button {
@@ -26,7 +26,7 @@
 .new-prompt-button {
   background-color: var(--md-secondary, #03a9f4);
   color: var(--md-on-secondary, white);
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Google Sans', 'Open Sans', sans-serif;
 }
 
 .new-prompt-button:hover:not(:disabled) {

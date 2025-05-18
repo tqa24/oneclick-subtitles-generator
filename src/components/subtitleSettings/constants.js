@@ -15,6 +15,7 @@ export const fontOptions = [
   { value: "'Gowun Dodum', sans-serif", label: 'Gowun Dodum', group: 'Korean Optimized', koreanSupport: true, vietnameseSupport: false },
 
   // Vietnamese optimized fonts
+  { value: "'Rubik', 'Be Vietnam Pro', sans-serif", label: 'Rubik', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Noto Sans Vietnamese', sans-serif", label: 'Noto Sans Vietnamese', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Be Vietnam Pro', sans-serif", label: 'Be Vietnam Pro', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
   { value: "'Sarabun', sans-serif", label: 'Sarabun', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
@@ -23,6 +24,7 @@ export const fontOptions = [
   { value: "'Lexend', sans-serif", label: 'Lexend', group: 'Vietnamese Optimized', koreanSupport: false, vietnameseSupport: true },
 
   // Multilingual fonts with good support for both Korean and Vietnamese
+  { value: "'Google Sans', 'Open Sans', sans-serif", label: 'Google Sans', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
   { value: "'Open Sans', sans-serif", label: 'Open Sans', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
   { value: "'Noto Sans', sans-serif", label: 'Noto Sans', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
   { value: "'Noto Serif', serif", label: 'Noto Serif', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },

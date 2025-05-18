@@ -1,6 +1,6 @@
-/* Font overrides to ensure Open Sans is used throughout the application */
+/* Font overrides to ensure Google Sans and Rubik are used throughout the application */
 
-/* Apply Open Sans to all elements by default */
+/* Apply Google Sans to all elements by default */
 * {
   font-family: var(--font-primary);
 }

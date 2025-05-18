@@ -64,7 +64,7 @@
   background: transparent;
   border-radius: 20px; /* Pill shape */
   color: var(--md-on-surface-variant);
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Google Sans', 'Open Sans', sans-serif;
   font-size: var(--md-label-large-size);
   font-weight: 500;
   cursor: pointer;
