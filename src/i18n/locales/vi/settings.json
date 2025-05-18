@@ -88,7 +88,7 @@
   "removeKey": "Xóa khóa",
   "addKey": "Thêm Khóa",
   "noGeminiKeys": "Chưa có khóa API Gemini nào. Thêm khóa đầu tiên của bạn bên dưới.",
-  "multipleKeysInfo": "Về Nhiều Khóa API",
+  "multipleKeysInfo": "Về Nhiều Khóa API (Chưa hoàn thiện)",
   "multipleKeysDescription": "Thêm nhiều khóa API Gemini cho phép tự động chuyển đổi dự phòng. Nếu một khóa gặp lỗi, hệ thống sẽ tự động thử khóa khác.",
   "activeKeyDescription": "Khóa hoạt động được sử dụng trước tiên. Nếu nó thất bại, các khóa khác sẽ được thử theo thứ tự.",
   "youtubeStep1": "Truy cập Google Cloud Console",
