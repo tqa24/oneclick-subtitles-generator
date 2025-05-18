@@ -110,12 +110,35 @@ const ApiKeysTab = ({
     }
   };
 
-  // Toggle key visibility
+  // Toggle key visibility with animation
   const toggleKeyVisibility = (index) => {
-    setVisibleKeyIndices(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
+    // Get the key element
+    const keyElement = document.querySelector(`#gemini-key-${index} .gemini-key-content`);
+
+    if (keyElement) {
+      // Add fade-out animation
+      keyElement.style.opacity = '0';
+      keyElement.style.transition = 'opacity 0.2s ease-in-out';
+
+      // After animation completes, toggle visibility and fade back in
+      setTimeout(() => {
+        setVisibleKeyIndices(prev => ({
+          ...prev,
+          [index]: !prev[index]
+        }));
+
+        // Fade back in
+        setTimeout(() => {
+          keyElement.style.opacity = '1';
+        }, 50);
+      }, 200);
+    } else {
+      // Fallback if element not found
+      setVisibleKeyIndices(prev => ({
+        ...prev,
+        [index]: !prev[index]
+      }));
+    }
   };
 
   // Refs for editable fields
@@ -261,6 +284,7 @@ const ApiKeysTab = ({
                 {geminiApiKeys.map((key, index) => (
                   <div
                     key={`gemini-key-${index}`}
+                    id={`gemini-key-${index}`}
                     className={`gemini-key-item ${index === activeKeyIndex ? 'active' : ''} ${geminiApiKeys.length === 1 ? 'single-key' : ''}`}
                   >
                     <div className="gemini-key-content">
