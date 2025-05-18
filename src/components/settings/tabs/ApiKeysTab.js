@@ -3,6 +3,28 @@ import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
 import { getAllKeys, addKey, removeKey, getActiveKeyIndex, setActiveKeyIndex } from '../../../services/gemini/keyManager';
 
+// Helper function for animating input visibility toggle with subtle fade
+const animateToggle = (elementId, currentState, setState) => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    setState(!currentState);
+    return;
+  }
+
+  // Apply fade-out animation
+  element.style.animation = 'fade-out 0.15s ease-in-out forwards';
+
+  // After animation completes, toggle state
+  setTimeout(() => {
+    setState(!currentState);
+
+    // Apply fade-in animation after state change
+    setTimeout(() => {
+      element.style.animation = 'fade-in 0.15s ease-in-out forwards';
+    }, 50);
+  }, 150);
+};
+
 // Note: This function is defined but not used - the functionality is implemented inline
 // in the onKeyDown handlers of the contentEditable elements
 // Prevent form submission on Enter key
@@ -110,28 +132,27 @@ const ApiKeysTab = ({
     }
   };
 
-  // Toggle key visibility with animation
+  // Toggle key visibility with subtle fade animation
   const toggleKeyVisibility = (index) => {
     // Get the key element
     const keyElement = document.querySelector(`#gemini-key-${index} .gemini-key-content`);
 
     if (keyElement) {
-      // Add fade-out animation
-      keyElement.style.opacity = '0';
-      keyElement.style.transition = 'opacity 0.2s ease-in-out';
+      // Apply fade-out animation
+      keyElement.style.animation = 'fade-out 0.15s ease-in-out forwards';
 
-      // After animation completes, toggle visibility and fade back in
+      // After animation completes, toggle visibility
       setTimeout(() => {
         setVisibleKeyIndices(prev => ({
           ...prev,
           [index]: !prev[index]
         }));
 
-        // Fade back in
+        // Apply fade-in animation after state change
         setTimeout(() => {
-          keyElement.style.opacity = '1';
+          keyElement.style.animation = 'fade-in 0.15s ease-in-out forwards';
         }, 50);
-      }, 200);
+      }, 150);
     } else {
       // Fallback if element not found
       setVisibleKeyIndices(prev => ({
@@ -385,9 +406,9 @@ const ApiKeysTab = ({
                 <div className="custom-api-key-input">
                   <div className="custom-input-field">
                     <input
-                      type={showNewGeminiKey ? "text" : "password"}
+                      type="text"
                       id="new-gemini-key-input"
-                      className="api-key-input-field"
+                      className={`api-key-input-field ${!showNewGeminiKey ? 'masked-input' : ''}`}
                       value={newGeminiKey}
                       onChange={(e) => setNewGeminiKey(e.target.value)}
                       onKeyDown={(e) => {
@@ -398,23 +419,16 @@ const ApiKeysTab = ({
                       }}
                       placeholder={t('settings.addGeminiKeyPlaceholder', 'Enter a new Gemini API key')}
                       ref={newGeminiKeyRef}
-                      autoComplete="off"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-form-type="other"
                       spellCheck="false"
                     />
                   </div>
                   <button
                     type="button"
                     className="toggle-visibility"
-                    onClick={() => {
-                      // Toggle visibility
-                      setShowNewGeminiKey(!showNewGeminiKey);
-
-                      // Toggle input type between text and password
-                      const input = document.getElementById('new-gemini-key-input');
-                      if (input) {
-                        input.type = showNewGeminiKey ? 'password' : 'text';
-                      }
-                    }}
+                    onClick={() => animateToggle('new-gemini-key-input', showNewGeminiKey, setShowNewGeminiKey)}
                     aria-label={showNewGeminiKey ? t('settings.hide') : t('settings.show')}
                   >
                     {showNewGeminiKey ? t('settings.hide') : t('settings.show')}
@@ -474,9 +488,9 @@ const ApiKeysTab = ({
           <div className="custom-api-key-input">
             <div className="custom-input-field">
               <input
-                type={showGeniusKey ? "text" : "password"}
+                type="text"
                 id="genius-key-input"
-                className="api-key-input-field"
+                className={`api-key-input-field ${!showGeniusKey ? 'masked-input' : ''}`}
                 value={geniusApiKey}
                 onChange={(e) => setGeniusApiKey(e.target.value)}
                 onKeyDown={(e) => {
@@ -486,23 +500,16 @@ const ApiKeysTab = ({
                 }}
                 placeholder={t('settings.geniusApiKeyPlaceholder', 'Enter your Genius API key')}
                 ref={geniusKeyRef}
-                autoComplete="off"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-form-type="other"
                 spellCheck="false"
               />
             </div>
             <button
               type="button"
               className="toggle-visibility"
-              onClick={() => {
-                // Toggle visibility
-                setShowGeniusKey(!showGeniusKey);
-
-                // Toggle input type between text and password
-                const input = document.getElementById('genius-key-input');
-                if (input) {
-                  input.type = showGeniusKey ? 'password' : 'text';
-                }
-              }}
+              onClick={() => animateToggle('genius-key-input', showGeniusKey, setShowGeniusKey)}
               aria-label={showGeniusKey ? t('settings.hide') : t('settings.show')}
             >
               {showGeniusKey ? t('settings.hide') : t('settings.show')}
@@ -583,9 +590,9 @@ const ApiKeysTab = ({
             <div className="custom-api-key-input">
               <div className="custom-input-field">
                 <input
-                  type={showYoutubeKey ? "text" : "password"}
+                  type="text"
                   id="youtube-key-input"
-                  className="api-key-input-field"
+                  className={`api-key-input-field ${!showYoutubeKey ? 'masked-input' : ''}`}
                   value={youtubeApiKey}
                   onChange={(e) => setYoutubeApiKey(e.target.value)}
                   onKeyDown={(e) => {
@@ -595,23 +602,16 @@ const ApiKeysTab = ({
                   }}
                   placeholder={t('settings.youtubeApiKeyPlaceholder', 'Enter your YouTube API key')}
                   ref={youtubeKeyRef}
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-form-type="other"
                   spellCheck="false"
                 />
               </div>
               <button
                 type="button"
                 className="toggle-visibility"
-                onClick={() => {
-                  // Toggle visibility
-                  setShowYoutubeKey(!showYoutubeKey);
-
-                  // Toggle input type between text and password
-                  const input = document.getElementById('youtube-key-input');
-                  if (input) {
-                    input.type = showYoutubeKey ? 'password' : 'text';
-                  }
-                }}
+                onClick={() => animateToggle('youtube-key-input', showYoutubeKey, setShowYoutubeKey)}
                 aria-label={showYoutubeKey ? t('settings.hide') : t('settings.show')}
               >
                 {showYoutubeKey ? t('settings.hide') : t('settings.show')}
@@ -668,9 +668,9 @@ const ApiKeysTab = ({
                 <div className="custom-api-key-input">
                   <div className="custom-input-field">
                     <input
-                      type={showClientId ? "text" : "password"}
+                      type="text"
                       id="client-id-input"
-                      className="api-key-input-field"
+                      className={`api-key-input-field ${!showClientId ? 'masked-input' : ''}`}
                       value={youtubeClientId}
                       onChange={(e) => setYoutubeClientId(e.target.value)}
                       onKeyDown={(e) => {
@@ -680,23 +680,16 @@ const ApiKeysTab = ({
                       }}
                       placeholder={t('settings.clientIdPlaceholder', 'Enter your OAuth Client ID')}
                       ref={clientIdRef}
-                      autoComplete="off"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-form-type="other"
                       spellCheck="false"
                     />
                   </div>
                   <button
                     type="button"
                     className="toggle-visibility"
-                    onClick={() => {
-                      // Toggle visibility
-                      setShowClientId(!showClientId);
-
-                      // Toggle input type between text and password
-                      const input = document.getElementById('client-id-input');
-                      if (input) {
-                        input.type = showClientId ? 'password' : 'text';
-                      }
-                    }}
+                    onClick={() => animateToggle('client-id-input', showClientId, setShowClientId)}
                     aria-label={showClientId ? t('settings.hide') : t('settings.show')}
                   >
                     {showClientId ? t('settings.hide') : t('settings.show')}
@@ -710,9 +703,9 @@ const ApiKeysTab = ({
                 <div className="custom-api-key-input">
                   <div className="custom-input-field">
                     <input
-                      type={showClientSecret ? "text" : "password"}
+                      type="text"
                       id="client-secret-input"
-                      className="api-key-input-field"
+                      className={`api-key-input-field ${!showClientSecret ? 'masked-input' : ''}`}
                       value={youtubeClientSecret}
                       onChange={(e) => setYoutubeClientSecret(e.target.value)}
                       onKeyDown={(e) => {
@@ -722,23 +715,16 @@ const ApiKeysTab = ({
                       }}
                       placeholder={t('settings.clientSecretPlaceholder', 'Enter your OAuth Client Secret')}
                       ref={clientSecretRef}
-                      autoComplete="off"
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-form-type="other"
                       spellCheck="false"
                     />
                   </div>
                   <button
                     type="button"
                     className="toggle-visibility"
-                    onClick={() => {
-                      // Toggle visibility
-                      setShowClientSecret(!showClientSecret);
-
-                      // Toggle input type between text and password
-                      const input = document.getElementById('client-secret-input');
-                      if (input) {
-                        input.type = showClientSecret ? 'password' : 'text';
-                      }
-                    }}
+                    onClick={() => animateToggle('client-secret-input', showClientSecret, setShowClientSecret)}
                     aria-label={showClientSecret ? t('settings.hide') : t('settings.show')}
                   >
                     {showClientSecret ? t('settings.hide') : t('settings.show')}

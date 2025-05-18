@@ -129,16 +129,48 @@
   outline: none;
 }
 
-/* Style for password inputs to make dots more visible */
-input[type="password"].api-key-input-field {
-  font-size: 1.2rem;
+/* Style for masked inputs */
+.masked-input {
+  font-family: 'JetBrains Mono', monospace;
   letter-spacing: 2px;
+  animation: fade-in 0.2s ease-in-out;
+  -webkit-text-security: disc; /* Creates password dots in WebKit browsers */
+  -moz-text-security: disc; /* For Firefox */
+  text-security: disc; /* Standard property (not widely supported yet) */
 }
 
-/* Animation for showing/hiding keys */
+/* Fallback for browsers that don't support text-security */
+@supports not (text-security: disc) and not (-webkit-text-security: disc) and not (-moz-text-security: disc) {
+  .masked-input {
+    color: transparent;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Make sure placeholder is visible even when input is masked */
+.masked-input::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+  text-shadow: none;
+  -webkit-text-security: none;
+  -moz-text-security: none;
+  text-security: none;
+}
+
+/* Style for visible inputs */
+.api-key-input-field:not(.masked-input) {
+  animation: fade-in 0.2s ease-in-out;
+}
+
+/* Animations for showing/hiding keys */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Placeholder styling is now handled by the input's placeholder attribute */
@@ -334,7 +366,7 @@ input[type="password"].api-key-input-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.15s ease-in-out;
 }
 
 .gemini-key-display {
@@ -362,8 +394,8 @@ input[type="password"].api-key-input-field {
   flex: 1;
   min-width: 0; /* Allows text to shrink below content size */
   margin-left: 12px;
-  animation: fade-in 0.2s ease-in-out;
-  transition: all 0.2s ease-in-out;
+  animation: fade-in 0.15s ease-in-out;
+  transition: opacity 0.15s ease-in-out;
 }
 
 .gemini-key-visible {
@@ -377,8 +409,8 @@ input[type="password"].api-key-input-field {
   max-height: 60px;
   overflow-y: auto;
   width: 100%;
-  animation: fade-in 0.2s ease-in-out;
-  transition: all 0.2s ease-in-out;
+  animation: fade-in 0.15s ease-in-out;
+  transition: opacity 0.15s ease-in-out;
 }
 
 /* Tooltip for full key display */
