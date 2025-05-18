@@ -2,6 +2,8 @@
   "title": "Cài đặt",
   "appearance": "Giao diện",
   "apiKeys": "Khóa API",
+  "gemini25ProPaused": "Từ ngày 15 tháng 4, Google tạm thời chặn truy cập vào Gemini 2.5 Pro 03-25 trên API free tier",
+  "closeMessage": "Đóng",
   "geminiApiKey": "Khóa API Gemini",
   "geminiApiKeys": "Các Khóa API Gemini",
   "youtubeApiKey": "Khóa API YouTube",

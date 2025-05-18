@@ -2,6 +2,8 @@
   "title": "Settings",
   "appearance": "Appearance",
   "apiKeys": "API Keys",
+  "gemini25ProPaused": "From April 15, Google temporarily paused access to Gemini 2.5 Pro 03-25 on free API tier",
+  "closeMessage": "Close",
   "geminiApiKey": "Gemini API Key",
   "geminiApiKeys": "Gemini API Keys",
   "youtubeApiKey": "YouTube API Key",

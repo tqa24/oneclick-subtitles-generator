@@ -49,13 +49,26 @@ const ApiKeysTab = ({
   const [showNewGeminiKey, setShowNewGeminiKey] = useState(false);
   const [activeKeyIndex, setActiveKeyIndexState] = useState(0);
   const [visibleKeyIndices, setVisibleKeyIndices] = useState({});
+  const [showGeminiPausedMessage, setShowGeminiPausedMessage] = useState(true);
 
   // Load all Gemini API keys on mount
   useEffect(() => {
     const keys = getAllKeys();
     setGeminiApiKeys(keys);
     setActiveKeyIndexState(getActiveKeyIndex());
+
+    // Check if the message has been closed before
+    const messageClosedBefore = localStorage.getItem('gemini25ProPausedMessageClosed') === 'true';
+    if (messageClosedBefore) {
+      setShowGeminiPausedMessage(false);
+    }
   }, []);
+
+  // Handle closing the Gemini paused message
+  const handleCloseGeminiPausedMessage = () => {
+    setShowGeminiPausedMessage(false);
+    localStorage.setItem('gemini25ProPausedMessageClosed', 'true');
+  };
 
   // Update the active key when it changes
   const handleSetActiveKey = (index) => {
@@ -205,6 +218,29 @@ const ApiKeysTab = ({
 
   return (
     <div className="settings-section api-key-section">
+      {/* Gemini 2.5 Pro API Pause Message */}
+      {showGeminiPausedMessage && (
+        <div className="gemini-paused-message">
+          <div className="message-content">
+            <span>{t('settings.gemini25ProPaused')}</span>
+            <a
+              href="https://x.com/OfficialLoganK/status/1922357621178200248"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Twitter/X
+            </a>
+          </div>
+          <button
+            className="close-message-btn"
+            onClick={handleCloseGeminiPausedMessage}
+            aria-label={t('settings.closeMessage')}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Grid layout for API keys */}
       <div className="api-keys-grid">
         {/* Gemini API Keys - Left column (spans two rows) */}

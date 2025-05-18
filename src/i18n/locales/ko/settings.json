@@ -2,6 +2,8 @@
   "title": "설정",
   "appearance": "모양",
   "apiKeys": "API 키",
+  "gemini25ProPaused": "4월 15일부터 Google은 무료 API 등급에서 Gemini 2.5 Pro 03-25에 대한 액세스를 일시적으로 중단했습니다",
+  "closeMessage": "닫기",
   "geminiApiKey": "Gemini API 키",
   "geminiApiKeys": "Gemini API 키 목록",
   "youtubeApiKey": "YouTube API 키",
