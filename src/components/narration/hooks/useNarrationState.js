@@ -16,12 +16,6 @@ const useNarrationState = (initialReferenceAudio) => {
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
 
   // Gemini-specific settings
-  const [sleepTime, setSleepTime] = useState(() => {
-    // Try to load from localStorage
-    const savedSleepTime = localStorage.getItem('gemini_sleep_time');
-    return savedSleepTime ? parseInt(savedSleepTime) : 0; // Default to 0 seconds (no delay)
-  });
-
   const [selectedVoice, setSelectedVoice] = useState(() => {
     // Try to load from localStorage
     const savedVoice = localStorage.getItem('gemini_voice');
@@ -122,8 +116,6 @@ const useNarrationState = (initialReferenceAudio) => {
     setIsCheckingAvailability,
 
     // Gemini-specific settings
-    sleepTime,
-    setSleepTime,
     selectedVoice,
     setSelectedVoice,
     concurrentClients,

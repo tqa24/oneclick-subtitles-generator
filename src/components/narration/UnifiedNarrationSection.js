@@ -17,7 +17,6 @@ import ReferenceAudioSection from './components/ReferenceAudioSection';
 import AudioControls from './components/AudioControls';
 import SubtitleSourceSelection from './components/SubtitleSourceSelection';
 import GeminiSubtitleSourceSelection from './components/GeminiSubtitleSourceSelection';
-import GeminiSleepTimeSlider from './components/GeminiSleepTimeSlider';
 import GeminiVoiceSelection from './components/GeminiVoiceSelection';
 import GeminiConcurrentClientsSlider from './components/GeminiConcurrentClientsSlider';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
@@ -70,7 +69,6 @@ const UnifiedNarrationSection = ({
     isGeminiAvailable, setIsGeminiAvailable,
 
     // Gemini-specific settings
-    sleepTime, setSleepTime,
     selectedVoice, setSelectedVoice,
     concurrentClients, setConcurrentClients,
 
@@ -133,7 +131,6 @@ const UnifiedNarrationSection = ({
     subtitles,
     originalLanguage,
     translatedLanguage,
-    sleepTime,
     selectedVoice,
     concurrentClients,
     useGroupedSubtitles,
@@ -304,7 +301,7 @@ const UnifiedNarrationSection = ({
           setIsGenerating(false);
         },
         null, // Use default model
-        sleepTime, // Use the configured sleep time
+        0, // No sleep time
         selectedVoice, // Use the selected voice
         concurrentClients // Use the configured concurrent clients
       );
@@ -807,13 +804,6 @@ const UnifiedNarrationSection = ({
           <GeminiVoiceSelection
             selectedVoice={selectedVoice}
             setSelectedVoice={setSelectedVoice}
-            isGenerating={isGenerating}
-          />
-
-          {/* Sleep Time Slider for Gemini */}
-          <GeminiSleepTimeSlider
-            sleepTime={sleepTime}
-            setSleepTime={setSleepTime}
             isGenerating={isGenerating}
           />
 

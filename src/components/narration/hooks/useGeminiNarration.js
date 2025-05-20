@@ -21,7 +21,6 @@ import { groupSubtitlesForNarration } from '../../../services/gemini/subtitleGro
  * @param {Array} params.subtitles - Fallback subtitles
  * @param {Object} params.originalLanguage - Original language
  * @param {Object} params.translatedLanguage - Translated language
- * @param {number} params.sleepTime - Sleep time between requests
  * @param {string} params.selectedVoice - Selected voice
  * @param {number} params.concurrentClients - Number of concurrent WebSocket clients
  * @param {boolean} params.useGroupedSubtitles - Whether to use grouped subtitles for narration
@@ -45,7 +44,6 @@ const useGeminiNarration = ({
   subtitles,
   originalLanguage,
   translatedLanguage,
-  sleepTime,
   selectedVoice,
   concurrentClients,
   useGroupedSubtitles,
@@ -286,7 +284,7 @@ const useGeminiNarration = ({
           setIsGenerating(false);
         },
         null, // Use default model
-        sleepTime, // Use the configured sleep time
+        0, // No sleep time
         selectedVoice // Use the selected voice
       );
 
