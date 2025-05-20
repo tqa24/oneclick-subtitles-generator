@@ -84,7 +84,7 @@
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-family: 'Open Sans', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
   border: none;

@@ -309,7 +309,7 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   padding: 0.4rem 0.8rem;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-family: 'Open Sans', sans-serif;
+  font-family: var(--font-title);
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
   border: none;
@@ -333,11 +333,38 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
 .download-model-btn {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
+  border-radius: var(--md-shape-pill);
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  font-weight: var(--md-label-medium-weight);
+  letter-spacing: 0.1px;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  overflow: hidden;
 }
 
 .download-model-btn:hover {
   background-color: var(--md-primary);
   color: var(--md-on-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.download-model-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.download-model-btn svg {
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.download-model-btn:hover svg {
+  transform: translateY(2px);
 }
 
 .delete-model-btn {
