@@ -17,7 +17,7 @@
 
 .advanced-settings-modal {
   background-color: var(--md-surface-1);
-  border-radius: 28px;
+  border-radius: 32px;
   box-shadow: var(--md-elevation-level4);
   width: 90%;
   max-width: 1300px; /* Increased to accommodate more columns */

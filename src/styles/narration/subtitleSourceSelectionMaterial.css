@@ -116,7 +116,7 @@
 
 .grouping-intensity-select {
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: var(--md-shape-pill); /* Changed to pill shape */
   border: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-1);
   color: var(--md-on-surface);
@@ -125,6 +125,16 @@
   transition: all 0.2s ease;
   box-shadow: var(--md-elevation-level1);
   min-width: 120px;
+  appearance: none; /* Remove default appearance */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 30px; /* Make room for custom dropdown indicator */
+  position: relative; /* For positioning the custom dropdown indicator */
+  /* Custom dropdown indicator - uses currentColor which will inherit from text color */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
 }
 
 .grouping-intensity-select:hover:not(:disabled) {
@@ -147,6 +157,18 @@
   border-color: var(--md-outline-variant);
   box-shadow: none;
   transform: none;
+}
+
+/* Dark mode dropdown indicator */
+@media (prefers-color-scheme: dark) {
+  .grouping-intensity-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+}
+
+/* For apps that use a .dark-theme class instead of prefers-color-scheme */
+.dark-theme .grouping-intensity-select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 /* Add a tooltip to explain that changing intensity requires regrouping */
