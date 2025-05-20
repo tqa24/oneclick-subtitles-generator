@@ -13,4 +13,4 @@ export const SERVER_URL = 'http://127.0.0.1:3007';
 export const GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
 
 // Default Gemini model for transcription
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-preview-04-17';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';

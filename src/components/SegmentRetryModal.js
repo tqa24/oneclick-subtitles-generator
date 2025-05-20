@@ -46,7 +46,7 @@ const SegmentRetryModal = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
-      id: 'gemini-2.5-flash-preview-04-17',
+      id: 'gemini-2.5-flash-preview-05-20',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
       description: t('models.smarterFaster', 'Smarter & faster'),
       icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,

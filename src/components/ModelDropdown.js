@@ -40,7 +40,7 @@ const ModelDropdown = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
-      id: 'gemini-2.5-flash-preview-04-17',
+      id: 'gemini-2.5-flash-preview-05-20',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
       description: isTranslationSection
         ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
