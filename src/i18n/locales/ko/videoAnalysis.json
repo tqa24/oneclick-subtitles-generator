@@ -16,7 +16,7 @@
   "relationships": "관계 & 사회적 계층",
   "additionalNotes": "추가 메모",
   "autoSelectCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
-  "autoSelectRecommendedCountdown": "[KOREAN TRANSLATION NEEDED] Auto-selecting recommended preset in (click anywhere to cancel)",
-  "autoSelectDefaultCountdown": "[KOREAN TRANSLATION NEEDED] Auto-selecting default preset in (click anywhere to cancel)",
+  "autoSelectRecommendedCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
+  "autoSelectDefaultCountdown": "기본 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
   "seconds": "초"
 }
