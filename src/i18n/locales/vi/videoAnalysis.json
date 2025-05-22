@@ -16,5 +16,7 @@
   "relationships": "Mối quan hệ & Thứ bậc xã hội",
   "additionalNotes": "Ghi chú bổ sung",
   "autoSelectCountdown": "Tự động chọn mẫu đề xuất trong (nhấp bất kỳ đâu để hủy)",
+  "autoSelectRecommendedCountdown": "[VIETNAMESE TRANSLATION NEEDED] Auto-selecting recommended preset in (click anywhere to cancel)",
+  "autoSelectDefaultCountdown": "[VIETNAMESE TRANSLATION NEEDED] Auto-selecting default preset in (click anywhere to cancel)",
   "seconds": "giây"
 }

@@ -6,13 +6,22 @@ import VideoAnalysisModal from './VideoAnalysisModal';
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key, options) => {
-      if (options) {
-        // Replace placeholders like {{countdown}} for relevant keys
-        if (key === 'videoAnalysis.autoSelectCountdown' && options.countdown !== undefined) {
-          return `Auto-selecting recommended preset in (click anywhere to cancel) ${options.countdown} seconds`;
-        }
+      // The component appends the countdown number and "seconds" separately now.
+      // So, the keys here should just return the main message part.
+      if (key === 'videoAnalysis.autoSelectDefaultCountdown') {
+        return 'Default countdown message';
       }
-      return key;
+      if (key === 'videoAnalysis.autoSelectRecommendedCountdown') {
+        return 'Recommended countdown message';
+      }
+      if (key === 'videoAnalysis.seconds') {
+        return 'seconds'; // Ensure "seconds" is also translated for full message construction
+      }
+      // Fallback for other keys used in the component (e.g., button labels)
+      if (key === 'videoAnalysis.useDefaultPreset') return 'Use My Default Preset';
+      if (key === 'videoAnalysis.useRecommended') return 'Use Recommended';
+      if (key === 'videoAnalysis.title') return 'Video Analysis Results'; // For userInteraction test
+      return key; // Return the key itself if no specific mock is defined
     },
   }),
 }));
@@ -164,12 +173,34 @@ describe('VideoAnalysisModal Component', () => {
     });
 
     render(<VideoAnalysisModal {...defaultProps} />);
-    expect(screen.getByText(/Auto-selecting recommended preset in \(click anywhere to cancel\) 10 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recommended countdown message 10 seconds/i)).toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(1000); // Advance 1 second
     });
-    expect(screen.getByText(/Auto-selecting recommended preset in \(click anywhere to cancel\) 9 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recommended countdown message 9 seconds/i)).toBeInTheDocument();
+  });
+
+  test('should display "Default countdown message" when autoSelectDefaultPreset is true', () => {
+    mockLocalStorageGetItem.mockImplementation((key) => {
+      if (key === 'auto_select_default_preset') {
+        return 'true';
+      }
+      if (key === 'video_analysis_timeout') {
+        return '15'; // Use a different timeout for this test
+      }
+      if (key === 'video_analysis_result') {
+        return JSON.stringify(analysisResultMock);
+      }
+      return null;
+    });
+
+    render(<VideoAnalysisModal {...defaultProps} />);
+    expect(screen.getByText(/Default countdown message 15 seconds/i)).toBeInTheDocument();
+    act(() => {
+      jest.advanceTimersByTime(1000); // Advance 1 second
+    });
+    expect(screen.getByText(/Default countdown message 14 seconds/i)).toBeInTheDocument();
   });
 
   test('should not start countdown if timeout setting is "none"', () => {
@@ -197,7 +228,8 @@ describe('VideoAnalysisModal Component', () => {
       return null;
     });
     render(<VideoAnalysisModal {...defaultProps} />);
-    expect(screen.getByText(/Auto-selecting recommended preset in \(click anywhere to cancel\) 20 seconds/i)).toBeInTheDocument();
+    // Message will be "Recommended" by default if auto_select_default_preset is not 'true'
+    expect(screen.getByText(/Recommended countdown message 20 seconds/i)).toBeInTheDocument();
 
     // Simulate user clicking the modal overlay (which calls handleUserInteraction)
     const modalOverlay = screen.getByText('videoAnalysis.title').closest('.video-analysis-modal-overlay');
@@ -208,7 +240,8 @@ describe('VideoAnalysisModal Component', () => {
     }
 
 
-    expect(screen.queryByText(/Auto-selecting recommended preset in/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Recommended countdown message/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Default countdown message/i)).not.toBeInTheDocument();
 
     // Advance timers to see if the original timeout still fires
     act(() => {
@@ -216,5 +249,76 @@ describe('VideoAnalysisModal Component', () => {
     });
     expect(mockOnUseDefaultPreset).not.toHaveBeenCalled();
     expect(mockOnUsePreset).not.toHaveBeenCalled();
+  });
+
+  describe('Button Rendering and Styling', () => {
+    test('should render "Use My Default Preset" as primary when autoSelectDefaultPreset is true', () => {
+      mockLocalStorageGetItem.mockImplementation((key) => {
+        if (key === 'auto_select_default_preset') return 'true';
+        if (key === 'video_analysis_timeout') return '20'; // Needs a timeout to show buttons
+        if (key === 'video_analysis_result') return JSON.stringify(analysisResultMock);
+        return null;
+      });
+
+      render(<VideoAnalysisModal {...defaultProps} />);
+
+      const useDefaultButton = screen.getByText('Use My Default Preset');
+      const useRecommendedButton = screen.getByText('Use Recommended');
+
+      // Check classes
+      expect(useDefaultButton).toHaveClass('use-recommended-button'); // Primary style
+      expect(useRecommendedButton).toHaveClass('use-default-button'); // Secondary style
+
+      // Check order (right-most is primary)
+      const footer = useDefaultButton.closest('.modal-footer');
+      const buttonsInFooter = Array.from(footer.querySelectorAll('button'));
+      expect(buttonsInFooter.indexOf(useRecommendedButton)).toBeLessThan(buttonsInFooter.indexOf(useDefaultButton));
+    });
+
+    test('should render "Use Recommended" as primary when autoSelectDefaultPreset is false', () => {
+      mockLocalStorageGetItem.mockImplementation((key) => {
+        if (key === 'auto_select_default_preset') return 'false';
+        if (key === 'video_analysis_timeout') return '20';
+        if (key === 'video_analysis_result') return JSON.stringify(analysisResultMock);
+        return null;
+      });
+
+      render(<VideoAnalysisModal {...defaultProps} />);
+
+      const useDefaultButton = screen.getByText('Use My Default Preset');
+      const useRecommendedButton = screen.getByText('Use Recommended');
+
+      // Check classes
+      expect(useRecommendedButton).toHaveClass('use-recommended-button'); // Primary style
+      expect(useDefaultButton).toHaveClass('use-default-button'); // Secondary style
+      
+      // Check order (right-most is primary)
+      const footer = useDefaultButton.closest('.modal-footer');
+      const buttonsInFooter = Array.from(footer.querySelectorAll('button'));
+      expect(buttonsInFooter.indexOf(useDefaultButton)).toBeLessThan(buttonsInFooter.indexOf(useRecommendedButton));
+    });
+
+    test('should render "Use Recommended" as primary when autoSelectDefaultPreset is not set', () => {
+      // Default mockLocalStorageGetItem already handles this (returns null for auto_select_default_preset)
+       mockLocalStorageGetItem.mockImplementation((key) => {
+        if (key === 'video_analysis_timeout') return '20';
+        if (key === 'video_analysis_result') return JSON.stringify(analysisResultMock);
+        // auto_select_default_preset will be null
+        return null;
+      });
+      render(<VideoAnalysisModal {...defaultProps} />);
+
+      const useDefaultButton = screen.getByText('Use My Default Preset');
+      const useRecommendedButton = screen.getByText('Use Recommended');
+
+      // Check classes
+      expect(useRecommendedButton).toHaveClass('use-recommended-button'); // Primary style
+      expect(useDefaultButton).toHaveClass('use-default-button'); // Secondary style
+
+      // Check order
+      const footer = useDefaultButton.closest('.modal-footer');
+      const buttonsInFooter = Array.from(footer.querySelectorAll('button'));
+      expect(buttonsInFooter.indexOf(useDefaultButton)).toBeLessThan(buttonsInFooter.indexOf(useRecommendedButton));
+    });
   });
 });

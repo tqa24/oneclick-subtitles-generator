@@ -16,5 +16,7 @@
   "relationships": "Relationships & Social Hierarchy",
   "additionalNotes": "Additional Notes",
   "autoSelectCountdown": "Auto-selecting recommended preset in (click anywhere to cancel)",
+  "autoSelectRecommendedCountdown": "Auto-selecting recommended preset in (click anywhere to cancel)",
+  "autoSelectDefaultCountdown": "Auto-selecting default preset in (click anywhere to cancel)",
   "seconds": "seconds"
 }

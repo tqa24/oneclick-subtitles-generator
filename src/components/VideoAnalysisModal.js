@@ -39,6 +39,8 @@ const VideoAnalysisModal = ({
   // Set up state for auto-selection of recommended preset
   const [countdown, setCountdown] = useState(null);
   const [userInteracted, setUserInteracted] = useState(false);
+  const [autoSelectMessageType, setAutoSelectMessageType] = useState('recommended'); // 'recommended' or 'default'
+  const [isDefaultAutoSelected, setIsDefaultAutoSelected] = useState(false);
 
   // Use refs to store timers without triggering re-renders
   const intervalRef = useRef(null);
@@ -50,6 +52,11 @@ const VideoAnalysisModal = ({
     if (!isOpen || !analysisResult?.recommendedPreset?.id || userInteracted) {
       return;
     }
+
+    // Determine message type and primary action based on localStorage
+    const autoSelectDefaultSetting = localStorage.getItem('auto_select_default_preset') === 'true';
+    setAutoSelectMessageType(autoSelectDefaultSetting ? 'default' : 'recommended');
+    setIsDefaultAutoSelected(autoSelectDefaultSetting);
 
     // Get timeout setting from localStorage
     const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
@@ -247,7 +254,16 @@ const VideoAnalysisModal = ({
               <div className="analysis-result">
                 {countdown !== null && (
                   <div className="timer-section" onClick={handleUserInteraction}>
-                    <p>{t('videoAnalysis.autoSelectCountdown', 'Auto-selecting recommended preset in (click anywhere to cancel)')} <span className="timer">{countdown}</span> {t('videoAnalysis.seconds', 'seconds')}</p>
+                    <p>
+                      {autoSelectMessageType === 'default'
+                        ? t('videoAnalysis.autoSelectDefaultCountdown', { countdown })
+                        : t('videoAnalysis.autoSelectRecommendedCountdown', { countdown })
+                      }
+                      {' '} {/* Ensure space before span */}
+                      <span className="timer">{countdown}</span>
+                      {' '} {/* Ensure space before seconds */}
+                      {t('videoAnalysis.seconds', 'seconds')}
+                    </p>
                   </div>
                 )}
                 <div className="recommended-preset">
@@ -276,25 +292,49 @@ const VideoAnalysisModal = ({
 
             </div>
             <div className="modal-footer">
-              <button
-                className="use-default-button"
-                onClick={() => {
-                  handleUserInteraction();
-                  handleUseDefaultPreset();
-                }}
-              >
-                {t('videoAnalysis.useDefaultPreset', 'Use My Default Preset')}
-              </button>
-              <button
-                className="use-recommended-button"
-                onClick={() => {
-
-                  handleUserInteraction();
-                  onUsePreset(analysisResult.recommendedPreset.id);
-                }}
-              >
-                {t('videoAnalysis.useRecommended', 'Use Recommended')}
-              </button>
+              {isDefaultAutoSelected ? (
+                <>
+                  <button
+                    className="use-default-button" // Secondary style
+                    onClick={() => {
+                      handleUserInteraction();
+                      onUsePreset(analysisResult.recommendedPreset.id);
+                    }}
+                  >
+                    {t('videoAnalysis.useRecommended', 'Use Recommended')}
+                  </button>
+                  <button
+                    className="use-recommended-button" // Primary style
+                    onClick={() => {
+                      handleUserInteraction();
+                      handleUseDefaultPreset();
+                    }}
+                  >
+                    {t('videoAnalysis.useDefaultPreset', 'Use My Default Preset')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="use-default-button" // Secondary style
+                    onClick={() => {
+                      handleUserInteraction();
+                      handleUseDefaultPreset();
+                    }}
+                  >
+                    {t('videoAnalysis.useDefaultPreset', 'Use My Default Preset')}
+                  </button>
+                  <button
+                    className="use-recommended-button" // Primary style
+                    onClick={() => {
+                      handleUserInteraction();
+                      onUsePreset(analysisResult.recommendedPreset.id);
+                    }}
+                  >
+                    {t('videoAnalysis.useRecommended', 'Use Recommended')}
+                  </button>
+                </>
+              )}
             </div>
           </>
         ) : (

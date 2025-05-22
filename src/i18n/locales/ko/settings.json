@@ -151,6 +151,8 @@
   "timeoutNone": "제한 없음",
   "timeout10Seconds": "10초",
   "timeout20Seconds": "20초",
+  "autoSelectDefaultPreset": "[KOREAN TRANSLATION NEEDED] Auto-select default preset on timeout",
+  "autoSelectDefaultPresetDescription": "[KOREAN TRANSLATION NEEDED] If enabled, the 'Use My Default Preset' option will be automatically selected in the Video Analysis Results pop-up when the timer expires. Otherwise, the 'Use Recommended' preset will be selected.",
   "videoOptimization": "비디오 최적화",
   "optimizeVideos": "업로드된 비디오 자동 최적화",
   "optimizeVideosDescription": "더 빠른 처리를 위해 비디오를 낮은 해상도와 15fps로 자동 감소시킵니다. 원본 비디오 품질은 재생을 위해 보존됩니다.",
