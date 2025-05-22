@@ -108,6 +108,7 @@
   "displaySettings": "Cài đặt hiển thị",
   "modelSettings": "Mô hình AI",
   "segmentSettings": "Cài đặt phân đoạn",
+  "processingSettings": "Cài đặt xử lý",
   "segmentDuration": "Độ dài phân đoạn (phút)",
   "segmentDurationDescription": "Chọn độ dài của mỗi phân đoạn video khi xử lý video dài. Phân đoạn ngắn hơn sẽ xử lý nhanh hơn nhưng có thể kém chính xác hơn.",
   "minutes": "phút",

@@ -100,6 +100,7 @@
   "displaySettings": "표시 설정",
   "modelSettings": "AI 모델",
   "segmentSettings": "세그먼트 설정",
+  "processingSettings": "처리 설정",
   "segmentDuration": "세그먼트 길이 (분)",
   "segmentDurationDescription": "긴 비디오를 처리할 때 각 비디오 세그먼트의 길이를 선택하세요. 짧은 세그먼트는 더 빠르게 처리되지만 정확도가 떨어질 수 있습니다.",
   "minutes": "분",

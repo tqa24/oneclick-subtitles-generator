@@ -64,6 +64,11 @@
   gap: 16px;
 }
 
+/* Combined card styling */
+.settings-card.combined-card .settings-card-content {
+  gap: 24px; /* Slightly more spacing between settings in combined card */
+}
+
 /* Accent line at the top of each card */
 .settings-card::before {
   content: '';
@@ -83,6 +88,10 @@
 
 .settings-card.ai-model-card::before {
   background-color: var(--md-secondary);
+}
+
+.settings-card.combined-card::before {
+  background: linear-gradient(to right, var(--md-primary), var(--md-secondary));
 }
 
 .settings-card.analysis-card::before {

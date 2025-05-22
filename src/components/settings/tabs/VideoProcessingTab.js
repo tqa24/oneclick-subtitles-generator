@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon, ModelIcon } from '../icons/TabIcons';
+import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
 
 const VideoProcessingTab = ({
   segmentDuration,
@@ -31,15 +31,16 @@ const VideoProcessingTab = ({
 
       {/* Grid layout for settings cards */}
       <div className="video-processing-grid">
-        {/* Segments Card */}
-        <div className="settings-card segments-card">
+        {/* Combined Segments and AI Model Card */}
+        <div className="settings-card combined-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
               <SegmentsIcon />
             </div>
-            <h4>{t('settings.segmentSettings', 'Segment Settings')}</h4>
+            <h4>{t('settings.processingSettings', 'Processing Settings')}</h4>
           </div>
           <div className="settings-card-content">
+            {/* Segment Duration Setting */}
             <div className="compact-setting">
               <label htmlFor="segment-duration">
                 {t('settings.segmentDuration', 'Segment Duration (minutes)')}
@@ -64,18 +65,8 @@ const VideoProcessingTab = ({
                 <option value="45">45 {t('settings.minutes', 'minutes')}</option>
               </select>
             </div>
-          </div>
-        </div>
 
-        {/* AI Model Card */}
-        <div className="settings-card ai-model-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <ModelIcon />
-            </div>
-            <h4>{t('settings.modelSettings', 'AI Model')}</h4>
-          </div>
-          <div className="settings-card-content">
+            {/* Gemini Model Setting */}
             <div className="compact-setting">
               <label htmlFor="gemini-model">
                 {t('settings.geminiModel', 'Gemini Model')}
