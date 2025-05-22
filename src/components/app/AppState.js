@@ -42,6 +42,7 @@ export const useAppState = () => {
   // Video analysis state
   const [showVideoAnalysis, setShowVideoAnalysis] = useState(false);
   const [videoAnalysisResult, setVideoAnalysisResult] = useState(null);
+  const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(localStorage.getItem('auto_select_default_preset') === 'true');
 
   // Segments state
   const [segmentsStatus, setSegmentsStatus] = useState([]);
@@ -218,6 +219,7 @@ export const useAppState = () => {
     isSrtOnlyMode, setIsSrtOnlyMode,
     showVideoAnalysis, setShowVideoAnalysis,
     videoAnalysisResult, setVideoAnalysisResult,
+    autoSelectDefaultPreset, setAutoSelectDefaultPreset,
     segmentsStatus, setSegmentsStatus,
     videoSegments, setVideoSegments,
     showRulesEditor, setShowRulesEditor,

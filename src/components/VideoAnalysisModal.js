@@ -74,7 +74,12 @@ const VideoAnalysisModal = ({
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      onUsePreset(analysisResult.recommendedPreset.id);
+      const autoSelectDefault = localStorage.getItem('auto_select_default_preset') === 'true';
+      if (autoSelectDefault) {
+        onUseDefaultPreset();
+      } else {
+        onUsePreset(analysisResult.recommendedPreset.id);
+      }
     }, seconds * 1000);
 
     // Set up interval to update the countdown display

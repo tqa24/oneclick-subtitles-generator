@@ -16,6 +16,8 @@ const VideoProcessingTab = ({
   setVideoAnalysisModel,
   videoAnalysisTimeout,
   setVideoAnalysisTimeout,
+  autoSelectDefaultPreset,
+  setAutoSelectDefaultPreset,
   optimizeVideos,
   optimizedResolution,
   setOptimizedResolution,
@@ -154,6 +156,29 @@ const VideoProcessingTab = ({
                 <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
                 <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
               </select>
+            </div>
+
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="auto-select-default-preset">
+                  {t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
+                </label>
+                <div className="toggle-switch-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      id="auto-select-default-preset"
+                      checked={autoSelectDefaultPreset}
+                      onChange={(e) => setAutoSelectDefaultPreset(e.target.checked)}
+                      disabled={!useVideoAnalysis}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.autoSelectDefaultPresetDescription', "If enabled, the 'Use My Default Preset' option will be automatically selected in the Video Analysis Results pop-up when the timer expires. Otherwise, the 'Use Recommended' preset will be selected.")}
+              </p>
             </div>
           </div>
         </div>

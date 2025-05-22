@@ -132,6 +132,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
   const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-preview-05-20'); // Default to Gemini 2.5 Flash
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
+  const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(true); // Default to optimized video in preview
@@ -188,6 +189,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     useVideoAnalysis: true,
     videoAnalysisModel: 'gemini-2.5-flash-preview-05-20',
     videoAnalysisTimeout: '20',
+    autoSelectDefaultPreset: false,
     optimizeVideos: true,
     optimizedResolution: '360p',
     useOptimizedPreview: true
@@ -220,6 +222,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
       const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to Flash
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
+      const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
       const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
@@ -241,6 +244,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setUseVideoAnalysis(savedUseVideoAnalysis);
       setVideoAnalysisModel(savedVideoAnalysisModel);
       setVideoAnalysisTimeout(savedVideoAnalysisTimeout);
+      setAutoSelectDefaultPreset(savedAutoSelectDefaultPreset);
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUseOAuth(savedUseOAuth);
       setYoutubeClientId(clientId);
@@ -268,6 +272,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         useVideoAnalysis: savedUseVideoAnalysis,
         videoAnalysisModel: savedVideoAnalysisModel,
         videoAnalysisTimeout: savedVideoAnalysisTimeout,
+        autoSelectDefaultPreset: savedAutoSelectDefaultPreset,
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview
@@ -368,6 +373,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useVideoAnalysis !== originalSettings.useVideoAnalysis ||
       videoAnalysisModel !== originalSettings.videoAnalysisModel ||
       videoAnalysisTimeout !== originalSettings.videoAnalysisTimeout ||
+      autoSelectDefaultPreset !== originalSettings.autoSelectDefaultPreset ||
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview;
@@ -375,7 +381,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(settingsChanged);
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout,
+      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
       optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
 
   // Handle save button click
@@ -392,6 +398,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
+    localStorage.setItem('auto_select_default_preset', autoSelectDefaultPreset.toString());
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
@@ -456,6 +463,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useVideoAnalysis,
       videoAnalysisModel,
       videoAnalysisTimeout,
+      autoSelectDefaultPreset,
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview
@@ -635,6 +643,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setVideoAnalysisModel={setVideoAnalysisModel}
               videoAnalysisTimeout={videoAnalysisTimeout}
               setVideoAnalysisTimeout={setVideoAnalysisTimeout}
+              autoSelectDefaultPreset={autoSelectDefaultPreset}
+              setAutoSelectDefaultPreset={setAutoSelectDefaultPreset}
               optimizeVideos={optimizeVideos}
               setOptimizeVideos={setOptimizeVideos}
               optimizedResolution={optimizedResolution}
