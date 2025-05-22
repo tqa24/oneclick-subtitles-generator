@@ -37,25 +37,25 @@ GOTO %MENU_LABEL%
 CLS
 ECHO ======================================================
 ECHO %TITLE_TEXT%
-ECHO Vi tri: %SCRIPT_DIR%
-ECHO Thu muc Du an: %PROJECT_FOLDER_NAME%
+ECHO Vi tri (Location): %SCRIPT_DIR%
+ECHO Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%
 ECHO ======================================================
 ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)
+ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS Narration)
 ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
-ECHO   2. Cai dat (Thuyet minh thong thuong)
+ECHO   2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)
 ECHO.
 ECHO BAO TRI / SU DUNG:
-ECHO   3. Cap nhat Ung dung (git pull)
-ECHO   4. Chay Ung dung (npm run dev)
-ECHO   5. Chay Ung dung voi Nhan ban giong noi (npm run dev:cuda)
+ECHO   3. Cap nhat Ung dung (Update)
+ECHO   4. Chay Ung dung (Run App)
+ECHO   5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS Narration)
 ECHO.
 ECHO GO CAI DAT:
-ECHO   6. Go cai dat Ung dung (Xoa thu muc du an)
+ECHO   6. Go cai dat Ung dung (Uninstall)
 ECHO.
-ECHO   7. Thoat
+ECHO   7. Thoat (Exit)
 ECHO ======================================================
 ECHO.
 SET /P "CHOICE=%PROMPT_CHOICE%"
