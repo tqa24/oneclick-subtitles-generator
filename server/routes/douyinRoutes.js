@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR } = require('../config');
 const { downloadDouyinVideoWithRetry } = require('../services/douyin');
+const { getDownloadProgress } = require('../services/shared/progressTracker');
 
 /**
  * POST /api/download-douyin-video - Download a Douyin video
@@ -88,6 +89,34 @@ router.post('/download-douyin-video', async (req, res) => {
     return res.status(500).json({
       error: errorMessage,
       details: details
+    });
+  }
+});
+
+/**
+ * GET /api/douyin-download-progress/:videoId - Get download progress for a Douyin video
+ */
+router.get('/douyin-download-progress/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  try {
+    const progress = getDownloadProgress(videoId);
+    res.json({
+      success: true,
+      videoId: videoId,
+      progress: progress.progress,
+      status: progress.status,
+      timestamp: progress.timestamp
+    });
+  } catch (error) {
+    console.error('Error getting Douyin download progress:', error);
+    res.status(500).json({
+      error: 'Failed to get download progress',
+      details: error.message
     });
   }
 });

@@ -14,6 +14,9 @@ const app = require('./app');
 // Import narration service
 const { startNarrationService } = require('./server/startNarrationService');
 
+// Import WebSocket progress tracking
+const { initializeProgressWebSocket } = require('./server/services/shared/progressWebSocket');
+
 // Start the narration service only if running with dev:cuda
 let narrationProcess;
 
@@ -48,8 +51,10 @@ if (isDevCuda) {
 
 // Start the server
 const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 
-
+  // Initialize WebSocket server for real-time progress tracking
+  initializeProgressWebSocket(server);
 });
 
 // Handle server shutdown

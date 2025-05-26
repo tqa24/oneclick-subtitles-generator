@@ -7,6 +7,10 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
+const {
+  setDownloadProgress,
+  updateProgressFromYtdlpOutput
+} = require('../shared/progressTracker');
 
 /**
  * Get the path to yt-dlp executable

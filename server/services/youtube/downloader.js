@@ -29,10 +29,9 @@ async function downloadYouTubeVideo(videoId) {
   }
 
   try {
-
     // Always pass '360p' as the quality parameter to ensure consistent behavior
-    await downloadWithYtdlp(videoURL, outputPath, '360p');
-
+    // Pass videoId for progress tracking
+    await downloadWithYtdlp(videoURL, outputPath, '360p', videoId);
 
     return {
       success: true,

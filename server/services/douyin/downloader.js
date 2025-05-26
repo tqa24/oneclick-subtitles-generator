@@ -9,6 +9,10 @@ const { VIDEOS_DIR } = require('../../config');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 const douyinPuppeteer = require('./douyin_puppeteer');
+const {
+  setDownloadProgress,
+  updateProgressFromYtdlpOutput
+} = require('../shared/progressTracker');
 
 /**
  * Get the path to yt-dlp executable

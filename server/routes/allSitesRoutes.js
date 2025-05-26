@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR } = require('../config');
 const { downloadVideoWithRetry } = require('../services/allSites/downloader');
+const { getDownloadProgress } = require('../services/shared/progressTracker');
 
 /**
  * POST /api/download-generic-video - Download a video from any supported site
@@ -66,6 +67,34 @@ router.post('/download-generic-video', async (req, res) => {
 
     return res.status(500).json({
       error: 'Failed to download video',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/generic-download-progress/:videoId - Get download progress for a generic video
+ */
+router.get('/generic-download-progress/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  try {
+    const progress = getDownloadProgress(videoId);
+    res.json({
+      success: true,
+      videoId: videoId,
+      progress: progress.progress,
+      status: progress.status,
+      timestamp: progress.timestamp
+    });
+  } catch (error) {
+    console.error('Error getting generic download progress:', error);
+    res.status(500).json({
+      error: 'Failed to get download progress',
       details: error.message
     });
   }

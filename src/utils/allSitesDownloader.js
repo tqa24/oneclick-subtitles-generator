@@ -320,7 +320,67 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
     }
 
     // Set up progress reporting
-    activeDownloadIntervals[videoId] = setInterval(() => {
+    activeDownloadIntervals[videoId] = setInterval(async () => {
+      // Try to get real progress from server first
+      try {
+        const progressResponse = await fetch(`${SERVER_URL}/api/generic-download-progress/${videoId}`);
+        if (progressResponse.ok) {
+          const progressData = await progressResponse.json();
+          if (progressData.success) {
+            // Update local progress with server progress
+            downloadQueue[videoId].progress = progressData.progress;
+            onProgress(progressData.progress);
+
+            // If progress is 95% or more, check if the file exists
+            if (progressData.progress >= 95) {
+              isVideoAlreadyDownloaded(videoId).then(exists => {
+                if (exists) {
+                  // File exists, mark as completed
+                  clearInterval(activeDownloadIntervals[videoId]);
+                  delete activeDownloadIntervals[videoId];
+
+                  downloadQueue[videoId].status = 'completed';
+                  downloadQueue[videoId].progress = 100;
+                  onProgress(100);
+
+              // Resolve any pending promises with a File object
+              if (downloadQueue[videoId].resolve) {
+                // Create a File object for the downloaded video
+                fetch(`/videos/${videoId}.mp4`)
+                  .then(response => {
+                    if (response.ok) {
+                      return response.blob();
+                    } else {
+                      throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
+                    }
+                  })
+                  .then(blob => {
+                    const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
+                    downloadQueue[videoId].resolve(file);
+                  })
+                  .catch(error => {
+                    console.error('Error creating File object:', error);
+                    downloadQueue[videoId].reject(error);
+                  });
+              }
+            }
+          });
+        }
+            return; // Exit early if we got real progress
+          } else {
+            // Fallback to local progress checking
+            console.warn('Server progress not available, falling back to local progress');
+          }
+        } else {
+          // Fallback to local progress checking
+          console.warn('Error fetching server progress, falling back to local progress');
+        }
+      } catch (error) {
+        console.warn('Error fetching server progress:', error);
+        // Fallback to local progress checking
+      }
+
+      // Fallback: use local progress checking
       checkDownloadProgress(videoId).then(progress => {
         onProgress(progress);
 

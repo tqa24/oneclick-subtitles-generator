@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
+const { getDownloadProgress } = require('../services/shared/progressTracker');
 const {
   splitVideoIntoSegments,
   splitMediaIntoSegments,
@@ -108,6 +109,34 @@ router.post('/download-video', async (req, res) => {
 
     return res.status(500).json({
       error: 'Failed to download video',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/download-progress/:videoId - Get download progress for a video
+ */
+router.get('/download-progress/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  try {
+    const progress = getDownloadProgress(videoId);
+    res.json({
+      success: true,
+      videoId: videoId,
+      progress: progress.progress,
+      status: progress.status,
+      timestamp: progress.timestamp
+    });
+  } catch (error) {
+    console.error('Error getting download progress:', error);
+    res.status(500).json({
+      error: 'Failed to get download progress',
       details: error.message
     });
   }

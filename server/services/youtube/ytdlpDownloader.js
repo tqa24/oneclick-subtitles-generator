@@ -7,15 +7,23 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { safeMoveFile } = require('../../utils/fileOperations');
+const {
+  getDownloadProgress,
+  setDownloadProgress,
+  updateProgressFromYtdlpOutput
+} = require('../shared/progressTracker');
+
+
 
 /**
  * Download YouTube video using yt-dlp command line tool
  * @param {string} videoURL - YouTube video URL
  * @param {string} outputPath - Path to save the video
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {string} videoId - Video ID for progress tracking (optional)
  * @returns {Promise<boolean>} - Success status
  */
-async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
+async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId = null) {
   return new Promise((resolve, reject) => {
 
 
@@ -51,13 +59,20 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
 
 
 
+    // Initialize progress tracking if videoId is provided
+    if (videoId) {
+      setDownloadProgress(videoId, 0, 'starting');
+    }
+
     // Build the yt-dlp command arguments
     const args = [
       videoURL,
       '-f', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '-o', tempPath,
       '--no-playlist',
-      '--merge-output-format', 'mp4'
+      '--merge-output-format', 'mp4',
+      '--progress',  // Enable progress reporting
+      '--newline'    // Force newlines for better parsing
     ];
 
 
@@ -72,6 +87,10 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
       const output = data.toString();
       stdoutData += output;
 
+      // Parse progress information if videoId is provided
+      if (videoId) {
+        updateProgressFromYtdlpOutput(videoId, output);
+      }
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
@@ -86,32 +105,51 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
         try {
           // Check if the file exists
           if (fs.existsSync(tempPath)) {
+            // Set progress to 100% before moving file
+            if (videoId) {
+              setDownloadProgress(videoId, 100, 'completed');
+            }
+
             // Use safeMoveFile to avoid EPERM errors on Windows
             // This uses copy-then-delete instead of rename
             safeMoveFile(tempPath, outputPath)
               .then(() => {
-
                 resolve(true);
               })
               .catch((err) => {
+                if (videoId) {
+                  setDownloadProgress(videoId, 0, 'error');
+                }
                 console.error(`Error moving yt-dlp downloaded file: ${err.message}`);
                 reject(err);
               });
           } else {
+            if (videoId) {
+              setDownloadProgress(videoId, 0, 'error');
+            }
             console.error(`yt-dlp process completed but file not found: ${tempPath}`);
             reject(new Error('yt-dlp process completed but file not found'));
           }
         } catch (error) {
+          if (videoId) {
+            setDownloadProgress(videoId, 0, 'error');
+          }
           console.error(`Error moving yt-dlp downloaded file: ${error.message}`);
           reject(error);
         }
       } else {
+        if (videoId) {
+          setDownloadProgress(videoId, 0, 'error');
+        }
         console.error(`yt-dlp process exited with code ${code}`);
         reject(new Error(`yt-dlp process failed with code ${code}: ${stderrData}`));
       }
     });
 
     ytdlpProcess.on('error', (error) => {
+      if (videoId) {
+        setDownloadProgress(videoId, 0, 'error');
+      }
       console.error(`Error spawning yt-dlp process: ${error.message}`);
 
       // If the error is ENOENT (command not found), provide a more helpful message
@@ -126,5 +164,6 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p') {
 }
 
 module.exports = {
-  downloadWithYtdlp
+  downloadWithYtdlp,
+  getDownloadProgress
 };
