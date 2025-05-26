@@ -646,6 +646,59 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, [subtitleSettings.boxWidth]);
 
+  // Handle spacebar key press for play/pause functionality
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only handle spacebar (key code 32 or ' ')
+      if (event.code !== 'Space' && event.key !== ' ') return;
+
+      // Don't handle spacebar if user is typing in an input field
+      const activeElement = document.activeElement;
+      if (activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.contentEditable === 'true' ||
+        activeElement.isContentEditable
+      )) {
+        return;
+      }
+
+      // Don't handle spacebar if a modal is open (check for common modal classes)
+      const hasOpenModal = document.querySelector(
+        '.modal-overlay, .settings-modal-overlay, .advanced-settings-modal-overlay, ' +
+        '.download-modal-overlay, .segment-retry-modal-overlay, .prompt-editor-overlay, ' +
+        '.subtitles-input-modal-overlay, .custom-modal-overlay'
+      );
+      if (hasOpenModal) {
+        return;
+      }
+
+      // Only proceed if video element exists and is loaded
+      const videoElement = videoRef.current;
+      if (!videoElement || !isLoaded) return;
+
+      // Prevent default spacebar behavior (page scroll)
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Toggle play/pause
+      if (videoElement.paused) {
+        videoElement.play().catch(error => {
+          console.error('Error playing video:', error);
+        });
+      } else {
+        videoElement.pause();
+      }
+    };
+
+    // Add global keydown listener
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLoaded]); // Re-run when video load state changes
+
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
     if (!isLoaded) return;
