@@ -7,6 +7,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const { VIDEOS_DIR, SUBTITLES_DIR } = require('../config');
+const { safeDeleteFile, safeDeleteMultipleFiles } = require('../utils/windowsSafeFileOperations');
 
 // Define paths for user-provided subtitles and transcription rules
 const USER_SUBTITLES_DIR = path.join(SUBTITLES_DIR, 'user-provided');
@@ -269,7 +270,7 @@ router.get('/cache-info', (req, res) => {
 /**
  * DELETE /api/clear-cache - Clear all cached files
  */
-router.delete('/clear-cache', (req, res) => {
+router.delete('/clear-cache', async (req, res) => {
   try {
     const details = {
       subtitles: { count: 0, size: 0, files: [] },
@@ -287,53 +288,68 @@ router.delete('/clear-cache', (req, res) => {
     // Clear subtitles directory
     if (fs.existsSync(SUBTITLES_DIR)) {
       const subtitleFiles = fs.readdirSync(SUBTITLES_DIR);
-      subtitleFiles.forEach(file => {
+      for (const file of subtitleFiles) {
         const filePath = path.join(SUBTITLES_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.subtitles.count++;
-        details.subtitles.size += fileSize;
-        details.subtitles.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.subtitles.count++;
+          details.subtitles.size += fileSize;
+          details.subtitles.files.push({ name: file, size: fileSize });
+
+          // Delete subtitle file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing subtitle file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Clear videos directory
     if (fs.existsSync(VIDEOS_DIR)) {
       const videoFiles = fs.readdirSync(VIDEOS_DIR);
+      const videoFilePaths = [];
+
+      // First, collect file info and paths
       videoFiles.forEach(file => {
         const filePath = path.join(VIDEOS_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.videos.count++;
-        details.videos.size += fileSize;
-        details.videos.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            return;
+          }
+
+          const fileSize = stats.size;
+          details.videos.count++;
+          details.videos.size += fileSize;
+          details.videos.files.push({ name: file, size: fileSize });
+          videoFilePaths.push(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error getting stats for ${filePath}:`, error);
         }
       });
+
+      // Then safely delete all video files
+      if (videoFilePaths.length > 0) {
+        console.log(`Safely deleting ${videoFilePaths.length} video files...`);
+        const deleteResults = await safeDeleteMultipleFiles(videoFilePaths, (deleted, total, currentFile) => {
+          if (currentFile) {
+            console.log(`Deleting video file ${deleted + 1}/${total}: ${path.basename(currentFile)}`);
+          }
+        });
+        console.log(`Video deletion results: ${deleteResults.deleted} deleted, ${deleteResults.failed} failed`);
+        if (deleteResults.failed > 0) {
+          console.log('Failed to delete video files:', deleteResults.failedFiles.map(f => path.basename(f)));
+        }
+      }
     }
 
 
@@ -341,85 +357,85 @@ router.delete('/clear-cache', (req, res) => {
     // Clear user-provided subtitles directory
     if (fs.existsSync(USER_SUBTITLES_DIR)) {
       const userSubtitleFiles = fs.readdirSync(USER_SUBTITLES_DIR);
-      userSubtitleFiles.forEach(file => {
+      for (const file of userSubtitleFiles) {
         const filePath = path.join(USER_SUBTITLES_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.userSubtitles.count++;
-        details.userSubtitles.size += fileSize;
-        details.userSubtitles.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.userSubtitles.count++;
+          details.userSubtitles.size += fileSize;
+          details.userSubtitles.files.push({ name: file, size: fileSize });
+
+          // Delete user subtitle file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing user subtitle file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Clear rules directory
     if (fs.existsSync(RULES_DIR)) {
       const rulesFiles = fs.readdirSync(RULES_DIR);
-      rulesFiles.forEach(file => {
+      for (const file of rulesFiles) {
         const filePath = path.join(RULES_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.rules.count++;
-        details.rules.size += fileSize;
-        details.rules.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.rules.count++;
+          details.rules.size += fileSize;
+          details.rules.files.push({ name: file, size: fileSize });
+
+          // Delete rules file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing rules file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Clear narration reference audio directory
     if (fs.existsSync(REFERENCE_AUDIO_DIR)) {
       const referenceFiles = fs.readdirSync(REFERENCE_AUDIO_DIR);
-      referenceFiles.forEach(file => {
+      for (const file of referenceFiles) {
         const filePath = path.join(REFERENCE_AUDIO_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.narrationReference.count++;
-        details.narrationReference.size += fileSize;
-        details.narrationReference.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.narrationReference.count++;
+          details.narrationReference.size += fileSize;
+          details.narrationReference.files.push({ name: file, size: fileSize });
+
+          // Delete reference audio file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing reference audio file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Clear narration output audio directory
     if (fs.existsSync(OUTPUT_AUDIO_DIR)) {
       const outputItems = fs.readdirSync(OUTPUT_AUDIO_DIR);
-      outputItems.forEach(item => {
+      for (const item of outputItems) {
         const itemPath = path.join(OUTPUT_AUDIO_DIR, item);
         try {
           const stats = fs.statSync(itemPath);
@@ -430,7 +446,7 @@ router.delete('/clear-cache', (req, res) => {
             let directorySize = 0;
 
             // Process each file in the subtitle directory
-            subtitleFiles.forEach(file => {
+            for (const file of subtitleFiles) {
               const filePath = path.join(itemPath, file);
               try {
                 const fileStats = fs.statSync(filePath);
@@ -439,12 +455,12 @@ router.delete('/clear-cache', (req, res) => {
                 details.narrationOutput.count++;
                 details.narrationOutput.files.push({ name: `${item}/${file}`, size: fileSize });
 
-                // Delete the file
-                fs.unlinkSync(filePath);
+                // Delete the file safely
+                await safeDeleteFile(filePath);
               } catch (fileError) {
                 console.error(`Error processing file ${filePath}:`, fileError);
               }
-            });
+            }
 
             // Add directory size to total
             details.narrationOutput.size += directorySize;
@@ -463,93 +479,88 @@ router.delete('/clear-cache', (req, res) => {
             details.narrationOutput.size += fileSize;
             details.narrationOutput.files.push({ name: item, size: fileSize });
 
-            try {
-              fs.unlinkSync(itemPath);
-            } catch (error) {
-              console.error(`Error deleting file ${itemPath}:`, error);
-            }
+            // Delete the file safely
+            await safeDeleteFile(itemPath);
           }
         } catch (error) {
           console.error(`Error processing item ${itemPath}:`, error);
         }
-      });
+      }
     }
 
     // Clear narration temp directory
     if (fs.existsSync(TEMP_AUDIO_DIR)) {
       const tempFiles = fs.readdirSync(TEMP_AUDIO_DIR);
-      tempFiles.forEach(file => {
+      for (const file of tempFiles) {
         const filePath = path.join(TEMP_AUDIO_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        // We don't count temp files in the details
-
-
         try {
-          fs.unlinkSync(filePath);
-        } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
-        }
-      });
+          const stats = fs.statSync(filePath);
 
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          // We don't count temp files in the details
+
+          // Delete temp file safely
+          await safeDeleteFile(filePath);
+        } catch (error) {
+          console.error(`Error processing temp file ${filePath}:`, error);
+        }
+      }
     }
 
     // Clear lyrics directory
     if (fs.existsSync(LYRICS_DIR)) {
       const lyricsFiles = fs.readdirSync(LYRICS_DIR);
-      lyricsFiles.forEach(file => {
+      for (const file of lyricsFiles) {
         const filePath = path.join(LYRICS_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.lyrics.count++;
-        details.lyrics.size += fileSize;
-        details.lyrics.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.lyrics.count++;
+          details.lyrics.size += fileSize;
+          details.lyrics.files.push({ name: file, size: fileSize });
+
+          // Delete lyrics file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing lyrics file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Clear album art directory
     if (fs.existsSync(ALBUM_ART_DIR)) {
       const albumArtFiles = fs.readdirSync(ALBUM_ART_DIR);
-      albumArtFiles.forEach(file => {
+      for (const file of albumArtFiles) {
         const filePath = path.join(ALBUM_ART_DIR, file);
-        const stats = fs.statSync(filePath);
-
-        // Skip directories
-        if (stats.isDirectory()) {
-
-          return;
-        }
-
-        const fileSize = stats.size;
-        details.albumArt.count++;
-        details.albumArt.size += fileSize;
-        details.albumArt.files.push({ name: file, size: fileSize });
-
         try {
-          fs.unlinkSync(filePath);
+          const stats = fs.statSync(filePath);
+
+          // Skip directories
+          if (stats.isDirectory()) {
+            continue;
+          }
+
+          const fileSize = stats.size;
+          details.albumArt.count++;
+          details.albumArt.size += fileSize;
+          details.albumArt.files.push({ name: file, size: fileSize });
+
+          // Delete album art file safely
+          await safeDeleteFile(filePath);
         } catch (error) {
-          console.error(`Error deleting file ${filePath}:`, error);
+          console.error(`Error processing album art file ${filePath}:`, error);
         }
-      });
+      }
     }
 
     // Calculate totals
