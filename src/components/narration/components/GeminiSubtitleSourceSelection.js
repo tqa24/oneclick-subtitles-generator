@@ -53,9 +53,43 @@ const GeminiSubtitleSourceSelection = ({
 
   // Function to handle subtitle grouping toggle
   const handleGroupingToggle = (checked) => {
-    // Simply update the useGroupedSubtitles state
-    // The useGeminiNarration hook will handle the grouping logic
-    setUseGroupedSubtitles(checked);
+    if (checked) {
+      // If turning on, only clear existing grouped subtitles if we want to force re-grouping
+      // Check if we already have grouped subtitles - if so, keep them
+      if (!groupedSubtitles || groupedSubtitles.length === 0) {
+        // No existing grouped subtitles, clear to force re-request to Gemini
+        if (typeof window.setGroupedSubtitles === 'function') {
+          window.setGroupedSubtitles(null);
+        }
+        window.groupedSubtitles = null;
+      }
+
+      // Clear the user disabled flag since they're turning it back on
+      try {
+        localStorage.removeItem('user_disabled_grouping');
+      } catch (error) {
+        console.error('Error clearing user disabled grouping flag:', error);
+      }
+
+      // Update the state - the useGeminiNarration hook will handle the grouping logic
+      setUseGroupedSubtitles(true);
+    } else {
+      // If turning off, clear the grouping data and update the state
+      setUseGroupedSubtitles(false);
+
+      // Clear the grouped subtitles data
+      if (typeof window.setGroupedSubtitles === 'function') {
+        window.setGroupedSubtitles(null);
+      }
+      window.groupedSubtitles = null;
+
+      // Set flag to prevent auto-loading from cache
+      try {
+        localStorage.setItem('user_disabled_grouping', 'true');
+      } catch (error) {
+        console.error('Error setting user disabled grouping flag:', error);
+      }
+    }
   };
 
   // We don't need to define onGroupedSubtitlesGenerated here

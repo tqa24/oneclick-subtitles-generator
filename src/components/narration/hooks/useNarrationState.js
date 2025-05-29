@@ -48,7 +48,11 @@ const useNarrationState = (initialReferenceAudio) => {
   const [error, setError] = useState('');
   const [currentAudio, setCurrentAudio] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [subtitleSource, setSubtitleSource] = useState(null); // No default selection, will be set when user clicks
+  const [subtitleSource, setSubtitleSource] = useState(() => {
+    // Try to load from localStorage
+    const savedSubtitleSource = localStorage.getItem('subtitle_source');
+    return savedSubtitleSource || 'original'; // Default to 'original' if not set
+  });
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);

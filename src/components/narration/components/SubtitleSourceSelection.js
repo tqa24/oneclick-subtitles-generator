@@ -64,7 +64,21 @@ const SubtitleSourceSelection = ({
   // Function to handle subtitle grouping toggle
   const handleGroupingToggle = async (checked) => {
     if (checked) {
-      // If turning on, we need to group the subtitles
+      // Clear the user disabled flag since they're turning it back on
+      try {
+        localStorage.removeItem('user_disabled_grouping');
+      } catch (error) {
+        console.error('Error clearing user disabled grouping flag:', error);
+      }
+
+      // If turning on, check if we already have grouped subtitles
+      if (groupedSubtitles && groupedSubtitles.length > 0) {
+        // We already have grouped subtitles, just enable the toggle
+        setUseGroupedSubtitles(true);
+        return;
+      }
+
+      // No existing grouped subtitles, we need to group them
       try {
         // Set grouping state to true to show loading indicator
         if (typeof window.setIsGroupingSubtitles === 'function') {
@@ -120,8 +134,21 @@ const SubtitleSourceSelection = ({
         }, 500);
       }
     } else {
-      // If turning off, just update the state
+      // If turning off, clear the grouping data and update the state
       setUseGroupedSubtitles(false);
+
+      // Clear the grouped subtitles data
+      window.groupedSubtitles = null;
+      if (typeof window.setGroupedSubtitles === 'function') {
+        window.setGroupedSubtitles(null);
+      }
+
+      // Set flag to prevent auto-loading from cache
+      try {
+        localStorage.setItem('user_disabled_grouping', 'true');
+      } catch (error) {
+        console.error('Error setting user disabled grouping flag:', error);
+      }
     }
   };
 

@@ -1,7 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAudioUrl } from '../../services/narrationService';
-import { enhanceF5TTSNarrations } from '../../utils/narrationEnhancer';
 import useNarrationHandlers from './hooks/useNarrationHandlers';
 
 // Import custom hooks
@@ -11,6 +10,8 @@ import useGeminiNarration from './hooks/useGeminiNarration';
 import useAudioPlayback from './hooks/useAudioPlayback';
 import useNarrationStorage from './hooks/useNarrationStorage';
 import useUIEffects from './hooks/useUIEffects';
+import useNarrationCache from './hooks/useNarrationCache';
+import useWindowStateManager from './hooks/useWindowStateManager';
 
 // Import modular components
 import ReferenceAudioSection from './components/ReferenceAudioSection';
@@ -118,7 +119,8 @@ const UnifiedNarrationSection = ({
   const {
     handleGeminiNarration,
     cancelGeminiGeneration,
-    retryGeminiNarration
+    retryGeminiNarration,
+    retryFailedGeminiNarrations
   } = useGeminiNarration({
     setIsGenerating,
     setGenerationStatus,
@@ -143,174 +145,6 @@ const UnifiedNarrationSection = ({
     t,
     setRetryingSubtitleId
   });
-
-  // Custom function to retry all failed Gemini narrations
-  const retryFailedGeminiNarrations = async () => {
-    // Find all failed narrations
-    const failedNarrations = generationResults.filter(result => !result.success);
-
-    if (failedNarrations.length === 0) {
-      setError(t('narration.noFailedNarrationsError', 'No failed narrations to retry'));
-      return;
-    }
-
-    // Determine which subtitles to use based on whether we're using grouped subtitles
-    let selectedSubtitles;
-
-    if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
-      // Use the grouped subtitles if available
-      selectedSubtitles = groupedSubtitles;
-    } else {
-      // Otherwise use the original or translated subtitles
-      selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
-        ? translatedSubtitles
-        : originalSubtitles || subtitles;
-    }
-
-    if (!selectedSubtitles || selectedSubtitles.length === 0) {
-      setError(t('narration.noSubtitlesError', 'No subtitles available for narration'));
-      return;
-    }
-
-    // Filter the subtitles to only include those that failed
-    const subtitlesToRetry = selectedSubtitles.filter(subtitle => {
-      const subtitleId = subtitle.id || subtitle.index;
-      return failedNarrations.some(failedNarration =>
-        failedNarration.subtitle_id === subtitleId
-      );
-    });
-
-    if (subtitlesToRetry.length === 0) {
-      setError(t('narration.noFailedNarrationsError', 'Could not match failed narrations with subtitles'));
-      return;
-    }
-
-    // Clear any previous errors
-    setError('');
-
-    // Set status for retrying failed narrations
-    setGenerationStatus(t('narration.retryingFailedNarrations', 'Retrying {{count}} failed narrations...', { count: subtitlesToRetry.length }));
-
-    // Create a new array of generation results, keeping successful ones and marking failed ones as pending
-    const updatedResults = generationResults.map(result => {
-      if (!result.success) {
-        return {
-          ...result,
-          pending: true,
-          error: null
-        };
-      }
-      return result;
-    });
-
-    // Update the generation results
-    setGenerationResults(updatedResults);
-
-    // Use a modified version of the handleGeminiNarration function to process all failed narrations at once
-    try {
-      // Set isGenerating to true to show the Cancel button
-      setIsGenerating(true);
-      setGenerationStatus(t('narration.preparingGeminiGeneration', 'Preparing to generate narration with Gemini...'));
-
-      // Get the language code for the selected subtitles
-      const detectedLanguageCode = subtitleSource === 'original'
-        ? (originalLanguage?.languageCode || 'en')
-        : (translatedLanguage?.languageCode || 'en');
-
-      // Import the necessary functions
-      const {
-        generateGeminiNarrations,
-        getGeminiLanguageCode
-      } = await import('../../services/gemini/geminiNarrationService');
-
-      // Convert to Gemini-compatible language code
-      const language = getGeminiLanguageCode(detectedLanguageCode);
-
-      // Prepare subtitles with IDs for tracking
-      const subtitlesWithIds = subtitlesToRetry.map((subtitle, index) => ({
-        ...subtitle,
-        id: subtitle.id || index + 1
-      }));
-
-      // Generate narration with Gemini
-      await generateGeminiNarrations(
-        subtitlesWithIds,
-        language,
-        (message) => {
-          console.log("Progress update:", message);
-          setGenerationStatus(message);
-
-          // We'll only set isGenerating to false in the onComplete callback
-          // This ensures the Cancel button stays visible until all narrations are complete
-        },
-        (result, progress, total) => {
-          console.log(`Result received for subtitle ${result.subtitle_id}, progress: ${progress}/${total}`);
-
-          // Update the existing result in the array
-          setGenerationResults(prev => {
-            return prev.map(item =>
-              item.subtitle_id === result.subtitle_id ? { ...result, pending: false } : item
-            );
-          });
-
-          // Update the status
-          setGenerationStatus(
-            t(
-              'narration.geminiGeneratingProgress',
-              'Generated {{progress}} of {{total}} narrations with Gemini...',
-              {
-                progress,
-                total
-              }
-            )
-          );
-        },
-        (error) => {
-          console.error('Error in Gemini narration generation:', error);
-          setError(`${t('narration.geminiGenerationError', 'Error generating narration with Gemini')}: ${error.message || error}`);
-          setIsGenerating(false);
-        },
-        (results) => {
-          console.log("Retry generation complete, total results:", results.length);
-
-          // Update the generation results, marking any pending items as failed
-          setGenerationResults(prev => {
-            return prev.map(item => {
-              // If this item is in the results, use that result
-              const resultItem = results.find(r => r.subtitle_id === item.subtitle_id);
-              if (resultItem) {
-                return { ...resultItem, pending: false };
-              }
-
-              // If this item is still pending and was in the retry list, mark it as failed
-              if (item.pending && failedNarrations.some(f => f.subtitle_id === item.subtitle_id)) {
-                return {
-                  ...item,
-                  pending: false,
-                  success: false,
-                  error: 'Generation was interrupted'
-                };
-              }
-
-              // Otherwise, keep the item as is
-              return item;
-            });
-          });
-
-          setGenerationStatus(t('narration.retryingFailedNarrationsComplete', 'Completed retrying all failed narrations'));
-          setIsGenerating(false);
-        },
-        null, // Use default model
-        0, // No sleep time
-        selectedVoice, // Use the selected voice
-        concurrentClients // Use the configured concurrent clients
-      );
-    } catch (error) {
-      console.error('Error retrying failed narrations:', error);
-      setError(t('narration.retryError', 'Error retrying failed narrations'));
-      setIsGenerating(false);
-    }
-  };
 
   // Use audio playback hook
   const { audioRef, handleAudioEnded } = useAudioPlayback({
@@ -337,7 +171,33 @@ const UnifiedNarrationSection = ({
     setError
   });
 
-  // No height initialization - let content determine height naturally
+  // Use narration cache hook
+  useNarrationCache({
+    generationResults,
+    setGenerationResults,
+    setGenerationStatus,
+    subtitleSource,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    t
+  });
+
+  // Use window state manager hook
+  useWindowStateManager({
+    generationResults,
+    subtitleSource,
+    narrationMethod,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    useGroupedSubtitles,
+    groupedSubtitles,
+    setGroupedSubtitles,
+    setIsGroupingSubtitles,
+    setUseGroupedSubtitles,
+    groupingIntensity
+  });
 
   // Update reference audio when initialReferenceAudio changes
   useEffect(() => {
@@ -355,190 +215,13 @@ const UnifiedNarrationSection = ({
     if (sectionRef.current) {
       sectionRef.current.classList.remove('f5tts-generating', 'gemini-generating');
     }
-
-    // IMPORTANT: We intentionally do NOT clear generationResults here
-    // This is to ensure that the aligned narration feature can still access
-    // the narration results when the user clicks the "Refresh Narration" button
-    // in the video player. If we cleared the results, the aligned narration
-    // would fail with "no narration results available" error.
-
-    // Ensure the global window objects have the latest narration results
-    // This is critical for the aligned narration feature to work
-    if (generationResults && generationResults.length > 0) {
-      if (subtitleSource === 'original') {
-        window.originalNarrations = [...generationResults];
-
-      } else if (subtitleSource === 'translated') {
-        window.translatedNarrations = [...generationResults];
-
-      }
-    }
-
-
-  }, [narrationMethod, setGenerationStatus, setError, generationResults, subtitleSource]);
+  }, [narrationMethod, setGenerationStatus, setError]);
 
   // No height animation when narration method changes - let content flow naturally
-
-  // Update global window objects when generation results change
-  useEffect(() => {
-    // Ensure the global window objects have the latest narration results
-    // This is critical for the aligned narration feature to work
-    if (generationResults && generationResults.length > 0) {
-      if (subtitleSource === 'original') {
-        // If this is F5-TTS narration (not Gemini), enhance with timing information
-        if (narrationMethod === 'f5tts') {
-          // Get subtitles for enhancing narrations with timing information
-          const subtitlesForEnhancement = originalSubtitles || subtitles || [];
-
-          // Enhance F5-TTS narrations with timing information from subtitles
-          const enhancedNarrations = enhanceF5TTSNarrations(generationResults, subtitlesForEnhancement);
-          window.originalNarrations = [...enhancedNarrations];
-        } else {
-          // For Gemini narrations, just use as is (they already have timing info)
-          window.originalNarrations = [...generationResults];
-        }
-      } else if (subtitleSource === 'translated') {
-        // For translated narrations, similar enhancement if needed
-        if (narrationMethod === 'f5tts') {
-          // Get subtitles for enhancing narrations with timing information
-          const subtitlesForEnhancement = translatedSubtitles || [];
-
-          // Enhance F5-TTS narrations with timing information from subtitles
-          const enhancedNarrations = enhanceF5TTSNarrations(generationResults, subtitlesForEnhancement);
-          window.translatedNarrations = [...enhancedNarrations];
-        } else {
-          // For Gemini narrations, just use as is
-          window.translatedNarrations = [...generationResults];
-        }
-      }
-    }
-  }, [generationResults, subtitleSource, narrationMethod, originalSubtitles, translatedSubtitles, subtitles]);
-
-  // Effect to update window variables for subtitle grouping
-  useEffect(() => {
-    // Make grouped subtitles available to the narration service
-    window.useGroupedSubtitles = useGroupedSubtitles;
-    window.groupedSubtitles = groupedSubtitles;
-
-    // Make the setter functions available to the SubtitleSourceSelection component
-    window.setGroupedSubtitles = setGroupedSubtitles;
-    window.setIsGroupingSubtitles = setIsGroupingSubtitles;
-
-    return () => {
-      // Clean up when component unmounts
-      delete window.setGroupedSubtitles;
-      delete window.setIsGroupingSubtitles;
-    };
-  }, [useGroupedSubtitles, groupedSubtitles, setGroupedSubtitles, setIsGroupingSubtitles]);
 
   // No overall section height animation - let content flow naturally
 
   // No special effect for height when generation starts - let content flow naturally
-
-  // Listen for narrations loaded from cache event
-  useEffect(() => {
-    const handleNarrationsLoadedFromCache = (event) => {
-      if (event.detail && event.detail.narrations) {
-
-
-        // Only update if we don't already have results
-        if (!generationResults || generationResults.length === 0) {
-          // Get the narrations from the event
-          const cachedNarrations = event.detail.narrations;
-
-          // Immediately update the generation results
-          setGenerationResults(cachedNarrations);
-
-          // Show a status message
-          setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
-
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
-          } else {
-            window.translatedNarrations = [...cachedNarrations];
-          }
-
-          // Dispatch a custom event to notify other components
-          const updateEvent = new CustomEvent('narrations-updated', {
-            detail: {
-              source: subtitleSource,
-              narrations: cachedNarrations,
-              fromCache: true
-            }
-          });
-          window.dispatchEvent(updateEvent);
-
-          // Force a re-render after a short delay to ensure the UI updates
-          setTimeout(() => {
-
-            setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded narrations from previous session'));
-          }, 200);
-        }
-      }
-    };
-
-    // Handle F5-TTS narrations loaded from cache
-    const handleF5TTSNarrationsLoadedFromCache = (event) => {
-      if (event.detail && event.detail.narrations) {
-
-
-        // Only update if we don't already have results
-        if (!generationResults || generationResults.length === 0) {
-          // Get the narrations from the event
-          const cachedNarrations = event.detail.narrations;
-
-          // Get subtitles for enhancing narrations with timing information
-          const subtitles = originalSubtitles || subtitles || [];
-
-          // Enhance F5-TTS narrations with timing information from subtitles
-          const enhancedNarrations = enhanceF5TTSNarrations(cachedNarrations, subtitles);
-
-          // Log the enhanced narrations for debugging
-          console.log('Enhanced F5-TTS narrations from cache:', enhancedNarrations);
-
-          // Immediately update the generation results
-          setGenerationResults(enhancedNarrations);
-
-          // Show a status message
-          setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
-
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...enhancedNarrations];
-          } else {
-            window.translatedNarrations = [...enhancedNarrations];
-          }
-
-          // Dispatch a custom event to notify other components
-          const updateEvent = new CustomEvent('narrations-updated', {
-            detail: {
-              source: subtitleSource,
-              narrations: enhancedNarrations,
-              fromCache: true
-            }
-          });
-          window.dispatchEvent(updateEvent);
-
-          // Force a re-render after a short delay to ensure the UI updates
-          setTimeout(() => {
-
-            setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded narrations from previous session'));
-          }, 200);
-        }
-      }
-    };
-
-    // Add event listeners
-    window.addEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
-    window.addEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
-
-    // Clean up
-    return () => {
-      window.removeEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
-      window.removeEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
-    };
-  }, [generationResults, setGenerationResults, setGenerationStatus, subtitleSource, t]);
 
   // Import the handler functions from separate file to keep this component clean
   const {

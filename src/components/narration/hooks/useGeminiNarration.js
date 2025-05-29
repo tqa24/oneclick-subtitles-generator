@@ -6,6 +6,7 @@ import {
   getGeminiLanguageCode
 } from '../../../services/gemini/geminiNarrationService';
 import { groupSubtitlesForNarration } from '../../../services/gemini/subtitleGroupingService';
+import { retryFailedGeminiNarrations as retryFailedGeminiNarrationsUtil } from '../utils/geminiRetryUtils';
 
 /**
  * Custom hook for Gemini narration generation
@@ -784,10 +785,33 @@ const useGeminiNarration = ({
     }
   }, [subtitleSource, groupingIntensity]);
 
+  // Wrapper function for retrying failed Gemini narrations
+  const retryFailedGeminiNarrations = async () => {
+    return retryFailedGeminiNarrationsUtil({
+      generationResults,
+      setError,
+      setGenerationStatus,
+      setGenerationResults,
+      setIsGenerating,
+      subtitleSource,
+      originalSubtitles,
+      translatedSubtitles,
+      subtitles,
+      originalLanguage,
+      translatedLanguage,
+      selectedVoice,
+      concurrentClients,
+      useGroupedSubtitles,
+      groupedSubtitles,
+      t
+    });
+  };
+
   return {
     handleGeminiNarration,
     cancelGeminiGeneration,
     retryGeminiNarration,
+    retryFailedGeminiNarrations,
     groupSubtitles
   };
 };
