@@ -4,15 +4,16 @@ import ReactDOM from 'react-dom';
 import '../../../styles/narration/subtitleGroupingModal.css';
 
 /**
- * Modal component to display a comparison between original subtitles and grouped subtitles
+ * Modal component to display a comparison between source subtitles and grouped subtitles
  * @param {Object} props - Component props
  * @param {boolean} props.open - Whether the modal is open
  * @param {Function} props.onClose - Function to close the modal
- * @param {Array} props.originalSubtitles - Original subtitle objects
+ * @param {Array} props.originalSubtitles - Source subtitle objects (could be original or translated)
  * @param {Array} props.groupedSubtitles - Grouped subtitle objects
+ * @param {string} props.subtitleSource - The source type ('original' or 'translated')
  * @returns {JSX.Element} - Rendered component
  */
-const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtitles }) => {
+const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtitles, subtitleSource = 'original' }) => {
   const { t } = useTranslation();
   const [groupedSubtitleMap, setGroupedSubtitleMap] = useState({});
   const [tableData, setTableData] = useState([]);
@@ -100,7 +101,10 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
           </div>
         <div className="modal-content">
           <p className="subtitle-grouping-explanation">
-            {t('narration.subtitleGroupingExplanation', 'This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row on the left represents an original subtitle, while the merged cells on the right show how they have been combined.')}
+            {subtitleSource === 'translated'
+              ? t('narration.subtitleGroupingExplanationTranslated', 'This table shows how the translated subtitles have been grouped into fuller sentences for better narration. Each row on the left represents a translated subtitle, while the merged cells on the right show how they have been combined.')
+              : t('narration.subtitleGroupingExplanation', 'This table shows how the original subtitles have been grouped into fuller sentences for better narration. Each row on the left represents an original subtitle, while the merged cells on the right show how they have been combined.')
+            }
           </p>
           <div className="table-container">
             <table className="subtitle-grouping-table">
@@ -108,7 +112,12 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
                 <tr>
                   <th width="5%" className="id-cell">{t('narration.id', 'ID')}</th>
                   <th width="10%" className="time-cell">{t('narration.time', 'Time')}</th>
-                  <th width="35%">{t('narration.originalSubtitles', 'Original Subtitles')}</th>
+                  <th width="35%">
+                    {subtitleSource === 'translated'
+                      ? t('narration.translatedSubtitles', 'Translated Subtitles')
+                      : t('narration.originalSubtitles', 'Original Subtitles')
+                    }
+                  </th>
                   <th width="5%" className="id-cell">{t('narration.groupId', 'Group')}</th>
                   <th width="10%" className="time-cell">{t('narration.groupTime', 'Group Time')}</th>
                   <th width="35%">{t('narration.groupedSubtitles', 'Grouped Subtitles')}</th>

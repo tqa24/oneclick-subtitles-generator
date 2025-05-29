@@ -962,8 +962,9 @@ const SubtitleSourceSelection = ({
       <SubtitleGroupingModal
         open={isModalOpen}
         onClose={closeModal}
-        originalSubtitles={originalSubtitles}
+        originalSubtitles={subtitleSource === 'translated' && hasTranslatedSubtitles ? translatedSubtitles : originalSubtitles}
         groupedSubtitles={groupedSubtitles}
+        subtitleSource={subtitleSource}
       />
     </>
   );
