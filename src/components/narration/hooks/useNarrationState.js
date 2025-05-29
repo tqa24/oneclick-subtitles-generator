@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 /**
  * Custom hook for managing narration state
@@ -63,7 +63,11 @@ const useNarrationState = (initialReferenceAudio) => {
   const [useGroupedSubtitles, setUseGroupedSubtitles] = useState(false);
   const [groupedSubtitles, setGroupedSubtitles] = useState(null);
   const [isGroupingSubtitles, setIsGroupingSubtitles] = useState(false);
-  const [groupingIntensity, setGroupingIntensity] = useState('moderate');
+  const [groupingIntensity, setGroupingIntensity] = useState(() => {
+    // Try to load from localStorage
+    const savedGroupingIntensity = localStorage.getItem('grouping_intensity');
+    return savedGroupingIntensity || 'moderate'; // Default to 'moderate' if not set
+  });
   const [advancedSettings, setAdvancedSettings] = useState(() => {
     // Try to load from localStorage
     try {
@@ -101,6 +105,18 @@ const useNarrationState = (initialReferenceAudio) => {
       mergeOutput: false
     };
   });
+
+  // Save grouping intensity to localStorage when it changes
+  useEffect(() => {
+    if (groupingIntensity) {
+      try {
+        localStorage.setItem('grouping_intensity', groupingIntensity);
+        console.log('Saved grouping intensity to localStorage:', groupingIntensity);
+      } catch (error) {
+        console.error('Error saving grouping intensity to localStorage:', error);
+      }
+    }
+  }, [groupingIntensity]);
 
   // Update local state when initialReferenceAudio changes
   const updateReferenceAudio = (newReferenceAudio) => {
