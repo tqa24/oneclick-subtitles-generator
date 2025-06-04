@@ -191,4 +191,106 @@ router.post('/save-rules', (req, res) => {
   }
 });
 
+/**
+ * POST /api/delete-subtitles - Delete subtitle files to force regeneration
+ */
+router.post('/delete-subtitles', (req, res) => {
+  const { videoUrl, fileName, cacheId } = req.body;
+
+  console.log('DELETE SUBTITLES: Request received with:', { videoUrl, fileName, cacheId });
+
+  let deletedFiles = [];
+  let errors = [];
+
+  try {
+    // Try to delete files based on different identifiers
+    const possibleFiles = [];
+
+    // If we have a cacheId, use it directly
+    if (cacheId) {
+      possibleFiles.push(`${cacheId}.json`);
+    }
+
+    // If we have a fileName, create possible cache IDs from it
+    if (fileName) {
+      const baseName = path.parse(fileName).name;
+      possibleFiles.push(`${baseName}.json`);
+      // Also try with some common hash patterns
+      possibleFiles.push(`file_${baseName}.json`);
+    }
+
+    // If we have a videoUrl, create possible cache IDs from it
+    if (videoUrl) {
+      // Extract video ID from YouTube URLs
+      const youtubeMatch = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      if (youtubeMatch) {
+        possibleFiles.push(`${youtubeMatch[1]}.json`);
+        possibleFiles.push(`youtube_${youtubeMatch[1]}.json`);
+      }
+    }
+
+    // Also try to find any .json files in the subtitles directory that might match
+    if (fs.existsSync(SUBTITLES_DIR)) {
+      const allFiles = fs.readdirSync(SUBTITLES_DIR);
+      const jsonFiles = allFiles.filter(file => file.endsWith('.json'));
+
+      // Add all JSON files to possible files (for aggressive cleanup)
+      possibleFiles.push(...jsonFiles);
+    }
+
+    console.log('DELETE SUBTITLES: Possible files to delete:', possibleFiles);
+
+    // Remove duplicates
+    const uniqueFiles = [...new Set(possibleFiles)];
+
+    // Try to delete each file
+    for (const fileName of uniqueFiles) {
+      const filePath = path.join(SUBTITLES_DIR, fileName);
+
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          deletedFiles.push(fileName);
+          console.log('DELETE SUBTITLES: Deleted file:', fileName);
+        } catch (error) {
+          console.error('DELETE SUBTITLES: Error deleting file:', fileName, error);
+          errors.push(`Failed to delete ${fileName}: ${error.message}`);
+        }
+      }
+    }
+
+    // Also try to delete user-provided subtitles
+    if (cacheId) {
+      const userSubtitlePath = path.join(USER_SUBTITLES_DIR, `${cacheId}.txt`);
+      if (fs.existsSync(userSubtitlePath)) {
+        try {
+          fs.unlinkSync(userSubtitlePath);
+          deletedFiles.push(`user-provided/${cacheId}.txt`);
+          console.log('DELETE SUBTITLES: Deleted user subtitle file:', `${cacheId}.txt`);
+        } catch (error) {
+          console.error('DELETE SUBTITLES: Error deleting user subtitle file:', error);
+          errors.push(`Failed to delete user subtitle file: ${error.message}`);
+        }
+      }
+    }
+
+    console.log('DELETE SUBTITLES: Operation completed. Deleted:', deletedFiles.length, 'files. Errors:', errors.length);
+
+    res.json({
+      success: true,
+      message: `Deleted ${deletedFiles.length} subtitle files`,
+      deletedFiles,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('DELETE SUBTITLES: Unexpected error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete subtitle files',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -31,6 +31,17 @@ const ButtonsContainer = ({
   t,
   onGenerateBackground
 }) => {
+  // Determine retry button visibility - show more aggressively for force retry
+  const hasSubtitlesData = subtitlesData && subtitlesData.length > 0;
+  const hasError = status?.type === 'error';
+  const hasAnyVideoSource = selectedVideo || uploadedFile || localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
+  const isNotBusy = !isGenerating && !isDownloading;
+
+  // Show retry button if:
+  // 1. We have subtitles data OR there's an error OR there's any video source
+  // 2. AND we're not currently busy
+  const retryButtonVisible = (hasSubtitlesData || hasError || hasAnyVideoSource) && isNotBusy;
+
   return (
     <div className="buttons-container">
       <SrtUploadButton
@@ -115,10 +126,18 @@ const ButtonsContainer = ({
         </button>
       )}
 
-      {(subtitlesData || status.type === 'error') && !isGenerating && !isDownloading && (
+      {retryButtonVisible && (
         <button
           className={`retry-gemini-btn ${retryingSegments.length > 0 ? 'processing' : ''}`}
-          onClick={handleRetryGeneration}
+          onClick={() => {
+            console.log('FORCE RETRY button clicked!');
+            try {
+              handleRetryGeneration();
+              console.log('Force retry initiated successfully');
+            } catch (error) {
+              console.error('Error calling handleRetryGeneration:', error);
+            }
+          }}
           disabled={isGenerating || isDownloading}
           title={t('output.retryGeminiTooltip')}
         >
