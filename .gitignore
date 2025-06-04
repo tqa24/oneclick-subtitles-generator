@@ -134,3 +134,4 @@ lib64/
 !src/assets/*.mp3
 !src/assets/*.wav
 live-api-web-console/
+video-renderer/
