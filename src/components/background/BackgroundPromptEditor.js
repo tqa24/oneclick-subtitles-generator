@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../../styles/PromptEditor.css';
 import '../../styles/background/BackgroundPromptEditor.css';
@@ -138,7 +139,8 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  return (
+  // Create the modal content
+  const modalContent = (
     <div className="prompt-editor-overlay">
       <div className="prompt-editor-modal background-prompt-editor" ref={modalRef}>
         <div className="prompt-editor-header">
@@ -215,6 +217,12 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
         </div>
       </div>
     </div>
+  );
+
+  // Use ReactDOM.createPortal to render the modal directly to the document body
+  return ReactDOM.createPortal(
+    modalContent,
+    document.body
   );
 };
 
