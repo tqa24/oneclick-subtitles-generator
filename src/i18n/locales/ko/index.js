@@ -31,6 +31,7 @@ import subtitlesInput from './subtitlesInput.json';
 import segmentRetry from './segmentRetry.json';
 import narration from './narration.json';
 import backgroundGenerator from './backgroundGenerator.json';
+import videoRendering from './videoRendering.json';
 
 // Combine all translations
 const koTranslations = {
@@ -64,7 +65,8 @@ const koTranslations = {
   subtitlesInput,
   segmentRetry,
   narration,
-  backgroundGenerator
+  backgroundGenerator,
+  videoRendering
 };
 
 export default koTranslations;

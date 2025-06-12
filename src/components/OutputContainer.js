@@ -30,7 +30,9 @@ const OutputContainer = ({
   onViewRules,
   userProvidedSubtitles = '',
   onUserSubtitlesAdd,
-  onGenerateBackground
+  onGenerateBackground,
+  onRenderVideo,
+  onActualVideoUrlChange
 }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
@@ -121,6 +123,13 @@ const OutputContainer = ({
     setVideoSource('');
   }, [selectedVideo, uploadedFile]);
 
+  // Notify parent when actualVideoUrl changes
+  useEffect(() => {
+    if (onActualVideoUrlChange) {
+      onActualVideoUrlChange(actualVideoUrl);
+    }
+  }, [actualVideoUrl, onActualVideoUrlChange]);
+
   // Calculate virtual duration for SRT-only mode
   useEffect(() => {
     if (isSrtOnlyMode && subtitlesData && subtitlesData.length > 0) {
@@ -203,6 +212,7 @@ const OutputContainer = ({
                 onVideoUrlReady={setActualVideoUrl}
                 useOptimizedPreview={useOptimizedPreview}
                 onReferenceAudioChange={setReferenceAudio}
+                onRenderVideo={onRenderVideo}
               />
             )}
 

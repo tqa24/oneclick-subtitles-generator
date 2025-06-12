@@ -1,0 +1,340 @@
+/* Subtitle Customization Panel Styles */
+
+.subtitle-customization-panel {
+  background: var(--card-background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.subtitle-customization-collapsed {
+  background: var(--card-background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subtitle-customization-collapsed:hover {
+  background: var(--hover-color);
+  border-color: var(--accent-color);
+}
+
+.collapsed-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collapsed-icon {
+  font-size: 1.2rem;
+}
+
+.collapsed-title {
+  font-weight: 600;
+  color: var(--heading-color);
+  flex: 1;
+}
+
+.collapsed-preset {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: var(--background-secondary);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.expand-arrow {
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.expand-arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.panel-header {
+  padding: 20px 24px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.panel-header:hover {
+  background: var(--hover-color);
+}
+
+.panel-icon {
+  font-size: 1.2rem;
+}
+
+.panel-title {
+  font-weight: 600;
+  color: var(--heading-color);
+  flex: 1;
+}
+
+.panel-content {
+  padding: 0 24px 24px 24px;
+}
+
+/* Customization Sections */
+.customization-section {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.section-header {
+  padding: 12px 16px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.section-header:hover {
+  background: var(--hover-color);
+}
+
+.section-content {
+  padding: 16px;
+  background: var(--card-background);
+}
+
+/* Control Layouts */
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.control-row:last-child {
+  margin-bottom: 0;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-item label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form Controls */
+.control-item select,
+.control-item input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.control-item select:focus,
+.control-item input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+}
+
+.control-item input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.control-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+}
+
+.control-item input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  cursor: pointer;
+  border: none;
+}
+
+/* Color Input Group */
+.color-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-input-group input[type="color"] {
+  width: 40px;
+  height: 35px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-input-group input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input-group input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.color-input-group input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Preset Grid */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.preset-button {
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-background);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-button:hover {
+  background: var(--hover-color);
+  border-color: var(--accent-color);
+}
+
+.preset-button.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .panel-header,
+  .collapsed-header {
+    padding: 16px 20px;
+  }
+  
+  .panel-content {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .control-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .preset-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+  }
+  
+  .preset-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .section-header {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+  
+  .section-content {
+    padding: 12px;
+  }
+  
+  .color-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .color-input-group input[type="color"] {
+    width: 100%;
+    height: 40px;
+  }
+}
+
+/* Animation for expanding sections */
+.customization-section.expanded .section-content {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus styles for accessibility */
+.preset-button:focus,
+.section-header:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.control-item select:disabled,
+.control-item input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar for long content */
+.section-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.section-content::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+.section-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.section-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

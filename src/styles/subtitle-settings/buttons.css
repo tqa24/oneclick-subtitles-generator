@@ -108,6 +108,26 @@
   border-color: transparent;
 }
 
+/* Render Video Button */
+.render-video-toggle.md-filled-tonal-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.render-video-toggle.md-filled-tonal-button:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.render-video-toggle.md-filled-tonal-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
 /* Header buttons */
 .close-settings-btn {
   display: flex;

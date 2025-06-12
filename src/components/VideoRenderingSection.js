@@ -1,0 +1,813 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import SubtitleCustomizationPanel, { defaultCustomization } from './SubtitleCustomizationPanel';
+import RemotionVideoPreview from './RemotionVideoPreview';
+import QueueManagerPanel from './QueueManagerPanel';
+import '../styles/VideoRenderingSection.css';
+
+const VideoRenderingSection = ({
+  selectedVideo,
+  uploadedFile,
+  actualVideoUrl,
+  subtitlesData,
+  translatedSubtitles,
+  narrationResults,
+  isExpanded = false,
+  onExpandChange,
+  autoFillData = null
+}) => {
+  const { t } = useTranslation();
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderStatus, setRenderStatus] = useState('');
+  const [renderedVideoUrl, setRenderedVideoUrl] = useState('');
+  const [error, setError] = useState('');
+  
+  // Form state
+  const [selectedVideoFile, setSelectedVideoFile] = useState(null);
+  const [selectedSubtitles, setSelectedSubtitles] = useState('original');
+  const [selectedNarration, setSelectedNarration] = useState('none');
+  const [renderSettings, setRenderSettings] = useState({
+    resolution: '1080p',
+    frameRate: 60,
+    videoType: 'Subtitled Video',
+    originalAudioVolume: 100,
+    narrationVolume: 100
+  });
+
+  // New feature states
+  const [subtitleCustomization, setSubtitleCustomization] = useState(defaultCustomization);
+  const [showSubtitleCustomization, setShowSubtitleCustomization] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [renderQueue, setRenderQueue] = useState([]);
+  const [currentQueueItem, setCurrentQueueItem] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const eventSourceRef = useRef(null);
+  const sectionRef = useRef(null);
+
+  // Auto-fill data when autoFillData changes
+  useEffect(() => {
+    if (autoFillData) {
+      // Auto-fill video using the actual video URL from the player
+      if (actualVideoUrl) {
+        // Create a video file object that represents the actual playing video
+        setSelectedVideoFile({
+          url: actualVideoUrl,
+          name: selectedVideo?.title || uploadedFile?.name || 'Current Video',
+          isActualVideo: true
+        });
+      }
+
+      // Auto-fill subtitles based on available data
+      if (translatedSubtitles && translatedSubtitles.length > 0) {
+        setSelectedSubtitles('translated');
+      } else if (subtitlesData && subtitlesData.length > 0) {
+        setSelectedSubtitles('original');
+      }
+
+      // Auto-fill narration if available
+      if (narrationResults && narrationResults.length > 0) {
+        setSelectedNarration('generated');
+      }
+
+      // Expand the section and scroll to it
+      onExpandChange(true);
+      setTimeout(() => {
+        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, onExpandChange]);
+
+  // Get current subtitles based on selection
+  const getCurrentSubtitles = () => {
+    if (selectedSubtitles === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
+      return translatedSubtitles;
+    }
+    return subtitlesData || [];
+  };
+
+  // Check if aligned narration is available (same logic as refresh narration button)
+  const isAlignedNarrationAvailable = () => {
+    return window.isAlignedNarrationAvailable === true && window.alignedNarrationCache?.url;
+  };
+
+  // Get narration audio URL if available - same as refresh narration button
+  const getNarrationAudioUrl = async () => {
+    // First check if aligned narration is already available
+    if (isAlignedNarrationAvailable()) {
+      return window.alignedNarrationCache.url;
+    }
+
+    // If not available and user selected generated narration, try to generate it
+    if (selectedNarration === 'generated' && narrationResults && narrationResults.length > 0) {
+      try {
+        // Use the same logic as the refresh narration button
+        const narrationData = narrationResults.map(result => ({
+          filename: result.filename,
+          start_time: result.start_time,
+          end_time: result.end_time,
+          subtitle_id: result.subtitle_id
+        }));
+
+        // Call the same endpoint as refresh narration button
+        const response = await fetch(`http://localhost:3007/api/narration/download-aligned`, {
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'audio/wav'
+          },
+          body: JSON.stringify({ narrations: narrationData })
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+
+          // Update the cache like the refresh button does
+          window.alignedNarrationCache = {
+            blob: blob,
+            url: url,
+            timestamp: Date.now(),
+            subtitleTimestamps: {}
+          };
+          window.isAlignedNarrationAvailable = true;
+
+          return url;
+        }
+      } catch (error) {
+        console.error('Failed to get aligned narration:', error);
+      }
+    }
+    return null;
+  };
+
+  // Handle video file upload
+  const handleVideoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedVideoFile(file);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const videoFile = files.find(file => file.type.startsWith('video/') || file.type.startsWith('audio/'));
+      if (videoFile) {
+        setSelectedVideoFile(videoFile);
+      }
+    }
+  };
+
+  // Upload file to video-renderer server
+  const uploadFileToRenderer = async (file, type = 'video') => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`http://localhost:3010/upload/${type}`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload ${type}`);
+    }
+
+    const data = await response.json();
+    return data.filename;
+  };
+
+  // Download video from URL and upload to renderer
+  const downloadVideoFromUrl = async (videoUrl) => {
+    // Handle blob URLs differently - they can't be fetched from server
+    if (videoUrl.startsWith('blob:')) {
+      throw new Error('Blob URLs cannot be downloaded from server. Please upload the original file.');
+    }
+
+    // Fetch the video from the URL
+    const response = await fetch(videoUrl);
+    if (!response.ok) {
+      throw new Error('Failed to download video from URL');
+    }
+
+    // Convert to blob
+    const blob = await response.blob();
+
+    // Create a File object from the blob
+    const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
+
+    // Upload to renderer
+    return await uploadFileToRenderer(file, 'video');
+  };
+
+  // Convert blob URL to File object for upload
+  const convertBlobUrlToFile = async (blobUrl, filename = 'video.mp4') => {
+    try {
+      // Fetch the blob from the blob URL
+      const response = await fetch(blobUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch blob');
+      }
+
+      const blob = await response.blob();
+
+      // Create a File object from the blob
+      return new File([blob], filename, { type: blob.type || 'video/mp4' });
+    } catch (error) {
+      console.error('Error converting blob URL to file:', error);
+      throw new Error('Failed to convert blob URL to file');
+    }
+  };
+
+  // Start rendering
+  const handleStartRender = async () => {
+    try {
+      setIsRendering(true);
+      setRenderProgress(0);
+      setRenderStatus(t('videoRendering.starting', 'Starting render...'));
+      setError('');
+      setRenderedVideoUrl('');
+
+      // Validate inputs
+      if (!selectedVideoFile) {
+        throw new Error(t('videoRendering.noVideoSelected', 'Please select a video file'));
+      }
+
+      const currentSubtitles = getCurrentSubtitles();
+      if (!currentSubtitles || currentSubtitles.length === 0) {
+        throw new Error(t('videoRendering.noSubtitles', 'No subtitles available'));
+      }
+
+      // Upload video file if it's a File object
+      let audioFile;
+      if (selectedVideoFile instanceof File) {
+        setRenderStatus(t('videoRendering.uploadingVideo', 'Uploading video...'));
+        audioFile = await uploadFileToRenderer(selectedVideoFile, 'video');
+      } else if (selectedVideoFile && typeof selectedVideoFile === 'object' && selectedVideoFile.url) {
+        // If it's the actual video URL from the player
+        if (selectedVideoFile.isActualVideo) {
+          // Check if it's a blob URL
+          if (selectedVideoFile.url.startsWith('blob:')) {
+            setRenderStatus(t('videoRendering.convertingVideo', 'Converting video...'));
+            // Convert blob URL to File and upload
+            const videoFile = await convertBlobUrlToFile(selectedVideoFile.url, selectedVideoFile.name || 'video.mp4');
+            setRenderStatus(t('videoRendering.uploadingVideo', 'Uploading video...'));
+            audioFile = await uploadFileToRenderer(videoFile, 'video');
+          } else {
+            setRenderStatus(t('videoRendering.downloadingVideo', 'Downloading video...'));
+            audioFile = await downloadVideoFromUrl(selectedVideoFile.url);
+          }
+        } else {
+          throw new Error(t('videoRendering.urlNotSupported', 'URL videos not yet supported. Please upload a file.'));
+        }
+      } else {
+        throw new Error(t('videoRendering.invalidVideoFile', 'Invalid video file. Please select a valid video file.'));
+      }
+
+      // Upload narration audio if selected and get HTTP URL
+      let narrationUrl = null;
+      if (selectedNarration === 'generated') {
+        setRenderStatus(t('videoRendering.preparingNarration', 'Preparing narration...'));
+        const narrationBlobUrl = await getNarrationAudioUrl();
+        if (narrationBlobUrl) {
+          setRenderStatus(t('videoRendering.uploadingNarration', 'Uploading narration...'));
+
+          // Handle blob URLs for narration audio
+          let narrationFileObj;
+          if (narrationBlobUrl.startsWith('blob:')) {
+            // Convert blob URL to File object (client-side)
+            const narrationResponse = await fetch(narrationBlobUrl);
+            const narrationBlob = await narrationResponse.blob();
+            narrationFileObj = new File([narrationBlob], 'narration.wav', { type: 'audio/wav' });
+          } else {
+            // Handle HTTP URLs
+            const narrationResponse = await fetch(narrationBlobUrl);
+            if (!narrationResponse.ok) {
+              throw new Error('Failed to download narration from URL');
+            }
+            const narrationBlob = await narrationResponse.blob();
+            narrationFileObj = new File([narrationBlob], 'narration.wav', { type: 'audio/wav' });
+          }
+
+          // Upload the file to renderer and get HTTP URL
+          const uploadedNarrationFilename = await uploadFileToRenderer(narrationFileObj, 'audio');
+          narrationUrl = `http://localhost:3010/uploads/${uploadedNarrationFilename}`;
+        }
+      }
+
+      // Prepare render request
+      const renderRequest = {
+        compositionId: 'subtitled-video',
+        audioFile: audioFile,
+        lyrics: currentSubtitles,
+        metadata: renderSettings,
+        narrationUrl: narrationUrl, // Use HTTP URL instead of blob URL
+        isVideoFile: true
+      };
+
+      setRenderStatus(t('videoRendering.rendering', 'Rendering video...'));
+
+      // Start Server-Sent Events connection for progress
+      eventSourceRef.current = new EventSource('http://localhost:3010/render', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(renderRequest)
+      });
+
+      // Actually send the POST request
+      const response = await fetch('http://localhost:3010/render', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(renderRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Render request failed: ${response.status}`);
+      }
+
+      // Handle Server-Sent Events
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.progress !== undefined) {
+                setRenderProgress(Math.round(data.progress * 100));
+                setRenderStatus(t('videoRendering.progress', 'Rendering: {{progress}}%', { 
+                  progress: Math.round(data.progress * 100) 
+                }));
+              }
+              
+              if (data.status === 'complete' && data.videoUrl) {
+                setRenderedVideoUrl(data.videoUrl);
+                setRenderStatus(t('videoRendering.complete', 'Render complete!'));
+                setRenderProgress(100);
+                break;
+              }
+              
+              if (data.status === 'error') {
+                throw new Error(data.error || t('videoRendering.unknownError', 'Unknown error occurred'));
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse SSE data:', parseError);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Render error:', error);
+      setError(error.message);
+      setRenderStatus(t('videoRendering.failed', 'Render failed'));
+    } finally {
+      setIsRendering(false);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    }
+  };
+
+  // Cancel rendering
+  const handleCancelRender = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setIsRendering(false);
+    setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+  };
+
+  // Queue management functions
+  const addToQueue = async () => {
+    if (!selectedVideoFile || getCurrentSubtitles().length === 0) return;
+
+    // Validate video file
+    if (!(selectedVideoFile instanceof File) &&
+        !(typeof selectedVideoFile === 'object' && selectedVideoFile.url)) {
+      setError(t('videoRendering.invalidVideoFile', 'Invalid video file. Please select a valid video file.'));
+      return;
+    }
+
+    // Get narration URL asynchronously
+    const narrationUrl = await getNarrationAudioUrl();
+
+    const queueItem = {
+      id: Date.now().toString(),
+      videoFile: selectedVideoFile,
+      subtitles: getCurrentSubtitles(),
+      narrationUrl: narrationUrl,
+      settings: renderSettings,
+      customization: subtitleCustomization,
+      status: 'pending',
+      progress: 0,
+      timestamp: Date.now()
+    };
+
+    setRenderQueue(prev => [...prev, queueItem]);
+    setError(''); // Clear any previous errors
+  };
+
+  const removeFromQueue = (id) => {
+    setRenderQueue(prev => prev.filter(item => item.id !== id));
+  };
+
+  const clearQueue = () => {
+    setRenderQueue(prev => prev.filter(item => item.status === 'processing'));
+  };
+
+  const retryQueueItem = (id) => {
+    setRenderQueue(prev => prev.map(item =>
+      item.id === id ? { ...item, status: 'pending', progress: 0, error: null } : item
+    ));
+  };
+
+  return (
+    <div
+      ref={sectionRef}
+      className={`video-rendering-section ${isExpanded ? 'expanded' : 'collapsed'} ${isDragging ? 'dragging' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <div className="video-rendering-header" onClick={() => onExpandChange(!isExpanded)}>
+        <div className="header-content">
+          <div className="header-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </div>
+          <div className="header-text">
+            <h3>{t('videoRendering.title', 'Video Rendering')}</h3>
+            <p>{t('videoRendering.description', 'Render your video with subtitles and narration')}</p>
+          </div>
+        </div>
+        <div className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+      </div>
+
+      {isDragging && (
+        <div className="drag-overlay">
+          <div className="drag-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <h3>{t('videoRendering.dropVideo', 'Drop video file here')}</h3>
+          </div>
+        </div>
+      )}
+
+      {isExpanded && (
+        <div className="video-rendering-content">
+          {/* Video Preview Panel */}
+          <RemotionVideoPreview
+            videoFile={selectedVideoFile}
+            subtitles={getCurrentSubtitles()}
+            narrationAudioUrl={isAlignedNarrationAvailable() ? window.alignedNarrationCache?.url : null}
+            subtitleCustomization={{
+              ...subtitleCustomization,
+              resolution: renderSettings.resolution,
+              frameRate: renderSettings.frameRate
+            }}
+            originalAudioVolume={renderSettings.originalAudioVolume}
+            narrationVolume={renderSettings.narrationVolume}
+          />
+
+          {/* Queue Manager Panel */}
+          <QueueManagerPanel
+            queue={renderQueue}
+            currentQueueItem={currentQueueItem}
+            onRemoveItem={removeFromQueue}
+            onClearQueue={clearQueue}
+            onRetryItem={retryQueueItem}
+            isExpanded={renderQueue.length > 0}
+            onToggle={() => {}}
+          />
+
+          {/* Video Input Section */}
+          <div className="rendering-section">
+            <h4>{t('videoRendering.videoInput', 'Video Input')}</h4>
+            <div className="video-input-container">
+              {selectedVideoFile ? (
+                <div className="selected-video-info">
+                  <span className="video-name">
+                    {(selectedVideoFile instanceof File ? selectedVideoFile.name :
+                      (selectedVideoFile.name || selectedVideoFile.title || 'Current Video'))}
+                  </span>
+                  {selectedVideoFile.isActualVideo && (
+                    <span className="video-source-indicator">
+                      {t('videoRendering.fromPlayer', '(from video player)')}
+                    </span>
+                  )}
+                  <button
+                    className="change-video-btn"
+                    onClick={() => document.getElementById('video-upload-input').click()}
+                  >
+                    {t('videoRendering.changeVideo', 'Change')}
+                  </button>
+                </div>
+              ) : (
+                <div className="upload-drop-zone">
+                  <button
+                    className="upload-video-btn"
+                    onClick={() => document.getElementById('video-upload-input').click()}
+                  >
+                    {t('videoRendering.selectVideo', 'Select Video File')}
+                  </button>
+                  <span className="drop-text">
+                    {t('videoRendering.orDragDrop', 'or drag and drop here')}
+                  </span>
+                </div>
+              )}
+              <input
+                id="video-upload-input"
+                type="file"
+                accept="video/*,audio/*"
+                onChange={handleVideoUpload}
+                style={{ display: 'none' }}
+              />
+            </div>
+          </div>
+
+          {/* Subtitle Selection */}
+          <div className="rendering-section">
+            <h4>{t('videoRendering.subtitleSource', 'Subtitle Source')}</h4>
+            <div className="subtitle-selection">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  value="original"
+                  checked={selectedSubtitles === 'original'}
+                  onChange={(e) => setSelectedSubtitles(e.target.value)}
+                  disabled={!subtitlesData || subtitlesData.length === 0}
+                />
+                <span>{t('videoRendering.originalSubtitles', 'Original Subtitles')}</span>
+                <span className="subtitle-count">
+                  ({subtitlesData ? subtitlesData.length : 0} {t('videoRendering.items', 'items')})
+                </span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  value="translated"
+                  checked={selectedSubtitles === 'translated'}
+                  onChange={(e) => setSelectedSubtitles(e.target.value)}
+                  disabled={!translatedSubtitles || translatedSubtitles.length === 0}
+                />
+                <span>{t('videoRendering.translatedSubtitles', 'Translated Subtitles')}</span>
+                <span className="subtitle-count">
+                  ({translatedSubtitles ? translatedSubtitles.length : 0} {t('videoRendering.items', 'items')})
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Narration Selection */}
+          <div className="rendering-section">
+            <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
+            <div className="narration-selection">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  value="none"
+                  checked={selectedNarration === 'none'}
+                  onChange={(e) => setSelectedNarration(e.target.value)}
+                />
+                <span>{t('videoRendering.noNarration', 'No Narration')}</span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  value="generated"
+                  checked={selectedNarration === 'generated'}
+                  onChange={(e) => setSelectedNarration(e.target.value)}
+                  disabled={!isAlignedNarrationAvailable()}
+                />
+                <span>
+                  {isAlignedNarrationAvailable()
+                    ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
+                    : (narrationResults && narrationResults.length > 0
+                        ? t('videoRendering.narrationNotAligned', 'Narration not aligned - use "Refresh Narration" or "Download Aligned" button first')
+                        : t('videoRendering.noNarrationGenerated', 'No narration generated')
+                      )
+                  }
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Subtitle Customization Panel */}
+          <SubtitleCustomizationPanel
+            customization={subtitleCustomization}
+            onChange={setSubtitleCustomization}
+            isExpanded={showSubtitleCustomization}
+            onToggle={() => setShowSubtitleCustomization(!showSubtitleCustomization)}
+          />
+
+          {/* Audio Mixing Controls */}
+          <div className="rendering-section">
+            <h4>{t('videoRendering.audioMixing', 'Audio Mixing')}</h4>
+            <div className="audio-controls">
+              <div className="volume-control">
+                <label>{t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={renderSettings.originalAudioVolume}
+                  onChange={(e) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(e.target.value) }))}
+                  className="volume-slider"
+                />
+              </div>
+              <div className="volume-control">
+                <label>{t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={renderSettings.narrationVolume}
+                  onChange={(e) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(e.target.value) }))}
+                  className="volume-slider"
+                  disabled={selectedNarration === 'none'}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Render Settings */}
+          <div className="rendering-section">
+            <h4>{t('videoRendering.renderSettings', 'Render Settings')}</h4>
+            <div className="settings-grid">
+              <div className="setting-item">
+                <label>{t('videoRendering.resolution', 'Resolution')}</label>
+                <select
+                  value={renderSettings.resolution}
+                  onChange={(e) => setRenderSettings(prev => ({ ...prev, resolution: e.target.value }))}
+                >
+                  <option value="480p">480p</option>
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                  <option value="2K">2K</option>
+                </select>
+              </div>
+              <div className="setting-item">
+                <label>{t('videoRendering.frameRate', 'Frame Rate')}</label>
+                <select
+                  value={renderSettings.frameRate}
+                  onChange={(e) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(e.target.value) }))}
+                >
+                  <option value={30}>30 FPS</option>
+                  <option value={60}>60 FPS</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Render Controls */}
+          <div className="rendering-section">
+            <div className="render-controls">
+              {!isRendering ? (
+                <>
+                  <button
+                    className="render-btn primary"
+                    onClick={handleStartRender}
+                    disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    {t('videoRendering.renderNow', 'Render Now')}
+                  </button>
+                  <button
+                    className="render-btn queue"
+                    onClick={addToQueue}
+                    disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    {t('videoRendering.addToQueue', 'Add to Queue')}
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="render-btn secondary"
+                  onClick={handleCancelRender}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="6" y="6" width="12" height="12"></rect>
+                  </svg>
+                  {t('videoRendering.cancel', 'Cancel')}
+                </button>
+              )}
+            </div>
+
+            {/* Progress Display */}
+            {(isRendering || renderProgress > 0) && (
+              <div className="render-progress">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${renderProgress}%` }}
+                  ></div>
+                </div>
+                <div className="progress-text">
+                  {renderStatus} {renderProgress > 0 && `(${renderProgress}%)`}
+                </div>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="error-message">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                {error}
+              </div>
+            )}
+
+            {/* Rendered Video Display */}
+            {renderedVideoUrl && (
+              <div className="rendered-video">
+                <h4>{t('videoRendering.result', 'Rendered Video')}</h4>
+                <video controls width="100%" style={{ maxWidth: '600px' }}>
+                  <source src={renderedVideoUrl} type="video/mp4" />
+                  {t('videoRendering.videoNotSupported', 'Your browser does not support the video tag.')}
+                </video>
+                <div className="video-actions">
+                  <a 
+                    href={renderedVideoUrl} 
+                    download 
+                    className="download-btn"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    {t('videoRendering.download', 'Download Video')}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VideoRenderingSection;

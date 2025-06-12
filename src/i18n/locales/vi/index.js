@@ -29,6 +29,7 @@ import rulesEditor from './rulesEditor.json';
 import fileUpload from './fileUpload.json';
 import subtitlesInput from './subtitlesInput.json';
 import segmentRetry from './segmentRetry.json';
+import videoRendering from './videoRendering.json';
 
 const vi = {
   common,
@@ -61,7 +62,8 @@ const vi = {
   subtitlesInput,
   segmentRetry,
   narration,
-  backgroundGenerator
+  backgroundGenerator,
+  videoRendering
 };
 
 export default vi;
