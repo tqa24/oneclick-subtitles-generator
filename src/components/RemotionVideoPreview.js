@@ -236,21 +236,7 @@ const RemotionVideoPreview = ({
         onSeek={handleSeek}
       />
 
-      <div className="video-preview-info">
-        <span className="video-info-item">
-          Duration: {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
-        </span>
-        <span className="video-info-item">
-          Time: {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}
-        </span>
-        <span className="video-info-item">
-          {subtitleCustomization?.resolution || '1080p'} • {frameRate} FPS
-        </span>
-      </div>
 
-      <small className="video-preview-hint">
-        💡 Click on this panel and press spacebar to play/pause
-      </small>
     </>
   );
 };

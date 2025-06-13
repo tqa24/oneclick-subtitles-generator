@@ -179,7 +179,7 @@
   height: 600px;
   margin-bottom: 20px;
   border: 1px solid var(--md-outline-variant);
-  border-radius: 8px;
+  border-radius: 24px;
   overflow: hidden;
 }
 
@@ -187,6 +187,7 @@
 .video-input-compact,
 .subtitle-selection-compact,
 .narration-selection-compact {
+  padding: 0 1.5rem 0 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -230,7 +231,7 @@
   overflow: hidden;
   outline: none;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: 24px;
   transition: border-color 0.2s ease;
 }
 
@@ -257,7 +258,7 @@
 
 .panel-resizer::before {
   content: '';
-  width: 3px;
+  width: 5px;
   height: 80px;
   background: var(--md-outline-variant);
   border-radius: 2px;
@@ -266,7 +267,7 @@
 
 .panel-resizer:hover::before {
   background: var(--md-primary);
-  width: 4px;
+  width: 10px;
 }
 
 /* Customization panel - matches video panel height */

@@ -82,10 +82,6 @@
   flex: 1;
 }
 
-.panel-content {
-  padding: 24px;
-}
-
 /* Queue Actions */
 .queue-actions {
   display: flex;

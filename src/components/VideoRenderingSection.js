@@ -130,6 +130,18 @@ const VideoRenderingSection = ({
     }
   }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults]);
 
+  // Auto-process queue when it changes
+  useEffect(() => {
+    if (!isRendering && !currentQueueItem && renderQueue.length > 0) {
+      const hasPendingItems = renderQueue.some(item => item.status === 'pending');
+      if (hasPendingItems) {
+        // Small delay to avoid rapid processing
+        const timer = setTimeout(() => processNextQueueItem(), 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [renderQueue, isRendering, currentQueueItem]);
+
   // Get current subtitles based on selection
   const getCurrentSubtitles = () => {
     if (selectedSubtitles === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
@@ -297,6 +309,18 @@ const VideoRenderingSection = ({
     }
   };
 
+  // Unified render function that handles both immediate rendering and queueing
+  const handleRender = async () => {
+    // If currently rendering, add to queue instead
+    if (isRendering || currentQueueItem) {
+      await addToQueue();
+      return;
+    }
+
+    // Otherwise, start rendering immediately
+    await handleStartRender();
+  };
+
   // Start rendering
   const handleStartRender = async () => {
     try {
@@ -434,6 +458,9 @@ const VideoRenderingSection = ({
                 setRenderedVideoUrl(data.videoUrl);
                 setRenderStatus(t('videoRendering.complete', 'Render complete!'));
                 setRenderProgress(100);
+
+                // Process next item in queue if available
+                setTimeout(() => processNextQueueItem(), 1000); // Small delay to show completion
                 break;
               }
               
@@ -457,6 +484,9 @@ const VideoRenderingSection = ({
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
+
+      // Process next item in queue even if current one failed
+      setTimeout(() => processNextQueueItem(), 1000);
     }
   };
 
@@ -512,6 +542,45 @@ const VideoRenderingSection = ({
     setRenderQueue(prev => prev.map(item =>
       item.id === id ? { ...item, status: 'pending', progress: 0, error: null } : item
     ));
+  };
+
+  // Process next item in queue
+  const processNextQueueItem = async () => {
+    // Don't process if already rendering
+    if (isRendering || currentQueueItem) return;
+
+    // Find next pending item
+    const nextItem = renderQueue.find(item => item.status === 'pending');
+    if (!nextItem) return;
+
+    try {
+      // Set as current processing item
+      setCurrentQueueItem(nextItem);
+      setRenderQueue(prev => prev.map(item =>
+        item.id === nextItem.id ? { ...item, status: 'processing' } : item
+      ));
+
+      // Set up the render with the queue item's settings
+      setSelectedVideoFile(nextItem.videoFile);
+      setSelectedSubtitles(nextItem.subtitles === getCurrentSubtitles() ? selectedSubtitles : 'original');
+      setRenderSettings(nextItem.settings);
+      setSubtitleCustomization(nextItem.customization);
+
+      // Start the render
+      await handleStartRender();
+
+      // Mark as complete
+      setRenderQueue(prev => prev.map(item =>
+        item.id === nextItem.id ? { ...item, status: 'complete' } : item
+      ));
+    } catch (error) {
+      // Mark as failed
+      setRenderQueue(prev => prev.map(item =>
+        item.id === nextItem.id ? { ...item, status: 'failed', error: error.message } : item
+      ));
+    } finally {
+      setCurrentQueueItem(null);
+    }
   };
 
   return (
@@ -785,7 +854,7 @@ const VideoRenderingSection = ({
 
 
 
-          {/* Render Settings - using translation-section row pattern */}
+          {/* Render Settings and Controls - compact single row */}
           <div className="rendering-row">
             <div className="row-label">
               <label>{t('videoRendering.resolution', 'Resolution')}</label>
@@ -795,75 +864,52 @@ const VideoRenderingSection = ({
                 value={renderSettings.resolution}
                 onChange={(e) => setRenderSettings(prev => ({ ...prev, resolution: e.target.value }))}
                 className="setting-select"
+                style={{ marginRight: '1rem' }}
               >
                 <option value="480p">480p</option>
                 <option value="720p">720p</option>
                 <option value="1080p">1080p</option>
                 <option value="2K">2K</option>
               </select>
-            </div>
-          </div>
 
-          <div className="rendering-row">
-            <div className="row-label">
-              <label>{t('videoRendering.frameRate', 'Frame Rate')}</label>
-            </div>
-            <div className="row-content">
+              <label style={{ marginRight: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>
+                {t('videoRendering.frameRate', 'Frame Rate')}:
+              </label>
               <select
                 value={renderSettings.frameRate}
                 onChange={(e) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(e.target.value) }))}
                 className="setting-select"
+                style={{ marginRight: '1rem' }}
               >
                 <option value={30}>30 FPS</option>
                 <option value={60}>60 FPS</option>
               </select>
-            </div>
-          </div>
 
-          {/* Render Controls - using translation-section row pattern */}
-          <div className="rendering-row">
-            <div className="row-label">
-              <label>{t('videoRendering.renderControls', 'Render Controls')}</label>
-            </div>
-            <div className="row-content">
-              <div className="action-content">
-                {!isRendering ? (
-                  <>
-                    <button
-                      className="pill-button primary"
-                      onClick={handleStartRender}
-                      disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                      </svg>
-                      {t('videoRendering.renderNow', 'Render Now')}
-                    </button>
-                    <button
-                      className="pill-button secondary"
-                      onClick={addToQueue}
-                      disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                      </svg>
-                      {t('videoRendering.addToQueue', 'Add to Queue')}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="pill-button cancel"
-                    onClick={handleCancelRender}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="6" y="6" width="12" height="12"></rect>
-                    </svg>
-                    {t('videoRendering.cancel', 'Cancel')}
-                  </button>
-                )}
-              </div>
+              {!isRendering ? (
+                <button
+                  className="pill-button primary"
+                  onClick={handleRender}
+                  disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  {(currentQueueItem || renderQueue.some(item => item.status === 'processing'))
+                    ? t('videoRendering.addToQueue', 'Add to Queue')
+                    : t('videoRendering.render', 'Render')
+                  }
+                </button>
+              ) : (
+                <button
+                  className="pill-button cancel"
+                  onClick={handleCancelRender}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="6" y="6" width="12" height="12"></rect>
+                  </svg>
+                  {t('videoRendering.cancel', 'Cancel')}
+                </button>
+              )}
             </div>
           </div>
 
