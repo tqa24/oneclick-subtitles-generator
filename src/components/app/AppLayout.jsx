@@ -28,7 +28,6 @@ const AppLayout = ({
   const [backgroundSongName, setBackgroundSongName] = useState('');
 
   // State for video rendering section
-  const [showVideoRendering, setShowVideoRendering] = useState(false);
   const [videoRenderingAutoFill, setVideoRenderingAutoFill] = useState(null);
   const [actualVideoUrl, setActualVideoUrl] = useState('');
 
@@ -171,9 +170,11 @@ const AppLayout = ({
 
   // Handler for render video action
   const handleRenderVideo = () => {
-    // Auto-fill the video rendering section and expand it
-    setVideoRenderingAutoFill(Date.now()); // Use timestamp to trigger re-render
-    setShowVideoRendering(true);
+    // Auto-fill the video rendering section and ensure it's expanded
+    setVideoRenderingAutoFill({
+      timestamp: Date.now(), // Use timestamp to trigger re-render
+      expand: true // Signal to expand the section
+    });
   };
 
   // Handle when video source is removed or added
@@ -278,8 +279,6 @@ const AppLayout = ({
             subtitlesData={subtitlesData}
             translatedSubtitles={window.translatedSubtitles}
             narrationResults={window.originalNarrations || window.translatedNarrations}
-            isExpanded={showVideoRendering}
-            onExpandChange={(expanded) => setShowVideoRendering(expanded)}
             autoFillData={videoRenderingAutoFill}
           />
 

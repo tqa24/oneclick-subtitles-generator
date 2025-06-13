@@ -12,8 +12,6 @@ const VideoRenderingSection = ({
   subtitlesData,
   translatedSubtitles,
   narrationResults,
-  isExpanded = false,
-  onExpandChange,
   autoFillData = null
 }) => {
   const { t } = useTranslation();
@@ -22,7 +20,7 @@ const VideoRenderingSection = ({
   const [renderStatus, setRenderStatus] = useState('');
   const [renderedVideoUrl, setRenderedVideoUrl] = useState('');
   const [error, setError] = useState('');
-  
+
   // Form state
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const [selectedSubtitles, setSelectedSubtitles] = useState('original');
@@ -38,10 +36,12 @@ const VideoRenderingSection = ({
   // New feature states
   const [subtitleCustomization, setSubtitleCustomization] = useState(defaultCustomization);
   const [showSubtitleCustomization, setShowSubtitleCustomization] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [renderQueue, setRenderQueue] = useState([]);
   const [currentQueueItem, setCurrentQueueItem] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Collapsible state - matching background-generator pattern
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const eventSourceRef = useRef(null);
   const sectionRef = useRef(null);
@@ -49,6 +49,11 @@ const VideoRenderingSection = ({
   // Auto-fill data when autoFillData changes
   useEffect(() => {
     if (autoFillData) {
+      // Expand the section if requested
+      if (autoFillData.expand) {
+        setIsCollapsed(false);
+      }
+
       // Auto-fill video using the actual video URL from the player
       if (actualVideoUrl) {
         // Create a video file object that represents the actual playing video
@@ -71,13 +76,12 @@ const VideoRenderingSection = ({
         setSelectedNarration('generated');
       }
 
-      // Expand the section and scroll to it
-      onExpandChange(true);
+      // Scroll to section
       setTimeout(() => {
         sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
-  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, onExpandChange]);
+  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults]);
 
   // Get current subtitles based on selection
   const getCurrentSubtitles = () => {
@@ -466,32 +470,28 @@ const VideoRenderingSection = ({
   return (
     <div
       ref={sectionRef}
-      className={`video-rendering-section ${isExpanded ? 'expanded' : 'collapsed'} ${isDragging ? 'dragging' : ''}`}
+      className={`video-rendering-section ${isCollapsed ? 'collapsed' : ''} ${isDragging ? 'dragging' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="video-rendering-header" onClick={() => onExpandChange(!isExpanded)}>
-        <div className="header-content">
-          <div className="header-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="23 7 16 12 23 17 23 7"></polygon>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-            </svg>
-          </div>
-          <div className="header-text">
-            <h3>{t('videoRendering.title', 'Video Rendering')}</h3>
-            <p>{t('videoRendering.description', 'Render your video with subtitles and narration')}</p>
-          </div>
+      {/* Header - matching background-generator-header */}
+      <div className="video-rendering-header">
+        <div className="header-left">
+          <h2>{t('videoRendering.title', 'Video Rendering')}</h2>
         </div>
-        <div className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>
+        <button
+          className="collapse-button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-        </div>
+        </button>
       </div>
 
+      {/* Drag overlay */}
       {isDragging && (
         <div className="drag-overlay">
           <div className="drag-content">
@@ -505,293 +505,348 @@ const VideoRenderingSection = ({
         </div>
       )}
 
-      {isExpanded && (
+      {/* Collapsed content */}
+      {isCollapsed ? (
+        <div className="video-rendering-collapsed-content">
+          <p className="helper-message">
+            {t('videoRendering.helperMessage', 'Configure video rendering settings and generate your final video with subtitles and narration')}
+          </p>
+        </div>
+      ) : (
+        /* Expanded content */
         <div className="video-rendering-content">
-          {/* Video Preview Panel */}
-          <RemotionVideoPreview
-            videoFile={selectedVideoFile}
-            subtitles={getCurrentSubtitles()}
-            narrationAudioUrl={isAlignedNarrationAvailable() ? window.alignedNarrationCache?.url : null}
-            subtitleCustomization={{
-              ...subtitleCustomization,
-              resolution: renderSettings.resolution,
-              frameRate: renderSettings.frameRate
-            }}
-            originalAudioVolume={renderSettings.originalAudioVolume}
-            narrationVolume={renderSettings.narrationVolume}
-          />
-
-          {/* Queue Manager Panel */}
-          <QueueManagerPanel
-            queue={renderQueue}
-            currentQueueItem={currentQueueItem}
-            onRemoveItem={removeFromQueue}
-            onClearQueue={clearQueue}
-            onRetryItem={retryQueueItem}
-            isExpanded={renderQueue.length > 0}
-            onToggle={() => {}}
-          />
-
-          {/* Video Input Section */}
-          <div className="rendering-section">
-            <h4>{t('videoRendering.videoInput', 'Video Input')}</h4>
-            <div className="video-input-container">
-              {selectedVideoFile ? (
-                <div className="selected-video-info">
-                  <span className="video-name">
-                    {(selectedVideoFile instanceof File ? selectedVideoFile.name :
-                      (selectedVideoFile.name || selectedVideoFile.title || 'Current Video'))}
-                  </span>
-                  {selectedVideoFile.isActualVideo && (
-                    <span className="video-source-indicator">
-                      {t('videoRendering.fromPlayer', '(from video player)')}
+          {/* First row: Compact input/selection row */}
+          <div className="compact-input-row">
+            {/* Video Input */}
+            <div className="video-input-compact">
+              <h4>{t('videoRendering.videoInput', 'Video Input')}</h4>
+              <div className="video-input-container">
+                {selectedVideoFile ? (
+                  <div className="selected-video-info">
+                    <span className="video-name">
+                      {(selectedVideoFile instanceof File ? selectedVideoFile.name :
+                        (selectedVideoFile.name || selectedVideoFile.title || 'Current Video'))}
                     </span>
-                  )}
-                  <button
-                    className="change-video-btn"
-                    onClick={() => document.getElementById('video-upload-input').click()}
-                  >
-                    {t('videoRendering.changeVideo', 'Change')}
-                  </button>
+                    {selectedVideoFile.isActualVideo && (
+                      <span className="video-source-indicator">
+                        {t('videoRendering.fromPlayer', '(from video player)')}
+                      </span>
+                    )}
+                    <button
+                      className="pill-button secondary"
+                      onClick={() => document.getElementById('video-upload-input').click()}
+                    >
+                      {t('videoRendering.changeVideo', 'Change')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="upload-drop-zone">
+                    <button
+                      className="pill-button primary"
+                      onClick={() => document.getElementById('video-upload-input').click()}
+                    >
+                      {t('videoRendering.selectVideo', 'Select Video File')}
+                    </button>
+                    <span className="drop-text">
+                      {t('videoRendering.orDragDrop', 'or drag and drop here')}
+                    </span>
+                  </div>
+                )}
+                <input
+                  id="video-upload-input"
+                  type="file"
+                  accept="video/*,audio/*"
+                  onChange={handleVideoUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Subtitle Selection */}
+            <div className="subtitle-selection-compact">
+              <h4>{t('videoRendering.subtitleSource', 'Subtitle Source')}</h4>
+              <div className="radio-group">
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="subtitle-original"
+                    value="original"
+                    checked={selectedSubtitles === 'original'}
+                    onChange={(e) => setSelectedSubtitles(e.target.value)}
+                    disabled={!subtitlesData || subtitlesData.length === 0}
+                  />
+                  <label htmlFor="subtitle-original">
+                    {t('videoRendering.originalSubtitles', 'Original Subtitles')}
+                    <span className="item-count">
+                      ({subtitlesData ? subtitlesData.length : 0} {t('videoRendering.items', 'items')})
+                    </span>
+                  </label>
                 </div>
-              ) : (
-                <div className="upload-drop-zone">
-                  <button
-                    className="upload-video-btn"
-                    onClick={() => document.getElementById('video-upload-input').click()}
-                  >
-                    {t('videoRendering.selectVideo', 'Select Video File')}
-                  </button>
-                  <span className="drop-text">
-                    {t('videoRendering.orDragDrop', 'or drag and drop here')}
-                  </span>
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="subtitle-translated"
+                    value="translated"
+                    checked={selectedSubtitles === 'translated'}
+                    onChange={(e) => setSelectedSubtitles(e.target.value)}
+                    disabled={!translatedSubtitles || translatedSubtitles.length === 0}
+                  />
+                  <label htmlFor="subtitle-translated">
+                    {t('videoRendering.translatedSubtitles', 'Translated Subtitles')}
+                    <span className="item-count">
+                      ({translatedSubtitles ? translatedSubtitles.length : 0} {t('videoRendering.items', 'items')})
+                    </span>
+                  </label>
                 </div>
-              )}
-              <input
-                id="video-upload-input"
-                type="file"
-                accept="video/*,audio/*"
-                onChange={handleVideoUpload}
-                style={{ display: 'none' }}
+              </div>
+            </div>
+
+            {/* Narration Selection */}
+            <div className="narration-selection-compact">
+              <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
+              <div className="radio-group">
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="narration-none"
+                    value="none"
+                    checked={selectedNarration === 'none'}
+                    onChange={(e) => setSelectedNarration(e.target.value)}
+                  />
+                  <label htmlFor="narration-none">
+                    {t('videoRendering.noNarration', 'No Narration')}
+                  </label>
+                </div>
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="narration-generated"
+                    value="generated"
+                    checked={selectedNarration === 'generated'}
+                    onChange={(e) => setSelectedNarration(e.target.value)}
+                    disabled={!isAlignedNarrationAvailable()}
+                  />
+                  <label htmlFor="narration-generated">
+                    {isAlignedNarrationAvailable()
+                      ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
+                      : (narrationResults && narrationResults.length > 0
+                          ? t('videoRendering.narrationNotAligned', 'Narration not aligned - use "Refresh Narration" or "Download Aligned" button first')
+                          : t('videoRendering.noNarrationGenerated', 'No narration generated')
+                        )
+                    }
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Second row: Split layout - Video preview (66.67%) and Customization panel (33.33%) */}
+          <div className="split-layout-row">
+            {/* Left side: Video Preview Panel (66.67%) */}
+            <div className="video-preview-panel">
+              <RemotionVideoPreview
+                videoFile={selectedVideoFile}
+                subtitles={getCurrentSubtitles()}
+                narrationAudioUrl={isAlignedNarrationAvailable() ? window.alignedNarrationCache?.url : null}
+                subtitleCustomization={{
+                  ...subtitleCustomization,
+                  resolution: renderSettings.resolution,
+                  frameRate: renderSettings.frameRate
+                }}
+                originalAudioVolume={renderSettings.originalAudioVolume}
+                narrationVolume={renderSettings.narrationVolume}
               />
             </div>
-          </div>
 
-          {/* Subtitle Selection */}
-          <div className="rendering-section">
-            <h4>{t('videoRendering.subtitleSource', 'Subtitle Source')}</h4>
-            <div className="subtitle-selection">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  value="original"
-                  checked={selectedSubtitles === 'original'}
-                  onChange={(e) => setSelectedSubtitles(e.target.value)}
-                  disabled={!subtitlesData || subtitlesData.length === 0}
+            {/* Right side: Scrollable customization panel (33.33%) */}
+            <div className="customization-panel">
+              <div className="customization-panel-content">
+                {/* Subtitle Customization Panel */}
+                <SubtitleCustomizationPanel
+                  customization={subtitleCustomization}
+                  onChange={setSubtitleCustomization}
+                  isExpanded={showSubtitleCustomization}
+                  onToggle={() => setShowSubtitleCustomization(!showSubtitleCustomization)}
                 />
-                <span>{t('videoRendering.originalSubtitles', 'Original Subtitles')}</span>
-                <span className="subtitle-count">
-                  ({subtitlesData ? subtitlesData.length : 0} {t('videoRendering.items', 'items')})
-                </span>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  value="translated"
-                  checked={selectedSubtitles === 'translated'}
-                  onChange={(e) => setSelectedSubtitles(e.target.value)}
-                  disabled={!translatedSubtitles || translatedSubtitles.length === 0}
-                />
-                <span>{t('videoRendering.translatedSubtitles', 'Translated Subtitles')}</span>
-                <span className="subtitle-count">
-                  ({translatedSubtitles ? translatedSubtitles.length : 0} {t('videoRendering.items', 'items')})
-                </span>
-              </label>
-            </div>
-          </div>
 
-          {/* Narration Selection */}
-          <div className="rendering-section">
-            <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
-            <div className="narration-selection">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  value="none"
-                  checked={selectedNarration === 'none'}
-                  onChange={(e) => setSelectedNarration(e.target.value)}
-                />
-                <span>{t('videoRendering.noNarration', 'No Narration')}</span>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  value="generated"
-                  checked={selectedNarration === 'generated'}
-                  onChange={(e) => setSelectedNarration(e.target.value)}
-                  disabled={!isAlignedNarrationAvailable()}
-                />
-                <span>
-                  {isAlignedNarrationAvailable()
-                    ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
-                    : (narrationResults && narrationResults.length > 0
-                        ? t('videoRendering.narrationNotAligned', 'Narration not aligned - use "Refresh Narration" or "Download Aligned" button first')
-                        : t('videoRendering.noNarrationGenerated', 'No narration generated')
-                      )
-                  }
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Subtitle Customization Panel */}
-          <SubtitleCustomizationPanel
-            customization={subtitleCustomization}
-            onChange={setSubtitleCustomization}
-            isExpanded={showSubtitleCustomization}
-            onToggle={() => setShowSubtitleCustomization(!showSubtitleCustomization)}
-          />
-
-          {/* Audio Mixing Controls */}
-          <div className="rendering-section">
-            <h4>{t('videoRendering.audioMixing', 'Audio Mixing')}</h4>
-            <div className="audio-controls">
-              <div className="volume-control">
-                <label>{t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={renderSettings.originalAudioVolume}
-                  onChange={(e) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(e.target.value) }))}
-                  className="volume-slider"
-                />
-              </div>
-              <div className="volume-control">
-                <label>{t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={renderSettings.narrationVolume}
-                  onChange={(e) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(e.target.value) }))}
-                  className="volume-slider"
-                  disabled={selectedNarration === 'none'}
-                />
+                {/* Audio Mixing Controls */}
+                <div className="audio-mixing-section">
+                  <h4>{t('videoRendering.audioMixing', 'Audio Mixing')}</h4>
+                  <div className="audio-controls">
+                    <div className="volume-control">
+                      <label className="volume-label">
+                        {t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%
+                      </label>
+                      <div className="volume-slider">
+                        <div className="custom-slider-track">
+                          <div
+                            className="custom-slider-fill"
+                            style={{ width: `${renderSettings.originalAudioVolume}%` }}
+                          ></div>
+                        </div>
+                        <div
+                          className="custom-slider-thumb"
+                          style={{ left: `${renderSettings.originalAudioVolume}%` }}
+                        ></div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={renderSettings.originalAudioVolume}
+                          onChange={(e) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(e.target.value) }))}
+                          className="custom-slider-input"
+                        />
+                      </div>
+                    </div>
+                    <div className="volume-control">
+                      <label className="volume-label">
+                        {t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%
+                      </label>
+                      <div className={`volume-slider ${selectedNarration === 'none' ? 'disabled' : ''}`}>
+                        <div className="custom-slider-track">
+                          <div
+                            className="custom-slider-fill"
+                            style={{ width: `${renderSettings.narrationVolume}%` }}
+                          ></div>
+                        </div>
+                        <div
+                          className="custom-slider-thumb"
+                          style={{ left: `${renderSettings.narrationVolume}%` }}
+                        ></div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={renderSettings.narrationVolume}
+                          onChange={(e) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(e.target.value) }))}
+                          className="custom-slider-input"
+                          disabled={selectedNarration === 'none'}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Render Settings */}
-          <div className="rendering-section">
-            <h4>{t('videoRendering.renderSettings', 'Render Settings')}</h4>
-            <div className="settings-grid">
-              <div className="setting-item">
-                <label>{t('videoRendering.resolution', 'Resolution')}</label>
-                <select
-                  value={renderSettings.resolution}
-                  onChange={(e) => setRenderSettings(prev => ({ ...prev, resolution: e.target.value }))}
-                >
-                  <option value="480p">480p</option>
-                  <option value="720p">720p</option>
-                  <option value="1080p">1080p</option>
-                  <option value="2K">2K</option>
-                </select>
-              </div>
-              <div className="setting-item">
-                <label>{t('videoRendering.frameRate', 'Frame Rate')}</label>
-                <select
-                  value={renderSettings.frameRate}
-                  onChange={(e) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(e.target.value) }))}
-                >
-                  <option value={30}>30 FPS</option>
-                  <option value={60}>60 FPS</option>
-                </select>
+          {/* Third row: Combined render settings and controls */}
+          <div className="render-settings-controls-row">
+            {/* Render Settings */}
+            <div className="render-settings-section">
+              <h4>{t('videoRendering.renderSettings', 'Render Settings')}</h4>
+              <div className="settings-grid">
+                <div className="setting-item">
+                  <label className="setting-label">{t('videoRendering.resolution', 'Resolution')}</label>
+                  <select
+                    value={renderSettings.resolution}
+                    onChange={(e) => setRenderSettings(prev => ({ ...prev, resolution: e.target.value }))}
+                    className="setting-select"
+                  >
+                    <option value="480p">480p</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                    <option value="2K">2K</option>
+                  </select>
+                </div>
+                <div className="setting-item">
+                  <label className="setting-label">{t('videoRendering.frameRate', 'Frame Rate')}</label>
+                  <select
+                    value={renderSettings.frameRate}
+                    onChange={(e) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(e.target.value) }))}
+                    className="setting-select"
+                  >
+                    <option value={30}>30 FPS</option>
+                    <option value={60}>60 FPS</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Render Controls */}
-          <div className="rendering-section">
-            <div className="render-controls">
-              {!isRendering ? (
-                <>
+            {/* Render Controls */}
+            <div className="render-controls-section">
+              <div className="render-controls">
+                {!isRendering ? (
+                  <>
+                    <button
+                      className="pill-button primary"
+                      onClick={handleStartRender}
+                      disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                      {t('videoRendering.renderNow', 'Render Now')}
+                    </button>
+                    <button
+                      className="pill-button secondary"
+                      onClick={addToQueue}
+                      disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                      {t('videoRendering.addToQueue', 'Add to Queue')}
+                    </button>
+                  </>
+                ) : (
                   <button
-                    className="render-btn primary"
-                    onClick={handleStartRender}
-                    disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                    className="pill-button cancel"
+                    onClick={handleCancelRender}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      <rect x="6" y="6" width="12" height="12"></rect>
                     </svg>
-                    {t('videoRendering.renderNow', 'Render Now')}
+                    {t('videoRendering.cancel', 'Cancel')}
                   </button>
-                  <button
-                    className="render-btn queue"
-                    onClick={addToQueue}
-                    disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    {t('videoRendering.addToQueue', 'Add to Queue')}
-                  </button>
-                </>
-              ) : (
-                <button
-                  className="render-btn secondary"
-                  onClick={handleCancelRender}
-                >
+                )}
+              </div>
+
+              {/* Progress Display */}
+              {(isRendering || renderProgress > 0) && (
+                <div className="render-progress">
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${renderProgress}%` }}
+                    ></div>
+                  </div>
+                  <div className="progress-text">
+                    {renderStatus} {renderProgress > 0 && `(${renderProgress}%)`}
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {error && (
+                <div className="status-message error">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="6" y="6" width="12" height="12"></rect>
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
                   </svg>
-                  {t('videoRendering.cancel', 'Cancel')}
-                </button>
+                  {error}
+                </div>
               )}
             </div>
+          </div>
 
-            {/* Progress Display */}
-            {(isRendering || renderProgress > 0) && (
-              <div className="render-progress">
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${renderProgress}%` }}
-                  ></div>
-                </div>
-                <div className="progress-text">
-                  {renderStatus} {renderProgress > 0 && `(${renderProgress}%)`}
-                </div>
-              </div>
-            )}
-
-            {/* Error Display */}
-            {error && (
-              <div className="error-message">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {/* Rendered Video Display */}
-            {renderedVideoUrl && (
-              <div className="rendered-video">
-                <h4>{t('videoRendering.result', 'Rendered Video')}</h4>
+          {/* Rendered Video Results */}
+          {renderedVideoUrl && (
+            <div className="rendered-video-section">
+              <h4>{t('videoRendering.result', 'Rendered Video')}</h4>
+              <div className="video-result">
                 <video controls width="100%" style={{ maxWidth: '600px' }}>
                   <source src={renderedVideoUrl} type="video/mp4" />
                   {t('videoRendering.videoNotSupported', 'Your browser does not support the video tag.')}
                 </video>
                 <div className="video-actions">
-                  <a 
-                    href={renderedVideoUrl} 
-                    download 
-                    className="download-btn"
+                  <a
+                    href={renderedVideoUrl}
+                    download
+                    className="pill-button primary"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -802,8 +857,19 @@ const VideoRenderingSection = ({
                   </a>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Queue Manager Panel - at the very end */}
+          <QueueManagerPanel
+            queue={renderQueue}
+            currentQueueItem={currentQueueItem}
+            onRemoveItem={removeFromQueue}
+            onClearQueue={clearQueue}
+            onRetryItem={retryQueueItem}
+            isExpanded={renderQueue.length > 0}
+            onToggle={() => {}}
+          />
         </div>
       )}
     </div>
