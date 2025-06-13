@@ -705,6 +705,10 @@
   margin-bottom: 16px;
 }
 
+.render-progress {
+  width: 100%;
+}
+
 .progress-bar {
   width: 100%;
   height: 8px;
@@ -712,6 +716,7 @@
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .progress-fill {
@@ -719,6 +724,26 @@
   background: var(--md-primary);
   transition: width var(--md-duration-medium3) var(--md-easing-emphasized);
   border-radius: 12px;
+  width: 0%; /* Start at 0 */
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.progress-status {
+  flex: 1;
+}
+
+.progress-percentage {
+  font-weight: 600;
+  color: var(--md-primary);
+  min-width: 40px;
+  text-align: right;
 }
 
 .progress-text {
@@ -789,6 +814,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: var(--md-elevation-level1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: var(--md-elevation-level2), 0 0 0 3px rgba(var(--md-primary-rgb), 0.2);
   }
 }
 

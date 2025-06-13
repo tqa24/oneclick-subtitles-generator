@@ -195,6 +195,7 @@ app.post('/render', async (req, res) => {
 
     // Bundle the remotion project
     console.log('Bundling Remotion project...');
+    res.write(`data: ${JSON.stringify({ bundling: true })}\n\n`);
     const bundleResult = await bundle(entryPoint);
 
     console.log('Bundle completed');
@@ -206,6 +207,7 @@ app.post('/render', async (req, res) => {
 
     // Select the composition
     console.log('Selecting composition...');
+    res.write(`data: ${JSON.stringify({ composition: true })}\n\n`);
     console.log('Using serve URL:', bundleResult);
     console.log('Video duration:', `${durationInSeconds} seconds (${durationInFrames} frames at ${fps}fps)`);
     console.log('Video resolution:', `${resolution} (${width}x${height})`);
@@ -250,9 +252,30 @@ app.post('/render', async (req, res) => {
     console.log(`- Resolution: ${width}x${height} (${resolution})`);
     console.log(`- Frame rate: ${fps} fps`);
 
+    // Store original console.log for restoration
+    const originalConsoleLog = console.log;
+
     try {
       // Double-check that temp directories exist right before rendering
       ensureRemotionTempDirs();
+
+      // Intercept console.log to catch Chrome download progress
+      console.log = (...args: any[]) => {
+        const message = args.join(' ');
+
+        // Check for Chrome download progress
+        const chromeDownloadMatch = message.match(/Downloading Chrome Headless Shell - ([\d.]+) Mb\/([\d.]+) Mb/);
+        if (chromeDownloadMatch) {
+          const downloaded = parseFloat(chromeDownloadMatch[1]);
+          const total = parseFloat(chromeDownloadMatch[2]);
+          if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
+          }
+        }
+
+        // Call original console.log
+        originalConsoleLog(...args);
+      };
 
       await renderMedia({
         composition,
@@ -279,7 +302,12 @@ app.post('/render', async (req, res) => {
           res.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
         }
       });
+
+      // Restore original console.log
+      console.log = originalConsoleLog;
     } catch (error) {
+      // Restore original console.log in case of error
+      console.log = originalConsoleLog;
       const renderError = error as Error;
       console.error('Error during renderMedia:', renderError);
 

@@ -38,6 +38,7 @@ const VideoRenderingSection = ({
   const [renderQueue, setRenderQueue] = useState([]);
   const [currentQueueItem, setCurrentQueueItem] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isRefreshingNarration, setIsRefreshingNarration] = useState(false);
 
   // Panel resizing states
   const [leftPanelWidth, setLeftPanelWidth] = useState(66.67); // Default 2fr = 66.67%
@@ -155,6 +156,28 @@ const VideoRenderingSection = ({
     return window.isAlignedNarrationAvailable === true && window.alignedNarrationCache?.url;
   };
 
+  // Check if individual narration segments are available (not the aligned audio)
+  const hasNarrationSegments = () => {
+    // Check props first
+    if (narrationResults && narrationResults.length > 0) {
+      // Check if any narration has success=true (meaning individual segments exist)
+      const hasSuccessfulNarrations = narrationResults.some(result => result.success === true);
+      if (hasSuccessfulNarrations) return true;
+    }
+
+    // Check window objects (where narrations are actually stored)
+    const originalNarrations = window.originalNarrations || [];
+    const translatedNarrations = window.translatedNarrations || [];
+    const groupedNarrations = window.groupedNarrations || [];
+
+    // Check if any narration segments have success=true
+    const hasOriginalSegments = originalNarrations.some(result => result.success === true);
+    const hasTranslatedSegments = translatedNarrations.some(result => result.success === true);
+    const hasGroupedSegments = groupedNarrations.some(result => result.success === true);
+
+    return hasOriginalSegments || hasTranslatedSegments || hasGroupedSegments;
+  };
+
   // Get narration audio URL if available - same as refresh narration button
   const getNarrationAudioUrl = async () => {
     // First check if aligned narration is already available
@@ -205,6 +228,180 @@ const VideoRenderingSection = ({
       }
     }
     return null;
+  };
+
+  // Refresh narration function - same logic as the main video player
+  const handleRefreshNarration = async () => {
+    if (isRefreshingNarration) return;
+
+    try {
+      setIsRefreshingNarration(true);
+
+      // Get narrations from window object
+      const isUsingGroupedSubtitles = window.useGroupedSubtitles || false;
+      const groupedNarrations = window.groupedNarrations || [];
+      const originalNarrations = window.originalNarrations || [];
+
+      // Use grouped narrations if available and enabled, otherwise use original narrations
+      const narrations = (isUsingGroupedSubtitles && groupedNarrations.length > 0)
+        ? groupedNarrations
+        : originalNarrations;
+
+      console.log(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
+
+      // Check if we have any narration results
+      if (!narrations || narrations.length === 0) {
+        console.error('No narration results available in window objects');
+
+        // Try to reconstruct narration results from the file system
+        const allSubtitles = window.subtitlesData || window.originalSubtitles || [];
+
+        if (allSubtitles.length === 0) {
+          throw new Error('No narration results or subtitles available for alignment');
+        }
+
+        // Create synthetic narration objects based on subtitles
+        const syntheticNarrations = allSubtitles.map(subtitle => ({
+          subtitle_id: subtitle.id,
+          filename: `subtitle_${subtitle.id}/1.wav`,
+          success: true,
+          start: subtitle.start,
+          end: subtitle.end,
+          text: subtitle.text
+        }));
+
+        // Use these synthetic narrations
+        narrations.length = 0;
+        narrations.push(...syntheticNarrations);
+
+        // Also update the window object for future use
+        window.originalNarrations = [...syntheticNarrations];
+      }
+
+      // Force reset the aligned narration cache
+      if (typeof window.resetAlignedNarration === 'function') {
+        window.resetAlignedNarration();
+      }
+
+      // Clean up any existing audio elements
+      if (window.alignedAudioElement) {
+        try {
+          window.alignedAudioElement.pause();
+          window.alignedAudioElement.src = '';
+          window.alignedAudioElement.load();
+          window.alignedAudioElement = null;
+        } catch (e) {
+          console.warn('Error cleaning up window.alignedAudioElement:', e);
+        }
+      }
+
+      // Get all subtitles from the window object
+      const allSubtitles = isUsingGroupedSubtitles && window.groupedSubtitles ?
+        window.groupedSubtitles :
+        (window.subtitlesData || window.originalSubtitles || []);
+
+      // Create a map for faster lookup
+      const subtitleMap = {};
+      allSubtitles.forEach(sub => {
+        if (sub.id !== undefined) {
+          subtitleMap[sub.id] = sub;
+        }
+      });
+
+      // Prepare the data for the aligned narration with correct timing
+      const narrationData = narrations
+        .filter(result => {
+          if (result.success && result.filename) {
+            return true;
+          }
+          if (result.success && !result.filename && result.subtitle_id) {
+            result.filename = `subtitle_${result.subtitle_id}/1.wav`;
+            return true;
+          }
+          return false;
+        })
+        .map(result => {
+          const subtitle = subtitleMap[result.subtitle_id];
+          if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+            return {
+              filename: result.filename,
+              subtitle_id: result.subtitle_id,
+              start: subtitle.start,
+              end: subtitle.end,
+              text: subtitle.text || result.text || ''
+            };
+          }
+          return {
+            filename: result.filename,
+            subtitle_id: result.subtitle_id,
+            start: 0,
+            end: 5,
+            text: result.text || ''
+          };
+        });
+
+      // Sort by start time to ensure correct order
+      narrationData.sort((a, b) => a.start - b.start);
+
+      if (narrationData.length === 0) {
+        throw new Error('No valid narration files found. Please generate narrations first.');
+      }
+
+      // Call the same endpoint as refresh narration button
+      const response = await fetch(`http://localhost:3007/api/narration/download-aligned`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/wav'
+        },
+        body: JSON.stringify({ narrations: narrationData })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error && errorJson.error.includes('Audio file not found')) {
+            throw new Error(`Some narration files are missing. Please regenerate narrations before refreshing.`);
+          } else {
+            throw new Error(`Failed to generate aligned audio: ${errorJson.error || response.statusText}`);
+          }
+        } catch (jsonError) {
+          throw new Error(`Failed to generate aligned audio: ${errorText || response.statusText}`);
+        }
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      // Update the aligned narration cache
+      window.alignedNarrationCache = {
+        blob: blob,
+        url: url,
+        timestamp: Date.now(),
+        subtitleTimestamps: {}
+      };
+
+      // Set a flag to indicate that aligned narration is available
+      window.isAlignedNarrationAvailable = true;
+
+      // Notify the system that aligned narration is available
+      window.dispatchEvent(new CustomEvent('aligned-narration-ready', {
+        detail: {
+          url: url,
+          timestamp: Date.now()
+        }
+      }));
+
+    } catch (error) {
+      console.error('Error during aligned narration regeneration:', error);
+      setError(error.message || 'Failed to refresh narration');
+    } finally {
+      setIsRefreshingNarration(false);
+    }
   };
 
   // Handle video file upload
@@ -446,14 +643,32 @@ const VideoRenderingSection = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
-              if (data.progress !== undefined) {
-                setRenderProgress(Math.round(data.progress * 100));
-                setRenderStatus(t('videoRendering.progress', 'Rendering: {{progress}}%', { 
-                  progress: Math.round(data.progress * 100) 
+
+              // Handle Chrome download progress for first-time users
+              if (data.chromeDownload) {
+                const { downloaded, total } = data.chromeDownload;
+                const downloadProgress = Math.round((downloaded / total) * 100);
+                setRenderProgress(downloadProgress);
+                setRenderStatus(t('videoRendering.downloadingChrome', 'First-time setup: Downloading Chrome browser... {{progress}}%', {
+                  progress: downloadProgress
                 }));
               }
-              
+              // Handle bundling progress
+              else if (data.bundling) {
+                setRenderProgress(10);
+                setRenderStatus(t('videoRendering.bundling', 'Preparing video components...'));
+              }
+              // Handle composition selection
+              else if (data.composition) {
+                setRenderProgress(20);
+                setRenderStatus(t('videoRendering.selectingComposition', 'Setting up video composition...'));
+              }
+              // Handle regular render progress
+              else if (data.progress !== undefined) {
+                setRenderProgress(Math.round(data.progress * 100));
+                setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+              }
+
               if (data.status === 'complete' && data.videoUrl) {
                 setRenderedVideoUrl(data.videoUrl);
                 setRenderStatus(t('videoRendering.complete', 'Render complete!'));
@@ -463,7 +678,7 @@ const VideoRenderingSection = ({
                 setTimeout(() => processNextQueueItem(), 1000); // Small delay to show completion
                 break;
               }
-              
+
               if (data.status === 'error') {
                 throw new Error(data.error || t('videoRendering.unknownError', 'Unknown error occurred'));
               }
@@ -756,24 +971,61 @@ const VideoRenderingSection = ({
                     {t('videoRendering.noNarration', 'No Narration')}
                   </label>
                 </div>
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="narration-generated"
-                    value="generated"
-                    checked={selectedNarration === 'generated'}
-                    onChange={(e) => setSelectedNarration(e.target.value)}
-                    disabled={!isAlignedNarrationAvailable()}
-                  />
-                  <label htmlFor="narration-generated">
-                    {isAlignedNarrationAvailable()
-                      ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
-                      : (narrationResults && narrationResults.length > 0
-                          ? t('videoRendering.narrationNotAligned', 'Narration not aligned - use "Refresh Narration" or "Download Aligned" button first')
-                          : t('videoRendering.noNarrationGenerated', 'No narration generated')
-                        )
+                <div className="radio-option" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <input
+                      type="radio"
+                      id="narration-generated"
+                      value="generated"
+                      checked={selectedNarration === 'generated'}
+                      onChange={(e) => setSelectedNarration(e.target.value)}
+                      disabled={!isAlignedNarrationAvailable()}
+                    />
+                    <label htmlFor="narration-generated">
+                      {isAlignedNarrationAvailable()
+                        ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
+                        : (hasNarrationSegments()
+                            ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
+                            : t('videoRendering.noNarrationGenerated', 'No narration generated')
+                          )
+                      }
+                    </label>
+                  </div>
+                  {/* Refresh button for narration alignment - always visible, grayed out when not needed */}
+                  <button
+                    type="button"
+                    className="pill-button secondary"
+                    onClick={handleRefreshNarration}
+                    disabled={isRefreshingNarration || isAlignedNarrationAvailable() || !hasNarrationSegments()}
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '0.8rem',
+                      height: '28px',
+                      minWidth: '28px',
+                      flexShrink: 0,
+                      opacity: (isAlignedNarrationAvailable() || !hasNarrationSegments()) ? 0.5 : 1,
+                      animation: (!isAlignedNarrationAvailable() && hasNarrationSegments() && !isRefreshingNarration)
+                        ? 'breathe 2s ease-in-out infinite'
+                        : 'none'
+                    }}
+                    title={
+                      isAlignedNarrationAvailable()
+                        ? t('videoRendering.narrationAlreadyReady', 'Narration already aligned')
+                        : (!hasNarrationSegments())
+                          ? t('videoRendering.generateNarrationFirst', 'Generate narration first')
+                          : t('videoRendering.refreshNarration', 'Click to align narration for video rendering')
                     }
-                  </label>
+                  >
+                    {isRefreshingNarration ? (
+                      <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'rotate 1.5s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3"></circle>
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -910,6 +1162,7 @@ const VideoRenderingSection = ({
                   {t('videoRendering.cancel', 'Cancel')}
                 </button>
               )}
+
             </div>
           </div>
 
@@ -928,7 +1181,8 @@ const VideoRenderingSection = ({
                     ></div>
                   </div>
                   <div className="progress-text">
-                    {renderStatus} {renderProgress > 0 && `(${renderProgress}%)`}
+                    <span className="progress-status">{renderStatus}</span>
+                    <span className="progress-percentage">{renderProgress}%</span>
                   </div>
                 </div>
               </div>
@@ -985,25 +1239,23 @@ const VideoRenderingSection = ({
             </div>
           )}
 
-          {/* Queue Manager - simplified to match app aesthetics */}
-          {renderQueue.length > 0 && (
-            <div className="rendering-row">
-              <div className="row-label">
-                <label>{t('videoRendering.renderQueue', 'Render Queue')}</label>
-              </div>
-              <div className="row-content">
-                <QueueManagerPanel
-                  queue={renderQueue}
-                  currentQueueItem={currentQueueItem}
-                  onRemoveItem={removeFromQueue}
-                  onClearQueue={clearQueue}
-                  onRetryItem={retryQueueItem}
-                  isExpanded={true}
-                  onToggle={() => {}}
-                />
-              </div>
+          {/* Queue Manager - always visible to match app aesthetics */}
+          <div className="rendering-row">
+            <div className="row-label">
+              <label>{t('videoRendering.renderQueue', 'Render Queue')}</label>
             </div>
-          )}
+            <div className="row-content">
+              <QueueManagerPanel
+                queue={renderQueue}
+                currentQueueItem={currentQueueItem}
+                onRemoveItem={removeFromQueue}
+                onClearQueue={clearQueue}
+                onRetryItem={retryQueueItem}
+                isExpanded={true}
+                onToggle={() => {}}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
