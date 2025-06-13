@@ -4,7 +4,6 @@
   background: var(--card-background);
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  margin-bottom: 20px;
   overflow: hidden;
   outline: none; /* Remove default focus outline */
 }
@@ -86,9 +85,7 @@
   flex: 1;
 }
 
-.panel-content {
-  padding: 24px;
-}
+/* Removed generic .panel-content padding to prevent conflicts with video preview */
 
 /* Video Container - Scoped to VideoPreviewPanel */
 .video-preview-panel .video-container {
@@ -246,9 +243,7 @@
     padding: 16px 20px;
   }
 
-  .video-preview-panel .panel-content {
-    padding: 20px;
-  }
+  /* Removed mobile panel-content padding rule */
 
   .video-preview-panel .video-controls {
     flex-wrap: wrap;
@@ -327,23 +322,7 @@
   background: var(--background-secondary);
 }
 
-/* Custom scrollbar for long content - Scoped to VideoPreviewPanel */
-.video-preview-panel .panel-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.video-preview-panel .panel-content::-webkit-scrollbar-track {
-  background: var(--background-secondary);
-}
-
-.video-preview-panel .panel-content::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-
-.video-preview-panel .panel-content::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
-}
+/* Removed panel-content scrollbar rules to prevent conflicts */
 
 /* High contrast mode support - Scoped to VideoPreviewPanel */
 @media (prefers-contrast: high) {
@@ -371,25 +350,19 @@
   }
 }
 
-/* RemotionVideoPreview specific styles */
-.video-preview-panel .video-preview-container {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
-.video-preview-panel .video-preview-placeholder {
+/* RemotionVideoPreview specific styles - direct children of video-preview-panel */
+.video-preview-panel .placeholder-content {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
-  background: var(--background-secondary);
-  border-radius: 8px;
-  border: 2px dashed var(--border-color);
-}
-
-.video-preview-panel .placeholder-content {
+  flex: 1;
   text-align: center;
   color: var(--text-secondary);
+  background: var(--background-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  margin: 8px;
 }
 
 .video-preview-panel .placeholder-icon {
@@ -399,42 +372,29 @@
 }
 
 .video-preview-panel .video-preview-info {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  padding: 16px;
+  padding: 8px 12px;
   background: var(--background-secondary);
   border-radius: 6px;
-  margin-bottom: 12px;
+  margin: 8px 8px 0 8px;
+  font-size: 0.8rem;
 }
 
-.video-preview-panel .video-info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.video-preview-panel .video-info-label {
-  font-size: 0.9rem;
+.video-preview-panel .video-info-item {
   color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.video-preview-panel .video-info-value {
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
 }
 
 .video-preview-panel .video-preview-hint {
   text-align: center;
-  padding: 8px;
+  padding: 6px 8px;
   background: var(--info-background);
   border-radius: 4px;
   border: 1px solid var(--accent-color);
-}
-
-.video-preview-panel .video-preview-hint small {
+  margin: 8px 8px 0 8px;
   color: var(--accent-color);
   font-weight: 500;
 }

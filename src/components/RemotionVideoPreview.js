@@ -187,15 +187,13 @@ const RemotionVideoPreview = ({
 
   if (!videoFile || !videoUrl) {
     return (
-      <div className="video-preview-panel">
-        <div className="video-preview-placeholder">
-          <div className="placeholder-content">
-            <div className="placeholder-icon">🎥</div>
-            <p>No video selected</p>
-            <small>Select a video file to see preview</small>
-          </div>
+      <>
+        <div className="placeholder-content">
+          <div className="placeholder-icon">🎥</div>
+          <p>No video selected</p>
+          <small>Select a video file to see preview</small>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -204,86 +202,56 @@ const RemotionVideoPreview = ({
   const frameRate = subtitleCustomization?.frameRate || 30;
 
   return (
-    <div 
-      className="video-preview-panel"
-      tabIndex={0}
-      style={{
-        outline: 'none',
-        border: '2px solid transparent',
-        borderRadius: '8px',
-        transition: 'border-color 0.2s ease',
-      }}
-      onFocus={(e) => {
-        e.target.style.borderColor = '#007bff';
-        e.target.style.boxShadow = '0 0 0 3px rgba(0, 123, 255, 0.25)';
-      }}
-      onBlur={(e) => {
-        e.target.style.borderColor = 'transparent';
-        e.target.style.boxShadow = 'none';
-      }}
-    >
-      <div className="video-preview-container">
-        <Player
-          ref={playerRef}
-          component={SubtitledVideoComposition}
-          durationInFrames={durationInFrames}
-          compositionWidth={width}
-          compositionHeight={height}
-          fps={frameRate}
-          controls
-          style={{
-            width: '100%',
-            aspectRatio: '16/9',
-            borderRadius: '8px',
-            overflow: 'hidden',
-          }}
-          inputProps={{
-            videoUrl: videoUrl,
-            narrationUrl: narrationAudioUrl,
-            subtitles: subtitles || [],
-            metadata: {
-              subtitleCustomization: subtitleCustomization,
-              resolution: subtitleCustomization?.resolution || '1080p',
-              frameRate: frameRate,
-            },
-            isVideoFile: isVideoFile,
-            originalAudioVolume: originalAudioVolume,
-            narrationVolume: narrationVolume,
-          }}
-          onFrame={handlePlayerTimeUpdate}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onSeek={handleSeek}
-        />
-      </div>
-      
+    <>
+      <Player
+        ref={playerRef}
+        component={SubtitledVideoComposition}
+        durationInFrames={durationInFrames}
+        compositionWidth={width}
+        compositionHeight={height}
+        fps={frameRate}
+        controls
+        style={{
+          width: '100%',
+          flex: 1,
+          borderRadius: '8px',
+          overflow: 'hidden',
+        }}
+        inputProps={{
+          videoUrl: videoUrl,
+          narrationUrl: narrationAudioUrl,
+          subtitles: subtitles || [],
+          metadata: {
+            subtitleCustomization: subtitleCustomization,
+            resolution: subtitleCustomization?.resolution || '1080p',
+            frameRate: frameRate,
+          },
+          isVideoFile: isVideoFile,
+          originalAudioVolume: originalAudioVolume,
+          narrationVolume: narrationVolume,
+        }}
+        onFrame={handlePlayerTimeUpdate}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onSeek={handleSeek}
+      />
+
       <div className="video-preview-info">
-        <div className="video-info-row">
-          <span className="video-info-label">Duration:</span>
-          <span className="video-info-value">
-            {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
-          </span>
-        </div>
-        <div className="video-info-row">
-          <span className="video-info-label">Current Time:</span>
-          <span className="video-info-value">
-            {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}
-          </span>
-        </div>
-        <div className="video-info-row">
-          <span className="video-info-label">Resolution:</span>
-          <span className="video-info-value">{subtitleCustomization?.resolution || '1080p'}</span>
-        </div>
-        <div className="video-info-row">
-          <span className="video-info-label">Frame Rate:</span>
-          <span className="video-info-value">{frameRate} FPS</span>
-        </div>
+        <span className="video-info-item">
+          Duration: {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
+        </span>
+        <span className="video-info-item">
+          Time: {Math.floor(currentTime / 60)}:{Math.floor(currentTime % 60).toString().padStart(2, '0')}
+        </span>
+        <span className="video-info-item">
+          {subtitleCustomization?.resolution || '1080p'} • {frameRate} FPS
+        </span>
       </div>
 
-      <div className="video-preview-hint">
-        <small>💡 Click on this panel and press spacebar to play/pause</small>
-      </div>
-    </div>
+      <small className="video-preview-hint">
+        💡 Click on this panel and press spacebar to play/pause
+      </small>
+    </>
   );
 };
 

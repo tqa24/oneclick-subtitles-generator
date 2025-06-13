@@ -149,432 +149,692 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
     onChange({ ...customization, ...presetConfig });
   };
 
-  if (!isExpanded) {
-    return (
-      <div className="subtitle-customization-collapsed" onClick={onToggle}>
-        <div className="collapsed-header">
-          <span className="collapsed-icon">🎨</span>
-          <span className="collapsed-title">{t('videoRendering.subtitleCustomization', 'Subtitle Customization')}</span>
-          <span className="collapsed-preset">({customization.preset})</span>
-          <span className="expand-arrow">▶</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="subtitle-customization-panel">
-      <div className="panel-header" onClick={onToggle}>
-        <span className="panel-icon">🎨</span>
-        <span className="panel-title">{t('videoRendering.subtitleCustomization', 'Subtitle Customization')}</span>
-        <span className="expand-arrow expanded">▼</span>
-      </div>
-
       <div className="panel-content">
-        {/* Style Presets */}
-        <div className={`customization-section ${expandedSections.presets ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('presets')}>
-            <span>📋 {t('videoRendering.stylePresets', 'Style Presets')}</span>
-            <span>{expandedSections.presets ? '▼' : '▶'}</span>
+        {/* Style Presets - using translation-section row pattern */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.stylePresets', 'Style Presets')}</label>
           </div>
-          {expandedSections.presets && (
-            <div className="section-content">
-              <div className="preset-grid">
-                {['default', 'modern', 'classic', 'neon', 'minimal'].map(preset => (
-                  <button
-                    key={preset}
-                    className={`preset-button ${customization.preset === preset ? 'active' : ''}`}
-                    onClick={() => applyPreset(preset)}
-                  >
-                    {preset.charAt(0).toUpperCase() + preset.slice(1)}
-                  </button>
-                ))}
-              </div>
+          <div className="row-content">
+            <div className="preset-buttons">
+              {['default', 'modern', 'classic', 'neon', 'minimal'].map(preset => (
+                <button
+                  key={preset}
+                  className={`pill-button ${customization.preset === preset ? 'primary' : 'secondary'}`}
+                  onClick={() => applyPreset(preset)}
+                >
+                  {preset.charAt(0).toUpperCase() + preset.slice(1)}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Text Styling */}
-        <div className={`customization-section ${expandedSections.text ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('text')}>
-            <span>✏️ {t('videoRendering.textStyling', 'Text Styling')}</span>
-            <span>{expandedSections.text ? '▼' : '▶'}</span>
+        {/* Font Family */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.fontFamily', 'Font Family')}</label>
           </div>
-          {expandedSections.text && (
-            <div className="section-content">
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.fontFamily', 'Font Family')}</label>
-                  <select
-                    value={customization.fontFamily}
-                    onChange={(e) => updateCustomization({ fontFamily: e.target.value })}
-                    className="font-family-select"
-                  >
-                    {Object.entries(groupFontsByCategory()).map(([group, fonts]) => (
-                      <optgroup key={group} label={group}>
-                        {fonts.map(font => (
-                          <option key={font.value} value={font.value}>
-                            {font.label} {getFontSupportFlags(font)}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.fontSize', 'Font Size')}: {customization.fontSize}px</label>
-                  <input
-                    type="range"
-                    min="12"
-                    max="72"
-                    value={customization.fontSize}
-                    onChange={(e) => updateCustomization({ fontSize: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.fontWeight', 'Font Weight')}: {customization.fontWeight}</label>
-                  <input
-                    type="range"
-                    min="100"
-                    max="900"
-                    step="100"
-                    value={customization.fontWeight}
-                    onChange={(e) => updateCustomization({ fontWeight: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.textColor', 'Text Color')}</label>
-                  <div className="color-input-group">
-                    <input
-                      type="color"
-                      value={customization.textColor}
-                      onChange={(e) => updateCustomization({ textColor: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      value={customization.textColor}
-                      onChange={(e) => updateCustomization({ textColor: e.target.value })}
-                      placeholder="#ffffff"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.textAlign', 'Text Alignment')}</label>
-                  <select
-                    value={customization.textAlign}
-                    onChange={(e) => updateCustomization({ textAlign: e.target.value })}
-                  >
-                    <option value="left">{t('videoRendering.left', 'Left')}</option>
-                    <option value="center">{t('videoRendering.center', 'Center')}</option>
-                    <option value="right">{t('videoRendering.right', 'Right')}</option>
-                  </select>
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.lineHeight', 'Line Height')}: {customization.lineHeight}</label>
-                  <input
-                    type="range"
-                    min="0.8"
-                    max="2.0"
-                    step="0.1"
-                    value={customization.lineHeight}
-                    onChange={(e) => updateCustomization({ lineHeight: parseFloat(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="row-content">
+            <select
+              value={customization.fontFamily}
+              onChange={(e) => updateCustomization({ fontFamily: e.target.value })}
+              className="setting-select"
+            >
+              {Object.entries(groupFontsByCategory()).map(([group, fonts]) => (
+                <optgroup key={group} label={group}>
+                  {fonts.map(font => (
+                    <option key={font.value} value={font.value}>
+                      {font.label} {getFontSupportFlags(font)}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Background & Border */}
-        <div className={`customization-section ${expandedSections.background ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('background')}>
-            <span>🎭 {t('videoRendering.backgroundBorder', 'Background & Border')}</span>
-            <span>{expandedSections.background ? '▼' : '▶'}</span>
+        {/* Font Size */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.fontSize', 'Font Size')}</label>
           </div>
-          {expandedSections.background && (
-            <div className="section-content">
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.backgroundColor', 'Background Color')}</label>
-                  <div className="color-input-group">
-                    <input
-                      type="color"
-                      value={customization.backgroundColor}
-                      onChange={(e) => updateCustomization({ backgroundColor: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      value={customization.backgroundColor}
-                      onChange={(e) => updateCustomization({ backgroundColor: e.target.value })}
-                      placeholder="#000000"
-                    />
-                  </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.fontSize}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.fontSize - 12) / (72 - 12)) * 100}%` }}
+                  ></div>
                 </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.backgroundOpacity', 'Background Opacity')}: {customization.backgroundOpacity}%</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={customization.backgroundOpacity}
-                    onChange={(e) => updateCustomization({ backgroundOpacity: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.borderRadius', 'Border Radius')}: {customization.borderRadius}px</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    value={customization.borderRadius}
-                    onChange={(e) => updateCustomization({ borderRadius: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.borderWidth', 'Border Width')}: {customization.borderWidth}px</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    value={customization.borderWidth}
-                    onChange={(e) => updateCustomization({ borderWidth: parseInt(e.target.value) })}
-                  />
-                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fontSize - 12) / (72 - 12)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="12"
+                  max="72"
+                  value={customization.fontSize}
+                  onChange={(e) => updateCustomization({ fontSize: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
               </div>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* Font Weight */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.fontWeight', 'Font Weight')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.fontWeight}</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="100"
+                  max="900"
+                  step="100"
+                  value={customization.fontWeight}
+                  onChange={(e) => updateCustomization({ fontWeight: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Text Color */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.textColor', 'Text Color')}</label>
+          </div>
+          <div className="row-content">
+            <div className="color-control">
+              <input
+                type="color"
+                value={customization.textColor}
+                onChange={(e) => updateCustomization({ textColor: e.target.value })}
+                className="color-picker"
+              />
+              <input
+                type="text"
+                value={customization.textColor}
+                onChange={(e) => updateCustomization({ textColor: e.target.value })}
+                placeholder="#ffffff"
+                className="color-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Text Alignment */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.textAlign', 'Text Alignment')}</label>
+          </div>
+          <div className="row-content">
+            <select
+              value={customization.textAlign}
+              onChange={(e) => updateCustomization({ textAlign: e.target.value })}
+              className="setting-select"
+            >
+              <option value="left">{t('videoRendering.left', 'Left')}</option>
+              <option value="center">{t('videoRendering.center', 'Center')}</option>
+              <option value="right">{t('videoRendering.right', 'Right')}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Line Height */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.lineHeight', 'Line Height')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.lineHeight}</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.lineHeight - 0.8) / (2.0 - 0.8)) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.lineHeight - 0.8) / (2.0 - 0.8)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="2.0"
+                  step="0.1"
+                  value={customization.lineHeight}
+                  onChange={(e) => updateCustomization({ lineHeight: parseFloat(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Background Color */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.backgroundColor', 'Background Color')}</label>
+          </div>
+          <div className="row-content">
+            <div className="color-control">
+              <input
+                type="color"
+                value={customization.backgroundColor}
+                onChange={(e) => updateCustomization({ backgroundColor: e.target.value })}
+                className="color-picker"
+              />
+              <input
+                type="text"
+                value={customization.backgroundColor}
+                onChange={(e) => updateCustomization({ backgroundColor: e.target.value })}
+                placeholder="#000000"
+                className="color-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Background Opacity */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.backgroundOpacity', 'Background Opacity')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.backgroundOpacity}%</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${customization.backgroundOpacity}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${customization.backgroundOpacity}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={customization.backgroundOpacity}
+                  onChange={(e) => updateCustomization({ backgroundOpacity: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Border Radius */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.borderRadius', 'Border Radius')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.borderRadius}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${(customization.borderRadius / 50) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.borderRadius / 50) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  value={customization.borderRadius}
+                  onChange={(e) => updateCustomization({ borderRadius: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Border Width */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.borderWidth', 'Border Width')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.borderWidth}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${(customization.borderWidth / 10) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.borderWidth / 10) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  value={customization.borderWidth}
+                  onChange={(e) => updateCustomization({ borderWidth: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Position */}
-        <div className={`customization-section ${expandedSections.position ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('position')}>
-            <span>📍 {t('videoRendering.position', 'Position & Layout')}</span>
-            <span>{expandedSections.position ? '▼' : '▶'}</span>
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.position', 'Position')}</label>
           </div>
-          {expandedSections.position && (
-            <div className="section-content">
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.position', 'Position')}</label>
-                  <select
-                    value={customization.position}
-                    onChange={(e) => updateCustomization({ position: e.target.value })}
-                  >
-                    <option value="bottom">{t('videoRendering.bottom', 'Bottom')}</option>
-                    <option value="top">{t('videoRendering.top', 'Top')}</option>
-                    <option value="center">{t('videoRendering.center', 'Center')}</option>
-                    <option value="custom">{t('videoRendering.custom', 'Custom')}</option>
-                  </select>
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.maxWidth', 'Max Width')}: {customization.maxWidth}%</label>
-                  <input
-                    type="range"
-                    min="20"
-                    max="100"
-                    value={customization.maxWidth}
-                    onChange={(e) => updateCustomization({ maxWidth: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.marginBottom', 'Margin Bottom')}: {customization.marginBottom}px</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="200"
-                    value={customization.marginBottom}
-                    onChange={(e) => updateCustomization({ marginBottom: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.marginTop', 'Margin Top')}: {customization.marginTop}px</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="200"
-                    value={customization.marginTop}
-                    onChange={(e) => updateCustomization({ marginTop: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          <div className="row-content">
+            <select
+              value={customization.position}
+              onChange={(e) => updateCustomization({ position: e.target.value })}
+              className="setting-select"
+            >
+              <option value="bottom">{t('videoRendering.bottom', 'Bottom')}</option>
+              <option value="top">{t('videoRendering.top', 'Top')}</option>
+              <option value="center">{t('videoRendering.center', 'Center')}</option>
+              <option value="custom">{t('videoRendering.custom', 'Custom')}</option>
+            </select>
+          </div>
         </div>
 
-        {/* Effects */}
-        <div className={`customization-section ${expandedSections.effects ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('effects')}>
-            <span>✨ {t('videoRendering.effects', 'Effects')}</span>
-            <span>{expandedSections.effects ? '▼' : '▶'}</span>
+        {/* Max Width */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.maxWidth', 'Max Width')}</label>
           </div>
-          {expandedSections.effects && (
-            <div className="section-content">
-              {/* Text Shadow */}
-              <div className="control-row">
-                <div className="control-item">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={customization.textShadowEnabled}
-                      onChange={(e) => updateCustomization({ textShadowEnabled: e.target.checked })}
-                    />
-                    {t('videoRendering.textShadow', 'Text Shadow')}
-                  </label>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.maxWidth}%</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.maxWidth - 20) / (100 - 20)) * 100}%` }}
+                  ></div>
                 </div>
-                {customization.textShadowEnabled && (
-                  <div className="control-item">
-                    <label>{t('videoRendering.shadowColor', 'Shadow Color')}</label>
-                    <input
-                      type="color"
-                      value={customization.textShadowColor}
-                      onChange={(e) => updateCustomization({ textShadowColor: e.target.value })}
-                    />
-                  </div>
-                )}
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.maxWidth - 20) / (100 - 20)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="20"
+                  max="100"
+                  value={customization.maxWidth}
+                  onChange={(e) => updateCustomization({ maxWidth: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
               </div>
+            </div>
+          </div>
+        </div>
 
+        {/* Margin Bottom */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.marginBottom', 'Margin Bottom')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.marginBottom}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${(customization.marginBottom / 200) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginBottom / 200) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={customization.marginBottom}
+                  onChange={(e) => updateCustomization({ marginBottom: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Margin Top */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.marginTop', 'Margin Top')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.marginTop}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${(customization.marginTop / 200) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginTop / 200) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={customization.marginTop}
+                  onChange={(e) => updateCustomization({ marginTop: parseInt(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Text Shadow */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.textShadow', 'Text Shadow')}</label>
+          </div>
+          <div className="row-content">
+            <div className="toggle-control">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={customization.textShadowEnabled}
+                  onChange={(e) => updateCustomization({ textShadowEnabled: e.target.checked })}
+                />
+                <span className="toggle-slider"></span>
+              </label>
               {customization.textShadowEnabled && (
-                <div className="control-row">
-                  <div className="control-item">
-                    <label>{t('videoRendering.shadowBlur', 'Shadow Blur')}: {customization.textShadowBlur}px</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      value={customization.textShadowBlur}
-                      onChange={(e) => updateCustomization({ textShadowBlur: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div className="control-item">
-                    <label>{t('videoRendering.shadowOffset', 'Shadow Offset')}: {customization.textShadowOffsetY}px</label>
-                    <input
-                      type="range"
-                      min="-10"
-                      max="10"
-                      value={customization.textShadowOffsetY}
-                      onChange={(e) => updateCustomization({ textShadowOffsetY: parseInt(e.target.value) })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Glow Effect */}
-              <div className="control-row">
-                <div className="control-item">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={customization.glowEnabled}
-                      onChange={(e) => updateCustomization({ glowEnabled: e.target.checked })}
-                    />
-                    {t('videoRendering.glow', 'Glow Effect')}
-                  </label>
-                </div>
-                {customization.glowEnabled && (
-                  <div className="control-item">
-                    <label>{t('videoRendering.glowColor', 'Glow Color')}</label>
-                    <input
-                      type="color"
-                      value={customization.glowColor}
-                      onChange={(e) => updateCustomization({ glowColor: e.target.value })}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {customization.glowEnabled && (
-                <div className="control-row">
-                  <div className="control-item">
-                    <label>{t('videoRendering.glowIntensity', 'Glow Intensity')}: {customization.glowIntensity}px</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="30"
-                      value={customization.glowIntensity}
-                      onChange={(e) => updateCustomization({ glowIntensity: parseInt(e.target.value) })}
-                    />
-                  </div>
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={customization.textShadowColor}
+                    onChange={(e) => updateCustomization({ textShadowColor: e.target.value })}
+                    className="color-picker"
+                  />
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Animation */}
-        <div className={`customization-section ${expandedSections.animation ? 'expanded' : ''}`}>
-          <div className="section-header" onClick={() => toggleSection('animation')}>
-            <span>🎬 {t('videoRendering.animation', 'Animation & Transitions')}</span>
-            <span>{expandedSections.animation ? '▼' : '▶'}</span>
-          </div>
-          {expandedSections.animation && (
-            <div className="section-content">
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.animationType', 'Animation Type')}</label>
-                  <select
-                    value={customization.animationType}
-                    onChange={(e) => updateCustomization({ animationType: e.target.value })}
-                  >
-                    {animationTypes.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.animationEasing', 'Animation Easing')}</label>
-                  <select
-                    value={customization.animationEasing}
-                    onChange={(e) => updateCustomization({ animationEasing: e.target.value })}
-                  >
-                    {animationEasing.map(easing => (
-                      <option key={easing.value} value={easing.value}>
-                        {easing.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="control-row">
-                <div className="control-item">
-                  <label>{t('videoRendering.fadeInDuration', 'Fade In Duration')}: {customization.fadeInDuration}s</label>
+        {/* Shadow Blur */}
+        {customization.textShadowEnabled && (
+          <div className="customization-row">
+            <div className="row-label">
+              <label>{t('videoRendering.shadowBlur', 'Shadow Blur')}</label>
+            </div>
+            <div className="row-content">
+              <div className="slider-control">
+                <span className="slider-value">{customization.textShadowBlur}px</span>
+                <div className="volume-slider">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(customization.textShadowBlur / 20) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.textShadowBlur / 20) * 100}%` }}
+                  ></div>
                   <input
                     type="range"
-                    min="0.1"
-                    max="2.0"
-                    step="0.1"
-                    value={customization.fadeInDuration}
-                    onChange={(e) => updateCustomization({ fadeInDuration: parseFloat(e.target.value) })}
-                  />
-                </div>
-                <div className="control-item">
-                  <label>{t('videoRendering.fadeOutDuration', 'Fade Out Duration')}: {customization.fadeOutDuration}s</label>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="2.0"
-                    step="0.1"
-                    value={customization.fadeOutDuration}
-                    onChange={(e) => updateCustomization({ fadeOutDuration: parseFloat(e.target.value) })}
+                    min="0"
+                    max="20"
+                    value={customization.textShadowBlur}
+                    onChange={(e) => updateCustomization({ textShadowBlur: parseInt(e.target.value) })}
+                    className="custom-slider-input"
                   />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Shadow Offset */}
+        {customization.textShadowEnabled && (
+          <div className="customization-row">
+            <div className="row-label">
+              <label>{t('videoRendering.shadowOffset', 'Shadow Offset')}</label>
+            </div>
+            <div className="row-content">
+              <div className="slider-control">
+                <span className="slider-value">{customization.textShadowOffsetY}px</span>
+                <div className="volume-slider">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${((customization.textShadowOffsetY + 10) / 20) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${((customization.textShadowOffsetY + 10) / 20) * 100}%` }}
+                  ></div>
+                  <input
+                    type="range"
+                    min="-10"
+                    max="10"
+                    value={customization.textShadowOffsetY}
+                    onChange={(e) => updateCustomization({ textShadowOffsetY: parseInt(e.target.value) })}
+                    className="custom-slider-input"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Glow Effect */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.glow', 'Glow Effect')}</label>
+          </div>
+          <div className="row-content">
+            <div className="toggle-control">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={customization.glowEnabled}
+                  onChange={(e) => updateCustomization({ glowEnabled: e.target.checked })}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              {customization.glowEnabled && (
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={customization.glowColor}
+                    onChange={(e) => updateCustomization({ glowColor: e.target.value })}
+                    className="color-picker"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Glow Intensity */}
+        {customization.glowEnabled && (
+          <div className="customization-row">
+            <div className="row-label">
+              <label>{t('videoRendering.glowIntensity', 'Glow Intensity')}</label>
+            </div>
+            <div className="row-content">
+              <div className="slider-control">
+                <span className="slider-value">{customization.glowIntensity}px</span>
+                <div className="volume-slider">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(customization.glowIntensity / 30) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.glowIntensity / 30) * 100}%` }}
+                  ></div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="30"
+                    value={customization.glowIntensity}
+                    onChange={(e) => updateCustomization({ glowIntensity: parseInt(e.target.value) })}
+                    className="custom-slider-input"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Animation Type */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.animationType', 'Animation Type')}</label>
+          </div>
+          <div className="row-content">
+            <select
+              value={customization.animationType}
+              onChange={(e) => updateCustomization({ animationType: e.target.value })}
+              className="setting-select"
+            >
+              {animationTypes.map(type => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Animation Easing */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.animationEasing', 'Animation Easing')}</label>
+          </div>
+          <div className="row-content">
+            <select
+              value={customization.animationEasing}
+              onChange={(e) => updateCustomization({ animationEasing: e.target.value })}
+              className="setting-select"
+            >
+              {animationEasing.map(easing => (
+                <option key={easing.value} value={easing.value}>
+                  {easing.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Fade In Duration */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.fadeInDuration', 'Fade In Duration')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.fadeInDuration}s</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.fadeInDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fadeInDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2.0"
+                  step="0.1"
+                  value={customization.fadeInDuration}
+                  onChange={(e) => updateCustomization({ fadeInDuration: parseFloat(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fade Out Duration */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.fadeOutDuration', 'Fade Out Duration')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.fadeOutDuration}s</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.fadeOutDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fadeOutDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2.0"
+                  step="0.1"
+                  value={customization.fadeOutDuration}
+                  onChange={(e) => updateCustomization({ fadeOutDuration: parseFloat(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
