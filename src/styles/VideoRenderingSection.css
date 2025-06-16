@@ -171,7 +171,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr; /* Three equal columns */
   gap: 16px;
-  margin-bottom: 20px;
 }
 
 .preview-customization-row {
@@ -286,6 +285,13 @@
   gap: 1rem;
   min-height: 42px; /* Match the height of input elements */
   margin-bottom: 1.25rem;
+}
+
+/* Queue row - full width without label */
+.rendering-row.queue-row {
+  display: block; /* Remove flex layout */
+  gap: 0;
+  min-height: auto;
 }
 
 /* Label column */

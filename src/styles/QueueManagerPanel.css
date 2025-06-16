@@ -117,6 +117,18 @@
   gap: 0.75rem;
 }
 
+/* Grid Layout for Queue List */
+.queue-list.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Grid Layout for Queue Manager Panel */
+.queue-manager-panel.grid-layout {
+  margin-bottom: 0;
+}
+
 /* Queue Item */
 .queue-item {
   background: var(--md-surface-2);
@@ -399,6 +411,12 @@
 
   .queue-actions {
     justify-content: center;
+  }
+
+  /* Grid layout responsive - single column on mobile */
+  .queue-list.grid-layout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 }
 

@@ -13,8 +13,16 @@ process.env.REMOTION_GL = "vulkan";
 const app = express();
 const port = process.env.PORT || 3010;
 
-// Store active render processes for cancellation
-const activeRenders = new Map<string, { cancel: () => void; response: express.Response }>();
+// Store active render processes for cancellation and status tracking
+const activeRenders = new Map<string, {
+  cancel: () => void;
+  response: express.Response;
+  status: 'active' | 'completed' | 'failed' | 'cancelled';
+  progress: number;
+  outputPath?: string;
+  error?: string;
+  startTime: number;
+}>();
 
 // Ensure directories exist
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -101,6 +109,72 @@ app.post('/api/clear-cache', (req, res) => {
   }
 });
 
+// Get render status endpoint
+app.get('/render-status/:renderId', (req, res) => {
+  const { renderId } = req.params;
+
+  const activeRender = activeRenders.get(renderId);
+  if (!activeRender) {
+    return res.status(404).json({ error: 'Render not found' });
+  }
+
+  res.json({
+    status: activeRender.status,
+    progress: activeRender.progress,
+    outputPath: activeRender.outputPath,
+    error: activeRender.error,
+    startTime: activeRender.startTime
+  });
+});
+
+// Reconnect to render stream endpoint
+app.get('/render-stream/:renderId', (req, res) => {
+  const { renderId } = req.params;
+
+  const activeRender = activeRenders.get(renderId);
+  if (!activeRender) {
+    return res.status(404).json({ error: 'Render not found' });
+  }
+
+  if (activeRender.status !== 'active') {
+    // Render is no longer active, send final status
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    if (activeRender.status === 'completed') {
+      res.write(`data: ${JSON.stringify({
+        status: 'complete',
+        videoUrl: activeRender.outputPath,
+        progress: 1.0
+      })}\n\n`);
+    } else if (activeRender.status === 'failed') {
+      res.write(`data: ${JSON.stringify({
+        status: 'error',
+        error: activeRender.error
+      })}\n\n`);
+    } else if (activeRender.status === 'cancelled') {
+      res.write(`data: ${JSON.stringify({ status: 'cancelled' })}\n\n`);
+    }
+
+    res.end();
+    return;
+  }
+
+  // Replace the response object to reconnect the stream
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Render-ID', renderId);
+  res.flushHeaders();
+
+  // Update the response object in activeRenders
+  activeRender.response = res;
+
+  // Send current progress immediately
+  res.write(`data: ${JSON.stringify({ progress: activeRender.progress })}\n\n`);
+});
+
 // Cancel render endpoint
 app.post('/cancel-render/:renderId', (req, res) => {
   const { renderId } = req.params;
@@ -175,7 +249,13 @@ app.post('/render', async (req, res) => {
   const { cancelSignal, cancel } = makeCancelSignal();
 
   // Store the render in active renders map
-  activeRenders.set(renderId, { cancel, response: res });
+  activeRenders.set(renderId, {
+    cancel,
+    response: res,
+    status: 'active',
+    progress: 0,
+    startTime: Date.now()
+  });
 
   // Ensure Remotion temp directories exist before rendering
   ensureRemotionTempDirs();
@@ -250,7 +330,13 @@ app.post('/render', async (req, res) => {
 
     // Bundle the remotion project
     console.log('Bundling Remotion project...');
-    res.write(`data: ${JSON.stringify({ bundling: true })}\n\n`);
+
+    // Use the current response object (which may have been updated on reconnection)
+    const activeRenderForBundling = activeRenders.get(renderId);
+    if (activeRenderForBundling && !activeRenderForBundling.response.writableEnded) {
+      activeRenderForBundling.response.write(`data: ${JSON.stringify({ bundling: true })}\n\n`);
+    }
+
     const bundleResult = await bundle(entryPoint);
 
     console.log('Bundle completed');
@@ -262,7 +348,12 @@ app.post('/render', async (req, res) => {
 
     // Select the composition
     console.log('Selecting composition...');
-    res.write(`data: ${JSON.stringify({ composition: true })}\n\n`);
+
+    // Use the current response object (which may have been updated on reconnection)
+    const activeRenderForComposition = activeRenders.get(renderId);
+    if (activeRenderForComposition && !activeRenderForComposition.response.writableEnded) {
+      activeRenderForComposition.response.write(`data: ${JSON.stringify({ composition: true })}\n\n`);
+    }
     console.log('Using serve URL:', bundleResult);
     console.log('Video duration:', `${durationInSeconds} seconds (${durationInFrames} frames at ${fps}fps)`);
     console.log('Video resolution:', `${resolution} (${width}x${height})`);
@@ -323,8 +414,11 @@ app.post('/render', async (req, res) => {
         if (chromeDownloadMatch) {
           const downloaded = parseFloat(chromeDownloadMatch[1]);
           const total = parseFloat(chromeDownloadMatch[2]);
-          if (!res.writableEnded) {
-            res.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
+
+          // Use the current response object (which may have been updated on reconnection)
+          const activeRenderForChrome = activeRenders.get(renderId);
+          if (activeRenderForChrome && !activeRenderForChrome.response.writableEnded) {
+            activeRenderForChrome.response.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
           }
         }
 
@@ -354,8 +448,17 @@ app.post('/render', async (req, res) => {
         onProgress: ({ renderedFrames, encodedFrames }) => {
           console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
           const progress = renderedFrames / durationInFrames;
-          if (res.writableEnded) return;
-          res.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+
+          // Update progress in activeRenders
+          const activeRender = activeRenders.get(renderId);
+          if (activeRender) {
+            activeRender.progress = progress;
+
+            // Use the current response object (which may have been updated on reconnection)
+            if (!activeRender.response.writableEnded) {
+              activeRender.response.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+            }
+          }
         }
       });
 
@@ -400,8 +503,17 @@ app.post('/render', async (req, res) => {
               onProgress: ({ renderedFrames }) => {
                 console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);
                 const progress = renderedFrames / durationInFrames;
-                if (res.writableEnded) return;
-                res.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+
+                // Update progress in activeRenders
+                const activeRender = activeRenders.get(renderId);
+                if (activeRender) {
+                  activeRender.progress = progress;
+
+                  // Use the current response object (which may have been updated on reconnection)
+                  if (!activeRender.response.writableEnded) {
+                    activeRender.response.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+                  }
+                }
               }
             });
           } else {
@@ -418,27 +530,63 @@ app.post('/render', async (req, res) => {
     }
 
     const videoUrl = `http://localhost:${port}/output/${outputFile}`;
-    res.write(`data: ${JSON.stringify({ status: 'complete', videoUrl })}\n\n`);
-    res.end();
 
-    // Clean up active render
-    activeRenders.delete(renderId);
+    // Update status to completed
+    const activeRender = activeRenders.get(renderId);
+    if (activeRender) {
+      activeRender.status = 'completed';
+      activeRender.progress = 1.0;
+      activeRender.outputPath = videoUrl;
+
+      // Use the current response object (which may have been updated on reconnection)
+      if (!activeRender.response.writableEnded) {
+        activeRender.response.write(`data: ${JSON.stringify({ status: 'complete', videoUrl })}\n\n`);
+        activeRender.response.end();
+      }
+    }
+
+    // Keep the render info for a while to allow reconnection, then clean up
+    setTimeout(() => {
+      activeRenders.delete(renderId);
+    }, 300000); // Keep for 5 minutes
   } catch (error) {
     console.error('Rendering error:', error);
 
+    const activeRender = activeRenders.get(renderId);
+
     // Check if this was a cancellation
     if (error instanceof Error && error.message.includes('cancelled')) {
-      res.write(`data: ${JSON.stringify({ status: 'cancelled' })}\n\n`);
-    } else {
-      res.write(`data: ${JSON.stringify({
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error)
-      })}\n\n`);
-    }
-    res.end();
+      if (activeRender) {
+        activeRender.status = 'cancelled';
+        activeRender.error = 'Render was cancelled';
 
-    // Clean up active render
-    activeRenders.delete(renderId);
+        // Use the current response object (which may have been updated on reconnection)
+        if (!activeRender.response.writableEnded) {
+          activeRender.response.write(`data: ${JSON.stringify({ status: 'cancelled' })}\n\n`);
+          activeRender.response.end();
+        }
+      }
+    } else {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (activeRender) {
+        activeRender.status = 'failed';
+        activeRender.error = errorMessage;
+
+        // Use the current response object (which may have been updated on reconnection)
+        if (!activeRender.response.writableEnded) {
+          activeRender.response.write(`data: ${JSON.stringify({
+            status: 'error',
+            error: errorMessage
+          })}\n\n`);
+          activeRender.response.end();
+        }
+      }
+    }
+
+    // Keep the render info for a while to allow reconnection, then clean up
+    setTimeout(() => {
+      activeRenders.delete(renderId);
+    }, 300000); // Keep for 5 minutes
   }
 });
 

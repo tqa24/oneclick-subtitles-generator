@@ -133,7 +133,264 @@ const VideoRenderingSection = ({
   }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults]);
 
   // Auto-process queue when it changes
-  // No automatic queue processing - renders are started manually
+  // Restore render state from localStorage on component mount
+  useEffect(() => {
+    const restoreRenderState = () => {
+      try {
+        const savedQueue = localStorage.getItem('videoRenderQueue');
+        const savedCurrentItem = localStorage.getItem('currentRenderItem');
+        const savedRenderId = localStorage.getItem('currentRenderId');
+
+        if (savedQueue) {
+          const parsedQueue = JSON.parse(savedQueue);
+          setRenderQueue(parsedQueue);
+        }
+
+        if (savedCurrentItem && savedRenderId) {
+          const parsedCurrentItem = JSON.parse(savedCurrentItem);
+          setCurrentQueueItem(parsedCurrentItem);
+          setCurrentRenderId(savedRenderId);
+
+          // Check if the render is still active on the server
+          checkRenderStatus(savedRenderId, parsedCurrentItem);
+        }
+      } catch (error) {
+        console.error('Failed to restore render state:', error);
+        // Clear corrupted data
+        localStorage.removeItem('videoRenderQueue');
+        localStorage.removeItem('currentRenderItem');
+        localStorage.removeItem('currentRenderId');
+      }
+    };
+
+    restoreRenderState();
+  }, []);
+
+  // Save render state to localStorage whenever it changes
+  useEffect(() => {
+    if (renderQueue.length > 0) {
+      localStorage.setItem('videoRenderQueue', JSON.stringify(renderQueue));
+    } else {
+      localStorage.removeItem('videoRenderQueue');
+    }
+  }, [renderQueue]);
+
+  useEffect(() => {
+    if (currentQueueItem && currentRenderId) {
+      localStorage.setItem('currentRenderItem', JSON.stringify(currentQueueItem));
+      localStorage.setItem('currentRenderId', currentRenderId);
+    } else {
+      localStorage.removeItem('currentRenderItem');
+      localStorage.removeItem('currentRenderId');
+    }
+  }, [currentQueueItem, currentRenderId]);
+
+  // Check if a render is still active on the server and reconnect
+  const checkRenderStatus = async (renderId, queueItem) => {
+    try {
+      const response = await fetch(`http://localhost:3010/render-status/${renderId}`);
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.status === 'active') {
+          // Render is still active, reconnect to it
+          console.log('Reconnecting to active render:', renderId);
+          setIsRendering(true);
+
+          // Update queue item status to processing
+          setRenderQueue(prev => prev.map(item =>
+            item.id === queueItem.id ? { ...item, status: 'processing', progress: data.progress || 0 } : item
+          ));
+
+          // Reconnect to the render stream
+          reconnectToRender(renderId, queueItem);
+        } else if (data.status === 'completed') {
+          // Render completed while user was away
+          console.log('Render completed while away:', renderId);
+          setRenderQueue(prev => prev.map(item =>
+            item.id === queueItem.id
+              ? { ...item, status: 'completed', progress: 100, outputPath: data.outputPath }
+              : item
+          ));
+          setCurrentQueueItem(null);
+          setCurrentRenderId(null);
+
+          // Start next pending render if any
+          setTimeout(() => startNextPendingRender(), 1000);
+        } else {
+          // Render failed or was cancelled
+          console.log('Render failed or cancelled while away:', renderId);
+          setRenderQueue(prev => prev.map(item =>
+            item.id === queueItem.id
+              ? { ...item, status: 'failed', error: data.error || 'Render failed while browser was closed' }
+              : item
+          ));
+          setCurrentQueueItem(null);
+          setCurrentRenderId(null);
+
+          // Start next pending render if any
+          setTimeout(() => startNextPendingRender(), 1000);
+        }
+      } else {
+        // Server doesn't know about this render, mark as failed
+        console.log('Server does not know about render:', renderId);
+        setRenderQueue(prev => prev.map(item =>
+          item.id === queueItem.id
+            ? { ...item, status: 'failed', error: 'Render not found on server' }
+            : item
+        ));
+        setCurrentQueueItem(null);
+        setCurrentRenderId(null);
+      }
+    } catch (error) {
+      console.error('Failed to check render status:', error);
+      // Mark as failed if we can't check status
+      setRenderQueue(prev => prev.map(item =>
+        item.id === queueItem.id
+          ? { ...item, status: 'failed', error: 'Could not reconnect to render' }
+          : item
+      ));
+      setCurrentQueueItem(null);
+      setCurrentRenderId(null);
+    }
+  };
+
+  // Reconnect to an ongoing render stream
+  const reconnectToRender = async (renderId, queueItem) => {
+    try {
+      // Create new abort controller for this reconnection
+      const controller = new AbortController();
+      setAbortController(controller);
+
+      setRenderStatus(t('videoRendering.reconnecting', 'Reconnecting to render...'));
+
+      // Connect to the render stream
+      const response = await fetch(`http://localhost:3010/render-stream/${renderId}`, {
+        method: 'GET',
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to reconnect to render stream: ${response.status}`);
+      }
+
+      // Handle Server-Sent Events (same logic as in handleStartRender)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        // Check if the request was aborted
+        if (controller.signal.aborted) {
+          console.log('Reconnection stream reading aborted');
+          break;
+        }
+
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              // Handle progress updates
+              if (data.progress !== undefined) {
+                const progressPercent = Math.round(data.progress * 100);
+
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? { ...item, progress: progressPercent }
+                    : item
+                ));
+
+                setRenderProgress(progressPercent);
+                setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+              }
+
+              // Handle completion
+              if (data.status === 'complete' && data.videoUrl) {
+                setRenderedVideoUrl(data.videoUrl);
+                setRenderStatus(t('videoRendering.complete', 'Render complete!'));
+                setRenderProgress(100);
+
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? { ...item, status: 'completed', progress: 100, outputPath: data.videoUrl }
+                    : item
+                ));
+
+                setCurrentQueueItem(null);
+                setTimeout(() => startNextPendingRender(), 1000);
+                break;
+              }
+
+              // Handle cancellation
+              if (data.status === 'cancelled') {
+                setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+                setRenderProgress(0);
+
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+                    : item
+                ));
+                break;
+              }
+
+              // Handle errors
+              if (data.status === 'error') {
+                const errorMessage = data.error || t('videoRendering.unknownError', 'Unknown error occurred');
+
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? { ...item, status: 'failed', error: errorMessage }
+                    : item
+                ));
+
+                throw new Error(errorMessage);
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse SSE data during reconnection:', parseError);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Reconnection error:', error);
+
+      if (error.name === 'AbortError') {
+        console.log('Reconnection was aborted');
+        setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+        setRenderProgress(0);
+
+        setRenderQueue(prev => prev.map(item =>
+          item.id === queueItem.id
+            ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+            : item
+        ));
+      } else {
+        setError(error.message);
+        setRenderStatus(t('videoRendering.failed', 'Render failed'));
+
+        setRenderQueue(prev => prev.map(item =>
+          item.id === queueItem.id
+            ? { ...item, status: 'failed', error: error.message }
+            : item
+        ));
+      }
+    } finally {
+      setIsRendering(false);
+      setCurrentRenderId(null);
+      setAbortController(null);
+      setCurrentQueueItem(null);
+      setTimeout(() => startNextPendingRender(), 1000);
+    }
+  };
 
   // Get current subtitles based on selection
   const getCurrentSubtitles = () => {
@@ -509,7 +766,7 @@ const VideoRenderingSection = ({
       customization: subtitleCustomization,
       status: isRendering ? 'pending' : 'processing',
       progress: 0,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: Date.now(), // Store as timestamp number, not formatted string
       outputPath: null,
       error: null
     };
@@ -1281,23 +1538,19 @@ const VideoRenderingSection = ({
 
           {/* Rendered videos are now accessible through the queue items */}
 
-          {/* Queue Manager - always visible to match app aesthetics */}
-          <div className="rendering-row">
-            <div className="row-label">
-              <label>{t('videoRendering.renderQueue', 'Render Queue')}</label>
-            </div>
-            <div className="row-content">
-              <QueueManagerPanel
-                queue={renderQueue}
-                currentQueueItem={currentQueueItem}
-                onRemoveItem={removeFromQueue}
-                onClearQueue={clearQueue}
-                onRetryItem={retryQueueItem}
-                onCancelItem={handleCancelRender}
-                isExpanded={true}
-                onToggle={() => {}}
-              />
-            </div>
+          {/* Queue Manager - full width grid layout */}
+          <div className="rendering-row queue-row">
+            <QueueManagerPanel
+              queue={renderQueue}
+              currentQueueItem={currentQueueItem}
+              onRemoveItem={removeFromQueue}
+              onClearQueue={clearQueue}
+              onRetryItem={retryQueueItem}
+              onCancelItem={handleCancelRender}
+              isExpanded={true}
+              onToggle={() => {}}
+              gridLayout={true}
+            />
           </div>
         </div>
       )}

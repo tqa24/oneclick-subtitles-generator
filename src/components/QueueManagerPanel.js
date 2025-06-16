@@ -8,7 +8,8 @@ const QueueManagerPanel = ({
   onRemoveItem,
   onClearQueue,
   onRetryItem,
-  onCancelItem
+  onCancelItem,
+  gridLayout = false
 }) => {
   const { t } = useTranslation();
 
@@ -74,13 +75,16 @@ const QueueManagerPanel = ({
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString();
+    if (!timestamp) return '';
+    // Handle both number timestamps and string timestamps
+    const date = typeof timestamp === 'number' ? new Date(timestamp) : new Date(timestamp);
+    return isNaN(date.getTime()) ? '' : date.toLocaleTimeString();
   };
 
 
 
   return (
-    <div className="queue-manager-panel">
+    <div className={`queue-manager-panel ${gridLayout ? 'grid-layout' : ''}`}>
       <div className="panel-header">
         <svg className="panel-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -127,7 +131,7 @@ const QueueManagerPanel = ({
             <p>{t('videoRendering.addVideosToQueue', 'Add videos to the queue to start batch rendering')}</p>
           </div>
         ) : (
-          <div className="queue-list">
+          <div className={`queue-list ${gridLayout ? 'grid-layout' : ''}`}>
             {queue.map((item, index) => (
               <div 
                 key={item.id} 
