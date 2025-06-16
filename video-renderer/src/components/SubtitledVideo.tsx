@@ -144,6 +144,26 @@ export const SubtitledVideoContent: React.FC<Props> = ({
         }
         return 'translateY(0px)';
 
+      case 'slide-left':
+        if (isAnimatingIn) {
+          const translateX = (1 - easedProgress) * 100; // Start 100px right
+          return `translateX(${translateX}px)`;
+        } else if (isAnimatingOut) {
+          const translateX = (1 - easedProgress) * -100; // End 100px left
+          return `translateX(${translateX}px)`;
+        }
+        return 'translateX(0px)';
+
+      case 'slide-right':
+        if (isAnimatingIn) {
+          const translateX = (1 - easedProgress) * -100; // Start 100px left
+          return `translateX(${translateX}px)`;
+        } else if (isAnimatingOut) {
+          const translateX = (1 - easedProgress) * 100; // End 100px right
+          return `translateX(${translateX}px)`;
+        }
+        return 'translateX(0px)';
+
       case 'scale':
         if (isAnimatingIn) {
           const scale = 0.5 + (easedProgress * 0.5); // Start at 50% scale
@@ -153,6 +173,33 @@ export const SubtitledVideoContent: React.FC<Props> = ({
           return `scale(${scale})`;
         }
         return 'scale(1)';
+
+      case 'bounce':
+        if (isAnimatingIn) {
+          const bounceScale = 1 + Math.sin(easedProgress * Math.PI * 3) * 0.1 * (1 - easedProgress);
+          return `scale(${bounceScale})`;
+        }
+        return 'scale(1)';
+
+      case 'flip':
+        if (isAnimatingIn) {
+          const rotateY = (1 - easedProgress) * 90; // Start rotated 90 degrees
+          return `rotateY(${rotateY}deg)`;
+        } else if (isAnimatingOut) {
+          const rotateY = (1 - easedProgress) * -90; // End rotated -90 degrees
+          return `rotateY(${rotateY}deg)`;
+        }
+        return 'rotateY(0deg)';
+
+      case 'rotate':
+        if (isAnimatingIn) {
+          const rotate = (1 - easedProgress) * 180; // Start rotated 180 degrees
+          return `rotate(${rotate}deg)`;
+        } else if (isAnimatingOut) {
+          const rotate = (1 - easedProgress) * -180; // End rotated -180 degrees
+          return `rotate(${rotate}deg)`;
+        }
+        return 'rotate(0deg)';
 
       case 'typewriter':
         // For typewriter, we'll handle this differently in the text rendering
@@ -339,10 +386,8 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap',
                   boxShadow,
                   direction: customization.rtlSupport ? 'rtl' : 'ltr',
-                  // Smooth transitions for all animations
-                  transition: customization.animationType === 'typewriter'
-                    ? 'none' // No transition for typewriter effect
-                    : `all ${customization.fadeInDuration}s ${customization.animationEasing}`,
+                  // Note: CSS transitions don't work in server-side rendering (Remotion)
+                  // All animations are handled manually through opacity and transform calculations
                   transformOrigin: 'center center', // For scale animations
                 }}
               >

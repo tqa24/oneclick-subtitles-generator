@@ -354,9 +354,11 @@
   background: var(--md-success);
   color: var(--md-on-success);
   text-decoration: none;
+  border: none;
   border-radius: 32px;
   font-size: 0.75rem;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 

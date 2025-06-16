@@ -441,10 +441,8 @@ export const SubtitledVideoComposition = ({
                   whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap',
                   boxShadow,
                   direction: customization.rtlSupport ? 'rtl' : 'ltr',
-                  // Smooth transitions for all animations
-                  transition: customization.animationType === 'typewriter'
-                    ? 'none' // No transition for typewriter effect
-                    : `all ${customization.fadeInDuration}s ${customization.animationEasing}`,
+                  // Note: CSS transitions don't work in server-side rendering (Remotion)
+                  // All animations are handled manually through opacity and transform calculations
                   transformOrigin: 'center center', // For scale animations
                 }}
               >

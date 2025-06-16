@@ -81,7 +81,41 @@ const QueueManagerPanel = ({
     return isNaN(date.getTime()) ? '' : date.toLocaleTimeString();
   };
 
+  const handleDownloadVideo = async (outputPath, itemId) => {
+    try {
+      // Fetch the video as a blob
+      const response = await fetch(outputPath);
+      if (!response.ok) {
+        throw new Error('Failed to fetch video');
+      }
 
+      const blob = await response.blob();
+
+      // Create a download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `subtitled-video-${itemId}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading video:', error);
+      // Fallback to direct link if fetch fails
+      const a = document.createElement('a');
+      a.href = outputPath;
+      a.download = `subtitled-video-${itemId}.mp4`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
 
   return (
     <div className={`queue-manager-panel ${gridLayout ? 'grid-layout' : ''}`}>
@@ -238,13 +272,12 @@ const QueueManagerPanel = ({
                       </svg>
                       <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
                     </div>
-                    <a 
-                      href={item.outputPath} 
-                      download 
+                    <button
+                      onClick={() => handleDownloadVideo(item.outputPath, item.id)}
                       className="download-btn"
                     >
                       {t('videoRendering.download', 'Download')}
-                    </a>
+                    </button>
                   </div>
                 )}
 
