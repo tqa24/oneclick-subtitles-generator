@@ -4,7 +4,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { bundle } from '@remotion/bundler';
-import { renderMedia, selectComposition, getCompositions } from '@remotion/renderer';
+import { renderMedia, selectComposition, getCompositions, makeCancelSignal } from '@remotion/renderer';
 
 // Set Remotion environment variables for GPU acceleration
 process.env.REMOTION_CHROME_MODE = "chrome-for-testing";
@@ -12,6 +12,9 @@ process.env.REMOTION_GL = "vulkan";
 
 const app = express();
 const port = process.env.PORT || 3010;
+
+// Store active render processes for cancellation
+const activeRenders = new Map<string, { cancel: () => void; response: express.Response }>();
 
 // Ensure directories exist
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -61,7 +64,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-Render-ID']
+}));
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 app.use('/output', express.static(outputDir));
@@ -96,6 +101,43 @@ app.post('/api/clear-cache', (req, res) => {
   }
 });
 
+// Cancel render endpoint
+app.post('/cancel-render/:renderId', (req, res) => {
+  const { renderId } = req.params;
+  console.log('Cancel request received for render ID:', renderId);
+  console.log('Active renders:', Array.from(activeRenders.keys()));
+
+  if (!renderId) {
+    return res.status(400).json({ error: 'Render ID is required' });
+  }
+
+  const activeRender = activeRenders.get(renderId);
+  if (!activeRender) {
+    console.log('No active render found with ID:', renderId);
+    return res.status(404).json({ error: 'No active render found with that ID' });
+  }
+
+  try {
+    // Cancel the render using Remotion's cancel function
+    activeRender.cancel();
+
+    // Send cancellation message to the SSE stream
+    if (!activeRender.response.writableEnded) {
+      activeRender.response.write(`data: ${JSON.stringify({ status: 'cancelled' })}\n\n`);
+      activeRender.response.end();
+    }
+
+    // Remove from active renders
+    activeRenders.delete(renderId);
+
+    console.log(`Render ${renderId} cancelled successfully`);
+    res.json({ success: true, message: 'Render cancelled successfully' });
+  } catch (error) {
+    console.error('Error cancelling render:', error);
+    res.status(500).json({ error: 'Failed to cancel render' });
+  }
+});
+
 // Helper function to verify assets on the server side
 function verifyServerAssets(
   videoType: string,
@@ -116,11 +158,24 @@ function verifyServerAssets(
 
 // Render video endpoint
 app.post('/render', async (req, res) => {
+  // Generate unique render ID
+  const renderId = `render_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  console.log('=== NEW RENDER STARTED ===');
+  console.log('Generated render ID:', renderId);
+
   // Set headers for Server-Sent Events
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Render-ID', renderId); // Send render ID to client
+  console.log('Set X-Render-ID header:', renderId);
   res.flushHeaders();
+
+  // Create cancel signal for this render
+  const { cancelSignal, cancel } = makeCancelSignal();
+
+  // Store the render in active renders map
+  activeRenders.set(renderId, { cancel, response: res });
 
   // Ensure Remotion temp directories exist before rendering
   ensureRemotionTempDirs();
@@ -295,6 +350,7 @@ app.post('/render', async (req, res) => {
           gl: "vulkan"
         },
         logLevel: 'verbose',
+        cancelSignal,
         onProgress: ({ renderedFrames, encodedFrames }) => {
           console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
           const progress = renderedFrames / durationInFrames;
@@ -340,6 +396,7 @@ app.post('/render', async (req, res) => {
                 gl: "vulkan"
               },
               logLevel: 'verbose',
+              cancelSignal,
               onProgress: ({ renderedFrames }) => {
                 console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);
                 const progress = renderedFrames / durationInFrames;
@@ -363,13 +420,25 @@ app.post('/render', async (req, res) => {
     const videoUrl = `http://localhost:${port}/output/${outputFile}`;
     res.write(`data: ${JSON.stringify({ status: 'complete', videoUrl })}\n\n`);
     res.end();
+
+    // Clean up active render
+    activeRenders.delete(renderId);
   } catch (error) {
     console.error('Rendering error:', error);
-    res.write(`data: ${JSON.stringify({
-      status: 'error',
-      error: error instanceof Error ? error.message : String(error)
-    })}\n\n`);
+
+    // Check if this was a cancellation
+    if (error instanceof Error && error.message.includes('cancelled')) {
+      res.write(`data: ${JSON.stringify({ status: 'cancelled' })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error)
+      })}\n\n`);
+    }
     res.end();
+
+    // Clean up active render
+    activeRenders.delete(renderId);
   }
 });
 

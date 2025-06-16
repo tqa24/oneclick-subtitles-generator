@@ -20,6 +20,8 @@ const VideoRenderingSection = ({
   const [renderStatus, setRenderStatus] = useState('');
   const [renderedVideoUrl, setRenderedVideoUrl] = useState('');
   const [error, setError] = useState('');
+  const [currentRenderId, setCurrentRenderId] = useState(null);
+  const [abortController, setAbortController] = useState(null);
 
   // Form state
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
@@ -91,7 +93,6 @@ const VideoRenderingSection = ({
     };
   }, [isResizing]);
 
-  const eventSourceRef = useRef(null);
   const sectionRef = useRef(null);
 
   // Auto-fill data when autoFillData changes
@@ -520,6 +521,10 @@ const VideoRenderingSection = ({
 
   // Start rendering
   const handleStartRender = async () => {
+    // Create abort controller for this render
+    const controller = new AbortController();
+    setAbortController(controller);
+
     try {
       setIsRendering(true);
       setRenderProgress(0);
@@ -606,26 +611,29 @@ const VideoRenderingSection = ({
 
       setRenderStatus(t('videoRendering.rendering', 'Rendering video...'));
 
-      // Start Server-Sent Events connection for progress
-      eventSourceRef.current = new EventSource('http://localhost:3010/render', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(renderRequest)
-      });
-
-      // Actually send the POST request
+      // Send the POST request for rendering
       const response = await fetch('http://localhost:3010/render', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(renderRequest)
+        body: JSON.stringify(renderRequest),
+        signal: controller.signal
       });
 
       if (!response.ok) {
         throw new Error(`Render request failed: ${response.status}`);
+      }
+
+      // Capture the render ID from response headers
+      const renderId = response.headers.get('X-Render-ID');
+      console.log('Response headers:', Array.from(response.headers.entries()));
+      console.log('Extracted render ID:', renderId);
+      if (renderId) {
+        setCurrentRenderId(renderId);
+        console.log('Render started with ID:', renderId);
+      } else {
+        console.warn('No render ID found in response headers');
       }
 
       // Handle Server-Sent Events
@@ -633,6 +641,12 @@ const VideoRenderingSection = ({
       const decoder = new TextDecoder();
 
       while (true) {
+        // Check if the request was aborted
+        if (controller.signal.aborted) {
+          console.log('Stream reading aborted');
+          break;
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -679,6 +693,12 @@ const VideoRenderingSection = ({
                 break;
               }
 
+              if (data.status === 'cancelled') {
+                setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+                setRenderProgress(0);
+                break;
+              }
+
               if (data.status === 'error') {
                 throw new Error(data.error || t('videoRendering.unknownError', 'Unknown error occurred'));
               }
@@ -691,14 +711,20 @@ const VideoRenderingSection = ({
 
     } catch (error) {
       console.error('Render error:', error);
-      setError(error.message);
-      setRenderStatus(t('videoRendering.failed', 'Render failed'));
+
+      // Check if this was an abort (cancellation)
+      if (error.name === 'AbortError') {
+        console.log('Render was aborted');
+        setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+        setRenderProgress(0);
+      } else {
+        setError(error.message);
+        setRenderStatus(t('videoRendering.failed', 'Render failed'));
+      }
     } finally {
       setIsRendering(false);
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
+      setCurrentRenderId(null);
+      setAbortController(null);
 
       // Process next item in queue even if current one failed
       setTimeout(() => processNextQueueItem(), 1000);
@@ -706,13 +732,54 @@ const VideoRenderingSection = ({
   };
 
   // Cancel rendering
-  const handleCancelRender = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+  const handleCancelRender = async () => {
+    console.log('Cancel button clicked, currentRenderId:', currentRenderId);
+
+    // First, abort the fetch request if we have an abort controller
+    if (abortController) {
+      console.log('Aborting fetch request');
+      abortController.abort();
     }
-    setIsRendering(false);
-    setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+
+    // Update status immediately to show cancellation is in progress
+    setRenderStatus(t('videoRendering.cancelling', 'Cancelling render...'));
+
+    if (!currentRenderId) {
+      console.log('No render ID found, using fallback cancel method');
+      setIsRendering(false);
+      setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
+      setAbortController(null);
+      return;
+    }
+
+    try {
+      console.log('Sending cancel request to server for render ID:', currentRenderId);
+      // Call the cancel endpoint on the server
+      const response = await fetch(`http://localhost:3010/cancel-render/${currentRenderId}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        console.log('Render cancelled successfully');
+        // Don't set isRendering to false here - let the stream reading loop handle it
+        // when it receives the cancelled status or when the abort happens
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to cancel render:', errorText);
+        setRenderStatus(t('videoRendering.cancelFailed', 'Failed to cancel render'));
+        // Force cleanup on server cancel failure
+        setIsRendering(false);
+        setCurrentRenderId(null);
+        setAbortController(null);
+      }
+    } catch (error) {
+      console.error('Error cancelling render:', error);
+      setRenderStatus(t('videoRendering.cancelError', 'Error cancelling render'));
+      // Force cleanup on error
+      setIsRendering(false);
+      setCurrentRenderId(null);
+      setAbortController(null);
+    }
   };
 
   // Queue management functions
