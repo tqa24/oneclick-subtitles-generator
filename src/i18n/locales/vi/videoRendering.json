@@ -35,6 +35,8 @@
   "rendering": "Đang kết xuất video...",
   "progress": "Tiến độ",
   "renderingFrames": "Đang xử lý khung hình video...",
+  "renderingFramesDetailed": "Đang kết xuất khung hình: {{rendered}}/{{total}}",
+  "encodingFrames": "Đang mã hóa và ghép nối khung hình...",
   "downloadingChrome": "Thiết lập lần đầu: Đang tải xuống trình duyệt Chrome... {{progress}}%",
   "bundling": "Đang chuẩn bị các thành phần video...",
   "selectingComposition": "Đang thiết lập thành phần video...",

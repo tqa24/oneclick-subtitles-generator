@@ -301,14 +301,37 @@ const VideoRenderingSection = ({
               if (data.progress !== undefined) {
                 const progressPercent = Math.round(data.progress * 100);
 
+                // Simple debug to see if frame data is received
+                if (data.renderedFrames && data.durationInFrames) {
+                  console.log(`Frames: ${data.renderedFrames}/${data.durationInFrames}`);
+                }
+
                 setRenderQueue(prev => prev.map(item =>
                   item.id === queueItem.id
-                    ? { ...item, progress: progressPercent }
+                    ? {
+                        ...item,
+                        progress: progressPercent,
+                        renderedFrames: data.renderedFrames,
+                        durationInFrames: data.durationInFrames,
+                        phase: data.phase,
+                        phaseDescription: data.phaseDescription
+                      }
                     : item
                 ));
 
                 setRenderProgress(progressPercent);
-                setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+
+                // Use more detailed status messages based on phase
+                if (data.phase === 'encoding' || data.phaseDescription) {
+                  setRenderStatus(data.phaseDescription || t('videoRendering.encodingFrames', 'Encoding and stitching frames...'));
+                } else if (data.renderedFrames && data.durationInFrames) {
+                  setRenderStatus(t('videoRendering.renderingFramesDetailed', 'Rendering frames: {{rendered}}/{{total}}', {
+                    rendered: data.renderedFrames,
+                    total: data.durationInFrames
+                  }));
+                } else {
+                  setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+                }
               }
 
               // Handle completion
@@ -957,19 +980,42 @@ const VideoRenderingSection = ({
               else if (data.progress !== undefined) {
                 const progressPercent = Math.round(data.progress * 100);
 
+                // Simple debug to see if frame data is received
+                if (data.renderedFrames && data.durationInFrames) {
+                  console.log(`Main render frames: ${data.renderedFrames}/${data.durationInFrames}`);
+                }
+
                 // Update the queue item's progress (use passed queueItem or fallback to currentQueueItem)
                 const targetQueueItem = queueItem || currentQueueItem;
                 if (targetQueueItem) {
                   setRenderQueue(prev => prev.map(item =>
                     item.id === targetQueueItem.id
-                      ? { ...item, progress: progressPercent }
+                      ? {
+                          ...item,
+                          progress: progressPercent,
+                          renderedFrames: data.renderedFrames,
+                          durationInFrames: data.durationInFrames,
+                          phase: data.phase,
+                          phaseDescription: data.phaseDescription
+                        }
                       : item
                   ));
                 }
 
                 // Keep legacy progress for any remaining external displays (but we'll remove these)
                 setRenderProgress(progressPercent);
-                setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+
+                // Use more detailed status messages based on phase
+                if (data.phase === 'encoding' || data.phaseDescription) {
+                  setRenderStatus(data.phaseDescription || t('videoRendering.encodingFrames', 'Encoding and stitching frames...'));
+                } else if (data.renderedFrames && data.durationInFrames) {
+                  setRenderStatus(t('videoRendering.renderingFramesDetailed', 'Rendering frames: {{rendered}}/{{total}}', {
+                    rendered: data.renderedFrames,
+                    total: data.durationInFrames
+                  }));
+                } else {
+                  setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
+                }
               }
 
               if (data.status === 'complete' && data.videoUrl) {
@@ -1515,26 +1561,7 @@ const VideoRenderingSection = ({
             </div>
           </div>
 
-          {/* Progress is now shown in the queue items instead of here */}
-
-          {/* Error Display */}
-          {error && (
-            <div className="rendering-row">
-              <div className="row-label">
-                <label>{t('videoRendering.error', 'Error')}</label>
-              </div>
-              <div className="row-content">
-                <div className="status-message error">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                  </svg>
-                  {error}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Progress and errors are now shown in the queue items instead of here */}
 
           {/* Rendered videos are now accessible through the queue items */}
 

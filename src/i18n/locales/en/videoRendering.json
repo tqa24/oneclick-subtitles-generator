@@ -35,6 +35,8 @@
   "rendering": "Rendering video...",
   "progress": "Progress",
   "renderingFrames": "Processing video frames...",
+  "renderingFramesDetailed": "Rendering frames: {{rendered}}/{{total}}",
+  "encodingFrames": "Encoding and stitching frames...",
   "downloadingChrome": "First-time setup: Downloading Chrome browser... {{progress}}%",
   "bundling": "Preparing video components...",
   "selectingComposition": "Setting up video composition...",

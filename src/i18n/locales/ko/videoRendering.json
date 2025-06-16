@@ -35,6 +35,8 @@
   "rendering": "비디오 렌더링 중...",
   "progress": "진행률",
   "renderingFrames": "비디오 프레임 처리 중...",
+  "renderingFramesDetailed": "프레임 렌더링: {{rendered}}/{{total}}",
+  "encodingFrames": "프레임 인코딩 및 결합 중...",
   "downloadingChrome": "최초 설정: Chrome 브라우저 다운로드 중... {{progress}}%",
   "bundling": "비디오 구성 요소 준비 중...",
   "selectingComposition": "비디오 컴포지션 설정 중...",

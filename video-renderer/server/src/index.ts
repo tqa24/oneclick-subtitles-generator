@@ -454,9 +454,28 @@ app.post('/render', async (req, res) => {
           if (activeRender) {
             activeRender.progress = progress;
 
+            // Determine the current phase based on progress
+            let phase = 'rendering';
+            let phaseDescription = 'Rendering video frames';
+
+            if (encodedFrames !== undefined && renderedFrames > 0) {
+              const encodingRatio = encodedFrames / renderedFrames;
+              if (encodingRatio < 0.8 && progress > 0.8) {
+                phase = 'encoding';
+                phaseDescription = 'Encoding and stitching frames';
+              }
+            }
+
             // Use the current response object (which may have been updated on reconnection)
             if (!activeRender.response.writableEnded) {
-              activeRender.response.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+              activeRender.response.write(`data: ${JSON.stringify({
+                progress,
+                renderedFrames,
+                encodedFrames,
+                durationInFrames,
+                phase,
+                phaseDescription
+              })}\n\n`);
             }
           }
         }
@@ -500,7 +519,7 @@ app.post('/render', async (req, res) => {
               },
               logLevel: 'verbose',
               cancelSignal,
-              onProgress: ({ renderedFrames }) => {
+              onProgress: ({ renderedFrames, encodedFrames }) => {
                 console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);
                 const progress = renderedFrames / durationInFrames;
 
@@ -509,9 +528,28 @@ app.post('/render', async (req, res) => {
                 if (activeRender) {
                   activeRender.progress = progress;
 
+                  // Determine the current phase based on progress
+                  let phase = 'rendering';
+                  let phaseDescription = 'Rendering video frames';
+
+                  if (encodedFrames !== undefined && renderedFrames > 0) {
+                    const encodingRatio = encodedFrames / renderedFrames;
+                    if (encodingRatio < 0.8 && progress > 0.8) {
+                      phase = 'encoding';
+                      phaseDescription = 'Encoding and stitching frames';
+                    }
+                  }
+
                   // Use the current response object (which may have been updated on reconnection)
                   if (!activeRender.response.writableEnded) {
-                    activeRender.response.write(`data: ${JSON.stringify({ progress, renderedFrames, durationInFrames })}\n\n`);
+                    activeRender.response.write(`data: ${JSON.stringify({
+                      progress,
+                      renderedFrames,
+                      encodedFrames,
+                      durationInFrames,
+                      phase,
+                      phaseDescription
+                    })}\n\n`);
                   }
                 }
               }

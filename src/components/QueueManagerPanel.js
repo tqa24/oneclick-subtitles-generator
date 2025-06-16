@@ -86,33 +86,33 @@ const QueueManagerPanel = ({
   return (
     <div className={`queue-manager-panel ${gridLayout ? 'grid-layout' : ''}`}>
       <div className="panel-header">
-        <svg className="panel-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-        <span className="panel-title">{t('videoRendering.renderQueue', 'Render Queue')}</span>
-        <span className="queue-count">{queue.length}</span>
+        <div className="header-left">
+          <svg className="panel-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span className="panel-title">{t('videoRendering.renderQueue', 'Render Queue')}</span>
+          <span className="queue-count">{queue.length}</span>
+        </div>
+
+        {queue.length > 0 && (
+          <button
+            className="clear-queue-btn header-btn"
+            onClick={onClearQueue}
+            disabled={currentQueueItem !== null}
+            title={t('videoRendering.clearQueue', 'Clear Queue')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="panel-content">
-        {queue.length > 0 && (
-          <div className="queue-actions">
-            <button 
-              className="clear-queue-btn"
-              onClick={onClearQueue}
-              disabled={currentQueueItem !== null}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              {t('videoRendering.clearQueue', 'Clear Queue')}
-            </button>
-          </div>
-        )}
-
         {queue.length === 0 ? (
           <div className="empty-queue">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -166,19 +166,49 @@ const QueueManagerPanel = ({
                 {(item.status === 'processing' || item.status === 'pending') && (
                   <div className="progress-section">
                     <div className="progress-bar">
-                      <div 
+                      <div
                         className="progress-fill"
-                        style={{ 
+                        style={{
                           width: `${item.progress || 0}%`,
                           backgroundColor: getStatusColor(item.status)
                         }}
                       ></div>
                     </div>
                     <div className="progress-text">
-                      {item.status === 'processing' ? 
-                        `${Math.round(item.progress || 0)}%` : 
+                      {item.status === 'processing' ? (
+                        <>
+                          {/* Fixed percentage container */}
+                          <div className="progress-percentage-container">
+                            <div className="progress-percentage">
+                              {Math.round(item.progress || 0)}%
+                            </div>
+                          </div>
+
+                          {/* Separate container for frame details */}
+                          <div className="progress-frames-container">
+                            {item.renderedFrames && item.durationInFrames ? (
+                              <div className="progress-frames">
+                                {`${item.renderedFrames}/${item.durationInFrames} frames`}
+                              </div>
+                            ) : item.phaseDescription ? (
+                              <div className="progress-frames">
+                                {item.phaseDescription}
+                              </div>
+                            ) : (
+                              <div className="progress-frames">
+                                {t('videoRendering.renderingFrames', 'Processing video frames...')}
+                              </div>
+                            )}
+                            {item.phase === 'encoding' && (
+                              <div className="progress-phase encoding">
+                                {t('videoRendering.encodingFrames', 'Encoding and stitching frames...')}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
                         t('videoRendering.waiting', 'Waiting...')
-                      }
+                      )}
                     </div>
                   </div>
                 )}
