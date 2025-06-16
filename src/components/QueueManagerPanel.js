@@ -7,7 +7,8 @@ const QueueManagerPanel = ({
   currentQueueItem,
   onRemoveItem,
   onClearQueue,
-  onRetryItem
+  onRetryItem,
+  onCancelItem
 }) => {
   const { t } = useTranslation();
 
@@ -216,7 +217,7 @@ const QueueManagerPanel = ({
                 {/* Item Actions */}
                 <div className="item-actions">
                   {item.status === 'failed' && (
-                    <button 
+                    <button
                       className="retry-btn"
                       onClick={() => onRetryItem(item.id)}
                     >
@@ -228,9 +229,21 @@ const QueueManagerPanel = ({
                       {t('videoRendering.retry', 'Retry')}
                     </button>
                   )}
-                  
+
+                  {item.status === 'processing' && onCancelItem && (
+                    <button
+                      className="cancel-btn"
+                      onClick={() => onCancelItem(item.id)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="6" y="6" width="12" height="12"></rect>
+                      </svg>
+                      {t('videoRendering.cancel', 'Cancel')}
+                    </button>
+                  )}
+
                   {item.status !== 'processing' && (
-                    <button 
+                    <button
                       className="remove-btn"
                       onClick={() => onRemoveItem(item.id)}
                     >

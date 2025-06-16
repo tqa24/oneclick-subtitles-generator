@@ -133,16 +133,7 @@ const VideoRenderingSection = ({
   }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults]);
 
   // Auto-process queue when it changes
-  useEffect(() => {
-    if (!isRendering && !currentQueueItem && renderQueue.length > 0) {
-      const hasPendingItems = renderQueue.some(item => item.status === 'pending');
-      if (hasPendingItems) {
-        // Small delay to avoid rapid processing
-        const timer = setTimeout(() => processNextQueueItem(), 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [renderQueue, isRendering, currentQueueItem]);
+  // No automatic queue processing - renders are started manually
 
   // Get current subtitles based on selection
   const getCurrentSubtitles = () => {
@@ -507,20 +498,48 @@ const VideoRenderingSection = ({
     }
   };
 
-  // Unified render function that handles both immediate rendering and queueing
+  // Simple render function - allows queueing multiple renders
   const handleRender = async () => {
-    // If currently rendering, add to queue instead
-    if (isRendering || currentQueueItem) {
-      await addToQueue();
-      return;
-    }
+    // Create queue item for display
+    const queueItem = {
+      id: `render_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      videoFile: selectedVideoFile,
+      subtitles: selectedSubtitles,
+      settings: renderSettings,
+      customization: subtitleCustomization,
+      status: isRendering ? 'pending' : 'processing',
+      progress: 0,
+      timestamp: new Date().toLocaleTimeString(),
+      outputPath: null,
+      error: null
+    };
 
-    // Otherwise, start rendering immediately
-    await handleStartRender();
+    // Always add to queue for display
+    setRenderQueue(prev => [queueItem, ...prev]);
+
+    // If not currently rendering, start this one immediately
+    if (!isRendering) {
+      setCurrentQueueItem(queueItem);
+      await handleStartRender(queueItem);
+    }
+  };
+
+  // Simple function to start next pending render
+  const startNextPendingRender = async () => {
+    // Find the next pending item
+    const nextItem = renderQueue.find(item => item.status === 'pending');
+    if (!nextItem || isRendering) return;
+
+    // Mark as processing and start
+    setRenderQueue(prev => prev.map(item =>
+      item.id === nextItem.id ? { ...item, status: 'processing' } : item
+    ));
+    setCurrentQueueItem(nextItem);
+    await handleStartRender(nextItem);
   };
 
   // Start rendering
-  const handleStartRender = async () => {
+  const handleStartRender = async (queueItem = null) => {
     // Create abort controller for this render
     const controller = new AbortController();
     setAbortController(controller);
@@ -677,9 +696,22 @@ const VideoRenderingSection = ({
                 setRenderProgress(20);
                 setRenderStatus(t('videoRendering.selectingComposition', 'Setting up video composition...'));
               }
-              // Handle regular render progress
+              // Handle regular render progress - update queue item instead of global state
               else if (data.progress !== undefined) {
-                setRenderProgress(Math.round(data.progress * 100));
+                const progressPercent = Math.round(data.progress * 100);
+
+                // Update the queue item's progress (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? { ...item, progress: progressPercent }
+                      : item
+                  ));
+                }
+
+                // Keep legacy progress for any remaining external displays (but we'll remove these)
+                setRenderProgress(progressPercent);
                 setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
               }
 
@@ -688,19 +720,52 @@ const VideoRenderingSection = ({
                 setRenderStatus(t('videoRendering.complete', 'Render complete!'));
                 setRenderProgress(100);
 
-                // Process next item in queue if available
-                setTimeout(() => processNextQueueItem(), 1000); // Small delay to show completion
+                // Update the queue item as completed (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? { ...item, status: 'completed', progress: 100, outputPath: data.videoUrl }
+                      : item
+                  ));
+                }
+
+                // Render complete - reset state and start next
+                setCurrentQueueItem(null);
+                setTimeout(() => startNextPendingRender(), 1000);
                 break;
               }
 
               if (data.status === 'cancelled') {
                 setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
                 setRenderProgress(0);
+
+                // Update the queue item as cancelled (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+                      : item
+                  ));
+                }
                 break;
               }
 
               if (data.status === 'error') {
-                throw new Error(data.error || t('videoRendering.unknownError', 'Unknown error occurred'));
+                const errorMessage = data.error || t('videoRendering.unknownError', 'Unknown error occurred');
+
+                // Update the queue item as failed (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? { ...item, status: 'failed', error: errorMessage }
+                      : item
+                  ));
+                }
+
+                throw new Error(errorMessage);
               }
             } catch (parseError) {
               console.warn('Failed to parse SSE data:', parseError);
@@ -717,27 +782,45 @@ const VideoRenderingSection = ({
         console.log('Render was aborted');
         setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
         setRenderProgress(0);
+
+        // Update queue item as cancelled (use passed queueItem or fallback to currentQueueItem)
+        const targetQueueItem = queueItem || currentQueueItem;
+        if (targetQueueItem) {
+          setRenderQueue(prev => prev.map(item =>
+            item.id === targetQueueItem.id
+              ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+              : item
+          ));
+        }
       } else {
         setError(error.message);
         setRenderStatus(t('videoRendering.failed', 'Render failed'));
+
+        // Update queue item as failed (use passed queueItem or fallback to currentQueueItem)
+        const targetQueueItem = queueItem || currentQueueItem;
+        if (targetQueueItem) {
+          setRenderQueue(prev => prev.map(item =>
+            item.id === targetQueueItem.id
+              ? { ...item, status: 'failed', error: error.message }
+              : item
+          ));
+        }
       }
     } finally {
       setIsRendering(false);
       setCurrentRenderId(null);
       setAbortController(null);
 
-      // Process next item in queue even if current one failed
-      setTimeout(() => processNextQueueItem(), 1000);
+      // Render finished - reset state and start next
+      setCurrentQueueItem(null);
+      setTimeout(() => startNextPendingRender(), 1000);
     }
   };
 
   // Cancel rendering
   const handleCancelRender = async () => {
-    console.log('Cancel button clicked, currentRenderId:', currentRenderId);
-
     // First, abort the fetch request if we have an abort controller
     if (abortController) {
-      console.log('Aborting fetch request');
       abortController.abort();
     }
 
@@ -745,22 +828,21 @@ const VideoRenderingSection = ({
     setRenderStatus(t('videoRendering.cancelling', 'Cancelling render...'));
 
     if (!currentRenderId) {
-      console.log('No render ID found, using fallback cancel method');
       setIsRendering(false);
       setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
       setAbortController(null);
+      setCurrentQueueItem(null);
+      setTimeout(() => startNextPendingRender(), 1000);
       return;
     }
 
     try {
-      console.log('Sending cancel request to server for render ID:', currentRenderId);
       // Call the cancel endpoint on the server
       const response = await fetch(`http://localhost:3010/cancel-render/${currentRenderId}`, {
         method: 'POST'
       });
 
       if (response.ok) {
-        console.log('Render cancelled successfully');
         // Don't set isRendering to false here - let the stream reading loop handle it
         // when it receives the cancelled status or when the abort happens
       } else {
@@ -771,6 +853,8 @@ const VideoRenderingSection = ({
         setIsRendering(false);
         setCurrentRenderId(null);
         setAbortController(null);
+        setCurrentQueueItem(null);
+        setTimeout(() => startNextPendingRender(), 1000);
       }
     } catch (error) {
       console.error('Error cancelling render:', error);
@@ -779,38 +863,12 @@ const VideoRenderingSection = ({
       setIsRendering(false);
       setCurrentRenderId(null);
       setAbortController(null);
+      setCurrentQueueItem(null);
+      setTimeout(() => startNextPendingRender(), 1000);
     }
   };
 
-  // Queue management functions
-  const addToQueue = async () => {
-    if (!selectedVideoFile || getCurrentSubtitles().length === 0) return;
-
-    // Validate video file
-    if (!(selectedVideoFile instanceof File) &&
-        !(typeof selectedVideoFile === 'object' && selectedVideoFile.url)) {
-      setError(t('videoRendering.invalidVideoFile', 'Invalid video file. Please select a valid video file.'));
-      return;
-    }
-
-    // Get narration URL asynchronously
-    const narrationUrl = await getNarrationAudioUrl();
-
-    const queueItem = {
-      id: Date.now().toString(),
-      videoFile: selectedVideoFile,
-      subtitles: getCurrentSubtitles(),
-      narrationUrl: narrationUrl,
-      settings: renderSettings,
-      customization: subtitleCustomization,
-      status: 'pending',
-      progress: 0,
-      timestamp: Date.now()
-    };
-
-    setRenderQueue(prev => [...prev, queueItem]);
-    setError(''); // Clear any previous errors
-  };
+  // Simple queue management functions
 
   const removeFromQueue = (id) => {
     setRenderQueue(prev => prev.filter(item => item.id !== id));
@@ -821,49 +879,17 @@ const VideoRenderingSection = ({
   };
 
   const retryQueueItem = (id) => {
+    // Mark as pending and start next render if not currently rendering
     setRenderQueue(prev => prev.map(item =>
       item.id === id ? { ...item, status: 'pending', progress: 0, error: null } : item
     ));
-  };
 
-  // Process next item in queue
-  const processNextQueueItem = async () => {
-    // Don't process if already rendering
-    if (isRendering || currentQueueItem) return;
-
-    // Find next pending item
-    const nextItem = renderQueue.find(item => item.status === 'pending');
-    if (!nextItem) return;
-
-    try {
-      // Set as current processing item
-      setCurrentQueueItem(nextItem);
-      setRenderQueue(prev => prev.map(item =>
-        item.id === nextItem.id ? { ...item, status: 'processing' } : item
-      ));
-
-      // Set up the render with the queue item's settings
-      setSelectedVideoFile(nextItem.videoFile);
-      setSelectedSubtitles(nextItem.subtitles === getCurrentSubtitles() ? selectedSubtitles : 'original');
-      setRenderSettings(nextItem.settings);
-      setSubtitleCustomization(nextItem.customization);
-
-      // Start the render
-      await handleStartRender();
-
-      // Mark as complete
-      setRenderQueue(prev => prev.map(item =>
-        item.id === nextItem.id ? { ...item, status: 'complete' } : item
-      ));
-    } catch (error) {
-      // Mark as failed
-      setRenderQueue(prev => prev.map(item =>
-        item.id === nextItem.id ? { ...item, status: 'failed', error: error.message } : item
-      ));
-    } finally {
-      setCurrentQueueItem(null);
+    if (!isRendering) {
+      setTimeout(() => startNextPendingRender(), 100);
     }
   };
+
+  // No automatic queue processing - simple render history display
 
   return (
     <div
@@ -1204,57 +1230,35 @@ const VideoRenderingSection = ({
                 <option value={60}>60 FPS</option>
               </select>
 
-              {!isRendering ? (
-                <button
-                  className="pill-button primary"
-                  onClick={handleRender}
-                  disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                  {(currentQueueItem || renderQueue.some(item => item.status === 'processing'))
-                    ? t('videoRendering.addToQueue', 'Add to Queue')
-                    : t('videoRendering.render', 'Render')
-                  }
-                </button>
-              ) : (
+              <button
+                className="pill-button primary"
+                onClick={handleRender}
+                disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                {t('videoRendering.render', 'Render')}
+              </button>
+
+              {/* Cancel button for current render - only show when actively rendering */}
+              {isRendering && currentQueueItem && (
                 <button
                   className="pill-button cancel"
                   onClick={handleCancelRender}
+                  style={{ marginLeft: '0.5rem' }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="6" y="6" width="12" height="12"></rect>
                   </svg>
-                  {t('videoRendering.cancel', 'Cancel')}
+                  {t('videoRendering.cancel', 'Cancel Current')}
                 </button>
               )}
 
             </div>
           </div>
 
-          {/* Progress Display */}
-          {(isRendering || renderProgress > 0) && (
-            <div className="rendering-row">
-              <div className="row-label">
-                <label>{t('videoRendering.progress', 'Progress')}</label>
-              </div>
-              <div className="row-content">
-                <div className="render-progress">
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{ width: `${renderProgress}%` }}
-                    ></div>
-                  </div>
-                  <div className="progress-text">
-                    <span className="progress-status">{renderStatus}</span>
-                    <span className="progress-percentage">{renderProgress}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Progress is now shown in the queue items instead of here */}
 
           {/* Error Display */}
           {error && (
@@ -1275,36 +1279,7 @@ const VideoRenderingSection = ({
             </div>
           )}
 
-          {/* Rendered Video Results */}
-          {renderedVideoUrl && (
-            <div className="rendering-row">
-              <div className="row-label">
-                <label>{t('videoRendering.result', 'Rendered Video')}</label>
-              </div>
-              <div className="row-content">
-                <div className="video-result-content">
-                  <video controls width="100%" style={{ maxWidth: '600px' }}>
-                    <source src={renderedVideoUrl} type="video/mp4" />
-                    {t('videoRendering.videoNotSupported', 'Your browser does not support the video tag.')}
-                  </video>
-                  <div className="video-actions">
-                    <a
-                      href={renderedVideoUrl}
-                      download
-                      className="pill-button primary"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                      {t('videoRendering.download', 'Download Video')}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Rendered videos are now accessible through the queue items */}
 
           {/* Queue Manager - always visible to match app aesthetics */}
           <div className="rendering-row">
@@ -1318,6 +1293,7 @@ const VideoRenderingSection = ({
                 onRemoveItem={removeFromQueue}
                 onClearQueue={clearQueue}
                 onRetryItem={retryQueueItem}
+                onCancelItem={handleCancelRender}
                 isExpanded={true}
                 onToggle={() => {}}
               />

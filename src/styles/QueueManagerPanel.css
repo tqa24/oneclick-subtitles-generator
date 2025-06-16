@@ -301,7 +301,8 @@
 }
 
 .retry-btn,
-.remove-btn {
+.remove-btn,
+.cancel-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -332,6 +333,17 @@
 
 .remove-btn:hover {
   background: var(--md-error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cancel-btn {
+  background: var(--md-warning);
+  color: var(--md-on-warning);
+}
+
+.cancel-btn:hover {
+  background: var(--md-warning-dark);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -409,6 +421,7 @@
 /* Focus styles for accessibility */
 .retry-btn:focus,
 .remove-btn:focus,
+.cancel-btn:focus,
 .clear-queue-btn:focus,
 .download-btn:focus {
   outline: 2px solid var(--md-primary);
@@ -444,6 +457,7 @@
 
   .retry-btn:hover,
   .remove-btn:hover,
+  .cancel-btn:hover,
   .clear-queue-btn:hover,
   .download-btn:hover,
   .queue-item:hover {
