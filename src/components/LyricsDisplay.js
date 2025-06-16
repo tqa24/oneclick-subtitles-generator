@@ -110,6 +110,10 @@ const LyricsDisplay = ({
     // Load from localStorage, default to true if not set
     return localStorage.getItem('show_waveform') !== 'false';
   });
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(() => {
+    // Load from localStorage, default to true (auto-scroll enabled) if not set
+    return localStorage.getItem('lyrics_auto_scroll') !== 'false';
+  });
 
   // Function to calculate row height based on text content
   const getRowHeight = index => {
@@ -171,6 +175,11 @@ const LyricsDisplay = ({
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
+
+  // Save auto-scroll setting to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('lyrics_auto_scroll', autoScrollEnabled.toString());
+  }, [autoScrollEnabled]);
 
   // Listen for consolidation status updates
   useEffect(() => {
@@ -234,11 +243,11 @@ const LyricsDisplay = ({
 
   // Auto-scroll to the current lyric with accurate positioning
   useEffect(() => {
-    if (currentIndex >= 0 && listRef.current) {
+    if (autoScrollEnabled && currentIndex >= 0 && listRef.current) {
       // Scroll to the current index in the virtualized list
       listRef.current.scrollToItem(currentIndex, 'center');
     }
-  }, [currentIndex]);
+  }, [currentIndex, autoScrollEnabled]);
 
   // Watch for seekTime changes to center the timeline
   useEffect(() => {
@@ -530,10 +539,8 @@ const LyricsDisplay = ({
           onRedo={handleRedo}
           onReset={handleReset}
           onSave={handleSave}
-          zoom={zoom}
-          setZoom={setZoom}
-          panOffset={panOffset}
-          setPanOffset={setPanOffset}
+          autoScrollEnabled={autoScrollEnabled}
+          setAutoScrollEnabled={setAutoScrollEnabled}
         />
 
         <TimelineVisualization
@@ -542,6 +549,7 @@ const LyricsDisplay = ({
           duration={duration}
           onTimelineClick={onLyricClick}
           zoom={zoom}
+          setZoom={setZoom}
           panOffset={panOffset}
           setPanOffset={setPanOffset}
           centerOnTime={centerTimelineAt}

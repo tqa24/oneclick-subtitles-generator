@@ -8,12 +8,27 @@
   height: 100%;
 }
 
-/* Zoom controls for the first row */
-.zoom-controls {
+
+
+/* Material Design 3 auto-scroll toggle - pill-shaped switch */
+.auto-scroll-toggle {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  height: 100%;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  padding: 4px 10px;
+  border-radius: var(--md-shape-pill);
+  position: relative;
+  overflow: hidden;
+  min-width: 50px;
+  border: 1px solid transparent;
+  margin-right: auto; /* Push to the left side */
 }
 
 /* Material Design 3 sticky toggle - pill-shaped switch */
@@ -37,11 +52,29 @@
   margin-left: auto; /* Push to the right side */
 }
 
-/* Active state styling */
+/* Active state styling for auto-scroll toggle */
+.auto-scroll-toggle.active {
+  color: var(--md-on-primary-container);
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+}
+
+/* Active state styling for sticky toggle */
 .sticky-toggle.active {
   color: var(--md-on-primary-container);
   background-color: var(--md-primary-container);
   border-color: var(--md-primary);
+}
+
+/* Auto-scroll icon styling */
+.auto-scroll-icon {
+  margin-right: 6px;
+  stroke: currentColor;
+  transition: transform 0.3s ease;
+}
+
+.auto-scroll-toggle:hover .auto-scroll-icon {
+  transform: translateY(-2px);
 }
 
 /* Sticky icon styling */
@@ -55,6 +88,15 @@
   transform: rotate(15deg);
 }
 
+/* Specific animations for auto-scroll icons */
+.auto-scroll-toggle.active .auto-scroll-icon {
+  transform: scale(1.1);
+}
+
+.auto-scroll-toggle:not(.active) .auto-scroll-icon {
+  transform: scale(1.05);
+}
+
 /* Specific animations for chain icons */
 .sticky-toggle.active .sticky-icon {
   transform: scale(1.1);
@@ -64,13 +106,25 @@
   transform: scale(1.05);
 }
 
-/* Hover effects */
+/* Hover effects for auto-scroll toggle */
+.auto-scroll-toggle:hover {
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+/* Pressed effect for auto-scroll toggle */
+.auto-scroll-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Hover effects for sticky toggle */
 .sticky-toggle:hover {
   box-shadow: var(--md-elevation-level2);
   transform: translateY(-1px);
 }
 
-/* Pressed effect */
+/* Pressed effect for sticky toggle */
 .sticky-toggle:active {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
@@ -166,44 +220,4 @@
   transform: none;
 }
 
-/* Zoom controls inside combined pill - updated for first row */
-.zoom-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 100%;
-  flex: 1; /* Take up remaining space */
-}
 
-/* Zoom slider for draggable zoom control */
-.zoom-slider {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  cursor: ew-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--md-duration-medium2) var(--md-easing-standard);
-  background-color: color-mix(in srgb, var(--md-primary-container), transparent 90%);
-  border-radius: var(--md-shape-pill);
-}
-
-.zoom-slider:hover {
-  background-color: color-mix(in srgb, var(--md-primary-container), transparent 70%);
-  transform: scale(1.02);
-}
-
-/* Zoom percentage display */
-.zoom-slider span {
-  font-size: var(--md-label-medium-size); /* Larger font */
-  line-height: var(--md-label-medium-height);
-  font-weight: 600; /* Bolder text */
-  color: var(--md-on-primary-container);
-  text-align: center;
-  font-family: 'JetBrains Mono', monospace; /* Monospace font for better readability */
-  user-select: none; /* Prevent text selection */
-  padding: 4px 8px;
-  border-radius: var(--md-shape-small);
-  transition: all var(--md-duration-medium2) var(--md-easing-standard);
-}
