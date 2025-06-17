@@ -23,32 +23,47 @@ const VideoRenderingSection = ({
   const [currentRenderId, setCurrentRenderId] = useState(null);
   const [abortController, setAbortController] = useState(null);
 
-  // Form state
+  // Form state with localStorage persistence
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
-  const [selectedSubtitles, setSelectedSubtitles] = useState('original');
-  const [selectedNarration, setSelectedNarration] = useState('none');
-  const [renderSettings, setRenderSettings] = useState({
-    resolution: '1080p',
-    frameRate: 60,
-    videoType: 'Subtitled Video',
-    originalAudioVolume: 100,
-    narrationVolume: 100
+  const [selectedSubtitles, setSelectedSubtitles] = useState(() => {
+    return localStorage.getItem('videoRender_selectedSubtitles') || 'original';
+  });
+  const [selectedNarration, setSelectedNarration] = useState(() => {
+    return localStorage.getItem('videoRender_selectedNarration') || 'none';
+  });
+  const [renderSettings, setRenderSettings] = useState(() => {
+    const saved = localStorage.getItem('videoRender_renderSettings');
+    return saved ? JSON.parse(saved) : {
+      resolution: '1080p',
+      frameRate: 60,
+      videoType: 'Subtitled Video',
+      originalAudioVolume: 100,
+      narrationVolume: 100
+    };
   });
 
-  // New feature states
-  const [subtitleCustomization, setSubtitleCustomization] = useState(defaultCustomization);
+  // New feature states with localStorage persistence
+  const [subtitleCustomization, setSubtitleCustomization] = useState(() => {
+    const saved = localStorage.getItem('videoRender_subtitleCustomization');
+    return saved ? JSON.parse(saved) : defaultCustomization;
+  });
   const [renderQueue, setRenderQueue] = useState([]);
   const [currentQueueItem, setCurrentQueueItem] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false);
 
-  // Panel resizing states
-  const [leftPanelWidth, setLeftPanelWidth] = useState(66.67); // Default 2fr = 66.67%
+  // Panel resizing states with localStorage persistence
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('videoRender_leftPanelWidth');
+    return saved ? parseFloat(saved) : 66.67; // Default 2fr = 66.67%
+  });
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef(null);
 
-  // Collapsible state - matching background-generator pattern
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Collapsible state with localStorage persistence
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('videoRender_isCollapsed') === 'true';
+  });
 
   // Panel resizing functionality
   const handleMouseDown = (e) => {
@@ -184,6 +199,31 @@ const VideoRenderingSection = ({
       localStorage.removeItem('currentRenderId');
     }
   }, [currentQueueItem, currentRenderId]);
+
+  // Save video rendering settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('videoRender_selectedSubtitles', selectedSubtitles);
+  }, [selectedSubtitles]);
+
+  useEffect(() => {
+    localStorage.setItem('videoRender_selectedNarration', selectedNarration);
+  }, [selectedNarration]);
+
+  useEffect(() => {
+    localStorage.setItem('videoRender_renderSettings', JSON.stringify(renderSettings));
+  }, [renderSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('videoRender_subtitleCustomization', JSON.stringify(subtitleCustomization));
+  }, [subtitleCustomization]);
+
+  useEffect(() => {
+    localStorage.setItem('videoRender_leftPanelWidth', leftPanelWidth.toString());
+  }, [leftPanelWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('videoRender_isCollapsed', isCollapsed.toString());
+  }, [isCollapsed]);
 
   // Check if a render is still active on the server and reconnect
   const checkRenderStatus = async (renderId, queueItem) => {
