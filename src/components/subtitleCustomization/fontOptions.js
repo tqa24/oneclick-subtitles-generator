@@ -51,6 +51,7 @@ export const fontOptions = [
   { value: "'Poppins', sans-serif", label: 'Poppins', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Inter', sans-serif", label: 'Inter', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Roboto', sans-serif", label: 'Roboto', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Montserrat', sans-serif", label: 'Montserrat', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Arial', sans-serif", label: 'Arial', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Helvetica', sans-serif", label: 'Helvetica', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Tahoma', sans-serif", label: 'Tahoma', group: 'Sans-serif', koreanSupport: false, vietnameseSupport: true },
@@ -60,6 +61,7 @@ export const fontOptions = [
   { value: "'Georgia', serif", label: 'Georgia', group: 'Serif', koreanSupport: false, vietnameseSupport: false },
   { value: "'Times New Roman', serif", label: 'Times New Roman', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Playfair Display', serif", label: 'Playfair Display', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Cormorant Garamond', serif", label: 'Cormorant Garamond', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
 
   // Monospace fonts
   { value: "'Nanum Gothic Coding', monospace", label: 'Nanum Gothic Coding', group: 'Monospace', koreanSupport: true, vietnameseSupport: false },
@@ -69,6 +71,7 @@ export const fontOptions = [
 
   // Display fonts
   { value: "'Impact', sans-serif", label: 'Impact', group: 'Display', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Orbitron', sans-serif", label: 'Orbitron', group: 'Display', koreanSupport: false, vietnameseSupport: true },
   { value: "'Oswald', sans-serif", label: 'Oswald', group: 'Display', koreanSupport: false, vietnameseSupport: true },
   { value: "'Bebas Neue', sans-serif", label: 'Bebas Neue', group: 'Display', koreanSupport: false, vietnameseSupport: false }
 ];

@@ -41,6 +41,27 @@ export const defaultCustomization = {
   glowColor: '#ffffff',
   glowIntensity: 10,
 
+  // Advanced gradient effects
+  gradientEnabled: false,
+  gradientType: 'linear',
+  gradientDirection: '45deg',
+  gradientColorStart: '#ffffff',
+  gradientColorEnd: '#cccccc',
+  gradientColorMid: '#eeeeee',
+
+  // Advanced text effects
+  strokeEnabled: false,
+  strokeWidth: 2,
+  strokeColor: '#000000',
+  multiShadowEnabled: false,
+  shadowLayers: 1,
+
+  // Kinetic effects
+  pulseEnabled: false,
+  pulseSpeed: 1,
+  shakeEnabled: false,
+  shakeIntensity: 2,
+
   position: 'bottom',
   customPositionX: 50,
   customPositionY: 80,
@@ -90,7 +111,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       default: defaultCustomization,
       modern: {
         ...defaultCustomization,
-        fontFamily: 'Roboto',
+        fontFamily: "'Roboto', sans-serif",
         fontSize: 32,
         fontWeight: 400,
         backgroundColor: '#1a1a1a',
@@ -101,7 +122,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       },
       classic: {
         ...defaultCustomization,
-        fontFamily: 'Times New Roman',
+        fontFamily: "'Times New Roman', serif",
         fontSize: 30,
         fontWeight: 700,
         textColor: '#ffff00',
@@ -115,7 +136,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       },
       neon: {
         ...defaultCustomization,
-        fontFamily: 'Arial',
+        fontFamily: "'Arial', sans-serif",
         fontSize: 34,
         fontWeight: 700,
         textColor: '#00ffff',
@@ -132,7 +153,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       },
       minimal: {
         ...defaultCustomization,
-        fontFamily: 'Helvetica',
+        fontFamily: "'Helvetica', sans-serif",
         fontSize: 26,
         fontWeight: 300,
         backgroundColor: 'transparent',
@@ -142,6 +163,101 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
         textShadowColor: '#000000',
         textShadowBlur: 8,
         preset: 'minimal'
+      },
+      gaming: {
+        ...defaultCustomization,
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: 36,
+        fontWeight: 700,
+        textColor: '#ff6b35',
+        backgroundColor: '#0a0a0a',
+        backgroundOpacity: 85,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: '#ff6b35',
+        borderStyle: 'solid',
+        glowEnabled: true,
+        glowColor: '#ff6b35',
+        glowIntensity: 12,
+        strokeEnabled: true,
+        strokeWidth: 1,
+        strokeColor: '#000000',
+        animationType: 'bounce',
+        preset: 'gaming'
+      },
+      cinematic: {
+        ...defaultCustomization,
+        fontFamily: "'Playfair Display', serif",
+        fontSize: 32,
+        fontWeight: 400,
+        textColor: '#f5f5dc',
+        backgroundColor: '#1c1c1c',
+        backgroundOpacity: 75,
+        borderRadius: 2,
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 8,
+        textShadowOffsetY: 3,
+        letterSpacing: 1,
+        lineHeight: 1.4,
+        preset: 'cinematic'
+      },
+      gradient: {
+        ...defaultCustomization,
+        fontFamily: "'Montserrat', sans-serif",
+        fontSize: 34,
+        fontWeight: 600,
+        gradientEnabled: true,
+        gradientType: 'linear',
+        gradientDirection: '45deg',
+        gradientColorStart: '#ff6b6b',
+        gradientColorEnd: '#4ecdc4',
+        backgroundColor: '#000000',
+        backgroundOpacity: 60,
+        borderRadius: 8,
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 6,
+        preset: 'gradient'
+      },
+      retro: {
+        ...defaultCustomization,
+        fontFamily: "'Courier New', monospace",
+        fontSize: 28,
+        fontWeight: 700,
+        textColor: '#00ff41',
+        backgroundColor: '#000000',
+        backgroundOpacity: 90,
+        borderRadius: 0,
+        textShadowEnabled: true,
+        textShadowColor: '#00ff41',
+        textShadowBlur: 10,
+        glowEnabled: true,
+        glowColor: '#00ff41',
+        glowIntensity: 8,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        preset: 'retro'
+      },
+      elegant: {
+        ...defaultCustomization,
+        fontFamily: "'Cormorant Garamond', serif",
+        fontSize: 30,
+        fontWeight: 300,
+        textColor: '#ffffff',
+        backgroundColor: 'transparent',
+        backgroundOpacity: 0,
+        borderRadius: 0,
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 12,
+        textShadowOffsetY: 2,
+        letterSpacing: 0.5,
+        lineHeight: 1.5,
+        strokeEnabled: true,
+        strokeWidth: 1,
+        strokeColor: '#333333',
+        preset: 'elegant'
       }
     };
 
@@ -159,7 +275,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
           </div>
           <div className="row-content">
             <div className="preset-buttons">
-              {['default', 'modern', 'classic', 'neon', 'minimal'].map(preset => (
+              {['default', 'modern', 'classic', 'neon', 'minimal', 'gaming', 'cinematic', 'gradient', 'retro', 'elegant'].map(preset => (
                 <button
                   key={preset}
                   className={`pill-button ${customization.preset === preset ? 'primary' : 'secondary'}`}
@@ -730,6 +846,212 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
             </div>
           </div>
         )}
+
+        {/* Gradient Text Effect */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.gradientText', 'Gradient Text')}</label>
+          </div>
+          <div className="row-content">
+            <div className="toggle-control">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={customization.gradientEnabled}
+                  onChange={(e) => updateCustomization({ gradientEnabled: e.target.checked })}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Gradient Colors */}
+        {customization.gradientEnabled && (
+          <>
+            <div className="customization-row">
+              <div className="row-label">
+                <label>{t('videoRendering.gradientStart', 'Gradient Start')}</label>
+              </div>
+              <div className="row-content">
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={customization.gradientColorStart}
+                    onChange={(e) => updateCustomization({ gradientColorStart: e.target.value })}
+                    className="color-picker"
+                  />
+                  <input
+                    type="text"
+                    value={customization.gradientColorStart}
+                    onChange={(e) => updateCustomization({ gradientColorStart: e.target.value })}
+                    placeholder="#ff6b6b"
+                    className="color-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="customization-row">
+              <div className="row-label">
+                <label>{t('videoRendering.gradientEnd', 'Gradient End')}</label>
+              </div>
+              <div className="row-content">
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={customization.gradientColorEnd}
+                    onChange={(e) => updateCustomization({ gradientColorEnd: e.target.value })}
+                    className="color-picker"
+                  />
+                  <input
+                    type="text"
+                    value={customization.gradientColorEnd}
+                    onChange={(e) => updateCustomization({ gradientColorEnd: e.target.value })}
+                    placeholder="#4ecdc4"
+                    className="color-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="customization-row">
+              <div className="row-label">
+                <label>{t('videoRendering.gradientDirection', 'Gradient Direction')}</label>
+              </div>
+              <div className="row-content">
+                <select
+                  value={customization.gradientDirection}
+                  onChange={(e) => updateCustomization({ gradientDirection: e.target.value })}
+                  className="setting-select"
+                >
+                  <option value="0deg">Horizontal →</option>
+                  <option value="90deg">Vertical ↓</option>
+                  <option value="45deg">Diagonal ↘</option>
+                  <option value="135deg">Diagonal ↙</option>
+                  <option value="180deg">Horizontal ←</option>
+                  <option value="270deg">Vertical ↑</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Text Stroke Effect */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.textStroke', 'Text Stroke')}</label>
+          </div>
+          <div className="row-content">
+            <div className="toggle-control">
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={customization.strokeEnabled}
+                  onChange={(e) => updateCustomization({ strokeEnabled: e.target.checked })}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              {customization.strokeEnabled && (
+                <div className="color-control">
+                  <input
+                    type="color"
+                    value={customization.strokeColor}
+                    onChange={(e) => updateCustomization({ strokeColor: e.target.value })}
+                    className="color-picker"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stroke Width */}
+        {customization.strokeEnabled && (
+          <div className="customization-row">
+            <div className="row-label">
+              <label>{t('videoRendering.strokeWidth', 'Stroke Width')}</label>
+            </div>
+            <div className="row-content">
+              <div className="slider-control">
+                <span className="slider-value">{customization.strokeWidth}px</span>
+                <div className="volume-slider">
+                  <div className="custom-slider-track">
+                    <div
+                      className="custom-slider-fill"
+                      style={{ width: `${(customization.strokeWidth / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.strokeWidth / 5) * 100}%` }}
+                  ></div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={customization.strokeWidth}
+                    onChange={(e) => updateCustomization({ strokeWidth: parseFloat(e.target.value) })}
+                    className="custom-slider-input"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Letter Spacing */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.letterSpacing', 'Letter Spacing')}</label>
+          </div>
+          <div className="row-content">
+            <div className="slider-control">
+              <span className="slider-value">{customization.letterSpacing}px</span>
+              <div className="volume-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((customization.letterSpacing + 5) / 10) * 100}%` }}
+                  ></div>
+                </div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.letterSpacing + 5) / 10) * 100}%` }}
+                ></div>
+                <input
+                  type="range"
+                  min="-5"
+                  max="5"
+                  step="0.5"
+                  value={customization.letterSpacing}
+                  onChange={(e) => updateCustomization({ letterSpacing: parseFloat(e.target.value) })}
+                  className="custom-slider-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Text Transform */}
+        <div className="customization-row">
+          <div className="row-label">
+            <label>{t('videoRendering.textTransform', 'Text Transform')}</label>
+          </div>
+          <div className="row-content">
+            <select
+              value={customization.textTransform}
+              onChange={(e) => updateCustomization({ textTransform: e.target.value })}
+              className="setting-select"
+            >
+              <option value="none">Normal</option>
+              <option value="uppercase">UPPERCASE</option>
+              <option value="lowercase">lowercase</option>
+              <option value="capitalize">Capitalize</option>
+            </select>
+          </div>
+        </div>
 
         {/* Animation Type */}
         <div className="customization-row">

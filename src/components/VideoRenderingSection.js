@@ -903,7 +903,10 @@ const VideoRenderingSection = ({
         compositionId: 'subtitled-video',
         audioFile: audioFile,
         lyrics: currentSubtitles,
-        metadata: renderSettings,
+        metadata: {
+          ...renderSettings,
+          subtitleCustomization: queueItem.customization // Include subtitle customization in metadata
+        },
         narrationUrl: narrationUrl, // Use HTTP URL instead of blob URL
         isVideoFile: true
       };

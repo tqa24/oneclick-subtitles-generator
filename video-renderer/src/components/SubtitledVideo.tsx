@@ -6,12 +6,14 @@ import { defaultCustomization } from './SubtitleCustomization';
 
 // Font styles
 const fontStyles = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Georgia:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Impact:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 `;
 
 
@@ -332,6 +334,19 @@ export const SubtitledVideoContent: React.FC<Props> = ({
               ? `${getResponsiveScaledValue(customization.borderWidth)}px ${customization.borderStyle} ${customization.borderColor}`
               : 'none';
 
+            // Advanced styling features
+            const textStroke = customization.strokeEnabled
+              ? `${getResponsiveScaledValue(customization.strokeWidth)}px ${customization.strokeColor}`
+              : 'none';
+
+            // Gradient text support
+            let textColor = customization.textColor;
+            let backgroundImage = 'none';
+            if (customization.gradientEnabled) {
+              textColor = 'transparent';
+              backgroundImage = `linear-gradient(${customization.gradientDirection}, ${customization.gradientColorStart}, ${customization.gradientColorEnd})`;
+            }
+
             // Get animation transform
             const transform = getAnimationTransform(
               currentSubtitle.animationProgress,
@@ -373,10 +388,10 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   fontSize: getResponsiveScaledValue(customization.fontSize),
                   fontFamily: customization.fontFamily,
                   fontWeight: customization.fontWeight,
-                  color: customization.textColor,
+                  color: textColor,
                   textAlign: customization.textAlign,
                   lineHeight: customization.lineHeight,
-                  letterSpacing: getResponsiveScaledValue(customization.letterSpacing),
+                  letterSpacing: getResponsiveScaledValue(customization.letterSpacing || 0),
                   textShadow,
                   backgroundColor,
                   border,
@@ -385,6 +400,13 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   maxWidth: `${customization.maxWidth}%`,
                   whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap',
                   boxShadow,
+                  // Advanced styling features
+                  WebkitTextStroke: textStroke,
+                  textStroke: textStroke,
+                  backgroundImage: backgroundImage,
+                  WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial',
+                  backgroundClip: customization.gradientEnabled ? 'text' : 'initial',
+                  textTransform: customization.textTransform || 'none',
                   direction: customization.rtlSupport ? 'rtl' : 'ltr',
                   // Note: CSS transitions don't work in server-side rendering (Remotion)
                   // All animations are handled manually through opacity and transform calculations

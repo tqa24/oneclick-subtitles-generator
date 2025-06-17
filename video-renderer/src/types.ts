@@ -49,6 +49,27 @@ export interface SubtitleCustomization {
   glowColor: string;
   glowIntensity: number;
 
+  // Advanced gradient effects
+  gradientEnabled: boolean;
+  gradientType: 'linear' | 'radial';
+  gradientDirection: string;
+  gradientColorStart: string;
+  gradientColorEnd: string;
+  gradientColorMid: string;
+
+  // Advanced text effects
+  strokeEnabled: boolean;
+  strokeWidth: number;
+  strokeColor: string;
+  multiShadowEnabled: boolean;
+  shadowLayers: number;
+
+  // Kinetic effects
+  pulseEnabled: boolean;
+  pulseSpeed: number;
+  shakeEnabled: boolean;
+  shakeIntensity: number;
+
   // Positioning
   position: 'bottom' | 'top' | 'center' | 'custom';
   customPositionX: number; // percentage
@@ -62,7 +83,7 @@ export interface SubtitleCustomization {
   // Animation & Timing
   fadeInDuration: number;
   fadeOutDuration: number;
-  animationType: 'fade' | 'slide-up' | 'slide-down' | 'scale' | 'typewriter';
+  animationType: 'fade' | 'slide-up' | 'slide-down' | 'slide-left' | 'slide-right' | 'scale' | 'bounce' | 'flip' | 'rotate' | 'typewriter';
   animationEasing: 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
   // Advanced
@@ -72,7 +93,7 @@ export interface SubtitleCustomization {
   rtlSupport: boolean;
 
   // Preset Styles
-  preset: 'default' | 'modern' | 'classic' | 'neon' | 'minimal' | 'bold' | 'elegant' | 'custom';
+  preset: 'default' | 'modern' | 'classic' | 'neon' | 'minimal' | 'gaming' | 'cinematic' | 'gradient' | 'retro' | 'elegant' | 'custom';
 }
 
 export interface AudioFiles {

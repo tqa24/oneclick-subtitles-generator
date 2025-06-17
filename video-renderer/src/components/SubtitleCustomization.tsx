@@ -30,6 +30,27 @@ export const defaultCustomization: SubtitleCustomization = {
   glowColor: '#ffffff',
   glowIntensity: 10,
 
+  // Advanced gradient effects
+  gradientEnabled: false,
+  gradientType: 'linear',
+  gradientDirection: '45deg',
+  gradientColorStart: '#ffffff',
+  gradientColorEnd: '#cccccc',
+  gradientColorMid: '#eeeeee',
+
+  // Advanced text effects
+  strokeEnabled: false,
+  strokeWidth: 2,
+  strokeColor: '#000000',
+  multiShadowEnabled: false,
+  shadowLayers: 1,
+
+  // Kinetic effects
+  pulseEnabled: false,
+  pulseSpeed: 1,
+  shakeEnabled: false,
+  shakeIntensity: 2,
+
   position: 'bottom',
   customPositionX: 50,
   customPositionY: 80,
