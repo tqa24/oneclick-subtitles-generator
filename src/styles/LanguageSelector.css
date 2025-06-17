@@ -48,7 +48,6 @@
 }
 
 .language-selector-button:hover {
-  transform: translateY(-2px);
   box-shadow: var(--md-elevation-level2); /* Increase shadow on hover */
 }
 

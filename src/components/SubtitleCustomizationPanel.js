@@ -13,6 +13,7 @@ import {
   groupFontsByCategory,
   getFontSupportFlags
 } from './subtitleCustomization/fontOptions';
+import FontSelectionModal from './subtitleCustomization/FontSelectionModal';
 
 // Default customization settings
 export const defaultCustomization = {
@@ -94,6 +95,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
     position: false,
     animation: false
   });
+  const [isFontModalOpen, setIsFontModalOpen] = useState(false);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -166,7 +168,7 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       },
       gaming: {
         ...defaultCustomization,
-        fontFamily: "'Orbitron', sans-serif",
+        fontFamily: "'Audiowide', cursive",
         fontSize: 36,
         fontWeight: 700,
         textColor: '#ff6b35',
@@ -222,8 +224,8 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
       },
       retro: {
         ...defaultCustomization,
-        fontFamily: "'Courier New', monospace",
-        fontSize: 28,
+        fontFamily: "'Press Start 2P', cursive",
+        fontSize: 24,
         fontWeight: 700,
         textColor: '#00ff41',
         backgroundColor: '#000000',
@@ -258,6 +260,363 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
         strokeWidth: 1,
         strokeColor: '#333333',
         preset: 'elegant'
+      },
+      cyberpunk: {
+        ...defaultCustomization,
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: 38,
+        fontWeight: 700,
+        textColor: '#ff0080',
+        backgroundColor: '#000000',
+        backgroundOpacity: 95,
+        borderRadius: 0,
+        borderWidth: 3,
+        borderColor: '#ff0080',
+        glowEnabled: true,
+        glowColor: '#ff0080',
+        glowIntensity: 25,
+        textShadowEnabled: true,
+        textShadowColor: '#ff0080',
+        textShadowBlur: 15,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        preset: 'cyberpunk'
+      },
+      vintage: {
+        ...defaultCustomization,
+        fontFamily: "'Playfair Display', serif",
+        fontSize: 32,
+        fontWeight: 400,
+        textColor: '#f4e4bc',
+        backgroundColor: '#8b4513',
+        backgroundOpacity: 85,
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#daa520',
+        textShadowEnabled: true,
+        textShadowColor: '#654321',
+        textShadowBlur: 8,
+        letterSpacing: 1,
+        preset: 'vintage'
+      },
+      comic: {
+        ...defaultCustomization,
+        fontFamily: "'Bangers', cursive",
+        fontSize: 36,
+        fontWeight: 400,
+        textColor: '#ffffff',
+        backgroundColor: '#ff6b35',
+        backgroundOpacity: 90,
+        borderRadius: 20,
+        borderWidth: 4,
+        borderColor: '#000000',
+        strokeEnabled: true,
+        strokeWidth: 3,
+        strokeColor: '#000000',
+        textShadowEnabled: true,
+        textShadowColor: '#ff0000',
+        textShadowBlur: 5,
+        preset: 'comic'
+      },
+      horror: {
+        ...defaultCustomization,
+        fontFamily: "'Nosifer', cursive",
+        fontSize: 34,
+        fontWeight: 400,
+        textColor: '#8b0000',
+        backgroundColor: '#000000',
+        backgroundOpacity: 95,
+        borderRadius: 5,
+        glowEnabled: true,
+        glowColor: '#8b0000',
+        glowIntensity: 30,
+        textShadowEnabled: true,
+        textShadowColor: '#ff0000',
+        textShadowBlur: 20,
+        textShadowOffsetY: 5,
+        letterSpacing: 2,
+        preset: 'horror'
+      },
+      luxury: {
+        ...defaultCustomization,
+        fontFamily: "'Playfair Display', serif",
+        fontSize: 35,
+        fontWeight: 400,
+        textColor: '#ffd700',
+        backgroundColor: '#1a1a1a',
+        backgroundOpacity: 80,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ffd700',
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 10,
+        letterSpacing: 2,
+        lineHeight: 1.4,
+        preset: 'luxury'
+      },
+      kawaii: {
+        ...defaultCustomization,
+        fontFamily: "'Comfortaa', cursive",
+        fontSize: 30,
+        fontWeight: 600,
+        textColor: '#ff69b4',
+        backgroundColor: '#ffffff',
+        backgroundOpacity: 85,
+        borderRadius: 25,
+        borderWidth: 3,
+        borderColor: '#ff69b4',
+        textShadowEnabled: true,
+        textShadowColor: '#ffb6c1',
+        textShadowBlur: 8,
+        preset: 'kawaii'
+      },
+      grunge: {
+        ...defaultCustomization,
+        fontFamily: "'Righteous', cursive",
+        fontSize: 32,
+        fontWeight: 400,
+        textColor: '#ffffff',
+        backgroundColor: '#2f2f2f',
+        backgroundOpacity: 90,
+        borderRadius: 0,
+        strokeEnabled: true,
+        strokeWidth: 2,
+        strokeColor: '#000000',
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 15,
+        textShadowOffsetY: 3,
+        letterSpacing: 1,
+        preset: 'grunge'
+      },
+      corporate: {
+        ...defaultCustomization,
+        fontFamily: "'Open Sans', sans-serif",
+        fontSize: 28,
+        fontWeight: 400,
+        textColor: '#2c3e50',
+        backgroundColor: '#ecf0f1',
+        backgroundOpacity: 90,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#bdc3c7',
+        textShadowEnabled: false,
+        letterSpacing: 0.5,
+        lineHeight: 1.3,
+        preset: 'corporate'
+      },
+      anime: {
+        ...defaultCustomization,
+        fontFamily: "'Nunito', sans-serif",
+        fontSize: 32,
+        fontWeight: 700,
+        textColor: '#ffffff',
+        backgroundColor: '#ff6b9d',
+        backgroundOpacity: 85,
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        strokeEnabled: true,
+        strokeWidth: 1,
+        strokeColor: '#ff1493',
+        textShadowEnabled: true,
+        textShadowColor: '#ff1493',
+        textShadowBlur: 8,
+        preset: 'anime'
+      },
+      vaporwave: {
+        ...defaultCustomization,
+        fontFamily: "'Orbitron', sans-serif",
+        fontSize: 34,
+        fontWeight: 300,
+        gradientEnabled: true,
+        gradientColorStart: '#ff00ff',
+        gradientColorEnd: '#00ffff',
+        gradientDirection: '45deg',
+        backgroundColor: '#1a0033',
+        backgroundOpacity: 90,
+        borderRadius: 0,
+        glowEnabled: true,
+        glowColor: '#ff00ff',
+        glowIntensity: 20,
+        letterSpacing: 4,
+        textTransform: 'uppercase',
+        preset: 'vaporwave'
+      },
+      steampunk: {
+        ...defaultCustomization,
+        fontFamily: "'Cinzel', serif",
+        fontSize: 30,
+        fontWeight: 600,
+        textColor: '#cd853f',
+        backgroundColor: '#2f1b14',
+        backgroundOpacity: 90,
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: '#8b4513',
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 12,
+        letterSpacing: 1,
+        preset: 'steampunk'
+      },
+      noir: {
+        ...defaultCustomization,
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: 36,
+        fontWeight: 400,
+        textColor: '#ffffff',
+        backgroundColor: '#000000',
+        backgroundOpacity: 95,
+        borderRadius: 0,
+        textShadowEnabled: true,
+        textShadowColor: '#333333',
+        textShadowBlur: 20,
+        textShadowOffsetY: 8,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        preset: 'noir'
+      },
+      pastel: {
+        ...defaultCustomization,
+        fontFamily: "'Quicksand', sans-serif",
+        fontSize: 28,
+        fontWeight: 500,
+        textColor: '#6b5b95',
+        backgroundColor: '#f8f8ff',
+        backgroundOpacity: 85,
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: '#dda0dd',
+        textShadowEnabled: true,
+        textShadowColor: '#e6e6fa',
+        textShadowBlur: 6,
+        preset: 'pastel'
+      },
+      bold: {
+        ...defaultCustomization,
+        fontFamily: "'Anton', sans-serif",
+        fontSize: 42,
+        fontWeight: 400,
+        textColor: '#ffffff',
+        backgroundColor: '#000000',
+        backgroundOpacity: 90,
+        borderRadius: 5,
+        strokeEnabled: true,
+        strokeWidth: 4,
+        strokeColor: '#ff0000',
+        textShadowEnabled: true,
+        textShadowColor: '#ff0000',
+        textShadowBlur: 10,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        preset: 'bold'
+      },
+      sketch: {
+        ...defaultCustomization,
+        fontFamily: "'Kalam', cursive",
+        fontSize: 30,
+        fontWeight: 400,
+        textColor: '#2c3e50',
+        backgroundColor: '#ffffff',
+        backgroundOpacity: 80,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#34495e',
+        strokeEnabled: true,
+        strokeWidth: 1,
+        strokeColor: '#7f8c8d',
+        preset: 'sketch'
+      },
+      glitch: {
+        ...defaultCustomization,
+        fontFamily: "'Courier New', monospace",
+        fontSize: 32,
+        fontWeight: 700,
+        textColor: '#00ff00',
+        backgroundColor: '#000000',
+        backgroundOpacity: 95,
+        borderRadius: 0,
+        glowEnabled: true,
+        glowColor: '#00ff00',
+        glowIntensity: 35,
+        textShadowEnabled: true,
+        textShadowColor: '#ff0000',
+        textShadowBlur: 8,
+        textShadowOffsetY: 2,
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        preset: 'glitch'
+      },
+      royal: {
+        ...defaultCustomization,
+        fontFamily: "'Cinzel', serif",
+        fontSize: 34,
+        fontWeight: 600,
+        textColor: '#ffd700',
+        backgroundColor: '#4b0082',
+        backgroundOpacity: 90,
+        borderRadius: 10,
+        borderWidth: 3,
+        borderColor: '#ffd700',
+        textShadowEnabled: true,
+        textShadowColor: '#000000',
+        textShadowBlur: 15,
+        letterSpacing: 2,
+        lineHeight: 1.4,
+        preset: 'royal'
+      },
+      sunset: {
+        ...defaultCustomization,
+        fontFamily: "'Poppins', sans-serif",
+        fontSize: 32,
+        fontWeight: 500,
+        gradientEnabled: true,
+        gradientColorStart: '#ff7e5f',
+        gradientColorEnd: '#feb47b',
+        gradientDirection: '135deg',
+        backgroundColor: '#2c1810',
+        backgroundOpacity: 75,
+        borderRadius: 15,
+        textShadowEnabled: true,
+        textShadowColor: '#8b4513',
+        textShadowBlur: 10,
+        preset: 'sunset'
+      },
+      ocean: {
+        ...defaultCustomization,
+        fontFamily: "'Merriweather', serif",
+        fontSize: 30,
+        fontWeight: 400,
+        gradientEnabled: true,
+        gradientColorStart: '#667eea',
+        gradientColorEnd: '#764ba2',
+        gradientDirection: '90deg',
+        backgroundColor: '#1e3c72',
+        backgroundOpacity: 80,
+        borderRadius: 12,
+        textShadowEnabled: true,
+        textShadowColor: '#0f1419',
+        textShadowBlur: 8,
+        preset: 'ocean'
+      },
+      forest: {
+        ...defaultCustomization,
+        fontFamily: "'Lora', serif",
+        fontSize: 28,
+        fontWeight: 400,
+        textColor: '#90ee90',
+        backgroundColor: '#2d5016',
+        backgroundOpacity: 85,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#228b22',
+        textShadowEnabled: true,
+        textShadowColor: '#006400',
+        textShadowBlur: 12,
+        letterSpacing: 0.5,
+        preset: 'forest'
       }
     };
 
@@ -269,22 +628,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
     <div className="subtitle-customization-panel">
       <div className="panel-content">
         {/* Style Presets - using translation-section row pattern */}
-        <div className="customization-row">
-          <div className="row-label">
-            <label>{t('videoRendering.stylePresets', 'Style Presets')}</label>
-          </div>
-          <div className="row-content">
-            <div className="preset-buttons">
-              {['default', 'modern', 'classic', 'neon', 'minimal', 'gaming', 'cinematic', 'gradient', 'retro', 'elegant'].map(preset => (
-                <button
-                  key={preset}
-                  className={`pill-button ${customization.preset === preset ? 'primary' : 'secondary'}`}
-                  onClick={() => applyPreset(preset)}
-                >
-                  {preset.charAt(0).toUpperCase() + preset.slice(1)}
-                </button>
-              ))}
-            </div>
+        <div className="customization-row preset-row">
+          <div className="preset-buttons">
+            {['default', 'modern', 'classic', 'neon', 'minimal', 'gaming', 'cinematic', 'gradient', 'retro', 'elegant', 'cyberpunk', 'vintage', 'comic', 'horror', 'luxury', 'kawaii', 'grunge', 'corporate', 'anime', 'vaporwave', 'steampunk', 'noir', 'pastel', 'bold', 'sketch', 'glitch', 'royal', 'sunset', 'ocean', 'forest'].map(preset => (
+              <button
+                key={preset}
+                className={`pill-button ${customization.preset === preset ? 'primary' : 'secondary'}`}
+                onClick={() => applyPreset(preset)}
+              >
+                {preset.charAt(0).toUpperCase() + preset.slice(1)}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -294,21 +648,32 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
             <label>{t('videoRendering.fontFamily', 'Font Family')}</label>
           </div>
           <div className="row-content">
-            <select
-              value={customization.fontFamily}
-              onChange={(e) => updateCustomization({ fontFamily: e.target.value })}
-              className="setting-select"
+            <button
+              className="font-selector-button"
+              onClick={() => setIsFontModalOpen(true)}
             >
-              {Object.entries(groupFontsByCategory()).map(([group, fonts]) => (
-                <optgroup key={group} label={group}>
-                  {fonts.map(font => (
-                    <option key={font.value} value={font.value}>
-                      {font.label} {getFontSupportFlags(font)}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              <div className="font-selector-preview">
+                <span
+                  className="font-name"
+                  style={{ fontFamily: customization.fontFamily }}
+                >
+                  {(() => {
+                    const currentFont = Object.values(groupFontsByCategory())
+                      .flat()
+                      .find(font => font.value === customization.fontFamily);
+                    return currentFont?.label || 'Select Font';
+                  })()}
+                </span>
+                <span className="font-flags">
+                  {(() => {
+                    const currentFont = Object.values(groupFontsByCategory())
+                      .flat()
+                      .find(font => font.value === customization.fontFamily);
+                    return currentFont ? getFontSupportFlags(currentFont) : '';
+                  })()}
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -324,17 +689,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.fontSize - 12) / (72 - 12)) * 100}%` }}
+                    style={{ width: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.fontSize - 12) / (72 - 12)) * 100}%` }}
+                  style={{ left: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="12"
-                  max="72"
+                  min="8"
+                  max="120"
                   value={customization.fontSize}
                   onChange={(e) => updateCustomization({ fontSize: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -431,17 +796,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.lineHeight - 0.8) / (2.0 - 0.8)) * 100}%` }}
+                    style={{ width: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.lineHeight - 0.8) / (2.0 - 0.8)) * 100}%` }}
+                  style={{ left: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="0.8"
-                  max="2.0"
+                  min="0.5"
+                  max="3.0"
                   step="0.1"
                   value={customization.lineHeight}
                   onChange={(e) => updateCustomization({ lineHeight: parseFloat(e.target.value) })}
@@ -520,17 +885,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${(customization.borderRadius / 50) * 100}%` }}
+                    style={{ width: `${(customization.borderRadius / 100) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${(customization.borderRadius / 50) * 100}%` }}
+                  style={{ left: `${(customization.borderRadius / 100) * 100}%` }}
                 ></div>
                 <input
                   type="range"
                   min="0"
-                  max="50"
+                  max="100"
                   value={customization.borderRadius}
                   onChange={(e) => updateCustomization({ borderRadius: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -552,17 +917,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${(customization.borderWidth / 10) * 100}%` }}
+                    style={{ width: `${(customization.borderWidth / 20) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${(customization.borderWidth / 10) * 100}%` }}
+                  style={{ left: `${(customization.borderWidth / 20) * 100}%` }}
                 ></div>
                 <input
                   type="range"
                   min="0"
-                  max="10"
+                  max="20"
                   value={customization.borderWidth}
                   onChange={(e) => updateCustomization({ borderWidth: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -603,17 +968,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.maxWidth - 20) / (100 - 20)) * 100}%` }}
+                    style={{ width: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.maxWidth - 20) / (100 - 20)) * 100}%` }}
+                  style={{ left: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="20"
-                  max="100"
+                  min="10"
+                  max="150"
                   value={customization.maxWidth}
                   onChange={(e) => updateCustomization({ maxWidth: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -635,17 +1000,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${(customization.marginBottom / 200) * 100}%` }}
+                    style={{ width: `${(customization.marginBottom / 400) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginBottom / 200) * 100}%` }}
+                  style={{ left: `${(customization.marginBottom / 400) * 100}%` }}
                 ></div>
                 <input
                   type="range"
                   min="0"
-                  max="200"
+                  max="400"
                   value={customization.marginBottom}
                   onChange={(e) => updateCustomization({ marginBottom: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -667,17 +1032,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${(customization.marginTop / 200) * 100}%` }}
+                    style={{ width: `${(customization.marginTop / 400) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginTop / 200) * 100}%` }}
+                  style={{ left: `${(customization.marginTop / 400) * 100}%` }}
                 ></div>
                 <input
                   type="range"
                   min="0"
-                  max="200"
+                  max="400"
                   value={customization.marginTop}
                   onChange={(e) => updateCustomization({ marginTop: parseInt(e.target.value) })}
                   className="custom-slider-input"
@@ -729,17 +1094,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${(customization.textShadowBlur / 20) * 100}%` }}
+                      style={{ width: `${(customization.textShadowBlur / 50) * 100}%` }}
                     ></div>
                   </div>
                   <div
                     className="custom-slider-thumb"
-                    style={{ left: `${(customization.textShadowBlur / 20) * 100}%` }}
+                    style={{ left: `${(customization.textShadowBlur / 50) * 100}%` }}
                   ></div>
                   <input
                     type="range"
                     min="0"
-                    max="20"
+                    max="50"
                     value={customization.textShadowBlur}
                     onChange={(e) => updateCustomization({ textShadowBlur: parseInt(e.target.value) })}
                     className="custom-slider-input"
@@ -763,17 +1128,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${((customization.textShadowOffsetY + 10) / 20) * 100}%` }}
+                      style={{ width: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
                     ></div>
                   </div>
                   <div
                     className="custom-slider-thumb"
-                    style={{ left: `${((customization.textShadowOffsetY + 10) / 20) * 100}%` }}
+                    style={{ left: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
                   ></div>
                   <input
                     type="range"
-                    min="-10"
-                    max="10"
+                    min="-25"
+                    max="25"
                     value={customization.textShadowOffsetY}
                     onChange={(e) => updateCustomization({ textShadowOffsetY: parseInt(e.target.value) })}
                     className="custom-slider-input"
@@ -826,17 +1191,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${(customization.glowIntensity / 30) * 100}%` }}
+                      style={{ width: `${(customization.glowIntensity / 100) * 100}%` }}
                     ></div>
                   </div>
                   <div
                     className="custom-slider-thumb"
-                    style={{ left: `${(customization.glowIntensity / 30) * 100}%` }}
+                    style={{ left: `${(customization.glowIntensity / 100) * 100}%` }}
                   ></div>
                   <input
                     type="range"
                     min="0"
-                    max="30"
+                    max="100"
                     value={customization.glowIntensity}
                     onChange={(e) => updateCustomization({ glowIntensity: parseInt(e.target.value) })}
                     className="custom-slider-input"
@@ -979,17 +1344,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
-                      style={{ width: `${(customization.strokeWidth / 5) * 100}%` }}
+                      style={{ width: `${(customization.strokeWidth / 10) * 100}%` }}
                     ></div>
                   </div>
                   <div
                     className="custom-slider-thumb"
-                    style={{ left: `${(customization.strokeWidth / 5) * 100}%` }}
+                    style={{ left: `${(customization.strokeWidth / 10) * 100}%` }}
                   ></div>
                   <input
                     type="range"
                     min="0"
-                    max="5"
+                    max="10"
                     step="0.5"
                     value={customization.strokeWidth}
                     onChange={(e) => updateCustomization({ strokeWidth: parseFloat(e.target.value) })}
@@ -1013,17 +1378,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.letterSpacing + 5) / 10) * 100}%` }}
+                    style={{ width: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.letterSpacing + 5) / 10) * 100}%` }}
+                  style={{ left: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="-5"
-                  max="5"
+                  min="-10"
+                  max="10"
                   step="0.5"
                   value={customization.letterSpacing}
                   onChange={(e) => updateCustomization({ letterSpacing: parseFloat(e.target.value) })}
@@ -1105,17 +1470,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.fadeInDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                    style={{ width: `${((customization.fadeInDuration - 0.0) / (5.0 - 0.0)) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.fadeInDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                  style={{ left: `${((customization.fadeInDuration - 0.0) / (5.0 - 0.0)) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="0.1"
-                  max="2.0"
+                  min="0.0"
+                  max="5.0"
                   step="0.1"
                   value={customization.fadeInDuration}
                   onChange={(e) => updateCustomization({ fadeInDuration: parseFloat(e.target.value) })}
@@ -1138,17 +1503,17 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
-                    style={{ width: `${((customization.fadeOutDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                    style={{ width: `${((customization.fadeOutDuration - 0.0) / (5.0 - 0.0)) * 100}%` }}
                   ></div>
                 </div>
                 <div
                   className="custom-slider-thumb"
-                  style={{ left: `${((customization.fadeOutDuration - 0.1) / (2.0 - 0.1)) * 100}%` }}
+                  style={{ left: `${((customization.fadeOutDuration - 0.0) / (5.0 - 0.0)) * 100}%` }}
                 ></div>
                 <input
                   type="range"
-                  min="0.1"
-                  max="2.0"
+                  min="0.0"
+                  max="5.0"
                   step="0.1"
                   value={customization.fadeOutDuration}
                   onChange={(e) => updateCustomization({ fadeOutDuration: parseFloat(e.target.value) })}
@@ -1159,6 +1524,14 @@ const SubtitleCustomizationPanel = ({ customization, onChange, isExpanded, onTog
           </div>
         </div>
       </div>
+
+      {/* Font Selection Modal */}
+      <FontSelectionModal
+        isOpen={isFontModalOpen}
+        onClose={() => setIsFontModalOpen(false)}
+        selectedFont={customization.fontFamily}
+        onFontSelect={(fontFamily) => updateCustomization({ fontFamily })}
+      />
     </div>
   );
 };

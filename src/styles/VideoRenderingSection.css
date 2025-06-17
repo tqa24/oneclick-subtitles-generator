@@ -683,14 +683,12 @@
 .setting-select:hover {
   background-color: var(--md-surface-2);
   box-shadow: var(--md-elevation-level2);
-  transform: translateY(-2px);
 }
 
 .setting-select:focus {
   outline: none;
   border-color: var(--md-primary);
   box-shadow: 0 0 0 3px rgba(var(--md-primary-rgb), 0.1);
-  transform: translateY(-2px);
 }
 
 .setting-select:active {

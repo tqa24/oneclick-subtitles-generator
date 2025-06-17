@@ -106,7 +106,6 @@
 /* State layer for hover effect */
 .language-selector select:hover {
   border-color: var(--md-primary);
-  transform: translateY(-2px);
 }
 
 .language-selector:hover::after {

@@ -140,7 +140,6 @@
 .grouping-intensity-select:hover:not(:disabled) {
   border-color: var(--md-primary);
   box-shadow: var(--md-elevation-level2);
-  transform: translateY(-2px);
 }
 
 .grouping-intensity-select:focus {

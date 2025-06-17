@@ -30,6 +30,11 @@ export const fontOptions = [
   { value: "'Noto Serif', serif", label: 'Noto Serif', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
   { value: "'Arial Unicode MS', sans-serif", label: 'Arial Unicode', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
   { value: "'Source Sans Pro', sans-serif", label: 'Source Sans Pro', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
+  { value: "'Arial', sans-serif", label: 'Arial', group: 'Multilingual', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Helvetica', sans-serif", label: 'Helvetica', group: 'Multilingual', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Roboto', sans-serif", label: 'Roboto', group: 'Multilingual', koreanSupport: true, vietnameseSupport: true },
+  { value: "'Montserrat', sans-serif", label: 'Montserrat', group: 'Multilingual', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Poppins', sans-serif", label: 'Poppins', group: 'Multilingual', koreanSupport: false, vietnameseSupport: true },
 
   // Chinese optimized fonts
   { value: "'Noto Sans SC', sans-serif", label: 'Noto Sans Simplified Chinese', group: 'Chinese Optimized', chineseSupport: true },
@@ -62,6 +67,8 @@ export const fontOptions = [
   { value: "'Times New Roman', serif", label: 'Times New Roman', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Playfair Display', serif", label: 'Playfair Display', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
   { value: "'Cormorant Garamond', serif", label: 'Cormorant Garamond', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Merriweather', serif", label: 'Merriweather', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Lora', serif", label: 'Lora', group: 'Serif', koreanSupport: false, vietnameseSupport: true },
 
   // Monospace fonts
   { value: "'Nanum Gothic Coding', monospace", label: 'Nanum Gothic Coding', group: 'Monospace', koreanSupport: true, vietnameseSupport: false },
@@ -73,7 +80,34 @@ export const fontOptions = [
   { value: "'Impact', sans-serif", label: 'Impact', group: 'Display', koreanSupport: false, vietnameseSupport: false },
   { value: "'Orbitron', sans-serif", label: 'Orbitron', group: 'Display', koreanSupport: false, vietnameseSupport: true },
   { value: "'Oswald', sans-serif", label: 'Oswald', group: 'Display', koreanSupport: false, vietnameseSupport: true },
-  { value: "'Bebas Neue', sans-serif", label: 'Bebas Neue', group: 'Display', koreanSupport: false, vietnameseSupport: false }
+  { value: "'Bebas Neue', sans-serif", label: 'Bebas Neue', group: 'Display', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Anton', sans-serif", label: 'Anton', group: 'Display', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Audiowide', cursive", label: 'Audiowide', group: 'Display', koreanSupport: false, vietnameseSupport: false },
+
+  // Creative & Artistic fonts
+  { value: "'Creepster', cursive", label: 'Creepster', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Nosifer', cursive", label: 'Nosifer', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Bungee', cursive", label: 'Bungee', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Fredoka One', cursive", label: 'Fredoka One', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Kalam', cursive", label: 'Kalam', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Bangers', cursive", label: 'Bangers', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Righteous', cursive", label: 'Righteous', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Comic Sans MS', cursive", label: 'Comic Sans MS', group: 'Creative', koreanSupport: false, vietnameseSupport: false },
+
+  // Elegant & Luxury fonts
+  { value: "'Cinzel', serif", label: 'Cinzel', group: 'Elegant', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Crimson Text', serif", label: 'Crimson Text', group: 'Elegant', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Libre Baskerville', serif", label: 'Libre Baskerville', group: 'Elegant', koreanSupport: false, vietnameseSupport: false },
+
+  // Gaming & Tech fonts
+  { value: "'Press Start 2P', cursive", label: 'Press Start 2P', group: 'Gaming', koreanSupport: false, vietnameseSupport: false },
+  { value: "'VT323', monospace", label: 'VT323', group: 'Gaming', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Share Tech Mono', monospace", label: 'Share Tech Mono', group: 'Gaming', koreanSupport: false, vietnameseSupport: false },
+
+  // Cute & Kawaii fonts
+  { value: "'Nunito', sans-serif", label: 'Nunito', group: 'Cute', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Quicksand', sans-serif", label: 'Quicksand', group: 'Cute', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Comfortaa', cursive", label: 'Comfortaa', group: 'Cute', koreanSupport: false, vietnameseSupport: false }
 ];
 
 // Animation types
@@ -179,6 +213,67 @@ export const getFontSupportFlags = (font) => {
 };
 
 /**
+ * Get sample text for a font based on its language support
+ * @param {Object} font - Font object
+ * @returns {String} - Sample text in appropriate language
+ */
+export const getFontSampleText = (font) => {
+  // Korean optimized fonts
+  if (font.koreanSupport && font.group === 'Korean Optimized') {
+    return '한글 샘플 텍스트';
+  }
+
+  // Vietnamese optimized fonts
+  if (font.vietnameseSupport && font.group === 'Vietnamese Optimized') {
+    return 'Văn bản tiếng Việt';
+  }
+
+  // Chinese optimized fonts
+  if (font.chineseSupport) {
+    return font.label.includes('Simplified') ? '简体中文样本' : '繁體中文樣本';
+  }
+
+  // Japanese optimized fonts
+  if (font.japaneseSupport) {
+    return '日本語サンプル';
+  }
+
+  // Arabic optimized fonts
+  if (font.arabicSupport) {
+    return 'نص عربي نموذجي';
+  }
+
+  // Multilingual fonts - show mixed text
+  if (font.group === 'Multilingual') {
+    if (font.koreanSupport && font.vietnameseSupport) {
+      return 'Sample • 샘플 • Mẫu';
+    } else if (font.koreanSupport) {
+      return 'Sample • 샘플';
+    } else if (font.vietnameseSupport) {
+      return 'Sample • Mẫu';
+    }
+  }
+
+  // Display fonts - show stylized text
+  if (font.group === 'Display') {
+    return 'DISPLAY FONT';
+  }
+
+  // Monospace fonts
+  if (font.group === 'Monospace') {
+    return 'Code Sample';
+  }
+
+  // Serif fonts
+  if (font.group === 'Serif') {
+    return 'Elegant Text';
+  }
+
+  // Default for sans-serif and others
+  return 'Sample Text';
+};
+
+/**
  * Get recommended fonts for a specific language
  * @param {String} language - Language code (ko, vi, zh, ja, ar, etc.)
  * @returns {Array} - Recommended fonts for the language
@@ -192,6 +287,6 @@ export const getRecommendedFonts = (language) => {
     ar: fontOptions.filter(f => f.arabicSupport),
     en: fontOptions.filter(f => f.group === 'Sans-serif' || f.group === 'Serif')
   };
-  
+
   return languageMap[language] || fontOptions.filter(f => f.group === 'Multilingual');
 };
