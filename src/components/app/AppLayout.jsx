@@ -167,13 +167,13 @@ const AppLayout = ({
       }
     }
   };
-
   // Handler for render video action
   const handleRenderVideo = () => {
     // Auto-fill the video rendering section and ensure it's expanded
     setVideoRenderingAutoFill({
       timestamp: Date.now(), // Use timestamp to trigger re-render
-      expand: true // Signal to expand the section
+      expand: true, // Signal to expand the section
+      autoScroll: true // Also scroll to the section
     });
   };
 

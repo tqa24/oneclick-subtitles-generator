@@ -58,12 +58,9 @@ const VideoRenderingSection = ({
     return saved ? parseFloat(saved) : 66.67; // Default 2fr = 66.67%
   });
   const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef(null);
-
-  // Collapsible state with localStorage persistence
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    return localStorage.getItem('videoRender_isCollapsed') === 'true';
-  });
+  const containerRef = useRef(null);  // Collapsible state - always start collapsed by default (like BackgroundImageGenerator)
+  const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
+  const [userHasCollapsed, setUserHasCollapsed] = useState(false); // Track if user has manually collapsed
 
   // Panel resizing functionality
   const handleMouseDown = (e) => {
@@ -109,13 +106,14 @@ const VideoRenderingSection = ({
   }, [isResizing]);
 
   const sectionRef = useRef(null);
-
-  // Auto-fill data when autoFillData changes
+  // Auto-fill data when autoFillData changes - with improved state management
   useEffect(() => {
     if (autoFillData) {
-      // Expand the section if requested
+      // Expand if expansion is requested - override userHasCollapsed when explicitly requested
       if (autoFillData.expand) {
         setIsCollapsed(false);
+        // Reset userHasCollapsed when auto-expanding via render button
+        setUserHasCollapsed(false);
       }
 
       // Auto-fill video using the actual video URL from the player
@@ -138,14 +136,14 @@ const VideoRenderingSection = ({
       // Auto-fill narration if available
       if (narrationResults && narrationResults.length > 0) {
         setSelectedNarration('generated');
+      }      // Auto-scroll if explicitly requested
+      if (autoFillData.expand && autoFillData.autoScroll) {
+        setTimeout(() => {
+          sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }
-
-      // Scroll to section
-      setTimeout(() => {
-        sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
     }
-  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults]);
+  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, userHasCollapsed]);
 
   // Auto-process queue when it changes
   // Restore render state from localStorage on component mount
@@ -216,14 +214,11 @@ const VideoRenderingSection = ({
   useEffect(() => {
     localStorage.setItem('videoRender_subtitleCustomization', JSON.stringify(subtitleCustomization));
   }, [subtitleCustomization]);
-
   useEffect(() => {
     localStorage.setItem('videoRender_leftPanelWidth', leftPanelWidth.toString());
   }, [leftPanelWidth]);
 
-  useEffect(() => {
-    localStorage.setItem('videoRender_isCollapsed', isCollapsed.toString());
-  }, [isCollapsed]);
+  // Note: isCollapsed state is not persisted - always starts collapsed like BackgroundImageGenerator
 
   // Check if a render is still active on the server and reconnect
   const checkRenderStatus = async (renderId, queueItem) => {
@@ -1240,7 +1235,7 @@ const VideoRenderingSection = ({
   return (
     <div
       ref={sectionRef}
-      className={`video-rendering-section ${isCollapsed ? 'collapsed' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`video-rendering-section ${isCollapsed ? 'collapsed' : 'expanded'} ${isDragging ? 'dragging' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -1253,7 +1248,19 @@ const VideoRenderingSection = ({
         </div>
         <button
           className="collapse-button"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => {
+            // Toggle collapsed state - matches BackgroundImageGenerator pattern
+            const newCollapsedState = !isCollapsed;
+            setIsCollapsed(newCollapsedState);
+
+            // Set userHasCollapsed flag when user manually collapses
+            if (newCollapsedState) {
+              setUserHasCollapsed(true);
+            } else {
+              // Reset the flag when user manually expands
+              setUserHasCollapsed(false);
+            }
+          }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="6 9 12 15 18 9"></polyline>
