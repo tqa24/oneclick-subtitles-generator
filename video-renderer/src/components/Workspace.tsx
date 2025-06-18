@@ -175,7 +175,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
 
   // Handle frame rate change
   const handleFrameRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFrameRate = parseInt(e.target.value, 10) as 30 | 60;
+    const newFrameRate = parseInt(e.target.value, 10) as 24 | 25 | 30 | 50 | 60 | 120;
 
     // Save preference to localStorage
     try {
@@ -258,14 +258,22 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                   component={SubtitledVideoContent}
                   durationInFrames={durationInFrames}
                   compositionWidth={
+                    metadata.resolution === '360p' ? 640 :
                     metadata.resolution === '480p' ? 854 :
                     metadata.resolution === '720p' ? 1280 :
-                    metadata.resolution === '2K' ? 2560 : 1920
+                    metadata.resolution === '1440p' ? 2560 :
+                    metadata.resolution === '2K' ? 2048 :
+                    metadata.resolution === '4K' ? 3840 :
+                    metadata.resolution === '8K' ? 7680 : 1920
                   }
                   compositionHeight={
+                    metadata.resolution === '360p' ? 360 :
                     metadata.resolution === '480p' ? 480 :
                     metadata.resolution === '720p' ? 720 :
-                    metadata.resolution === '2K' ? 1440 : 1080
+                    metadata.resolution === '1440p' ? 1440 :
+                    metadata.resolution === '2K' ? 1080 :
+                    metadata.resolution === '4K' ? 2160 :
+                    metadata.resolution === '8K' ? 4320 : 1080
                   }
                   fps={metadata.frameRate}
                   controls
@@ -341,10 +349,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     value={metadata.resolution}
                     onChange={handleResolutionChange}
                   >
+                    <option value="360p">360p (640x360)</option>
                     <option value="480p">480p (854x480)</option>
                     <option value="720p">720p (1280x720)</option>
                     <option value="1080p">1080p (1920x1080)</option>
-                    <option value="2K">2K (2560x1440)</option>
+                    <option value="1440p">1440p (2560x1440)</option>
+                    <option value="2K">2K (2048x1080)</option>
+                    <option value="4K">4K (3840x2160)</option>
+                    <option value="8K">8K (7680x4320)</option>
                   </select>
                   <SelectDescription>{t('resolutionDesc')}</SelectDescription>
                 </SelectControl>
@@ -357,8 +369,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     value={metadata.frameRate}
                     onChange={handleFrameRateChange}
                   >
-                    <option value="30">30 FPS</option>
-                    <option value="60">60 FPS</option>
+                    <option value="24">24 FPS (Cinema)</option>
+                    <option value="25">25 FPS (PAL)</option>
+                    <option value="30">30 FPS (Standard)</option>
+                    <option value="50">50 FPS (PAL High)</option>
+                    <option value="60">60 FPS (Smooth)</option>
+                    <option value="120">120 FPS (High Speed)</option>
                   </select>
                   <SelectDescription>{t('frameRateDesc')}</SelectDescription>
                 </SelectControl>
@@ -384,8 +400,24 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                         isVideoFile: mainFileIsVideo
                       }}
                       durationInFrames={Math.ceil((subtitles[subtitles.length - 1]?.end || 30) * metadata.frameRate)}
-                      compositionWidth={metadata.resolution === '2K' ? 2560 : metadata.resolution === '1080p' ? 1920 : metadata.resolution === '720p' ? 1280 : 854}
-                      compositionHeight={metadata.resolution === '2K' ? 1440 : metadata.resolution === '1080p' ? 1080 : metadata.resolution === '720p' ? 720 : 480}
+                      compositionWidth={
+                        metadata.resolution === '360p' ? 640 :
+                        metadata.resolution === '480p' ? 854 :
+                        metadata.resolution === '720p' ? 1280 :
+                        metadata.resolution === '1440p' ? 2560 :
+                        metadata.resolution === '2K' ? 2048 :
+                        metadata.resolution === '4K' ? 3840 :
+                        metadata.resolution === '8K' ? 7680 : 1920
+                      }
+                      compositionHeight={
+                        metadata.resolution === '360p' ? 360 :
+                        metadata.resolution === '480p' ? 480 :
+                        metadata.resolution === '720p' ? 720 :
+                        metadata.resolution === '1440p' ? 1440 :
+                        metadata.resolution === '2K' ? 1080 :
+                        metadata.resolution === '4K' ? 2160 :
+                        metadata.resolution === '8K' ? 4320 : 1080
+                      }
                       fps={metadata.frameRate}
                       style={{
                         width: '100%',

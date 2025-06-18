@@ -1557,10 +1557,14 @@ const VideoRenderingSection = ({
                 className="setting-select"
                 style={{ marginRight: '1rem' }}
               >
-                <option value="480p">480p</option>
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
-                <option value="2K">2K</option>
+                <option value="360p">360p (640×360)</option>
+                <option value="480p">480p (854×480)</option>
+                <option value="720p">720p (1280×720)</option>
+                <option value="1080p">1080p (1920×1080)</option>
+                <option value="1440p">1440p (2560×1440)</option>
+                <option value="2K">2K (2048×1080)</option>
+                <option value="4K">4K (3840×2160)</option>
+                <option value="8K">8K (7680×4320)</option>
               </select>
 
               <label style={{ marginRight: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>
@@ -1572,8 +1576,12 @@ const VideoRenderingSection = ({
                 className="setting-select"
                 style={{ marginRight: '1rem' }}
               >
-                <option value={30}>30 FPS</option>
-                <option value={60}>60 FPS</option>
+                <option value={24}>24 FPS (Cinema)</option>
+                <option value={25}>25 FPS (PAL)</option>
+                <option value={30}>30 FPS (Standard)</option>
+                <option value={50}>50 FPS (PAL High)</option>
+                <option value={60}>60 FPS (Smooth)</option>
+                <option value={120}>120 FPS (High Speed)</option>
               </select>
 
               <button

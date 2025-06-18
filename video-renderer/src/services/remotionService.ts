@@ -17,7 +17,7 @@ export interface RenderOptions {
   metadata?: {
     videoType: 'Subtitled Video';
     resolution?: Resolution;
-    frameRate?: 30 | 60;
+    frameRate?: 24 | 25 | 30 | 50 | 60 | 120;
     subtitleLineThreshold?: number;
     originalAudioVolume?: number;
     narrationVolume?: number;

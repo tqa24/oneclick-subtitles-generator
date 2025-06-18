@@ -294,6 +294,10 @@ app.post('/render', async (req, res) => {
     let width: number, height: number;
 
     switch (resolution) {
+      case '360p':
+        width = 640;
+        height = 360;
+        break;
       case '480p':
         width = 854;
         height = 480;
@@ -302,9 +306,21 @@ app.post('/render', async (req, res) => {
         width = 1280;
         height = 720;
         break;
-      case '2K':
+      case '1440p':
         width = 2560;
         height = 1440;
+        break;
+      case '2K':
+        width = 2048;
+        height = 1080;
+        break;
+      case '4K':
+        width = 3840;
+        height = 2160;
+        break;
+      case '8K':
+        width = 7680;
+        height = 4320;
         break;
       case '1080p':
       default:
