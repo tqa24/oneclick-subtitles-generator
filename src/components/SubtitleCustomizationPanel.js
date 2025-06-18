@@ -47,7 +47,7 @@ export const defaultCustomization = {
 
   // Advanced text effects
   strokeEnabled: false,
-  strokeWidth: 2,
+  strokeWidth: 0,
   strokeColor: '#000000',
   multiShadowEnabled: false,
   shadowLayers: 1,
