@@ -387,11 +387,6 @@ export const SubtitledVideoComposition = ({
               ? `${getResponsiveScaledValue(customization.borderWidth)}px ${customization.borderStyle} ${customization.borderColor}`
               : 'none';
 
-            // Advanced styling features
-            const textStroke = customization.strokeEnabled
-              ? `${getResponsiveScaledValue(customization.strokeWidth)}px ${customization.strokeColor}`
-              : 'none';
-
             // Gradient text support
             let textColor = customization.textColor;
             let backgroundImage = 'none';
@@ -436,39 +431,52 @@ export const SubtitledVideoComposition = ({
               );
             }
 
+            const subtitleStyleProperties = {
+              opacity: currentSubtitle.opacity,
+              transform: transform !== 'none' ? transform : undefined,
+              fontSize: getResponsiveScaledValue(customization.fontSize),
+              fontFamily: customization.fontFamily,
+              fontWeight: customization.fontWeight,
+              color: textColor, // Assuming textColor is already defined based on gradient logic
+              textAlign: customization.textAlign,
+              lineHeight: customization.lineHeight,
+              letterSpacing: getResponsiveScaledValue(customization.letterSpacing || 0),
+              textShadow, // Assuming textShadow is already defined
+              backgroundColor, // Assuming backgroundColor is already defined
+              border, // Assuming border is already defined
+              borderRadius: getResponsiveScaledValue(customization.borderRadius),
+              padding: `${getResponsiveScaledValue(8)}px ${getResponsiveScaledValue(16)}px`,
+              maxWidth: `${customization.maxWidth}%`,
+              whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap',
+              boxShadow, // Assuming boxShadow is already defined
+              direction: customization.rtlSupport ? 'rtl' : 'ltr',
+              backgroundImage: backgroundImage, // Assuming backgroundImage is already defined for gradient
+              WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial',
+              backgroundClip: customization.gradientEnabled ? 'text' : 'initial',
+              textTransform: customization.textTransform || 'none',
+              transformOrigin: 'center center',
+            };
+
+            if (customization.strokeEnabled) {
+              const strokeValue = `${getResponsiveScaledValue(customization.strokeWidth)}px ${customization.strokeColor}`;
+              subtitleStyleProperties.WebkitTextStroke = strokeValue;
+              subtitleStyleProperties.textStroke = strokeValue;
+              // Ensure explicit width and color are also set if needed, though shorthand should be enough
+              subtitleStyleProperties.WebkitTextStrokeWidth = `${getResponsiveScaledValue(customization.strokeWidth)}px`;
+              subtitleStyleProperties.textStrokeWidth = `${getResponsiveScaledValue(customization.strokeWidth)}px`;
+              subtitleStyleProperties.WebkitTextStrokeColor = customization.strokeColor;
+              subtitleStyleProperties.textStrokeColor = customization.strokeColor;
+            } else {
+              subtitleStyleProperties.WebkitTextStroke = 'none'; // Keep this as a general reset
+              subtitleStyleProperties.textStroke = 'none';       // Keep this
+              subtitleStyleProperties.WebkitTextStrokeWidth = '0px'; // Explicitly set width to 0
+              subtitleStyleProperties.textStrokeWidth = '0px';       // Explicitly set width to 0
+              subtitleStyleProperties.WebkitTextStrokeColor = 'transparent'; // Explicitly set color to transparent
+              subtitleStyleProperties.textStrokeColor = 'transparent';       // Explicitly set color to transparent
+            }
+
             return (
-              <div
-                style={{
-                  opacity: currentSubtitle.opacity,
-                  transform: transform !== 'none' ? transform : undefined,
-                  fontSize: getResponsiveScaledValue(customization.fontSize),
-                  fontFamily: customization.fontFamily,
-                  fontWeight: customization.fontWeight,
-                  color: textColor,
-                  textAlign: customization.textAlign,
-                  lineHeight: customization.lineHeight,
-                  letterSpacing: getResponsiveScaledValue(customization.letterSpacing || 0),
-                  textShadow,
-                  backgroundColor,
-                  border,
-                  borderRadius: getResponsiveScaledValue(customization.borderRadius),
-                  padding: `${getResponsiveScaledValue(8)}px ${getResponsiveScaledValue(16)}px`,
-                  maxWidth: `${customization.maxWidth}%`,
-                  whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap',
-                  boxShadow,
-                  direction: customization.rtlSupport ? 'rtl' : 'ltr',
-                  // Advanced styling features
-                  WebkitTextStroke: textStroke,
-                  textStroke: textStroke,
-                  backgroundImage: backgroundImage,
-                  WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial',
-                  backgroundClip: customization.gradientEnabled ? 'text' : 'initial',
-                  textTransform: customization.textTransform || 'none',
-                  // Note: CSS transitions don't work in server-side rendering (Remotion)
-                  // All animations are handled manually through opacity and transform calculations
-                  transformOrigin: 'center center', // For scale animations
-                }}
-              >
+              <div style={subtitleStyleProperties}>
                 {displayText}
               </div>
             );
