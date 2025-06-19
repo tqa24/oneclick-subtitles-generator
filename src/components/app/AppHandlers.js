@@ -221,6 +221,9 @@ export const useAppHandlers = (appState) => {
           return prepareVideoForSegments(file, setStatus, setVideoSegments, setSegmentsStatus, t);
         };
 
+        // Create a wrapper for system-initiated tab changes
+        const systemTabChange = (tab) => handleTabChange(tab, false);
+
         // Download and prepare the YouTube video
         const downloadedFile = await downloadAndPrepareYouTubeVideo(
           selectedVideo,
@@ -228,7 +231,7 @@ export const useAppHandlers = (appState) => {
           setDownloadProgress,
           setStatus,
           setCurrentDownloadId,
-          setActiveTab,
+          systemTabChange,
           setUploadedFile,
           setIsSrtOnlyMode,
           prepareVideoWrapper,
@@ -391,6 +394,9 @@ export const useAppHandlers = (appState) => {
           return prepareVideoForSegments(file, setStatus, setVideoSegments, setSegmentsStatus, t);
         };
 
+        // Create a wrapper for system-initiated tab changes
+        const systemTabChange = (tab) => handleTabChange(tab, false);
+
         // Download and prepare the YouTube video
         const downloadedFile = await downloadAndPrepareYouTubeVideo(
           selectedVideo,
@@ -398,7 +404,7 @@ export const useAppHandlers = (appState) => {
           setDownloadProgress,
           setStatus,
           setCurrentDownloadId,
-          setActiveTab,
+          systemTabChange,
           setUploadedFile,
           setIsSrtOnlyMode,
           prepareVideoWrapper,
@@ -581,7 +587,13 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle tab change
    */
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab, isUserInitiated = true) => {
+    // Only update user preference if this is a user-initiated change
+    if (isUserInitiated) {
+      localStorage.setItem('userPreferredTab', tab);
+    }
+
+    // Always update the current active tab
     localStorage.setItem('lastActiveTab', tab);
     setActiveTab(tab);
     setSelectedVideo(null);
@@ -687,13 +699,16 @@ export const useAppHandlers = (appState) => {
       return;
     }
 
+    // Create a wrapper for system-initiated tab changes
+    const systemTabChange = (tab) => handleTabChange(tab, false);
+
     await downloadAndPrepareYouTubeVideo(
       selectedVideo,
       setIsDownloading,
       setDownloadProgress,
       setStatus,
       setCurrentDownloadId,
-      setActiveTab,
+      systemTabChange,
       setUploadedFile,
       setIsSrtOnlyMode,
       prepareVideoForSegmentsWrapper,
