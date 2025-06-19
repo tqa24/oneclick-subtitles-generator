@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
 import './FontSelectionModal.css';
 
 const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const modalRef = useRef(null);
@@ -47,13 +49,19 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
   const groupedFonts = groupFontsByCategory();
   const categories = ['All', ...Object.keys(groupedFonts)];
 
+  // Get translated category name
+  const getCategoryName = (category) => {
+    if (category === 'All') return t('fontModal.allCategories', 'All');
+    return t(`fontModal.category${category}`, category);
+  };
+
   // Filter fonts based on search term and category
   const filteredGroups = Object.entries(groupedFonts).reduce((acc, [group, fonts]) => {
     if (selectedCategory !== 'All' && group !== selectedCategory) {
       return acc;
     }
 
-    const filteredFonts = fonts.filter(font => 
+    const filteredFonts = fonts.filter(font =>
       font.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
       font.group.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -79,7 +87,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
       <div className="font-modal" ref={modalRef}>
         {/* Modal Header */}
         <div className="font-modal-header">
-          <h2>Select Font</h2>
+          <h2>{t('fontModal.selectFont', 'Select Font')}</h2>
           <button className="font-modal-close" onClick={onClose}>
             ✕
           </button>
@@ -91,14 +99,14 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search fonts..."
+              placeholder={t('fontModal.searchPlaceholder', 'Search fonts...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="font-search-input"
             />
             {(searchTerm || selectedCategory !== 'All') && (
               <button className="clear-search" onClick={clearSearch}>
-                Clear
+                {t('fontModal.clear', 'Clear')}
               </button>
             )}
           </div>
@@ -111,7 +119,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
             >
               {categories.map(category => (
                 <option key={category} value={category}>
-                  {category}
+                  {getCategoryName(category)}
                 </option>
               ))}
             </select>
@@ -122,7 +130,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
         <div className="font-modal-content">
           {Object.entries(filteredGroups).map(([group, fonts]) => (
             <div key={group} className="font-category-section">
-              <h3 className="font-category-title">{group}</h3>
+              <h3 className="font-category-title">{getCategoryName(group)}</h3>
               <div className="font-grid">
                 {fonts.map(font => (
                   <div
@@ -155,10 +163,10 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
           {Object.keys(filteredGroups).length === 0 && (
             <div className="no-results">
               <div className="no-results-icon">🔍</div>
-              <h3>No fonts found</h3>
-              <p>Try adjusting your search terms or category filter.</p>
+              <h3>{t('fontModal.noFontsFound', 'No fonts found')}</h3>
+              <p>{t('fontModal.adjustSearch', 'Try adjusting your search terms or category filter.')}</p>
               <button className="clear-filters-btn" onClick={clearSearch}>
-                Clear Filters
+                {t('fontModal.clearFilters', 'Clear Filters')}
               </button>
             </div>
           )}
@@ -167,11 +175,11 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
         {/* Modal Footer */}
         <div className="font-modal-footer">
           <div className="font-count">
-            {Object.values(filteredGroups).flat().length} fonts available
+            {t('fontModal.fontsAvailable', '{{count}} fonts available', { count: Object.values(filteredGroups).flat().length })}
           </div>
           <div className="modal-actions">
             <button className="btn-secondary" onClick={onClose}>
-              Cancel
+              {t('fontModal.cancel', 'Cancel')}
             </button>
           </div>
         </div>

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
 import './FontDropdown.css';
 
 const FontDropdown = ({ value, onChange, className }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
@@ -29,10 +31,10 @@ const FontDropdown = ({ value, onChange, className }) => {
   }, [isOpen]);
 
   const groupedFonts = groupFontsByCategory();
-  
+
   // Filter fonts based on search term
   const filteredGroups = Object.entries(groupedFonts).reduce((acc, [group, fonts]) => {
-    const filteredFonts = fonts.filter(font => 
+    const filteredFonts = fonts.filter(font =>
       font.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
       font.group.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -63,16 +65,16 @@ const FontDropdown = ({ value, onChange, className }) => {
   return (
     <div className={`font-dropdown ${className || ''}`} ref={dropdownRef}>
       {/* Selected font display */}
-      <div 
+      <div
         className={`font-dropdown-selected ${isOpen ? 'open' : ''}`}
         onClick={toggleDropdown}
       >
         <div className="font-preview">
-          <span 
+          <span
             className="font-name"
             style={{ fontFamily: currentFont?.value || value }}
           >
-            {currentFont?.label || 'Select Font'}
+            {currentFont?.label || t('fontModal.selectFont', 'Select Font')}
           </span>
           <span className="font-flags">
             {currentFont && getFontSupportFlags(currentFont)}
@@ -110,7 +112,7 @@ const FontDropdown = ({ value, onChange, className }) => {
                     onClick={() => handleFontSelect(font.value)}
                   >
                     <div className="font-option-content">
-                      <div 
+                      <div
                         className="font-sample"
                         style={{ fontFamily: font.value }}
                       >
@@ -127,7 +129,7 @@ const FontDropdown = ({ value, onChange, className }) => {
                 ))}
               </div>
             ))}
-            
+
             {Object.keys(filteredGroups).length === 0 && (
               <div className="no-results">
                 No fonts found matching "{searchTerm}"

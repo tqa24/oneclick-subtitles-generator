@@ -168,7 +168,7 @@ const RemotionVideoPreview = ({
       if (event.code === 'Space' && event.target.closest('.video-preview-panel')) {
         event.preventDefault();
         event.stopPropagation();
-        
+
         if (playerRef.current) {
           if (isPlaying) {
             playerRef.current.pause();
@@ -189,9 +189,17 @@ const RemotionVideoPreview = ({
     return (
       <>
         <div className="placeholder-content">
-          <div className="placeholder-icon">🎥</div>
+          <div className="placeholder-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </div>
           <p>No video selected</p>
           <small>Select a video file to see preview</small>
+          <div className="powered-by-remotion">
+            <span>powered by Remotion</span>
+          </div>
         </div>
       </>
     );

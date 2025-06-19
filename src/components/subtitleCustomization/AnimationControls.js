@@ -1,9 +1,13 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { animationTypes, animationEasing } from './fontOptions';
+import { getAnimationTypes, getAnimationEasing } from './fontOptions';
 
 const AnimationControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
+
+  // Get localized options
+  const animationTypes = getAnimationTypes(t);
+  const animationEasing = getAnimationEasing(t);
 
   const updateCustomization = (updates) => {
     onChange({ ...customization, ...updates, preset: 'custom' });

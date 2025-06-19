@@ -4,9 +4,9 @@ import { FiUpload } from 'react-icons/fi';
 import '../styles/SrtUploadButton.css';
 
 /**
- * Button component for uploading SRT files
+ * Button component for uploading SRT and JSON subtitle files
  * @param {Object} props - Component props
- * @param {Function} props.onSrtUpload - Function called when an SRT file is uploaded
+ * @param {Function} props.onSrtUpload - Function called when an SRT or JSON file is uploaded
  * @param {boolean} props.disabled - Whether the button is disabled
  * @returns {JSX.Element} - Rendered component
  */
@@ -33,16 +33,44 @@ const SrtUploadButton = ({ onSrtUpload, disabled = false }) => {
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.name.toLowerCase().endsWith('.srt')) {
+    const fileName = file?.name.toLowerCase();
+
+    if (file && (fileName.endsWith('.srt') || fileName.endsWith('.json'))) {
       setIsProcessing(true); // Start processing animation
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target.result;
+
+        // For JSON files, validate the format
+        if (fileName.endsWith('.json')) {
+          try {
+            const jsonData = JSON.parse(content);
+            if (!Array.isArray(jsonData)) {
+              alert(t('errors.invalidJsonFile', 'JSON file must contain an array of subtitles'));
+              setIsProcessing(false);
+              return;
+            }
+            // Validate that it has the expected subtitle structure
+            if (jsonData.length > 0) {
+              const firstItem = jsonData[0];
+              if (!firstItem.hasOwnProperty('start') || !firstItem.hasOwnProperty('end') || !firstItem.hasOwnProperty('text')) {
+                alert(t('errors.invalidJsonStructure', 'JSON subtitles must have start, end, and text properties'));
+                setIsProcessing(false);
+                return;
+              }
+            }
+          } catch (error) {
+            alert(t('errors.invalidJsonFormat', 'Invalid JSON format'));
+            setIsProcessing(false);
+            return;
+          }
+        }
+
         onSrtUpload(content, file.name);
       };
       reader.readAsText(file);
     } else if (file) {
-      alert(t('errors.invalidSrtFile', 'Please select a valid SRT file'));
+      alert(t('errors.invalidSubtitleFile', 'Please select a valid SRT or JSON subtitle file'));
     }
 
     // Reset the input so the same file can be selected again
@@ -96,7 +124,7 @@ const SrtUploadButton = ({ onSrtUpload, disabled = false }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".srt"
+        accept=".srt,.json"
         style={{ display: 'none' }}
       />
     </div>

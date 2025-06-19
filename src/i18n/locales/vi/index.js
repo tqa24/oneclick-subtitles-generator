@@ -30,6 +30,7 @@ import fileUpload from './fileUpload.json';
 import subtitlesInput from './subtitlesInput.json';
 import segmentRetry from './segmentRetry.json';
 import videoRendering from './videoRendering.json';
+import fontModal from './fontModal.json';
 
 const vi = {
   common,
@@ -63,7 +64,8 @@ const vi = {
   segmentRetry,
   narration,
   backgroundGenerator,
-  videoRendering
+  videoRendering,
+  fontModal
 };
 
 export default vi;

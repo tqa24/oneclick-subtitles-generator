@@ -1339,7 +1339,19 @@ const VideoRenderingSection = ({
 
             {/* Subtitle Selection */}
             <div className="subtitle-selection-compact">
-              <h4>{t('videoRendering.subtitleSource', 'Subtitle Source')}</h4>
+              <h4>
+                {t('videoRendering.subtitleSource', 'Subtitle Source')}
+                <div
+                  className="help-icon-container"
+                  title={t('videoRendering.subtitleSourceHelp', 'You can use the Upload SRT/JSON button to upload your own subtitle files')}
+                >
+                  <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </div>
+              </h4>
               <div className="radio-group">
                 <div className="radio-option">
                   <input

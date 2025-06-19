@@ -199,6 +199,32 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Help icon styling for video rendering section */
+.video-rendering-section .help-icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+}
+
+.video-rendering-section .help-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.video-rendering-section .help-icon-container:hover .help-icon {
+  opacity: 1;
+  color: var(--md-primary);
 }
 
 /* Compact volume control - matches the compact section layout */

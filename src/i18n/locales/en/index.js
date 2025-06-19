@@ -32,6 +32,7 @@ import segmentRetry from './segmentRetry.json';
 import narration from './narration.json';
 import backgroundGenerator from './backgroundGenerator.json';
 import videoRendering from './videoRendering.json';
+import fontModal from './fontModal.json';
 
 // Combine all translations
 const enTranslations = {
@@ -66,7 +67,8 @@ const enTranslations = {
   segmentRetry,
   narration,
   backgroundGenerator,
-  videoRendering
+  videoRendering,
+  fontModal
 };
 
 export default enTranslations;

@@ -63,12 +63,30 @@ export const useAppHandlers = (appState) => {
   };
 
   /**
-   * Handle SRT file upload
+   * Handle SRT/JSON file upload
    */
-  const handleSrtUpload = async (srtContent) => {
+  const handleSrtUpload = async (fileContent, fileName) => {
     try {
-      // Parse the SRT content
-      const parsedSubtitles = parseSrtContent(srtContent);
+      let parsedSubtitles = [];
+
+      // Check if it's a JSON file
+      if (fileName && fileName.toLowerCase().endsWith('.json')) {
+        try {
+          const jsonData = JSON.parse(fileContent);
+          if (Array.isArray(jsonData)) {
+            parsedSubtitles = jsonData;
+          } else {
+            setStatus({ message: t('errors.invalidJsonFile', 'JSON file must contain an array of subtitles'), type: 'error' });
+            return;
+          }
+        } catch (error) {
+          setStatus({ message: t('errors.invalidJsonFormat', 'Invalid JSON format'), type: 'error' });
+          return;
+        }
+      } else {
+        // Parse as SRT content
+        parsedSubtitles = parseSrtContent(fileContent);
+      }
 
       if (parsedSubtitles.length === 0) {
         setStatus({ message: t('errors.invalidSrtFormat', 'Invalid SRT format or empty file'), type: 'error' });
@@ -109,12 +127,14 @@ export const useAppHandlers = (appState) => {
 
         // Set the subtitles data directly
         setSubtitlesData(parsedSubtitles);
-        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+        const fileType = fileName && fileName.toLowerCase().endsWith('.json') ? 'JSON' : 'SRT';
+        setStatus({ message: t('output.subtitleUploadSuccess', `${fileType} file uploaded successfully!`), type: 'success' });
       } else if (activeTab === 'file-upload' && uploadedFile) {
         try {
           // For file upload tab, set the subtitles data directly
           setSubtitlesData(parsedSubtitles);
-          setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+          const fileType = fileName && fileName.toLowerCase().endsWith('.json') ? 'JSON' : 'SRT';
+          setStatus({ message: t('output.subtitleUploadSuccess', `${fileType} file uploaded successfully!`), type: 'success' });
 
           // Create a wrapper function that includes the additional parameters
           const prepareVideoWrapper = async (file) => {

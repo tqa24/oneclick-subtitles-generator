@@ -57,10 +57,14 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
     }
   };
 
-  // Prevent form submission
-  const preventSubmit = (e) => {
+  // Handle Enter key press to trigger fetch
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      // Only trigger fetch if both fields have values and not currently loading
+      if (artist && song && !loading) {
+        handleFetchLyrics();
+      }
       return false;
     }
   };
@@ -75,7 +79,7 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
             type="text"
             value={artist}
             onChange={(e) => setArtist(e.target.value)}
-            onKeyDown={preventSubmit}
+            onKeyDown={handleKeyDown}
             placeholder={t('subtitlesInput.artistPlaceholder', 'Enter artist name')}
             autoComplete="off"
           />
@@ -87,7 +91,7 @@ const LyricsInputSection = ({ onLyricsReceived }) => {
             type="text"
             value={song}
             onChange={(e) => setSong(e.target.value)}
-            onKeyDown={preventSubmit}
+            onKeyDown={handleKeyDown}
             placeholder={t('subtitlesInput.songPlaceholder', 'Enter song title')}
             autoComplete="off"
           />
