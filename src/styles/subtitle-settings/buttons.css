@@ -108,19 +108,19 @@
   border-color: transparent;
 }
 
-/* Render Video Button */
+/* Render Video Button - matches other action buttons */
 .render-video-toggle.md-filled-tonal-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-color: transparent;
-  font-weight: 600;
+  color: var(--md-primary);
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .render-video-toggle.md-filled-tonal-button:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--md-elevation-level2);
+  border-color: transparent;
 }
 
 .render-video-toggle.md-filled-tonal-button:active {
