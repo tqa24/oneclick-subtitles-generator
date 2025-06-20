@@ -23,6 +23,15 @@ const TEMP_AUDIO_DIR = path.join(NARRATION_DIR, 'temp');
 const LYRICS_DIR = path.join(VIDEOS_DIR, 'lyrics');
 const ALBUM_ART_DIR = path.join(path.dirname(path.dirname(__dirname)), 'public', 'videos', 'album_art');
 
+// Define additional cache directories that are currently missing
+const UPLOADS_DIR = path.join(path.dirname(path.dirname(__dirname)), 'uploads');
+const OUTPUT_DIR = path.join(path.dirname(path.dirname(__dirname)), 'output');
+const VIDEO_RENDERED_DIR = path.join(VIDEOS_DIR, 'rendered');
+const VIDEO_TEMP_DIR = path.join(VIDEOS_DIR, 'temp');
+const VIDEO_ALBUM_ART_DIR = path.join(VIDEOS_DIR, 'album_art');
+const VIDEO_RENDERER_UPLOADS_DIR = path.join(path.dirname(path.dirname(__dirname)), 'video-renderer', 'server', 'uploads');
+const VIDEO_RENDERER_OUTPUT_DIR = path.join(path.dirname(path.dirname(__dirname)), 'video-renderer', 'server', 'output');
+
 const { getFileSize, formatBytes } = require('../utils/fileUtils');
 
 /**
@@ -39,6 +48,13 @@ router.get('/cache-info', (req, res) => {
       narrationOutput: { count: 0, size: 0, files: [] },
       lyrics: { count: 0, size: 0, files: [] },
       albumArt: { count: 0, size: 0, files: [] },
+      uploads: { count: 0, size: 0, files: [] },
+      output: { count: 0, size: 0, files: [] },
+      videoRendered: { count: 0, size: 0, files: [] },
+      videoTemp: { count: 0, size: 0, files: [] },
+      videoAlbumArt: { count: 0, size: 0, files: [] },
+      videoRendererUploads: { count: 0, size: 0, files: [] },
+      videoRendererOutput: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -233,15 +249,166 @@ router.get('/cache-info', (req, res) => {
       });
     }
 
+    // Get uploads directory info (recursively scan subdirectories)
+    if (fs.existsSync(UPLOADS_DIR)) {
+      const scanDirectory = (dirPath, prefix = '') => {
+        const items = fs.readdirSync(dirPath);
+        items.forEach(item => {
+          const itemPath = path.join(dirPath, item);
+          try {
+            const stats = fs.statSync(itemPath);
+            if (stats.isDirectory()) {
+              scanDirectory(itemPath, prefix ? `${prefix}/${item}` : item);
+            } else {
+              const fileSize = stats.size;
+              details.uploads.count++;
+              details.uploads.size += fileSize;
+              details.uploads.files.push({ name: prefix ? `${prefix}/${item}` : item, size: fileSize });
+            }
+          } catch (error) {
+            console.error(`Error processing upload item ${itemPath}:`, error);
+          }
+        });
+      };
+      scanDirectory(UPLOADS_DIR);
+    }
+
+    // Get output directory info
+    if (fs.existsSync(OUTPUT_DIR)) {
+      const outputFiles = fs.readdirSync(OUTPUT_DIR);
+      outputFiles.forEach(file => {
+        const filePath = path.join(OUTPUT_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.output.count++;
+            details.output.size += fileSize;
+            details.output.files.push({ name: file, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing output file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Get video rendered directory info
+    if (fs.existsSync(VIDEO_RENDERED_DIR)) {
+      const renderedFiles = fs.readdirSync(VIDEO_RENDERED_DIR);
+      renderedFiles.forEach(file => {
+        const filePath = path.join(VIDEO_RENDERED_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoRendered.count++;
+            details.videoRendered.size += fileSize;
+            details.videoRendered.files.push({ name: file, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing video rendered file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Get video temp directory info
+    if (fs.existsSync(VIDEO_TEMP_DIR)) {
+      const tempFiles = fs.readdirSync(VIDEO_TEMP_DIR);
+      tempFiles.forEach(file => {
+        const filePath = path.join(VIDEO_TEMP_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoTemp.count++;
+            details.videoTemp.size += fileSize;
+            details.videoTemp.files.push({ name: file, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing video temp file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Get video album art directory info
+    if (fs.existsSync(VIDEO_ALBUM_ART_DIR)) {
+      const albumArtFiles = fs.readdirSync(VIDEO_ALBUM_ART_DIR);
+      albumArtFiles.forEach(file => {
+        const filePath = path.join(VIDEO_ALBUM_ART_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoAlbumArt.count++;
+            details.videoAlbumArt.size += fileSize;
+            details.videoAlbumArt.files.push({ name: file, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing video album art file ${filePath}:`, error);
+        }
+      });
+    }
+
+    // Get video renderer uploads directory info (recursively scan subdirectories)
+    if (fs.existsSync(VIDEO_RENDERER_UPLOADS_DIR)) {
+      const scanDirectory = (dirPath, prefix = '') => {
+        const items = fs.readdirSync(dirPath);
+        items.forEach(item => {
+          const itemPath = path.join(dirPath, item);
+          try {
+            const stats = fs.statSync(itemPath);
+            if (stats.isDirectory()) {
+              scanDirectory(itemPath, prefix ? `${prefix}/${item}` : item);
+            } else {
+              const fileSize = stats.size;
+              details.videoRendererUploads.count++;
+              details.videoRendererUploads.size += fileSize;
+              details.videoRendererUploads.files.push({ name: prefix ? `${prefix}/${item}` : item, size: fileSize });
+            }
+          } catch (error) {
+            console.error(`Error processing video renderer upload item ${itemPath}:`, error);
+          }
+        });
+      };
+      scanDirectory(VIDEO_RENDERER_UPLOADS_DIR);
+    }
+
+    // Get video renderer output directory info
+    if (fs.existsSync(VIDEO_RENDERER_OUTPUT_DIR)) {
+      const outputFiles = fs.readdirSync(VIDEO_RENDERER_OUTPUT_DIR);
+      outputFiles.forEach(file => {
+        const filePath = path.join(VIDEO_RENDERER_OUTPUT_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoRendererOutput.count++;
+            details.videoRendererOutput.size += fileSize;
+            details.videoRendererOutput.files.push({ name: file, size: fileSize });
+          }
+        } catch (error) {
+          console.error(`Error processing video renderer output file ${filePath}:`, error);
+        }
+      });
+    }
+
     // Calculate totals
     details.totalCount = details.subtitles.count + details.videos.count +
                          details.userSubtitles.count + details.rules.count +
                          details.narrationReference.count + details.narrationOutput.count +
-                         details.lyrics.count + details.albumArt.count;
+                         details.lyrics.count + details.albumArt.count +
+                         details.uploads.count + details.output.count +
+                         details.videoRendered.count + details.videoTemp.count +
+                         details.videoAlbumArt.count + details.videoRendererUploads.count +
+                         details.videoRendererOutput.count;
     details.totalSize = details.subtitles.size + details.videos.size +
                         details.userSubtitles.size + details.rules.size +
                         details.narrationReference.size + details.narrationOutput.size +
-                        details.lyrics.size + details.albumArt.size;
+                        details.lyrics.size + details.albumArt.size +
+                        details.uploads.size + details.output.size +
+                        details.videoRendered.size + details.videoTemp.size +
+                        details.videoAlbumArt.size + details.videoRendererUploads.size +
+                        details.videoRendererOutput.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
@@ -252,6 +419,13 @@ router.get('/cache-info', (req, res) => {
     details.narrationOutput.formattedSize = formatBytes(details.narrationOutput.size);
     details.lyrics.formattedSize = formatBytes(details.lyrics.size);
     details.albumArt.formattedSize = formatBytes(details.albumArt.size);
+    details.uploads.formattedSize = formatBytes(details.uploads.size);
+    details.output.formattedSize = formatBytes(details.output.size);
+    details.videoRendered.formattedSize = formatBytes(details.videoRendered.size);
+    details.videoTemp.formattedSize = formatBytes(details.videoTemp.size);
+    details.videoAlbumArt.formattedSize = formatBytes(details.videoAlbumArt.size);
+    details.videoRendererUploads.formattedSize = formatBytes(details.videoRendererUploads.size);
+    details.videoRendererOutput.formattedSize = formatBytes(details.videoRendererOutput.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({
@@ -281,6 +455,13 @@ router.delete('/clear-cache', async (req, res) => {
       narrationOutput: { count: 0, size: 0, files: [] },
       lyrics: { count: 0, size: 0, files: [] },
       albumArt: { count: 0, size: 0, files: [] },
+      uploads: { count: 0, size: 0, files: [] },
+      output: { count: 0, size: 0, files: [] },
+      videoRendered: { count: 0, size: 0, files: [] },
+      videoTemp: { count: 0, size: 0, files: [] },
+      videoAlbumArt: { count: 0, size: 0, files: [] },
+      videoRendererUploads: { count: 0, size: 0, files: [] },
+      videoRendererOutput: { count: 0, size: 0, files: [] },
       totalCount: 0,
       totalSize: 0
     };
@@ -563,15 +744,187 @@ router.delete('/clear-cache', async (req, res) => {
       }
     }
 
+    // Clear uploads directory (recursively)
+    if (fs.existsSync(UPLOADS_DIR)) {
+      const clearDirectory = async (dirPath, prefix = '') => {
+        const items = fs.readdirSync(dirPath);
+        for (const item of items) {
+          const itemPath = path.join(dirPath, item);
+          try {
+            const stats = fs.statSync(itemPath);
+            if (stats.isDirectory()) {
+              await clearDirectory(itemPath, prefix ? `${prefix}/${item}` : item);
+              // Remove empty directory
+              try {
+                fs.rmdirSync(itemPath);
+                console.log(`Removed upload directory: ${itemPath}`);
+              } catch (rmError) {
+                console.error(`Error removing upload directory ${itemPath}:`, rmError);
+              }
+            } else {
+              const fileSize = stats.size;
+              details.uploads.count++;
+              details.uploads.size += fileSize;
+              details.uploads.files.push({ name: prefix ? `${prefix}/${item}` : item, size: fileSize });
+              await safeDeleteFile(itemPath);
+            }
+          } catch (error) {
+            console.error(`Error processing upload item ${itemPath}:`, error);
+          }
+        }
+      };
+      await clearDirectory(UPLOADS_DIR);
+    }
+
+    // Clear output directory
+    if (fs.existsSync(OUTPUT_DIR)) {
+      const outputFiles = fs.readdirSync(OUTPUT_DIR);
+      for (const file of outputFiles) {
+        const filePath = path.join(OUTPUT_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.output.count++;
+            details.output.size += fileSize;
+            details.output.files.push({ name: file, size: fileSize });
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing output file ${filePath}:`, error);
+        }
+      }
+    }
+
+    // Clear video rendered directory
+    if (fs.existsSync(VIDEO_RENDERED_DIR)) {
+      const renderedFiles = fs.readdirSync(VIDEO_RENDERED_DIR);
+      for (const file of renderedFiles) {
+        const filePath = path.join(VIDEO_RENDERED_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoRendered.count++;
+            details.videoRendered.size += fileSize;
+            details.videoRendered.files.push({ name: file, size: fileSize });
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing video rendered file ${filePath}:`, error);
+        }
+      }
+    }
+
+    // Clear video temp directory
+    if (fs.existsSync(VIDEO_TEMP_DIR)) {
+      const tempFiles = fs.readdirSync(VIDEO_TEMP_DIR);
+      for (const file of tempFiles) {
+        const filePath = path.join(VIDEO_TEMP_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoTemp.count++;
+            details.videoTemp.size += fileSize;
+            details.videoTemp.files.push({ name: file, size: fileSize });
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing video temp file ${filePath}:`, error);
+        }
+      }
+    }
+
+    // Clear video album art directory
+    if (fs.existsSync(VIDEO_ALBUM_ART_DIR)) {
+      const albumArtFiles = fs.readdirSync(VIDEO_ALBUM_ART_DIR);
+      for (const file of albumArtFiles) {
+        const filePath = path.join(VIDEO_ALBUM_ART_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoAlbumArt.count++;
+            details.videoAlbumArt.size += fileSize;
+            details.videoAlbumArt.files.push({ name: file, size: fileSize });
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing video album art file ${filePath}:`, error);
+        }
+      }
+    }
+
+    // Clear video renderer uploads directory (recursively)
+    if (fs.existsSync(VIDEO_RENDERER_UPLOADS_DIR)) {
+      const clearDirectory = async (dirPath, prefix = '') => {
+        const items = fs.readdirSync(dirPath);
+        for (const item of items) {
+          const itemPath = path.join(dirPath, item);
+          try {
+            const stats = fs.statSync(itemPath);
+            if (stats.isDirectory()) {
+              await clearDirectory(itemPath, prefix ? `${prefix}/${item}` : item);
+              // Remove empty directory
+              try {
+                fs.rmdirSync(itemPath);
+                console.log(`Removed video renderer upload directory: ${itemPath}`);
+              } catch (rmError) {
+                console.error(`Error removing video renderer upload directory ${itemPath}:`, rmError);
+              }
+            } else {
+              const fileSize = stats.size;
+              details.videoRendererUploads.count++;
+              details.videoRendererUploads.size += fileSize;
+              details.videoRendererUploads.files.push({ name: prefix ? `${prefix}/${item}` : item, size: fileSize });
+              await safeDeleteFile(itemPath);
+            }
+          } catch (error) {
+            console.error(`Error processing video renderer upload item ${itemPath}:`, error);
+          }
+        }
+      };
+      await clearDirectory(VIDEO_RENDERER_UPLOADS_DIR);
+    }
+
+    // Clear video renderer output directory
+    if (fs.existsSync(VIDEO_RENDERER_OUTPUT_DIR)) {
+      const outputFiles = fs.readdirSync(VIDEO_RENDERER_OUTPUT_DIR);
+      for (const file of outputFiles) {
+        const filePath = path.join(VIDEO_RENDERER_OUTPUT_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            const fileSize = stats.size;
+            details.videoRendererOutput.count++;
+            details.videoRendererOutput.size += fileSize;
+            details.videoRendererOutput.files.push({ name: file, size: fileSize });
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing video renderer output file ${filePath}:`, error);
+        }
+      }
+    }
+
     // Calculate totals
     details.totalCount = details.subtitles.count + details.videos.count +
                          details.userSubtitles.count + details.rules.count +
                          details.narrationReference.count + details.narrationOutput.count +
-                         details.lyrics.count + details.albumArt.count;
+                         details.lyrics.count + details.albumArt.count +
+                         details.uploads.count + details.output.count +
+                         details.videoRendered.count + details.videoTemp.count +
+                         details.videoAlbumArt.count + details.videoRendererUploads.count +
+                         details.videoRendererOutput.count;
     details.totalSize = details.subtitles.size + details.videos.size +
                         details.userSubtitles.size + details.rules.size +
                         details.narrationReference.size + details.narrationOutput.size +
-                        details.lyrics.size + details.albumArt.size;
+                        details.lyrics.size + details.albumArt.size +
+                        details.uploads.size + details.output.size +
+                        details.videoRendered.size + details.videoTemp.size +
+                        details.videoAlbumArt.size + details.videoRendererUploads.size +
+                        details.videoRendererOutput.size;
 
     // Format sizes for human readability
     details.subtitles.formattedSize = formatBytes(details.subtitles.size);
@@ -582,6 +935,13 @@ router.delete('/clear-cache', async (req, res) => {
     details.narrationOutput.formattedSize = formatBytes(details.narrationOutput.size);
     details.lyrics.formattedSize = formatBytes(details.lyrics.size);
     details.albumArt.formattedSize = formatBytes(details.albumArt.size);
+    details.uploads.formattedSize = formatBytes(details.uploads.size);
+    details.output.formattedSize = formatBytes(details.output.size);
+    details.videoRendered.formattedSize = formatBytes(details.videoRendered.size);
+    details.videoTemp.formattedSize = formatBytes(details.videoTemp.size);
+    details.videoAlbumArt.formattedSize = formatBytes(details.videoAlbumArt.size);
+    details.videoRendererUploads.formattedSize = formatBytes(details.videoRendererUploads.size);
+    details.videoRendererOutput.formattedSize = formatBytes(details.videoRendererOutput.size);
     details.formattedTotalSize = formatBytes(details.totalSize);
 
     res.json({

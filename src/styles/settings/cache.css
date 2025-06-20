@@ -199,19 +199,20 @@
 /* Cache details grid layout */
 .cache-details-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 16px;
   width: 100%;
 }
 
 .cache-details-grid-header {
-  grid-column: span 2;
-  margin-bottom: 24px;
+  grid-column: span 4;
+  margin-bottom: 20px;
 }
 
 .cache-details-column {
   display: flex;
   flex-direction: column;
+  gap: 12px; /* Add consistent spacing between items */
 }
 
 /* Cache columns - legacy, keeping for compatibility */
@@ -257,8 +258,8 @@
 }
 
 .cache-details-item {
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  margin-bottom: 0; /* Remove margin since we're using gap in parent */
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--md-outline-variant);
   transition: border-color var(--transition-speed);
 }
@@ -287,9 +288,33 @@
 }
 
 /* Responsive styles for cache section */
+@media (max-width: 1200px) {
+  .cache-details-grid {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+  }
+
+  .cache-details-grid-header {
+    grid-column: span 3;
+  }
+}
+
+@media (max-width: 900px) {
+  .cache-details-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on smaller screens */
+  }
+
+  .cache-details-grid-header {
+    grid-column: span 2;
+  }
+}
+
 @media (max-width: 768px) {
   .cache-details-grid {
-    grid-template-columns: 1fr; /* Single column on smaller screens */
+    grid-template-columns: 1fr; /* Single column on mobile */
+  }
+
+  .cache-details-grid-header {
+    grid-column: span 1;
   }
 
   .cache-actions-row {
