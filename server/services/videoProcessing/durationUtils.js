@@ -4,6 +4,8 @@
 
 const { spawn } = require('child_process');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
+const path = require('path');
 
 /**
  * Get the duration of a media file using ffprobe
@@ -293,8 +295,139 @@ function getVideoDimensions(mediaPath) {
 // For backward compatibility
 const getVideoDuration = getMediaDuration;
 
+/**
+ * Check if a video uses HEVC codec and convert it to H.264 if needed
+ * @param {string} videoPath - Path to the video file
+ * @returns {Promise<string>} - Path to the compatible video (original or converted)
+ */
+async function ensureVideoCompatibility(videoPath) {
+  return new Promise((resolve, reject) => {
+    // First, check the video codec
+    const ffprobeArgs = [
+      '-v', 'quiet',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=codec_name',
+      '-of', 'csv=p=0',
+      videoPath
+    ];
+
+    const ffprobe = spawn('ffprobe', ffprobeArgs);
+    let stdout = '';
+    let stderr = '';
+
+    ffprobe.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    ffprobe.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    ffprobe.on('close', async (code) => {
+      if (code !== 0) {
+        console.error(`[VideoCompatibility] FFprobe failed: ${stderr}`);
+        resolve(videoPath); // Return original path if we can't check
+        return;
+      }
+
+      const codec = stdout.trim().toLowerCase();
+      console.log(`[VideoCompatibility] Detected video codec: ${codec}`);
+
+      // Check if conversion is needed
+      const problematicCodecs = ['hevc', 'h265', 'av1', 'vp9'];
+      if (problematicCodecs.includes(codec)) {
+        console.log(`[VideoCompatibility] Converting ${codec} video to H.264 for better compatibility`);
+
+        try {
+          const convertedPath = await convertToH264(videoPath);
+          resolve(convertedPath);
+        } catch (error) {
+          console.error(`[VideoCompatibility] Conversion failed: ${error.message}`);
+          resolve(videoPath); // Return original if conversion fails
+        }
+      } else {
+        console.log(`[VideoCompatibility] Video codec ${codec} is compatible, no conversion needed`);
+        resolve(videoPath);
+      }
+    });
+
+    ffprobe.on('error', (error) => {
+      console.error(`[VideoCompatibility] FFprobe error: ${error.message}`);
+      resolve(videoPath); // Return original path if we can't check
+    });
+  });
+}
+
+/**
+ * Convert a video to H.264 codec for better web compatibility
+ * @param {string} inputPath - Path to the input video
+ * @returns {Promise<string>} - Path to the converted video (same as input, file is replaced)
+ */
+async function convertToH264(inputPath) {
+  const tempOutputPath = inputPath.replace(/\.mp4$/, '_h264_temp.mp4');
+
+  return new Promise((resolve, reject) => {
+    const ffmpegArgs = [
+      '-i', inputPath,
+      '-c:v', 'libx264',           // Convert to H.264
+      '-preset', 'ultrafast',       // Fastest encoding
+      '-crf', '23',                 // Good quality balance
+      '-pix_fmt', 'yuv420p',        // Compatible pixel format
+      '-c:a', 'copy',               // Copy audio without re-encoding to avoid issues
+      '-movflags', '+faststart',    // Optimize for web
+      '-avoid_negative_ts', 'make_zero', // Fix timestamp issues
+      '-y',                         // Overwrite output
+      tempOutputPath
+    ];
+
+    console.log(`[VideoCompatibility] Converting video: ${path.basename(inputPath)} -> H.264 (replacing original)`);
+
+    const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+    let stderr = '';
+
+    ffmpeg.stderr.on('data', (data) => {
+      stderr += data.toString();
+      // Show progress dots
+      if (data.toString().includes('frame=')) {
+        process.stdout.write('.');
+      }
+    });
+
+    ffmpeg.on('close', async (code) => {
+      if (code !== 0) {
+        reject(new Error(`FFmpeg conversion failed: ${stderr}`));
+        return;
+      }
+
+      try {
+        // Verify the temp output file exists and has content
+        const stats = await fsPromises.stat(tempOutputPath);
+        if (stats.size < 1000) {
+          reject(new Error('Converted file is too small'));
+          return;
+        }
+
+        console.log(`\n[VideoCompatibility] Conversion completed: ${stats.size} bytes`);
+
+        // Don't replace the original file during rendering to avoid corruption
+        // Instead, return the path to the converted file
+        console.log(`[VideoCompatibility] Conversion completed, using converted file: ${path.basename(tempOutputPath)}`);
+
+        resolve(tempOutputPath); // Return the converted file path
+      } catch (error) {
+        reject(new Error(`Failed to replace original file: ${error.message}`));
+      }
+    });
+
+    ffmpeg.on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
 module.exports = {
   getMediaDuration,
   getVideoDuration,
-  getVideoDimensions
+  getVideoDimensions,
+  ensureVideoCompatibility
 };

@@ -280,30 +280,76 @@ app.post('/render', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // Calculate duration from the last subtitle end time + buffer
-    const durationInSeconds = lyrics.length > 0 ? Math.max(...lyrics.map((l: any) => l.end)) + 2 : 8;
+    // For video files, we need to get the actual video duration instead of using subtitle duration
+    let durationInSeconds: number;
 
-    // Use the frame rate from metadata or default to 60
-    const fps = metadata.frameRate || 60;
-    // Add a 2-second buffer to ensure audio doesn't get cut off at the end
-    const audioDurationWithBuffer = durationInSeconds + 2;
-    const durationInFrames = Math.max(60, Math.ceil(audioDurationWithBuffer * fps));
+    if (isVideoFile) {
+      // We'll get the actual video duration after compatibility check
+      durationInSeconds = 8; // Temporary, will be updated below
+    } else {
+      // For audio files, use subtitle duration + buffer
+      durationInSeconds = lyrics.length > 0 ? Math.max(...lyrics.map((l: any) => l.end)) + 2 : 8;
+    }
+
+    // Use the frame rate from metadata or default to 24 for video files, 60 for audio
+    const fps = metadata.frameRate || (isVideoFile ? 24 : 60);
+
+    // For video files, use exact duration. For audio files, add buffer
+    const finalDuration = isVideoFile ? durationInSeconds : durationInSeconds + 2;
+    let durationInFrames = Math.max(60, Math.ceil(finalDuration * fps));
 
     // Determine resolution dimensions based on metadata and video aspect ratio
     const resolution = metadata.resolution || '1080p';
     let width: number, height: number;
 
+    // Store the final audio/video file path (may be converted for compatibility)
+    let finalAudioFile = audioFile;
+
     // If we have a video file, get its actual dimensions to preserve aspect ratio
     if (isVideoFile && audioFile) {
       try {
-        // Import the video dimension utility
-        const { getVideoDimensions } = require('../../../server/services/videoProcessing/durationUtils');
+        // Import the video utilities
+        const { getVideoDimensions, ensureVideoCompatibility } = require('../../../server/services/videoProcessing/durationUtils');
 
-        // Get actual video dimensions
-        const videoDimensions = await getVideoDimensions(audioFile);
+        // First, ensure video compatibility (convert HEVC to H.264 if needed)
+        // Check if the video file exists in the video-renderer server's uploads directory
+        const localVideoPath = path.join(__dirname, '../uploads', audioFile);
+
+        console.log(`[RENDER] Looking for video file at: ${localVideoPath}`);
+
+        // Check if the file exists
+        const fs = require('fs');
+        if (!fs.existsSync(localVideoPath)) {
+          throw new Error(`Video file not found: ${localVideoPath}`);
+        }
+
+        console.log(`[RENDER] Found video file: ${localVideoPath}`);
+        console.log(`[RENDER] Checking compatibility for: ${localVideoPath}`);
+        const compatibleVideoPath = await ensureVideoCompatibility(localVideoPath);
+
+        // Update the final audio file to use the compatible version
+        finalAudioFile = path.basename(compatibleVideoPath);
+        console.log(`[RENDER] Video compatibility ensured, using file: ${finalAudioFile}`);
+
+        // Get actual video dimensions and duration from the compatible video
+        const { getMediaDuration } = require('../../../server/services/videoProcessing/durationUtils');
+        const videoDimensions = await getVideoDimensions(compatibleVideoPath);
+        const actualVideoDuration = await getMediaDuration(compatibleVideoPath);
+
         const videoWidth = videoDimensions.width;
         const videoHeight = videoDimensions.height;
         const aspectRatio = videoWidth / videoHeight;
+
+        // Update duration to match the actual video duration
+        durationInSeconds = actualVideoDuration;
+
+        // Recalculate frames with the actual video duration
+        const finalDuration = durationInSeconds; // No buffer for video files
+        durationInFrames = Math.max(60, Math.ceil(finalDuration * fps));
+
+        console.log(`[RENDER] Actual video duration: ${actualVideoDuration} seconds`);
+        console.log(`[RENDER] Recalculated frames: ${durationInFrames} at ${fps}fps`);
+        console.log(`[RENDER] Using video file: ${compatibleVideoPath}`);
 
         console.log(`[RENDER] Original video dimensions: ${videoWidth}x${videoHeight} (aspect ratio: ${aspectRatio.toFixed(2)})`);
 
@@ -429,7 +475,7 @@ app.post('/render', async (req, res) => {
     const outputPath = path.join(outputDir, outputFile);
 
     // Create URLs that can be accessed via HTTP instead of file:// protocol
-    const audioUrl = `http://localhost:${port}/uploads/${audioFile}`;
+    const audioUrl = `http://localhost:${port}/uploads/${finalAudioFile}`;
 
     // Perform server-side verification before rendering
     verifyServerAssets(metadata.videoType, audioUrl, narrationUrl);
@@ -562,6 +608,7 @@ app.post('/render', async (req, res) => {
           gl: "vulkan"
         },
         logLevel: 'verbose',
+        timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
         cancelSignal,
         onProgress: ({ renderedFrames, encodedFrames }) => {
           console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
@@ -636,6 +683,7 @@ app.post('/render', async (req, res) => {
                 gl: "vulkan"
               },
               logLevel: 'verbose',
+              timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
               cancelSignal,
               onProgress: ({ renderedFrames, encodedFrames }) => {
                 console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);

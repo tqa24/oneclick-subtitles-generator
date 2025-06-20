@@ -23,6 +23,7 @@ const allSitesRoutes = require('./server/routes/allSitesRoutes');
 const narrationRoutes = require('./server/routes/narrationRoutes');
 const testAudioRoute = require('./server/routes/testAudioRoute');
 const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
+const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRoutes');
 
 // Initialize Express app
 const app = express();
@@ -156,6 +157,7 @@ app.use('/api', settingsRoutes);
 app.use('/api', douyinRoutes);
 app.use('/api', allSitesRoutes);
 app.use('/api', qualityScanRoutes);
+app.use('/api/video', videoCompatibilityRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);
