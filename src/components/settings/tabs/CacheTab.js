@@ -141,7 +141,7 @@ const CacheTab = () => {
         <div className="cache-section-header">
         </div>
         <p className="cache-description">
-          {t('settings.cacheDescription', 'Clear all cached subtitles, downloaded videos, and narration audio files to free up space.')}
+          {t('settings.cacheDescription', 'Clear all cached files including subtitles, videos, uploaded files, generated content, narration audio, and temporary files to free up space.')}
         </p>
       </div>
 
@@ -214,7 +214,7 @@ const CacheTab = () => {
           </div>
 
           <div className="cache-details-grid">
-            {/* Left Column */}
+            {/* Column 1 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
                 <h4>{t('settings.videos', 'Videos')}:</h4>
@@ -229,9 +229,54 @@ const CacheTab = () => {
                   {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.userSubtitles', 'User Subtitles')}:</h4>
+                <p>
+                  {t('settings.userSubtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.userSubtitles?.count || 0, size: cacheDetails.userSubtitles?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.rules', 'Transcription Rules')}:</h4>
+                <p>
+                  {t('settings.rulesCount', '{{count}} files ({{size}})', { count: cacheDetails.rules?.count || 0, size: cacheDetails.rules?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
             </div>
 
-            {/* Right Column */}
+            {/* Column 2 */}
+            <div className="cache-details-column">
+              <div className="cache-details-item">
+                <h4>{t('settings.lyrics', 'Lyrics')}:</h4>
+                <p>
+                  {t('settings.lyricsCount', '{{count}} files ({{size}})', { count: cacheDetails.lyrics?.count || 0, size: cacheDetails.lyrics?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.albumArt', 'Album Art')}:</h4>
+                <p>
+                  {t('settings.albumArtCount', '{{count}} files ({{size}})', { count: cacheDetails.albumArt?.count || 0, size: cacheDetails.albumArt?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.uploads', 'Uploaded Files')}:</h4>
+                <p>
+                  {t('settings.uploadsCount', '{{count}} files ({{size}})', { count: cacheDetails.uploads?.count || 0, size: cacheDetails.uploads?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.output', 'Generated Videos')}:</h4>
+                <p>
+                  {t('settings.outputCount', '{{count}} files ({{size}})', { count: cacheDetails.output?.count || 0, size: cacheDetails.output?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+            </div>
+
+            {/* Column 3 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
                 <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
@@ -244,6 +289,44 @@ const CacheTab = () => {
                 <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
                 <p>
                   {t('settings.narrationOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationOutput?.count || 0, size: cacheDetails.narrationOutput?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.videoRendered', 'Rendered Videos')}:</h4>
+                <p>
+                  {t('settings.videoRenderedCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendered?.count || 0, size: cacheDetails.videoRendered?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.videoTemp', 'Temporary Videos')}:</h4>
+                <p>
+                  {t('settings.videoTempCount', '{{count}} files ({{size}})', { count: cacheDetails.videoTemp?.count || 0, size: cacheDetails.videoTemp?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+            </div>
+
+            {/* Column 4 */}
+            <div className="cache-details-column">
+              <div className="cache-details-item">
+                <h4>{t('settings.videoAlbumArt', 'Video Album Art')}:</h4>
+                <p>
+                  {t('settings.videoAlbumArtCount', '{{count}} files ({{size}})', { count: cacheDetails.videoAlbumArt?.count || 0, size: cacheDetails.videoAlbumArt?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.videoRendererUploads', 'Video Renderer Uploads')}:</h4>
+                <p>
+                  {t('settings.videoRendererUploadsCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendererUploads?.count || 0, size: cacheDetails.videoRendererUploads?.formattedSize || '0 Bytes' })}
+                </p>
+              </div>
+
+              <div className="cache-details-item">
+                <h4>{t('settings.videoRendererOutput', 'Video Renderer Output')}:</h4>
+                <p>
+                  {t('settings.videoRendererOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendererOutput?.count || 0, size: cacheDetails.videoRendererOutput?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
             </div>

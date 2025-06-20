@@ -9,8 +9,10 @@ import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
 import BackgroundImageGenerator from '../BackgroundImageGenerator';
 import VideoRenderingSection from '../VideoRenderingSection';
+import VideoQualityModal from '../VideoQualityModal';
 import FloatingScrollbar from '../FloatingScrollbar';
 import OnboardingBanner from '../OnboardingBanner';
+import { useVideoInfo } from '../../hooks/useVideoInfo';
 
 /**
  * Main application layout component
@@ -30,6 +32,9 @@ const AppLayout = ({
   // State for video rendering section
   const [videoRenderingAutoFill, setVideoRenderingAutoFill] = useState(null);
   const [actualVideoUrl, setActualVideoUrl] = useState('');
+
+  // State for video quality modal
+  const [showVideoQualityModal, setShowVideoQualityModal] = useState(false);
 
   // Handler for generating background image
   const handleGenerateBackground = (lyrics, albumArt, songName) => {
@@ -114,6 +119,14 @@ const AppLayout = ({
     handleAbortVideoAnalysis
   } = modalHandlers;
 
+  // Use video info hook to track current video and available versions
+  const {
+    videoInfo,
+    availableVersions,
+    getVideoInfoForModal,
+    getVideoFileForRendering
+  } = useVideoInfo(selectedVideo, uploadedFile, actualVideoUrl);
+
   // Handler for generating a specific segment
   const handleGenerateSegment = async (segmentIndex, segments) => {
     if (!segments || !segments[segmentIndex]) {
@@ -169,12 +182,42 @@ const AppLayout = ({
   };
   // Handler for render video action
   const handleRenderVideo = () => {
+    // Check if we have video info and should show quality modal
+    if (videoInfo) {
+      setShowVideoQualityModal(true);
+    } else {
+      // Fallback to original behavior if no video info
+      proceedWithVideoRendering();
+    }
+  };
+
+  // Proceed with video rendering (original behavior)
+  const proceedWithVideoRendering = (videoFile = null) => {
     // Auto-fill the video rendering section and ensure it's expanded
     setVideoRenderingAutoFill({
       timestamp: Date.now(), // Use timestamp to trigger re-render
       expand: true, // Signal to expand the section
-      autoScroll: true // Also scroll to the section
+      autoScroll: true, // Also scroll to the section
+      videoFile: videoFile // Pass selected video file if any
     });
+  };
+
+  // Handler for video quality modal confirmation
+  const handleVideoQualityConfirm = async (option, data = {}) => {
+    try {
+      // Get the appropriate video file based on user selection
+      const videoFile = await getVideoFileForRendering(option, data);
+
+      // Close the modal
+      setShowVideoQualityModal(false);
+
+      // Proceed with video rendering using the selected video
+      proceedWithVideoRendering(videoFile);
+    } catch (error) {
+      console.error('Error handling video quality selection:', error);
+      // Show error to user (you might want to add a toast notification here)
+      alert(`Error: ${error.message}`);
+    }
   };
 
   // Handle when video source is removed or added
@@ -357,6 +400,17 @@ const AppLayout = ({
               localStorage.setItem('transcription_prompt', preset.prompt);
             }
           }}
+        />
+      )}
+
+      {/* Video Quality Modal */}
+      {showVideoQualityModal && (
+        <VideoQualityModal
+          isOpen={showVideoQualityModal}
+          onClose={() => setShowVideoQualityModal(false)}
+          onConfirm={handleVideoQualityConfirm}
+          videoInfo={getVideoInfoForModal()?.videoInfo || videoInfo}
+          availableVersions={availableVersions}
         />
       )}
 

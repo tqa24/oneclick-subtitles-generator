@@ -21,6 +21,7 @@ const RemotionVideoPreview = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isVideoFile, setIsVideoFile] = useState(false);
+  const [videoDimensions, setVideoDimensions] = useState(null);
   const playerRef = useRef(null);
 
   // Create video URL from file
@@ -72,6 +73,31 @@ const RemotionVideoPreview = ({
             if (onDurationChange) {
               onDurationChange(videoDuration);
             }
+
+            // Get actual video dimensions for proper aspect ratio
+            // Check if this is a video file by examining the file type or video properties
+            const isActualVideo = (videoFile instanceof File && videoFile.type.startsWith('video/')) ||
+                                 (typeof videoFile === 'string' && videoFile.includes('.mp4')) ||
+                                 (videoFile && videoFile.isActualVideo) ||
+                                 (tempVideo.videoWidth && tempVideo.videoHeight);
+
+            if (isActualVideo) {
+              // Wait a bit for video metadata to fully load
+              setTimeout(() => {
+                if (tempVideo.videoWidth && tempVideo.videoHeight) {
+                  const videoWidth = tempVideo.videoWidth;
+                  const videoHeight = tempVideo.videoHeight;
+                  console.log(`[RemotionVideoPreview] Detected video dimensions: ${videoWidth}x${videoHeight}`);
+                  setVideoDimensions({
+                    width: videoWidth,
+                    height: videoHeight,
+                    aspectRatio: videoWidth / videoHeight
+                  });
+                } else {
+                  console.warn('[RemotionVideoPreview] Could not detect video dimensions, using fallback');
+                }
+              }, 100);
+            }
           });
           tempVideo.addEventListener('error', (e) => {
             console.warn('Error loading video for duration:', e);
@@ -94,20 +120,79 @@ const RemotionVideoPreview = ({
       setVideoUrl(null);
       setIsVideoFile(false);
       setDuration(0);
+      setVideoDimensions(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoFile]);
 
-  // Calculate composition dimensions based on resolution
+  // Debug effect to track videoDimensions changes
+  useEffect(() => {
+    console.log('[RemotionVideoPreview] videoDimensions changed:', videoDimensions);
+  }, [videoDimensions]);
+
+  // Calculate composition dimensions based on actual video dimensions or resolution fallback
   const getCompositionDimensions = () => {
+    // If we have actual video dimensions, use them with the target resolution height
+    if (videoDimensions && isVideoFile) {
+      const resolution = subtitleCustomization?.resolution || '1080p';
+      let targetHeight;
+
+      switch (resolution) {
+        case '360p':
+          targetHeight = 360;
+          break;
+        case '480p':
+          targetHeight = 480;
+          break;
+        case '720p':
+          targetHeight = 720;
+          break;
+        case '1440p':
+          targetHeight = 1440;
+          break;
+        case '2K':
+          targetHeight = 1080;
+          break;
+        case '4K':
+          targetHeight = 2160;
+          break;
+        case '8K':
+          targetHeight = 4320;
+          break;
+        case '1080p':
+        default:
+          targetHeight = 1080;
+          break;
+      }
+
+      // Calculate width based on actual aspect ratio
+      const targetWidth = Math.round(targetHeight * videoDimensions.aspectRatio);
+
+      // Ensure dimensions are even numbers (required for video encoding)
+      const width = targetWidth % 2 === 0 ? targetWidth : targetWidth + 1;
+      const height = targetHeight % 2 === 0 ? targetHeight : targetHeight + 1;
+
+      console.log(`[RemotionVideoPreview] Using actual video dimensions: ${width}x${height} (aspect ratio: ${videoDimensions.aspectRatio.toFixed(2)})`);
+      return { width, height };
+    }
+
+    // Fallback to default 16:9 dimensions for audio files or when video dimensions aren't available yet
     const resolution = subtitleCustomization?.resolution || '1080p';
     switch (resolution) {
+      case '360p':
+        return { width: 640, height: 360 };
       case '480p':
         return { width: 854, height: 480 };
       case '720p':
         return { width: 1280, height: 720 };
-      case '2K':
+      case '1440p':
         return { width: 2560, height: 1440 };
+      case '2K':
+        return { width: 2048, height: 1080 };
+      case '4K':
+        return { width: 3840, height: 2160 };
+      case '8K':
+        return { width: 7680, height: 4320 };
       case '1080p':
       default:
         return { width: 1920, height: 1080 };
@@ -209,19 +294,27 @@ const RemotionVideoPreview = ({
   const durationInFrames = getDurationInFrames();
   const frameRate = subtitleCustomization?.frameRate || 30;
 
+  // Debug logging
+  console.log('[RemotionVideoPreview] Composition dimensions:', { width, height, videoDimensions, isVideoFile });
+
+  // Ensure we have valid dimensions
+  const safeWidth = width > 0 ? width : 1920;
+  const safeHeight = height > 0 ? height : 1080;
+
   return (
     <>
       <Player
+        key={`${safeWidth}x${safeHeight}`} // Force re-render when dimensions change
         ref={playerRef}
         component={SubtitledVideoComposition}
         durationInFrames={durationInFrames}
-        compositionWidth={width}
-        compositionHeight={height}
+        compositionWidth={safeWidth}
+        compositionHeight={safeHeight}
         fps={frameRate}
         controls
         style={{
           width: '100%',
-          flex: 1,
+          height: '100%',
           borderRadius: '8px',
           overflow: 'hidden',
         }}

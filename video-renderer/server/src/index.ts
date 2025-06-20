@@ -280,60 +280,202 @@ app.post('/render', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    // Calculate duration from the last subtitle end time + buffer
-    const durationInSeconds = lyrics.length > 0 ? Math.max(...lyrics.map((l: any) => l.end)) + 2 : 8;
+    // For video files, we need to get the actual video duration instead of using subtitle duration
+    let durationInSeconds: number;
 
-    // Use the frame rate from metadata or default to 60
-    const fps = metadata.frameRate || 60;
-    // Add a 2-second buffer to ensure audio doesn't get cut off at the end
-    const audioDurationWithBuffer = durationInSeconds + 2;
-    const durationInFrames = Math.max(60, Math.ceil(audioDurationWithBuffer * fps));
+    if (isVideoFile) {
+      // We'll get the actual video duration after compatibility check
+      durationInSeconds = 8; // Temporary, will be updated below
+    } else {
+      // For audio files, use subtitle duration + buffer
+      durationInSeconds = lyrics.length > 0 ? Math.max(...lyrics.map((l: any) => l.end)) + 2 : 8;
+    }
 
-    // Determine resolution dimensions based on metadata
+    // Use the frame rate from metadata or default to 24 for video files, 60 for audio
+    const fps = metadata.frameRate || (isVideoFile ? 24 : 60);
+
+    // For video files, use exact duration. For audio files, add buffer
+    const finalDuration = isVideoFile ? durationInSeconds : durationInSeconds + 2;
+    let durationInFrames = Math.max(60, Math.ceil(finalDuration * fps));
+
+    // Determine resolution dimensions based on metadata and video aspect ratio
     const resolution = metadata.resolution || '1080p';
     let width: number, height: number;
 
-    switch (resolution) {
-      case '360p':
-        width = 640;
-        height = 360;
-        break;
-      case '480p':
-        width = 854;
-        height = 480;
-        break;
-      case '720p':
-        width = 1280;
-        height = 720;
-        break;
-      case '1440p':
-        width = 2560;
-        height = 1440;
-        break;
-      case '2K':
-        width = 2048;
-        height = 1080;
-        break;
-      case '4K':
-        width = 3840;
-        height = 2160;
-        break;
-      case '8K':
-        width = 7680;
-        height = 4320;
-        break;
-      case '1080p':
-      default:
-        width = 1920;
-        height = 1080;
-        break;
+    // Store the final audio/video file path (may be converted for compatibility)
+    let finalAudioFile = audioFile;
+
+    // If we have a video file, get its actual dimensions to preserve aspect ratio
+    if (isVideoFile && audioFile) {
+      try {
+        // Import the video utilities
+        const { getVideoDimensions, ensureVideoCompatibility } = require('../../../server/services/videoProcessing/durationUtils');
+
+        // First, ensure video compatibility (convert HEVC to H.264 if needed)
+        // Check if the video file exists in the video-renderer server's uploads directory
+        const localVideoPath = path.join(__dirname, '../uploads', audioFile);
+
+        console.log(`[RENDER] Looking for video file at: ${localVideoPath}`);
+
+        // Check if the file exists
+        const fs = require('fs');
+        if (!fs.existsSync(localVideoPath)) {
+          throw new Error(`Video file not found: ${localVideoPath}`);
+        }
+
+        console.log(`[RENDER] Found video file: ${localVideoPath}`);
+        console.log(`[RENDER] Checking compatibility for: ${localVideoPath}`);
+        const compatibleVideoPath = await ensureVideoCompatibility(localVideoPath);
+
+        // Update the final audio file to use the compatible version
+        finalAudioFile = path.basename(compatibleVideoPath);
+        console.log(`[RENDER] Video compatibility ensured, using file: ${finalAudioFile}`);
+
+        // Get actual video dimensions and duration from the compatible video
+        const { getMediaDuration } = require('../../../server/services/videoProcessing/durationUtils');
+        const videoDimensions = await getVideoDimensions(compatibleVideoPath);
+        const actualVideoDuration = await getMediaDuration(compatibleVideoPath);
+
+        const videoWidth = videoDimensions.width;
+        const videoHeight = videoDimensions.height;
+        const aspectRatio = videoWidth / videoHeight;
+
+        // Update duration to match the actual video duration
+        durationInSeconds = actualVideoDuration;
+
+        // Recalculate frames with the actual video duration
+        const finalDuration = durationInSeconds; // No buffer for video files
+        durationInFrames = Math.max(60, Math.ceil(finalDuration * fps));
+
+        console.log(`[RENDER] Actual video duration: ${actualVideoDuration} seconds`);
+        console.log(`[RENDER] Recalculated frames: ${durationInFrames} at ${fps}fps`);
+        console.log(`[RENDER] Using video file: ${compatibleVideoPath}`);
+
+        console.log(`[RENDER] Original video dimensions: ${videoWidth}x${videoHeight} (aspect ratio: ${aspectRatio.toFixed(2)})`);
+
+        // Calculate target dimensions based on resolution while preserving aspect ratio
+        let targetHeight: number;
+        switch (resolution) {
+          case '360p':
+            targetHeight = 360;
+            break;
+          case '480p':
+            targetHeight = 480;
+            break;
+          case '720p':
+            targetHeight = 720;
+            break;
+          case '1440p':
+            targetHeight = 1440;
+            break;
+          case '2K':
+            targetHeight = 1080;
+            break;
+          case '4K':
+            targetHeight = 2160;
+            break;
+          case '8K':
+            targetHeight = 4320;
+            break;
+          case '1080p':
+          default:
+            targetHeight = 1080;
+            break;
+        }
+
+        // Calculate width based on aspect ratio
+        width = Math.round(targetHeight * aspectRatio);
+        height = targetHeight;
+
+        // Ensure dimensions are even numbers (required for video encoding)
+        width = width % 2 === 0 ? width : width + 1;
+        height = height % 2 === 0 ? height : height + 1;
+
+        console.log(`[RENDER] Calculated composition dimensions: ${width}x${height} (preserving aspect ratio)`);
+
+      } catch (error) {
+        console.warn(`[RENDER] Could not get video dimensions, falling back to default 16:9: ${error instanceof Error ? error.message : String(error)}`);
+        // Fall back to default 16:9 dimensions
+        switch (resolution) {
+          case '360p':
+            width = 640;
+            height = 360;
+            break;
+          case '480p':
+            width = 854;
+            height = 480;
+            break;
+          case '720p':
+            width = 1280;
+            height = 720;
+            break;
+          case '1440p':
+            width = 2560;
+            height = 1440;
+            break;
+          case '2K':
+            width = 2048;
+            height = 1080;
+            break;
+          case '4K':
+            width = 3840;
+            height = 2160;
+            break;
+          case '8K':
+            width = 7680;
+            height = 4320;
+            break;
+          case '1080p':
+          default:
+            width = 1920;
+            height = 1080;
+            break;
+        }
+      }
+    } else {
+      // For audio files, use default 16:9 dimensions
+      switch (resolution) {
+        case '360p':
+          width = 640;
+          height = 360;
+          break;
+        case '480p':
+          width = 854;
+          height = 480;
+          break;
+        case '720p':
+          width = 1280;
+          height = 720;
+          break;
+        case '1440p':
+          width = 2560;
+          height = 1440;
+          break;
+        case '2K':
+          width = 2048;
+          height = 1080;
+          break;
+        case '4K':
+          width = 3840;
+          height = 2160;
+          break;
+        case '8K':
+          width = 7680;
+          height = 4320;
+          break;
+        case '1080p':
+        default:
+          width = 1920;
+          height = 1080;
+          break;
+      }
     }
 
     const outputFile = `subtitle-video-${Date.now()}.mp4`;
     const outputPath = path.join(outputDir, outputFile);
 
     // Create URLs that can be accessed via HTTP instead of file:// protocol
-    const audioUrl = `http://localhost:${port}/uploads/${audioFile}`;
+    const audioUrl = `http://localhost:${port}/uploads/${finalAudioFile}`;
 
     // Perform server-side verification before rendering
     verifyServerAssets(metadata.videoType, audioUrl, narrationUrl);
@@ -401,6 +543,12 @@ app.post('/render', async (req, res) => {
       },
     });
 
+    // Override composition dimensions with calculated values
+    composition.width = width;
+    composition.height = height;
+    composition.fps = fps;
+    composition.durationInFrames = durationInFrames;
+
     // Force the composition settings to match our calculated values
     composition.durationInFrames = durationInFrames;
     composition.width = width;
@@ -460,6 +608,7 @@ app.post('/render', async (req, res) => {
           gl: "vulkan"
         },
         logLevel: 'verbose',
+        timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
         cancelSignal,
         onProgress: ({ renderedFrames, encodedFrames }) => {
           console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
@@ -534,6 +683,7 @@ app.post('/render', async (req, res) => {
                 gl: "vulkan"
               },
               logLevel: 'verbose',
+              timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
               cancelSignal,
               onProgress: ({ renderedFrames, encodedFrames }) => {
                 console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);

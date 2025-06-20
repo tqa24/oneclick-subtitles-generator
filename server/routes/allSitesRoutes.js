@@ -14,7 +14,7 @@ const { getDownloadProgress } = require('../services/shared/progressTracker');
  * POST /api/download-generic-video - Download a video from any supported site
  */
 router.post('/download-generic-video', async (req, res) => {
-  const { videoId, url } = req.body;
+  const { videoId, url, quality = '360p' } = req.body;
 
 
 
@@ -35,7 +35,7 @@ router.post('/download-generic-video', async (req, res) => {
 
   try {
     // Download the video using yt-dlp with retry and fallback
-    const result = await downloadVideoWithRetry(videoId, url);
+    const result = await downloadVideoWithRetry(videoId, url, quality);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {

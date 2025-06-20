@@ -9,6 +9,7 @@ const path = require('path');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { getVideoDimensions } = require('../services/videoProcessing/durationUtils');
 const {
   splitVideoIntoSegments,
   splitMediaIntoSegments,
@@ -137,6 +138,46 @@ router.get('/download-progress/:videoId', (req, res) => {
     console.error('Error getting download progress:', error);
     res.status(500).json({
       error: 'Failed to get download progress',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/video-dimensions/:videoId - Get video dimensions and quality
+ */
+router.get('/video-dimensions/:videoId', async (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  try {
+    const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+
+    if (!fs.existsSync(videoPath)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Video file not found'
+      });
+    }
+
+    const dimensions = await getVideoDimensions(videoPath);
+
+    res.json({
+      success: true,
+      videoId: videoId,
+      width: dimensions.width,
+      height: dimensions.height,
+      quality: dimensions.quality,
+      resolution: dimensions.resolution
+    });
+  } catch (error) {
+    console.error('Error getting video dimensions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get video dimensions',
       details: error.message
     });
   }

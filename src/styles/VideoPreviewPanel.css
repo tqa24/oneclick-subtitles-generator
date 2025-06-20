@@ -97,10 +97,16 @@
 .video-preview-panel .video-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 16/9;
+  /* Provide a reasonable default height that works for most videos */
+  height: 400px; /* Fixed height to ensure container is visible */
+  min-height: 300px;
+  max-height: 70vh;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-preview-panel .preview-video {

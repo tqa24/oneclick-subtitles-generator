@@ -4,6 +4,39 @@ import { extractYoutubeVideoId, downloadYoutubeVideo } from '../../utils/videoDo
 import { extractDouyinVideoId, downloadDouyinVideo } from '../../utils/douyinDownloader';
 import { downloadGenericVideo } from '../../utils/allSitesDownloader';
 
+// Function to ensure video compatibility
+const ensureVideoCompatibility = async (videoFile) => {
+  try {
+    // Check if we need to convert the video for compatibility
+    const response = await fetch('/api/video/ensure-compatibility', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        videoPath: videoFile.name || 'uploaded-video.mp4'
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.converted) {
+        console.log('[VideoProcessing] Video was converted for compatibility');
+        // Return a new file object pointing to the converted video
+        const convertedResponse = await fetch(result.path);
+        const convertedBlob = await convertedResponse.blob();
+        return new File([convertedBlob], result.filename, { type: 'video/mp4' });
+      }
+    }
+
+    // Return original file if no conversion needed or conversion failed
+    return videoFile;
+  } catch (error) {
+    console.warn('[VideoProcessing] Compatibility check failed, using original video:', error);
+    return videoFile;
+  }
+};
+
 /**
  * Prepare video for segment processing by optimizing and splitting
  * @param {File} videoFile - The video file to prepare
@@ -465,8 +498,16 @@ export const downloadAndPrepareYouTubeVideo = async (
         }
       }
 
+      // Preserve the original video URL before tab change
+      const originalVideoUrl = localStorage.getItem('current_video_url');
+
       // Switch to the upload tab without resetting state (system-initiated, don't update user preference)
       handleTabChange('file-upload');
+
+      // Restore the original video URL after tab change (so we can redownload later)
+      if (originalVideoUrl) {
+        localStorage.setItem('current_video_url', originalVideoUrl);
+      }
 
       // Process the file as if it was uploaded
       const objectUrl = URL.createObjectURL(file);

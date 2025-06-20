@@ -279,7 +279,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                   controls
                   style={{
                     width: '100%',
-                    aspectRatio: '16/9',
+                    height: 'auto',
+                    maxHeight: '60vh',
                   }}
                   inputProps={{
                     audioUrl: audioUrls.main,
@@ -349,14 +350,14 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     value={metadata.resolution}
                     onChange={handleResolutionChange}
                   >
-                    <option value="360p">360p (640x360)</option>
-                    <option value="480p">480p (854x480)</option>
-                    <option value="720p">720p (1280x720)</option>
-                    <option value="1080p">1080p (1920x1080)</option>
-                    <option value="1440p">1440p (2560x1440)</option>
-                    <option value="2K">2K (2048x1080)</option>
-                    <option value="4K">4K (3840x2160)</option>
-                    <option value="8K">8K (7680x4320)</option>
+                    <option value="360p">360p (dimensions based on video aspect ratio)</option>
+                    <option value="480p">480p (dimensions based on video aspect ratio)</option>
+                    <option value="720p">720p (dimensions based on video aspect ratio)</option>
+                    <option value="1080p">1080p (dimensions based on video aspect ratio)</option>
+                    <option value="1440p">1440p (dimensions based on video aspect ratio)</option>
+                    <option value="2K">2K (dimensions based on video aspect ratio)</option>
+                    <option value="4K">4K (dimensions based on video aspect ratio)</option>
+                    <option value="8K">8K (dimensions based on video aspect ratio)</option>
                   </select>
                   <SelectDescription>{t('resolutionDesc')}</SelectDescription>
                 </SelectControl>
@@ -422,7 +423,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                       style={{
                         width: '100%',
                         height: 'auto',
-                        aspectRatio: '16/9'
+                        maxHeight: '60vh'
                       }}
                       controls
                       loop
@@ -430,7 +431,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                   ) : (
                     <div style={{
                       width: '100%',
-                      aspectRatio: '16/9',
+                      height: '300px',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       display: 'flex',
                       alignItems: 'center',
