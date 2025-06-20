@@ -143,7 +143,7 @@ export const downloadAndPrepareYouTubeVideo = async (
   setDownloadProgress,
   setStatus,
   setCurrentDownloadId,
-  setActiveTab,
+  handleTabChange,
   setUploadedFile,
   setIsSrtOnlyMode,
   prepareVideoForSegments,
@@ -465,9 +465,8 @@ export const downloadAndPrepareYouTubeVideo = async (
         }
       }
 
-      // Switch to the upload tab without resetting state
-      localStorage.setItem('lastActiveTab', 'file-upload');
-      setActiveTab('file-upload');
+      // Switch to the upload tab without resetting state (system-initiated, don't update user preference)
+      handleTabChange('file-upload');
 
       // Process the file as if it was uploaded
       const objectUrl = URL.createObjectURL(file);

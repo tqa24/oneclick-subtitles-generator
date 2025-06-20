@@ -33,7 +33,7 @@ export const useAppHandlers = (appState) => {
     useUserProvidedSubtitles,
     generateSubtitles,
     retryGeneration,
-    // isRetrying is used in UI elsewhere
+    isRetrying,
     setIsRetrying,
     setSegmentsStatus,
     setVideoSegments,
@@ -63,12 +63,30 @@ export const useAppHandlers = (appState) => {
   };
 
   /**
-   * Handle SRT file upload
+   * Handle SRT/JSON file upload
    */
-  const handleSrtUpload = async (srtContent) => {
+  const handleSrtUpload = async (fileContent, fileName) => {
     try {
-      // Parse the SRT content
-      const parsedSubtitles = parseSrtContent(srtContent);
+      let parsedSubtitles = [];
+
+      // Check if it's a JSON file
+      if (fileName && fileName.toLowerCase().endsWith('.json')) {
+        try {
+          const jsonData = JSON.parse(fileContent);
+          if (Array.isArray(jsonData)) {
+            parsedSubtitles = jsonData;
+          } else {
+            setStatus({ message: t('errors.invalidJsonFile', 'JSON file must contain an array of subtitles'), type: 'error' });
+            return;
+          }
+        } catch (error) {
+          setStatus({ message: t('errors.invalidJsonFormat', 'Invalid JSON format'), type: 'error' });
+          return;
+        }
+      } else {
+        // Parse as SRT content
+        parsedSubtitles = parseSrtContent(fileContent);
+      }
 
       if (parsedSubtitles.length === 0) {
         setStatus({ message: t('errors.invalidSrtFormat', 'Invalid SRT format or empty file'), type: 'error' });
@@ -109,12 +127,14 @@ export const useAppHandlers = (appState) => {
 
         // Set the subtitles data directly
         setSubtitlesData(parsedSubtitles);
-        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+        const fileType = fileName && fileName.toLowerCase().endsWith('.json') ? 'JSON' : 'SRT';
+        setStatus({ message: t('output.subtitleUploadSuccess', `${fileType} file uploaded successfully!`), type: 'success' });
       } else if (activeTab === 'file-upload' && uploadedFile) {
         try {
           // For file upload tab, set the subtitles data directly
           setSubtitlesData(parsedSubtitles);
-          setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+          const fileType = fileName && fileName.toLowerCase().endsWith('.json') ? 'JSON' : 'SRT';
+          setStatus({ message: t('output.subtitleUploadSuccess', `${fileType} file uploaded successfully!`), type: 'success' });
 
           // Create a wrapper function that includes the additional parameters
           const prepareVideoWrapper = async (file) => {
@@ -201,6 +221,9 @@ export const useAppHandlers = (appState) => {
           return prepareVideoForSegments(file, setStatus, setVideoSegments, setSegmentsStatus, t);
         };
 
+        // Create a wrapper for system-initiated tab changes
+        const systemTabChange = (tab) => handleTabChange(tab, false);
+
         // Download and prepare the YouTube video
         const downloadedFile = await downloadAndPrepareYouTubeVideo(
           selectedVideo,
@@ -208,7 +231,7 @@ export const useAppHandlers = (appState) => {
           setDownloadProgress,
           setStatus,
           setCurrentDownloadId,
-          setActiveTab,
+          systemTabChange,
           setUploadedFile,
           setIsSrtOnlyMode,
           prepareVideoWrapper,
@@ -292,30 +315,72 @@ export const useAppHandlers = (appState) => {
   };
 
   /**
-   * Handle retrying subtitle generation
+   * Handle retrying subtitle generation - FORCE RETRY that ignores validation
    */
   const handleRetryGeneration = async () => {
-    if (!validateInput()) {
-      setStatus({ message: t('errors.invalidInput'), type: 'error' });
+    console.log('FORCE RETRY: handleRetryGeneration called');
+
+    // Prevent multiple simultaneous retries
+    if (isRetrying) {
+      console.log('FORCE RETRY: Already retrying, ignoring duplicate call');
       return;
     }
 
-    // If we're in SRT-only mode, just show a message
-    if (isSrtOnlyMode) {
-      setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
+    // Only check for API key - this is the minimum requirement
+    if (!apiKeysSet.gemini) {
+      console.log('No Gemini API key available');
+      setStatus({ message: t('errors.apiKeyRequired', 'Gemini API key is required'), type: 'error' });
       return;
     }
 
+    console.log('FORCE RETRY: Setting retrying state to true');
     // Set retrying state to true immediately
     setIsRetrying(true);
 
     // Clear the segments-status before starting the retry process
     setSegmentsStatus([]);
 
+    console.log('FORCE RETRY: Determining input source...');
     let input, inputType;
 
+    // Try to get input from current state or localStorage
+    // Priority: 1. Current selected video/file, 2. localStorage cached data
+
+    if (selectedVideo) {
+      console.log('FORCE RETRY: Using selected video');
+      input = selectedVideo;
+      inputType = activeTab.includes('youtube') || activeTab === 'unified-url' ? 'youtube' : 'file-upload';
+    } else if (uploadedFile) {
+      console.log('FORCE RETRY: Using uploaded file');
+      input = uploadedFile;
+      inputType = 'file-upload';
+    } else {
+      // Try to get from localStorage
+      const cachedVideoUrl = localStorage.getItem('current_video_url');
+      const cachedFileUrl = localStorage.getItem('current_file_url');
+
+      if (cachedVideoUrl) {
+        console.log('FORCE RETRY: Using cached video URL');
+        // Create a video object from cached URL
+        input = { url: cachedVideoUrl };
+        inputType = 'youtube';
+      } else if (cachedFileUrl) {
+        console.log('FORCE RETRY: Using cached file URL');
+        // For cached files, we'll need to use the retryGeneration function directly
+        input = null; // Will be handled by retryGeneration
+        inputType = 'file-upload';
+      } else {
+        console.log('FORCE RETRY: No input source found, but proceeding anyway...');
+        // If we have subtitles data, we can still retry with the last known configuration
+        input = null;
+        inputType = 'retry';
+      }
+    }
+
+    console.log('FORCE RETRY: Input determined:', { input, inputType });
+
     // For YouTube or Unified URL tabs, download the video first and switch to upload tab
-    if ((activeTab.includes('youtube') || activeTab === 'unified-url') && selectedVideo) {
+    if ((inputType === 'youtube' || activeTab === 'unified-url') && input && input.url) {
       try {
         // Set downloading state to true to disable the generate button
         setIsDownloading(true);
@@ -329,6 +394,9 @@ export const useAppHandlers = (appState) => {
           return prepareVideoForSegments(file, setStatus, setVideoSegments, setSegmentsStatus, t);
         };
 
+        // Create a wrapper for system-initiated tab changes
+        const systemTabChange = (tab) => handleTabChange(tab, false);
+
         // Download and prepare the YouTube video
         const downloadedFile = await downloadAndPrepareYouTubeVideo(
           selectedVideo,
@@ -336,7 +404,7 @@ export const useAppHandlers = (appState) => {
           setDownloadProgress,
           setStatus,
           setCurrentDownloadId,
-          setActiveTab,
+          systemTabChange,
           setUploadedFile,
           setIsSrtOnlyMode,
           prepareVideoWrapper,
@@ -412,14 +480,76 @@ export const useAppHandlers = (appState) => {
           return;
         }
 
-        // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
-        if (subtitlesData && subtitlesData.length > 0) {
-          // Just update the status to show that the video is ready
-          setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
-        } else {
-          // Otherwise, retry generating subtitles
-          await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+        // FORCE RETRY: Always retry generating subtitles, ignore existing data
+        console.log('FORCE RETRY: Forcing subtitle regeneration...');
+        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+      } finally {
+        // Reset retrying state regardless of success or failure
+        setIsRetrying(false);
+        // Reset button animation state when generation is complete
+        resetGeminiButtonState();
+      }
+    } else {
+      // Direct retry without re-downloading - use retryGeneration function
+      console.log('FORCE RETRY: Using direct retry method');
+
+      try {
+        // First, delete any existing subtitle files to force regeneration
+        console.log('FORCE RETRY: Deleting existing subtitle files...');
+        try {
+          const response = await fetch('/api/delete-subtitles', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              // Send any identifiers that might help locate the files
+              videoUrl: selectedVideo?.url || localStorage.getItem('current_video_url'),
+              fileName: uploadedFile?.name || localStorage.getItem('current_file_name'),
+              cacheId: localStorage.getItem('current_file_cache_id')
+            })
+          });
+
+          if (response.ok) {
+            console.log('FORCE RETRY: Subtitle files deleted successfully');
+          } else {
+            console.log('FORCE RETRY: Could not delete subtitle files, but continuing...');
+          }
+        } catch (deleteError) {
+          console.log('FORCE RETRY: Error deleting files, but continuing...', deleteError);
         }
+
+        // Clear any cached subtitles data and preview section
+        console.log('FORCE RETRY: Clearing all subtitle data and preview...');
+        setSubtitlesData(null);
+        localStorage.removeItem('subtitles_data');
+        localStorage.removeItem('latest_segment_subtitles');
+
+        // Clear any window-stored subtitle data that might be cached
+        if (window.subtitlesData) {
+          window.subtitlesData = null;
+        }
+
+        // Clear status to remove any success messages
+        setStatus({ message: t('output.retrying', 'Retrying subtitle generation...'), type: 'loading' });
+
+        // Prepare options for subtitle generation
+        const subtitleOptions = {};
+
+        // Add user-provided subtitles if available and enabled
+        if (useUserProvidedSubtitles && userProvidedSubtitles) {
+          subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
+        }
+
+        console.log('FORCE RETRY: Calling retryGeneration with:', { input, inputType, subtitleOptions });
+
+        // Call retryGeneration directly - it will handle finding the right input
+        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
+
+        console.log('FORCE RETRY: retryGeneration completed');
+      } catch (error) {
+        console.error('FORCE RETRY: Error during direct retry:', error);
+        setStatus({ message: `${t('errors.retryFailed', 'Retry failed')}: ${error.message}`, type: 'error' });
       } finally {
         // Reset retrying state regardless of success or failure
         setIsRetrying(false);
@@ -457,7 +587,13 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle tab change
    */
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab, isUserInitiated = true) => {
+    // Only update user preference if this is a user-initiated change
+    if (isUserInitiated) {
+      localStorage.setItem('userPreferredTab', tab);
+    }
+
+    // Always update the current active tab
     localStorage.setItem('lastActiveTab', tab);
     setActiveTab(tab);
     setSelectedVideo(null);
@@ -563,13 +699,16 @@ export const useAppHandlers = (appState) => {
       return;
     }
 
+    // Create a wrapper for system-initiated tab changes
+    const systemTabChange = (tab) => handleTabChange(tab, false);
+
     await downloadAndPrepareYouTubeVideo(
       selectedVideo,
       setIsDownloading,
       setDownloadProgress,
       setStatus,
       setCurrentDownloadId,
-      setActiveTab,
+      systemTabChange,
       setUploadedFile,
       setIsSrtOnlyMode,
       prepareVideoForSegmentsWrapper,

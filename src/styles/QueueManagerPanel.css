@@ -1,0 +1,552 @@
+/* Queue Manager Panel - Modern Design */
+
+.queue-manager-panel {
+  background: var(--md-surface-1);
+  border-radius: 32px;
+  border: 1px solid var(--md-outline-variant);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.queue-count {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: var(--md-surface-3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 24px;
+  font-weight: 500;
+  min-width: 24px;
+  text-align: center;
+}
+
+.panel-header {
+  padding: 1rem 1.5rem;
+  background: var(--md-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.panel-icon {
+  font-size: 1.1rem;
+}
+
+.panel-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+/* Panel Content */
+.panel-content {
+  padding: 1rem;
+}
+
+/* Header Button */
+.header-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--md-error);
+  color: var(--md-on-error);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.header-btn:hover:not(:disabled) {
+  background: var(--md-error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.header-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Empty Queue */
+.empty-queue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-queue svg {
+  margin-bottom: 1.25rem;
+  opacity: 0.4;
+  color: var(--text-secondary);
+}
+
+.empty-queue h3 {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.empty-queue p {
+  margin: 0;
+  font-size: 0.85rem;
+  max-width: 280px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Queue List */
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Grid Layout for Queue List */
+.queue-list.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+/* Grid Layout for Queue Manager Panel */
+.queue-manager-panel.grid-layout {
+  margin-bottom: 0;
+}
+
+/* Queue Item */
+.queue-item {
+  background: var(--md-surface-2);
+  border-radius: 24px;
+  border: 1px solid var(--md-outline-variant);
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.queue-item.current {
+  border-color: var(--md-warning);
+  background: var(--md-warning-container);
+  box-shadow: 0 0 0 1px var(--md-warning);
+}
+
+.queue-item.completed {
+  border-color: var(--md-success);
+  background: var(--md-success-container);
+}
+
+.queue-item.failed {
+  border-color: var(--md-error);
+  background: var(--md-error-container);
+}
+
+.queue-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--md-outline);
+}
+
+/* Queue Item Header */
+.queue-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.item-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.status-icon {
+  font-size: 1.1rem;
+  margin-top: 0.125rem;
+}
+
+.item-details {
+  flex: 1;
+}
+
+.item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.item-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.item-time {
+  opacity: 0.8;
+}
+
+.item-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 24px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  letter-spacing: 0.25px;
+  background: var(--md-surface-3);
+  color: var(--text-primary);
+}
+
+/* Progress Section */
+.progress-section {
+  margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--md-surface-3);
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 24px;
+}
+
+.progress-text {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-height: 2.5rem; /* Reserve space to prevent layout shifts */
+  position: relative;
+}
+
+/* Fixed percentage container - always in the same position */
+.progress-percentage-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.progress-percentage {
+  font-weight: 600;
+  color: var(--md-primary);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Separate container for frame details - positioned below percentage */
+.progress-frames-container {
+  position: absolute;
+  top: 1.3rem; /* Start below the percentage */
+  right: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.progress-frames {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+  opacity: 0.9;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.progress-phase {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+  max-width: 200px;
+  text-align: right;
+  line-height: 1.2;
+}
+
+.progress-phase.encoding {
+  color: var(--md-secondary);
+  font-weight: 500;
+}
+
+/* Error Section */
+.error-section {
+  margin-bottom: 0.75rem;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--md-error-container);
+  color: var(--md-on-error-container);
+  border-radius: 24px;
+  font-size: 0.8rem;
+  border: 1px solid var(--md-error);
+}
+
+/* Completed Section */
+.completed-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--md-success-container);
+  border-radius: 24px;
+  border: 1px solid var(--md-success);
+}
+
+.output-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--md-on-success-container);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--md-success);
+  color: var(--md-on-success);
+  text-decoration: none;
+  border: none;
+  border-radius: 32px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  background: var(--md-success-dark);
+  transform: translateY(-1px);
+  color: var(--md-on-success);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Item Actions */
+.item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.retry-btn,
+.remove-btn,
+.cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 32px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn {
+  background: var(--md-warning);
+  color: var(--md-on-warning);
+}
+
+.retry-btn:hover {
+  background: var(--md-warning-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.remove-btn {
+  background: var(--md-error);
+  color: var(--md-on-error);
+}
+
+.remove-btn:hover {
+  background: var(--md-error-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cancel-btn {
+  background: var(--md-warning);
+  color: var(--md-on-warning);
+}
+
+.cancel-btn:hover {
+  background: var(--md-warning-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .panel-header,
+  .collapsed-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .panel-content {
+    padding: 0.875rem;
+  }
+
+  .queue-item {
+    padding: 0.875rem;
+  }
+
+  .queue-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .item-info {
+    width: 100%;
+  }
+
+  .item-status {
+    align-self: flex-end;
+  }
+
+  .completed-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .item-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .empty-queue {
+    padding: 2.5rem 1.25rem;
+  }
+
+  .empty-queue svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .queue-actions {
+    justify-content: center;
+  }
+
+  /* Grid layout responsive - single column on mobile */
+  .queue-list.grid-layout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+/* Animation for new queue items */
+.queue-item {
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus styles for accessibility */
+.retry-btn:focus,
+.remove-btn:focus,
+.cancel-btn:focus,
+.clear-queue-btn:focus,
+.download-btn:focus {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+.panel-header:focus,
+.collapsed-header:focus {
+  outline: 2px solid var(--md-primary);
+  outline-offset: -2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .queue-item {
+    border-width: 2px;
+  }
+
+  .status-badge {
+    border: 1px solid var(--text-primary);
+  }
+
+  .progress-bar {
+    border: 1px solid var(--text-primary);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .queue-item {
+    animation: none;
+  }
+
+  .retry-btn:hover,
+  .remove-btn:hover,
+  .cancel-btn:hover,
+  .clear-queue-btn:hover,
+  .download-btn:hover,
+  .queue-item:hover {
+    transform: none;
+  }
+
+  .expand-arrow {
+    transition: none;
+  }
+}

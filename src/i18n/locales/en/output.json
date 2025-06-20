@@ -85,5 +85,6 @@
   "audioSegmentsReady": "Audio segments ready",
   "retrying": "Retrying...",
   "ready": "Ready",
-  "segmentReady": "Ready for processing"
+  "segmentReady": "Ready for processing",
+  "subtitleUploadSuccess": "Subtitle file uploaded successfully!"
 }

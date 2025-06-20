@@ -1,5 +1,5 @@
 {
-  "buttonText": "Tải lên SRT",
-  "tooltip": "Tải lên tập tin SRT của bạn",
+  "buttonText": "Tải lên SRT/JSON",
+  "tooltip": "Tải lên tập tin SRT hoặc JSON phụ đề của bạn",
   "processing": "Đang xử lý..."
 }

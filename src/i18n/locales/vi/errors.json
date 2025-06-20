@@ -11,5 +11,10 @@
   "youtubeApiNotEnabled": "YouTube Data API v3 chưa được kích hoạt trong dự án Google Cloud của bạn. Vui lòng kích hoạt bằng cách truy cập Google Cloud Console và bật dịch vụ YouTube Data API v3.",
   "quotaExceeded": "Đã vượt quá hạn ngạch, vui lòng đợi đến ngày mai, hoặc tạo dự án Google Cloud mới và cập nhật API hoặc OAuth.",
   "contentBlocked": "Nội dung video không an toàn và đã bị Gemini chặn",
-  "paidTierRequired": "Mô hình này hiện đang yêu cầu gói trả phí của Gemini API"
+  "paidTierRequired": "Mô hình này hiện đang yêu cầu gói trả phí của Gemini API",
+  "invalidSrtFile": "Vui lòng chọn tập tin SRT hợp lệ",
+  "invalidSubtitleFile": "Vui lòng chọn tập tin SRT hoặc JSON phụ đề hợp lệ",
+  "invalidJsonFile": "Tập tin JSON phải chứa một mảng phụ đề",
+  "invalidJsonFormat": "Định dạng JSON không hợp lệ",
+  "invalidJsonStructure": "Phụ đề JSON phải có các thuộc tính start, end và text"
 }

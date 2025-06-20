@@ -153,10 +153,6 @@
   box-shadow: var(--md-elevation-level1);
 }
 
-.advanced-settings-button-label {
-  font-family: 'Open Sans', sans-serif;
-}
-
 .advanced-settings-button:hover {
   background-color: var(--md-tertiary-container);
   color: var(--md-on-tertiary-container);

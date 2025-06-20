@@ -14,7 +14,7 @@ import '../../styles/VideoPreview.css';
 import '../../styles/narration/index.css';
 import { SERVER_URL } from '../../config';
 
-const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange, onRenderVideo }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -673,6 +673,19 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         return;
       }
 
+      // Don't handle spacebar if the video rendering section is expanded and focused
+      // This prevents conflicts with the RemotionVideoPreview
+      const videoRenderingSection = document.querySelector('.video-rendering-section.expanded');
+      const videoPreviewPanel = document.querySelector('.video-preview-panel');
+      if (videoRenderingSection && videoPreviewPanel) {
+        // Check if the user is interacting with the video rendering section
+        const isInVideoRenderingArea = event.target.closest('.video-rendering-section') ||
+                                      event.target.closest('.video-preview-panel');
+        if (isInVideoRenderingArea) {
+          return; // Let the RemotionVideoPreview handle its own spacebar events
+        }
+      }
+
       // Only proceed if video element exists and is loaded
       const videoElement = videoRef.current;
       if (!videoElement || !isLoaded) return;
@@ -885,6 +898,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             return {};
           })()}
           getAudioUrl={(filename) => `${SERVER_URL}/narration/audio/${filename || 'test.wav'}`}
+          onRenderVideo={onRenderVideo}
         />
       </div>
 

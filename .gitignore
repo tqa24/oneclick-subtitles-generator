@@ -134,5 +134,12 @@ lib64/
 !src/assets/*.mp3
 !src/assets/*.wav
 live-api-web-console/
-video-renderer/node_modules
-video-renderer/server/uploads
+
+# Video-renderer specific ignores (keep source code, ignore build artifacts)
+video-renderer/node_modules/
+video-renderer/build/
+video-renderer/dist/
+video-renderer/.cache/
+video-renderer/out/
+video-renderer/.remotion/
+video-renderer/public/video.mp4

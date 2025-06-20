@@ -16,6 +16,57 @@
   flex-direction: column;
 }
 
+/* Floating zoom controls in top right corner */
+.floating-zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  border-radius: var(--md-shape-pill);
+  padding: 4px 8px;
+  box-shadow: var(--md-elevation-level2);
+  border: 1px solid var(--md-outline-variant);
+  backdrop-filter: blur(2px);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.floating-zoom-controls:hover {
+  box-shadow: var(--md-elevation-level3);
+  transform: translateY(-1px);
+}
+
+/* Zoom slider inside floating controls */
+.floating-zoom-controls .zoom-slider {
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 24px;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  background-color: transparent;
+  border-radius: var(--md-shape-pill);
+}
+
+.floating-zoom-controls .zoom-slider:hover {
+  background-color: color-mix(in srgb, var(--md-primary-container), transparent 80%);
+  transform: scale(1.05);
+}
+
+/* Zoom percentage display in floating controls */
+.floating-zoom-controls .zoom-slider span {
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  font-weight: 600;
+  color: var(--md-on-surface);
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  user-select: none;
+  padding: 2px 6px;
+  border-radius: var(--md-shape-small);
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}
+
 .subtitle-timeline {
   width: 100%;
   height: 50px; /* Fixed height for the timeline */

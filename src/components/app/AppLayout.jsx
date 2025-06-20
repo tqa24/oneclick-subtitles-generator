@@ -8,6 +8,7 @@ import TranslationWarningToast from '../TranslationWarningToast';
 import VideoAnalysisModal from '../VideoAnalysisModal';
 import TranscriptionRulesEditor from '../TranscriptionRulesEditor';
 import BackgroundImageGenerator from '../BackgroundImageGenerator';
+import VideoRenderingSection from '../VideoRenderingSection';
 import FloatingScrollbar from '../FloatingScrollbar';
 import OnboardingBanner from '../OnboardingBanner';
 
@@ -25,6 +26,10 @@ const AppLayout = ({
   const [backgroundLyrics, setBackgroundLyrics] = useState('');
   const [backgroundAlbumArt, setBackgroundAlbumArt] = useState('');
   const [backgroundSongName, setBackgroundSongName] = useState('');
+
+  // State for video rendering section
+  const [videoRenderingAutoFill, setVideoRenderingAutoFill] = useState(null);
+  const [actualVideoUrl, setActualVideoUrl] = useState('');
 
   // Handler for generating background image
   const handleGenerateBackground = (lyrics, albumArt, songName) => {
@@ -162,6 +167,15 @@ const AppLayout = ({
       }
     }
   };
+  // Handler for render video action
+  const handleRenderVideo = () => {
+    // Auto-fill the video rendering section and ensure it's expanded
+    setVideoRenderingAutoFill({
+      timestamp: Date.now(), // Use timestamp to trigger re-render
+      expand: true, // Signal to expand the section
+      autoScroll: true // Also scroll to the section
+    });
+  };
 
   // Handle when video source is removed or added
   useEffect(() => {
@@ -252,8 +266,21 @@ const AppLayout = ({
                 setShowBackgroundGenerator(false);
               }}
               onGenerateBackground={handleGenerateBackground}
+              onRenderVideo={handleRenderVideo}
+              onActualVideoUrlChange={setActualVideoUrl}
             />
           </div>
+
+          {/* Video Rendering Section - Above Background Generator */}
+          <VideoRenderingSection
+            selectedVideo={selectedVideo}
+            uploadedFile={uploadedFile}
+            actualVideoUrl={actualVideoUrl}
+            subtitlesData={subtitlesData}
+            translatedSubtitles={window.translatedSubtitles}
+            narrationResults={window.originalNarrations || window.translatedNarrations}
+            autoFillData={videoRenderingAutoFill}
+          />
 
           {/* Background Image Generator - Always visible but collapsed at page start */}
           <BackgroundImageGenerator

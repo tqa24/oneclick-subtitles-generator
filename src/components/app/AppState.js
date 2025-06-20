@@ -21,7 +21,7 @@ export const useAppState = () => {
 
   // UI state
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState(localStorage.getItem('lastActiveTab') || 'unified-url');
+  const [activeTab, setActiveTab] = useState(localStorage.getItem('userPreferredTab') || 'unified-url');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
   const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
@@ -86,6 +86,18 @@ export const useAppState = () => {
 
   // Initialize default values for settings
   useEffect(() => {
+    // Migration: If user doesn't have userPreferredTab but has lastActiveTab, migrate it
+    // But only if lastActiveTab is not 'file-upload' (which would be from auto-conversion)
+    if (!localStorage.getItem('userPreferredTab')) {
+      const lastTab = localStorage.getItem('lastActiveTab');
+      if (lastTab && lastTab !== 'file-upload') {
+        localStorage.setItem('userPreferredTab', lastTab);
+      } else {
+        // Default to unified-url if no valid preference exists
+        localStorage.setItem('userPreferredTab', 'unified-url');
+      }
+    }
+
     // Set onboarding as completed
     localStorage.setItem('onboarding_completed', 'true');
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LyricsHeader = ({
@@ -13,91 +13,36 @@ const LyricsHeader = ({
   onRedo,
   onReset,
   onSave,
-  zoom,
-  setZoom,
-  panOffset,
-  setPanOffset
+  autoScrollEnabled,
+  setAutoScrollEnabled
 }) => {
   const { t } = useTranslation();
-  const durationRef = useRef(0);
-
-  // Calculate minimum zoom level based on duration to limit view to 300 seconds
-  const calculateMinZoom = (duration) => {
-    if (!duration || duration <= 300) return 1;
-    return duration / 300; // Ensure max visible time is 300 seconds
-  };
-
-  // Get current video duration from the video element
-  useEffect(() => {
-    const videoElement = document.querySelector('video');
-    if (videoElement) {
-      const updateDuration = () => {
-        if (videoElement.duration && !isNaN(videoElement.duration)) {
-          durationRef.current = videoElement.duration;
-
-          // Enforce minimum zoom level when duration changes
-          const minZoom = calculateMinZoom(durationRef.current);
-          if (zoom < minZoom) {
-            setZoom(minZoom);
-          }
-        }
-      };
-
-      // Update duration when metadata is loaded
-      videoElement.addEventListener('loadedmetadata', updateDuration);
-
-      // Check if duration is already available
-      if (videoElement.duration && !isNaN(videoElement.duration)) {
-        updateDuration();
-      }
-
-      return () => {
-        videoElement.removeEventListener('loadedmetadata', updateDuration);
-      };
-    }
-  }, [zoom, setZoom]);
-
-  // Update durationRef when video metadata is loaded
-  useEffect(() => {
-    const videoElement = document.querySelector('video');
-    if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
-      durationRef.current = videoElement.duration;
-    }
-  }, []);
 
   return (
     <div className="combined-controls">
-      {/* First row for zoom controls and sticky toggle */}
+      {/* First row for auto-scroll and sticky toggle */}
       <div className="controls-top-row">
-        <div className="zoom-controls">
-          <div
-            className="zoom-slider"
-            title={t('timeline.dragToZoom', 'Drag to zoom')}
-            onMouseDown={(e) => {
-              const startX = e.clientX;
-              const startZoom = zoom;
-              const minZoom = calculateMinZoom(durationRef.current);
-
-              const handleMouseMove = (moveEvent) => {
-                const deltaX = moveEvent.clientX - startX;
-                // Increased sensitivity for more responsive zooming
-                // Increased maximum zoom level from 50 to 200 for more detailed view
-                const newZoom = Math.max(minZoom, Math.min(200, startZoom + (deltaX * 0.05)));
-                setZoom(newZoom);
-              };
-
-              const handleMouseUp = () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-              };
-
-              document.addEventListener('mousemove', handleMouseMove);
-              document.addEventListener('mouseup', handleMouseUp);
-            }}
-          >
-            <span>{Math.round(zoom * 100)}%</span>
-          </div>
+        {/* Auto-scroll toggle switch */}
+        <div
+          className={`auto-scroll-toggle ${autoScrollEnabled ? 'active' : ''}`}
+          onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
+          title={autoScrollEnabled ? t('lyrics.autoScrollDisable', 'Disable auto-scroll') : t('lyrics.autoScrollEnable', 'Enable auto-scroll')}
+        >
+          {autoScrollEnabled ? (
+            <svg className="auto-scroll-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none">
+              <path d="M12 2v20"/>
+              <path d="m19 15-7 7-7-7"/>
+              <path d="m19 9-7-7-7 7"/>
+            </svg>
+          ) : (
+            <svg className="auto-scroll-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none">
+              <path d="M9 9h6v6h-6z"/>
+              <path d="M21 3H3v18h18V3z"/>
+            </svg>
+          )}
+          <span>{t('lyrics.autoScroll', 'Auto')}</span>
         </div>
+
         {allowEditing && (
           <div
             className={`sticky-toggle ${isSticky ? 'active' : ''}`}

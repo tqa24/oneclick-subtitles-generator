@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Import utility modules
-import { calculateMinZoom, getVisibleTimeRange, calculateVisibleTimeRange } from './utils/TimelineCalculations';
+import { getVisibleTimeRange, calculateVisibleTimeRange } from './utils/TimelineCalculations';
 import { drawTimeline } from './utils/TimelineDrawing';
 import { centerTimelineOnTime as centerTimeOnTime, handleTimelineClick as handleClick, animateZoom as animateZoomTo } from './utils/TimelineInteractions';
 
@@ -18,6 +18,7 @@ const TimelineVisualization = ({
   duration,
   onTimelineClick,
   zoom,
+  setZoom,
   panOffset,
   setPanOffset,
   centerOnTime, // Prop to center the view on a specific time
@@ -27,6 +28,51 @@ const TimelineVisualization = ({
 }) => {
   const { t } = useTranslation();
   const [showWaveformDisabledNotice, setShowWaveformDisabledNotice] = useState(false);
+  const durationRef = useRef(0);
+
+  // Calculate minimum zoom level based on duration to limit view to 300 seconds
+  const calculateMinZoom = (duration) => {
+    if (!duration || duration <= 300) return 1;
+    return duration / 300; // Ensure max visible time is 300 seconds
+  };
+
+  // Get current video duration from the video element
+  useEffect(() => {
+    const videoElement = document.querySelector('video');
+    if (videoElement) {
+      const updateDuration = () => {
+        if (videoElement.duration && !isNaN(videoElement.duration)) {
+          durationRef.current = videoElement.duration;
+
+          // Enforce minimum zoom level when duration changes
+          const minZoom = calculateMinZoom(durationRef.current);
+          if (zoom < minZoom && setZoom) {
+            setZoom(minZoom);
+          }
+        }
+      };
+
+      // Update duration when metadata is loaded
+      videoElement.addEventListener('loadedmetadata', updateDuration);
+
+      // Check if duration is already available
+      if (videoElement.duration && !isNaN(videoElement.duration)) {
+        updateDuration();
+      }
+
+      return () => {
+        videoElement.removeEventListener('loadedmetadata', updateDuration);
+      };
+    }
+  }, [zoom, setZoom]);
+
+  // Update durationRef when video metadata is loaded
+  useEffect(() => {
+    const videoElement = document.querySelector('video');
+    if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
+      durationRef.current = videoElement.duration;
+    }
+  }, []);
 
   // Check if waveform should be disabled due to long video
   useEffect(() => {
@@ -378,6 +424,40 @@ const TimelineVisualization = ({
         className="subtitle-timeline"
         style={{ cursor: 'pointer' }}
       />
+
+      {/* Floating zoom controls in top right corner */}
+      {setZoom && (
+        <div className="floating-zoom-controls">
+          <div
+            className="zoom-slider"
+            title={t('timeline.dragToZoom', 'Drag to zoom')}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startZoom = zoom;
+              const minZoom = calculateMinZoom(durationRef.current);
+
+              const handleMouseMove = (moveEvent) => {
+                const deltaX = moveEvent.clientX - startX;
+                // Increased sensitivity for more responsive zooming
+                // Increased maximum zoom level from 50 to 200 for more detailed view
+                const newZoom = Math.max(minZoom, Math.min(200, startZoom + (deltaX * 0.05)));
+                setZoom(newZoom);
+              };
+
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          >
+            <span>{Math.round(zoom * 100)}%</span>
+          </div>
+        </div>
+      )}
+
       {videoSource && showWaveform && duration <= 1800 && ( // Only show waveform for videos <= 30 minutes (1800 seconds)
         <VolumeVisualizer
           audioSource={videoSource}
