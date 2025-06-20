@@ -289,44 +289,140 @@ app.post('/render', async (req, res) => {
     const audioDurationWithBuffer = durationInSeconds + 2;
     const durationInFrames = Math.max(60, Math.ceil(audioDurationWithBuffer * fps));
 
-    // Determine resolution dimensions based on metadata
+    // Determine resolution dimensions based on metadata and video aspect ratio
     const resolution = metadata.resolution || '1080p';
     let width: number, height: number;
 
-    switch (resolution) {
-      case '360p':
-        width = 640;
-        height = 360;
-        break;
-      case '480p':
-        width = 854;
-        height = 480;
-        break;
-      case '720p':
-        width = 1280;
-        height = 720;
-        break;
-      case '1440p':
-        width = 2560;
-        height = 1440;
-        break;
-      case '2K':
-        width = 2048;
-        height = 1080;
-        break;
-      case '4K':
-        width = 3840;
-        height = 2160;
-        break;
-      case '8K':
-        width = 7680;
-        height = 4320;
-        break;
-      case '1080p':
-      default:
-        width = 1920;
-        height = 1080;
-        break;
+    // If we have a video file, get its actual dimensions to preserve aspect ratio
+    if (isVideoFile && audioFile) {
+      try {
+        // Import the video dimension utility
+        const { getVideoDimensions } = require('../../../server/services/videoProcessing/durationUtils');
+
+        // Get actual video dimensions
+        const videoDimensions = await getVideoDimensions(audioFile);
+        const videoWidth = videoDimensions.width;
+        const videoHeight = videoDimensions.height;
+        const aspectRatio = videoWidth / videoHeight;
+
+        console.log(`[RENDER] Original video dimensions: ${videoWidth}x${videoHeight} (aspect ratio: ${aspectRatio.toFixed(2)})`);
+
+        // Calculate target dimensions based on resolution while preserving aspect ratio
+        let targetHeight: number;
+        switch (resolution) {
+          case '360p':
+            targetHeight = 360;
+            break;
+          case '480p':
+            targetHeight = 480;
+            break;
+          case '720p':
+            targetHeight = 720;
+            break;
+          case '1440p':
+            targetHeight = 1440;
+            break;
+          case '2K':
+            targetHeight = 1080;
+            break;
+          case '4K':
+            targetHeight = 2160;
+            break;
+          case '8K':
+            targetHeight = 4320;
+            break;
+          case '1080p':
+          default:
+            targetHeight = 1080;
+            break;
+        }
+
+        // Calculate width based on aspect ratio
+        width = Math.round(targetHeight * aspectRatio);
+        height = targetHeight;
+
+        // Ensure dimensions are even numbers (required for video encoding)
+        width = width % 2 === 0 ? width : width + 1;
+        height = height % 2 === 0 ? height : height + 1;
+
+        console.log(`[RENDER] Calculated composition dimensions: ${width}x${height} (preserving aspect ratio)`);
+
+      } catch (error) {
+        console.warn(`[RENDER] Could not get video dimensions, falling back to default 16:9: ${error instanceof Error ? error.message : String(error)}`);
+        // Fall back to default 16:9 dimensions
+        switch (resolution) {
+          case '360p':
+            width = 640;
+            height = 360;
+            break;
+          case '480p':
+            width = 854;
+            height = 480;
+            break;
+          case '720p':
+            width = 1280;
+            height = 720;
+            break;
+          case '1440p':
+            width = 2560;
+            height = 1440;
+            break;
+          case '2K':
+            width = 2048;
+            height = 1080;
+            break;
+          case '4K':
+            width = 3840;
+            height = 2160;
+            break;
+          case '8K':
+            width = 7680;
+            height = 4320;
+            break;
+          case '1080p':
+          default:
+            width = 1920;
+            height = 1080;
+            break;
+        }
+      }
+    } else {
+      // For audio files, use default 16:9 dimensions
+      switch (resolution) {
+        case '360p':
+          width = 640;
+          height = 360;
+          break;
+        case '480p':
+          width = 854;
+          height = 480;
+          break;
+        case '720p':
+          width = 1280;
+          height = 720;
+          break;
+        case '1440p':
+          width = 2560;
+          height = 1440;
+          break;
+        case '2K':
+          width = 2048;
+          height = 1080;
+          break;
+        case '4K':
+          width = 3840;
+          height = 2160;
+          break;
+        case '8K':
+          width = 7680;
+          height = 4320;
+          break;
+        case '1080p':
+        default:
+          width = 1920;
+          height = 1080;
+          break;
+      }
     }
 
     const outputFile = `subtitle-video-${Date.now()}.mp4`;
@@ -400,6 +496,12 @@ app.post('/render', async (req, res) => {
         isVideoFile
       },
     });
+
+    // Override composition dimensions with calculated values
+    composition.width = width;
+    composition.height = height;
+    composition.fps = fps;
+    composition.durationInFrames = durationInFrames;
 
     // Force the composition settings to match our calculated values
     composition.durationInFrames = durationInFrames;

@@ -33,14 +33,14 @@ const VideoComponentWrapper: React.FC<Record<string, unknown>> = (props) => {
 };
 
 export const RemotionRoot: React.FC = () => {
-  // Create compositions for both 1080p and 2K resolutions, and both 30fps and 60fps
-  // The server will select the appropriate one based on the metadata
+  // Create a flexible composition that can handle any aspect ratio
+  // The server will override dimensions, fps, and duration based on the actual video
   const commonProps = {
     component: VideoComponentWrapper,
     fps: 60, // Default, will be overridden by server
-    width: 1920, // Default, will be overridden by server
-    height: 1080, // Default, will be overridden by server
-    durationInFrames: 180
+    width: 1920, // Default, will be overridden by server based on video aspect ratio
+    height: 1080, // Default, will be overridden by server based on video aspect ratio
+    durationInFrames: 180 // Default, will be overridden by server based on audio/video duration
   };
 
   return (

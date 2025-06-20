@@ -1579,13 +1579,13 @@ const VideoRenderingSection = ({
                 className="setting-select"
                 style={{ marginRight: '1rem' }}
               >
-                <option value="360p">360p (640×360)</option>
-                <option value="480p">480p (854×480)</option>
-                <option value="720p">720p (1280×720)</option>
-                <option value="1080p">1080p (1920×1080)</option>
-                <option value="1440p">1440p (2560×1440)</option>
-                <option value="2K">2K (2048×1080)</option>
-                <option value="4K">4K (3840×2160)</option>
+                <option value="360p">360p (dimensions based on video aspect ratio)</option>
+                <option value="480p">480p (dimensions based on video aspect ratio)</option>
+                <option value="720p">720p (dimensions based on video aspect ratio)</option>
+                <option value="1080p">1080p (dimensions based on video aspect ratio)</option>
+                <option value="1440p">1440p (dimensions based on video aspect ratio)</option>
+                <option value="2K">2K (dimensions based on video aspect ratio)</option>
+                <option value="4K">4K (dimensions based on video aspect ratio)</option>
                 <option value="8K">8K (7680×4320)</option>
               </select>
 

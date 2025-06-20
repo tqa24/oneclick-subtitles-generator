@@ -341,13 +341,18 @@ const VideoQualityModal = ({
 
   const getCurrentQuality = () => {
     if (!videoInfo) return t('videoQuality.unknownQuality', 'Unknown quality');
-    
+
     if (videoInfo.source === 'upload') {
-      return videoInfo.isOptimized 
+      return videoInfo.isOptimized
         ? t('videoQuality.optimizedQuality', 'Optimized ({{quality}})', { quality: videoInfo.quality || '360p' })
         : t('videoQuality.originalQuality', 'Original Quality');
     }
-    
+
+    // Show actual dimensions if available, otherwise just the quality
+    if (videoInfo.quality && videoInfo.quality.includes('×')) {
+      return videoInfo.quality; // Already includes dimensions like "720p (1080×1920)"
+    }
+
     return videoInfo.quality || '360p';
   };
 

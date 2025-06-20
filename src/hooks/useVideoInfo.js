@@ -267,9 +267,9 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
         console.log('[useVideoInfo] Not fetching dimensions. URL:', actualVideoUrl);
 
         // Also try to fetch dimensions based on selectedVideo if we have it
-        if (selectedVideo && !selectedVideo.startsWith('blob:')) {
-          console.log('[useVideoInfo] Trying to fetch dimensions from selectedVideo:', selectedVideo);
-          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo}`);
+        if (selectedVideo && selectedVideo.id) {
+          console.log('[useVideoInfo] Trying to fetch dimensions from selectedVideo:', selectedVideo.id);
+          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo.id}.mp4`);
         }
       }
     };

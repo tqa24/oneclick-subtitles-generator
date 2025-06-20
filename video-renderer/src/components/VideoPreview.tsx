@@ -33,7 +33,9 @@ const VideoContainer = styled.div`
   border-radius: 8px;
   overflow: hidden;
   position: relative;
-  aspect-ratio: 16/9;
+  /* Removed fixed aspect-ratio to allow dynamic video dimensions */
+  min-height: 200px;
+  max-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
