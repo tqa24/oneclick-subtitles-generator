@@ -235,6 +235,28 @@ async function getVideoInfo(videoURL) {
  * @returns {Promise<boolean>} - Success status
  */
 async function downloadWithQuality(videoURL, outputPath, quality, videoId = null, progressCallback = null) {
+  // Try with primary format first, then fallback if needed
+  try {
+    await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, progressCallback, false);
+    return true;
+  } catch (error) {
+    console.warn(`[downloadWithQuality] Primary attempt failed: ${error.message}`);
+    console.log(`[downloadWithQuality] Trying fallback format...`);
+
+    try {
+      await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, progressCallback, true);
+      return true;
+    } catch (fallbackError) {
+      console.error(`[downloadWithQuality] Fallback attempt also failed: ${fallbackError.message}`);
+      throw fallbackError;
+    }
+  }
+}
+
+/**
+ * Single download attempt with specific format strategy
+ */
+async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId = null, progressCallback = null, useFallback = false) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
@@ -255,8 +277,24 @@ async function downloadWithQuality(videoURL, outputPath, quality, videoId = null
       setDownloadProgress(videoId, 0, 'downloading');
     }
 
+    // Choose format strategy based on attempt type and site
+    let formatString;
+    if (useFallback) {
+      // Fallback: use simple format for all sites
+      formatString = `best[height<=${height}]`;
+      console.log(`[downloadWithQualityAttempt] Using fallback format: ${formatString}`);
+    } else if (videoURL.includes('tiktok.com') || videoURL.includes('douyin.com')) {
+      // For TikTok/Douyin, use simple format to avoid compatibility issues
+      formatString = `best[height<=${height}]`;
+      console.log(`[downloadWithQualityAttempt] Using TikTok/Douyin format: ${formatString}`);
+    } else {
+      // For other sites (YouTube, etc.), use complex format for better quality
+      formatString = `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`;
+      console.log(`[downloadWithQualityAttempt] Using complex format: ${formatString}`);
+    }
+
     const ytdlpProcess = spawn(ytDlpPath, [
-      '--format', `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]`,
+      '--format', formatString,
       '--merge-output-format', 'mp4',
       '--output', outputPath,
       '--no-playlist',
@@ -348,21 +386,21 @@ async function downloadWithQuality(videoURL, outputPath, quality, videoId = null
     });
 
     ytdlpProcess.on('close', (code) => {
-      console.log(`[downloadWithQuality] Process finished with code: ${code}`);
+      console.log(`[downloadWithQualityAttempt] Process finished with code: ${code}`);
       if (code === 0) {
-        console.log(`[downloadWithQuality] Download successful for: ${outputPath}`);
+        console.log(`[downloadWithQualityAttempt] Download successful for: ${outputPath}`);
 
         // Update progress tracking to completed
-        if (videoId) {
+        if (videoId && !useFallback) {
           setDownloadProgress(videoId, 100, 'completed');
         }
 
         resolve(true);
       } else {
-        console.error('yt-dlp download failed:', stderr);
+        console.error(`[downloadWithQualityAttempt] yt-dlp download failed:`, stderr);
 
-        // Update progress tracking to error
-        if (videoId) {
+        // Only update progress tracking to error if this is the final attempt
+        if (videoId && useFallback) {
           setDownloadProgress(videoId, 0, 'error', `Download failed: ${stderr}`);
         }
 

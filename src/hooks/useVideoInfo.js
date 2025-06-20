@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
   const [videoInfo, setVideoInfo] = useState(null);
   const [availableVersions, setAvailableVersions] = useState([]);
+  const [actualDimensions, setActualDimensions] = useState(null);
 
   useEffect(() => {
     const updateVideoInfo = () => {
@@ -28,7 +29,8 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       // Priority 1: Check if we have a selectedVideo (downloaded video) - this is the original source
       if (selectedVideo) {
-        const currentQuality = localStorage.getItem('optimized_resolution') || '360p';
+        // Use actual dimensions if available, otherwise fall back to localStorage
+        const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
         info = {
           source: selectedVideo.source, // This preserves the original source (youtube, douyin, all-sites)
@@ -41,6 +43,12 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
         // For downloaded videos, we don't show version options since they can redownload
         // The split_result versions are just processing artifacts
+
+        // Fetch actual dimensions for this video
+        if (selectedVideo.id && !actualDimensions) {
+          console.log('[useVideoInfo] Fetching dimensions for selectedVideo:', selectedVideo.id);
+          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo.id}.mp4`);
+        }
       }
       // Priority 2: Check if we have an uploaded file
       else if (uploadedFile) {
@@ -108,7 +116,8 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             }
           }
 
-          const currentQuality = localStorage.getItem('optimized_resolution') || '360p';
+          // Use actual dimensions if available, otherwise fall back to localStorage
+          const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
           info = {
             source,
@@ -117,6 +126,13 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             isOptimized: true, // Downloaded videos are optimized by default
             url: storedVideoUrl || null // Original URL for redownloading (may be null)
           };
+
+          // Fetch actual dimensions for this video
+          if (uploadedFile && !actualDimensions) {
+            const videoId = uploadedFile.name.replace('.mp4', '');
+            console.log('[useVideoInfo] Fetching dimensions for uploadedFile:', videoId);
+            fetchActualDimensions(`http://localhost:3007/videos/${videoId}.mp4`);
+          }
         } else {
           // This is an actual uploaded file
           info = {
@@ -193,7 +209,8 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             }
           }
 
-          const currentQuality = localStorage.getItem('optimized_resolution') || '360p';
+          // Use actual dimensions if available, otherwise fall back to localStorage
+          const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
           info = {
             source,
@@ -202,6 +219,20 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             isOptimized: true, // Downloaded videos are optimized by default
             url: storedVideoUrl // Original URL for redownloading
           };
+
+          // Fetch actual dimensions for this video
+          if (!actualDimensions) {
+            // Try to extract video ID from the file path or URL
+            let videoId = null;
+            if (actualVideoUrl && actualVideoUrl.includes('/videos/')) {
+              videoId = actualVideoUrl.split('/videos/')[1].replace('.mp4', '');
+            }
+
+            if (videoId) {
+              console.log('[useVideoInfo] Fetching dimensions for actualVideoUrl:', videoId);
+              fetchActualDimensions(`http://localhost:3007/videos/${videoId}.mp4`);
+            }
+          }
         }
         // Priority 4: Check if we have a video URL without selectedVideo (edge case)
         else if (actualVideoUrl) {
@@ -227,20 +258,103 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       setVideoInfo(info);
       setAvailableVersions(versions);
+
+      // Fetch actual dimensions if we have a video URL
+      if (actualVideoUrl && !actualVideoUrl.startsWith('blob:')) {
+        console.log('[useVideoInfo] Attempting to fetch dimensions for URL:', actualVideoUrl);
+        fetchActualDimensions(actualVideoUrl);
+      } else {
+        console.log('[useVideoInfo] Not fetching dimensions. URL:', actualVideoUrl);
+
+        // Also try to fetch dimensions based on selectedVideo if we have it
+        if (selectedVideo && !selectedVideo.startsWith('blob:')) {
+          console.log('[useVideoInfo] Trying to fetch dimensions from selectedVideo:', selectedVideo);
+          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo}`);
+        }
+      }
     };
 
     updateVideoInfo();
   }, [selectedVideo, uploadedFile, actualVideoUrl]);
 
+  // Update video info when actual dimensions are fetched
+  useEffect(() => {
+    if (actualDimensions && videoInfo) {
+      console.log('[useVideoInfo] Updating videoInfo with actual dimensions:', actualDimensions.quality);
+      setVideoInfo(prev => ({
+        ...prev,
+        quality: actualDimensions.quality
+      }));
+    }
+  }, [actualDimensions]);
+
+  /**
+   * Fetch actual video dimensions from the server
+   */
+  const fetchActualDimensions = async (videoUrl) => {
+    console.log('[useVideoInfo] fetchActualDimensions called with URL:', videoUrl);
+
+    try {
+      // Extract video ID from URL
+      let videoId = null;
+
+      if (videoUrl && videoUrl.includes('/videos/')) {
+        const urlParts = videoUrl.split('/videos/');
+        if (urlParts.length > 1) {
+          videoId = urlParts[1].replace('.mp4', '');
+        }
+      }
+
+      console.log('[useVideoInfo] Extracted video ID:', videoId);
+
+      if (!videoId) {
+        console.warn('[useVideoInfo] Could not extract video ID from URL:', videoUrl);
+        return null;
+      }
+
+      console.log('[useVideoInfo] Making API call to fetch dimensions for video ID:', videoId);
+
+      const response = await fetch(`http://localhost:3007/api/video-dimensions/${videoId}`);
+      console.log('[useVideoInfo] API response status:', response.status);
+
+      const data = await response.json();
+      console.log('[useVideoInfo] API response data:', data);
+
+      if (data.success) {
+        console.log('[useVideoInfo] Setting actual dimensions:', data);
+        setActualDimensions(data);
+        return data;
+      } else {
+        console.warn('[useVideoInfo] API returned error:', data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('[useVideoInfo] Error fetching dimensions:', error);
+      return null;
+    }
+  };
+
   /**
    * Get video information for quality modal
    */
   const getVideoInfoForModal = () => {
+    // Use actual dimensions if available, otherwise fall back to stored quality
+    const currentQuality = actualDimensions?.quality || videoInfo?.quality || '360p';
+
+    console.log('[useVideoInfo] getVideoInfoForModal called:');
+    console.log('  - actualDimensions:', actualDimensions);
+    console.log('  - videoInfo.quality:', videoInfo?.quality);
+    console.log('  - final currentQuality:', currentQuality);
+
     return {
-      videoInfo,
+      videoInfo: {
+        ...videoInfo,
+        quality: currentQuality // Override with actual quality
+      },
       availableVersions,
       hasMultipleVersions: availableVersions.length > 1,
-      canRedownload: videoInfo?.source && ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source)
+      canRedownload: videoInfo?.source && ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source),
+      actualDimensions
     };
   };
 
@@ -340,8 +454,10 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
   return {
     videoInfo,
     availableVersions,
+    actualDimensions,
     getVideoInfoForModal,
     redownloadWithQuality,
-    getVideoFileForRendering
+    getVideoFileForRendering,
+    fetchActualDimensions
   };
 };

@@ -191,10 +191,110 @@ function getMediaDuration(mediaPath) {
   });
 }
 
+/**
+ * Get video dimensions using ffprobe
+ * @param {string} mediaPath - Path to the video file
+ * @returns {Promise<Object>} - Object with width, height, and quality string
+ */
+function getVideoDimensions(mediaPath) {
+  return new Promise((resolve, reject) => {
+    // Check if the file exists first
+    if (!fs.existsSync(mediaPath)) {
+      console.error(`[GET-DIMENSIONS] Video file does not exist: ${mediaPath}`);
+      return reject(new Error(`Video file does not exist: ${mediaPath}`));
+    }
+
+    const ffprobeProcess = spawn('ffprobe', [
+      '-v', 'quiet',
+      '-print_format', 'json',
+      '-show_streams',
+      '-select_streams', 'v:0',
+      mediaPath
+    ]);
+
+    let stdout = '';
+    let stderr = '';
+
+    ffprobeProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    ffprobeProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    // Set a timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      console.error(`[GET-DIMENSIONS] Timeout while getting dimensions`);
+      ffprobeProcess.kill();
+      reject(new Error('Timeout while getting video dimensions'));
+    }, 10000); // 10 second timeout
+
+    ffprobeProcess.on('close', (code) => {
+      clearTimeout(timeout);
+
+      if (code !== 0) {
+        console.error(`[GET-DIMENSIONS] ffprobe failed: ${stderr}`);
+        reject(new Error(`ffprobe failed: ${stderr}`));
+        return;
+      }
+
+      try {
+        const data = JSON.parse(stdout);
+        const videoStream = data.streams && data.streams[0];
+
+        if (!videoStream) {
+          reject(new Error('No video stream found'));
+          return;
+        }
+
+        const width = parseInt(videoStream.width);
+        const height = parseInt(videoStream.height);
+
+        if (!width || !height) {
+          reject(new Error('Could not determine video dimensions'));
+          return;
+        }
+
+        // Convert height to quality string
+        let quality = `${height}p`;
+
+        // Handle common aspect ratios and special cases
+        if (width > height) {
+          // Landscape video
+          quality = `${height}p`;
+        } else {
+          // Portrait video (common for TikTok, Instagram Stories)
+          quality = `${height}p (${width}×${height})`;
+        }
+
+        console.log(`[GET-DIMENSIONS] Video dimensions: ${width}×${height} (${quality})`);
+
+        resolve({
+          width,
+          height,
+          quality,
+          resolution: `${width}×${height}`
+        });
+      } catch (error) {
+        console.error(`[GET-DIMENSIONS] Failed to parse ffprobe output: ${error.message}`);
+        reject(new Error(`Failed to parse ffprobe output: ${error.message}`));
+      }
+    });
+
+    ffprobeProcess.on('error', (error) => {
+      clearTimeout(timeout);
+      console.error(`[GET-DIMENSIONS] Failed to spawn ffprobe: ${error.message}`);
+      reject(new Error(`Failed to spawn ffprobe: ${error.message}`));
+    });
+  });
+}
+
 // For backward compatibility
 const getVideoDuration = getMediaDuration;
 
 module.exports = {
   getMediaDuration,
-  getVideoDuration
+  getVideoDuration,
+  getVideoDimensions
 };
