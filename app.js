@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Import configuration
-const { CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, ensureDirectories } = require('./server/config');
+const { CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, NARRATION_DIR, ensureDirectories } = require('./server/config');
 
 // Import routes
 const videoRoutes = require('./server/routes/videoRoutes');
@@ -22,6 +22,7 @@ const douyinRoutes = require('./server/routes/douyinRoutes');
 const allSitesRoutes = require('./server/routes/allSitesRoutes');
 const narrationRoutes = require('./server/routes/narrationRoutes');
 const testAudioRoute = require('./server/routes/testAudioRoute');
+const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
 
 // Initialize Express app
 const app = express();
@@ -87,10 +88,10 @@ const staticOptions = {
   }
 };
 
-app.use('/videos', express.static(path.join(__dirname, 'videos'), staticOptions));
-app.use('/videos/album_art', express.static(path.join(__dirname, 'videos', 'album_art'), staticOptions));
-app.use('/subtitles', express.static(path.join(__dirname, 'subtitles'), staticOptions));
-app.use('/narration', express.static(path.join(__dirname, 'narration'), staticOptions));
+app.use('/videos', express.static(VIDEOS_DIR, staticOptions));
+app.use('/videos/album_art', express.static(path.join(VIDEOS_DIR, 'album_art'), staticOptions));
+app.use('/subtitles', express.static(SUBTITLES_DIR, staticOptions));
+app.use('/narration', express.static(NARRATION_DIR, staticOptions));
 app.use('/public', express.static(path.join(__dirname, 'public'), staticOptions));
 app.use('/public/videos/album_art', express.static(path.join(__dirname, 'public', 'videos', 'album_art'), staticOptions));
 
@@ -154,6 +155,7 @@ app.use('/api', lyricsRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', douyinRoutes);
 app.use('/api', allSitesRoutes);
+app.use('/api', qualityScanRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);

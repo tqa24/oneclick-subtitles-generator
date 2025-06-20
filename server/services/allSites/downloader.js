@@ -55,9 +55,10 @@ async function checkYtDlpVersion() {
  * Download video from any site using yt-dlp
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithYtDlp(videoId, videoURL) {
+async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
 
@@ -72,15 +73,27 @@ async function downloadVideoWithYtDlp(videoId, videoURL) {
     throw error;
   }
 
+  // Convert quality string to resolution for yt-dlp
+  let resolution;
+  switch (quality) {
+    case '144p': resolution = '144'; break;
+    case '240p': resolution = '240'; break;
+    case '360p': resolution = '360'; break;
+    case '480p': resolution = '480'; break;
+    case '720p': resolution = '720'; break;
+    case '1080p': resolution = '1080'; break;
+    default: resolution = '360'; // Default to 360p
+  }
+
   // Create a promise to handle the download process
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with options for best compatibility
+    // Use yt-dlp with quality-limited options for consistency with YouTube
     const ytdlpProcess = spawn(ytDlpPath, [
       '--verbose',
-      '--format', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      '--format', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '--merge-output-format', 'mp4',
       '--output', tempPath,
       '--force-overwrites',
@@ -155,18 +168,19 @@ async function downloadVideoWithYtDlp(videoId, videoURL) {
  * Download video from any site with retry mechanism
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithRetry(videoId, videoURL) {
+async function downloadVideoWithRetry(videoId, videoURL, quality = '360p') {
   try {
     // First attempt with standard options
-    return await downloadVideoWithYtDlp(videoId, videoURL);
+    return await downloadVideoWithYtDlp(videoId, videoURL, quality);
   } catch (error) {
     console.error(`First download attempt failed: ${error.message}`);
 
     // Try with fallback options
     try {
-      return await downloadVideoWithFallbackOptions(videoId, videoURL);
+      return await downloadVideoWithFallbackOptions(videoId, videoURL, quality);
     } catch (fallbackError) {
       console.error(`Fallback download attempt failed: ${fallbackError.message}`);
       throw fallbackError;
@@ -180,19 +194,31 @@ async function downloadVideoWithRetry(videoId, videoURL) {
  * @param {string} videoURL - Video URL
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithFallbackOptions(videoId, videoURL) {
+async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
+
+  // Convert quality string to resolution for yt-dlp fallback
+  let resolution;
+  switch (quality) {
+    case '144p': resolution = '144'; break;
+    case '240p': resolution = '240'; break;
+    case '360p': resolution = '360'; break;
+    case '480p': resolution = '480'; break;
+    case '720p': resolution = '720'; break;
+    case '1080p': resolution = '1080'; break;
+    default: resolution = '360'; // Default to 360p
+  }
 
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with minimal options for maximum compatibility
+    // Use yt-dlp with minimal options but still respect quality limit
     const ytdlpProcess = spawn(ytDlpPath, [
       '--verbose',
       '--no-check-certificate',
-      '--format', 'best',
+      '--format', `best[height<=${resolution}]`,
       '--output', tempPath,
       videoURL
     ]);

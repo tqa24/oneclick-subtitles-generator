@@ -295,6 +295,9 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
 
 
 
+    // Get quality setting from localStorage (default to 360p for consistency)
+    const quality = localStorage.getItem('optimized_resolution') || '360p';
+
     // Request server to download the video
     const downloadResponse = await fetch(`${SERVER_URL}/api/download-generic-video`, {
       method: 'POST',
@@ -304,6 +307,7 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
       body: JSON.stringify({
         videoId,
         url,
+        quality,
         forceRefresh: downloadQueue[videoId].forceRefresh
       }),
     });

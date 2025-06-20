@@ -116,8 +116,11 @@ const VideoRenderingSection = ({
         setUserHasCollapsed(false);
       }
 
-      // Auto-fill video using the actual video URL from the player
-      if (actualVideoUrl) {
+      // Auto-fill video - prioritize videoFile from quality modal, then actual video URL
+      if (autoFillData.videoFile) {
+        // Use the video file selected from the quality modal
+        setSelectedVideoFile(autoFillData.videoFile);
+      } else if (actualVideoUrl) {
         // Create a video file object that represents the actual playing video
         setSelectedVideoFile({
           url: actualVideoUrl,

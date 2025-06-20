@@ -92,9 +92,10 @@ function normalizeDouyinUrl(url) {
  * Download Douyin video using yt-dlp
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoYtDlp(videoId, videoURL) {
+async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -111,15 +112,27 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL) {
     throw error;
   }
 
+  // Convert quality string to resolution for yt-dlp
+  let resolution;
+  switch (quality) {
+    case '144p': resolution = '144'; break;
+    case '240p': resolution = '240'; break;
+    case '360p': resolution = '360'; break;
+    case '480p': resolution = '480'; break;
+    case '720p': resolution = '720'; break;
+    case '1080p': resolution = '1080'; break;
+    default: resolution = '360'; // Default to 360p
+  }
+
   // Create a promise to handle the download process
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with more options for better compatibility
+    // Use yt-dlp with quality-limited options for consistency
     const ytdlpProcess = spawn(ytDlpPath, [
       '--verbose',
-      '--format', 'best',
+      '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
       '--force-overwrites',
       '--no-check-certificate',
@@ -188,9 +201,10 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL) {
  * Fallback method to download Douyin video using a different approach
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoFallback(videoId, videoURL) {
+async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -198,11 +212,23 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
 
 
 
+  // Convert quality string to resolution for yt-dlp fallback
+  let resolution;
+  switch (quality) {
+    case '144p': resolution = '144'; break;
+    case '240p': resolution = '240'; break;
+    case '360p': resolution = '360'; break;
+    case '480p': resolution = '480'; break;
+    case '720p': resolution = '720'; break;
+    case '1080p': resolution = '1080'; break;
+    default: resolution = '360'; // Default to 360p
+  }
+
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with different options for the fallback method
+    // Use yt-dlp with different options for the fallback method but respect quality limit
     const ytdlpProcess = spawn(ytDlpPath, [
       '--verbose',
       '--no-check-certificate',
@@ -211,7 +237,7 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
       '--referer', 'https://www.douyin.com/',
       '--add-header', 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8',
       '--add-header', 'Cookie: douyin.com',
-      '--format', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      '--format', `bestvideo[height<=${resolution}][ext=mp4]+bestaudio[ext=m4a]/best[height<=${resolution}][ext=mp4]/best[height<=${resolution}]`,
       '--merge-output-format', 'mp4',
       '--output', outputPath,
       normalizedUrl
@@ -265,9 +291,10 @@ async function downloadDouyinVideoFallback(videoId, videoURL) {
  * Second fallback method specifically for short URLs
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
+async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL but ensure it has a trailing slash for short URLs
@@ -280,11 +307,23 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
 
 
 
+  // Convert quality string to resolution for yt-dlp short URL fallback
+  let resolution;
+  switch (quality) {
+    case '144p': resolution = '144'; break;
+    case '240p': resolution = '240'; break;
+    case '360p': resolution = '360'; break;
+    case '480p': resolution = '480'; break;
+    case '720p': resolution = '720'; break;
+    case '1080p': resolution = '1080'; break;
+    default: resolution = '360'; // Default to 360p
+  }
+
   return new Promise((resolve, reject) => {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with special options for short URLs
+    // Use yt-dlp with special options for short URLs but respect quality limit
     const ytdlpProcess = spawn(ytDlpPath, [
       '--verbose',
       '--no-check-certificate',
@@ -293,7 +332,7 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
       '--referer', 'https://www.douyin.com/',
       '--add-header', 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8',
       '--add-header', 'Cookie: douyin.com',
-      '--format', 'best',
+      '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
       normalizedUrl
     ]);
@@ -346,9 +385,10 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL) {
  * Final fallback method that uses a simpler approach
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoSimpleFallback(videoId, videoURL) {
+async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '360p') {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -453,9 +493,10 @@ async function downloadDouyinVideoPuppeteer(videoId, videoURL) {
  * Download Douyin video with retry and fallback
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoWithRetry(videoId, videoURL) {
+async function downloadDouyinVideoWithRetry(videoId, videoURL, quality = '360p') {
 
 
   // Use the Puppeteer approach
