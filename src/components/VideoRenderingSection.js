@@ -1419,8 +1419,8 @@ const VideoRenderingSection = ({
             {/* Narration Selection */}
             <div className="narration-selection-compact">
               <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
-              <div className="radio-group">
-                <div className="radio-option">
+              <div className="radio-group-base radio-group-vertical">
+                <div className="radio-option-base">
                   <input
                     type="radio"
                     id="narration-none"
@@ -1428,7 +1428,7 @@ const VideoRenderingSection = ({
                     checked={selectedNarration === 'none'}
                     onChange={(e) => setSelectedNarration(e.target.value)}
                   />
-                  <label htmlFor="narration-none">
+                  <label htmlFor="narration-none" className="radio-option-pill">
                     {t('videoRendering.noNarration', 'No Narration')}
                   </label>
                 </div>

@@ -608,7 +608,7 @@ const LyricsDisplay = ({
 
         <div className="download-buttons">
           <button
-            className="download-btn"
+            className="btn-base btn-primary btn-large download-btn-primary"
             onClick={() => setIsModalOpen(true)}
             disabled={!lyrics.length}
           >

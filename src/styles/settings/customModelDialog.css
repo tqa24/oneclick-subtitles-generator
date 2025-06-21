@@ -226,32 +226,7 @@
   margin-top: 4px;
 }
 
-/* Radio group styling */
-.radio-group {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 8px;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.radio-option input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  cursor: pointer;
-  accent-color: var(--md-primary);
-}
-
-.radio-option label {
-  margin: 0;
-  cursor: pointer;
-}
+/* Radio styles moved to centralized radio system in components/buttons.css */
 
 /* Language codes section */
 .language-codes-section {

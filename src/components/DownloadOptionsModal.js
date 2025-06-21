@@ -126,10 +126,10 @@ const DownloadOptionsModal = ({
 
         <div className="modal-content">
           {/* Subtitle source selection */}
-          <div className="option-group">
+          <div className="option-group horizontal-layout">
             <h4>{t('download.subtitleSource', 'Subtitle Source')}</h4>
-            <div className="radio-group">
-              <label className={`radio-option ${!hasOriginal ? 'disabled' : ''}`}>
+            <div className="radio-group-base radio-group-horizontal">
+              <label className={`radio-option-base ${!hasOriginal ? 'disabled' : ''}`}>
                 <input
                   type="radio"
                   name="subtitle-source"
@@ -138,9 +138,9 @@ const DownloadOptionsModal = ({
                   onChange={() => setSubtitleSource('original')}
                   disabled={!hasOriginal}
                 />
-                <span>{t('download.original', 'Original')}</span>
+                <span className="radio-option-card">{t('download.original', 'Original')}</span>
               </label>
-              <label className={`radio-option ${!hasTranslation ? 'disabled' : ''}`}>
+              <label className={`radio-option-base ${!hasTranslation ? 'disabled' : ''}`}>
                 <input
                   type="radio"
                   name="subtitle-source"
@@ -149,7 +149,7 @@ const DownloadOptionsModal = ({
                   onChange={() => setSubtitleSource('translated')}
                   disabled={!hasTranslation}
                 />
-                <span>{t('download.translated', 'Translated')}</span>
+                <span className="radio-option-card">{t('download.translated', 'Translated')}</span>
               </label>
             </div>
           </div>
@@ -176,52 +176,54 @@ const DownloadOptionsModal = ({
             </div>
           </div>
 
-          {/* File format options */}
-          {fileFormat && (
-            <div className="option-group">
-              <h4>{t('download.fileFormat', 'File Format')}</h4>
-              <div className="radio-group">
-                <label className="radio-option">
-                  <input
-                    type="radio"
-                    name="file-format"
-                    value="srt"
-                    checked={fileFormat === 'srt'}
-                    onChange={() => setFileFormat('srt')}
-                  />
-                  <span>SRT</span>
-                </label>
-                <label className="radio-option">
-                  <input
-                    type="radio"
-                    name="file-format"
-                    value="json"
-                    checked={fileFormat === 'json'}
-                    onChange={() => setFileFormat('json')}
-                  />
-                  <span>JSON</span>
-                </label>
-                <label className="radio-option">
-                  <input
-                    type="radio"
-                    name="file-format"
-                    value="txt"
-                    checked={fileFormat === 'txt'}
-                    onChange={() => setFileFormat('txt')}
-                  />
-                  <span>{t('download.txtNoTimings', 'TXT (no timings)')}</span>
-                </label>
+          {/* Tab-specific content area with consistent height */}
+          <div className="tab-content-area">
+            {/* File format options */}
+            {fileFormat && (
+              <div className="option-group horizontal-layout">
+                <h4>{t('download.fileFormat', 'File Format')}</h4>
+                <div className="radio-group-base radio-group-horizontal">
+                  <label className="radio-option-base">
+                    <input
+                      type="radio"
+                      name="file-format"
+                      value="srt"
+                      checked={fileFormat === 'srt'}
+                      onChange={() => setFileFormat('srt')}
+                    />
+                    <span className="radio-option-card">SRT</span>
+                  </label>
+                  <label className="radio-option-base">
+                    <input
+                      type="radio"
+                      name="file-format"
+                      value="json"
+                      checked={fileFormat === 'json'}
+                      onChange={() => setFileFormat('json')}
+                    />
+                    <span className="radio-option-card">JSON</span>
+                  </label>
+                  <label className="radio-option-base">
+                    <input
+                      type="radio"
+                      name="file-format"
+                      value="txt"
+                      checked={fileFormat === 'txt'}
+                      onChange={() => setFileFormat('txt')}
+                    />
+                    <span className="radio-option-card">{t('download.txtNoTimings', 'TXT (no timings)')}</span>
+                  </label>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Process options */}
-          {processType && (
-            <>
-              <div className="option-group">
+            {/* Process options */}
+            {processType && (
+              <>
+              <div className="option-group two-column-layout constrained-height">
                 <h4>{t('download.processType', 'Process Type')}</h4>
-                <div className="radio-group">
-                  <label className="radio-option">
+                <div className="radio-group-base radio-group-two-columns">
+                  <label className="radio-option-base">
                     <input
                       type="radio"
                       name="process-type"
@@ -233,16 +235,18 @@ const DownloadOptionsModal = ({
                         if (isPromptEditorOpen) setIsPromptEditorOpen(false);
                       }}
                     />
-                    <span>{t('download.consolidate', 'Complete Document (TXT)')}</span>
-                    <div className="info-icon-container" title={t('download.consolidateExplanation', 'Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.')}>
-                      <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                      </svg>
-                    </div>
+                    <span className="radio-option-card">
+                      {t('download.consolidate', 'Complete Document (TXT)')}
+                      <div className="info-icon-container" title={t('download.consolidateExplanation', 'Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.')}>
+                        <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                      </div>
+                    </span>
                   </label>
-                  <label className="radio-option">
+                  <label className="radio-option-base">
                     <input
                       type="radio"
                       name="process-type"
@@ -254,14 +258,16 @@ const DownloadOptionsModal = ({
                         if (isPromptEditorOpen) setIsPromptEditorOpen(false);
                       }}
                     />
-                    <span>{t('download.summarize', 'Summarize (TXT)')}</span>
-                    <div className="info-icon-container" title={t('download.summarizeExplanation', 'Creates a concise summary of the main points and key information, about 1/3 the length of the original text.')}>
-                      <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                      </svg>
-                    </div>
+                    <span className="radio-option-card">
+                      {t('download.summarize', 'Summarize (TXT)')}
+                      <div className="info-icon-container" title={t('download.summarizeExplanation', 'Creates a concise summary of the main points and key information, about 1/3 the length of the original text.')}>
+                        <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                      </div>
+                    </span>
                   </label>
                 </div>
               </div>
@@ -337,8 +343,9 @@ Here are the subtitles:\n\n{subtitlesText}`)
                 promptType={processType} // Explicitly set the prompt type
                 description={t('promptEditor.customizePromptDesc', 'Add custom instructions for processing. The system will automatically handle formatting.')}
               />
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
         <div className="modal-footer">

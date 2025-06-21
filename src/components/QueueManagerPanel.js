@@ -274,7 +274,7 @@ const QueueManagerPanel = ({
                     </div>
                     <button
                       onClick={() => handleDownloadVideo(item.outputPath, item.id)}
-                      className="download-btn"
+                      className="btn-base btn-success btn-compact download-btn-success"
                     >
                       {t('videoRendering.download', 'Download')}
                     </button>
