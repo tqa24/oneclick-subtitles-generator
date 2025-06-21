@@ -266,7 +266,7 @@ function getVideoDimensions(mediaPath) {
           // Landscape video
           quality = `${height}p`;
         } else {
-          // Portrait video (common for TikTok, Instagram Stories)
+          // Portrait video (common for TikTok, Instagram Stories) - show actual dimensions
           quality = `${height}p (${width}×${height})`;
         }
 

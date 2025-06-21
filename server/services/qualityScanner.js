@@ -139,27 +139,39 @@ function parseYtDlpFormats(formatOutput) {
         qualityDescription = `${height}p (HD)`;
       }
 
-      qualities.push({
+      // Only include resolution if it looks like actual video dimensions (contains 'x' and reasonable numbers)
+      const includeResolution = resolution && resolution.includes('x') &&
+        resolution.match(/^\d{2,4}x\d{2,4}$/) &&
+        !resolution.includes('audio') &&
+        !resolution.includes('only');
+
+      const qualityData = {
         height,
         quality: qualityLabel,
         description: qualityDescription,
         formatId,
-        extension,
-        resolution
-      });
+        extension
+      };
+
+      // Only add resolution if it's valid
+      if (includeResolution) {
+        qualityData.resolution = resolution;
+      }
+
+      qualities.push(qualityData);
     }
   }
 
   // Sort by height descending (highest quality first)
   qualities.sort((a, b) => b.height - a.height);
 
-  // If no qualities found, provide common fallback options
+  // If no qualities found, provide common fallback options without fake dimensions
   if (qualities.length === 0) {
     return [
-      { height: 1080, quality: '1080p', description: '1080p (Full HD)', formatId: 'best', extension: 'mp4', resolution: '1920x1080' },
-      { height: 720, quality: '720p', description: '720p (HD)', formatId: 'best[height<=720]', extension: 'mp4', resolution: '1280x720' },
-      { height: 480, quality: '480p', description: '480p', formatId: 'best[height<=480]', extension: 'mp4', resolution: '854x480' },
-      { height: 360, quality: '360p', description: '360p', formatId: 'best[height<=360]', extension: 'mp4', resolution: '640x360' }
+      { height: 1080, quality: '1080p', description: '1080p (Full HD)', formatId: 'best', extension: 'mp4' },
+      { height: 720, quality: '720p', description: '720p (HD)', formatId: 'best[height<=720]', extension: 'mp4' },
+      { height: 480, quality: '480p', description: '480p', formatId: 'best[height<=480]', extension: 'mp4' },
+      { height: 360, quality: '360p', description: '360p', formatId: 'best[height<=360]', extension: 'mp4' }
     ];
   }
 

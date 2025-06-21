@@ -20,7 +20,7 @@ const VideoQualityModal = ({
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadVideoId, setDownloadVideoId] = useState(null);
 
-  // Reset state when modal opens and scan qualities for online videos
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       console.log('[VideoQualityModal] Modal opened with videoInfo:', videoInfo);
@@ -35,16 +35,22 @@ const VideoQualityModal = ({
       setDownloadProgress(0);
       setDownloadVideoId(null);
 
-      // Scan qualities for online videos
-      if (videoInfo && videoInfo.url && ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source)) {
-        console.log('[VideoQualityModal] Starting quality scan for:', videoInfo.source);
-        scanVideoQualities();
-      } else {
-        console.log('[VideoQualityModal] Not scanning qualities. VideoInfo:', videoInfo);
-      }
+      // Don't scan qualities automatically - only when redownload is selected
+      console.log('[VideoQualityModal] Modal opened, waiting for user to select redownload option');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, videoInfo]);
+
+  // Scan qualities when redownload option is selected
+  useEffect(() => {
+    if (selectedOption === 'redownload' && videoInfo && videoInfo.url &&
+        ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source) &&
+        availableQualities.length === 0 && !isScanning) {
+      console.log('[VideoQualityModal] Redownload selected, starting quality scan for:', videoInfo.source);
+      scanVideoQualities();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOption, videoInfo]);
 
   // Set default version selection for uploaded videos
   useEffect(() => {
@@ -445,24 +451,18 @@ const VideoQualityModal = ({
                             {t('videoQuality.selectQuality', 'Select quality:')}
                           </div>
                           {availableQualities.map((quality, index) => (
-                            <label key={index} className="quality-option">
+                            <div key={index} className="radio-pill">
                               <input
                                 type="radio"
+                                id={`quality-${index}`}
                                 name="quality"
                                 checked={selectedQuality?.quality === quality.quality}
                                 onChange={() => setSelectedQuality(quality)}
                               />
-                              <div className="quality-info">
-                                <div className="quality-title">
-                                  {quality.description}
-                                </div>
-                                {quality.resolution && (
-                                  <div className="quality-details">
-                                    {quality.resolution}
-                                  </div>
-                                )}
-                              </div>
-                            </label>
+                              <label htmlFor={`quality-${index}`} className="quality-pill-label">
+                                {quality.description}
+                              </label>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -497,16 +497,17 @@ const VideoQualityModal = ({
                   {selectedOption === 'version' && (
                     <div className="version-selector">
                       {availableVersions.map((version, index) => (
-                        <label key={index} className="version-option">
+                        <div key={index} className="radio-pill">
                           <input
                             type="radio"
+                            id={`version-${index}`}
                             name="version"
                             checked={selectedVersion?.path === version.path}
                             onChange={() => setSelectedVersion(version)}
                           />
-                          <div className="version-info">
+                          <label htmlFor={`version-${index}`} className="version-pill-label">
                             <div className="version-title">
-                              {version.type === 'original' 
+                              {version.type === 'original'
                                 ? t('videoQuality.originalVersion', 'Original Quality')
                                 : t('videoQuality.optimizedVersion', 'Optimized ({{quality}})', { quality: version.quality || '360p' })}
                             </div>
@@ -515,8 +516,8 @@ const VideoQualityModal = ({
                                 {version.resolution} • {version.fps || 30}fps
                               </div>
                             )}
-                          </div>
-                        </label>
+                          </label>
+                        </div>
                       ))}
                     </div>
                   )}
