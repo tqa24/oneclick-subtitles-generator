@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
@@ -17,6 +18,58 @@ const {
   createAnalysisVideo,
   convertAudioToVideo
 } = require('../services/videoProcessingService');
+
+// Configure multer for large file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, VIDEOS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const originalName = file.originalname || 'uploaded-file';
+    const extension = path.extname(originalName);
+    const baseName = path.basename(originalName, extension);
+    const filename = `large_upload_${timestamp}_${baseName}${extension}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024 // 2GB limit
+  }
+});
+
+/**
+ * POST /api/copy-large-file - Copy a large file to the videos directory with progress tracking
+ */
+router.post('/copy-large-file', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const filePath = req.file.path;
+    const filename = req.file.filename;
+
+    // Return the file path for the client to reference
+    res.json({
+      success: true,
+      filePath: `/videos/${filename}`,
+      serverPath: filePath,
+      size: req.file.size,
+      message: 'Large file copied successfully'
+    });
+  } catch (error) {
+    console.error('Error copying large file:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to copy large file',
+      details: error.message
+    });
+  }
+});
 
 /**
  * GET /api/video-exists/:videoId - Check if a video exists
@@ -179,6 +232,99 @@ router.get('/video-dimensions/:videoId', async (req, res) => {
       success: false,
       error: 'Failed to get video dimensions',
       details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/split-existing-file - Split a file that already exists on the server
+ */
+router.post('/split-existing-file', async (req, res) => {
+  try {
+    const { filename, segmentDuration = 600, fastSplit = false, optimizeVideos = false, optimizedResolution = '360p' } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
+    }
+
+    const filePath = path.join(VIDEOS_DIR, filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found on server' });
+    }
+
+    // Determine media type from file extension
+    const extension = path.extname(filename).toLowerCase();
+    const isAudio = ['.mp3', '.wav', '.aac', '.ogg', '.flac'].includes(extension);
+    const mediaType = isAudio ? 'audio' : 'video';
+
+    // Extract media ID from filename
+    const mediaId = filename.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv|mp3|wav|aac|ogg|flac)$/i, '');
+
+    let processPath = filePath;
+    let optimizedResult = null;
+
+    // Optimize video if requested and it's a video (not audio)
+    if (optimizeVideos && !isAudio) {
+      try {
+        const optimizedFilename = `optimized_${mediaId}.mp4`;
+        const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+
+        optimizedResult = await optimizeVideo(processPath, optimizedPath, {
+          resolution: optimizedResolution,
+          fps: 15
+        });
+
+        if (fs.existsSync(optimizedPath)) {
+          processPath = optimizedPath;
+        }
+      } catch (error) {
+        console.error('Error optimizing video:', error);
+      }
+    }
+
+    // Split the media file into segments
+    const result = await splitMediaIntoSegments(
+      processPath,
+      segmentDuration,
+      VIDEOS_DIR,
+      `${mediaId}_part`,
+      {
+        fastSplit,
+        mediaType
+      }
+    );
+
+    res.json({
+      success: true,
+      originalMedia: `/videos/${filename}`,
+      mediaId: mediaId,
+      mediaType: mediaType,
+      segments: result.segments.map(segment => ({
+        path: `/videos/${path.basename(segment.path)}`,
+        url: `${SERVER_URL}/videos/${path.basename(segment.path)}?startTime=${segment.startTime}&duration=${segment.duration}`,
+        name: path.basename(segment.path),
+        startTime: segment.startTime,
+        duration: segment.duration,
+        theoreticalStartTime: segment.theoreticalStartTime,
+        theoreticalDuration: segment.theoreticalDuration
+      })),
+      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split successfully`,
+      optimized: optimizedResult ? {
+        video: `/videos/${path.basename(optimizedResult.path)}`,
+        resolution: optimizedResult.resolution,
+        fps: optimizedResult.fps,
+        width: optimizedResult.width,
+        height: optimizedResult.height,
+        wasOptimized: optimizedResult.optimized !== false
+      } : null
+    });
+  } catch (error) {
+    console.error('Error splitting existing file:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to split existing file'
     });
   }
 });
