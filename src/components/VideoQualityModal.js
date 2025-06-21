@@ -525,46 +525,46 @@ const VideoQualityModal = ({
             )}
           </div>
 
-          <div className="modal-actions">
-            <button 
-              className="cancel-button" 
-              onClick={onClose}
-              disabled={isRedownloading}
-            >
-              {t('common.cancel', 'Cancel')}
-            </button>
-            <button
-              className="confirm-button"
-              onClick={handleConfirm}
-              disabled={
-                isRedownloading ||
-                isScanning ||
-                (selectedOption === 'version' && !selectedVersion) ||
-                (selectedOption === 'redownload' && !selectedQuality)
-              }
-            >
-              {isRedownloading
-                ? `${t('videoQuality.redownloading', 'Redownloading...')} ${downloadProgress}%`
-                : isScanning
-                ? t('videoQuality.scanning', 'Scanning...')
-                : t('common.confirm', 'Confirm')}
-            </button>
-
-            {/* Progress bar for redownloading */}
-            {isRedownloading && (
-              <div className="download-progress-container">
-                <div className="download-progress-bar">
-                  <div
-                    className="download-progress-fill"
-                    style={{ width: `${downloadProgress}%` }}
-                  ></div>
-                </div>
-                <div className="download-progress-text">
-                  {downloadProgress}% - {t('videoQuality.downloadingQuality', 'Downloading {{quality}}', { quality: selectedQuality?.quality })}
-                </div>
+          {/* Progress bar for redownloading */}
+          {isRedownloading && (
+            <div className="download-progress-container">
+              <div className="download-progress-bar">
+                <div
+                  className="download-progress-fill"
+                  style={{ width: `${downloadProgress}%` }}
+                ></div>
               </div>
-            )}
-          </div>
+              <div className="download-progress-text">
+                {downloadProgress}% - {t('videoQuality.downloadingQuality', 'Downloading {{quality}}', { quality: selectedQuality?.quality })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button
+            className="cancel-button"
+            onClick={onClose}
+            disabled={isRedownloading}
+          >
+            {t('common.cancel', 'Cancel')}
+          </button>
+          <button
+            className="confirm-button"
+            onClick={handleConfirm}
+            disabled={
+              isRedownloading ||
+              isScanning ||
+              (selectedOption === 'version' && !selectedVersion) ||
+              (selectedOption === 'redownload' && !selectedQuality)
+            }
+          >
+            {isRedownloading
+              ? `${t('videoQuality.redownloading', 'Redownloading...')} ${downloadProgress}%`
+              : isScanning
+              ? t('videoQuality.scanning', 'Scanning...')
+              : t('common.confirm', 'Confirm')}
+          </button>
         </div>
       </div>
     </div>

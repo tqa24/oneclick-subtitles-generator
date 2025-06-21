@@ -1,4 +1,4 @@
-/* Video Quality Modal Styles */
+/* Video Quality Modal Styles - Flat Design inspired by Background Image Generator */
 
 .video-quality-modal-overlay {
   position: fixed;
@@ -6,74 +6,93 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 99999;
   backdrop-filter: blur(4px);
+  isolation: isolate;
 }
 
 .video-quality-modal {
-  background: var(--md-surface);
-  border-radius: 16px;
-  box-shadow: var(--md-elevation-level5);
+  background-color: var(--md-surface-1);
+  border-radius: 24px;
+  box-shadow: var(--md-elevation-level3);
   max-width: 600px;
   width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  border: 1px solid var(--md-outline-variant);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fade-in 0.3s ease-out;
+  position: relative;
+  z-index: 1;
 }
 
+/* Header - flat design like Background Image Generator */
 .modal-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 24px 24px 16px 24px;
-  border-bottom: 1px solid var(--md-outline-variant);
+  align-items: center;
+  padding: 20px 24px;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  z-index: 1;
+  border-radius: 24px;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: var(--md-on-surface);
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 500;
+  color: var(--md-on-surface);
+  letter-spacing: 0.1px;
 }
 
 .close-button {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
   color: var(--md-on-surface-variant);
-  padding: 4px;
+  padding: 6px;
   border-radius: 50%;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .close-button:hover {
-  background-color: var(--md-surface-variant);
+  background-color: rgba(var(--md-on-surface-rgb), 0.1);
 }
 
+/* Content - flat design with clean spacing */
 .modal-content {
   padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--md-surface-1);
 }
 
 .video-info {
-  background: var(--md-surface-variant);
-  border-radius: 12px;
+  background-color: var(--md-surface-2);
+  border-radius: 16px;
   padding: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--md-elevation-level1);
+  transition: all 0.2s ease;
 }
 
 .info-row {
   display: flex;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  align-items: flex-start;
 }
 
 .info-row:last-child {
@@ -82,50 +101,61 @@
 
 .info-row .label {
   font-weight: 500;
-  color: var(--md-on-surface-variant);
+  color: var(--md-on-surface);
   min-width: 120px;
   flex-shrink: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.1px;
 }
 
 .info-row .value {
   color: var(--md-on-surface);
   flex: 1;
   word-break: break-word;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
+/* Quality Options - flat design with subtle interactions */
 .quality-options h4 {
   margin: 0 0 16px 0;
   color: var(--md-on-surface);
   font-size: 1rem;
   font-weight: 500;
+  letter-spacing: 0.1px;
 }
 
 .option-item {
   display: flex;
   align-items: flex-start;
   padding: 16px;
-  border: 2px solid var(--md-outline-variant);
-  border-radius: 12px;
+  background-color: var(--md-surface-2);
+  border-radius: 16px;
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--md-surface);
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid transparent;
 }
 
 .option-item:hover {
-  border-color: var(--md-primary);
-  background: var(--md-primary-container);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
 }
 
 .option-item:has(input:checked) {
-  border-color: var(--md-primary);
-  background: var(--md-primary-container);
+  background-color: var(--md-surface-3);
+  border: 1px solid rgba(var(--md-on-surface-rgb), 0.12);
+  box-shadow: var(--md-elevation-level2);
 }
 
 .option-item input[type="radio"] {
   margin-right: 12px;
   margin-top: 2px;
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--md-on-surface);
 }
 
 .option-content {
@@ -135,20 +165,26 @@
 .option-title {
   font-weight: 500;
   color: var(--md-on-surface);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  letter-spacing: 0.1px;
 }
 
 .option-description {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--md-on-surface-variant);
   line-height: 1.4;
 }
 
+/* Nested selectors - flat design with clean indentation */
 .version-selector,
 .quality-selector {
   margin-top: 12px;
-  padding-left: 16px;
-  border-left: 2px solid var(--md-outline-variant);
+  padding: 12px 16px;
+  background-color: var(--md-surface-3);
+  border-radius: 12px;
+  border-left: 3px solid rgba(var(--md-on-surface-rgb), 0.2);
 }
 
 .version-option,
@@ -157,11 +193,22 @@
   align-items: center;
   padding: 8px 0;
   cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.version-option:hover,
+.quality-option:hover {
+  background-color: rgba(var(--md-on-surface-rgb), 0.05);
+  padding-left: 4px;
 }
 
 .version-option input[type="radio"],
 .quality-option input[type="radio"] {
-  margin-right: 8px;
+  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--md-on-surface);
 }
 
 .version-info,
@@ -173,7 +220,9 @@
 .quality-title {
   font-weight: 500;
   color: var(--md-on-surface);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  letter-spacing: 0.1px;
 }
 
 .version-details,
@@ -181,13 +230,15 @@
   font-size: 0.75rem;
   color: var(--md-on-surface-variant);
   margin-top: 2px;
+  line-height: 1.3;
 }
 
 .quality-selector-title {
   font-weight: 500;
   color: var(--md-on-surface);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   margin-bottom: 8px;
+  letter-spacing: 0.1px;
 }
 
 .scanning-indicator,
@@ -195,31 +246,36 @@
   padding: 12px;
   text-align: center;
   color: var(--md-on-surface-variant);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-style: italic;
+  background-color: var(--md-surface-2);
+  border-radius: 12px;
+  border: 1px dashed rgba(var(--md-on-surface-rgb), 0.2);
 }
 
 .quality-options-list {
   margin-top: 8px;
 }
 
+/* Progress section - flat design */
 .download-progress-container {
-  margin-top: 12px;
-  padding: 8px 0;
+  padding: 16px 24px;
+  background-color: var(--md-surface-2);
+  border-top: 1px solid rgba(var(--md-on-surface-rgb), 0.1);
 }
 
 .download-progress-bar {
   width: 100%;
   height: 6px;
-  background-color: var(--md-outline-variant);
+  background-color: rgba(var(--md-on-surface-rgb), 0.1);
   border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .download-progress-fill {
   height: 100%;
-  background-color: var(--md-primary);
+  background-color: var(--md-on-surface);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -228,115 +284,172 @@
   font-size: 0.75rem;
   color: var(--md-on-surface-variant);
   text-align: center;
+  line-height: 1.3;
 }
 
+/* Modal Footer - flat button design like Background Image Generator */
 .modal-actions {
   display: flex;
-  gap: 12px;
   justify-content: flex-end;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--md-outline-variant);
+  gap: 12px;
+  padding: 20px 24px;
+  background-color: var(--md-surface-1);
 }
 
+/* Flat Button Styles - inspired by Background Image Generator */
 .cancel-button,
 .confirm-button {
-  padding: 10px 24px;
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
   border: none;
+  border-radius: 24px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 80px;
+  height: 36px;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+  box-shadow: var(--md-elevation-level2);
+  font-family: 'Google Sans', 'Open Sans', sans-serif;
 }
 
 .cancel-button {
-  background: var(--md-surface-variant);
+  background-color: var(--md-surface-2);
   color: var(--md-on-surface-variant);
 }
 
 .cancel-button:hover:not(:disabled) {
-  background: var(--md-outline-variant);
+  background-color: var(--md-surface-3);
+  box-shadow: var(--md-elevation-level3);
 }
 
 .confirm-button {
-  background: var(--md-primary);
-  color: var(--md-on-primary);
+  background-color: var(--md-on-surface);
+  color: var(--md-surface);
 }
 
 .confirm-button:hover:not(:disabled) {
-  background: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  transform: translateY(-1px);
-  box-shadow: var(--md-elevation-level2);
+  background-color: rgba(var(--md-on-surface-rgb), 0.9);
+  box-shadow: var(--md-elevation-level3);
 }
 
 .cancel-button:disabled,
 .confirm-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  box-shadow: var(--md-elevation-level1);
 }
 
-/* Dark theme adjustments */
-@media (prefers-color-scheme: dark) {
-  .video-quality-modal-overlay {
-    background-color: rgba(0, 0, 0, 0.8);
-  }
-  
-  .option-item:hover {
-    background: rgba(var(--md-primary-rgb), 0.1);
-  }
-  
-  .option-item:has(input:checked) {
-    background: rgba(var(--md-primary-rgb), 0.15);
-  }
+.cancel-button:disabled:hover,
+.confirm-button:disabled:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
 }
 
-/* Animation */
-.video-quality-modal {
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
+/* Animation - simple fade-in like Background Image Generator */
+@keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-/* Responsive design */
+/* Theme adjustments - minimal and clean */
+[data-theme="light"] .video-quality-modal {
+  background-color: var(--md-surface);
+}
+
+[data-theme="dark"] .video-quality-modal {
+  background-color: var(--md-surface-1);
+}
+
+/* Scrollbar styling for modal content */
+.modal-content {
+  scrollbar-width: thin;
+  overflow: auto;
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px;
+  border-radius: 8px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.3);
+  border-radius: 8px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.5);
+}
+
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive design - clean mobile layout */
 @media (max-width: 768px) {
   .video-quality-modal {
     width: 95%;
     max-height: 90vh;
   }
-  
-  .modal-header,
-  .modal-content {
-    padding: 16px;
+
+  .modal-header {
+    padding: 16px 20px;
   }
-  
+
+  .modal-content {
+    padding: 16px 20px;
+  }
+
+  .modal-actions {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .info-row {
     flex-direction: column;
     gap: 4px;
+    margin-bottom: 8px;
   }
-  
+
   .info-row .label {
     min-width: auto;
+    font-weight: 500;
   }
-  
-  .modal-actions {
-    flex-direction: column;
-  }
-  
+
   .cancel-button,
   .confirm-button {
     width: 100%;
+    justify-content: center;
+  }
+
+  .option-item {
+    padding: 12px;
+  }
+
+  .version-selector,
+  .quality-selector {
+    padding: 8px 12px;
+    margin-top: 8px;
   }
 }
