@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { convertAudioToVideo } from '../../utils/audioToVideoConverter';
+import { SERVER_URL } from '../../config';
 import '../../styles/FileUploadInput.css';
 
 const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode }) => {
@@ -100,7 +101,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
     await processFile(file);
   };
 
-  // Process the file
+  // Process the file with improved handling for large files
   const processFile = async (file) => {
     if (file) {
       if (validateFile(file)) {
@@ -150,6 +151,45 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           }
         }
 
+        // For large files (>50MB for testing, normally 500MB), copy to videos directory for better handling
+        const fileSizeMB = processedFile.size / (1024 * 1024);
+        console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
+        if (fileSizeMB > 50) { // Temporarily lowered from 500MB for testing
+          try {
+            // Show copying progress for large files
+            setFileInfo(prev => ({
+              ...prev,
+              copying: true,
+              copyProgress: 0
+            }));
+
+            // Copy file to videos directory with progress tracking
+            const copiedFile = await copyFileToVideosDirectory(processedFile, (progress) => {
+              setFileInfo(prev => ({
+                ...prev,
+                copyProgress: progress
+              }));
+            });
+
+            // Use the copied file reference
+            processedFile = copiedFile;
+
+            // Update file info to remove copying state
+            setFileInfo(prev => ({
+              ...prev,
+              copying: false,
+              copyProgress: undefined
+            }));
+          } catch (error) {
+            console.error('Error copying large file:', error);
+            setError(t('fileUpload.copyError', 'Failed to copy large file. Please try again.'));
+            setUploadedFile(null);
+            setFileInfo(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+
         // Create a new object URL for the processed file
         const objectUrl = URL.createObjectURL(processedFile);
         localStorage.setItem('current_file_url', objectUrl);
@@ -186,6 +226,54 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         setIsLoading(false);
       }
     }
+  };
+
+  // Copy large files to videos directory for better handling
+  const copyFileToVideosDirectory = async (file, onProgress) => {
+    console.log(`Starting copy operation for file: ${file.name}, size: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filename', file.name);
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100);
+          onProgress(progress);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            // Create a new File object with the server path reference
+            const copiedFile = new File([file], file.name, {
+              type: file.type,
+              lastModified: file.lastModified
+            });
+            // Add server path reference for later use
+            copiedFile.serverPath = response.filePath;
+            copiedFile.isCopiedToServer = true;
+            resolve(copiedFile);
+          } catch (error) {
+            reject(new Error('Invalid server response'));
+          }
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Upload failed'));
+      });
+
+      xhr.open('POST', `${SERVER_URL}/api/copy-large-file`);
+      xhr.send(formData);
+    });
   };
 
   // Trigger file input click
@@ -291,7 +379,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
             <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
             <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
 
-            {fileInfo && fileInfo.converting ? (
+            {fileInfo && (fileInfo.converting || fileInfo.copying) ? (
               <div className="converting-indicator">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" style={{ marginRight: '6px' }}>
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
@@ -305,7 +393,12 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                     />
                   </path>
                 </svg>
-                {t('fileUpload.processing', 'Processing audio...')}
+                {fileInfo.converting
+                  ? t('fileUpload.processing', 'Processing audio...')
+                  : fileInfo.copying
+                    ? `${t('fileUpload.copying', 'Copying large file...')} ${fileInfo.copyProgress || 0}%`
+                    : t('fileUpload.processing', 'Processing...')
+                }
               </div>
             ) : (
               <button

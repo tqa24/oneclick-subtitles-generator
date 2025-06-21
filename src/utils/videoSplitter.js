@@ -22,6 +22,12 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const isAudio = mediaFile.type.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';
 
+    // Check if this file has already been copied to the server
+    if (mediaFile.isCopiedToServer && mediaFile.serverPath) {
+      // File is already on server, use the server-side splitting endpoint
+      return await splitFileOnServer(mediaFile, segmentDuration, onProgress, fastSplit, options);
+    }
+
     // Use the translation key for the uploading message
     const uploadingKey = isAudio ? 'output.uploadingAudioToServer' : 'output.uploadingVideoToServer';
     const uploadingDefaultMsg = isAudio ? 'Uploading audio to server...' : 'Uploading video to server...';
@@ -153,6 +159,61 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     };
   } catch (error) {
     console.error(`Error splitting ${mediaFile.type.startsWith('audio/') ? 'audio' : 'video'}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Split a file that has already been copied to the server
+ * @param {File} mediaFile - The media file with server path information
+ * @param {number} segmentDuration - Duration of each segment in seconds
+ * @param {Function} onProgress - Progress callback function
+ * @param {boolean} fastSplit - Whether to use fast splitting mode
+ * @param {Object} options - Additional options
+ * @returns {Promise<Object>} - Object containing segment URLs and metadata
+ */
+const splitFileOnServer = async (mediaFile, segmentDuration, onProgress, fastSplit, options) => {
+  try {
+    // Extract filename from server path
+    const filename = mediaFile.serverPath.split('/').pop();
+    const mediaId = filename.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
+
+    onProgress(20, 'output.splittingVideo', 'Splitting video into segments...');
+
+    // Call the server-side splitting endpoint for already uploaded files
+    const response = await fetch(`${SERVER_URL}/api/split-existing-file`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        filename: filename,
+        segmentDuration: segmentDuration,
+        fastSplit: fastSplit,
+        optimizeVideos: options.optimizeVideos || false,
+        optimizedResolution: options.optimizedResolution || '360p'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to split file on server');
+    }
+
+    const result = await response.json();
+
+    onProgress(100, 'output.splittingComplete', 'Video splitting complete');
+
+    return {
+      success: true,
+      originalMedia: result.originalMedia,
+      mediaId: result.mediaId,
+      mediaType: result.mediaType,
+      segments: result.segments,
+      optimized: result.optimized
+    };
+  } catch (error) {
+    console.error('Error splitting file on server:', error);
     throw error;
   }
 };

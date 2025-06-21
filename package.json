@@ -14,8 +14,8 @@
     "python:test": "uv run server/test-narration-service.py",
     "video-renderer:build": "cd video-renderer && npm run server:build",
     "video-renderer:start": "cd video-renderer && npm run server:start",
-    "dev": "concurrently \"npm run start\" \"npm run server:start\" \"npm run video-renderer:start\"",
-    "dev:test": "concurrently \"npm run start\" \"npm run server:start\" \"npm run python:test\"",
+    "dev": "concurrently --names \"FRONTEND,SERVER,RENDERER\" --prefix-colors \"cyan,green,magenta\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\" \"npm run video-renderer:start\"",
+    "dev:test": "concurrently --names \"FRONTEND,SERVER,PYTHON\" --prefix-colors \"cyan,green,yellow\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\" \"npm run python:test\"",
     "check:uv": "node check-uv.js",
     "test:python": "uv run test-python.py",
     "create:venv": "uv venv .venv",
@@ -26,10 +26,10 @@
     "postinstall": "node install-yt-dlp.js && cd video-renderer && npm run server:build",
     "setup:f5tts": "node setup-f5tts.js",
     "python:start:cuda": "uv run -- python server/narrationApp.py",
-    "dev:cuda": "cross-env START_PYTHON_SERVER=true concurrently \"npm run start\" \"npm run server:start\"",
+    "dev:cuda": "cross-env START_PYTHON_SERVER=true concurrently --names \"FRONTEND,SERVER\" --prefix-colors \"cyan,green\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\"",
     "install:all:uv": "npm install && node setup-narration-uv.js && node install-yt-dlp.js",
     "python:start:uv": "uv run -- python server/narrationApp.py",
-    "dev:uv": "concurrently \"npm run start\" \"npm run server:start\" \"npm run python:start:uv\"",
+    "dev:uv": "concurrently --names \"FRONTEND,SERVER,PYTHON\" --prefix-colors \"cyan,green,yellow\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\" \"npm run python:start:uv\"",
     "setup:narration:uv": "node setup-narration.js"
   },
   "dependencies": {

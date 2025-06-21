@@ -9,7 +9,7 @@ const fs = require('fs');
 const PORT = process.env.PORT || 3007; // Changed from 3004 to avoid port conflicts
 const SERVER_URL = 'http://127.0.0.1:3007'; // Using IPv4 address for better compatibility
 // Allow both localhost and 127.0.0.1 for development
-const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3008', 'http://127.0.0.1:3008'];
+const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3008', 'http://127.0.0.1:3008', 'http://localhost:3011', 'http://127.0.0.1:3011'];
 
 // Directory paths
 let VIDEOS_DIR, SUBTITLES_DIR, NARRATION_DIR;
