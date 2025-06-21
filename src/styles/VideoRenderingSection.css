@@ -618,7 +618,6 @@
   color: var(--md-on-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: var(--md-elevation-level1);
   height: 42px;
   box-sizing: border-box;
   display: flex;
@@ -657,7 +656,6 @@
 
 .setting-select:hover {
   background-color: var(--md-surface-2);
-  box-shadow: var(--md-elevation-level2);
 }
 
 .setting-select:focus {
