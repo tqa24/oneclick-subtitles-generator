@@ -33,6 +33,7 @@ import narration from './narration.json';
 import backgroundGenerator from './backgroundGenerator.json';
 import videoRendering from './videoRendering.json';
 import fontModal from './fontModal.json';
+import videoQuality from './videoQuality.json';
 
 // Combine all translations
 const koTranslations = {
@@ -68,7 +69,8 @@ const koTranslations = {
   narration,
   backgroundGenerator,
   videoRendering,
-  fontModal
+  fontModal,
+  videoQuality
 };
 
 export default koTranslations;
