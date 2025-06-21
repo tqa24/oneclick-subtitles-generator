@@ -303,3 +303,94 @@ src/styles/
 - **Better tooling**: IDEs can better organize and search styles
 
 This organization improvement follows industry best practices and creates a more maintainable codebase structure.
+
+---
+
+# Compact Section Radio Buttons - Material Design Pill Style
+
+## Problem Solved (Compact Sections)
+
+The centralized radio system affected the existing designs for `subtitle-selection-compact` and `narration-selection-compact` components, which needed their own specific Material Design pill-style appearance.
+
+### Before (Issues):
+- **Round radio buttons**: Traditional circular radio inputs didn't match Material Design aesthetic
+- **Inconsistent styling**: Compact sections looked different from the main narration section
+- **Poor UX**: Round radios felt outdated compared to modern pill-style buttons
+
+## Solution Implemented (Compact Sections)
+
+### 1. Material Design Pill-Style Radio Buttons
+```css
+/* Hidden radio input */
+.subtitle-selection-compact .radio-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Pill-style label */
+.subtitle-selection-compact .radio-option label {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  height: 36px;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+}
+```
+
+### 2. Interactive States
+- **Hover**: Elevated appearance with `translateY(-2px)` and enhanced shadow
+- **Active**: Returns to base position with reduced shadow
+- **Checked**: Primary container background with primary border
+- **Disabled**: Reduced opacity with no hover effects
+
+### 3. Special Handling for Complex Components
+- **Narration with refresh button**: Custom styling for radio options containing additional UI elements
+- **Flexible layout**: Maintains pill appearance while accommodating inline buttons
+
+### 4. Updated Component Structure
+```jsx
+// Subtitle selection - clean pill structure
+<div className="radio-option">
+  <input type="radio" id="subtitle-original" value="original" />
+  <label htmlFor="subtitle-original">
+    Original Subtitles
+    <span className="item-count">(5 items)</span>
+  </label>
+</div>
+
+// Narration selection - pill with additional button
+<div className="radio-option" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+  <input type="radio" id="narration-generated" value="generated" />
+  <label htmlFor="narration-generated" style={{ flex: 1 }}>
+    Aligned Narration (ready)
+  </label>
+  <button className="pill-button secondary">Refresh</button>
+</div>
+```
+
+## Benefits (Compact Sections)
+
+### ✅ **Modern Material Design**
+- **Pill-style buttons**: Contemporary appearance matching Material Design 3
+- **Consistent elevation**: Proper shadow and hover effects
+- **Smooth animations**: Polished interaction feedback
+
+### ✅ **Improved UX**
+- **Larger click targets**: Easier to interact with than small radio circles
+- **Visual hierarchy**: Clear distinction between selected and unselected states
+- **Accessible**: Proper focus states and keyboard navigation
+
+### ✅ **Design Consistency**
+- **Matches main sections**: Same pill style as the main narration section
+- **Unified aesthetic**: Consistent with the overall Material Design system
+- **Professional appearance**: Modern, polished interface
+
+The compact sections now use beautiful Material Design pill-style radio buttons that provide a much better user experience while maintaining consistency with the overall design system.
