@@ -2,7 +2,7 @@
   "remove": "Remove",
   "sizeError": "File size exceeds the maximum limit of {{size}} MB.",
   "formatError": "Unsupported file format. Please upload a supported video or audio file.",
-  "processing": "Processing audio...",
+  "processing": "Processing media...",
   "pleaseWait": "Please wait while we process your file",
   "converting": "Converting to video...",
   "conversionError": "Failed to convert audio to video. Please try again.",

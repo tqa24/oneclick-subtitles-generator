@@ -32,8 +32,8 @@
 
 /* Add a subtle animation to the header title */
 @keyframes title-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  0%, 100% { transform: translateY(4px) scale(1); }
+  50% { transform: translateY(4px) scale(1.01); }
 }
 
 .app-header:hover .header-title {
