@@ -1419,8 +1419,8 @@ const VideoRenderingSection = ({
             {/* Narration Selection */}
             <div className="narration-selection-compact">
               <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
-              <div className="radio-group-base radio-group-vertical">
-                <div className="radio-option-base">
+              <div className="radio-group">
+                <div className="radio-option">
                   <input
                     type="radio"
                     id="narration-none"
@@ -1428,43 +1428,42 @@ const VideoRenderingSection = ({
                     checked={selectedNarration === 'none'}
                     onChange={(e) => setSelectedNarration(e.target.value)}
                   />
-                  <label htmlFor="narration-none" className="radio-option-pill">
+                  <label htmlFor="narration-none">
                     {t('videoRendering.noNarration', 'No Narration')}
                   </label>
                 </div>
-                <div className="radio-option" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                {isAlignedNarrationAvailable() && (
+                  <div className="radio-option">
                     <input
                       type="radio"
                       id="narration-generated"
                       value="generated"
                       checked={selectedNarration === 'generated'}
                       onChange={(e) => setSelectedNarration(e.target.value)}
-                      disabled={!isAlignedNarrationAvailable()}
                     />
                     <label htmlFor="narration-generated">
-                      {isAlignedNarrationAvailable()
-                        ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
-                        : (hasNarrationSegments()
-                            ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
-                            : t('videoRendering.noNarrationGenerated', 'No narration generated')
-                          )
-                      }
+                      {t('videoRendering.alignedNarration', 'Aligned Narration (ready)')}
                     </label>
                   </div>
-                  {/* Refresh button for narration alignment - always visible, grayed out when not needed */}
+                )}
+
+                {/* Narration status and refresh button - always visible, grayed out when not needed */}
+                <div className="narration-status-container">
+                  <span className={`narration-status ${!hasNarrationSegments() ? 'disabled' : ''}`}>
+                    {isAlignedNarrationAvailable()
+                      ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
+                      : (hasNarrationSegments()
+                          ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
+                          : t('videoRendering.noNarrationGenerated', 'No narration generated')
+                        )
+                    }
+                  </span>
                   <button
                     type="button"
-                    className="pill-button secondary"
+                    className="refresh-icon-button"
                     onClick={handleRefreshNarration}
                     disabled={isRefreshingNarration || isAlignedNarrationAvailable() || !hasNarrationSegments()}
                     style={{
-                      padding: '4px 8px',
-                      fontSize: '0.8rem',
-                      height: '28px',
-                      minWidth: '28px',
-                      flexShrink: 0,
-                      opacity: (isAlignedNarrationAvailable() || !hasNarrationSegments()) ? 0.5 : 1,
                       animation: (!isAlignedNarrationAvailable() && hasNarrationSegments() && !isRefreshingNarration)
                         ? 'breathe 2s ease-in-out infinite'
                         : 'none'
@@ -1478,16 +1477,17 @@ const VideoRenderingSection = ({
                     }
                   >
                     {isRefreshingNarration ? (
-                      <svg className="spinner" width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'rotate 1.5s linear infinite' }}>
+                      <svg className="spinner" viewBox="0 0 24 24" style={{ animation: 'rotate 1.5s linear infinite' }}>
                         <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3"></circle>
                       </svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
                       </svg>
                     )}
                   </button>
                 </div>
+
               </div>
 
               {/* Narration Volume Control */}
