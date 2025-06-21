@@ -241,3 +241,65 @@ Added to `src/styles/components/buttons.css`:
 - **Future-proof** architecture for new components
 
 This comprehensive refactor solves the CSS architecture problems for both buttons and radio options, creating a maintainable and consistent design system.
+
+---
+
+# CSS File Organization - Proper Directory Structure
+
+## Problem Solved (CSS Organization)
+
+CSS files were scattered throughout the `components` directory instead of being properly organized in the `styles` directory, violating separation of concerns.
+
+### Before (Issues):
+- **Mixed concerns**: CSS files mixed with JavaScript components
+- **Poor organization**: `src/components/subtitleCustomization/FontSelectionModal.css`
+- **Inconsistent structure**: Some CSS in `styles/`, some in `components/`
+- **Maintenance difficulty**: Hard to locate and manage styles
+
+## Solution Implemented (CSS Organization)
+
+### 1. Moved CSS Files to Proper Location
+- **From**: `src/components/subtitleCustomization/FontSelectionModal.css`
+- **To**: `src/styles/subtitle-customization/FontSelectionModal.css`
+- **From**: `src/components/subtitleCustomization/FontDropdown.css`
+- **To**: `src/styles/subtitle-customization/FontDropdown.css`
+
+### 2. Updated Import Statements
+```jsx
+// Before
+import './FontSelectionModal.css';
+
+// After
+import '../../styles/subtitle-customization/FontSelectionModal.css';
+```
+
+### 3. Established Proper Directory Structure
+```
+src/styles/
+├── subtitle-customization/
+│   ├── FontSelectionModal.css
+│   └── FontDropdown.css
+├── subtitle-settings/
+├── components/
+├── settings/
+└── ...
+```
+
+## Benefits (CSS Organization)
+
+### ✅ **Separation of Concerns**
+- **CSS separated from JavaScript**: Clear distinction between styling and logic
+- **Consistent organization**: All styles in `styles/` directory
+- **Easier maintenance**: Styles grouped by feature/component type
+
+### ✅ **Better Architecture**
+- **Logical grouping**: Related styles organized together
+- **Scalable structure**: Easy to add new style categories
+- **Clear naming**: Directory names match component purposes
+
+### ✅ **Developer Experience**
+- **Predictable locations**: Developers know where to find styles
+- **Easier refactoring**: Styles can be moved/renamed independently
+- **Better tooling**: IDEs can better organize and search styles
+
+This organization improvement follows industry best practices and creates a more maintainable codebase structure.

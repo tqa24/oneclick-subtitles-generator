@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
-import './FontSelectionModal.css';
+import '../../styles/subtitle-customization/FontSelectionModal.css';
 
 const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => {
   const { t } = useTranslation();

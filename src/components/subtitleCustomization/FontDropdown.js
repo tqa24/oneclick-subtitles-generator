@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
-import './FontDropdown.css';
+import '../../styles/subtitle-customization/FontDropdown.css';
 
 const FontDropdown = ({ value, onChange, className }) => {
   const { t } = useTranslation();
