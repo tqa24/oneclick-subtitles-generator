@@ -245,11 +245,11 @@ const TextControls = ({ customization, onChange }) => {
         <FontSelectionModal
           isOpen={isFontModalOpen}
           onClose={() => setIsFontModalOpen(false)}
-          onSelectFont={(fontFamily) => {
+          onFontSelect={(fontFamily) => {
             updateCustomization({ fontFamily });
             setIsFontModalOpen(false);
           }}
-          currentFont={customization.fontFamily}
+          selectedFont={customization.fontFamily}
         />
       )}
     </>

@@ -1419,8 +1419,8 @@ const VideoRenderingSection = ({
             {/* Narration Selection */}
             <div className="narration-selection-compact">
               <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
-              <div className="radio-group">
-                <div className="radio-option">
+              <div className="radio-group-base radio-group-vertical">
+                <div className="radio-option-base">
                   <input
                     type="radio"
                     id="narration-none"
@@ -1428,7 +1428,7 @@ const VideoRenderingSection = ({
                     checked={selectedNarration === 'none'}
                     onChange={(e) => setSelectedNarration(e.target.value)}
                   />
-                  <label htmlFor="narration-none">
+                  <label htmlFor="narration-none" className="radio-option-pill">
                     {t('videoRendering.noNarration', 'No Narration')}
                   </label>
                 </div>
@@ -1579,14 +1579,13 @@ const VideoRenderingSection = ({
                 className="setting-select"
                 style={{ marginRight: '1rem' }}
               >
-                <option value="360p">360p (dimensions based on video aspect ratio)</option>
-                <option value="480p">480p (dimensions based on video aspect ratio)</option>
-                <option value="720p">720p (dimensions based on video aspect ratio)</option>
-                <option value="1080p">1080p (dimensions based on video aspect ratio)</option>
-                <option value="1440p">1440p (dimensions based on video aspect ratio)</option>
-                <option value="2K">2K (dimensions based on video aspect ratio)</option>
-                <option value="4K">4K (dimensions based on video aspect ratio)</option>
-                <option value="8K">8K (7680×4320)</option>
+                <option value="360p">360p</option>
+                <option value="480p">480p</option>
+                <option value="720p">720p</option>
+                <option value="1080p">1080p</option>
+                <option value="1440p">1440p</option>
+                <option value="4K">4K</option>
+                <option value="8K">8K</option>
               </select>
 
               <label style={{ marginRight: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>

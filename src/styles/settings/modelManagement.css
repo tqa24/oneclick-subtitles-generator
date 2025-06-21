@@ -715,15 +715,7 @@ html[data-theme="dark"] .language-chip:not(.en):not(.zh):not(.fr):not(.es):not(.
   margin-bottom: 1rem;
 }
 
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.radio-option input[type="radio"] {
-  width: auto;
-}
+/* Radio styles moved to centralized radio system in components/buttons.css */
 
 /* Language codes section */
 .language-codes-section {

@@ -479,86 +479,9 @@
   transform: none !important;
 }
 
-/* Radio groups - based on subtitleSourceSelectionMaterial.css */
-.radio-group {
-  display: block;
-  width: 100%;
-}
+/* Radio styles moved to centralized radio system in components/buttons.css */
 
-.radio-option {
-  margin-bottom: 8px;
-}
-
-.radio-option:last-child {
-  margin-bottom: 0;
-}
-
-.radio-option {
-  position: relative;
-}
-
-.radio-option input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.radio-option label {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  height: 36px;
-  background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--md-shape-pill);
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  color: var(--md-on-surface);
-  box-sizing: border-box;
-  box-shadow: var(--md-elevation-level1);
-}
-
-.radio-option label:hover {
-  background-color: var(--md-surface-2);
-  box-shadow: var(--md-elevation-level2);
-  transform: translateY(-2px);
-}
-
-.radio-option label:active {
-  transform: translateY(0);
-  box-shadow: var(--md-elevation-level1);
-}
-
-.radio-option input[type="radio"]:checked + label {
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  border-color: var(--md-primary);
-}
-
-.radio-option input[type="radio"]:checked + label:hover {
-  background-color: var(--md-primary-container);
-  opacity: 0.9;
-}
-
-.radio-option input[type="radio"]:disabled + label {
-  opacity: 0.38;
-  cursor: not-allowed;
-  background-color: var(--md-surface-1);
-  color: var(--md-on-surface-variant);
-  border-color: var(--md-outline-variant);
-  box-shadow: none;
-  transform: none;
-}
-
-.radio-option input[type="radio"]:disabled + label:hover {
-  box-shadow: none;
-  transform: none;
-  background-color: var(--md-surface-1);
-  color: var(--md-on-surface-variant);
-  border-color: var(--md-outline-variant);
-}
+/* Radio option styles moved to centralized system */
 
 .item-count {
   margin-left: 8px;
@@ -695,7 +618,6 @@
   color: var(--md-on-surface);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: var(--md-elevation-level1);
   height: 42px;
   box-sizing: border-box;
   display: flex;
@@ -734,7 +656,6 @@
 
 .setting-select:hover {
   background-color: var(--md-surface-2);
-  box-shadow: var(--md-elevation-level2);
 }
 
 .setting-select:focus {

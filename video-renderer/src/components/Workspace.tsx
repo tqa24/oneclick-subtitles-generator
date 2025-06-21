@@ -155,7 +155,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
 
   // Handle resolution change
   const handleResolutionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newResolution = e.target.value as '480p' | '720p' | '1080p' | '2K';
+    const newResolution = e.target.value as '480p' | '720p' | '1080p' | '1440p';
 
     // Save preference to localStorage
     try {
@@ -262,7 +262,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     metadata.resolution === '480p' ? 854 :
                     metadata.resolution === '720p' ? 1280 :
                     metadata.resolution === '1440p' ? 2560 :
-                    metadata.resolution === '2K' ? 2048 :
                     metadata.resolution === '4K' ? 3840 :
                     metadata.resolution === '8K' ? 7680 : 1920
                   }
@@ -271,7 +270,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     metadata.resolution === '480p' ? 480 :
                     metadata.resolution === '720p' ? 720 :
                     metadata.resolution === '1440p' ? 1440 :
-                    metadata.resolution === '2K' ? 1080 :
                     metadata.resolution === '4K' ? 2160 :
                     metadata.resolution === '8K' ? 4320 : 1080
                   }
@@ -350,14 +348,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                     value={metadata.resolution}
                     onChange={handleResolutionChange}
                   >
-                    <option value="360p">360p (dimensions based on video aspect ratio)</option>
-                    <option value="480p">480p (dimensions based on video aspect ratio)</option>
-                    <option value="720p">720p (dimensions based on video aspect ratio)</option>
-                    <option value="1080p">1080p (dimensions based on video aspect ratio)</option>
-                    <option value="1440p">1440p (dimensions based on video aspect ratio)</option>
-                    <option value="2K">2K (dimensions based on video aspect ratio)</option>
-                    <option value="4K">4K (dimensions based on video aspect ratio)</option>
-                    <option value="8K">8K (dimensions based on video aspect ratio)</option>
+                    <option value="360p">360p</option>
+                    <option value="480p">480p</option>
+                    <option value="720p">720p</option>
+                    <option value="1080p">1080p</option>
+                    <option value="1440p">1440p</option>
+                    <option value="4K">4K</option>
+                    <option value="8K">8K</option>
                   </select>
                   <SelectDescription>{t('resolutionDesc')}</SelectDescription>
                 </SelectControl>
@@ -406,7 +403,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                         metadata.resolution === '480p' ? 854 :
                         metadata.resolution === '720p' ? 1280 :
                         metadata.resolution === '1440p' ? 2560 :
-                        metadata.resolution === '2K' ? 2048 :
                         metadata.resolution === '4K' ? 3840 :
                         metadata.resolution === '8K' ? 7680 : 1920
                       }
@@ -415,7 +411,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                         metadata.resolution === '480p' ? 480 :
                         metadata.resolution === '720p' ? 720 :
                         metadata.resolution === '1440p' ? 1440 :
-                        metadata.resolution === '2K' ? 1080 :
                         metadata.resolution === '4K' ? 2160 :
                         metadata.resolution === '8K' ? 4320 : 1080
                       }

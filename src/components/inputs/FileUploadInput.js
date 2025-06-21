@@ -151,10 +151,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
           }
         }
 
-        // For large files (>50MB for testing, normally 500MB), copy to videos directory for better handling
+        // For large files (>500MB), copy to videos directory for better handling
         const fileSizeMB = processedFile.size / (1024 * 1024);
         console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
-        if (fileSizeMB > 50) { // Temporarily lowered from 500MB for testing
+        if (fileSizeMB > 500) {
           try {
             // Show copying progress for large files
             setFileInfo(prev => ({
@@ -339,7 +339,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
               />
             </path>
           </svg>
-          <h3>{t('fileUpload.processing', 'Processing audio...')}</h3>
+          <h3>{t('fileUpload.processing', 'Processing media...')}</h3>
           <p>{t('fileUpload.pleaseWait', 'Please wait while we process your file')}</p>
         </div>
       ) : !uploadedFile ? (
@@ -394,10 +394,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                   </path>
                 </svg>
                 {fileInfo.converting
-                  ? t('fileUpload.processing', 'Processing audio...')
+                  ? t('fileUpload.processing', 'Processing media...')
                   : fileInfo.copying
                     ? `${t('fileUpload.copying', 'Copying large file...')} ${fileInfo.copyProgress || 0}%`
-                    : t('fileUpload.processing', 'Processing...')
+                    : t('fileUpload.processing', 'Processing media...')
                 }
               </div>
             ) : (

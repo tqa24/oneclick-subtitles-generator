@@ -74,8 +74,8 @@ const AddModelDialog = ({
 
       <div className="form-field">
         <label>{t('settings.modelManagement.modelSource')}</label>
-        <div className="radio-group">
-          <div className="radio-option">
+        <div className="radio-group-base radio-group-horizontal">
+          <div className="radio-option-base">
             <input
               type="radio"
               id="source-huggingface"
@@ -84,11 +84,11 @@ const AddModelDialog = ({
               checked={form.sourceType === 'huggingface'}
               onChange={onSourceTypeChange}
             />
-            <label htmlFor="source-huggingface">
+            <label htmlFor="source-huggingface" className="radio-option-minimal">
               {t('settings.modelManagement.huggingFace')}
             </label>
           </div>
-          <div className="radio-option">
+          <div className="radio-option-base">
             <input
               type="radio"
               id="source-url"
@@ -97,7 +97,7 @@ const AddModelDialog = ({
               checked={form.sourceType === 'url'}
               onChange={onSourceTypeChange}
             />
-            <label htmlFor="source-url">
+            <label htmlFor="source-url" className="radio-option-minimal">
               {t('settings.modelManagement.directUrl')}
             </label>
           </div>

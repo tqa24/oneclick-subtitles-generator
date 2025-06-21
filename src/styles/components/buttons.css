@@ -276,3 +276,349 @@
   color: var(--text-primary);
   transform: scale(1.1);
 }
+
+/* ========================================
+   CENTRALIZED BUTTON SYSTEM - Material Design 3
+   ======================================== */
+
+/* Base button styles - shared foundation */
+.btn-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--md-shape-pill);
+  font-family: 'Google Sans', 'Open Sans', 'Segoe UI', sans-serif;
+  font-weight: var(--md-label-large-weight);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Button sizes */
+.btn-large {
+  padding: 12px 24px;
+  height: 44px;
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  min-width: 180px;
+}
+
+.btn-medium {
+  padding: 10px 20px;
+  height: 40px;
+  font-size: var(--md-label-medium-size);
+  line-height: var(--md-label-medium-height);
+  min-width: 120px;
+}
+
+.btn-small {
+  padding: 8px 16px;
+  height: 36px;
+  font-size: var(--md-label-small-size);
+  line-height: var(--md-label-small-height);
+  min-width: 100px;
+}
+
+.btn-compact {
+  padding: 6px 12px;
+  height: 32px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+/* Button variants */
+.btn-primary {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-primary), black 10%);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.btn-success {
+  background-color: var(--md-success);
+  color: var(--md-on-success);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--md-success-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.btn-secondary {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--md-secondary-container), black 10%);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.btn-outlined {
+  background-color: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.btn-outlined:hover:not(:disabled) {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+/* Disabled state for all buttons */
+.btn-base:disabled {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Icon styling within buttons */
+.btn-base svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized);
+}
+
+.btn-base:hover:not(:disabled) svg {
+  transform: translateY(1px);
+}
+
+/* Specific download button classes */
+.download-btn-primary {
+  /* Primary download button - main download center */
+}
+
+.download-btn-success {
+  /* Success download button - completed downloads */
+}
+
+.download-btn-secondary {
+  /* Secondary download button - alternative downloads */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .btn-large {
+    padding: 10px 20px;
+    height: 40px;
+    min-width: 140px;
+    font-size: var(--md-label-medium-size);
+  }
+
+  .btn-medium {
+    padding: 8px 16px;
+    height: 36px;
+    min-width: 100px;
+    font-size: var(--md-label-small-size);
+  }
+
+  .btn-small {
+    padding: 6px 12px;
+    height: 32px;
+    min-width: 80px;
+    font-size: 0.75rem;
+  }
+
+  .btn-compact {
+    padding: 4px 8px;
+    height: 28px;
+    min-width: 60px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ========================================
+   CENTRALIZED RADIO SYSTEM - Material Design 3
+   ======================================== */
+
+/* Base radio group styles */
+.radio-group-base {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radio-group-vertical {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-group-horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.radio-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.radio-group-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Base radio option styles */
+.radio-option-base {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+  user-select: none;
+}
+
+/* Hide default radio input */
+.radio-option-base input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+/* Radio option variants */
+.radio-option-card {
+  padding: 8px 12px;
+  border-radius: var(--md-shape-medium);
+  background-color: var(--md-surface-2);
+  border: 1px solid transparent;
+}
+
+.radio-option-card:hover {
+  background-color: var(--md-surface-3);
+  transform: translateY(-1px);
+}
+
+.radio-option-pill {
+  padding: 8px 16px;
+  height: 36px;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.radio-option-pill:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.radio-option-minimal {
+  padding: 4px 8px;
+  border-radius: var(--md-shape-small);
+}
+
+.radio-option-minimal:hover {
+  background-color: var(--md-surface-2);
+}
+
+/* Checked states */
+.radio-option-base input[type="radio"]:checked + .radio-option-card,
+.radio-option-card.checked {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.radio-option-base input[type="radio"]:checked + .radio-option-pill,
+.radio-option-pill.checked {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.radio-option-base input[type="radio"]:checked + .radio-option-minimal,
+.radio-option-minimal.checked {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+/* Disabled states */
+.radio-option-base.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio-option-base input[type="radio"]:disabled + label,
+.radio-option-base.disabled label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Focus states for accessibility */
+.radio-option-base input[type="radio"]:focus + label {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive radio styles */
+@media (max-width: 768px) {
+  .radio-group-horizontal {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .radio-group-grid,
+  .radio-group-two-columns {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .radio-option-pill {
+    padding: 6px 12px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .radio-option-card {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .radio-option-card,
+  .radio-option-pill,
+  .radio-option-minimal {
+    border-width: 2px;
+  }
+
+  .radio-option-base input[type="radio"]:checked + label {
+    border-width: 2px;
+    border-color: var(--md-primary);
+  }
+}

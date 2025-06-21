@@ -233,7 +233,7 @@
   margin-top: 1rem;
   padding: 1rem;
   background-color: var(--background-secondary);
-  border-radius: 6px;
+  border-radius: 24px;
   transition: background-color var(--transition-speed);
   border-bottom: 1px solid var(--border-color);;
 }
@@ -342,7 +342,6 @@
   padding: 12px 14px;
   background-color: var(--md-surface-1);
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
-  box-shadow: var(--md-elevation-level1);
   position: relative;
 }
 
@@ -355,12 +354,8 @@
 .gemini-key-item.active {
   border-color: var(--md-primary);
   background-color: color-mix(in srgb, var(--md-surface-1), var(--md-primary) 5%);
-  box-shadow: var(--md-elevation-level2);
 }
 
-.gemini-key-item:hover {
-  box-shadow: var(--md-elevation-level2);
-}
 
 .gemini-key-content {
   display: flex;

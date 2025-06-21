@@ -20,12 +20,13 @@
   box-shadow: var(--md-elevation-level3);
   width: 90%;
   max-width: 500px;
+  height: 600px; /* Fixed height to prevent layout shifts */
   max-height: 90vh;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   animation: modal-appear 0.3s var(--md-easing-emphasized);
   border: 1px solid var(--md-outline-variant);
+  overflow: hidden; /* Ensure header and footer don't overflow border radius */
 }
 
 @keyframes modal-appear {
@@ -46,6 +47,7 @@
   align-items: center;
   padding: 16px 24px;
   background-color: var(--md-surface-2);
+  border-radius: var(--md-shape-large) var(--md-shape-large) 0 0; /* Round top corners only */
 }
 
 .modal-header h3 {
@@ -80,6 +82,9 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* Allow flex item to shrink below content size */
 }
 
 /* Option groups */
@@ -89,6 +94,49 @@
   gap: 12px;
 }
 
+/* Constrain specific option groups to prevent layout shifts */
+.option-group:has(.radio-group-two-columns),
+.option-group.two-column-layout {
+  min-height: 120px; /* Ensure consistent height for 2-column radio groups */
+  transition: min-height 0.3s var(--md-easing-standard);
+}
+
+.option-group:has(.radio-group-horizontal),
+.option-group.horizontal-layout {
+  min-height: 60px; /* Ensure consistent height for horizontal radio groups */
+  transition: min-height 0.3s var(--md-easing-standard);
+}
+
+/* Fallback for browsers without :has() support */
+.option-group.constrained-height {
+  min-height: 120px;
+  transition: min-height 0.3s var(--md-easing-standard);
+}
+
+/* Content area height constraints to prevent tab switching layout shifts */
+.modal-content {
+  min-height: 400px; /* Ensure minimum content height */
+}
+
+/* Tab-specific content areas */
+.tab-content-area {
+  min-height: 280px; /* Reserve space for tab-specific content */
+  transition: all 0.3s var(--md-easing-standard);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Ensure consistent spacing for empty states */
+.tab-content-area:empty {
+  min-height: 280px;
+}
+
+/* Smooth transitions for radio group changes */
+.radio-group-base {
+  transition: all 0.3s var(--md-easing-standard);
+}
+
 .option-group h4 {
   margin: 0;
   font-size: var(--md-title-small-size);
@@ -96,24 +144,7 @@
   color: var(--md-on-surface);
 }
 
-/* Radio groups */
-.radio-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: var(--md-shape-medium);
-  background-color: var(--md-surface-2);
-  transition: background-color 0.2s;
-  user-select: none;
-}
+/* Radio styles moved to centralized radio system in components/buttons.css */
 
 /* Info icon for radio options */
 .info-icon-container {
@@ -138,18 +169,7 @@
   color: var(--md-primary);
 }
 
-.radio-option:hover {
-  background-color: var(--md-surface-3);
-}
-
-.radio-option input {
-  margin: 0;
-}
-
-.radio-option.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Radio option styles moved to centralized system */
 
 /* Tabs */
 .tabs {
@@ -195,6 +215,7 @@
   border-top: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-2);
   font-family: 'Open Sans', sans-serif;
+  border-radius: 0 0 var(--md-shape-large) var(--md-shape-large); /* Round bottom corners only */
 }
 
 /* Buttons */
@@ -262,12 +283,25 @@
 @media (max-width: 600px) {
   .download-options-modal {
     width: 95%;
+    height: 80vh; /* Maintain fixed height on mobile */
     max-height: 80vh;
   }
 
-  .radio-group {
-    flex-direction: column;
+  .radio-group-base,
+  .radio-group-two-columns {
+    grid-template-columns: 1fr;
     gap: 8px;
+  }
+
+  /* Adjust min-heights for mobile */
+  .option-group:has(.radio-group-two-columns),
+  .option-group.two-column-layout,
+  .option-group.constrained-height {
+    min-height: 140px; /* Slightly taller on mobile due to stacking */
+  }
+
+  .tab-content-area {
+    min-height: 320px; /* Slightly taller on mobile */
   }
 
   .modal-footer {

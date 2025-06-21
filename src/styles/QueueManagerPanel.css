@@ -109,8 +109,7 @@
 
 .empty-queue p {
   margin: 0;
-  font-size: 0.85rem;
-  max-width: 280px;
+
   line-height: 1.4;
   color: var(--text-secondary);
 }
@@ -346,28 +345,7 @@
   font-weight: 500;
 }
 
-.download-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--md-success);
-  color: var(--md-on-success);
-  text-decoration: none;
-  border: none;
-  border-radius: 32px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.download-btn:hover {
-  background: var(--md-success-dark);
-  transform: translateY(-1px);
-  color: var(--md-on-success);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
+/* Download button styles moved to centralized button system in components/buttons.css */
 
 /* Item Actions */
 .item-actions {
@@ -505,7 +483,7 @@
 .remove-btn:focus,
 .cancel-btn:focus,
 .clear-queue-btn:focus,
-.download-btn:focus {
+.download-btn-success:focus {
   outline: 2px solid var(--md-primary);
   outline-offset: 2px;
 }
