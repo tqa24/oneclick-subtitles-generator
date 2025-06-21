@@ -19,8 +19,8 @@ function loadUserPreferences() {
   try {
     // Load resolution preference
     const savedResolution = localStorage.getItem('preferredResolution');
-    const validResolutions = ['480p', '720p', '1080p', '2K'];
-    const resolution = validResolutions.includes(savedResolution || '') ? savedResolution : '2K';
+    const validResolutions = ['480p', '720p', '1080p', '1440p'];
+    const resolution = validResolutions.includes(savedResolution || '') ? savedResolution : '1080p';
 
     // Load frame rate preference
     const savedFrameRate = localStorage.getItem('preferredFrameRate');
@@ -29,7 +29,7 @@ function loadUserPreferences() {
     return { resolution, frameRate };
   } catch (error) {
     console.error('Error loading preferences from localStorage:', error);
-    return { resolution: '2K' as const, frameRate: 60 as const };
+    return { resolution: '1080p' as const, frameRate: 60 as const };
   }
 }
 
@@ -50,7 +50,7 @@ export function createEmptyWorkspace(id: string, name: string): WorkspaceTab {
   subtitlesFile: null,
   metadata: {
     videoType: 'Subtitled Video',
-    resolution: resolution as '480p' | '720p' | '1080p' | '2K',
+    resolution: resolution as '480p' | '720p' | '1080p' | '1440p',
     frameRate: frameRate as 30 | 60,
     originalAudioVolume: 100,
     narrationVolume: 100

@@ -132,7 +132,7 @@ function parseYtDlpFormats(formatOutput) {
       if (height >= 2160) {
         qualityDescription = `${height}p (4K)`;
       } else if (height >= 1440) {
-        qualityDescription = `${height}p (2K)`;
+        qualityDescription = `${height}p (1440p)`;
       } else if (height >= 1080) {
         qualityDescription = `${height}p (Full HD)`;
       } else if (height >= 720) {

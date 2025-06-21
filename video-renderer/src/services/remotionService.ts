@@ -32,7 +32,7 @@ export class RemotionService {
 
   private defaultMetadata = {
     videoType: 'Subtitled Video' as const,
-    resolution: '2K' as const,
+    resolution: '1080p' as const,
     frameRate: 60 as const,
     subtitleLineThreshold: 41,
     originalAudioVolume: 100,

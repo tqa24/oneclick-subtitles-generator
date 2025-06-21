@@ -267,7 +267,7 @@ app.post('/render', async (req, res) => {
       lyrics,
       metadata = {
         videoType: 'Subtitled Video',
-        resolution: '2K',
+        resolution: '1080p',
         frameRate: 60,
         originalAudioVolume: 100,
         narrationVolume: 100
@@ -368,9 +368,6 @@ app.post('/render', async (req, res) => {
           case '1440p':
             targetHeight = 1440;
             break;
-          case '2K':
-            targetHeight = 1080;
-            break;
           case '4K':
             targetHeight = 2160;
             break;
@@ -413,10 +410,6 @@ app.post('/render', async (req, res) => {
             width = 2560;
             height = 1440;
             break;
-          case '2K':
-            width = 2048;
-            height = 1080;
-            break;
           case '4K':
             width = 3840;
             height = 2160;
@@ -450,10 +443,6 @@ app.post('/render', async (req, res) => {
         case '1440p':
           width = 2560;
           height = 1440;
-          break;
-        case '2K':
-          width = 2048;
-          height = 1080;
           break;
         case '4K':
           width = 3840;

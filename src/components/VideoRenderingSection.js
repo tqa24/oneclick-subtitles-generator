@@ -1584,7 +1584,6 @@ const VideoRenderingSection = ({
                 <option value="720p">720p</option>
                 <option value="1080p">1080p</option>
                 <option value="1440p">1440p</option>
-                <option value="2K">2K</option>
                 <option value="4K">4K</option>
                 <option value="8K">8K</option>
               </select>

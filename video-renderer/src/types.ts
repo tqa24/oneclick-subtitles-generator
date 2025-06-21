@@ -7,12 +7,12 @@ export interface SubtitleEntry {
 // Keep LyricEntry as alias for backward compatibility
 export type LyricEntry = SubtitleEntry;
 
-export type Resolution = '360p' | '480p' | '720p' | '1080p' | '1440p' | '2K' | '4K' | '8K';
+export type Resolution = '360p' | '480p' | '720p' | '1080p' | '1440p' | '4K' | '8K';
 export type FrameRate = 24 | 25 | 30 | 50 | 60 | 120;
 
 export interface VideoMetadata {
   videoType: 'Subtitled Video';
-  resolution: Resolution; // Video resolution (1080p or 2K)
+  resolution: Resolution; // Video resolution (1080p, 1440p, 4K, etc.)
   frameRate: FrameRate; // Frame rate (30 or 60 fps)
   originalAudioVolume: number; // Volume for original audio/video (0-100)
   narrationVolume: number; // Volume for narration audio (0-100)

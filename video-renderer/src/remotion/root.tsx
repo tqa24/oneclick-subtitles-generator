@@ -12,7 +12,7 @@ const sampleSubtitles: LyricEntry[] = [
 
 const defaultMetadata: VideoMetadata = {
   videoType: 'Subtitled Video',
-  resolution: '2K',
+  resolution: '1080p',
   frameRate: 60,
   originalAudioVolume: 100,
   narrationVolume: 100

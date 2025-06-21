@@ -150,9 +150,6 @@ const RemotionVideoPreview = ({
         case '1440p':
           targetHeight = 1440;
           break;
-        case '2K':
-          targetHeight = 1080;
-          break;
         case '4K':
           targetHeight = 2160;
           break;
@@ -187,8 +184,6 @@ const RemotionVideoPreview = ({
         return { width: 1280, height: 720 };
       case '1440p':
         return { width: 2560, height: 1440 };
-      case '2K':
-        return { width: 2048, height: 1080 };
       case '4K':
         return { width: 3840, height: 2160 };
       case '8K':
