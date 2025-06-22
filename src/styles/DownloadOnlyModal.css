@@ -132,6 +132,20 @@
   letter-spacing: 0.1px;
 }
 
+/* Type Options Row - Video and Audio on same line */
+.type-options-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Ensure quality selector appears below the grid without layout shifts */
+.download-options {
+  display: flex;
+  flex-direction: column;
+}
+
 .option-item {
   display: flex;
   align-items: flex-start;
@@ -200,11 +214,14 @@
 
 /* Quality Selector - flat design with clean indentation */
 .quality-selector {
-  margin-top: 12px;
+  margin-top: 0;
   padding: 10px 14px;
   background-color: var(--md-surface-3);
   border-radius: 12px;
   border-left: 3px solid rgba(var(--md-on-surface-rgb), 0.2);
+  width: 100%;
+  box-sizing: border-box;
+  clear: both;
 }
 
 .quality-selector-title {
@@ -425,6 +442,11 @@
   .modal-actions {
     padding: 16px 20px;
     flex-direction: column;
+    gap: 8px;
+  }
+
+  .type-options-row {
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 

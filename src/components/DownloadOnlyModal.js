@@ -198,48 +198,54 @@ const DownloadOnlyModal = ({
 
         {/* Content */}
         <div className="modal-content">
-          {/* Video Info */}
-          <div className="video-info">
-            <div className="info-row">
-              <span className="label">{t('downloadOnly.title', 'Title')}</span>
-              <span className="value">{videoInfo?.title || 'Unknown'}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">{t('downloadOnly.source', 'Source')}</span>
-              <span className="value">{videoInfo?.source || 'Unknown'}</span>
-            </div>
-            <div className="info-row">
-              <span className="label">{t('downloadOnly.url', 'URL')}</span>
-              <span className="value">{videoInfo?.url || 'Unknown'}</span>
-            </div>
-          </div>
-
           {/* Download Type Selection */}
           <div className="download-options">
-            <h4>{t('downloadOnly.chooseType', 'Choose download type:')}</h4>
-
-            {/* Video Option */}
-            <label className="option-item">
-              <input
-                type="radio"
-                name="download-type"
-                value="video"
-                checked={selectedType === 'video'}
-                onChange={(e) => setSelectedType(e.target.value)}
-                disabled={isDownloading}
-              />
-              <div className="option-content">
-                <div className="option-title">
-                  <FiVideo size={16} />
-                  {t('downloadOnly.video', 'Video')}
+            {/* Type Options Row */}
+            <div className="type-options-row">
+              {/* Video Option */}
+              <label className="option-item">
+                <input
+                  type="radio"
+                  name="download-type"
+                  value="video"
+                  checked={selectedType === 'video'}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  disabled={isDownloading}
+                />
+                <div className="option-content">
+                  <div className="option-title">
+                    <FiVideo size={16} />
+                    {t('downloadOnly.video', 'Video')}
+                  </div>
+                  <div className="option-description">
+                    {t('downloadOnly.videoDesc', 'Download video with selected quality')}
+                  </div>
                 </div>
-                <div className="option-description">
-                  {t('downloadOnly.videoDesc', 'Download video with selected quality')}
-                </div>
-              </div>
-            </label>
+              </label>
 
-            {/* Quality Selector for Video */}
+              {/* Audio Option */}
+              <label className="option-item">
+                <input
+                  type="radio"
+                  name="download-type"
+                  value="audio"
+                  checked={selectedType === 'audio'}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  disabled={isDownloading}
+                />
+                <div className="option-content">
+                  <div className="option-title">
+                    <FiMusic size={16} />
+                    {t('downloadOnly.audio', 'Audio')}
+                  </div>
+                  <div className="option-description">
+                    {t('downloadOnly.audioDesc', 'Download audio only (MP3 format)')}
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Quality Selector for Video - Outside the grid */}
             {selectedType === 'video' && (
               <div className="quality-selector">
                 {isScanning ? (
@@ -274,47 +280,7 @@ const DownloadOnlyModal = ({
                 )}
               </div>
             )}
-
-            {/* Audio Option */}
-            <label className="option-item">
-              <input
-                type="radio"
-                name="download-type"
-                value="audio"
-                checked={selectedType === 'audio'}
-                onChange={(e) => setSelectedType(e.target.value)}
-                disabled={isDownloading}
-              />
-              <div className="option-content">
-                <div className="option-title">
-                  <FiMusic size={16} />
-                  {t('downloadOnly.audio', 'Audio')}
-                </div>
-                <div className="option-description">
-                  {t('downloadOnly.audioDesc', 'Download audio only (MP3 format)')}
-                </div>
-              </div>
-            </label>
           </div>
-
-          {/* Progress Bar */}
-          {isDownloading && (
-            <div className="download-progress-container">
-              <div className="download-progress-bar">
-                <div
-                  className="download-progress-fill"
-                  style={{ width: `${downloadProgress}%` }}
-                ></div>
-              </div>
-              <div className="download-progress-text">
-                {downloadProgress}% - {t('downloadOnly.downloading', 'Downloading {{type}}', { 
-                  type: selectedType === 'video' ? 
-                    `${selectedQuality?.quality || 'video'}` : 
-                    'audio' 
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
@@ -332,8 +298,8 @@ const DownloadOnlyModal = ({
             disabled={!canDownload() || isDownloading}
           >
             <FiDownload size={16} />
-            {isDownloading ? 
-              t('downloadOnly.downloading', 'Downloading...') : 
+            {isDownloading ?
+              `${t('downloadOnly.downloading', 'Downloading...')} ${downloadProgress}%` :
               t('downloadOnly.download', 'Download')
             }
           </button>
