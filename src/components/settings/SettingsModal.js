@@ -130,7 +130,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-preview-05-20'); // Default to Gemini 2.5 Flash
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-lite-preview-06-17'); // Default to Gemini 2.5 Flash Lite
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
@@ -178,7 +178,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeApiKey: '',
     geniusApiKey: '',
     segmentDuration: 5,
-    geminiModel: 'gemini-2.0-flash',
+    geminiModel: 'gemini-2.5-flash',
     timeFormat: 'hms',
     showWaveform: true,
     segmentOffsetCorrection: -3.0,
@@ -187,7 +187,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.5-flash-preview-05-20',
+    videoAnalysisModel: 'gemini-2.5-flash-lite-preview-06-17',
     videoAnalysisTimeout: '20',
     autoSelectDefaultPreset: false,
     optimizeVideos: true,
@@ -210,17 +210,31 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Load saved settings on component mount
   useEffect(() => {
     const loadSettings = () => {
+      // Check for settings migration
+      const settingsVersion = localStorage.getItem('settings_version') || '1.0';
+
+      // Migration for video analysis model default change
+      if (settingsVersion === '1.0') {
+        const currentVideoAnalysisModel = localStorage.getItem('video_analysis_model');
+        // If user has the old default, update it to the new default
+        if (currentVideoAnalysisModel === 'gemini-2.0-flash') {
+          localStorage.setItem('video_analysis_model', 'gemini-2.5-flash-lite-preview-06-17');
+        }
+        // Update settings version
+        localStorage.setItem('settings_version', '1.1');
+      }
+
       // Get the current active Gemini API key from the key manager
       const savedGeminiKey = getCurrentKey() || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
       const savedGeniusKey = localStorage.getItem('genius_token') || '';
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
-      const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+      const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to Flash
+      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.5-flash-lite-preview-06-17'; // Default to 2.5 Flash Lite
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;

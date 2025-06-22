@@ -27,7 +27,7 @@ import { getNextAvailableKey, blacklistKey } from './keyManager';
 export const callGeminiApi = async (input, inputType, options = {}) => {
     // Extract options
     const { userProvidedSubtitles } = options;
-    const MODEL = localStorage.getItem('gemini_model') || "gemini-2.0-flash";
+    const MODEL = localStorage.getItem('gemini_model') || "gemini-2.5-flash";
 
     // Get the next available API key
     const geminiApiKey = getNextAvailableKey();

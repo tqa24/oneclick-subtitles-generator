@@ -186,7 +186,7 @@ export const useSubtitles = (t) => {
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
             const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const strongModels = ['gemini-2.5-pro', 'gemini-2.0-flash-thinking-exp-01-21'];
             const isUsingStrongModel = strongModels.includes(currentModel);
 
             // Show different success message based on model
@@ -338,7 +338,7 @@ export const useSubtitles = (t) => {
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
             const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const strongModels = ['gemini-2.5-pro', 'gemini-2.0-flash-thinking-exp-01-21'];
             const isUsingStrongModel = strongModels.includes(currentModel);
 
             // Show different success message based on model

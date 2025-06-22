@@ -26,6 +26,7 @@
   "waitingForNextChunk": "Đang chờ {{seconds}} giây trước khi dịch phần tiếp theo...",
   "modelGemini25Pro": "độ dài output 65536 tokens (thường không cần chia)",
   "modelGemini25Flash": "độ dài output 65536 tokens (thường không cần chia)",
+  "modelGemini25FlashLite": "độ dài output 65536 tokens (thường không cần chia)",
   "modelGemini20Flash": "độ dài ouput 8192 tokens (nên chia khi dịch)",
   "modelGemini20FlashLite": "độ dài ouput 8192 tokens (nên chia khi dịch)",
   "splitDuration": "Thời gian chia",

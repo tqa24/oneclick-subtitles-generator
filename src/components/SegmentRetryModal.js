@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiCheck, FiZap, FiStar, FiCpu, FiArrowRight } from 'react-icons/fi';
+import { FiX, FiCheck, FiZap, FiStar, FiCpu, FiArrowRight, FiTrendingUp, FiActivity } from 'react-icons/fi';
 import '../styles/SegmentRetryModal.css';
 
 /**
@@ -38,15 +38,16 @@ const SegmentRetryModal = ({
   // Model options with their icons and colors
   const modelOptions = [
     {
-      id: 'gemini-2.5-pro-exp-03-25',
+      id: 'gemini-2.5-pro',
       name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
       description: t('models.bestAccuracy', 'Best accuracy'),
       icon: <FiStar className="model-icon star-icon" />,
       color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)',
+      isPaid: true
     },
     {
-      id: 'gemini-2.5-flash-preview-05-20',
+      id: 'gemini-2.5-flash',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
       description: t('models.smarterFaster', 'Smarter & faster'),
       icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,
@@ -54,10 +55,18 @@ const SegmentRetryModal = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
+      id: 'gemini-2.5-flash-lite-preview-06-17',
+      name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
+      description: t('models.fastestAdvanced', 'Fastest 2.5 model'),
+      icon: <FiTrendingUp className="model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }} />,
+      color: 'var(--md-tertiary)',
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+    },
+    {
       id: 'gemini-2.0-flash',
       name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
       description: t('models.balancedModel', 'Balanced'),
-      icon: <FiZap className="model-icon zap-icon" />,
+      icon: <FiActivity className="model-icon activity-icon" />,
       color: 'var(--md-primary)',
       bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
     },
@@ -76,7 +85,7 @@ const SegmentRetryModal = ({
       // Reset to first step when modal opens
       setCurrentStep(1);
       // Set default model to current model
-      setSelectedModel(localStorage.getItem('gemini_model') || 'gemini-2.0-flash');
+      setSelectedModel(localStorage.getItem('gemini_model') || 'gemini-2.5-flash');
       // Reset subtitle options
       setSubtitlesOption('none');
       setCustomSubtitles('');
@@ -209,7 +218,10 @@ const SegmentRetryModal = ({
                     </div>
                     <div className="model-option-icon">{model.icon}</div>
                     <div className="model-option-text">
-                      <div className="model-option-name">{model.name}</div>
+                      <div className="model-option-name">
+                        {model.name}
+                        {model.isPaid && <span className="paid-badge">paid</span>}
+                      </div>
                       <div className="model-option-description">{model.description}</div>
                     </div>
                   </div>
