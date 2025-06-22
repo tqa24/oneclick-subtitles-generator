@@ -130,13 +130,20 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-preview-05-20'); // Default to Gemini 2.5 Flash
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-lite-preview-06-17'); // Default to Gemini 2.5 Flash Lite
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(true); // Default to optimized video in preview
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
+
+  // Thinking budget settings for each model
+  const [thinkingBudgets, setThinkingBudgets] = useState({
+    'gemini-2.5-pro': 1024, // Moderate thinking budget
+    'gemini-2.5-flash': 512, // Lower thinking budget
+    'gemini-2.5-flash-lite-preview-06-17': 0 // Disabled by default
+  });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
 
   // Save active tab to localStorage when it changes
@@ -178,7 +185,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeApiKey: '',
     geniusApiKey: '',
     segmentDuration: 5,
-    geminiModel: 'gemini-2.0-flash',
+    geminiModel: 'gemini-2.5-flash',
     timeFormat: 'hms',
     showWaveform: true,
     segmentOffsetCorrection: -3.0,
@@ -187,12 +194,17 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.5-flash-preview-05-20',
+    videoAnalysisModel: 'gemini-2.5-flash-lite-preview-06-17',
     videoAnalysisTimeout: '20',
     autoSelectDefaultPreset: false,
     optimizeVideos: true,
     optimizedResolution: '360p',
-    useOptimizedPreview: true
+    useOptimizedPreview: true,
+    thinkingBudgets: {
+      'gemini-2.5-pro': 1024,
+      'gemini-2.5-flash': 512,
+      'gemini-2.5-flash-lite-preview-06-17': 0
+    }
   });
 
   // Listen for system theme changes and apply initial theme
@@ -210,17 +222,31 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   // Load saved settings on component mount
   useEffect(() => {
     const loadSettings = () => {
+      // Check for settings migration
+      const settingsVersion = localStorage.getItem('settings_version') || '1.0';
+
+      // Migration for video analysis model default change
+      if (settingsVersion === '1.0') {
+        const currentVideoAnalysisModel = localStorage.getItem('video_analysis_model');
+        // If user has the old default, update it to the new default
+        if (currentVideoAnalysisModel === 'gemini-2.0-flash') {
+          localStorage.setItem('video_analysis_model', 'gemini-2.5-flash-lite-preview-06-17');
+        }
+        // Update settings version
+        localStorage.setItem('settings_version', '1.1');
+      }
+
       // Get the current active Gemini API key from the key manager
       const savedGeminiKey = getCurrentKey() || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
       const savedGeniusKey = localStorage.getItem('genius_token') || '';
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
-      const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+      const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to Flash
+      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.5-flash-lite-preview-06-17'; // Default to 2.5 Flash Lite
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
@@ -228,6 +254,25 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false'; // Default to true if not set
+
+      // Load thinking budgets from localStorage
+      const savedThinkingBudgets = (() => {
+        try {
+          const stored = localStorage.getItem('thinking_budgets');
+          return stored ? JSON.parse(stored) : {
+            'gemini-2.5-pro': 1024,
+            'gemini-2.5-flash': 512,
+            'gemini-2.5-flash-lite-preview-06-17': 0
+          };
+        } catch (error) {
+          console.error('Error parsing thinking budgets from localStorage:', error);
+          return {
+            'gemini-2.5-pro': 1024,
+            'gemini-2.5-flash': 512,
+            'gemini-2.5-flash-lite-preview-06-17': 0
+          };
+        }
+      })();
       const { clientId, clientSecret } = getClientCredentials();
       const authenticated = hasValidTokens();
 
@@ -253,6 +298,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOptimizeVideos(savedOptimizeVideos);
       setOptimizedResolution(savedOptimizedResolution);
       setUseOptimizedPreview(savedUseOptimizedPreview);
+      setThinkingBudgets(savedThinkingBudgets);
       setHasChanges(false); // Reset changes flag when loading settings
 
       // Set original settings to match loaded settings
@@ -275,7 +321,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         autoSelectDefaultPreset: savedAutoSelectDefaultPreset,
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
-        useOptimizedPreview: savedUseOptimizedPreview
+        useOptimizedPreview: savedUseOptimizedPreview,
+        thinkingBudgets: savedThinkingBudgets
       });
 
       // Mark settings as loaded
@@ -376,13 +423,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       autoSelectDefaultPreset !== originalSettings.autoSelectDefaultPreset ||
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
-      useOptimizedPreview !== originalSettings.useOptimizedPreview;
+      useOptimizedPreview !== originalSettings.useOptimizedPreview ||
+      JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets);
 
     setHasChanges(settingsChanged);
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, originalSettings]);
+      optimizeVideos, optimizedResolution, useOptimizedPreview, thinkingBudgets, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -402,6 +450,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
+    localStorage.setItem('thinking_budgets', JSON.stringify(thinkingBudgets));
     // Save the Gemini API key to the key manager
     // The key manager will handle updating the legacy key for backward compatibility
     const allKeys = getAllKeys();
@@ -466,7 +515,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       autoSelectDefaultPreset,
       optimizeVideos,
       optimizedResolution,
-      useOptimizedPreview
+      useOptimizedPreview,
+      thinkingBudgets
     });
 
     // Reset changes flag and mark settings as loaded
@@ -651,6 +701,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setOptimizedResolution={setOptimizedResolution}
               useOptimizedPreview={useOptimizedPreview}
               setUseOptimizedPreview={setUseOptimizedPreview}
+              thinkingBudgets={thinkingBudgets}
+              setThinkingBudgets={setThinkingBudgets}
             />
           </div>
 

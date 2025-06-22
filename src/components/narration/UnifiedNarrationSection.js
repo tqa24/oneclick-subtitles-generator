@@ -101,6 +101,7 @@ const UnifiedNarrationSection = ({
     isGroupingSubtitles, setIsGroupingSubtitles,
     groupingIntensity, setGroupingIntensity,
     selectedNarrationModel,
+    setSelectedNarrationModel,
 
     // Helper functions
     updateReferenceAudio
@@ -381,6 +382,11 @@ const UnifiedNarrationSection = ({
 
               if (modelError) {
                 console.warn(`Model availability error: ${modelError}`);
+              }
+
+              // Update the selected narration model
+              if (modelId) {
+                setSelectedNarrationModel(modelId);
               }
 
               // Update the appropriate language state

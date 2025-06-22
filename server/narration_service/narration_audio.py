@@ -3,12 +3,10 @@ import uuid
 import base64
 import logging
 import re
-import json
 import subprocess
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
-from .narration_config import REFERENCE_AUDIO_DIR, OUTPUT_AUDIO_DIR
-from .narration_gemini import transcribe_with_gemini, transcribe_with_gemini_base64
+from .narration_config import REFERENCE_AUDIO_DIR
 from .narration_language import is_text_english
 
 logger = logging.getLogger(__name__)
@@ -34,7 +32,6 @@ def process_base64_audio_reference():
 
         audio_data_base64 = data.get('audio_data') if isinstance(data, dict) else None
         reference_text = data.get('reference_text', '') if isinstance(data, dict) else ''
-        should_transcribe = str(data.get('transcribe', 'false')).lower() == 'true' if isinstance(data, dict) else False
 
 
 
@@ -84,32 +81,9 @@ def process_base64_audio_reference():
         is_english = True # Default assumption
         language = "Unknown" # Default
 
-        # Transcribe if requested OR if no reference text was provided
-        if should_transcribe or not final_reference_text:
-
-            # Use the already decoded base64 data for speed
-            transcription_result = transcribe_with_gemini_base64(audio_data_base64)
-
-            final_reference_text = transcription_result.get("text", "")
-            is_english = transcription_result.get("is_english", True)
-            language = transcription_result.get("language", "Error during transcription") # Provide feedback
-
-            if not final_reference_text and "Error" not in language:
-                logger.warning("Gemini transcription returned empty text.")
-                language = "Unknown (Empty Transcription)"
-            elif "Error" in language:
-                logger.error(f"Gemini transcription failed: {language}")
-                # Keep provided text if any, otherwise it remains empty
-                final_reference_text = reference_text
-            else:
-                # Transcription successful
-                logger.info("Gemini transcription successful")
-
-        else:
-
-            # Estimate language from provided text
-            is_english = is_text_english(final_reference_text)
-            language = "English" if is_english else "Non-English"
+        # Skip transcription - handled by frontend
+        is_english = is_text_english(final_reference_text) if final_reference_text else True
+        language = "English" if is_english else "Non-English" if final_reference_text else "Unknown"
 
 
 
@@ -156,8 +130,6 @@ def upload_reference_audio():
 
         # Get reference text from form data
         reference_text = request.form.get('reference_text', '')
-        # Allow explicit 'transcribe' flag from form data as well
-        should_transcribe_form = request.form.get('transcribe', 'false').lower() == 'true'
 
 
         # --- Transcription Logic ---
@@ -165,29 +137,9 @@ def upload_reference_audio():
         is_english = True
         language = "Unknown"
 
-        # Transcribe if flag set OR if no text provided
-        if should_transcribe_form or not final_reference_text:
-
-            # Transcribe using the saved file path
-            transcription_result = transcribe_with_gemini(filepath)
-            final_reference_text = transcription_result.get("text", "")
-            is_english = transcription_result.get("is_english", True)
-            language = transcription_result.get("language", "Error during transcription")
-
-            if not final_reference_text and "Error" not in language:
-                logger.warning("Gemini transcription returned empty text for uploaded file.")
-                language = "Unknown (Empty Transcription)"
-            elif "Error" in language:
-                logger.error(f"Gemini transcription failed for uploaded file: {language}")
-                final_reference_text = reference_text # Fallback to provided text if any
-            else:
-                # Transcription successful
-                logger.info("Gemini transcription successful for uploaded file")
-
-        else:
-
-            is_english = is_text_english(final_reference_text)
-            language = "English" if is_english else "Non-English"
+        # Skip transcription - handled by frontend
+        is_english = is_text_english(final_reference_text) if final_reference_text else True
+        language = "English" if is_english else "Non-English" if final_reference_text else "Unknown"
 
 
         return jsonify({
@@ -259,7 +211,6 @@ def record_reference_audio():
 
 
         reference_text = request.form.get('reference_text', '')
-        should_transcribe = request.form.get('transcribe', 'false').lower() == 'true'
 
 
         # --- Transcription Logic ---
@@ -267,17 +218,9 @@ def record_reference_audio():
         is_english = True
         language = "Unknown"
 
-        if should_transcribe or not final_reference_text:
-
-            transcription_result = transcribe_with_gemini(filepath)
-            final_reference_text = transcription_result.get("text", "")
-            is_english = transcription_result.get("is_english", True)
-            language = transcription_result.get("language", "Error during transcription")
-            # Logging handled within transcribe function
-        else:
-
-            is_english = is_text_english(final_reference_text)
-            language = "English" if is_english else "Non-English"
+        # Skip transcription - handled by frontend
+        is_english = is_text_english(final_reference_text) if final_reference_text else True
+        language = "English" if is_english else "Non-English" if final_reference_text else "Unknown"
 
 
         return jsonify({
@@ -306,7 +249,6 @@ def process_base64_audio_reference_from_override():
      # For now, keep it simple:
      audio_data_base64 = data.get('audio_data')
      reference_text = data.get('reference_text', '')
-     should_transcribe = str(data.get('transcribe', 'false')).lower() == 'true'
 
      # (Paste the core decoding, saving, and transcription logic from process_base64_audio_reference here)
      # ... [omitted for brevity - this needs careful copy/paste or refactoring] ...
@@ -347,7 +289,6 @@ def extract_audio_segment():
         video_path = data.get('video_path')
         start_time_raw = data.get('start_time') # Can be seconds or HH:MM:SS.ms
         end_time_raw = data.get('end_time')     # Can be seconds or HH:MM:SS.ms
-        should_transcribe = data.get('transcribe', True)
 
 
 
@@ -434,21 +375,10 @@ def extract_audio_segment():
             if os.path.exists(output_path): os.remove(output_path)
             return jsonify({'error': f'ffmpeg failed: {e.stderr[:200]}...'}), 500
 
-        # --- Transcription Logic ---
+        # --- Skip transcription - handled by frontend ---
         reference_text = ""
         is_english = True
-        language = "Unknown"
-
-        if should_transcribe:
-
-            transcription_result = transcribe_with_gemini(output_path)
-            reference_text = transcription_result.get("text", "")
-            is_english = transcription_result.get("is_english", True)
-            language = transcription_result.get("language", "Error during transcription")
-            # Logging handled within transcribe function
-        else:
-            # Cannot determine language without transcription
-            language = "Unknown (No Transcription)"
+        language = "Unknown (No Transcription)"
 
         return jsonify({
             'success': True,

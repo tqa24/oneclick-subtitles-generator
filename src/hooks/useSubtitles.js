@@ -186,7 +186,7 @@ export const useSubtitles = (t) => {
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
             const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const strongModels = ['gemini-2.5-pro', 'gemini-2.0-flash-thinking-exp-01-21'];
             const isUsingStrongModel = strongModels.includes(currentModel);
 
             // Show different success message based on model
@@ -338,7 +338,7 @@ export const useSubtitles = (t) => {
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
             const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-            const strongModels = ['gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-thinking-exp-01-21'];
+            const strongModels = ['gemini-2.5-pro', 'gemini-2.0-flash-thinking-exp-01-21'];
             const isUsingStrongModel = strongModels.includes(currentModel);
 
             // Show different success message based on model
@@ -386,7 +386,13 @@ export const useSubtitles = (t) => {
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
         // Extract options
-        const { userProvidedSubtitles } = options;
+        const { userProvidedSubtitles, modelId } = options;
+
+        if (modelId) {
+            console.log(`[RetrySegment] Using custom model for segment ${segmentIndex + 1}: ${modelId}`);
+        } else {
+            console.log(`[RetrySegment] Using default model for segment ${segmentIndex + 1}`);
+        }
 
         // Get the most up-to-date subtitles data
         // This is important because the subtitles might have been saved just before this function is called
@@ -466,7 +472,7 @@ export const useSubtitles = (t) => {
                 },
                 t,
                 mediaType,
-                { userProvidedSubtitles }
+                { userProvidedSubtitles, modelId }
             );
 
             // Update the subtitles data with the new results

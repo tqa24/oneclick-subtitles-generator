@@ -18,6 +18,7 @@ def load_tts_model(model_id=None):
 
         # Determine which model to load
         target_model_id = model_id or get_active_model()
+        logger.info(f"[DEBUG] load_tts_model called with model_id={model_id}, active_model={get_active_model()}, target_model_id={target_model_id}")
         if not target_model_id:
              logger.warning("No specific or active model set, attempting to load default F5-TTS model.")
              # Initialize default F5-TTS

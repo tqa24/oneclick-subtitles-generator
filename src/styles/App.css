@@ -6,6 +6,7 @@
   flex-direction: column;
   width: 100%;
   gap: 24px; /* Consistent spacing between elements */
+  margin-bottom: 2rem;
 }
 
 .app-container {

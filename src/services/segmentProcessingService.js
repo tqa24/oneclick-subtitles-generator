@@ -22,7 +22,7 @@ import { getMaxSegmentDurationSeconds } from '../utils/durationUtils';
  */
 export async function processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType = 'video', options = {}) {
     // Extract options
-    const { userProvidedSubtitles } = options;
+    const { userProvidedSubtitles, modelId } = options;
     let retryCount = 0;
     const maxRetries = 3;
     let success = false;
@@ -61,7 +61,11 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             }
 
             // Process the segment with Gemini
-
+            if (modelId) {
+                console.log(`[SegmentRetry] Using custom model for segment ${segmentIndex + 1}: ${modelId}`);
+            } else {
+                console.log(`[SegmentRetry] Using default model for segment ${segmentIndex + 1}: ${localStorage.getItem('gemini_model') || 'gemini-2.5-flash'}`);
+            }
 
             // Get the total duration from the parent if available
             const totalDuration = options.totalDuration || null;
@@ -78,7 +82,8 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             // Pass segment info to callGeminiApi
             segmentSubtitles = await callGeminiApi(segmentFile, 'file-upload', {
                 userProvidedSubtitles,
-                segmentInfo
+                segmentInfo,
+                modelId
             });
             success = true;
         } catch (error) {

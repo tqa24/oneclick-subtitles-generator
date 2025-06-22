@@ -1,6 +1,14 @@
+/* Button group container */
+.srt-upload-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px; /* Match the height of the buttons */
+}
+
 .srt-upload-button-container {
+  position: relative;
   display: inline-block;
-  margin-right: 10px;
 }
 
 .srt-upload-button {
@@ -73,6 +81,69 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Has SRT uploaded state */
+.srt-upload-button.has-srt-uploaded {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.srt-upload-button.has-srt-uploaded:hover {
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+/* Style when in the buttons-container */
+.buttons-container .srt-upload-buttons-group {
+  margin: 0 10px 0 0;
+  display: flex;
+  align-items: center;
+  height: 52px; /* Match the height of other buttons in the container */
+}
+
+.buttons-container .srt-upload-button {
+  height: 40px;
+  margin: 0;
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  border: none;
+  box-shadow: var(--md-elevation-level2); /* Ensure consistent shadow with other buttons */
+}
+
+.buttons-container .srt-upload-button.has-srt-uploaded {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.buttons-container .srt-upload-button:hover {
+  background-color: transparent !important;
+  color: var(--md-secondary); /* Use secondary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+  box-shadow: var(--md-elevation-level3); /* Updated to match other buttons */
+  transform: translateY(-2px); /* Updated to match other buttons */
+}
+
+.buttons-container .srt-upload-button.has-srt-uploaded:hover {
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+.buttons-container .srt-upload-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Clear button in buttons-container */
+.buttons-container .clear-subtitles-button {
+  height: 34px;
+  width: 34px;
+}
+
+.srt-upload-button .icon {
+  font-size: 16px;
 }
 
 /* Gemini icon container styles */
@@ -193,7 +264,11 @@
     display: none;
   }
 
+  .srt-upload-buttons-group {
+    gap: 6px;
+  }
+
   .srt-upload-button-container {
-    margin-right: 6px;
+    margin-right: 0;
   }
 }

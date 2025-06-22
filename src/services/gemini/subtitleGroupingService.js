@@ -15,7 +15,7 @@
  * @param {string} intensity - Grouping intensity level (minimal, moderate, aggressive)
  * @returns {Promise<Object>} - Object with grouped subtitles and mapping
  */
-export const groupSubtitlesForNarration = async (subtitles, language = 'en', model = 'gemini-2.0-flash', intensity = 'moderate') => {
+export const groupSubtitlesForNarration = async (subtitles, language = 'en', model = 'gemini-2.5-flash-lite-preview-06-17', intensity = 'moderate') => {
   if (!subtitles || subtitles.length === 0) {
     return {
       success: false,

@@ -1,5 +1,8 @@
 {
   "buttonText": "Upload SRT/JSON",
   "tooltip": "Upload your own SRT or JSON subtitle file",
-  "processing": "Processing..."
+  "editTooltip": "Upload a different SRT/JSON file",
+  "processing": "Processing...",
+  "srtUploaded": "SRT uploaded",
+  "clearSrt": "Clear uploaded SRT/JSON"
 }

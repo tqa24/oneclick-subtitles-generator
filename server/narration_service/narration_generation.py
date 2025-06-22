@@ -9,7 +9,7 @@ import re
 from flask import Blueprint, request, jsonify, Response
 from .narration_config import HAS_F5TTS, OUTPUT_AUDIO_DIR
 from .narration_utils import load_tts_model
-from .narration_language import is_text_english
+
 from .directory_utils import ensure_subtitle_directory, get_next_file_number
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def generate_narration():
         settings = data.get('settings', {})
         requested_model_id = settings.get('modelId') # User can override active model
 
-
+        logger.info(f"[DEBUG] Requested model ID from frontend: {requested_model_id}")
         logger.debug(f"Reference Text: '{reference_text[:100]}...'")
         logger.debug(f"Settings: {settings}")
 
@@ -90,10 +90,7 @@ def generate_narration():
             processed_count = 0
             start_time_generation = time.time()
 
-            # Language mismatch check (simple version)
-            ref_lang_is_english = is_text_english(reference_text)
-
-            mismatch_warning_sent = False
+            # Language mismatch check removed per user request
 
             try:
                 for i, subtitle in enumerate(subtitles):
@@ -124,14 +121,7 @@ def generate_narration():
                         yield f"data: {json.dumps(skip_data)}\n\n"
                         continue
 
-                    # --- Language Mismatch Check ---
-                    if not mismatch_warning_sent:
-                         target_lang_is_english = is_text_english(text)
-                         if ref_lang_is_english != target_lang_is_english:
-                             logger.warning(f"Potential language mismatch! Reference is {'English' if ref_lang_is_english else 'Non-English'}, "
-                                            f"first target subtitle (ID: {subtitle_id}) seems {'English' if target_lang_is_english else 'Non-English'}. "
-                                            f"Model '{loaded_model_id}' might not support this cross-lingual generation.")
-                             mismatch_warning_sent = True # Send warning only once
+                    # Language mismatch check removed per user request
 
                     # --- Prepare for Generation ---
                     # Ensure the subtitle directory exists

@@ -38,8 +38,33 @@ export const parseGeminiResponse = (response) => {
         }
     }
 
+    // Check for MAX_TOKENS finish reason
+    if (response?.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+        const thoughtsTokens = response?.usageMetadata?.thoughtsTokenCount || 0;
+        const totalTokens = response?.usageMetadata?.totalTokenCount || 0;
+
+        console.error('Model hit token limit:', {
+            finishReason: response.candidates[0].finishReason,
+            thoughtsTokens,
+            totalTokens,
+            modelVersion: response.modelVersion
+        });
+
+        throw new Error(`Model ran out of tokens. Thinking used ${thoughtsTokens} tokens, leaving no space for response. Try reducing the thinking budget in Settings.`);
+    }
+
     // Fall back to text parsing if not structured JSON
     if (!response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        console.error('Invalid Gemini API response structure:', JSON.stringify(response, null, 2));
+        console.error('Expected: response.candidates[0].content.parts[0].text');
+        console.error('Actual structure:', {
+            hasCandidates: !!response?.candidates,
+            candidatesLength: response?.candidates?.length,
+            hasContent: !!response?.candidates?.[0]?.content,
+            hasParts: !!response?.candidates?.[0]?.content?.parts,
+            partsLength: response?.candidates?.[0]?.content?.parts?.length,
+            firstPart: response?.candidates?.[0]?.content?.parts?.[0]
+        });
         throw new Error('Invalid response format from Gemini API');
     }
 

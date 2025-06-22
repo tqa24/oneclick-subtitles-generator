@@ -26,6 +26,7 @@
   "waitingForNextChunk": "Waiting {{seconds}} seconds before translating the next chunk...",
   "modelGemini25Pro": "output length 65536 tokens (usually no splitting needed)",
   "modelGemini25Flash": "output length 65536 tokens (usually no splitting needed)",
+  "modelGemini25FlashLite": "output length 65536 tokens (usually no splitting needed)",
   "modelGemini20Flash": "output length 8192 tokens (splitting recommended)",
   "modelGemini20FlashLite": "output length 8192 tokens (splitting recommended)",
   "splitDuration": "Split Duration",

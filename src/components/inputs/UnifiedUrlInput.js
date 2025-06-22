@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiClock, FiX, FiExternalLink } from 'react-icons/fi';
+import { FiClock, FiX, FiExternalLink, FiDownload } from 'react-icons/fi';
 import {
   addYoutubeUrlToHistory,
   getYoutubeUrlHistory,
@@ -9,6 +9,7 @@ import {
   formatTimestamp
 } from '../../utils/historyUtils';
 import { getVideoDetails } from '../../services/youtubeApiService';
+import DownloadOnlyModal from '../DownloadOnlyModal';
 
 // Helper functions for Douyin URL history
 const getDouyinUrlHistory = () => {
@@ -61,6 +62,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState([]);
   const [urlType, setUrlType] = useState(''); // 'youtube', 'douyin', or 'all-sites'
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const historyDropdownRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -381,6 +383,14 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             <div className="video-info">
               <h3 className="video-title">{videoTitle}</h3>
               <p className="video-id">{t('youtubeUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+              <button
+                className="download-only-btn"
+                onClick={() => setShowDownloadModal(true)}
+                title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              >
+                <FiDownload size={16} />
+                {t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              </button>
             </div>
           </div>
         );
@@ -390,6 +400,14 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             <div className="video-info">
               <h3 className="video-title">{videoTitle}</h3>
               <p className="video-id">{t('unifiedUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+              <button
+                className="download-only-btn"
+                onClick={() => setShowDownloadModal(true)}
+                title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              >
+                <FiDownload size={16} />
+                {t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              </button>
             </div>
           </div>
         );
@@ -399,6 +417,14 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             <div className="video-info">
               <h3 className="video-title">{videoTitle}</h3>
               <p className="video-url">{t('unifiedUrlInput.url', 'URL:')} <span className="video-url-value">{url}</span></p>
+              <button
+                className="download-only-btn"
+                onClick={() => setShowDownloadModal(true)}
+                title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              >
+                <FiDownload size={16} />
+                {t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              </button>
             </div>
           </div>
         );
@@ -538,6 +564,13 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
 
       {renderVideoPreview()}
       {renderExamples()}
+
+      {/* Download Only Modal */}
+      <DownloadOnlyModal
+        isOpen={showDownloadModal}
+        onClose={() => setShowDownloadModal(false)}
+        videoInfo={selectedVideo}
+      />
     </div>
   );
 };

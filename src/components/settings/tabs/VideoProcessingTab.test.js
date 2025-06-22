@@ -14,14 +14,14 @@ describe('VideoProcessingTab Component', () => {
   const defaultProps = {
     segmentDuration: 5,
     setSegmentDuration: jest.fn(),
-    geminiModel: 'gemini-2.0-flash',
+    geminiModel: 'gemini-2.5-flash',
     setGeminiModel: jest.fn(),
     timeFormat: 'hms',
     setTimeFormat: jest.fn(),
     showWaveform: true,
     setShowWaveform: jest.fn(),
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.5-flash-preview-05-20',
+    videoAnalysisModel: 'gemini-2.5-flash-lite-preview-06-17',
     setVideoAnalysisModel: jest.fn(),
     videoAnalysisTimeout: '20',
     setVideoAnalysisTimeout: jest.fn(),
@@ -32,6 +32,12 @@ describe('VideoProcessingTab Component', () => {
     setOptimizedResolution: jest.fn(),
     useOptimizedPreview: true,
     setUseOptimizedPreview: jest.fn(),
+    thinkingBudgets: {
+      'gemini-2.5-pro': -1,
+      'gemini-2.5-flash': -1,
+      'gemini-2.5-flash-lite-preview-06-17': 0
+    },
+    setThinkingBudgets: jest.fn(),
   };
 
   beforeEach(() => {

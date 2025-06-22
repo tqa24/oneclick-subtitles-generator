@@ -274,6 +274,7 @@ const AppLayout = ({
               retryingSegments={retryingSegments}
               segmentsStatus={segmentsStatus}
               subtitlesData={subtitlesData}
+              setSubtitlesData={setSubtitlesData}
               status={status}
               userProvidedSubtitles={userProvidedSubtitles}
               selectedVideo={selectedVideo}

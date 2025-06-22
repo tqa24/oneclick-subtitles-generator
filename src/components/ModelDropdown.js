@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiChevronDown, FiStar, FiZap, FiCpu } from 'react-icons/fi';
+import { FiChevronDown, FiStar, FiZap, FiCpu, FiTrendingUp, FiActivity } from 'react-icons/fi';
 import '../styles/ModelDropdown.css';
 
 /**
@@ -16,7 +16,7 @@ import '../styles/ModelDropdown.css';
  */
 const ModelDropdown = ({
   onModelSelect,
-  selectedModel = 'gemini-2.0-flash',
+  selectedModel = 'gemini-2.5-flash',
   buttonClassName = '',
   label = '',
   headerText,
@@ -30,17 +30,18 @@ const ModelDropdown = ({
   // Model options with their icons and colors
   const modelOptions = [
     {
-      id: 'gemini-2.5-pro-exp-03-25',
+      id: 'gemini-2.5-pro',
       name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
       description: isTranslationSection
         ? t('translation.modelGemini25Pro', 'output length 65536 tokens (usually no splitting needed)')
         : t('models.bestAccuracy', 'Best accuracy'),
       icon: <FiStar className="model-icon star-icon" />,
       color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)',
+      isPaid: true
     },
     {
-      id: 'gemini-2.5-flash-preview-05-20',
+      id: 'gemini-2.5-flash',
       name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
       description: isTranslationSection
         ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
@@ -50,12 +51,22 @@ const ModelDropdown = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
+      id: 'gemini-2.5-flash-lite-preview-06-17',
+      name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
+      description: isTranslationSection
+        ? t('translation.modelGemini25FlashLite', 'output length 65536 tokens (usually no splitting needed)')
+        : t('models.fastestAdvanced', 'Fastest 2.5 model'),
+      icon: <FiTrendingUp className="model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }} />,
+      color: 'var(--md-tertiary)',
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+    },
+    {
       id: 'gemini-2.0-flash',
       name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
       description: isTranslationSection
         ? t('translation.modelGemini20Flash', 'output length 8192 tokens (splitting recommended)')
         : t('models.balancedModel', 'Balanced'),
-      icon: <FiZap className="model-icon zap-icon" />,
+      icon: <FiActivity className="model-icon activity-icon" />,
       color: 'var(--md-primary)',
       bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
     },
@@ -190,7 +201,10 @@ const ModelDropdown = ({
               >
                 <div className="model-option-icon">{model.icon}</div>
                 <div className="model-option-text">
-                  <div className="model-option-name">{model.name}</div>
+                  <div className="model-option-name">
+                    {model.name}
+                    {model.isPaid && <span className="paid-badge">paid</span>}
+                  </div>
                   <div className="model-option-description">{model.description}</div>
                 </div>
               </button>

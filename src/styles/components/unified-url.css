@@ -165,6 +165,41 @@
 .unified-url-input .selected-video-preview .video-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Video title styling */
+.unified-url-input .selected-video-preview .video-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Video ID/URL styling */
+.unified-url-input .selected-video-preview .video-id,
+.unified-url-input .selected-video-preview .video-url {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--md-on-surface-variant);
+  line-height: 1.3;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.unified-url-input .selected-video-preview .video-id-value,
+.unified-url-input .selected-video-preview .video-url-value {
+  color: var(--md-primary);
+  font-weight: 500;
 }
 
 .unified-url-input .selected-video-preview .video-title {
@@ -189,6 +224,46 @@
   color: var(--text-primary);
   transition: color var(--transition-speed);
   word-break: break-all;
+}
+
+/* Download Only Button - styled like translation buttons */
+.unified-url-input .selected-video-preview .download-only-btn {
+  padding: 0 1rem;
+  height: 42px;
+  border-radius: 21px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  white-space: nowrap;
+  box-shadow: var(--md-elevation-level1);
+  border: none;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  flex-shrink: 0;
+}
+
+.unified-url-input .selected-video-preview .download-only-btn:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.unified-url-input .selected-video-preview .download-only-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.unified-url-input .selected-video-preview .download-only-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Error message */

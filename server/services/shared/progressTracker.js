@@ -147,20 +147,20 @@ function updateProgressFromYtdlpOutput(videoId, output) {
 
   const progressInfo = parseYtdlpProgress(output);
   if (progressInfo) {
-    // Calculate overall progress for dual-phase downloads
-    const overallProgress = calculateOverallProgress(videoId, progressInfo.progress, progressInfo.phase);
+    // Use raw progress directly - no normalization
+    const rawProgress = progressInfo.progress;
 
-    setDownloadProgress(videoId, overallProgress, progressInfo.status);
+    setDownloadProgress(videoId, rawProgress, progressInfo.status);
 
     // Broadcast to WebSocket clients
     try {
       const { broadcastProgress } = require('./progressWebSocket');
-      broadcastProgress(videoId, overallProgress, progressInfo.status, progressInfo.phase);
+      broadcastProgress(videoId, rawProgress, progressInfo.status, progressInfo.phase);
     } catch (error) {
       // WebSocket module might not be initialized yet, that's okay
     }
 
-    console.log(`[yt-dlp progress] ${videoId}: ${overallProgress}% (${progressInfo.phase || 'unknown'} - raw: ${progressInfo.progress}%)`);
+    console.log(`[yt-dlp progress] ${videoId}: ${rawProgress}% (${progressInfo.phase || 'unknown'} - raw progress)`);
   }
 }
 
