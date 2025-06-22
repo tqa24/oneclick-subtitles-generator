@@ -230,6 +230,110 @@ def save_registry(registry):
     return False
 
 
+def scan_models_directory():
+    """Scan the models/f5_tts directory for existing models and add them to registry."""
+    from .constants import MODELS_DIR
+
+    logger.info(f"Starting scan of models directory: {MODELS_DIR}")
+
+    if not os.path.exists(MODELS_DIR):
+        logger.error(f"Models directory does not exist: {MODELS_DIR}")
+        return False, f"Models directory not found: {MODELS_DIR}"
+
+    registry = get_registry()
+    existing_model_ids = {model.get("id") for model in registry.get("models", [])}
+    new_models_found = 0
+
+    logger.info(f"Existing models in registry: {existing_model_ids}")
+
+    try:
+        # List all items in the models directory
+        items = os.listdir(MODELS_DIR)
+        logger.info(f"Found items in models directory: {items}")
+
+        # Scan each subdirectory in models/f5_tts
+        for item in items:
+            item_path = os.path.join(MODELS_DIR, item)
+            logger.info(f"Checking item: {item} at path: {item_path}")
+
+            # Skip files, only process directories
+            if not os.path.isdir(item_path):
+                logger.info(f"Skipping {item} - not a directory")
+                continue
+
+            # Skip if already in registry
+            if item in existing_model_ids:
+                logger.info(f"Skipping {item} - already in registry")
+                continue
+
+            # Look for model files in the directory
+            model_file = None
+            vocab_file = None
+
+            try:
+                files = os.listdir(item_path)
+                logger.info(f"Files in {item}: {files}")
+
+                for file in files:
+                    file_path = os.path.join(item_path, file)
+                    if os.path.isfile(file_path):
+                        if file.endswith(('.safetensors', '.pt', '.pth')):
+                            model_file = file_path
+                            logger.info(f"Found model file: {file_path}")
+                        elif file == 'vocab.txt':
+                            vocab_file = file_path
+                            logger.info(f"Found vocab file: {file_path}")
+            except Exception as e:
+                logger.error(f"Error reading directory {item_path}: {e}")
+                continue
+
+            # Only add if we found both model and vocab files
+            if model_file and vocab_file:
+                # Create model entry
+                model_info = {
+                    "id": item,
+                    "name": item.replace('-', ' ').replace('_', ' ').title(),
+                    "repo_id": f"local/{item}",
+                    "model_path": model_file,
+                    "vocab_path": vocab_file,
+                    "config": {},
+                    "source": "local",
+                    "language": "en",  # Default language
+                    "languages": ["en"],  # Default languages
+                    "is_symlink": False,
+                    "original_model_file": None,
+                    "original_vocab_file": None
+                }
+
+                # Add to registry
+                registry.setdefault("models", []).append(model_info)
+                new_models_found += 1
+                logger.info(f"✅ Found and added model: {item}")
+            else:
+                logger.warning(f"⚠️ Skipping {item} - missing files (model: {bool(model_file)}, vocab: {bool(vocab_file)})")
+
+        # Save updated registry
+        if new_models_found > 0:
+            logger.info(f"Saving registry with {new_models_found} new models")
+            if save_registry(registry):
+                message = f"Found and added {new_models_found} new models"
+                logger.info(f"✅ {message}")
+                return True, message
+            else:
+                logger.error("Failed to save registry after scanning")
+                return False, "Failed to save registry after scanning"
+        else:
+            message = "No new models found"
+            logger.info(f"ℹ️ {message}")
+            return True, message
+
+    except Exception as e:
+        logger.error(f"💥 Error scanning models directory: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, f"Error scanning directory: {str(e)}"
+
+
 def get_models(include_cache=False):
     """Get list of available models."""
     registry = get_registry()

@@ -25,6 +25,7 @@ const testAudioRoute = require('./server/routes/testAudioRoute');
 const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
 const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRoutes');
 const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
+const { scanModels } = require('./server/utils/scan-models');
 
 // Initialize Express app
 const app = express();
@@ -35,7 +36,7 @@ ensureDirectories();
 // Configure CORS with all needed methods
 app.use(cors({
   origin: CORS_ORIGIN,
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
   credentials: true
 }));
@@ -114,7 +115,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', CORS_ORIGIN);
   }
 
-  res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
@@ -163,5 +164,31 @@ app.use('/api/video', videoCompatibilityRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);
+
+// Simple model scanning endpoint - no Python bullshit!
+app.post('/api/scan-models', async (req, res) => {
+  try {
+    console.log('🔍 Model scan requested');
+    const success = scanModels();
+
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Models scanned successfully'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scan models'
+      });
+    }
+  } catch (error) {
+    console.error('Error scanning models:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 module.exports = app;

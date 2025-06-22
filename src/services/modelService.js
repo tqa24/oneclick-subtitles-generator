@@ -260,3 +260,36 @@ export const cancelModelDownload = async (modelId) => {
     throw error;
   }
 };
+
+/**
+ * Scan the models directory for new models and add them to registry
+ * Simple Node.js version - no Python bullshit!
+ * @returns {Promise<Object>} - Scan results
+ */
+export const scanModelsDirectory = async () => {
+  try {
+    console.log('🔍 Calling simple scan API...');
+
+    const response = await fetch(`${API_BASE_URL}/scan-models`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('📡 Scan API response status:', response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('❌ Scan API error:', errorData);
+      throw new Error(errorData.error || `Server returned ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Simple scan API success:', result);
+    return result;
+  } catch (error) {
+    console.error('💥 Error scanning models directory:', error);
+    throw error;
+  }
+};

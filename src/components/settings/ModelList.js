@@ -200,6 +200,7 @@ const LANGUAGE_NAMES = {
   'hi': 'Hindi',
   'it': 'Italian',
   'ja': 'Japanese',
+  'ms': 'Malay',
   'pl': 'Polish',
   'pt-br': 'Portuguese (BR)',
   'ru': 'Russian',

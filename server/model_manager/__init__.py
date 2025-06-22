@@ -9,7 +9,8 @@ from .registry import (
     initialize_registry,
     get_registry,
     save_registry,
-    get_models
+    get_models,
+    scan_models_directory
 )
 
 from .models import (

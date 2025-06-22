@@ -18,12 +18,14 @@ import { isDownloading, getDownloadProgress, isModelInstalled } from './modelMan
  * @param {Function} props.setDownloads - Function to update downloads state
  * @returns {JSX.Element} - Rendered component
  */
-const AvailableModelsList = ({ 
-  installedModels = [], 
-  downloads = {}, 
-  onModelAdded, 
+const AvailableModelsList = ({
+  installedModels = [],
+  downloads = {},
+  onModelAdded,
   onAddModelClick,
-  setDownloads
+  setDownloads,
+  customModels = [],
+  setCustomModels
 }) => {
   const { t } = useTranslation();
 
@@ -31,6 +33,11 @@ const AvailableModelsList = ({
   const installedModelIds = React.useMemo(() => {
     return installedModels.map(model => model.id);
   }, [installedModels]);
+
+  // Combine built-in models with custom models
+  const allAvailableModels = React.useMemo(() => {
+    return [...AVAILABLE_MODELS, ...customModels];
+  }, [customModels]);
 
   // Handle downloading a model
   const handleDownload = async (model) => {
@@ -121,7 +128,7 @@ const AvailableModelsList = ({
       </div>
 
       <div className="model-cards-container">
-        {AVAILABLE_MODELS.filter(model => {
+        {allAvailableModels.filter(model => {
           // Always filter out models that are already installed
           if (isModelInstalled(model.id, installedModelIds)) {
             return false;
@@ -151,6 +158,34 @@ const AvailableModelsList = ({
                 ))}
               </div>
             </div>
+
+            {/* Show delete button for custom models */}
+            {customModels.some(cm => cm.id === model.id) && (
+              <button
+                className="delete-custom-model-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedCustomModels = customModels.filter(cm => cm.id !== model.id);
+                  setCustomModels(updatedCustomModels);
+                  localStorage.setItem('customModels', JSON.stringify(updatedCustomModels));
+                }}
+                title={t('settings.modelManagement.deleteCustomModel', 'Delete custom model template')}
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  background: 'rgba(255, 59, 48, 0.1)',
+                  border: '1px solid rgba(255, 59, 48, 0.3)',
+                  borderRadius: '4px',
+                  color: '#ff3b30',
+                  padding: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                ×
+              </button>
+            )}
 
             {isDownloading(model.id, {}, downloads) ? (
               <div>
@@ -204,7 +239,7 @@ const AvailableModelsList = ({
           <p>{t('settings.modelManagement.addCustomModel')}</p>
         </div>
 
-        {AVAILABLE_MODELS.filter(model => !isModelInstalled(model.id, installedModelIds)).length === 0 && (
+        {allAvailableModels.filter(model => !isModelInstalled(model.id, installedModelIds)).length === 0 && (
           <div className="model-card">
             <p className="model-source" style={{ textAlign: 'center', padding: '2rem 0' }}>
               {t('settings.modelManagement.allModelsInstalled')}

@@ -42,8 +42,7 @@ const ModelManagementTab = () => {
   // updateDownloads is defined but not used in this component
   const { downloads, setDownloads } = useDownloads(fetchModels);
 
-  // Track if we're checking availability
-  const [isCheckingAvailability] = useState(false);
+  // Note: Removed isCheckingAvailability state as dialogs no longer depend on service availability
 
   // Dialog states
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -62,6 +61,16 @@ const ModelManagementTab = () => {
     language: '',
     languageCodes: [''],
     config: ''
+  });
+
+  // Custom models state (persisted in localStorage)
+  const [customModels, setCustomModels] = useState(() => {
+    try {
+      const saved = localStorage.getItem('customModels');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   // Loading states
@@ -118,7 +127,7 @@ const ModelManagementTab = () => {
     }));
   };
 
-  // Handle adding a new model
+  // Handle adding a new model template to available models
   const handleAddModel = async () => {
     try {
       setAddingModel(true);
@@ -133,47 +142,38 @@ const ModelManagementTab = () => {
         }
       }
 
-      // Prepare model data
-      const modelData = {
+      // Generate model ID if not provided
+      const modelId = addModelForm.modelId ||
+        `custom-${addModelForm.modelUrl.split('/').pop().replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`;
+
+      // Create new model template
+      const newModelTemplate = {
+        id: modelId,
+        name: addModelForm.modelId || 'Custom Model',
+        languages: addModelForm.languageCodes.filter(code => code.trim() !== ''),
+        author: 'Custom',
         modelUrl: addModelForm.modelUrl,
         vocabUrl: addModelForm.vocabUrl,
-        modelId: addModelForm.modelId,
-        languageCodes: addModelForm.languageCodes.filter(code => code.trim() !== ''),
         config: configObj
       };
 
-      // Add model based on source type
-      let response;
-      if (addModelForm.sourceType === 'huggingface') {
-        response = await addModelFromHuggingFace(modelData);
-      } else {
-        response = await addModelFromUrl(modelData);
-      }
-
-      // Get the model ID from the response
-      const { model_id } = response;
+      // Add to custom models and persist to localStorage
+      const updatedCustomModels = [...customModels, newModelTemplate];
+      setCustomModels(updatedCustomModels);
+      localStorage.setItem('customModels', JSON.stringify(updatedCustomModels));
 
       // Close dialog
       handleCloseAddDialog();
 
-      // Show downloading message
+      // Show success message
       setSnackbar({
         open: true,
-        message: t('settings.modelManagement.modelDownloading'),
-        severity: 'info'
+        message: t('settings.modelManagement.modelTemplateAdded', 'Model template added successfully! It will appear in Available Models.'),
+        severity: 'success'
       });
 
-      // Update downloads state
-      setDownloads(prev => ({
-        ...prev,
-        [model_id]: {
-          status: 'downloading',
-          progress: 0
-        }
-      }));
-
-      // Fetch models to get initial download status
-      await fetchModels();
+      // Reset form
+      setAddModelForm(getInitialAddModelForm());
 
     } catch (err) {
       setSnackbar({
@@ -367,8 +367,8 @@ const ModelManagementTab = () => {
     }));
   };
 
-  // Create a style for the unavailable or loading content
-  const unavailableContentStyle = !isServiceAvailable || isCheckingAvailability ? {
+  // Create a style for the unavailable content (only for actual downloads, not modal access)
+  const unavailableContentStyle = !isServiceAvailable ? {
     opacity: 0.38,
     pointerEvents: 'none',
     userSelect: 'none',
@@ -377,25 +377,19 @@ const ModelManagementTab = () => {
 
   return (
     <div className="model-management-section" id="model-management">
-      {(isCheckingAvailability || !isServiceAvailable) && (
+      {!isServiceAvailable && (
         <div className="model-management-unavailable-message" style={{ maxWidth: 'fit-content', marginBottom: '1.5rem' }}>
           <div className="warning-icon">
-            {isCheckingAvailability ? (
-              <div style={{ width: 24, height: 24, border: '2px solid rgba(var(--md-primary-rgb), 0.3)', borderRadius: '50%', borderTopColor: 'var(--md-primary)', animation: 'spin 1s linear infinite' }}></div>
-            ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            )}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
           </div>
           <div className="message" style={{ display: 'flex', flexDirection: 'column' }}>
             <strong>{t('settings.modelManagement.title', 'Narration Models')}</strong>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontStyle: 'italic' }}>
-              {isCheckingAvailability
-                ? t('narration.checkingAvailability', '(Checking availability...)')
-                : t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+              {t('narration.f5ttsUnavailable', '(Service unavailable - Model downloads require F5-TTS service)')}
             </span>
           </div>
         </div>
@@ -419,6 +413,8 @@ const ModelManagementTab = () => {
           setDownloads={setDownloads}
           installedModels={models}
           onAddModelClick={handleOpenAddDialog}
+          customModels={customModels}
+          setCustomModels={setCustomModels}
         />
 
         <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
@@ -439,7 +435,7 @@ const ModelManagementTab = () => {
 
       {/* Add Model Dialog */}
       <AddModelDialog
-        isOpen={openAddDialog && isServiceAvailable && !isCheckingAvailability}
+        isOpen={openAddDialog}
         onClose={handleCloseAddDialog}
         form={addModelForm}
         onFormChange={handleAddFormChange}
@@ -452,7 +448,7 @@ const ModelManagementTab = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteModelDialog
-        isOpen={openDeleteDialog && isServiceAvailable && !isCheckingAvailability}
+        isOpen={openDeleteDialog}
         onClose={handleCloseDeleteDialog}
         model={modelToDelete}
         onDelete={handleDeleteModel}
@@ -461,7 +457,7 @@ const ModelManagementTab = () => {
 
       {/* Edit Model Dialog */}
       <EditModelDialog
-        isOpen={openEditDialog && isServiceAvailable && !isCheckingAvailability}
+        isOpen={openEditDialog}
         onClose={handleCloseEditDialog}
         model={modelToEdit}
         form={editModelForm}

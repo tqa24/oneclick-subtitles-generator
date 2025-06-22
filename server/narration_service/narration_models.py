@@ -7,7 +7,8 @@ from model_manager import (
     get_models, get_active_model, set_active_model, add_model, delete_model,
     download_model_from_hf, download_model_from_url, parse_hf_url,
     get_download_status, update_download_status, remove_download_status,
-    update_model_info, is_model_using_symlinks, initialize_registry, cancel_download
+    update_model_info, is_model_using_symlinks, initialize_registry, cancel_download,
+    get_registry, save_registry
 )
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,11 @@ def list_models():
     include_cache = request.args.get('include_cache', 'false').lower() == 'true'
     models = get_models(include_cache)
     return jsonify(models)
+
+
+
+
+
 
 @models_bp.route('/models/active', methods=['GET'])
 def get_current_model():

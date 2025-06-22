@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getModels, getModelDownloadStatus, getModelStorageInfo } from '../../../services/modelService';
+import { getModels, getModelDownloadStatus, getModelStorageInfo, scanModelsDirectory } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
 import { checkNarrationStatus } from '../../../services/narrationService';
 
@@ -69,20 +69,33 @@ export const useModels = () => {
 
     try {
       setIsScanning(true);
-      const data = await getModels(false);
+      console.log('Starting models directory scan...');
 
-      // Check if there are any new models that aren't in the current state
-      const currentModelIds = models.map(model => model.id);
-      const newModels = data.models.filter(model => !currentModelIds.includes(model.id));
+      // Call the simple Node.js scan API
+      try {
+        console.log('🔍 Calling simple scan API...');
+        const scanResult = await scanModelsDirectory();
+        console.log('Scan result received:', scanResult);
 
-      if (newModels.length > 0) {
-        setModels(data.models || []);
-        invalidateModelsCache();
+        if (scanResult.success) {
+          console.log('✅ Models scan completed:', scanResult.message);
+
+          // Refresh the models list from the updated registry
+          const data = await getModels(false);
+          setModels(data.models || []);
+          invalidateModelsCache();
+
+          console.log('📋 Refreshed models list from updated registry');
+        } else {
+          console.error('❌ Model scan failed:', scanResult.error);
+        }
+      } catch (scanError) {
+        console.error('💥 Scan API failed:', scanError.message);
       }
 
-      // Update model sizes
+      // Update model sizes for all models
       const sizes = {};
-      for (const model of data.models) {
+      for (const model of models) {
         if (model.model_path && model.id !== 'f5tts-v1-base') {
           try {
             const storageInfo = await getModelStorageInfo(model.id);
@@ -97,8 +110,10 @@ export const useModels = () => {
 
       setModelSizes(prev => ({...prev, ...sizes}));
     } catch (error) {
-      console.error('Error scanning for models:', error);
+      console.error('💥 Error scanning for models:', error);
+      console.error('Error details:', error.message);
     } finally {
+      console.log('🔄 Scan completed, stopping spinner');
       setIsScanning(false);
     }
   }, [isScanning, models, setIsScanning, setModels, setModelSizes, checkServiceAvailability]);
