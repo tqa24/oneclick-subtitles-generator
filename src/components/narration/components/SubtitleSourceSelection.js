@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
 import {
@@ -164,10 +164,8 @@ const SubtitleSourceSelection = ({
   const [isCheckingModel, setIsCheckingModel] = useState(false);
   const [availableModels, setAvailableModels] = useState([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
-  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [userHasManuallySelectedModel, setUserHasManuallySelectedModel] = useState(false);
-  const modelButtonRef = useRef(null);
-  const modelDropdownRef = useRef(null);
 
   // Load available models
   useEffect(() => {
@@ -215,62 +213,9 @@ const SubtitleSourceSelection = ({
     }
   }, [translatedSubtitles, subtitleSource, setTranslatedLanguage]);
 
-  // Position the dropdown relative to the button
-  const positionDropdown = useCallback(() => {
-    if (!modelButtonRef.current || !modelDropdownRef.current) return;
-
-    const buttonRect = modelButtonRef.current.getBoundingClientRect();
-    const dropdownEl = modelDropdownRef.current;
-
-    // Position below the button
-    dropdownEl.style.top = `${buttonRect.bottom + 8}px`;
-
-    // Ensure the dropdown doesn't go off-screen to the right
-    const rightEdge = buttonRect.right;
-    const windowWidth = window.innerWidth;
-    const dropdownWidth = 240; // Width from CSS
-
-    if (rightEdge + dropdownWidth > windowWidth) {
-      // Position to the left of the button's right edge
-      dropdownEl.style.right = `${windowWidth - rightEdge}px`;
-      dropdownEl.style.left = 'auto';
-    } else {
-      // Position aligned with button's left edge
-      dropdownEl.style.left = `${buttonRect.left}px`;
-      dropdownEl.style.right = 'auto';
-    }
-  }, []);
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    if (!isModelDropdownOpen) return;
-
-    // Position the dropdown when it opens
-    positionDropdown();
-
-    const handleClickOutside = (event) => {
-      if (
-        modelButtonRef.current &&
-        !modelButtonRef.current.contains(event.target) &&
-        modelDropdownRef.current &&
-        !modelDropdownRef.current.contains(event.target)
-      ) {
-        setIsModelDropdownOpen(false);
-      }
-    };
-
-    // Add event listeners
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('resize', positionDropdown);
-    window.addEventListener('scroll', positionDropdown);
-
-    // Clean up
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', positionDropdown);
-      window.removeEventListener('scroll', positionDropdown);
-    };
-  }, [isModelDropdownOpen, positionDropdown]);
+  // Handle model modal
+  const openModelModal = () => setIsModelModalOpen(true);
+  const closeModelModal = () => setIsModelModalOpen(false);
 
   // Listen for language detection events
   useEffect(() => {
@@ -486,9 +431,9 @@ const SubtitleSourceSelection = ({
   // We're using an inline function for the button click handler
 
   // Handle model selection
-  const handleModelSelect = useCallback((modelId) => {
-    // Close the dropdown immediately
-    setIsModelDropdownOpen(false);
+  const handleModelSelect = (modelId) => {
+    // Close the modal immediately
+    setIsModelModalOpen(false);
 
     // Set the selected model
     setSelectedModel(modelId);
@@ -503,7 +448,7 @@ const SubtitleSourceSelection = ({
         onLanguageDetected(subtitleSource, currentLanguage, modelId);
       }
     }
-  }, [onLanguageDetected, subtitleSource, originalLanguage, translatedLanguage]);
+  };
 
   // We no longer need the handleModelChange function as we're using the new dropdown
 
@@ -759,134 +704,25 @@ const SubtitleSourceSelection = ({
               </div>
             )}
 
-            <div className={`model-dropdown-container narration-model-dropdown-container ${isModelDropdownOpen ? 'dropdown-open' : ''}`}>
+            <div className="model-dropdown-container narration-model-dropdown-container">
                 <button
                   className="model-dropdown-btn narration-model-dropdown-btn"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setIsModelDropdownOpen(prev => !prev);
+                    openModelModal();
                   }}
                   title={t('narration.selectNarrationModel', 'Select narration model')}
-                  ref={modelButtonRef}
-                  aria-haspopup="true"
-                  aria-expanded={isModelDropdownOpen}
                   disabled={isGenerating}
                 >
                   <span className="model-dropdown-label">{t('narration.narrationModel', 'Model')}:</span>
                   <span className="model-dropdown-selected">
                     <span className="model-name">{selectedModel}</span>
                   </span>
-                  <FiChevronDown size={14} className={`dropdown-icon ${isModelDropdownOpen ? 'active' : ''}`} />
+                  <FiChevronDown size={14} className="dropdown-icon" />
                 </button>
 
-                {isModelDropdownOpen && (
-                  <div
-                    className="model-options-dropdown"
-                    ref={modelDropdownRef}
-                    role="menu"
-                  >
-                    <div className="model-options-header">
-                      {t('narration.selectNarrationModel', 'Select narration model')}
-                    </div>
-                    <div className="model-options-list">
-                      {isLoadingModels ? (
-                        <div className="loading-animation dropdown-loading">
-                          <span className="spinner-circle"></span>
-                          <span>{t('narration.loadingModels', 'Loading models...')}</span>
-                        </div>
-                      ) : availableModels.length > 0 ? (
-                        <>
-                          {/* Group 1: Models matching the detected language */}
-                          <div className="model-group-label">
-                            {t('narration.matchingLanguageModels', 'Matching Language')}
-                          </div>
-                          {availableModels
-                            .filter(model => {
-                              const currentLanguageObj = subtitleSource === 'original'
-                                ? originalLanguage
-                                : translatedLanguage;
 
-                              if (!currentLanguageObj) return false;
-
-                              // Get all language codes to check (primary + secondary)
-                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                                currentLanguageObj.secondaryLanguages.length > 0
-                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                  : [currentLanguageObj.languageCode]; // Just use primary language
-
-                              // Check if model supports any of the detected languages
-                              return languagesToCheck.some(langCode =>
-                                model.language === langCode ||
-                                (Array.isArray(model.languages) && model.languages.includes(langCode))
-                              );
-                            })
-                            .map(model => (
-                              <button
-                                key={model.id}
-                                className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
-                                onClick={() => handleModelSelect(model.id)}
-                                role="menuitem"
-                              >
-                                <div className="model-option-text">
-                                  <div className="model-option-name">{model.id}</div>
-                                  <div className="model-option-description">{renderModelLanguages(model)}</div>
-                                </div>
-                              </button>
-                            ))
-                          }
-
-                          {/* Group 2: All other models */}
-                          <div className="model-group-label">
-                            {t('narration.otherModels', 'Other Models')}
-                          </div>
-                          {availableModels
-                            .filter(model => {
-                              const currentLanguageObj = subtitleSource === 'original'
-                                ? originalLanguage
-                                : translatedLanguage;
-
-                              if (!currentLanguageObj) return true;
-
-                              // Get all language codes to check (primary + secondary)
-                              const languagesToCheck = currentLanguageObj.isMultiLanguage &&
-                                Array.isArray(currentLanguageObj.secondaryLanguages) &&
-                                currentLanguageObj.secondaryLanguages.length > 0
-                                  ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
-                                  : [currentLanguageObj.languageCode]; // Just use primary language
-
-                              // Check if model does NOT support any of the detected languages
-                              return !languagesToCheck.some(langCode =>
-                                model.language === langCode ||
-                                (Array.isArray(model.languages) && model.languages.includes(langCode))
-                              );
-                            })
-                            .map(model => (
-                              <button
-                                key={model.id}
-                                className={`model-option-btn ${model.id === selectedModel ? 'selected' : ''}`}
-                                onClick={() => handleModelSelect(model.id)}
-                                role="menuitem"
-                              >
-                                <div className="model-option-text">
-                                  <div className="model-option-name">{model.id}</div>
-                                  <div className="model-option-description">{renderModelLanguages(model)}</div>
-                                </div>
-                              </button>
-                            ))
-                          }
-                        </>
-                      ) : (
-                        <div className="model-option-btn">
-                          <div className="model-option-text">
-                            <div className="model-option-name">{selectedModel}</div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {modelError && (
                   <div className="model-error">
@@ -985,6 +821,117 @@ const SubtitleSourceSelection = ({
           </div>
         </div>
       </div>
+
+      {/* Model Selection Modal */}
+      {isModelModalOpen && (
+        <div className="modal-overlay" onClick={closeModelModal}>
+          <div className="modal-content model-selection-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{t('narration.selectNarrationModel', 'Select narration model')}</h3>
+              <button className="modal-close-btn" onClick={closeModelModal}>
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {isLoadingModels ? (
+                <div className="loading-animation modal-loading">
+                  <span className="spinner-circle"></span>
+                  <span>{t('narration.loadingModels', 'Loading models...')}</span>
+                </div>
+              ) : availableModels.length > 0 ? (
+                <>
+                  {/* Group 1: Models matching the detected language */}
+                  <div className="model-group">
+                    <div className="model-group-label">
+                      {t('narration.matchingLanguageModels', 'Matching Language')}
+                    </div>
+                    <div className="model-options-grid">
+                      {availableModels
+                        .filter(model => {
+                          const currentLanguageObj = subtitleSource === 'original'
+                            ? originalLanguage
+                            : translatedLanguage;
+
+                          if (!currentLanguageObj) return false;
+
+                          // Get all language codes to check (primary + secondary)
+                          const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                            Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                            currentLanguageObj.secondaryLanguages.length > 0
+                              ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                              : [currentLanguageObj.languageCode]; // Just use primary language
+
+                          // Check if model supports any of the detected languages
+                          return languagesToCheck.some(langCode =>
+                            model.language === langCode ||
+                            (Array.isArray(model.languages) && model.languages.includes(langCode))
+                          );
+                        })
+                        .map(model => (
+                          <button
+                            key={model.id}
+                            className={`model-option-card ${model.id === selectedModel ? 'selected' : ''}`}
+                            onClick={() => handleModelSelect(model.id)}
+                          >
+                            <div className="model-option-name">{model.id}</div>
+                            <div className="model-option-description">{renderModelLanguages(model)}</div>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+
+                  {/* Group 2: All other models */}
+                  <div className="model-group">
+                    <div className="model-group-label">
+                      {t('narration.otherModels', 'Other Models')}
+                    </div>
+                    <div className="model-options-grid">
+                      {availableModels
+                        .filter(model => {
+                          const currentLanguageObj = subtitleSource === 'original'
+                            ? originalLanguage
+                            : translatedLanguage;
+
+                          if (!currentLanguageObj) return true;
+
+                          // Get all language codes to check (primary + secondary)
+                          const languagesToCheck = currentLanguageObj.isMultiLanguage &&
+                            Array.isArray(currentLanguageObj.secondaryLanguages) &&
+                            currentLanguageObj.secondaryLanguages.length > 0
+                              ? currentLanguageObj.secondaryLanguages // Use all languages if multi-language
+                              : [currentLanguageObj.languageCode]; // Just use primary language
+
+                          // Check if model does NOT support any of the detected languages
+                          return !languagesToCheck.some(langCode =>
+                            model.language === langCode ||
+                            (Array.isArray(model.languages) && model.languages.includes(langCode))
+                          );
+                        })
+                        .map(model => (
+                          <button
+                            key={model.id}
+                            className={`model-option-card ${model.id === selectedModel ? 'selected' : ''}`}
+                            onClick={() => handleModelSelect(model.id)}
+                          >
+                            <div className="model-option-name">{model.id}</div>
+                            <div className="model-option-description">{renderModelLanguages(model)}</div>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="no-models-message">
+                  <div className="model-option-name">{selectedModel}</div>
+                  <div className="model-option-description">{t('narration.noModelsAvailable', 'No other models available')}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subtitle Grouping Comparison Modal */}
       <SubtitleGroupingModal
