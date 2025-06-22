@@ -646,7 +646,7 @@ const useGeminiNarration = ({
       const groupingResult = await groupSubtitlesForNarration(
         selectedSubtitles,
         detectedLanguageCode,
-        'gemini-2.0-flash',
+        'gemini-2.5-flash-lite-preview-06-17',
         groupingIntensity
       );
 
