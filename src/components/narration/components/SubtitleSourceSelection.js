@@ -165,6 +165,7 @@ const SubtitleSourceSelection = ({
   const [availableModels, setAvailableModels] = useState([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [userHasManuallySelectedModel, setUserHasManuallySelectedModel] = useState(false);
   const modelButtonRef = useRef(null);
   const modelDropdownRef = useRef(null);
 
@@ -311,12 +312,16 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
-              // Use the available model
-              setSelectedModel(modelAvailability.modelId);
+              // Only auto-select if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = modelAvailability.modelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelAvailability.modelId);
+                onLanguageDetected(source, result, modelId);
               }
             } else {
               // No model available, show error and use fallback
@@ -324,22 +329,34 @@ const SubtitleSourceSelection = ({
               const languageName = result.languageName || result.languageCode;
               const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
               setModelError(customError);
-              setSelectedModel(suggestedModelId);
+
+              // Only auto-select fallback if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = suggestedModelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, suggestedModelId, customError);
+                onLanguageDetected(source, result, modelId, customError);
               }
             }
           } catch (error) {
             // Error checking model availability, use fallback
             setIsCheckingModel(false);
             setModelError(`Error checking model availability: ${error.message}`);
-            setSelectedModel(suggestedModelId);
+
+            // Only auto-select fallback if user hasn't manually chosen a model
+            let modelId = selectedModel;
+            if (!userHasManuallySelectedModel) {
+              modelId = suggestedModelId;
+              setSelectedModel(modelId);
+            }
 
             // Call the callback with the detected language and fallback model
             if (onLanguageDetected) {
-              onLanguageDetected(source, result, suggestedModelId, `Error checking model availability: ${error.message}`);
+              onLanguageDetected(source, result, modelId, `Error checking model availability: ${error.message}`);
             }
           }
         }
@@ -369,12 +386,16 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
-              // Use the available model
-              setSelectedModel(modelAvailability.modelId);
+              // Only auto-select if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = modelAvailability.modelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelAvailability.modelId);
+                onLanguageDetected(source, result, modelId);
               }
             } else {
               // No model available, show error and use fallback
@@ -382,22 +403,34 @@ const SubtitleSourceSelection = ({
               const languageName = result.languageName || result.languageCode;
               const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
               setModelError(customError);
-              setSelectedModel(suggestedModelId);
+
+              // Only auto-select fallback if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = suggestedModelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected(source, result, suggestedModelId, customError);
+                onLanguageDetected(source, result, modelId, customError);
               }
             }
           } catch (error) {
             // Error checking model availability, use fallback
             setIsCheckingModel(false);
             setModelError(`Error checking model availability: ${error.message}`);
-            setSelectedModel(suggestedModelId);
+
+            // Only auto-select fallback if user hasn't manually chosen a model
+            let modelId = selectedModel;
+            if (!userHasManuallySelectedModel) {
+              modelId = suggestedModelId;
+              setSelectedModel(modelId);
+            }
 
             // Call the callback with the detected language and fallback model
             if (onLanguageDetected) {
-              onLanguageDetected(source, result, suggestedModelId, `Error checking model availability: ${error.message}`);
+              onLanguageDetected(source, result, modelId, `Error checking model availability: ${error.message}`);
             }
           }
         }
@@ -444,8 +477,12 @@ const SubtitleSourceSelection = ({
               ? originalLanguage.secondaryLanguages
               : originalLanguage.languageCode;
 
-          const modelId = getNarrationModelForLanguage(languagesToCheck);
-          setSelectedModel(modelId);
+          // Only auto-select if user hasn't manually chosen a model
+          let modelId = selectedModel;
+          if (!userHasManuallySelectedModel) {
+            modelId = getNarrationModelForLanguage(languagesToCheck);
+            setSelectedModel(modelId);
+          }
 
           // Call the callback with the detected language and model
           if (onLanguageDetected) {
@@ -482,6 +519,9 @@ const SubtitleSourceSelection = ({
     // Set the selected model
     setSelectedModel(modelId);
 
+    // Mark that user has manually selected a model
+    setUserHasManuallySelectedModel(true);
+
     // Call the callback with the updated model
     if (onLanguageDetected) {
       const currentLanguage = subtitleSource === 'original' ? originalLanguage : translatedLanguage;
@@ -502,6 +542,10 @@ const SubtitleSourceSelection = ({
 
       setSubtitleSource(source);
       setModelError(null); // Clear any previous errors
+
+      // Reset the manual selection flag when switching subtitle sources
+      // This allows automatic model selection for the new source
+      setUserHasManuallySelectedModel(false);
 
       // Detect language for the selected source
       if (source === 'original' && originalSubtitles && originalSubtitles.length > 0) {
@@ -524,12 +568,16 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
-              // Use the available model
-              setSelectedModel(modelAvailability.modelId);
+              // Only auto-select if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = modelAvailability.modelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and model
               if (onLanguageDetected) {
-                onLanguageDetected('original', originalLanguage, modelAvailability.modelId);
+                onLanguageDetected('original', originalLanguage, modelId);
               }
             } else {
               // No model available, show error and use fallback
@@ -539,11 +587,17 @@ const SubtitleSourceSelection = ({
               const languageName = originalLanguage.languageName || originalLanguage.languageCode;
               const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
               setModelError(customError);
-              setSelectedModel(fallbackModelId);
+
+              // Only auto-select fallback if user hasn't manually chosen a model
+              let modelId = selectedModel;
+              if (!userHasManuallySelectedModel) {
+                modelId = fallbackModelId;
+                setSelectedModel(modelId);
+              }
 
               // Call the callback with the detected language and fallback model
               if (onLanguageDetected) {
-                onLanguageDetected('original', originalLanguage, fallbackModelId, customError);
+                onLanguageDetected('original', originalLanguage, modelId, customError);
               }
             }
           } catch (error) {
@@ -551,6 +605,7 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
             const fallbackModelId = getNarrationModelForLanguage(originalLanguage.languageCode);
             setModelError(`Error checking model availability: ${error.message}`);
+
             setSelectedModel(fallbackModelId);
 
             // Call the callback with the detected language and fallback model
@@ -579,7 +634,7 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
 
             if (modelAvailability.available) {
-              // Use the available model
+              // Auto-select the best available model for this language
               setSelectedModel(modelAvailability.modelId);
 
               // Call the callback with the detected language and model
@@ -606,6 +661,7 @@ const SubtitleSourceSelection = ({
             setIsCheckingModel(false);
             const fallbackModelId = getNarrationModelForLanguage(translatedLanguage.languageCode);
             setModelError(`Error checking model availability: ${error.message}`);
+
             setSelectedModel(fallbackModelId);
 
             // Call the callback with the detected language and fallback model
