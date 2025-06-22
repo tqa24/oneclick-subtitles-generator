@@ -59,6 +59,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const [error, setError] = useState('');
   const [translationStatus, setTranslationStatus] = useState('');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+  const [wasManuallyReset, setWasManuallyReset] = useState(false);
   // Use a translation-specific model selection that's independent from settings
   const [selectedModel, setSelectedModel] = useState(() => {
     // Get the model from translation-specific localStorage key or use the global setting as default
@@ -105,6 +106,12 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   useEffect(() => {
     // Only try to load from cache if we don't have results yet and have subtitles to translate
     if (translatedSubtitles || !subtitles || subtitles.length === 0) return;
+
+    // Don't load from cache if translation was manually reset
+    if (wasManuallyReset) {
+      console.log('Translation was manually reset, not loading from cache');
+      return;
+    }
 
     try {
       // Get current media ID
@@ -153,7 +160,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     } catch (error) {
       console.error('Error loading translations from cache:', error);
     }
-  }, [subtitles, translatedSubtitles, onTranslationComplete, t]);
+  }, [subtitles, translatedSubtitles, onTranslationComplete, t, wasManuallyReset]);
 
   // Check if transcription rules are available
   useEffect(() => {
@@ -257,6 +264,9 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     setError('');
     setIsTranslating(true);
 
+    // Reset the manual reset flag when starting a new translation
+    setWasManuallyReset(false);
+
     try {
       // For 2 target languages, we can use both delimiter and brackets
       // For 3+ languages, we only use delimiter
@@ -355,13 +365,25 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
    * Handle reset of translation
    */
   const handleReset = () => {
+    console.log('Manual translation reset initiated');
+
     setTranslatedSubtitles(null);
     setError('');
     setLoadedFromCache(false);
 
+    // Set the manual reset flag to prevent cache loading
+    setWasManuallyReset(true);
+
     // Reset the processing force stopped flag when resetting translation
     setProcessingForceStopped(false);
 
+    // Clear the translation cache
+    try {
+      localStorage.removeItem(TRANSLATION_CACHE_KEY);
+      console.log('Translation cache cleared');
+    } catch (error) {
+      console.error('Error clearing translation cache:', error);
+    }
 
     if (onTranslationComplete) {
       onTranslationComplete(null);

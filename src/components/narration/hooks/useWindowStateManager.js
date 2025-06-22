@@ -151,6 +151,12 @@ const useWindowStateManager = ({
     // Only try to load from cache if we don't have grouped subtitles yet and we have source subtitles
     if (groupedSubtitles && groupedSubtitles.length > 0) return;
 
+    // Don't load cache if we're dealing with translated subtitles but they're null (translation was reset)
+    if (subtitleSource === 'translated' && (!translatedSubtitles || translatedSubtitles.length === 0)) {
+      console.log('Translation was reset or no translated subtitles, not loading grouped cache');
+      return;
+    }
+
     // Check if user has explicitly disabled grouping for this session
     try {
       const userDisabledGrouping = localStorage.getItem(USER_DISABLED_GROUPING_KEY);
@@ -237,6 +243,32 @@ const useWindowStateManager = ({
       delete window.setIsGroupingSubtitles;
     };
   }, [useGroupedSubtitles, groupedSubtitles, setGroupedSubtitles, setIsGroupingSubtitles]);
+
+  // Listen for translation reset to clear grouped subtitles cache
+  useEffect(() => {
+    const handleTranslationReset = () => {
+      console.log('Translation reset detected, clearing grouped subtitles cache and state');
+
+      // Clear the grouped subtitles cache from localStorage
+      try {
+        localStorage.removeItem(GROUPED_SUBTITLES_CACHE_KEY);
+      } catch (error) {
+        console.error('Error clearing grouped subtitles cache:', error);
+      }
+
+      // Clear the grouped subtitles state if we're using translated subtitles
+      if (subtitleSource === 'translated') {
+        setGroupedSubtitles(null);
+        setUseGroupedSubtitles(false);
+      }
+    };
+
+    window.addEventListener('translation-reset', handleTranslationReset);
+
+    return () => {
+      window.removeEventListener('translation-reset', handleTranslationReset);
+    };
+  }, [subtitleSource, setGroupedSubtitles, setUseGroupedSubtitles]);
 
   // Reset UI state when switching narration methods, but preserve results for aligned narration
   useEffect(() => {

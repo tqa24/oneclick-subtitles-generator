@@ -459,37 +459,11 @@ const SubtitleSourceSelection = ({
 
     // Listen for translation reset event to clear translated language
     const handleTranslationReset = () => {
-
-      // Reset the translated language state
+      // Just reset the translated language state, don't interfere with subtitle source
       setTranslatedLanguage(null);
 
-      // If the user had selected translated subtitles, switch to original
-      if (subtitleSource === 'translated') {
-
-        setSubtitleSource('original');
-
-        // If we have original language info, update the model
-        if (originalLanguage) {
-          // Get all language codes to check (primary + secondary)
-          const languagesToCheck = originalLanguage.isMultiLanguage &&
-            Array.isArray(originalLanguage.secondaryLanguages) &&
-            originalLanguage.secondaryLanguages.length > 0
-              ? originalLanguage.secondaryLanguages
-              : originalLanguage.languageCode;
-
-          // Only auto-select if user hasn't manually chosen a model
-          let modelId = selectedModel;
-          if (!userHasManuallySelectedModel) {
-            modelId = getNarrationModelForLanguage(languagesToCheck);
-            setSelectedModel(modelId);
-          }
-
-          // Call the callback with the detected language and model
-          if (onLanguageDetected) {
-            onLanguageDetected('original', originalLanguage, modelId);
-          }
-        }
-      }
+      // Don't automatically switch subtitle source - let user control this manually
+      // This prevents interference with the translation reset process
     };
 
     // Add event listeners
@@ -785,8 +759,7 @@ const SubtitleSourceSelection = ({
               </div>
             )}
 
-            {selectedModel && (subtitleSource === 'original' ? originalLanguage : translatedLanguage) && !isCheckingModel && (
-              <div className={`model-dropdown-container narration-model-dropdown-container ${isModelDropdownOpen ? 'dropdown-open' : ''}`}>
+            <div className={`model-dropdown-container narration-model-dropdown-container ${isModelDropdownOpen ? 'dropdown-open' : ''}`}>
                 <button
                   className="model-dropdown-btn narration-model-dropdown-btn"
                   onClick={(e) => {
@@ -922,7 +895,6 @@ const SubtitleSourceSelection = ({
                   </div>
                 )}
               </div>
-            )}
 
             {modelError && !selectedModel && !isCheckingModel && (
               <div className="model-error-standalone">
