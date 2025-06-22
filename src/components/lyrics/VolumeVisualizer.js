@@ -16,6 +16,8 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
   const [audioData, setAudioData] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
+  const [hasAudio, setHasAudio] = useState(true);
+  const [audioError, setAudioError] = useState(null);
   const audioContextRef = useRef(null);
   const bufferCanvasRef = useRef(null);
   const lastRenderRangeRef = useRef(null);
@@ -27,16 +29,27 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
   useEffect(() => {
     if (!audioSource || isProcessed || isProcessing) return;
 
+    // Reset states when audioSource changes
+    setHasAudio(true);
+    setAudioError(null);
+
     // Skip YouTube URLs as they can't be directly processed due to CORS
     if (audioSource.includes('youtube.com') || audioSource.includes('youtu.be')) {
-
+      setHasAudio(false);
+      setAudioError('YouTube videos cannot be processed due to CORS restrictions');
       return;
     }
 
     // Check if we already have this audio data in cache
     if (audioDataCache.has(audioSource)) {
-
-      setAudioData(audioDataCache.get(audioSource));
+      const cachedData = audioDataCache.get(audioSource);
+      if (cachedData === 'NO_AUDIO') {
+        setHasAudio(false);
+        setAudioError('No audio track found in this video');
+        setIsProcessed(true);
+        return;
+      }
+      setAudioData(cachedData);
       setIsProcessed(true);
       return;
     }
@@ -61,6 +74,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
 
         // Decode the audio data
         const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+
+        // Check if the audio buffer has any channels (i.e., if there's actually audio)
+        if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
+          throw new Error('No audio channels found in the media file');
+        }
 
         // Get the audio channel data (mono - just use the first channel)
         const channelData = audioBuffer.getChannelData(0);
@@ -144,6 +162,20 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
         setIsProcessed(true);
       } catch (error) {
         console.error('Error processing audio for visualization:', error);
+
+        // Check if this is an audio decoding error (no audio track)
+        if (error.name === 'EncodingError' ||
+            error.message.includes('Unable to decode audio data') ||
+            error.message.includes('No audio channels found') ||
+            error.message.includes('could not be decoded')) {
+          setHasAudio(false);
+          setAudioError('No audio track found in this video');
+          // Cache the fact that this source has no audio
+          audioDataCache.set(audioSource, 'NO_AUDIO');
+        } else {
+          setAudioError(`Audio processing failed: ${error.message}`);
+        }
+        setIsProcessed(true);
       } finally {
         setIsProcessing(false);
       }
@@ -423,6 +455,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
     }
   }, [height, duration]);
 
+  // Don't render anything if there's no audio
+  if (!hasAudio && isProcessed) {
+    return null;
+  }
+
   return (
     <div className="volume-visualizer" style={{ height: `${height}px` }}>
       <canvas
@@ -444,6 +481,13 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
             </path>
           </svg>
           Processing audio waveform...
+        </div>
+      )}
+      {!hasAudio && isProcessed && audioError && (
+        <div className="volume-visualizer-no-audio">
+          <span style={{ fontSize: '12px', color: 'var(--md-outline)', opacity: 0.7 }}>
+            No audio track
+          </span>
         </div>
       )}
     </div>
