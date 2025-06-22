@@ -1,0 +1,457 @@
+/* Download Only Modal Styles - Flat Design inspired by VideoQualityModal */
+
+.download-only-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999; /* High z-index like other portal modals */
+  backdrop-filter: blur(4px);
+  isolation: isolate; /* Create a new stacking context */
+}
+
+.download-only-modal {
+  background-color: var(--md-surface-1);
+  border-radius: 24px;
+  box-shadow: var(--md-elevation-level3);
+  max-width: 800px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fade-in 0.3s ease-out;
+  position: relative;
+  z-index: 1; /* Reset z-index - parent already has high z-index */
+  /* Create a new stacking context */
+  transform: translateZ(0);
+  /* Ensure proper rendering */
+  will-change: transform;
+}
+
+/* Header - flat design like VideoQualityModal */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  z-index: 1;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  letter-spacing: 0.1px;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--md-on-surface-variant);
+  padding: 6px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover:not(:disabled) {
+  background-color: rgba(var(--md-on-surface-rgb), 0.1);
+}
+
+.close-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Content - flat design with clean spacing */
+.modal-content {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--md-surface-1);
+}
+
+.video-info {
+  background-color: var(--md-surface-2);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--md-elevation-level1);
+  transition: all 0.2s ease;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-row .label {
+  font-weight: 500;
+  color: var(--md-on-surface);
+  font-size: 0.75rem;
+  letter-spacing: 0.1px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.info-row .value {
+  color: var(--md-on-surface);
+  word-break: break-word;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/* Download Options - flat design with subtle interactions */
+.download-options h4 {
+  margin: 0 0 16px 0;
+  color: var(--md-on-surface);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.option-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background-color: var(--md-surface-2);
+  border-radius: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid transparent;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.option-item:hover:not(:has(input:disabled)) {
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+.option-item:has(input:checked) {
+  background-color: var(--md-surface-3);
+  border: 1px solid rgba(var(--md-on-surface-rgb), 0.12);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.option-item:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.option-item input[type="radio"] {
+  margin: 0;
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--md-on-surface);
+  flex-basis: auto;
+  max-width: 16px;
+}
+
+.option-content {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.option-title {
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  letter-spacing: 0.1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-description {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+  line-height: 1.4;
+}
+
+/* Quality Selector - flat design with clean indentation */
+.quality-selector {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background-color: var(--md-surface-3);
+  border-radius: 12px;
+  border-left: 3px solid rgba(var(--md-on-surface-rgb), 0.2);
+}
+
+.quality-selector-title {
+  font-weight: 500;
+  color: var(--md-on-surface);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  letter-spacing: 0.1px;
+}
+
+.scanning-indicator,
+.no-qualities {
+  padding: 12px;
+  text-align: center;
+  color: var(--md-on-surface-variant);
+  font-size: 0.8rem;
+  font-style: italic;
+  background-color: var(--md-surface-2);
+  border-radius: 12px;
+  border: 1px dashed rgba(var(--md-on-surface-rgb), 0.2);
+}
+
+.quality-options-list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* Radio pill styling for quality options */
+.quality-options-list .radio-pill {
+  position: relative;
+}
+
+.quality-options-list .radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.quality-options-list .radio-pill input[type="radio"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.quality-options-list .radio-pill .quality-pill-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  height: 48px;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--md-on-surface);
+  box-sizing: border-box;
+  box-shadow: var(--md-elevation-level1);
+  width: 100%;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.quality-options-list .radio-pill .quality-pill-label:hover:not(:has(input:disabled)) {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-2px);
+}
+
+.quality-options-list .radio-pill .quality-pill-label:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.quality-options-list .radio-pill input[type="radio"]:checked + .quality-pill-label {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+}
+
+.quality-options-list .radio-pill input[type="radio"]:checked + .quality-pill-label:hover {
+  background-color: var(--md-primary-container);
+  opacity: 0.9;
+}
+
+.quality-options-list .radio-pill input[type="radio"]:disabled + .quality-pill-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--md-on-surface-variant);
+}
+
+/* Progress section - flat design */
+.download-progress-container {
+  padding: 16px 24px;
+  background-color: var(--md-surface-2);
+  border-top: 1px solid rgba(var(--md-on-surface-rgb), 0.1);
+  margin: 16px -24px 0;
+}
+
+.download-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(var(--md-on-surface-rgb), 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.download-progress-fill {
+  height: 100%;
+  background-color: var(--md-on-surface);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.download-progress-text {
+  font-size: 0.75rem;
+  color: var(--md-on-surface-variant);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Modal Footer - flat button design like VideoQualityModal */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  background-color: var(--md-surface-1);
+}
+
+/* Flat Button Styles - inspired by VideoQualityModal */
+.cancel-button,
+.confirm-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 36px;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+  box-shadow: var(--md-elevation-level2);
+  font-family: 'Google Sans', 'Open Sans', sans-serif;
+}
+
+.cancel-button {
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+}
+
+.cancel-button:hover:not(:disabled) {
+  background-color: var(--md-surface-3);
+  box-shadow: var(--md-elevation-level3);
+}
+
+.confirm-button {
+  background-color: var(--md-on-surface);
+  color: var(--md-surface);
+}
+
+.confirm-button:hover:not(:disabled) {
+  background-color: rgba(var(--md-on-surface-rgb), 0.9);
+  box-shadow: var(--md-elevation-level3);
+}
+
+.cancel-button:disabled,
+.confirm-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface-variant);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.cancel-button:disabled:hover,
+.confirm-button:disabled:hover {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Animation - simple fade-in like VideoQualityModal */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design - clean mobile layout */
+@media (max-width: 768px) {
+  .download-only-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+  }
+
+  .modal-content {
+    padding: 16px 20px;
+  }
+
+  .modal-actions {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .video-info {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .quality-options-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .cancel-button,
+  .confirm-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .option-item {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .quality-options-list .radio-pill .quality-pill-label {
+    padding: 8px 6px;
+    height: 40px;
+    font-size: 0.75rem;
+  }
+}
