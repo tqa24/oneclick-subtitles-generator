@@ -5,6 +5,7 @@
 import { getLanguageCode } from '../../utils/languageUtils';
 import i18n from '../../i18n/i18n';
 import { createTranslationSchema, addResponseSchema } from '../../utils/schemaUtils';
+import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { getDefaultTranslationPrompt } from './promptManagement';
 import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
 import { createRequestController, removeRequestController, abortAllRequests, getProcessingForceStopped } from './requestManagement';
@@ -226,6 +227,9 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
         // Always use structured output
         requestData = addResponseSchema(requestData, createTranslationSchema(isMultiLanguage));
+
+        // Add thinking configuration if supported by the model
+        requestData = addThinkingConfig(requestData, model);
 
 
         const response = await fetch(apiUrl, {

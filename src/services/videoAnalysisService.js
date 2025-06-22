@@ -4,6 +4,7 @@
 
 import { fileToBase64 } from '../utils/fileUtils';
 import { createVideoAnalysisSchema, addResponseSchema } from '../utils/schemaUtils';
+import { addThinkingConfig } from '../utils/thinkingBudgetUtils';
 import i18n from '../i18n/i18n';
 
 // Translation function shorthand
@@ -164,6 +165,9 @@ Provide your analysis in a structured format that can be used to guide the trans
 
     // Add response schema for structured output
     requestData = addResponseSchema(requestData, createVideoAnalysisSchema());
+
+    // Disable thinking for video analysis to avoid token conflicts with complex schemas
+    requestData = addThinkingConfig(requestData, MODEL, { enableThinking: false });
 
     onStatusUpdate({ message: t('input.analyzingVideo', 'Analyzing video content...'), type: 'loading' });
 

@@ -16,6 +16,7 @@ import {
 } from './requestManagement';
 import i18n from '../../i18n/i18n';
 import { getNextAvailableKey, blacklistKey } from './keyManager';
+import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 
 /**
  * Call the Gemini API with various input types
@@ -26,8 +27,13 @@ import { getNextAvailableKey, blacklistKey } from './keyManager';
  */
 export const callGeminiApi = async (input, inputType, options = {}) => {
     // Extract options
-    const { userProvidedSubtitles } = options;
-    const MODEL = localStorage.getItem('gemini_model') || "gemini-2.5-flash";
+    const { userProvidedSubtitles, modelId } = options;
+    // Use the passed modelId if available, otherwise fall back to localStorage
+    const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
+
+    if (modelId) {
+        console.log(`[GeminiAPI] Using custom model: ${MODEL}`);
+    }
 
     // Get the next available API key
     const geminiApiKey = getNextAvailableKey();
@@ -43,6 +49,9 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
     // Always use structured output, but with different schema based on whether we have user-provided subtitles
     const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
     requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
+
+    // Add thinking configuration if supported by the model
+    requestData = addThinkingConfig(requestData, MODEL);
 
 
     if (inputType === 'youtube') {
@@ -126,6 +135,9 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
             // Still add the structured output schema, but with the user-provided flag
             requestData = addResponseSchema(requestData, createSubtitleSchema(true), true);
+
+            // Add thinking configuration if supported by the model
+            requestData = addThinkingConfig(requestData, MODEL);
 
 
             // Count the number of subtitles for validation

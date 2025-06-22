@@ -301,5 +301,19 @@
   "modelManagement.storageInformation": "Storage Information",
   "modelManagement.usingSymlinks": "This model is using symbolic links to save disk space. The model files are stored in the Hugging Face cache directory and linked to the application's models directory.",
   "modelManagement.notUsingSymlinks": "This model is using duplicate storage. The model files are copied from the Hugging Face cache to the application's models directory, consuming extra disk space.",
-  "modelManagement.originalFiles": "Original files in Hugging Face cache"
+  "modelManagement.originalFiles": "Original files in Hugging Face cache",
+  "thinkingBudgetSection": "AI Thinking Budget",
+  "thinkingBudgetDescription": "Configure how much thinking each AI model should use. Higher budgets allow more detailed reasoning but increase processing time and cost.",
+  "thinkingBudget25Pro": "Gemini 2.5 Pro Thinking Budget",
+  "thinkingBudget25ProDesc": "Cannot disable thinking. Choose dynamic or set custom token budget.",
+  "thinkingBudget25Flash": "Gemini 2.5 Flash Thinking Budget",
+  "thinkingBudget25FlashDesc": "Can be disabled for fastest response, dynamic for auto, or custom token budget.",
+  "thinkingBudget25FlashLite": "Gemini 2.5 Flash Lite Thinking Budget",
+  "thinkingBudget25FlashLiteDesc": "Disabled by default for fastest response. Choose dynamic or custom token budget.",
+  "thinkingDynamic": "Dynamic (Auto)",
+  "thinkingDisabled": "Disabled",
+  "thinkingCustom": "Custom",
+  "thinkingRange": "Range",
+  "tokens": "tokens",
+  "default": "Default"
 }

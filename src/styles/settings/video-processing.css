@@ -205,6 +205,39 @@ input[type="checkbox"]:disabled,
   cursor: not-allowed;
 }
 
+/* Thinking Budget Dropdown + Custom Slider Styles */
+.thinking-slider-container {
+  padding: 0.5rem 2rem;
+  background-color: var(--md-surface-container-lowest);
+  border-radius: 18px;
+}
+
+.thinking-slider-container .slider-with-value {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.thinking-slider-container .custom-slider-container {
+  flex: 1;
+  height: 42px;
+}
+
+.thinking-slider-container .slider-value-display {
+  min-width: 100px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--md-primary);
+  text-align: right;
+}
+
+.thinking-slider-container .slider-range-info {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+  text-align: center;
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .segment-duration-select,
 [data-theme="dark"] .gemini-model-select,

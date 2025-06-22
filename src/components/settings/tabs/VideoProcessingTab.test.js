@@ -32,6 +32,12 @@ describe('VideoProcessingTab Component', () => {
     setOptimizedResolution: jest.fn(),
     useOptimizedPreview: true,
     setUseOptimizedPreview: jest.fn(),
+    thinkingBudgets: {
+      'gemini-2.5-pro': -1,
+      'gemini-2.5-flash': -1,
+      'gemini-2.5-flash-lite-preview-06-17': 0
+    },
+    setThinkingBudgets: jest.fn(),
   };
 
   beforeEach(() => {
