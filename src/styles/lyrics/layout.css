@@ -149,6 +149,12 @@
 .lyrics-container {
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
+  /* Add smooth scrolling behavior */
+  scroll-behavior: smooth;
+  /* Enhance scroll performance */
+  -webkit-overflow-scrolling: touch;
+  /* Add subtle transition for scroll position changes */
+  transition: scroll-top var(--md-duration-medium2) var(--md-easing-emphasized);
 }
 
 .lyrics-container::-webkit-scrollbar {

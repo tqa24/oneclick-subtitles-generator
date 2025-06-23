@@ -10,7 +10,6 @@
   align-items: center;
   justify-content: center;
   background-color: var(--md-surface-2);
-  margin-bottom: 16px;
   position: relative; /* For positioning the floating button */
   box-shadow: var(--md-elevation-level2);
   transition: all 0.2s ease;
@@ -91,7 +90,6 @@
   display: grid;
   gap: 16px;
   width: 100%;
-  margin-bottom: 16px;
 }
 
 .image-grid-1 {
@@ -116,10 +114,6 @@
 
 .image-grid-item {
   position: relative;
-}
-
-.image-grid-item .image-preview {
-  margin-bottom: 0;
 }
 
 .image-number {

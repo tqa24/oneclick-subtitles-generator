@@ -233,21 +233,112 @@ const LyricsDisplay = ({
   const currentIndex = lyrics.findIndex((lyric, index) => {
     const nextLyric = lyrics[index + 1];
     // If there's a next lyric, use the middle point between current lyric's end and next lyric's start
+    // Subtract 1ms from the midpoint to prevent flickering when subtitleA.end == subtitleB.start
     // Otherwise, use the current lyric's end time
     return currentTime >= lyric.start &&
-      (nextLyric ? currentTime < (lyric.end + (nextLyric.start - lyric.end) / 2) : currentTime <= lyric.end);
+      (nextLyric ? currentTime < (lyric.end + (nextLyric.start - lyric.end) / 2) - 0.001 : currentTime <= lyric.end);
   });
 
   // Reference to the virtualized list
   const listRef = useRef(null);
+  const isScrollingRef = useRef(false);
+  const scrollAnimationRef = useRef(null);
 
-  // Auto-scroll to the current lyric with accurate positioning
+  // Smooth scroll function for virtualized list
+  const smoothScrollToItem = (targetIndex, align = 'center') => {
+    if (!listRef.current || isScrollingRef.current || targetIndex < 0) return;
+
+    const list = listRef.current;
+
+    // Get current scroll position
+    const currentScrollTop = list.state.scrollOffset;
+
+    // Calculate target scroll position manually but more accurately
+    let targetScrollTop = 0;
+
+    // Sum up heights of all items before the target
+    for (let i = 0; i < targetIndex; i++) {
+      targetScrollTop += getRowHeight(i);
+    }
+
+    // Adjust for center alignment
+    if (align === 'center') {
+      const containerHeight = 300;
+      const targetItemHeight = getRowHeight(targetIndex);
+      targetScrollTop -= (containerHeight - targetItemHeight) / 2;
+    }
+
+    // Clamp to valid scroll range
+    const maxScrollTop = Math.max(0,
+      lyrics.reduce((sum, _, i) => sum + getRowHeight(i), 0) - 300
+    );
+    targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+
+    const distance = targetScrollTop - currentScrollTop;
+
+    // If the distance is very small, just snap to position
+    if (Math.abs(distance) < 5) {
+      list.scrollTo(targetScrollTop);
+      return;
+    }
+
+    // For large jumps (more than 2 container heights), use instant scroll to avoid virtualization issues
+    const containerHeight = 300;
+    const largeJumpThreshold = containerHeight * 2;
+
+    if (Math.abs(distance) > largeJumpThreshold) {
+      // Use react-window's built-in scrollToItem for large jumps to handle virtualization properly
+      list.scrollToItem(targetIndex, align);
+      return;
+    }
+
+    // Cancel any existing animation
+    if (scrollAnimationRef.current) {
+      cancelAnimationFrame(scrollAnimationRef.current);
+    }
+
+    isScrollingRef.current = true;
+    const startTime = performance.now();
+    // Shorter duration for more responsive feel
+    const duration = Math.min(400, Math.max(150, Math.abs(distance) * 0.8));
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Use easeOutQuart for smoother deceleration
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const newScrollTop = currentScrollTop + (distance * easeOutQuart);
+
+      list.scrollTo(newScrollTop);
+
+      if (progress < 1) {
+        scrollAnimationRef.current = requestAnimationFrame(animate);
+      } else {
+        isScrollingRef.current = false;
+        scrollAnimationRef.current = null;
+      }
+    };
+
+    scrollAnimationRef.current = requestAnimationFrame(animate);
+  };
+
+  // Auto-scroll to the current lyric with smooth positioning
   useEffect(() => {
     if (autoScrollEnabled && currentIndex >= 0 && listRef.current) {
-      // Scroll to the current index in the virtualized list
-      listRef.current.scrollToItem(currentIndex, 'center');
+      // Use smooth scroll instead of abrupt scrollToItem
+      smoothScrollToItem(currentIndex, 'center');
     }
   }, [currentIndex, autoScrollEnabled]);
+
+  // Cleanup scroll animation on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollAnimationRef.current) {
+        cancelAnimationFrame(scrollAnimationRef.current);
+      }
+    };
+  }, []);
 
   // Watch for seekTime changes to center the timeline
   useEffect(() => {
