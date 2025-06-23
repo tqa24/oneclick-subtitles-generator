@@ -140,9 +140,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
   // Thinking budget settings for each model
   const [thinkingBudgets, setThinkingBudgets] = useState({
-    'gemini-2.5-pro': 1024, // Moderate thinking budget
-    'gemini-2.5-flash': 512, // Lower thinking budget
-    'gemini-2.5-flash-lite-preview-06-17': 0 // Disabled by default
+    'gemini-2.5-pro': -1, // Dynamic thinking (model decides when and how much to think)
+    'gemini-2.5-flash': -1, // Dynamic thinking (model decides when and how much to think)
+    'gemini-2.5-flash-lite-preview-06-17': 0 // Model does not think by default
   });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
 
@@ -201,8 +201,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     optimizedResolution: '360p',
     useOptimizedPreview: true,
     thinkingBudgets: {
-      'gemini-2.5-pro': 1024,
-      'gemini-2.5-flash': 512,
+      'gemini-2.5-pro': -1,
+      'gemini-2.5-flash': -1,
       'gemini-2.5-flash-lite-preview-06-17': 0
     }
   });
@@ -260,15 +260,15 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         try {
           const stored = localStorage.getItem('thinking_budgets');
           return stored ? JSON.parse(stored) : {
-            'gemini-2.5-pro': 1024,
-            'gemini-2.5-flash': 512,
+            'gemini-2.5-pro': -1,
+            'gemini-2.5-flash': -1,
             'gemini-2.5-flash-lite-preview-06-17': 0
           };
         } catch (error) {
           console.error('Error parsing thinking budgets from localStorage:', error);
           return {
-            'gemini-2.5-pro': 1024,
-            'gemini-2.5-flash': 512,
+            'gemini-2.5-pro': -1,
+            'gemini-2.5-flash': -1,
             'gemini-2.5-flash-lite-preview-06-17': 0
           };
         }

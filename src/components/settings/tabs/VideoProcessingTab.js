@@ -76,7 +76,7 @@ const VideoProcessingTab = ({
       if (modelId === 'gemini-2.5-pro') {
         newBudget = 1024;
       } else if (modelId === 'gemini-2.5-flash') {
-        newBudget = 512; // Flash can start from 0, but 512 is a good default
+        newBudget = 1024; // Flash can start from 0, but 1024 is a good default
       } else {
         newBudget = 512; // Flash Lite minimum is 512
       }
