@@ -346,14 +346,14 @@ export const useAppHandlers = (appState) => {
     // Try to get input from current state or localStorage
     // Priority: 1. Current selected video/file, 2. localStorage cached data
 
-    if (selectedVideo) {
-      console.log('FORCE RETRY: Using selected video');
-      input = selectedVideo;
-      inputType = activeTab.includes('youtube') || activeTab === 'unified-url' ? 'youtube' : 'file-upload';
-    } else if (uploadedFile) {
+    if (uploadedFile) {
       console.log('FORCE RETRY: Using uploaded file');
       input = uploadedFile;
       inputType = 'file-upload';
+    } else if (selectedVideo) {
+      console.log('FORCE RETRY: Using selected video');
+      input = selectedVideo;
+      inputType = activeTab.includes('youtube') || activeTab === 'unified-url' ? 'youtube' : 'file-upload';
     } else {
       // Try to get from localStorage
       const cachedVideoUrl = localStorage.getItem('current_video_url');
@@ -436,16 +436,9 @@ export const useAppHandlers = (appState) => {
           return;
         }
 
-        // If we already have subtitles data (from an uploaded SRT file), don't generate new subtitles
-        if (subtitlesData && subtitlesData.length > 0) {
-          // Just update the status to show that the video is ready
-          setStatus({ message: t('output.videoReady', 'Video is ready for playback with uploaded subtitles!'), type: 'success' });
-          // Reset retrying state
-          setIsRetrying(false);
-        } else {
-          // Otherwise, retry generating subtitles
-          await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
-        }
+        // FORCE RETRY: Always retry generating subtitles, ignore existing data
+        console.log('FORCE RETRY: Forcing subtitle regeneration for downloaded video...');
+        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
       } catch (error) {
         console.error('Error downloading video:', error);
         // Reset downloading state
