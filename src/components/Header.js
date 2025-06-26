@@ -9,6 +9,7 @@ const Header = ({ onSettingsClick }) => {
   const hideTimeoutRef = useRef(null);
   const initialShowTimeoutRef = useRef(null);
   const [isInitialShow, setIsInitialShow] = useState(true); // Track if we're in initial show period
+  const [hasOpenedSettings, setHasOpenedSettings] = useState(false); // Track if user has ever opened settings
 
   // Define the position update function outside useEffect so it can be reused
   const updateFloatingActionsPosition = () => {
@@ -34,6 +35,18 @@ const Header = ({ onSettingsClick }) => {
   };
 
   useEffect(() => {
+    // Check if user has ever opened settings
+    const hasEverOpenedSettings = localStorage.getItem('has_opened_settings') === 'true';
+    setHasOpenedSettings(hasEverOpenedSettings);
+
+    // If user has never opened settings, keep button always visible
+    if (!hasEverOpenedSettings) {
+      setShowFloatingActions(true);
+      setIsInitialShow(false); // Skip initial show period, just stay visible
+      updateFloatingActionsPosition();
+      return;
+    }
+
     // Check if user has visited before (onboarding banner logic)
     const hasVisitedBefore = localStorage.getItem('has_visited_site') === 'true';
 
@@ -87,6 +100,9 @@ const Header = ({ onSettingsClick }) => {
       // Don't handle mouse events during initial show period
       if (isInitialShow) return;
 
+      // If user has never opened settings, keep button always visible
+      if (!hasOpenedSettings) return;
+
       // Show floating actions when cursor is near the top-right area of the current viewport
       const viewportWidth = window.innerWidth;
       const isMobile = viewportWidth <= 768;
@@ -123,6 +139,9 @@ const Header = ({ onSettingsClick }) => {
       // Don't handle mouse leave during initial show period
       if (isInitialShow) return;
 
+      // If user has never opened settings, keep button always visible
+      if (!hasOpenedSettings) return;
+
       // Hide when mouse leaves the window with a slight delay
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
@@ -153,7 +172,19 @@ const Header = ({ onSettingsClick }) => {
         clearTimeout(hideTimeoutRef.current);
       }
     };
-  }, [showFloatingActions, isInitialShow]);
+  }, [showFloatingActions, isInitialShow, hasOpenedSettings]);
+
+  // Handle settings click - mark as opened and call original handler
+  const handleSettingsClick = () => {
+    // Mark that user has opened settings
+    if (!hasOpenedSettings) {
+      localStorage.setItem('has_opened_settings', 'true');
+      setHasOpenedSettings(true);
+    }
+
+    // Call the original settings click handler
+    onSettingsClick();
+  };
 
   return (
     <header className="app-header">
@@ -166,7 +197,7 @@ const Header = ({ onSettingsClick }) => {
 
       <button
         className={`settings-button floating-settings ${showFloatingActions ? 'floating-visible' : 'floating-hidden'}`}
-        onClick={onSettingsClick}
+        onClick={handleSettingsClick}
         aria-label={t('header.settingsAria')}
       >
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
