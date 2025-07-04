@@ -138,7 +138,9 @@ const DownloadOptionsModal = ({
                   onChange={() => setSubtitleSource('original')}
                   disabled={!hasOriginal}
                 />
-                <span className="radio-option-card">{t('download.original', 'Original')}</span>
+                <span className={`radio-option-card ${subtitleSource === 'original' ? 'checked' : ''}`}>
+                  {t('download.original', 'Original')}
+                </span>
               </label>
               <label className={`radio-option-base ${!hasTranslation ? 'disabled' : ''}`}>
                 <input
@@ -149,7 +151,9 @@ const DownloadOptionsModal = ({
                   onChange={() => setSubtitleSource('translated')}
                   disabled={!hasTranslation}
                 />
-                <span className="radio-option-card">{t('download.translated', 'Translated')}</span>
+                <span className={`radio-option-card ${subtitleSource === 'translated' ? 'checked' : ''}`}>
+                  {t('download.translated', 'Translated')}
+                </span>
               </label>
             </div>
           </div>
@@ -191,7 +195,7 @@ const DownloadOptionsModal = ({
                       checked={fileFormat === 'srt'}
                       onChange={() => setFileFormat('srt')}
                     />
-                    <span className="radio-option-card">SRT</span>
+                    <span className={`radio-option-card ${fileFormat === 'srt' ? 'checked' : ''}`}>SRT</span>
                   </label>
                   <label className="radio-option-base">
                     <input
@@ -201,7 +205,7 @@ const DownloadOptionsModal = ({
                       checked={fileFormat === 'json'}
                       onChange={() => setFileFormat('json')}
                     />
-                    <span className="radio-option-card">JSON</span>
+                    <span className={`radio-option-card ${fileFormat === 'json' ? 'checked' : ''}`}>JSON</span>
                   </label>
                   <label className="radio-option-base">
                     <input
@@ -211,7 +215,9 @@ const DownloadOptionsModal = ({
                       checked={fileFormat === 'txt'}
                       onChange={() => setFileFormat('txt')}
                     />
-                    <span className="radio-option-card">{t('download.txtNoTimings', 'TXT (no timings)')}</span>
+                    <span className={`radio-option-card ${fileFormat === 'txt' ? 'checked' : ''}`}>
+                      {t('download.txtNoTimings', 'TXT (no timings)')}
+                    </span>
                   </label>
                 </div>
               </div>
@@ -235,7 +241,7 @@ const DownloadOptionsModal = ({
                         if (isPromptEditorOpen) setIsPromptEditorOpen(false);
                       }}
                     />
-                    <span className="radio-option-card">
+                    <span className={`radio-option-card ${processType === 'consolidate' ? 'checked' : ''}`}>
                       {t('download.consolidate', 'Complete Document (TXT)')}
                       <div className="info-icon-container" title={t('download.consolidateExplanation', 'Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.')}>
                         <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
@@ -258,7 +264,7 @@ const DownloadOptionsModal = ({
                         if (isPromptEditorOpen) setIsPromptEditorOpen(false);
                       }}
                     />
-                    <span className="radio-option-card">
+                    <span className={`radio-option-card ${processType === 'summarize' ? 'checked' : ''}`}>
                       {t('download.summarize', 'Summarize (TXT)')}
                       <div className="info-icon-container" title={t('download.summarizeExplanation', 'Creates a concise summary of the main points and key information, about 1/3 the length of the original text.')}>
                         <svg className="info-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
