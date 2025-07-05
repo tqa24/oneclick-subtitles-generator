@@ -107,6 +107,10 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   z-index: 25; /* Higher z-index to ensure it's always on top */
+  padding: 0; /* Override any inherited padding that could make it oval */
+  min-width: 20px; /* Ensure consistent width */
+  min-height: 20px; /* Ensure consistent height */
+  box-sizing: border-box; /* Ensure padding doesn't affect dimensions */
 }
 
 .chain-item:hover .remove-btn {
@@ -124,6 +128,10 @@
   height: 16px;
   top: -6px;
   right: -6px;
+  padding: 0; /* Override any inherited padding that could make it oval */
+  min-width: 16px; /* Ensure consistent width */
+  min-height: 16px; /* Ensure consistent height */
+  box-sizing: border-box; /* Ensure padding doesn't affect dimensions */
 }
 
 /* Delimiter item */
