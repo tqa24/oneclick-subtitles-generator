@@ -11,6 +11,12 @@ const LanguageSelector = ({ isDropup = false }) => {
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
+  // Debug flag - can be enabled for troubleshooting
+  const DEBUG_POSITIONING = false;
+
+  // Track if we've successfully calculated position at least once
+  const [hasValidPosition, setHasValidPosition] = useState(false);
+
   // Language options with their details
   const languages = [
     { code: 'en', name: t('language.en'), flag: '🇺🇸', label: 'English' },
@@ -32,30 +38,68 @@ const LanguageSelector = ({ isDropup = false }) => {
   // Calculate menu position when button is clicked
   const calculateMenuPosition = useCallback(() => {
     if (buttonRef.current) {
-      const buttonRect = buttonRef.current.getBoundingClientRect();
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+      try {
+        const buttonRect = buttonRef.current.getBoundingClientRect();
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
 
-      if (isDropup) {
-        // Position the menu above the button
-        setMenuPosition({
-          bottom: window.innerHeight - buttonRect.top + scrollTop,
-          left: buttonRect.left + scrollLeft,
-        });
-      } else {
-        // Position the menu below the button
-        setMenuPosition({
-          top: buttonRect.bottom + scrollTop,
-          left: buttonRect.left + scrollLeft,
-        });
+        if (DEBUG_POSITIONING) {
+          console.log('Calculating position:', {
+            isDropup,
+            buttonRect,
+            scrollTop,
+            scrollLeft,
+            windowHeight: window.innerHeight
+          });
+        }
+
+        // Ensure we have valid dimensions
+        if (buttonRect.width === 0 || buttonRect.height === 0) {
+          console.warn('Button has no dimensions, retrying position calculation...');
+          // Retry after a short delay
+          setTimeout(() => calculateMenuPosition(), 50);
+          return;
+        }
+
+        let newPosition;
+        if (isDropup) {
+          // Position the menu above the button
+          const bottomPosition = window.innerHeight - buttonRect.top + scrollTop;
+          newPosition = {
+            bottom: Math.max(0, bottomPosition), // Ensure non-negative value
+            left: Math.max(0, buttonRect.left + scrollLeft), // Ensure non-negative value
+          };
+        } else {
+          // Position the menu below the button
+          newPosition = {
+            top: Math.max(0, buttonRect.bottom + scrollTop), // Ensure non-negative value
+            left: Math.max(0, buttonRect.left + scrollLeft), // Ensure non-negative value
+          };
+        }
+
+        if (DEBUG_POSITIONING) {
+          console.log('Setting menu position:', newPosition);
+        }
+
+        setMenuPosition(newPosition);
+        setHasValidPosition(true);
+      } catch (error) {
+        console.error('Error calculating menu position:', error);
+        // Fallback to default positioning
+        setMenuPosition({ top: 0, left: 0 });
       }
+    } else if (DEBUG_POSITIONING) {
+      console.warn('buttonRef.current is null, cannot calculate position');
     }
-  }, [isDropup]);
+  }, [isDropup, DEBUG_POSITIONING]);
 
   // Toggle menu open/closed
   const toggleMenu = () => {
     if (!isOpen) {
-      calculateMenuPosition();
+      // Use requestAnimationFrame to ensure DOM is updated before calculating position
+      requestAnimationFrame(() => {
+        calculateMenuPosition();
+      });
     }
     setIsOpen(!isOpen);
   };
@@ -91,6 +135,64 @@ const LanguageSelector = ({ isDropup = false }) => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
+  }, [isOpen, calculateMenuPosition]);
+
+  // Recalculate position when menu opens to handle timing issues
+  useEffect(() => {
+    if (isOpen) {
+      // Multiple attempts to ensure proper positioning
+      const timeouts = [
+        setTimeout(() => calculateMenuPosition(), 10),
+        setTimeout(() => calculateMenuPosition(), 50),
+        setTimeout(() => calculateMenuPosition(), 100),
+        // Fallback: make menu visible even if position calculation fails
+        setTimeout(() => {
+          if (!hasValidPosition) {
+            console.warn('Position calculation failed, showing menu with fallback position');
+            setHasValidPosition(true);
+          }
+        }, 200)
+      ];
+
+      return () => {
+        timeouts.forEach(timeout => clearTimeout(timeout));
+      };
+    } else {
+      // Reset position state when menu closes
+      setHasValidPosition(false);
+    }
+  }, [isOpen, calculateMenuPosition, hasValidPosition]);
+
+  // Watch for button visibility changes
+  useEffect(() => {
+    if (buttonRef.current && isOpen) {
+      // Use Intersection Observer to detect when button is visible
+      const intersectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0) {
+            calculateMenuPosition();
+          }
+        });
+      }, { threshold: 0.1 });
+
+      // Use Mutation Observer to detect style/class changes
+      const mutationObserver = new MutationObserver(() => {
+        if (buttonRef.current && buttonRef.current.offsetParent !== null) {
+          calculateMenuPosition();
+        }
+      });
+
+      intersectionObserver.observe(buttonRef.current);
+      mutationObserver.observe(buttonRef.current, {
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
+
+      return () => {
+        intersectionObserver.disconnect();
+        mutationObserver.disconnect();
+      };
+    }
   }, [isOpen, calculateMenuPosition]);
 
   // Handle keyboard navigation
@@ -147,9 +249,20 @@ const LanguageSelector = ({ isDropup = false }) => {
           className={`language-menu ${isDropup ? 'dropup' : ''}`}
           role="menu"
           style={{
+            position: 'fixed',
+            zIndex: 10000,
+            visibility: hasValidPosition ? 'visible' : 'hidden',
             ...(isDropup
-              ? { bottom: `${menuPosition.bottom}px`, left: `${menuPosition.left}px` }
-              : { top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }
+              ? {
+                  bottom: `${menuPosition.bottom || (hasValidPosition ? 0 : 50)}px`,
+                  left: `${menuPosition.left || 20}px`,
+                  top: 'auto'
+                }
+              : {
+                  top: `${menuPosition.top || (hasValidPosition ? 0 : 50)}px`,
+                  left: `${menuPosition.left || 20}px`,
+                  bottom: 'auto'
+                }
             )
           }}
         >
