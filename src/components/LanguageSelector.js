@@ -40,15 +40,11 @@ const LanguageSelector = ({ isDropup = false }) => {
     if (buttonRef.current) {
       try {
         const buttonRect = buttonRef.current.getBoundingClientRect();
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
 
         if (DEBUG_POSITIONING) {
           console.log('Calculating position:', {
             isDropup,
             buttonRect,
-            scrollTop,
-            scrollLeft,
             windowHeight: window.innerHeight
           });
         }
@@ -61,19 +57,49 @@ const LanguageSelector = ({ isDropup = false }) => {
           return;
         }
 
+        // Check if the button is inside a floating modal
+        const isInFloatingModal = buttonRef.current?.closest('.floating-settings');
+
         let newPosition;
         if (isDropup) {
-          // Position the menu above the button
-          const bottomPosition = window.innerHeight - buttonRect.top + scrollTop;
-          newPosition = {
-            bottom: Math.max(0, bottomPosition), // Ensure non-negative value
-            left: Math.max(0, buttonRect.left + scrollLeft), // Ensure non-negative value
-          };
+          if (isInFloatingModal) {
+            // For dropup inside floating modal, position relative to the modal container
+            const modalContainer = buttonRef.current.closest('.settings-modal');
+            const modalRect = modalContainer ? modalContainer.getBoundingClientRect() : null;
+
+            if (modalRect) {
+              // Position relative to the modal container using absolute positioning
+              const relativeBottom = modalRect.height - (buttonRect.top - modalRect.top);
+              const relativeLeft = buttonRect.left - modalRect.left;
+              newPosition = {
+                bottom: Math.max(10, relativeBottom),
+                left: Math.max(10, Math.min(relativeLeft, modalRect.width - 200)),
+                top: 'auto'
+              };
+            } else {
+              // Fallback to viewport positioning
+              const bottomPosition = window.innerHeight - buttonRect.top;
+              newPosition = {
+                bottom: Math.max(10, bottomPosition),
+                left: Math.max(10, Math.min(buttonRect.left, window.innerWidth - 200)),
+                top: 'auto'
+              };
+            }
+          } else {
+            // For dropup in normal (non-floating) context
+            const bottomPosition = window.innerHeight - buttonRect.top;
+            newPosition = {
+              bottom: Math.max(10, bottomPosition),
+              left: Math.max(10, Math.min(buttonRect.left, window.innerWidth - 200)),
+              top: 'auto'
+            };
+          }
         } else {
-          // Position the menu below the button
+          // For dropdown, position the menu below the button
           newPosition = {
-            top: Math.max(0, buttonRect.bottom + scrollTop), // Ensure non-negative value
-            left: Math.max(0, buttonRect.left + scrollLeft), // Ensure non-negative value
+            top: Math.max(10, buttonRect.bottom),
+            left: Math.max(10, Math.min(buttonRect.left, window.innerWidth - 200)),
+            bottom: 'auto'
           };
         }
 
@@ -123,7 +149,7 @@ const LanguageSelector = ({ isDropup = false }) => {
     };
   }, []);
 
-  // Update menu position when window is resized
+  // Update menu position when window is resized, scrolled, or mouse moves (for floating buttons)
   useEffect(() => {
     const handleResize = () => {
       if (isOpen) {
@@ -131,13 +157,31 @@ const LanguageSelector = ({ isDropup = false }) => {
       }
     };
 
+    const handleScroll = () => {
+      if (isOpen) {
+        calculateMenuPosition();
+      }
+    };
+
+    const handleMouseMove = () => {
+      if (isOpen && buttonRef.current?.closest('.floating-settings')) {
+        // For floating buttons, recalculate position on mouse movement
+        // since the floating button may reposition itself
+        calculateMenuPosition();
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isOpen, calculateMenuPosition]);
 
-  // Recalculate position when menu opens to handle timing issues
+  // Recalculate position when menu opens and continuously track floating button movement
   useEffect(() => {
     if (isOpen) {
       // Multiple attempts to ensure proper positioning
@@ -154,16 +198,67 @@ const LanguageSelector = ({ isDropup = false }) => {
         }, 200)
       ];
 
+      // For floating buttons, continuously track position changes using requestAnimationFrame
+      let animationFrameId = null;
+      let lastPosition = null;
+      const isFloatingButton = buttonRef.current?.closest('.floating-settings');
+
+      if (isFloatingButton) {
+        const trackPosition = () => {
+          if (buttonRef.current && isOpen) {
+            const buttonRect = buttonRef.current.getBoundingClientRect();
+            const currentPosition = `${buttonRect.left},${buttonRect.top}`;
+
+            // Only recalculate if position actually changed
+            if (currentPosition !== lastPosition) {
+              lastPosition = currentPosition;
+
+              // Immediately update position for smooth tracking
+              let newPosition;
+              if (isDropup) {
+                const bottomPosition = window.innerHeight - buttonRect.top;
+                newPosition = {
+                  bottom: Math.max(10, bottomPosition),
+                  left: Math.max(10, Math.min(buttonRect.left, window.innerWidth - 200)),
+                  top: 'auto'
+                };
+              } else {
+                newPosition = {
+                  top: Math.max(10, buttonRect.bottom),
+                  left: Math.max(10, Math.min(buttonRect.left, window.innerWidth - 200)),
+                  bottom: 'auto'
+                };
+              }
+
+              setMenuPosition(newPosition);
+
+              if (DEBUG_POSITIONING) {
+                console.log('Position updated during floating tracking:', newPosition);
+              }
+            }
+
+            // Continue tracking
+            animationFrameId = requestAnimationFrame(trackPosition);
+          }
+        };
+
+        // Start tracking
+        animationFrameId = requestAnimationFrame(trackPosition);
+      }
+
       return () => {
         timeouts.forEach(timeout => clearTimeout(timeout));
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
       };
     } else {
       // Reset position state when menu closes
       setHasValidPosition(false);
     }
-  }, [isOpen, calculateMenuPosition, hasValidPosition]);
+  }, [isOpen, calculateMenuPosition, hasValidPosition, DEBUG_POSITIONING, isDropup]);
 
-  // Watch for button visibility changes
+  // Watch for button visibility and position changes (especially for floating buttons)
   useEffect(() => {
     if (buttonRef.current && isOpen) {
       // Use Intersection Observer to detect when button is visible
@@ -175,12 +270,25 @@ const LanguageSelector = ({ isDropup = false }) => {
         });
       }, { threshold: 0.1 });
 
-      // Use Mutation Observer to detect style/class changes
-      const mutationObserver = new MutationObserver(() => {
-        if (buttonRef.current && buttonRef.current.offsetParent !== null) {
-          calculateMenuPosition();
-        }
+      // Use Mutation Observer to detect style/class changes (important for floating buttons)
+      const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          if (mutation.type === 'attributes' &&
+              (mutation.attributeName === 'style' || mutation.attributeName === 'class')) {
+            // Recalculate position when button style changes (floating button repositioning)
+            calculateMenuPosition();
+          }
+        });
       });
+
+      // Monitor the floating settings button specifically if this is inside one
+      const floatingButton = buttonRef.current.closest('.floating-settings');
+      if (floatingButton) {
+        mutationObserver.observe(floatingButton, {
+          attributes: true,
+          attributeFilter: ['style', 'class']
+        });
+      }
 
       intersectionObserver.observe(buttonRef.current);
       mutationObserver.observe(buttonRef.current, {
@@ -243,28 +351,36 @@ const LanguageSelector = ({ isDropup = false }) => {
         </span>
       </button>
 
-      {isOpen && createPortal(
-        <div
-          ref={menuRef}
-          className={`language-menu ${isDropup ? 'dropup' : ''}`}
-          role="menu"
-          style={{
-            position: 'fixed',
-            zIndex: 10000,
-            visibility: hasValidPosition ? 'visible' : 'hidden',
-            ...(isDropup
-              ? {
-                  bottom: `${menuPosition.bottom || (hasValidPosition ? 0 : 50)}px`,
-                  left: `${menuPosition.left || 20}px`,
-                  top: 'auto'
-                }
-              : {
-                  top: `${menuPosition.top || (hasValidPosition ? 0 : 50)}px`,
-                  left: `${menuPosition.left || 20}px`,
-                  bottom: 'auto'
-                }
-            )
-          }}
+      {isOpen && (() => {
+        // Check if we're inside a floating modal
+        const isInFloatingModal = buttonRef.current?.closest('.floating-settings');
+        const modalContainer = isInFloatingModal ? buttonRef.current?.closest('.settings-modal') : null;
+
+        // Choose the portal target: modal container if floating, otherwise document.body
+        const portalTarget = modalContainer || document.body;
+
+        return createPortal(
+          <div
+            ref={menuRef}
+            className={`language-menu ${isDropup ? 'dropup' : ''}`}
+            role="menu"
+            style={{
+              position: isInFloatingModal && modalContainer ? 'absolute' : 'fixed',
+              zIndex: 10000,
+              visibility: hasValidPosition ? 'visible' : 'hidden',
+              ...(isDropup
+                ? {
+                    bottom: `${menuPosition.bottom || (hasValidPosition ? 0 : 50)}px`,
+                    left: `${menuPosition.left || 20}px`,
+                    top: 'auto'
+                  }
+                : {
+                    top: `${menuPosition.top || (hasValidPosition ? 0 : 50)}px`,
+                    left: `${menuPosition.left || 20}px`,
+                    bottom: 'auto'
+                  }
+              )
+            }}
         >
           <div className="language-menu-header">
             <span className="language-menu-title">{t('language.languageSelector')}</span>
@@ -299,8 +415,9 @@ const LanguageSelector = ({ isDropup = false }) => {
             ))}
           </div>
         </div>,
-        document.body
-      )}
+        portalTarget
+      );
+    })()}
     </div>
   );
 };
