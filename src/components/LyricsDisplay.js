@@ -105,6 +105,63 @@ const LyricsDisplay = ({
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('consolidation_split_duration') || '0');
   });
+
+  // Get naming information for downloads
+  const getNamingInfo = () => {
+    // Get uploaded SRT info
+    let sourceSubtitleName = '';
+    try {
+      const uploadedSrtInfo = localStorage.getItem('uploaded_srt_info');
+      if (uploadedSrtInfo) {
+        const srtInfo = JSON.parse(uploadedSrtInfo);
+        if (srtInfo.hasUploaded && srtInfo.fileName) {
+          sourceSubtitleName = srtInfo.fileName;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing uploaded SRT info:', error);
+    }
+
+    // Get video name (from uploaded file or video title)
+    let videoName = '';
+    const uploadedFileUrl = localStorage.getItem('current_file_url');
+    if (uploadedFileUrl) {
+      // For uploaded files, try to get the original file name
+      // This might be stored in the uploadedFile object or we can use videoTitle
+      videoName = videoTitle;
+    } else {
+      // For YouTube videos, use the video title
+      videoName = videoTitle;
+    }
+
+    // Get target languages
+    let targetLanguages = [];
+    try {
+      const translationTargetLanguage = localStorage.getItem('translation_target_language');
+      if (translationTargetLanguage) {
+        // Try to parse as JSON first (for multi-language)
+        try {
+          const parsed = JSON.parse(translationTargetLanguage);
+          if (Array.isArray(parsed)) {
+            targetLanguages = parsed;
+          } else {
+            targetLanguages = [{ value: parsed }];
+          }
+        } catch {
+          // If not JSON, treat as single language string
+          targetLanguages = [{ value: translationTargetLanguage }];
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing target languages:', error);
+    }
+
+    return {
+      sourceSubtitleName,
+      videoName,
+      targetLanguages
+    };
+  };
   const [consolidationStatus, setConsolidationStatus] = useState('');
   const [showWaveform, setShowWaveform] = useState(() => {
     // Load from localStorage, default to true if not set
@@ -349,13 +406,46 @@ const LyricsDisplay = ({
     }
   }, [seekTime]);
 
+  // Generate comprehensive filename based on priority system
+  const generateFilename = (source, namingInfo = {}) => {
+    const { sourceSubtitleName = '', videoName = '', targetLanguages = [] } = namingInfo;
+
+    // Priority 1: Source subtitle name (remove extension)
+    let baseName = '';
+    if (sourceSubtitleName) {
+      baseName = sourceSubtitleName.replace(/\.(srt|json)$/i, '');
+    }
+    // Priority 2: Video name (remove extension)
+    else if (videoName) {
+      baseName = videoName.replace(/\.[^/.]+$/, '');
+    }
+    // Fallback: Use video title or default
+    else {
+      baseName = videoTitle || 'subtitles';
+    }
+
+    // Add language suffix for translations
+    let langSuffix = '';
+    if (source === 'translated' && targetLanguages.length > 0) {
+      if (targetLanguages.length === 1) {
+        // Single language: use the language name
+        const langName = targetLanguages[0].value || targetLanguages[0];
+        langSuffix = `_${langName.toLowerCase().replace(/\s+/g, '_')}`;
+      } else {
+        // Multiple languages: use multi_lang
+        langSuffix = '_multi_lang';
+      }
+    }
+
+    return `${baseName}${langSuffix}`;
+  };
+
   // Handle download request from modal
-  const handleDownload = (source, format) => {
+  const handleDownload = (source, format, namingInfo = {}) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
 
     if (subtitlesToUse && subtitlesToUse.length > 0) {
-      const langSuffix = source === 'translated' ? '_translated' : '';
-      const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
+      const baseFilename = generateFilename(source, namingInfo);
 
       switch (format) {
         case 'srt':
@@ -375,7 +465,7 @@ const LyricsDisplay = ({
   };
 
   // Handle process request from modal
-  const handleProcess = async (source, processType, model, splitDurationParam, customPrompt) => {
+  const handleProcess = async (source, processType, model, splitDurationParam, customPrompt, namingInfo = {}) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : lyrics;
 
     // Store the current source in localStorage for language detection
@@ -465,8 +555,9 @@ const LyricsDisplay = ({
       }, 3000);
 
       // Download the processed document
-      const langSuffix = source === 'translated' ? '_translated' : '';
-      const filename = `${videoTitle || 'subtitles'}_${processType === 'consolidate' ? 'completed' : 'summary'}${langSuffix}.txt`;
+      const baseFilename = generateFilename(source, namingInfo);
+      const processTypeSuffix = processType === 'consolidate' ? 'completed' : 'summary';
+      const filename = `${baseFilename}_${processTypeSuffix}.txt`;
       downloadFile(result, filename);
     } catch (error) {
       console.error(`Error ${processType === 'consolidate' ? 'completing' : 'summarizing'} document:`, error);
@@ -727,6 +818,9 @@ const LyricsDisplay = ({
             onProcess={handleProcess}
             hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
             hasOriginal={lyrics && lyrics.length > 0}
+            sourceSubtitleName={getNamingInfo().sourceSubtitleName}
+            videoName={getNamingInfo().videoName}
+            targetLanguages={getNamingInfo().targetLanguages}
           />
         </div>
       </div>

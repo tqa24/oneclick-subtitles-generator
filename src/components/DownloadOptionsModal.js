@@ -15,6 +15,9 @@ import '../styles/DownloadOptionsModal.css';
  * @param {Function} props.onProcess - Function to handle processing (consolidate/summarize)
  * @param {boolean} props.hasTranslation - Whether translation is available
  * @param {boolean} props.hasOriginal - Whether original subtitles are available
+ * @param {string} props.sourceSubtitleName - Name of uploaded SRT file (first priority for naming)
+ * @param {string} props.videoName - Name of video file (second priority for naming)
+ * @param {Array} props.targetLanguages - Array of target languages for translation naming
  * @returns {JSX.Element} - Rendered component
  */
 const DownloadOptionsModal = ({
@@ -23,7 +26,10 @@ const DownloadOptionsModal = ({
   onDownload,
   onProcess,
   hasTranslation = false,
-  hasOriginal = true
+  hasOriginal = true,
+  sourceSubtitleName = '',
+  videoName = '',
+  targetLanguages = []
 }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
@@ -91,7 +97,11 @@ const DownloadOptionsModal = ({
 
   // Handle download button click
   const handleDownload = () => {
-    onDownload(subtitleSource, fileFormat);
+    onDownload(subtitleSource, fileFormat, {
+      sourceSubtitleName,
+      videoName,
+      targetLanguages
+    });
     onClose();
   };
 
@@ -99,8 +109,12 @@ const DownloadOptionsModal = ({
   const handleProcess = () => {
     // Pass the custom prompt if available
     const customPrompt = customPrompts[processType];
-    // Pass the split duration for consolidation
-    onProcess(subtitleSource, processType, selectedModel, splitDuration, customPrompt);
+    // Pass the split duration for consolidation and naming info
+    onProcess(subtitleSource, processType, selectedModel, splitDuration, customPrompt, {
+      sourceSubtitleName,
+      videoName,
+      targetLanguages
+    });
     onClose();
   };
 

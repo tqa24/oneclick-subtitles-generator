@@ -146,20 +146,71 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     }
   };
 
+  // Generate comprehensive filename based on priority system
+  const generateFilename = (source, namingInfo = {}) => {
+    const { sourceSubtitleName = '', videoName = '', targetLanguages: targetLangs = [] } = namingInfo;
+
+    // Priority 1: Source subtitle name (remove extension)
+    let baseName = '';
+    if (sourceSubtitleName) {
+      baseName = sourceSubtitleName.replace(/\.(srt|json)$/i, '');
+    }
+    // Priority 2: Video name (remove extension)
+    else if (videoName) {
+      baseName = videoName.replace(/\.[^/.]+$/, '');
+    }
+    // Fallback: Use video title or default
+    else {
+      baseName = videoTitle || 'subtitles';
+    }
+
+    // Add language suffix for translations
+    let langSuffix = '';
+    if (source === 'translated' && targetLangs.length > 0) {
+      if (targetLangs.length === 1) {
+        // Single language: use the language name
+        const langName = targetLangs[0].value || targetLangs[0];
+        langSuffix = `_${langName.toLowerCase().replace(/\s+/g, '_')}`;
+      } else {
+        // Multiple languages: use multi_lang
+        langSuffix = '_multi_lang';
+      }
+    }
+
+    return `${baseName}${langSuffix}`;
+  };
+
+  // Get naming information for downloads
+  const getNamingInfo = () => {
+    // Get uploaded SRT info
+    let sourceSubtitleName = '';
+    try {
+      const uploadedSrtInfo = localStorage.getItem('uploaded_srt_info');
+      if (uploadedSrtInfo) {
+        const srtInfo = JSON.parse(uploadedSrtInfo);
+        if (srtInfo.hasUploaded && srtInfo.fileName) {
+          sourceSubtitleName = srtInfo.fileName;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing uploaded SRT info:', error);
+    }
+
+    return {
+      sourceSubtitleName,
+      videoName: videoTitle,
+      targetLanguages
+    };
+  };
+
   // Handle download request from modal
-  const handleDownload = (source, format) => {
+  const handleDownload = (source, format, namingInfo = {}) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : subtitles;
 
     if (subtitlesToUse && subtitlesToUse.length > 0) {
-      let langSuffix = '';
-      if (source === 'translated') {
-        if (targetLanguages.length > 1) {
-          langSuffix = '_multi_lang';
-        } else {
-          langSuffix = `_${targetLanguages[0]?.value?.toLowerCase().replace(/\\s+/g, '_') || 'translated'}`;
-        }
-      }
-      const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
+      // Use provided naming info or get it from local state
+      const finalNamingInfo = Object.keys(namingInfo).length > 0 ? namingInfo : getNamingInfo();
+      const baseFilename = generateFilename(source, finalNamingInfo);
 
       switch (format) {
         case 'srt':
@@ -179,7 +230,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   };
 
   // Handle process request from modal
-  const handleProcess = async (source, processType) => {
+  const handleProcess = async (source, processType, model, splitDurationParam, customPrompt, namingInfo = {}) => {
     const subtitlesToUse = source === 'translated' ? translatedSubtitles : subtitles;
 
     if (!subtitlesToUse || subtitlesToUse.length === 0) return;
@@ -267,18 +318,11 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       }, 3000);
 
       // Download the processed document
-      let langSuffix = '';
-      if (source === 'translated') {
-        if (targetLanguages.length > 1) {
-          langSuffix = '_multi_lang';
-        } else {
-          langSuffix = `_${targetLanguages[0]?.value?.toLowerCase().replace(/\\s+/g, '_') || 'translated'}`;
-        }
-      }
-      const baseFilename = `${videoTitle || 'subtitles'}${langSuffix}`;
-      const filename = processType === 'consolidate'
-        ? `${baseFilename}_document.txt`
-        : `${baseFilename}_summary.txt`;
+      // Use provided naming info or get it from local state
+      const finalNamingInfo = Object.keys(namingInfo).length > 0 ? namingInfo : getNamingInfo();
+      const baseFilename = generateFilename(source, finalNamingInfo);
+      const processTypeSuffix = processType === 'consolidate' ? 'completed' : 'summary';
+      const filename = `${baseFilename}_${processTypeSuffix}.txt`;
 
       const blob = new Blob([result], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -344,6 +388,9 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             onProcess={handleProcess}
             hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
             hasOriginal={subtitles && subtitles.length > 0}
+            sourceSubtitleName={getNamingInfo().sourceSubtitleName}
+            videoName={getNamingInfo().videoName}
+            targetLanguages={getNamingInfo().targetLanguages}
           />
         ) : (
           <>
