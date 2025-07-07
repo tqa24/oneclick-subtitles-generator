@@ -330,7 +330,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                             (errorData.error.message && errorData.error.message.includes('quota'))) {
                             // Blacklist the current API key
                             blacklistKey(geminiApiKey);
-                            throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                            throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
                         }
                     }
 
@@ -353,7 +353,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     if (response.status === 429) {
                         // Blacklist the current API key
                         blacklistKey(geminiApiKey);
-                        throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                        throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
                     }
 
                     throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
@@ -374,7 +374,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (response.status === 429) {
                     // Blacklist the current API key
                     blacklistKey(geminiApiKey);
-                    throw new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                    throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
                 }
 
                 throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
@@ -454,7 +454,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 blacklistKey(geminiApiKey);
 
                 // Replace the error with a more user-friendly message
-                error = new Error(i18n.t('errors.paidTierRequired', 'This model is currently requiring paid tier of Gemini API'));
+                error = new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
             }
 
             // Remove this controller from the map on error

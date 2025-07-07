@@ -12,7 +12,7 @@
   "youtubeApiNotEnabled": "YouTube Data API v3 is not enabled in your Google Cloud project. Please enable it by visiting the Google Cloud Console and enabling the YouTube Data API v3 service.",
   "noMediaSelected": "Please select a video or audio file first",
   "contentBlocked": "Video content is not safe and was blocked by Gemini",
-  "paidTierRequired": "This model is currently requiring paid tier of Gemini API",
+  "paidTierRequired": "API quota exceeded. Please try again later or check your API key limits.",
   "invalidSrtFile": "Please select a valid SRT file",
   "invalidSubtitleFile": "Please select a valid SRT or JSON subtitle file",
   "invalidJsonFile": "JSON file must contain an array of subtitles",

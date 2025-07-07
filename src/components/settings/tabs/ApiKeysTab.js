@@ -267,13 +267,6 @@ const ApiKeysTab = ({
         <div className="gemini-paused-message">
           <div className="message-content">
             <span>{t('settings.gemini25ProPaused')}</span>
-            <a
-              href="https://x.com/OfficialLoganK/status/1922357621178200248"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Twitter/X
-            </a>
           </div>
           <button
             className="close-message-btn"

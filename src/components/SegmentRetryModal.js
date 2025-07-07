@@ -43,8 +43,7 @@ const SegmentRetryModal = ({
       description: t('models.bestAccuracy', 'Best accuracy'),
       icon: <FiStar className="model-icon star-icon" />,
       color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)',
-      isPaid: true
+      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
       id: 'gemini-2.5-flash',
@@ -220,7 +219,6 @@ const SegmentRetryModal = ({
                     <div className="model-option-text">
                       <div className="model-option-name">
                         {model.name}
-                        {model.isPaid && <span className="paid-badge">paid</span>}
                       </div>
                       <div className="model-option-description">{model.description}</div>
                     </div>
