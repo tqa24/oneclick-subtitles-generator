@@ -149,13 +149,17 @@ const ModelDropdown = ({
     // Position the dropdown when it opens
     positionDropdown();
 
-    // Add event listener
+    // Add event listeners for repositioning
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', positionDropdown);
+    window.addEventListener('scroll', positionDropdown, true); // Use capture to catch all scroll events
+    document.addEventListener('scroll', positionDropdown, true);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('resize', positionDropdown);
+      window.removeEventListener('scroll', positionDropdown, true);
+      document.removeEventListener('scroll', positionDropdown, true);
     };
   }, [isOpen, positionDropdown]);
 
