@@ -82,7 +82,15 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleReset,
     handleSplitDurationChange,
     handleRestTimeChange,
-    handleIncludeRulesChange
+    handleIncludeRulesChange,
+    // Bulk translation
+    bulkFiles,
+    setBulkFiles,
+    bulkTranslations,
+    isBulkTranslating,
+    currentBulkFileIndex,
+    handleBulkFileRemoval,
+    handleBulkFilesRemovalAll
   } = useTranslationState(subtitles, onTranslationComplete);
 
   // Initialize container height on component mount
@@ -111,7 +119,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     }, 50); // Small delay to ensure content is rendered
 
     return () => clearTimeout(animationTimeout);
-  }, [translatedSubtitles, isTranslating, error]); // Re-run when these state values change
+  }, [translatedSubtitles, isTranslating, error, bulkFiles, bulkTranslations]); // Re-run when these state values change
 
   // Wrapper for handleTranslate to pass the current languages and delimiter settings
   const handleTranslate = () => {
@@ -226,6 +234,130 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         default:
           break;
       }
+    }
+  };
+
+  // Generate filename for bulk translations
+  const generateBulkFilename = (originalName, targetLanguages) => {
+    // Remove extension from original name
+    const baseName = originalName.replace(/\.(srt|json)$/i, '');
+
+    // Create language suffix
+    const languageSuffix = targetLanguages.map(lang => lang.value || lang).join('_');
+
+    return `${baseName}_${languageSuffix}`;
+  };
+
+  // Handle bulk download all (includes main translation + bulk translations)
+  const handleBulkDownloadAll = () => {
+    const allDownloads = [];
+
+    // Add main translation if available (always as SRT since it comes from video processing)
+    if (translatedSubtitles && translatedSubtitles.length > 0) {
+      const namingInfo = getNamingInfo();
+      const baseFilename = generateFilename('translated', namingInfo);
+
+      allDownloads.push({
+        subtitles: translatedSubtitles,
+        filename: `${baseFilename}.srt`,
+        format: 'srt'
+      });
+    }
+
+    // Add bulk translations
+    const successfulBulkTranslations = bulkTranslations.filter(bt => bt.success);
+    successfulBulkTranslations.forEach(bulkTranslation => {
+      const originalFile = bulkTranslation.originalFile;
+      const translatedSubtitles = bulkTranslation.translatedSubtitles;
+      const originalFormat = originalFile.name.toLowerCase().endsWith('.json') ? 'json' : 'srt';
+
+      // Generate filename with target languages
+      const baseFilename = generateBulkFilename(originalFile.name, targetLanguages);
+      const filename = `${baseFilename}.${originalFormat}`;
+
+      allDownloads.push({
+        subtitles: translatedSubtitles,
+        filename: filename,
+        format: originalFormat
+      });
+    });
+
+    // Download all files
+    allDownloads.forEach(download => {
+      if (download.format === 'json') {
+        downloadJSON(download.subtitles, download.filename);
+      } else {
+        downloadSRT(download.subtitles, download.filename);
+      }
+    });
+  };
+
+  // Handle bulk download as ZIP
+  const handleBulkDownloadZip = async () => {
+    try {
+      // Dynamic import of JSZip
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+
+      // Add main translation if available (always as SRT since it comes from video processing)
+      if (translatedSubtitles && translatedSubtitles.length > 0) {
+        const namingInfo = getNamingInfo();
+        const baseFilename = generateFilename('translated', namingInfo);
+
+        // Add SRT version only
+        const srtContent = translatedSubtitles.map(subtitle =>
+          `${subtitle.index}\n${subtitle.start} --> ${subtitle.end}\n${subtitle.text}\n`
+        ).join('\n');
+        zip.file(`${baseFilename}.srt`, srtContent);
+      }
+
+      // Add bulk translations (in same format as original files)
+      bulkTranslations.forEach(bulkTranslation => {
+        if (bulkTranslation.success && bulkTranslation.translatedSubtitles) {
+          const originalFile = bulkTranslation.originalFile;
+          const originalFormat = originalFile.name.toLowerCase().endsWith('.json') ? 'json' : 'srt';
+
+          // Generate filename with target languages
+          const baseFilename = generateBulkFilename(originalFile.name, targetLanguages);
+          const filename = `${baseFilename}.${originalFormat}`;
+
+          // Add in original format only
+          if (originalFormat === 'json') {
+            const jsonContent = JSON.stringify(bulkTranslation.translatedSubtitles, null, 2);
+            zip.file(filename, jsonContent);
+          } else {
+            const srtContent = bulkTranslation.translatedSubtitles.map(subtitle =>
+              `${subtitle.index}\n${subtitle.start} --> ${subtitle.end}\n${subtitle.text}\n`
+            ).join('\n');
+            zip.file(filename, srtContent);
+          }
+        }
+      });
+
+      // Generate ZIP file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      // Create descriptive ZIP filename
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+      const targetLanguagesSuffix = targetLanguages.length > 0
+        ? `_${targetLanguages.map(lang => lang.value.toLowerCase().replace(/\s+/g, '_')).join('_')}`
+        : '';
+      const zipFilename = `translated_subtitles${targetLanguagesSuffix}_${timestamp}.zip`;
+
+      // Create download link
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = zipFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Error creating ZIP file:', error);
+      // Fallback to individual downloads
+      handleBulkDownloadAll();
     }
   };
 
@@ -372,7 +504,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
               onUpdateLanguage={updateLanguage}
               onUpdateDelimiter={updateDelimiter}
               onMoveItem={moveItem}
-              disabled={isTranslating || translatedSubtitles !== null}
+              disabled={isTranslating || isBulkTranslating || translatedSubtitles !== null}
               showOriginalOption={true}
             />
           </div>
@@ -391,6 +523,9 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
             sourceSubtitleName={getNamingInfo().sourceSubtitleName}
             videoName={getNamingInfo().videoName}
             targetLanguages={getNamingInfo().targetLanguages}
+            hasBulkTranslations={bulkTranslations.length > 0 && bulkTranslations.some(bt => bt.success)}
+            onDownloadAll={handleBulkDownloadAll}
+            onDownloadZip={handleBulkDownloadZip}
           />
         ) : (
           <>
@@ -401,6 +536,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 <ModelSelection
                   selectedModel={selectedModel}
                   onModelSelect={handleModelSelect}
+                  disabled={isTranslating || isBulkTranslating}
                 />
 
                 {/* Split duration slider */}
@@ -408,14 +544,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   splitDuration={splitDuration}
                   onSplitDurationChange={handleSplitDurationChange}
                   subtitles={subtitles}
-                  disabled={isTranslating || translatedSubtitles !== null}
+                  disabled={isTranslating || isBulkTranslating}
                 />
 
                 {/* Rest time slider */}
                 <RestTimeSlider
                   restTime={restTime}
                   onRestTimeChange={handleRestTimeChange}
-                  disabled={isTranslating || translatedSubtitles !== null}
+                  disabled={isTranslating || isBulkTranslating}
                 />
 
                 {/* Include rules toggle */}
@@ -424,22 +560,30 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   onIncludeRulesChange={handleIncludeRulesChange}
                   rulesAvailable={rulesAvailable}
                   hasUserProvidedSubtitles={hasUserProvidedSubtitles}
-                  disabled={isTranslating || translatedSubtitles !== null}
+                  disabled={isTranslating || isBulkTranslating}
                 />
               </>
             )}
 
             {/* Translation actions */}
             <TranslationActions
-              isTranslating={isTranslating}
+              isTranslating={isTranslating || isBulkTranslating}
               onTranslate={handleTranslate}
               onCancel={handleCancelTranslation}
               disabled={!hasOnlyOriginalLanguage() && !hasValidLanguage()}
               isFormatMode={hasOnlyOriginalLanguage()}
+              bulkFiles={bulkFiles}
+              onBulkFilesChange={setBulkFiles}
+              onBulkFileRemoval={handleBulkFileRemoval}
+              onBulkFilesRemovalAll={handleBulkFilesRemovalAll}
+              hasBulkTranslations={bulkTranslations.length > 0 && bulkTranslations.some(bt => bt.success)}
+              onDownloadAll={handleBulkDownloadAll}
+              onDownloadZip={handleBulkDownloadZip}
+              splitDuration={splitDuration}
             />
 
             {/* Translation status */}
-            {isTranslating && (
+            {(isTranslating || isBulkTranslating) && (
               <TranslationStatus
                 status={translationStatus}
                 statusRef={statusRef}
@@ -451,12 +595,14 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         {/* Error message */}
         <TranslationError error={error} />
 
-        {/* Translation preview */}
-        <TranslationPreview
-          translatedSubtitles={translatedSubtitles}
-          targetLanguages={targetLanguages}
-          loadedFromCache={loadedFromCache}
-        />
+        {/* Translation preview - only show for main translation without bulk files */}
+        {translatedSubtitles && bulkTranslations.length === 0 && (
+          <TranslationPreview
+            translatedSubtitles={translatedSubtitles}
+            targetLanguages={targetLanguages}
+            loadedFromCache={loadedFromCache}
+          />
+        )}
 
         {/* Narration Section moved to OutputContainer */}
       </div>

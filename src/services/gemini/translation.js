@@ -26,7 +26,7 @@ import { createRequestController, removeRequestController, abortAllRequests, get
  * @param {Array} chainItems - Optional chain items for chain-based formatting
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null) => {
+const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null, fileContext = null) => {
     // Check if we're in format mode (empty target languages array)
     const isFormatMode = Array.isArray(targetLanguage) && targetLanguage.length === 0;
 
@@ -106,10 +106,11 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
     if (splitDuration > 0) {
 
         // Dispatch event to update UI with status
-        const message = i18n.t('translation.splittingSubtitles', 'Splitting {{count}} subtitles into chunks of {{duration}} minutes', {
+        const baseMessage = i18n.t('translation.splittingSubtitles', 'Splitting {{count}} subtitles into chunks of {{duration}} minutes', {
             count: subtitles.length,
             duration: splitDuration
         });
+        const message = fileContext ? `[${fileContext}] ${baseMessage}` : baseMessage;
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message }
         }));
@@ -120,7 +121,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
 
         }
 
-        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems, restTime);
+        return await translateSubtitlesByChunks(subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules, delimiter, useParentheses, bracketStyle, chainItems, restTime, fileContext);
     }
 
     // Format subtitles as text lines for Gemini (text only, no timestamps, no numbering)
@@ -782,7 +783,7 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
  * @param {number} restTime - Optional rest time in seconds between chunk translations
  * @returns {Promise<Array>} - Array of translated subtitles
  */
-const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null, restTime = 0) => {
+const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, customPrompt, splitDuration, includeRules = false, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null, restTime = 0, fileContext = null) => {
     // Convert splitDuration from minutes to seconds
     const splitDurationSeconds = splitDuration * 60;
 
@@ -812,10 +813,11 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
 
     // Dispatch event to update UI with status
-    const splitMessage = i18n.t('translation.splitComplete', 'Split {{count}} subtitles into {{chunks}} chunks', {
+    const baseSplitMessage = i18n.t('translation.splitComplete', 'Split {{count}} subtitles into {{chunks}} chunks', {
         count: subtitles.length,
         chunks: chunks.length
     });
+    const splitMessage = fileContext ? `[${fileContext}] ${baseSplitMessage}` : baseSplitMessage;
     window.dispatchEvent(new CustomEvent('translation-status', {
         detail: { message: splitMessage }
     }));
@@ -833,11 +835,12 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
 
 
         // Dispatch event to update UI with status
-        const chunkMessage = i18n.t('translation.translatingChunk', 'Translating chunk {{current}}/{{total}} with {{count}} subtitles', {
+        const baseChunkMessage = i18n.t('translation.translatingChunk', 'Translating chunk {{current}}/{{total}} with {{count}} subtitles', {
             current: i + 1,
             total: chunks.length,
             count: chunk.length
         });
+        const chunkMessage = fileContext ? `[${fileContext}] ${baseChunkMessage}` : baseChunkMessage;
         window.dispatchEvent(new CustomEvent('translation-status', {
             detail: { message: chunkMessage }
         }));
@@ -977,9 +980,10 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
     }
 
     // Dispatch event to update UI with completion status
-    const completionMessage = i18n.t('translation.translationComplete', 'Translation completed for all {{count}} chunks', {
+    const baseCompletionMessage = i18n.t('translation.translationComplete', 'Translation completed for all {{count}} chunks', {
         count: chunks.length
     });
+    const completionMessage = fileContext ? `[${fileContext}] ${baseCompletionMessage}` : baseCompletionMessage;
     window.dispatchEvent(new CustomEvent('translation-status', {
         detail: { message: completionMessage }
     }));

@@ -1,0 +1,443 @@
+/* Bulk translation styles */
+
+/* Main layout for action row with bulk translation */
+.translation-row.action-row .row-content.action-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: stretch; /* Override center alignment, make items span full width */
+  width: 100%;
+}
+
+/* Controls row - drop zone and buttons in single row */
+.bulk-controls-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%; /* Ensure full width */
+}
+
+.bulk-controls-row .bulk-drop-zone {
+  flex: 1;
+  min-width: 200px;
+  justify-content: flex-start; /* Left align content in controls row */
+}
+
+.bulk-controls-row .translation-buttons-section {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-direction: row;
+}
+
+.bulk-controls-row .drop-zone-content {
+  text-align: left; /* Left align text in controls row */
+}
+
+.bulk-translation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%; /* Ensure full width */
+}
+
+/* Bulk translation pool - restructured layout */
+.bulk-translation-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%; /* Ensure full width */
+}
+
+/* Files container spans full width */
+.bulk-files-container {
+  width: 100%;
+}
+
+/* Drop zone - compact height matching translate button */
+.bulk-drop-zone {
+  border: 1px dashed var(--md-outline-variant);
+  border-radius: 21px;
+  padding: 0 1rem;
+  background-color: var(--md-surface-2);
+  cursor: pointer;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  height: 42px; /* Same height as translate button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bulk-drop-zone:hover:not(.disabled) {
+  border-color: var(--md-primary);
+  background-color: var(--md-primary-container);
+}
+
+.bulk-drop-zone.drag-over {
+  border-color: var(--md-primary);
+  background-color: var(--md-primary-container);
+  transform: scale(1.01);
+}
+
+.bulk-drop-zone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drop-zone-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--md-on-surface-variant);
+  text-align: center;
+}
+
+.drop-zone-content svg {
+  opacity: 0.7;
+  width: 18px;
+  height: 18px;
+}
+
+.drop-zone-text {
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.drop-zone-optional {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Bulk files container - compact grid layout */
+.bulk-files-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  animation: fadeInDelayed 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.bulk-files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.bulk-files-count {
+  font-size: 0.8rem;
+  color: var(--md-on-surface-variant);
+  font-weight: 500;
+}
+
+.remove-all-button {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  background-color: transparent;
+  color: var(--md-error);
+  border: 1px solid var(--md-error);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.remove-all-button:hover:not(:disabled) {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.remove-all-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.remove-all-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* File cards grid */
+.bulk-files-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+  max-height: 122px;
+  overflow-y: auto;
+}
+
+.bulk-file-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: var(--md-surface-3);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 18px;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  min-height: 44px;
+}
+
+.bulk-file-card:hover {
+  background-color: var(--md-surface-4);
+  border-color: var(--md-outline);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+  padding: 0 0.5rem 0 0.5rem;
+}
+
+.file-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-details {
+  font-size: 0.7rem;
+  color: var(--md-on-surface-variant);
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+/* Segment pills in bulk file cards */
+.file-details .single-segment {
+  font-style: italic;
+  font-size: 0.7rem;
+}
+
+.file-details .segment-pills {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  max-height: 36px;
+  overflow-y: auto;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.file-details .segment-pills::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.file-details .segment-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  border-radius: 8px;
+  padding: 1px 4px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  min-width: 16px;
+  height: 16px;
+  margin-bottom: 1px;
+}
+
+.remove-file-button {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: transparent;
+  color: var(--md-error);
+  border: 1px solid var(--md-error);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+.remove-file-button:hover:not(:disabled) {
+  background-color: var(--md-error-container);
+  color: var(--md-on-error-container);
+}
+
+.remove-file-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.remove-file-button svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Bulk download buttons */
+.bulk-download-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.download-all-button,
+.download-zip-button {
+  padding: 0 1rem;
+  height: 42px;
+  border-radius: 21px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  white-space: nowrap;
+  border: none;
+}
+
+.download-all-button {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.download-all-button:hover {
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.download-zip-button {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+.download-zip-button:hover {
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .translation-row.action-row .row-content.action-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-translation-section {
+    min-width: unset;
+  }
+
+  .translation-buttons-section {
+    align-items: stretch;
+  }
+
+  .bulk-download-buttons {
+    justify-content: center;
+  }
+
+  .bulk-files-list {
+    grid-template-columns: 1fr;
+    max-height: 100px;
+  }
+
+  .bulk-drop-zone {
+    height: 38px;
+    padding: 0 0.75rem;
+  }
+
+  .drop-zone-content svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .drop-zone-text {
+    font-size: 0.75rem;
+  }
+
+  .drop-zone-optional {
+    font-size: 0.7rem;
+  }
+
+  .bulk-file-card {
+    padding: 0.4rem;
+    min-height: 36px;
+  }
+
+  .file-name {
+    font-size: 0.75rem;
+  }
+
+  .file-details {
+    font-size: 0.65rem;
+  }
+
+  .remove-file-button {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+  }
+
+  .remove-file-button svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Animations */
+@keyframes fadeInDelayed {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  60% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bulk-file-card {
+  animation: slideInUp 0.2s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar styling for file list */
+.bulk-files-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bulk-files-list::-webkit-scrollbar-track {
+  background: var(--md-surface-2);
+  border-radius: 3px;
+}
+
+.bulk-files-list::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 3px;
+}
+
+.bulk-files-list::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}

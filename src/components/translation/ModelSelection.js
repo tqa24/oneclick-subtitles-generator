@@ -7,9 +7,10 @@ import ModelDropdown from '../ModelDropdown';
  * @param {Object} props - Component props
  * @param {string} props.selectedModel - Currently selected model
  * @param {Function} props.onModelSelect - Function to handle model selection
+ * @param {boolean} props.disabled - Whether the model selection is disabled
  * @returns {JSX.Element} - Rendered component
  */
-const ModelSelection = ({ selectedModel, onModelSelect }) => {
+const ModelSelection = ({ selectedModel, onModelSelect, disabled = false }) => {
   const { t } = useTranslation();
 
   return (
@@ -24,6 +25,7 @@ const ModelSelection = ({ selectedModel, onModelSelect }) => {
           buttonClassName="translate-model-dropdown"
           headerText={t('translation.selectModel', 'Select model for translation')}
           isTranslationSection={true}
+          disabled={disabled}
         />
       </div>
     </div>

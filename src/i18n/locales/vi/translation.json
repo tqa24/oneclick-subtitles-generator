@@ -43,6 +43,7 @@
   "cancel": "Hủy",
   "cancelTooltip": "Hủy quá trình dịch",
   "cancelled": "Dịch đã bị hủy bởi người dùng",
+  "allComplete": "Tất cả bản dịch hoàn thành: {{success}}/{{total}} tệp được xử lý thành công",
   "includeRules": "Bao gồm quy tắc ngữ cảnh",
   "includeRulesLabel": "Thêm quy tắc phiên âm vào các yêu cầu dịch",
   "includeRulesDescription": "Bao gồm ngữ cảnh phân tích video và quy tắc với mỗi yêu cầu dịch để đảm bảo tính nhất quán giữa các phần.",
@@ -81,5 +82,23 @@
   "delimiterCloseCurly": "Dấu ngoặc nhọn đóng",
   "delimiterOpenAngle": "Dấu ngoặc nhọn mở",
   "delimiterCloseAngle": "Dấu ngoặc nhọn đóng",
-  "customDelimiterPlaceholder": "Nhập dấu phân cách tùy chỉnh"
+  "customDelimiterPlaceholder": "Nhập dấu phân cách tùy chỉnh",
+  "bulk": {
+    "dropFiles": "Thả các tệp SRT/JSON để dịch hàng loạt",
+    "dropFilesWithSettings": "Thả các tệp SRT/JSON để dịch hàng loạt với cài đặt ở trên",
+    "addMore": "Thả thêm tệp hoặc nhấp để duyệt",
+    "addMoreWithSettings": "Thả thêm tệp hoặc nhấp để duyệt (sẽ sử dụng cài đặt ở trên)",
+    "optional": "(tùy chọn)",
+    "filesCount": "{{count}} tệp sẵn sàng để dịch hàng loạt",
+    "removeAll": "Xóa tất cả",
+    "removeFile": "Xóa tệp",
+    "subtitleCount": "{{count}} phụ đề",
+    "noFiles": "Không có tệp nào được thêm để dịch hàng loạt",
+    "processing": "Đang xử lý tệp {{current}}/{{total}}: {{filename}}",
+    "complete": "Dịch hàng loạt hoàn thành: {{success}}/{{total}} tệp được xử lý thành công",
+    "completeWithMain": "Tệp hàng loạt hoàn thành: {{success}}/{{bulkTotal}} tệp hàng loạt đã xử lý, tệp chính tiếp theo ({{current}}/{{total}} tổng)",
+    "error": "Lỗi trong quá trình dịch hàng loạt: {{message}}",
+    "downloadAll": "Tải xuống tất cả",
+    "downloadZip": "Tải xuống ZIP"
+  }
 }

@@ -12,6 +12,7 @@ import '../styles/ModelDropdown.css';
  * @param {string} props.label - Label to display on the button (optional)
  * @param {string} props.headerText - Text to display in the dropdown header
  * @param {boolean} props.isTranslationSection - Whether this dropdown is used in the translation section
+ * @param {boolean} props.disabled - Whether the dropdown is disabled
  * @returns {JSX.Element} - Rendered component
  */
 const ModelDropdown = ({
@@ -20,7 +21,8 @@ const ModelDropdown = ({
   buttonClassName = '',
   label = '',
   headerText,
-  isTranslationSection = false
+  isTranslationSection = false,
+  disabled = false
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -115,9 +117,12 @@ const ModelDropdown = ({
     e.preventDefault();
     e.stopPropagation();
 
+    // Don't open if disabled
+    if (disabled) return;
+
     // Toggle dropdown state
     setIsOpen(prev => !prev);
-  }, []);
+  }, [disabled]);
 
   // Handle model selection
   const handleModelSelect = useCallback((e, modelId) => {
@@ -166,12 +171,13 @@ const ModelDropdown = ({
   return (
     <div className={`model-dropdown-container ${isOpen ? 'dropdown-open' : ''}`}>
       <button
-        className={`model-dropdown-btn ${buttonClassName} ${isOpen ? 'active-dropdown-btn' : ''}`}
+        className={`model-dropdown-btn ${buttonClassName} ${isOpen ? 'active-dropdown-btn' : ''} ${disabled ? 'disabled' : ''}`}
         onClick={handleButtonClick}
-        title={t('common.selectModel', 'Select model')}
+        title={disabled ? t('common.disabled', 'Disabled during translation') : t('common.selectModel', 'Select model')}
         ref={buttonRef}
         aria-haspopup="true"
         aria-expanded={isOpen}
+        disabled={disabled}
       >
         {label && <span className="model-dropdown-label">{label}</span>}
         <span className="model-dropdown-selected">

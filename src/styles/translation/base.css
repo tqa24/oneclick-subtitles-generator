@@ -7,8 +7,8 @@
   border-radius: var(--card-border-radius);
   box-shadow: var(--md-elevation-level1);
   border: 1px solid var(--border-color);
-  transition: height var(--md-duration-medium3) var(--md-easing-emphasized);
-  overflow: hidden; /* Ensure content doesn't overflow during height transition */
+  transition: all var(--md-duration-medium3) var(--md-easing-emphasized);
+  overflow: visible; /* Allow bulk files container to be visible */
 }
 
 /* Row layout for consistent alignment */

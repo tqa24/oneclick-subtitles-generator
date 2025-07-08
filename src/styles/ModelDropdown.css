@@ -37,6 +37,17 @@
   font-family: 'Open Sans', sans-serif;
 }
 
+.model-dropdown-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.model-dropdown-btn.disabled:hover {
+  background-color: var(--md-surface-2);
+  transform: none;
+}
+
 /* Selected model display */
 .model-dropdown-selected {
   display: flex;

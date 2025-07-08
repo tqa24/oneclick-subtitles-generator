@@ -15,6 +15,9 @@ import DownloadOptionsModal from '../DownloadOptionsModal';
  * @param {string} props.sourceSubtitleName - Name of uploaded SRT file (first priority for naming)
  * @param {string} props.videoName - Name of video file (second priority for naming)
  * @param {Array} props.targetLanguages - Array of target languages for translation naming
+ * @param {boolean} props.hasBulkTranslations - Whether there are bulk translation results
+ * @param {Function} props.onDownloadAll - Function to download all bulk translations
+ * @param {Function} props.onDownloadZip - Function to download bulk translations as ZIP
  * @returns {JSX.Element} - Rendered component
  */
 const TranslationComplete = ({
@@ -27,7 +30,10 @@ const TranslationComplete = ({
   hasOriginal = true,
   sourceSubtitleName = '',
   videoName = '',
-  targetLanguages = []
+  targetLanguages = [],
+  hasBulkTranslations = false,
+  onDownloadAll,
+  onDownloadZip
 }) => {
   const { t } = useTranslation();
 
@@ -41,6 +47,35 @@ const TranslationComplete = ({
         >
           {t('translation.newTranslation', 'New Translation')}
         </button>
+
+        {/* Bulk download buttons */}
+        {hasBulkTranslations && (
+          <div className="bulk-download-buttons">
+            <button
+              className="download-all-button"
+              onClick={onDownloadAll}
+              title={t('translation.bulk.downloadAll', 'Download all translated files')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7,10 12,15 17,10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              {t('translation.bulk.downloadAll', 'Download All')}
+            </button>
+            <button
+              className="download-zip-button"
+              onClick={onDownloadZip}
+              title={t('translation.bulk.downloadZip', 'Download all as ZIP')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="16,18 22,12 16,6"></polyline>
+                <polyline points="8,6 2,12 8,18"></polyline>
+              </svg>
+              {t('translation.bulk.downloadZip', 'Download ZIP')}
+            </button>
+          </div>
+        )}
 
         <DownloadOptionsModal
           isOpen={isModalOpen}

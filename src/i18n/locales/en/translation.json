@@ -43,6 +43,7 @@
   "cancel": "Cancel",
   "cancelTooltip": "Cancel translation process",
   "cancelled": "Translation cancelled by user",
+  "allComplete": "All translations complete: {{success}}/{{total}} files processed successfully",
   "includeRules": "Include Context Rules",
   "includeRulesLabel": "Append transcription rules to translation requests",
   "includeRulesDescription": "Includes video analysis context and rules with each translation request for better consistency across segments.",
@@ -81,5 +82,23 @@
   "delimiterCloseCurly": "Closing Curly Brace",
   "delimiterOpenAngle": "Opening Angle Bracket",
   "delimiterCloseAngle": "Closing Angle Bracket",
-  "customDelimiterPlaceholder": "Enter custom delimiter"
+  "customDelimiterPlaceholder": "Enter custom delimiter",
+  "bulk": {
+    "dropFiles": "Drop SRT/JSON files for bulk translation",
+    "dropFilesWithSettings": "Drop SRT/JSON files for bulk translation with above settings",
+    "addMore": "Drop more files or click to browse",
+    "addMoreWithSettings": "Drop more files or click to browse (will use above settings)",
+    "optional": "(optional)",
+    "filesCount": "{{count}} files ready for bulk translation",
+    "removeAll": "Remove All",
+    "removeFile": "Remove file",
+    "subtitleCount": "{{count}} subtitles",
+    "noFiles": "No files added for bulk translation",
+    "processing": "Processing file {{current}}/{{total}}: {{filename}}",
+    "complete": "Bulk translation complete: {{success}}/{{total}} files processed successfully",
+    "completeWithMain": "Bulk files complete: {{success}}/{{bulkTotal}} bulk files processed, main file next ({{current}}/{{total}} total)",
+    "error": "Error during bulk translation: {{message}}",
+    "downloadAll": "Download All",
+    "downloadZip": "Download ZIP"
+  }
 }
