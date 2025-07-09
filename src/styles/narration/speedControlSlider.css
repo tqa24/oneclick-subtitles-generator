@@ -22,6 +22,8 @@
   height: 32px; /* Compact height */
   display: flex;
   align-items: center;
+  /* Add minimal padding to ensure thumb is fully draggable at extremes */
+  padding: 0 7px; /* Half thumb width (14px / 2 = 7px) */
 }
 
 .speed-control-slider-track {

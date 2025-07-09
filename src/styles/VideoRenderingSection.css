@@ -727,27 +727,30 @@
   height: 42px;
   display: flex;
   align-items: center;
+  /* Add minimal padding to ensure thumb is fully draggable at extremes */
+  padding: 0 8px; /* Half thumb width - just enough for edge coverage */
 }
 
-.custom-slider-track {
+.volume-slider .custom-slider-track {
   position: absolute;
-  width: 100%;
+  width: 100%; /* Full width to match percentage positioning */
   height: 4px;
   background-color: var(--md-outline-variant);
   border-radius: 2px;
   top: 50%;
+  left: 0; /* Start at container edge to match percentage positioning */
   transform: translateY(-50%);
 }
 
-.custom-slider-fill {
+.volume-slider .custom-slider-fill {
   position: absolute;
   height: 100%;
   background-color: var(--md-primary);
   border-radius: 2px 0 0 2px;
-  left: 0;
+  left: 0; /* Start at container edge to match percentage positioning */
 }
 
-.custom-slider-thumb {
+.volume-slider .custom-slider-thumb {
   position: absolute;
   width: 16px;
   height: 16px;

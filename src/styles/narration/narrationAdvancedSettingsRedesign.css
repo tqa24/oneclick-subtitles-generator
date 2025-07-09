@@ -39,6 +39,8 @@
 /* Use the main custom-slider styles but override height for compact version */
 .advanced-settings .custom-slider-container {
   height: 32px;
+  /* Adjust padding for smaller thumb - half thumb width (14px / 2 = 7px) */
+  padding: 0 7px;
 }
 
 .advanced-settings .custom-slider-track {

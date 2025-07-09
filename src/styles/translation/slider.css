@@ -17,7 +17,7 @@
   align-items: center;
   width: 100%;
   height: 42px;
-  padding: 0 8px; /* Add padding to account for the thumb radius */
+  /* Padding removed - now handled by .custom-slider-container */
 }
 
 .slider-with-value {

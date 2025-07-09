@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { calculateThumbPosition, calculateFillWidth } from '../../utils/sliderUtils';
 
 /**
  * Split duration slider component
@@ -57,46 +58,31 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
         <div className="split-duration-slider-container">
           <div className="slider-control-row">
             <div className="slider-with-value">
-              {!disabled ? (
-                <div className="custom-slider-container split-duration-slider">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${(splitDuration / 20) * 100}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${(splitDuration / 20) * 100}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="1"
-                    value={splitDuration}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      onSplitDurationChange(value);
-                    }}
-                    className="custom-slider-input"
-                    title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
-                  />
+              <div className="custom-slider-container split-duration-slider">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${(splitDuration / 20) * 100}%` }}
+                  ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(splitDuration / 20) * 100}%` }}
+                  ></div>
                 </div>
-              ) : (
-                <div className="custom-slider-container split-duration-slider disabled">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${(splitDuration / 20) * 100}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${(splitDuration / 20) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+                <input
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value={splitDuration}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    onSplitDurationChange(value);
+                  }}
+                  className="custom-slider-input"
+                  title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
+                />
+              </div>
               <div className="slider-value-display">
                 {splitDuration === 0
                   ? t('translation.noSplit', 'No Split')

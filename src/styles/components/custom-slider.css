@@ -7,15 +7,18 @@
   height: 42px;
   display: flex;
   align-items: center;
+  /* Add minimal padding to ensure thumb is fully draggable at extremes */
+  padding: 0 8px; /* Half thumb width - just enough for edge coverage */
 }
 
 .custom-slider-track {
   position: absolute;
-  width: 100%;
+  width: calc(100% - 16px); /* Match the utility function: container width minus 8px padding on each side */
   height: 4px;
   background-color: var(--md-outline-variant);
   border-radius: 2px;
   top: 50%;
+  left: 8px; /* Match the utility function: 8px padding */
   transform: translateY(-50%);
 }
 
@@ -24,7 +27,7 @@
   height: 100%;
   background-color: var(--md-primary);
   border-radius: 2px 0 0 2px;
-  left: 0;
+  /* NO default left or width - completely controlled by inline styles from JavaScript */
 }
 
 .custom-slider-thumb {
@@ -55,6 +58,7 @@
   cursor: pointer;
   margin: 0;
   padding: 0;
+  z-index: 10; /* Put input above visual elements so it can capture mouse events */
 }
 
 /* Disabled state */
