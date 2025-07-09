@@ -43,6 +43,11 @@
   cursor: pointer;
 }
 
+/* Disable transitions during dragging for instant response */
+.custom-slider-container.dragging .custom-slider-thumb {
+  transition: none !important;
+}
+
 .custom-slider-thumb:hover {
   transform: translate(-50%, -50%) scale(1.1);
   box-shadow: var(--md-elevation-level2);
@@ -59,6 +64,11 @@
   margin: 0;
   padding: 0;
   z-index: 10; /* Put input above visual elements so it can capture mouse events */
+}
+
+/* Also disable fill transitions during dragging for consistency */
+.custom-slider-container.dragging .custom-slider-fill {
+  transition: none !important;
 }
 
 /* Disabled state */
