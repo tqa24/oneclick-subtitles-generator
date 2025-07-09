@@ -63,17 +63,17 @@ const AnimationControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fadeInDuration}s</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container fade-in-duration-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.fadeInDuration / 2.0) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.fadeInDuration / 2.0) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.fadeInDuration / 2.0) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -96,17 +96,17 @@ const AnimationControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fadeOutDuration}s</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container fade-out-duration-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.fadeOutDuration / 2.0) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.fadeOutDuration / 2.0) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.fadeOutDuration / 2.0) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"

@@ -727,18 +727,18 @@
   height: 42px;
   display: flex;
   align-items: center;
-  /* Add minimal padding to ensure thumb is fully draggable at extremes */
-  padding: 0 8px; /* Half thumb width - just enough for edge coverage */
+  /* Add padding to ensure thumb is fully draggable at extremes */
+  padding: 0 8px; /* Half thumb width for proper hitbox coverage */
 }
 
 .volume-slider .custom-slider-track {
   position: absolute;
-  width: 100%; /* Full width to match percentage positioning */
+  width: calc(100% - 16px); /* Match split-duration-slider: account for padding */
   height: 4px;
   background-color: var(--md-outline-variant);
   border-radius: 2px;
   top: 50%;
-  left: 0; /* Start at container edge to match percentage positioning */
+  left: 8px; /* Match split-duration-slider: start at padding offset */
   transform: translateY(-50%);
 }
 
@@ -747,7 +747,8 @@
   height: 100%;
   background-color: var(--md-primary);
   border-radius: 2px 0 0 2px;
-  left: 0; /* Start at container edge to match percentage positioning */
+  left: 8px; /* Match split-duration-slider: start at track position */
+  /* Width is controlled by inline styles: width: X% */
 }
 
 .volume-slider .custom-slider-thumb {

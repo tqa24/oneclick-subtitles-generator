@@ -48,17 +48,17 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.textShadowBlur}px</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container shadow-blur-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${(customization.textShadowBlur / 50) * 100}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.textShadowBlur / 50) * 100}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.textShadowBlur / 50) * 100}%` }}
-                ></div>
                 <input
                   type="range"
                   min="0"
@@ -82,17 +82,17 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.textShadowOffsetY}px</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container shadow-offset-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
-                ></div>
                 <input
                   type="range"
                   min="-25"
@@ -145,17 +145,17 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.glowIntensity}px</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container glow-intensity-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${(customization.glowIntensity / 100) * 100}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.glowIntensity / 100) * 100}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.glowIntensity / 100) * 100}%` }}
-                ></div>
                 <input
                   type="range"
                   min="0"
@@ -298,17 +298,17 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.strokeWidth}px</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container stroke-width-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${(customization.strokeWidth / 10) * 100}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${(customization.strokeWidth / 10) * 100}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.strokeWidth / 10) * 100}%` }}
-                ></div>
                 <input
                   type="range"
                   min="0"

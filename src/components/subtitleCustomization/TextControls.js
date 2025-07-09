@@ -56,17 +56,17 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fontSize}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container font-size-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="8"
@@ -88,17 +88,17 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fontWeight}</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container font-weight-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="100"
@@ -163,17 +163,17 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.lineHeight}</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container line-height-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0.5"
@@ -196,17 +196,17 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.letterSpacing}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container letter-spacing-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="-10"

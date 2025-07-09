@@ -1393,17 +1393,23 @@ const VideoRenderingSection = ({
               {/* Original Audio Volume Control */}
               <div className="compact-volume-control">
                 <label className="volume-label">{t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%</label>
-                <div className="volume-slider">
+                <div
+                  className="custom-slider-container original-audio-volume-slider"
+                  onDragEnter={(e) => e.stopPropagation()}
+                  onDragLeave={(e) => e.stopPropagation()}
+                  onDragOver={(e) => e.stopPropagation()}
+                  onDrop={(e) => e.stopPropagation()}
+                >
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
                       style={{ width: `${renderSettings.originalAudioVolume}%` }}
                     ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${renderSettings.originalAudioVolume}%` }}
+                    ></div>
                   </div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${renderSettings.originalAudioVolume}%` }}
-                  ></div>
                   <input
                     type="range"
                     min="0"
@@ -1493,17 +1499,23 @@ const VideoRenderingSection = ({
               {/* Narration Volume Control */}
               <div className="compact-volume-control">
                 <label className="volume-label">{t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%</label>
-                <div className={`volume-slider ${selectedNarration === 'none' ? 'disabled' : ''}`}>
+                <div
+                  className={`custom-slider-container narration-volume-slider ${selectedNarration === 'none' ? 'disabled' : ''}`}
+                  onDragEnter={(e) => e.stopPropagation()}
+                  onDragLeave={(e) => e.stopPropagation()}
+                  onDragOver={(e) => e.stopPropagation()}
+                  onDrop={(e) => e.stopPropagation()}
+                >
                   <div className="custom-slider-track">
                     <div
                       className="custom-slider-fill"
                       style={{ width: `${renderSettings.narrationVolume}%` }}
                     ></div>
+                    <div
+                      className="custom-slider-thumb"
+                      style={{ left: `${renderSettings.narrationVolume}%` }}
+                    ></div>
                   </div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${renderSettings.narrationVolume}%` }}
-                  ></div>
                   <input
                     type="range"
                     min="0"

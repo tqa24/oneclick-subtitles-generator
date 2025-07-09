@@ -38,17 +38,17 @@ const PositionControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.customPositionX}%</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container position-x-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${customization.customPositionX}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${customization.customPositionX}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${customization.customPositionX}%` }}
-                ></div>
                 <input
                   type="range"
                   min="0"
@@ -72,17 +72,17 @@ const PositionControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.customPositionY}%</span>
-              <div className="volume-slider">
+              <div className="custom-slider-container position-y-slider">
                 <div className="custom-slider-track">
                   <div
                     className="custom-slider-fill"
                     style={{ width: `${customization.customPositionY}%` }}
                   ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${customization.customPositionY}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${customization.customPositionY}%` }}
-                ></div>
                 <input
                   type="range"
                   min="0"
@@ -105,17 +105,17 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.maxWidth}%</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container max-width-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="10"
@@ -137,17 +137,17 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginBottom}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container margin-bottom-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.marginBottom / 400) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginBottom / 400) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.marginBottom / 400) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -169,17 +169,17 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginTop}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container margin-top-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.marginTop / 400) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginTop / 400) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.marginTop / 400) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -201,17 +201,17 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginLeft}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container margin-left-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.marginLeft / 400) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginLeft / 400) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.marginLeft / 400) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -233,17 +233,17 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginRight}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container margin-right-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.marginRight / 400) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.marginRight / 400) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.marginRight / 400) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"

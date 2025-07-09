@@ -42,17 +42,17 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.backgroundOpacity}%</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container background-opacity-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${customization.backgroundOpacity}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${customization.backgroundOpacity}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${customization.backgroundOpacity}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -74,17 +74,17 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.borderRadius}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container border-radius-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.borderRadius / 100) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.borderRadius / 100) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.borderRadius / 100) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
@@ -106,17 +106,17 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.borderWidth}px</span>
-            <div className="volume-slider">
+            <div className="custom-slider-container border-width-slider">
               <div className="custom-slider-track">
                 <div
                   className="custom-slider-fill"
                   style={{ width: `${(customization.borderWidth / 20) * 100}%` }}
                 ></div>
+                <div
+                  className="custom-slider-thumb"
+                  style={{ left: `${(customization.borderWidth / 20) * 100}%` }}
+                ></div>
               </div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(customization.borderWidth / 20) * 100}%` }}
-              ></div>
               <input
                 type="range"
                 min="0"
