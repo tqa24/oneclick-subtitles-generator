@@ -101,7 +101,7 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
     }
 
     // Get the selected model from localStorage or use the default
-    const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.5-flash-lite-preview-06-17";
+    const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.0-flash";
 
     // Get video duration
     onStatusUpdate({ message: t('input.preparingVideoAnalysis', 'Preparing video for analysis...'), type: 'loading' });
