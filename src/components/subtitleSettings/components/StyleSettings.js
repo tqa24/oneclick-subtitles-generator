@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../../common/MaterialSwitch';
+import '../../../styles/common/material-switch.css';
 
 /**
  * Style Settings component
@@ -116,21 +118,19 @@ const StyleSettings = ({ settings, handleSettingChange, textAlignOptions, textTr
 
       <div className="setting-group">
         <label>{t('subtitleSettings.textShadow', 'Text Shadow')}</label>
-        <div className="toggle-switch-container">
-          <label className="toggle-switch" htmlFor="text-shadow">
-            <input
-              type="checkbox"
-              id="text-shadow"
-              checked={settings.textShadow === 'true' || settings.textShadow === true}
-              onChange={(e) => handleSettingChange('textShadow', e.target.checked)}
-            />
-            <span className="toggle-slider"></span>
-          </label>
-          <span className="toggle-label">
-            {settings.textShadow === 'true' || settings.textShadow === true 
-              ? t('common.on', 'On') 
+        <div className="material-switch-container">
+          <MaterialSwitch
+            id="text-shadow"
+            checked={settings.textShadow === 'true' || settings.textShadow === true}
+            onChange={(e) => handleSettingChange('textShadow', e.target.checked)}
+            ariaLabel={t('subtitleSettings.textShadow', 'Text Shadow')}
+            icons={true}
+          />
+          <label htmlFor="text-shadow" className="material-switch-label">
+            {settings.textShadow === 'true' || settings.textShadow === true
+              ? t('common.on', 'On')
               : t('common.off', 'Off')}
-          </span>
+          </label>
         </div>
       </div>
     </>

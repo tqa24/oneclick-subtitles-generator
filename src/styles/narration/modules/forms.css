@@ -133,8 +133,8 @@ textarea.reference-text::-webkit-resizer {
   gap: 0.75rem;
 }
 
-/* Switch container in reference content row */
-.reference-content-row .switch-container {
+/* Material Web Switch container in reference content row */
+.reference-content-row .material-switch-container {
   background-color: var(--md-surface-1);
   padding: 0.5rem 0.75rem;
   border-radius: 24px;
@@ -144,6 +144,19 @@ textarea.reference-text::-webkit-resizer {
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 16px; /* Match the padding in BackgroundImageGenerator */
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Legacy support - keep for any remaining old switch containers */
+.reference-content-row .switch-container {
+  background-color: var(--md-surface-1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 24px;
+  border: 1px solid var(--md-outline-variant);
+  position: relative;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 16px;
   box-shadow: var(--md-elevation-level1);
 }
 
@@ -164,60 +177,4 @@ textarea.reference-text::-webkit-resizer {
   padding: 0;
 }
 
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--md-surface-variant);
-  transition: background-color 0.3s ease;
-  border-radius: 10px;
-  overflow: hidden;
-}
 
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: var(--md-on-surface-variant);
-  transition: transform 0.3s ease, background-color 0.3s ease;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-input:checked + .toggle-slider {
-  background-color: var(--md-primary);
-}
-
-input:checked + .toggle-slider:before {
-  background-color: var(--md-on-primary);
-  transform: translateX(16px);
-}
-
-/* Ensure consistent toggle slider in reference-content-row */
-.reference-content-row .switch .toggle-slider:before {
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-}
-
-.reference-content-row .switch input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-
-/* Disabled state */
-input:disabled + .toggle-slider {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Focus state for accessibility */
-input:focus + .toggle-slider {
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
-}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../common/MaterialSwitch';
+import '../../styles/common/material-switch.css';
 
 /**
  * Rules toggle component
@@ -26,22 +28,20 @@ const RulesToggle = ({
         <label htmlFor="include-rules">{t('translation.includeRules', 'Include Context Rules')}:</label>
       </div>
       <div className="row-content">
-        <div className="toggle-switch-row">
-          <label className="toggle-switch" htmlFor="include-rules">
-            <input
-              type="checkbox"
-              id="include-rules"
-              checked={rulesAvailable && !hasUserProvidedSubtitles ? includeRules : false}
-              onChange={(e) => {
-                const value = e.target.checked;
-                onIncludeRulesChange(value);
-              }}
-              disabled={disabled || !rulesAvailable || hasUserProvidedSubtitles}
-            />
-            <span className="toggle-slider"></span>
-          </label>
+        <div className="material-switch-container">
+          <MaterialSwitch
+            id="include-rules"
+            checked={rulesAvailable && !hasUserProvidedSubtitles ? includeRules : false}
+            onChange={(e) => {
+              const value = e.target.checked;
+              onIncludeRulesChange(value);
+            }}
+            disabled={disabled || !rulesAvailable || hasUserProvidedSubtitles}
+            ariaLabel={t('translation.includeRules', 'Include Context Rules')}
+            icons={true}
+          />
           <div className="label-with-help">
-            <label htmlFor="include-rules" className="toggle-label">
+            <label htmlFor="include-rules" className="material-switch-label">
               {t('translation.includeRulesLabel', 'Append transcription rules to translation requests')}
             </label>
             <div

@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
 import { FiCpu } from 'react-icons/fi';
+import MaterialSwitch from '../../common/MaterialSwitch';
+import '../../../styles/common/material-switch.css';
 
 const VideoProcessingTab = ({
   segmentDuration,
@@ -228,17 +230,15 @@ const VideoProcessingTab = ({
                 <label htmlFor="auto-select-default-preset">
                   {t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
                 </label>
-                <div className="toggle-switch-container">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      id="auto-select-default-preset"
-                      checked={autoSelectDefaultPreset}
-                      onChange={(e) => setAutoSelectDefaultPreset(e.target.checked)}
-                      disabled={!useVideoAnalysis}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="auto-select-default-preset"
+                    checked={autoSelectDefaultPreset}
+                    onChange={(e) => setAutoSelectDefaultPreset(e.target.checked)}
+                    disabled={!useVideoAnalysis}
+                    ariaLabel={t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
+                    icons={true}
+                  />
                 </div>
               </div>
               <p className="setting-description">
@@ -283,17 +283,15 @@ const VideoProcessingTab = ({
                 <label htmlFor="use-optimized-preview">
                   {t('settings.useOptimizedPreview', 'Use optimized video for preview')}
                 </label>
-                <div className="toggle-switch-container">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      id="use-optimized-preview"
-                      checked={useOptimizedPreview}
-                      onChange={(e) => setUseOptimizedPreview(e.target.checked)}
-                      disabled={!optimizeVideos}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="use-optimized-preview"
+                    checked={useOptimizedPreview}
+                    onChange={(e) => setUseOptimizedPreview(e.target.checked)}
+                    disabled={!optimizeVideos}
+                    ariaLabel={t('settings.useOptimizedPreview', 'Use optimized video for preview')}
+                    icons={true}
+                  />
                 </div>
               </div>
               <p className="setting-description">
@@ -335,16 +333,14 @@ const VideoProcessingTab = ({
                 <label htmlFor="show-waveform">
                   {t('settings.showWaveform', 'Show Audio Waveform')}
                 </label>
-                <div className="toggle-switch-container">
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      id="show-waveform"
-                      checked={showWaveform}
-                      onChange={(e) => setShowWaveform(e.target.checked)}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="show-waveform"
+                    checked={showWaveform}
+                    onChange={(e) => setShowWaveform(e.target.checked)}
+                    ariaLabel={t('settings.showWaveform', 'Show Audio Waveform')}
+                    icons={true}
+                  />
                 </div>
               </div>
               <p className="setting-description">

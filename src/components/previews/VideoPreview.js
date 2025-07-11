@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../common/MaterialSwitch';
+import '../../styles/common/material-switch.css';
 import {
   startYoutubeVideoDownload,
   checkDownloadStatus,
@@ -934,18 +936,19 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               {/* Video quality toggle - only show when optimized video is available */}
               {optimizedVideoUrl && (
                 <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
+                  <div className="material-switch-container">
+                    <MaterialSwitch
+                      id="video-quality-toggle"
                       checked={useOptimizedPreview}
                       onChange={(e) => {
                         const newValue = e.target.checked;
                         setUseOptimizedPreview(newValue);
                         localStorage.setItem('use_optimized_preview', newValue.toString());
                       }}
+                      ariaLabel={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}
+                      icons={true}
                     />
-                    <span className="toggle-slider"></span>
-                  </label>
+                  </div>
                   <span className="toggle-label">
                     {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
                   </span>

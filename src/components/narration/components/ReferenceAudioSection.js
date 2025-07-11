@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../../common/MaterialSwitch';
+import '../../../styles/common/material-switch.css';
 
 /**
  * Isolated Text Input component that doesn't get affected by parent re-renders
@@ -114,16 +116,15 @@ const ReferenceAudioSection = ({
             </div>
 
             {/* Auto-Recognition Switch */}
-            <div className="switch-container">
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={autoRecognize}
-                  onChange={(e) => setAutoRecognize(e.target.checked)}
-                  disabled={isRecording || isExtractingSegment || isRecognizing}
-                />
-                <span className="toggle-slider"></span>
-              </label>
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="auto-recognize"
+                checked={autoRecognize}
+                onChange={(e) => setAutoRecognize(e.target.checked)}
+                disabled={isRecording || isExtractingSegment || isRecognizing}
+                ariaLabel={t('narration.autoRecognize', 'Auto-recognize voice')}
+                icons={true}
+              />
               <span>{t('narration.autoRecognize', 'Auto-recognize voice')}</span>
               <div className="help-icon-container" title={t('narration.autoRecognizeDescription', 'Automatically transcribe audio after recording or uploading')}>
                 <svg className="help-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

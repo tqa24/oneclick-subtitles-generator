@@ -76,22 +76,7 @@
   color: var(--md-primary);
 }
 
-/* Dark mode toggle slider styles */
-[data-theme="dark"] .advanced-settings .toggle-slider {
-  background-color: var(--md-surface-variant);
-}
 
-[data-theme="dark"] .advanced-settings .toggle-slider:before {
-  background-color: var(--md-on-surface-variant);
-}
-
-[data-theme="dark"] .advanced-settings input:checked + .toggle-slider {
-  background-color: var(--md-primary);
-}
-
-[data-theme="dark"] .advanced-settings input:checked + .toggle-slider:before {
-  background-color: var(--md-on-primary);
-}
 
 /* Number input styles - Compact */
 .number-input {
@@ -245,51 +230,7 @@
   padding: 0;
 }
 
-.advanced-settings .toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--md-surface-variant);
-  transition: background-color 0.3s ease;
-  border-radius: 10px;
-  overflow: hidden;
-}
 
-.advanced-settings .toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: var(--md-on-surface-variant);
-  transition: transform 0.3s ease, background-color 0.3s ease;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.advanced-settings input:checked + .toggle-slider {
-  background-color: var(--md-primary);
-}
-
-.advanced-settings input:checked + .toggle-slider:before {
-  background-color: var(--md-on-primary);
-  transform: translateX(16px);
-}
-
-/* Disabled state */
-.advanced-settings input:disabled + .toggle-slider {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Focus state for accessibility */
-.advanced-settings input:focus + .toggle-slider {
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
-}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

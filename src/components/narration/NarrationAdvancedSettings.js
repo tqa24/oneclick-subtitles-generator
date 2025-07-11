@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../common/MaterialSwitch';
+import '../../styles/common/material-switch.css';
 import '../../styles/narration/narrationAdvancedSettingsRedesign.css';
 
 /**
@@ -208,17 +210,15 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
               <label>{t('narration.randomSeed', 'Random')}:</label>
             </div>
             <div className="row-content">
-              <div className="switch-container">
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.useRandomSeed !== false}
-                    onChange={(e) => handleCheckboxChange(e)}
-                    name="useRandomSeed"
-                    disabled={disabled}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
+              <div className="material-switch-container">
+                <MaterialSwitch
+                  id="use-random-seed"
+                  checked={settings.useRandomSeed !== false}
+                  onChange={(e) => handleCheckboxChange({ target: { name: 'useRandomSeed', checked: e.target.checked } })}
+                  disabled={disabled}
+                  ariaLabel={t('narration.useRandomSeed', 'Use random seed')}
+                  icons={true}
+                />
                 <span>{t('narration.useRandomSeed', 'Use random seed')}</span>
               </div>
             </div>
@@ -257,17 +257,15 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
               <label>{t('narration.removeSilence', 'Silence')}:</label>
             </div>
             <div className="row-content">
-              <div className="switch-container">
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={settings.removeSilence !== false}
-                    onChange={(e) => handleCheckboxChange(e)}
-                    name="removeSilence"
-                    disabled={disabled}
-                  />
-                  <span className="toggle-slider"></span>
-                </label>
+              <div className="material-switch-container">
+                <MaterialSwitch
+                  id="remove-silence"
+                  checked={settings.removeSilence !== false}
+                  onChange={(e) => handleCheckboxChange({ target: { name: 'removeSilence', checked: e.target.checked } })}
+                  disabled={disabled}
+                  ariaLabel={t('narration.removeSilenceDesc', 'Remove silence')}
+                  icons={true}
+                />
                 <span>{t('narration.removeSilenceDesc', 'Remove silence')}</span>
               </div>
             </div>

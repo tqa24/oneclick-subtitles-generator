@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../../common/MaterialSwitch';
+import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
 import {
   checkModelAvailabilityForLanguage,
@@ -773,19 +775,17 @@ const SubtitleSourceSelection = ({
               </select>
             </div>
 
-            {/* Toggle Switch */}
-            <div className="toggle-switch-container">
-              <label className="toggle-switch" htmlFor="subtitle-grouping">
-                <input
-                  type="checkbox"
-                  id="subtitle-grouping"
-                  checked={useGroupedSubtitles}
-                  onChange={(e) => handleGroupingToggle(e.target.checked)}
-                  disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
-                />
-                <span className="toggle-slider"></span>
-              </label>
-              <span className="toggle-label">
+            {/* Material Web Switch */}
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="subtitle-grouping"
+                checked={useGroupedSubtitles}
+                onChange={(e) => handleGroupingToggle(e.target.checked)}
+                disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
+                ariaLabel={t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                icons={true}
+              />
+              <label htmlFor="subtitle-grouping" className="material-switch-label">
                 {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
                 {isGroupingSubtitles && (
                   <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
@@ -793,7 +793,7 @@ const SubtitleSourceSelection = ({
                     <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
                   </span>
                 )}
-              </span>
+              </label>
             </div>
 
             {/* Show comparison button when grouped subtitles are available */}

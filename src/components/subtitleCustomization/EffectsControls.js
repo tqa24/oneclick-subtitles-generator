@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import MaterialSwitch from '../common/MaterialSwitch';
+import '../../styles/common/material-switch.css';
 
 const EffectsControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -17,14 +19,15 @@ const EffectsControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="toggle-control">
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="text-shadow-enabled"
                 checked={customization.textShadowEnabled}
                 onChange={(e) => updateCustomization({ textShadowEnabled: e.target.checked })}
+                ariaLabel={t('videoRendering.textShadow', 'Text Shadow')}
+                icons={true}
               />
-              <span className="toggle-slider"></span>
-            </label>
+            </div>
             {customization.textShadowEnabled && (
               <div className="color-control">
                 <input
@@ -114,14 +117,15 @@ const EffectsControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="toggle-control">
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="glow-enabled"
                 checked={customization.glowEnabled}
                 onChange={(e) => updateCustomization({ glowEnabled: e.target.checked })}
+                ariaLabel={t('videoRendering.glow', 'Glow Effect')}
+                icons={true}
               />
-              <span className="toggle-slider"></span>
-            </label>
+            </div>
             {customization.glowEnabled && (
               <div className="color-control">
                 <input
@@ -177,14 +181,15 @@ const EffectsControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="toggle-control">
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="gradient-enabled"
                 checked={customization.gradientEnabled}
                 onChange={(e) => updateCustomization({ gradientEnabled: e.target.checked })}
+                ariaLabel={t('videoRendering.gradient', 'Gradient')}
+                icons={true}
               />
-              <span className="toggle-slider"></span>
-            </label>
+            </div>
           </div>
         </div>
       </div>
@@ -267,14 +272,15 @@ const EffectsControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="toggle-control">
-            <label className="toggle-switch">
-              <input
-                type="checkbox"
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="stroke-enabled"
                 checked={customization.strokeEnabled}
                 onChange={(e) => updateCustomization({ strokeEnabled: e.target.checked })}
+                ariaLabel={t('videoRendering.stroke', 'Stroke')}
+                icons={true}
               />
-              <span className="toggle-slider"></span>
-            </label>
+            </div>
             {customization.strokeEnabled && (
               <div className="color-control">
                 <input

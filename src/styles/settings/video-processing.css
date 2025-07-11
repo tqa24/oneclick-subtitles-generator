@@ -98,81 +98,16 @@
   font-size: var(--md-body-medium-size);
 }
 
-/* Toggle switch styles */
-.toggle-switch-container {
+/* Material Web Switch styles for video processing settings */
+.material-switch-container {
   display: flex;
   align-items: center;
   margin-top: 0.5rem;
 }
 
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-  margin-right: 10px;
-}
 
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
 
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--md-outline-variant);
-  transition: .4s;
-  border-radius: 34px;
-}
 
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: var(--md-surface);
-  transition: .4s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: var(--md-primary);
-}
-
-input:focus + .toggle-slider {
-  box-shadow: 0 0 1px var(--md-primary);
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
-}
-
-/* Ensure consistent toggle slider in reference-content-row */
-.reference-content-row .toggle-slider:before {
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: var(--md-on-surface-variant);
-}
-
-.reference-content-row input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-  background-color: var(--md-on-primary);
-}
-
-.toggle-label {
-  font-size: 0.9rem;
-  color: var(--text-primary);
-}
 
 /* Video optimization section styles */
 .video-optimization-section {

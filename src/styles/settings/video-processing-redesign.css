@@ -139,34 +139,16 @@
   padding-right: 10px;
 }
 
-/* Toggle switch container */
-.toggle-switch-container {
+/* Material Web Switch container */
+.material-switch-container {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Toggle switch row (for horizontal layout) */
-.toggle-switch-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-}
 
-.toggle-switch-row .toggle-switch {
-  margin: 0;
-}
 
-.toggle-switch-row .toggle-label {
-  flex: 1;
-}
 
-.toggle-label {
-  font-size: 0.8rem;
-  color: var(--md-on-surface-variant);
-  white-space: nowrap;
-}
 
 /* Improved select styling */
 .enhanced-select {
