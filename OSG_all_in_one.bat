@@ -340,8 +340,12 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO Git not found. Installing using Winget...
     winget install --id Git.Git -e --source winget
     IF %ERRORLEVEL% NEQ 0 (
-      ECHO ERROR: Failed to install Git.
-      EXIT /B 1
+        ECHO Winget failed to install Git. Trying with Chocolatey...
+        choco install git -y
+        IF %ERRORLEVEL% NEQ 0 (
+            ECHO ERROR: Failed to install Git with both Winget and Chocolatey.
+            EXIT /B 1
+        )
     )
     REFRESHENV
 ) ELSE (
@@ -429,7 +433,7 @@ EXIT /B 0
 REM ==============================================================================
 :ErrorOccurred
 ECHO.
-ECHO ********** Da xay ra loi. Vui long xem lai cac thong bao ben tren. **********
+ECHO ********** Da xay ra loi. Vui long xem lai cac thong bao ben tren. (ERROR OCCURED, OPEN THE BAT FILE AND INSTALL AGAIN MAY HELP) **********
 ECHO Vui long tat di mo lai file bat va bam cai dat lan nua moi khi co loi,
 ECHO vi system PATH cho Chocolatey, Git, Node, FFmpeg, uv can duoc cap nhat lai.
 ECHO.
