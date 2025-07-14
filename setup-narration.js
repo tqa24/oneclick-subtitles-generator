@@ -430,8 +430,8 @@ except Exception as e:
 // --- 6. Install F5-TTS dependencies using uv pip ---
 console.log('\n🔧 Installing F5-TTS dependencies using uv...');
 try {
-    // Added torchvision here as it's commonly needed and installed with torch now
-    const depsCmd = `uv pip install --python ${VENV_DIR} flask flask-cors soundfile numpy vocos`;
+    // Added setuptools to ensure pkg_resources is available if needed
+    const depsCmd = `uv pip install --python ${VENV_DIR} flask flask-cors soundfile numpy vocos setuptools`;
     console.log(`Running: ${depsCmd}`);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
     execSync(depsCmd, { stdio: 'inherit', env });
@@ -526,20 +526,22 @@ try {
     const verifyF5PyCode = `
 import sys
 import traceback
-import pkg_resources
 
 print("Python executable:", sys.executable)
 print("Python version:", sys.version)
 print("Python path:", sys.path[:3])  # Show first 3 entries
 
-# List installed packages that might be related
+# Try to list installed packages using importlib.metadata (modern approach)
 try:
-    installed_packages = [d.project_name for d in pkg_resources.working_set]
+    import importlib.metadata as metadata
+    installed_packages = [dist.metadata['name'] for dist in metadata.distributions()]
     f5_related = [pkg for pkg in installed_packages if 'f5' in pkg.lower() or 'tts' in pkg.lower()]
     if f5_related:
         print("F5/TTS related packages found:", f5_related)
     else:
-        print("No F5/TTS related packages found in:", installed_packages[:10])  # Show first 10
+        print("No F5/TTS related packages found in first 10:", installed_packages[:10])
+except ImportError:
+    print("importlib.metadata not available, skipping package listing")
 except Exception as e:
     print(f"Could not list packages: {e}")
 
