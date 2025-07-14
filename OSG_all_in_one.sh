@@ -212,6 +212,12 @@ clean_install() {
         rm -rf F5-TTS
     fi
 
+    # Clean Chatterbox directory
+    if [ -d "chatterbox/chatterbox" ]; then
+        echo "Removing Chatterbox directory..."
+        rm -rf chatterbox/chatterbox
+    fi
+
     # Clean package-lock.json
     if [ -f "package-lock.json" ]; then
         echo "Removing package-lock.json..."
@@ -252,13 +258,13 @@ show_menu() {
     echo "Thu muc Du an (Project Folder): $PROJECT_FOLDER_NAME"
     echo "======================================================="
     echo "SETUP & INSTALLATION:"
-    echo "  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS Narration)"
+    echo "  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS + Chatterbox Narration)"
     echo "  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)"
     echo "  3. Cap nhat Ung dung (Update)"
     echo
     echo "RUN APPLICATION:"
     echo "  4. Chay Ung dung (Run App)"
-    echo "  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS Narration)"
+    echo "  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)"
     echo
     echo "UNINSTALL:"
     echo "  6. Go cai dat Ung dung (Uninstall)"
@@ -286,7 +292,7 @@ show_menu() {
 }
 
 install_with_narration() {
-    echo "*** Option 1: Install with Voice Cloning Features (Clean Install) ***"
+    echo "*** Option 1: Install with Voice Cloning Features (F5-TTS + Chatterbox) (Clean Install) ***"
     echo "*** (Note: Requires more storage space and GPU for optimal performance) ***"
 
     # Check if we're in the right directory
@@ -498,7 +504,7 @@ run_app() {
 }
 
 run_app_cuda() {
-    echo "*** Option 5: Run Application with Voice Cloning ***"
+    echo "*** Option 5: Run Application with Voice Cloning (F5-TTS + Chatterbox) ***"
 
     # Check if we're in the right directory
     check_repo_structure
@@ -520,6 +526,11 @@ run_app_cuda() {
         read -p "Press Enter to continue..."
         show_menu
         return
+    fi
+
+    if [ ! -d "chatterbox/chatterbox" ]; then
+        echo "WARNING: Chatterbox not found. Some voice cloning features may not be available."
+        echo "Consider reinstalling with option 1 for full functionality."
     fi
 
     # Detect GPU type
@@ -570,7 +581,7 @@ uninstall_app() {
     echo
     echo "This includes:"
     echo "  - All source code"
-    echo "  - All dependencies (node_modules, .venv, F5-TTS)"
+    echo "  - All dependencies (node_modules, .venv, F5-TTS, Chatterbox)"
     echo "  - All generated files and outputs"
     echo "  - All configuration and settings"
     echo

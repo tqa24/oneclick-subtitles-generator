@@ -178,5 +178,20 @@
   "retryFailed": "Thử lại các thuyết minh thất bại/chưa tạo",
   "retryFailedTooltip": "Thử lại tất cả các thuyết minh thất bại",
   "noDelay": "Không có độ trễ",
-  "seconds": "giây"
+  "seconds": "giây",
+
+  "chatterboxMethod": "Chatterbox",
+  "chatterboxUnavailable": "(Không khả dụng - Kiểm tra Chatterbox API)",
+  "chatterboxUnavailableMessage": "Chatterbox API không khả dụng. Vui lòng khởi động dịch vụ Chatterbox.",
+  "exaggeration": "Cường độ cảm xúc",
+  "exaggerationTooltip": "Điều khiển cường độ cảm xúc của giọng nói (0.25-2.0, trung tính=0.5)",
+  "exaggerationDesc": "Giá trị cao hơn tăng cường biểu cảm cảm xúc",
+  "cfgWeight": "Điều khiển nhịp độ",
+  "cfgWeightTooltip": "Điều khiển sức mạnh tạo và nhịp độ (0.0-1.0)",
+  "cfgWeightDesc": "Điều chỉnh sức mạnh tạo và tốc độ nói",
+  "chatterboxStarting": "Bắt đầu tạo thuyết minh Chatterbox...",
+  "chatterboxGeneratingProgress": "Đang tạo {{progress}} trên {{total}} thuyết minh với Chatterbox...",
+  "chatterboxGenerationComplete": "Tạo thuyết minh Chatterbox hoàn tất",
+  "chatterboxGenerationPartial": "Tạo Chatterbox hoàn tất với {{success}} thành công và {{errors}} lỗi",
+  "chatterboxGenerationError": "Lỗi khi tạo thuyết minh với Chatterbox: {{error}}"
 }

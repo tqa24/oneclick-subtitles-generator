@@ -13,6 +13,7 @@ const useNarrationState = (initialReferenceAudio) => {
     return savedMethod || 'gemini'; // Default to Gemini if not set
   });
   const [isGeminiAvailable, setIsGeminiAvailable] = useState(true); // Assume Gemini is available by default
+  const [isChatterboxAvailable, setIsChatterboxAvailable] = useState(true); // Assume Chatterbox is available by default
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
 
   // Gemini-specific settings
@@ -26,6 +27,19 @@ const useNarrationState = (initialReferenceAudio) => {
     // Try to load from localStorage
     const savedConcurrentClients = localStorage.getItem('gemini_concurrent_clients');
     return savedConcurrentClients ? parseInt(savedConcurrentClients, 10) : 5; // Default to 5 concurrent clients
+  });
+
+  // Chatterbox-specific settings
+  const [exaggeration, setExaggeration] = useState(() => {
+    // Try to load from localStorage
+    const savedExaggeration = localStorage.getItem('chatterbox_exaggeration');
+    return savedExaggeration ? parseFloat(savedExaggeration) : 0.5; // Default to 0.5 (neutral)
+  });
+
+  const [cfgWeight, setCfgWeight] = useState(() => {
+    // Try to load from localStorage
+    const savedCfgWeight = localStorage.getItem('chatterbox_cfg_weight');
+    return savedCfgWeight ? parseFloat(savedCfgWeight) : 0.5; // Default to 0.5
   });
 
   // Narration Settings state (for F5-TTS)
@@ -132,6 +146,8 @@ const useNarrationState = (initialReferenceAudio) => {
     setNarrationMethod,
     isGeminiAvailable,
     setIsGeminiAvailable,
+    isChatterboxAvailable,
+    setIsChatterboxAvailable,
     isCheckingAvailability,
     setIsCheckingAvailability,
 
@@ -140,6 +156,12 @@ const useNarrationState = (initialReferenceAudio) => {
     setSelectedVoice,
     concurrentClients,
     setConcurrentClients,
+
+    // Chatterbox-specific settings
+    exaggeration,
+    setExaggeration,
+    cfgWeight,
+    setCfgWeight,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio,

@@ -14,6 +14,8 @@ const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
+const CHATTERBOX_DIR = 'chatterbox/chatterbox'; // Define the Chatterbox directory name (inside existing chatterbox folder)
+const CHATTERBOX_REPO_URL = 'https://github.com/JarodMica/chatterbox.git';
 
 // --- Helper Function to Check Command Existence ---
 function commandExists(command) {
@@ -162,6 +164,34 @@ try {
     console.error(`❌ Error cloning repository: ${error.message}`);
     console.log('   Please check your internet connection and git installation.');
     console.log(`   You may need to manually clone the repository: git clone ${F5_TTS_REPO_URL}`);
+    process.exit(1);
+}
+
+// --- 2.5. Clone Chatterbox repository ---
+console.log(`\n🔍 Preparing target directory "${CHATTERBOX_DIR}"...`);
+if (fs.existsSync(CHATTERBOX_DIR)) {
+    console.log(`   Directory "${CHATTERBOX_DIR}" already exists. Removing it...`);
+    try {
+        fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
+        console.log(`✅ Existing directory "${CHATTERBOX_DIR}" removed.`);
+    } catch (error) {
+        console.error(`❌ Error removing existing directory "${CHATTERBOX_DIR}": ${error.message}`);
+        console.log('   Please check permissions or if files are in use.');
+        console.log('   You may need to manually delete the directory.');
+        process.exit(1);
+    }
+} else {
+    console.log(`   Directory "${CHATTERBOX_DIR}" does not exist. Proceeding to clone.`);
+}
+
+console.log(`🔧 Cloning repository ${CHATTERBOX_REPO_URL} into "${CHATTERBOX_DIR}"...`);
+try {
+    execSync(`git clone ${CHATTERBOX_REPO_URL} "${CHATTERBOX_DIR}"`, { stdio: 'inherit' });
+    console.log(`✅ Chatterbox repository cloned successfully into "${CHATTERBOX_DIR}".`);
+} catch (error) {
+    console.error(`❌ Error cloning Chatterbox repository: ${error.message}`);
+    console.log('   Please check your internet connection and git installation.');
+    console.log(`   You may need to manually clone the repository: git clone ${CHATTERBOX_REPO_URL} "${CHATTERBOX_DIR}"`);
     process.exit(1);
 }
 
@@ -567,6 +597,81 @@ except Exception as e:
     process.exit(1);
 }
 
+// --- 7.5. Install Chatterbox using uv pip ---
+console.log('\n🔧 Installing Chatterbox using uv...');
+try {
+    if (!fs.existsSync(CHATTERBOX_DIR)) {
+        console.error(`❌ Error: Directory "${CHATTERBOX_DIR}" not found.`);
+        console.log(`   The script attempted to clone it earlier, but it seems to be missing now.`);
+        process.exit(1);
+    }
+
+    const chatterboxSetupPyPath = path.join(CHATTERBOX_DIR, 'setup.py');
+    const chatterboxPyprojectTomlPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
+
+    if (!fs.existsSync(chatterboxSetupPyPath) && !fs.existsSync(chatterboxPyprojectTomlPath)) {
+        console.error(`❌ Error: Neither setup.py nor pyproject.toml found in the "${CHATTERBOX_DIR}" directory.`);
+        console.log(`   The Chatterbox source code seems incomplete or improperly structured in the cloned repository.`);
+        process.exit(1);
+    } else {
+        console.log(`✅ Found Chatterbox directory and a setup file (${fs.existsSync(chatterboxPyprojectTomlPath) ? 'pyproject.toml' : 'setup.py'}).`);
+    }
+
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} -e ./${CHATTERBOX_DIR}`;
+    console.log(`Running: ${installChatterboxCmd}`);
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+
+    try {
+        execSync(installChatterboxCmd, { stdio: 'inherit', env });
+        console.log('✅ Chatterbox installation command completed.');
+    } catch (installError) {
+        console.error(`❌ Error during Chatterbox editable installation: ${installError.message}`);
+        console.log(`   Command that failed: ${installChatterboxCmd}`);
+        console.log('   Trying alternative installation method (non-editable)...');
+
+        try {
+            const altInstallCmd = `uv pip install --python ${VENV_DIR} ./${CHATTERBOX_DIR}`;
+            console.log(`Running alternative: ${altInstallCmd}`);
+            execSync(altInstallCmd, { stdio: 'inherit', env });
+            console.log('✅ Chatterbox alternative installation completed.');
+        } catch (altError) {
+            console.error(`❌ Alternative Chatterbox installation also failed: ${altError.message}`);
+            console.log('   This might be due to:');
+            console.log('   - Missing build dependencies');
+            console.log('   - Permission issues');
+            console.log('   - Network connectivity issues');
+            throw altError; // Re-throw to be caught by outer try-catch
+        }
+    }
+
+    console.log('\n🔍 Verifying Chatterbox installation using uv run...');
+    const verifyChatterboxPyCode = `
+import sys
+import traceback
+
+print("Verifying Chatterbox installation...")
+print("Python executable:", sys.executable)
+
+try:
+    from chatterbox.tts import ChatterboxTTS
+    from chatterbox.vc import ChatterboxVC
+    print('✅ Chatterbox imported successfully')
+    print('✅ ChatterboxTTS and ChatterboxVC classes available')
+except Exception as e:
+    print(f'❌ Error importing Chatterbox: {e}')
+    traceback.print_exc()
+    sys.exit(1)
+`;
+    const verifyChatterboxCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyChatterboxPyCode.replace(/"/g, '\\"')}"`;
+    execSync(verifyChatterboxCmd, { stdio: 'inherit', encoding: 'utf8' });
+    console.log('✅ Chatterbox installation verified (import successful).');
+
+} catch (error) {
+    console.error(`❌ Error installing/verifying Chatterbox with uv: ${error.message}`);
+    console.log(`   Verification command failed. Check the output above for details from Python.`);
+    process.exit(1);
+}
+
 // --- 8. Removed: Script generation for narration service ---
 // The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
 
@@ -613,11 +718,12 @@ try {
 // --- Final Summary ---
 console.log('\n✅ Setup using uv completed successfully!');
 console.log(`   - Target PyTorch backend: ${gpuVendor}`);
-console.log(`   - Removed any existing "${F5_TTS_DIR}" directory.`);
+console.log(`   - Removed any existing "${F5_TTS_DIR}" and "${CHATTERBOX_DIR}" directories.`);
 console.log(`   - Cloned fresh F5-TTS repository into "${F5_TTS_DIR}".`);
+console.log(`   - Cloned fresh Chatterbox repository into "${CHATTERBOX_DIR}".`);
 console.log(`   - Virtual environment created at: ./${VENV_DIR}`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
-console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, and dependencies installed in the venv.`);
+console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, and dependencies installed in the venv.`);
 if (installNotes) {
     console.log(`   - Reminder: ${installNotes}`);
 }
@@ -626,7 +732,7 @@ console.log('   1. Ensure `uv` and `npm` are in your PATH.');
 console.log('   2. Run the npm script: npm run dev:uv');
 console.log('\n💡 To just run the narration service:');
 console.log('   - npm run python:start:uv');
-console.log('\n🔧 To re-run this setup (will delete F5-TTS and reinstall venv packages):');
+console.log('\n🔧 To re-run this setup (will delete F5-TTS, Chatterbox and reinstall venv packages):');
 console.log(`   - node ${path.basename(__filename)}`);
 console.log(`   - OR npm run setup:narration:uv (if package.json was updated)`);
 console.log('\n💡 To force a specific PyTorch build (e.g., for CPU or if detection fails):');

@@ -160,5 +160,20 @@
   "apply": "Apply",
   "processingSpeed": "Processing {{current}} of {{total}}",
   "speedModifySuccess": "Narration speed successfully changed to {{speed}}x",
-  "speedModifyError": "Error changing narration speed: {{error}}"
+  "speedModifyError": "Error changing narration speed: {{error}}",
+
+  "chatterboxMethod": "Chatterbox",
+  "chatterboxUnavailable": "(Unavailable - Check Chatterbox API)",
+  "chatterboxUnavailableMessage": "Chatterbox API is not available. Please start the Chatterbox service.",
+  "exaggeration": "Emotional Intensity",
+  "exaggerationTooltip": "Controls emotional intensity of the voice (0.25-2.0, neutral=0.5)",
+  "exaggerationDesc": "Higher values increase emotional expression",
+  "cfgWeight": "Pace Control",
+  "cfgWeightTooltip": "Controls generation strength and pace (0.0-1.0)",
+  "cfgWeightDesc": "Adjusts generation strength and speaking pace",
+  "chatterboxStarting": "Starting Chatterbox narration generation...",
+  "chatterboxGeneratingProgress": "Generating {{progress}} of {{total}} narrations with Chatterbox...",
+  "chatterboxGenerationComplete": "Chatterbox narration generation complete",
+  "chatterboxGenerationPartial": "Chatterbox generation completed with {{success}} successes and {{errors}} errors",
+  "chatterboxGenerationError": "Error generating narration with Chatterbox: {{error}}"
 }

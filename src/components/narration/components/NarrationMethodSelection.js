@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import '../../../styles/narration/narrationMethodSelectionMaterial.css';
 
 /**
- * Component for selecting the narration method (F5-TTS or Gemini)
+ * Component for selecting the narration method (F5-TTS, Chatterbox, or Gemini)
  * @param {Object} props - Component props
  * @param {string} props.narrationMethod - Current narration method
  * @param {Function} props.setNarrationMethod - Function to set narration method
  * @param {boolean} props.isGenerating - Whether generation is in progress
  * @param {boolean} props.isF5Available - Whether F5-TTS is available
+ * @param {boolean} props.isChatterboxAvailable - Whether Chatterbox is available
  * @param {boolean} props.isGeminiAvailable - Whether Gemini is available
  * @returns {JSX.Element} - Rendered component
  */
@@ -17,6 +18,7 @@ const NarrationMethodSelection = ({
   setNarrationMethod,
   isGenerating,
   isF5Available = true,
+  isChatterboxAvailable = true,
   isGeminiAvailable = true
 }) => {
   const { t } = useTranslation();
@@ -52,6 +54,25 @@ const NarrationMethodSelection = ({
                 {!isF5Available && (
                   <span className="method-description">
                     {t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  </span>
+                )}
+              </label>
+            </div>
+            <div className="radio-pill">
+              <input
+                type="radio"
+                id="method-chatterbox"
+                name="narration-method"
+                value="chatterbox"
+                checked={narrationMethod === 'chatterbox'}
+                onChange={() => handleMethodChange('chatterbox')}
+                disabled={isGenerating || !isChatterboxAvailable}
+              />
+              <label htmlFor="method-chatterbox" className={!isChatterboxAvailable ? 'unavailable' : ''}>
+                {t('narration.chatterboxMethod', 'Chatterbox')}
+                {!isChatterboxAvailable && (
+                  <span className="method-description">
+                    {t('narration.chatterboxUnavailable', '(Unavailable - Check Chatterbox API)')}
                   </span>
                 )}
               </label>

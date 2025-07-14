@@ -7,6 +7,7 @@ import useNarrationHandlers from './hooks/useNarrationHandlers';
 import useNarrationState from './hooks/useNarrationState';
 import useAvailabilityCheck from './hooks/useAvailabilityCheck';
 import useGeminiNarration from './hooks/useGeminiNarration';
+import useChatterboxNarration from './hooks/useChatterboxNarration';
 import useAudioPlayback from './hooks/useAudioPlayback';
 import useNarrationStorage from './hooks/useNarrationStorage';
 import useUIEffects from './hooks/useUIEffects';
@@ -18,6 +19,7 @@ import ReferenceAudioSection from './components/ReferenceAudioSection';
 import AudioControls from './components/AudioControls';
 import SubtitleSourceSelection from './components/SubtitleSourceSelection';
 import GeminiSubtitleSourceSelection from './components/GeminiSubtitleSourceSelection';
+import ChatterboxControls from './components/ChatterboxControls';
 import GeminiVoiceSelection from './components/GeminiVoiceSelection';
 import GeminiConcurrentClientsSlider from './components/GeminiConcurrentClientsSlider';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
@@ -68,10 +70,15 @@ const UnifiedNarrationSection = ({
     // Narration Method state
     narrationMethod, setNarrationMethod,
     isGeminiAvailable, setIsGeminiAvailable,
+    isChatterboxAvailable, setIsChatterboxAvailable,
 
     // Gemini-specific settings
     selectedVoice, setSelectedVoice,
     concurrentClients, setConcurrentClients,
+
+    // Chatterbox-specific settings
+    exaggeration, setExaggeration,
+    cfgWeight, setCfgWeight,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio, setReferenceAudio,
@@ -112,6 +119,7 @@ const UnifiedNarrationSection = ({
     narrationMethod,
     setIsAvailable,
     setIsGeminiAvailable,
+    setIsChatterboxAvailable,
     setError,
     t
   });
@@ -136,6 +144,38 @@ const UnifiedNarrationSection = ({
     translatedLanguage,
     selectedVoice,
     concurrentClients,
+    useGroupedSubtitles,
+    setUseGroupedSubtitles,
+    groupedSubtitles,
+    setGroupedSubtitles,
+    isGroupingSubtitles,
+    setIsGroupingSubtitles,
+    groupingIntensity,
+    t,
+    setRetryingSubtitleId
+  });
+
+  // Use Chatterbox narration hook
+  const {
+    handleChatterboxNarration,
+    cancelChatterboxGeneration,
+    retryChatterboxNarration,
+    retryFailedChatterboxNarrations
+  } = useChatterboxNarration({
+    setIsGenerating,
+    setGenerationStatus,
+    setError,
+    setGenerationResults,
+    generationResults,
+    subtitleSource,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    originalLanguage,
+    translatedLanguage,
+    exaggeration,
+    cfgWeight,
+    referenceAudio,
     useGroupedSubtitles,
     setUseGroupedSubtitles,
     groupedSubtitles,
@@ -325,6 +365,7 @@ const UnifiedNarrationSection = ({
         setNarrationMethod={setNarrationMethod}
         isGenerating={isGenerating}
         isF5Available={isAvailable}
+        isChatterboxAvailable={isChatterboxAvailable}
         isGeminiAvailable={isGeminiAvailable}
       />
 
@@ -448,6 +489,113 @@ const UnifiedNarrationSection = ({
             onRetry={retryF5TTSNarration}
             retryingSubtitleId={retryingSubtitleId}
             onRetryFailed={retryFailedNarrations}
+          />
+
+          {/* Hidden audio player for playback */}
+          <audio
+            ref={audioRef}
+            src={currentAudio?.url}
+            onEnded={handleAudioEnded}
+            style={{ display: 'none' }}
+          />
+        </div>
+      ) : narrationMethod === 'chatterbox' ? (
+        // Chatterbox UI
+        <div className="chatterbox-content">
+          {/* Audio Controls - reuse from F5-TTS */}
+          <AudioControls
+            handleFileUpload={handleFileUpload}
+            fileInputRef={fileInputRef}
+            isRecording={isRecording}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            isAvailable={isChatterboxAvailable}
+            referenceAudio={referenceAudio}
+            clearReferenceAudio={clearReferenceAudio}
+          />
+
+          {/* Reference Audio Section - reuse from F5-TTS */}
+          <ReferenceAudioSection
+            referenceAudio={referenceAudio}
+            autoRecognize={autoRecognize}
+            setAutoRecognize={setAutoRecognize}
+            isRecognizing={isRecognizing}
+            referenceText={referenceText}
+            setReferenceText={setReferenceText}
+            clearReferenceAudio={clearReferenceAudio}
+            isRecording={isRecording}
+            isExtractingSegment={isExtractingSegment}
+          />
+
+          {/* Subtitle Source Selection - reuse from F5-TTS */}
+          <SubtitleSourceSelection
+            subtitleSource={subtitleSource}
+            setSubtitleSource={setSubtitleSource}
+            isGenerating={isGenerating}
+            translatedSubtitles={translatedSubtitles}
+            originalSubtitles={originalSubtitles || subtitles}
+            originalLanguage={originalLanguage}
+            translatedLanguage={translatedLanguage}
+            setOriginalLanguage={setOriginalLanguage}
+            setTranslatedLanguage={setTranslatedLanguage}
+            useGroupedSubtitles={useGroupedSubtitles}
+            setUseGroupedSubtitles={setUseGroupedSubtitles}
+            isGroupingSubtitles={isGroupingSubtitles}
+            groupedSubtitles={groupedSubtitles}
+            groupingIntensity={groupingIntensity}
+            setGroupingIntensity={setGroupingIntensity}
+            onGroupedSubtitlesGenerated={setGroupedSubtitles}
+            onLanguageDetected={(source, language) => {
+              if (source === 'original') {
+                setOriginalLanguage(language);
+              } else if (source === 'translated') {
+                setTranslatedLanguage(language);
+              }
+            }}
+          />
+
+          {/* Chatterbox Controls */}
+          <ChatterboxControls
+            exaggeration={exaggeration}
+            setExaggeration={setExaggeration}
+            cfgWeight={cfgWeight}
+            setCfgWeight={setCfgWeight}
+            isGenerating={isGenerating}
+          />
+
+          {/* Generate Button - reuse from F5-TTS */}
+          <GenerateButton
+            handleGenerateNarration={handleChatterboxNarration}
+            isGenerating={isGenerating}
+            referenceAudio={referenceAudio}
+            subtitleSource={subtitleSource}
+            cancelGeneration={cancelChatterboxGeneration}
+            downloadAllAudio={downloadAllAudio}
+            downloadAlignedAudio={downloadAlignedAudio}
+            generationResults={generationResults}
+          />
+
+          {/* Generation Status */}
+          <StatusMessage
+            message={(isGenerating || retryingSubtitleId) ? generationStatus : ''}
+            type="info"
+            statusRef={statusRef}
+            showProgress={isGenerating && generationStatus && generationStatus.includes('Generating')}
+            isGenerating={isGenerating}
+          />
+
+          {/* Chatterbox Results - reuse F5-TTS results component */}
+          <NarrationResults
+            generationResults={generationResults}
+            onRetry={retryChatterboxNarration}
+            retryingSubtitleId={retryingSubtitleId}
+            onRetryFailed={retryFailedChatterboxNarrations}
+            hasGenerationError={!!error && error.includes('Chatterbox')}
+            currentAudio={currentAudio}
+            isPlaying={isPlaying}
+            playAudio={playAudio}
+            getAudioUrl={getAudioUrl}
+            subtitleSource={subtitleSource}
           />
 
           {/* Hidden audio player for playback */}

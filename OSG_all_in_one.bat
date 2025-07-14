@@ -43,14 +43,14 @@ ECHO ======================================================
 ECHO Vui long chon mot tuy chon:
 ECHO.
 ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS Narration)
+ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS + Chatterbox Narration)
 ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
 ECHO   2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)
 ECHO.
 ECHO BAO TRI / SU DUNG:
 ECHO   3. Cap nhat Ung dung (Update)
 ECHO   4. Chay Ung dung (Run App)
-ECHO   5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS Narration)
+ECHO   5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)
 ECHO.
 ECHO GO CAI DAT:
 ECHO   6. Go cai dat Ung dung (Uninstall)
@@ -76,7 +76,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Option 1: Install with Gemini + F5-TTS Narration) ***
+ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Option 1: Install with Gemini + F5-TTS + Chatterbox Narration) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -248,7 +248,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (Option 5: Run App with F5-TTS Narration) ***
+ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (Option 5: Run App with F5-TTS + Chatterbox Narration) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
