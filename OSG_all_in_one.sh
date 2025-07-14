@@ -248,29 +248,26 @@ show_menu() {
     echo "======================================================="
     echo "  OneClick Subtitles Generator - Setup & Manager"
     echo "======================================================="
-    echo "Current directory: $(pwd)"
+    echo "Vi tri (Location): $(pwd)"
+    echo "Thu muc Du an (Project Folder): $PROJECT_FOLDER_NAME"
     echo "======================================================="
     echo "SETUP & INSTALLATION:"
-    echo "  1. Install with Narration Features (Clean Install)"
-    echo "  2. Install without Narration Features (Clean Install)"
-    echo "  3. Update Application (git pull + dependencies)"
+    echo "  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS Narration)"
+    echo "  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)"
+    echo "  3. Cap nhat Ung dung (Update)"
     echo
     echo "RUN APPLICATION:"
-    echo "  4. Run Application (npm run dev)"
-    echo "  5. Run Application with Narration (npm run dev:cuda)"
-    echo
-    echo "MAINTENANCE:"
-    echo "  6. Clean Install Dependencies Only"
-    echo "  7. Reset Application (Clean all generated files)"
+    echo "  4. Chay Ung dung (Run App)"
+    echo "  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS Narration)"
     echo
     echo "UNINSTALL:"
-    echo "  8. Uninstall Application"
+    echo "  6. Go cai dat Ung dung (Uninstall)"
     echo
-    echo "  9. Exit"
+    echo "  7. Thoat (Exit)"
     echo "======================================================="
     echo
 
-    read -p "Enter your choice (1-9): " choice
+    read -p "Enter your choice (1-7): " choice
 
     case $choice in
         1) install_with_narration ;;
@@ -278,10 +275,8 @@ show_menu() {
         3) update_app ;;
         4) run_app ;;
         5) run_app_cuda ;;
-        6) clean_dependencies ;;
-        7) reset_app ;;
-        8) uninstall_app ;;
-        9) exit 0 ;;
+        6) uninstall_app ;;
+        7) exit 0 ;;
         *)
             echo "Invalid choice. Please try again."
             sleep 2
@@ -291,7 +286,7 @@ show_menu() {
 }
 
 install_with_narration() {
-    echo "*** Option 1: Install with Narration Features (Clean Install) ***"
+    echo "*** Option 1: Install with Voice Cloning Features (Clean Install) ***"
     echo "*** (Note: Requires more storage space and GPU for optimal performance) ***"
 
     # Check if we're in the right directory
@@ -364,7 +359,7 @@ install_with_narration() {
 }
 
 install_without_narration() {
-    echo "*** Option 2: Install without Narration Features (Clean Install) ***"
+    echo "*** Option 2: Install without Voice Cloning Features (Clean Install) ***"
 
     # Check if we're in the right directory
     check_repo_structure
@@ -503,7 +498,7 @@ run_app() {
 }
 
 run_app_cuda() {
-    echo "*** Option 5: Run Application with Narration ***"
+    echo "*** Option 5: Run Application with Voice Cloning ***"
 
     # Check if we're in the right directory
     check_repo_structure
@@ -521,7 +516,7 @@ run_app_cuda() {
     fi
 
     if [ ! -d ".venv" ] || [ ! -d "F5-TTS" ]; then
-        echo "ERROR: Narration features not installed. Please use option 1 to install with narration features."
+        echo "ERROR: Voice Cloning features not installed. Please use option 1 to install with narration features."
         read -p "Press Enter to continue..."
         show_menu
         return
@@ -554,101 +549,12 @@ run_app_cuda() {
     show_menu
 }
 
-clean_dependencies() {
-    echo "*** Option 6: Clean Install Dependencies Only ***"
 
-    # Check if we're in the right directory
-    check_repo_structure
-    if [ $? -ne 0 ]; then
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
 
-    clean_install
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to clean install."
-        error_occurred
-        return
-    fi
 
-    # Fix the start script in package.json to be cross-platform
-    echo "Updating package.json for cross-platform compatibility..."
-    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
-    if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to update package.json. The application might not work correctly."
-    else
-        echo "Successfully updated package.json for cross-platform compatibility."
-    fi
-
-    echo "Installing basic dependencies (using npm install)..."
-    npm install
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed during 'npm install'. Check messages above."
-        error_occurred
-        return
-    fi
-
-    echo "Installing yt-dlp for YouTube video downloads..."
-    npm run install:yt-dlp
-    if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
-        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
-    fi
-
-    echo "Dependencies installation completed."
-    read -p "Press Enter to continue..."
-    show_menu
-}
-
-reset_app() {
-    echo "*** Option 7: Reset Application ***"
-
-    # Check if we're in the right directory
-    check_repo_structure
-    if [ $? -ne 0 ]; then
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-
-    echo "WARNING: This will remove all generated files and dependencies."
-    echo "The following will be deleted:"
-    echo "  - node_modules/"
-    echo "  - .venv/"
-    echo "  - F5-TTS/"
-    echo "  - package-lock.json"
-    echo "  - Any generated output files"
-    echo
-    read -p "Are you sure you want to continue? (y/n): " confirm
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo "Reset cancelled."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-
-    clean_install
-
-    # Also clean any output directories
-    if [ -d "output" ]; then
-        echo "Removing output directory..."
-        rm -rf output
-    fi
-
-    if [ -d "temp" ]; then
-        echo "Removing temp directory..."
-        rm -rf temp
-    fi
-
-    echo "Application reset completed. All generated files have been removed."
-    echo "You can now run option 1 or 2 to reinstall."
-    read -p "Press Enter to continue..."
-    show_menu
-}
 
 uninstall_app() {
-    echo "*** Option 8: Uninstall Application ***"
+    echo "*** Option 6: Uninstall Application ***"
 
     # Check if we're in the right directory
     check_repo_structure

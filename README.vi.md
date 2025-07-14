@@ -1,6 +1,6 @@
 # Phần Mềm Tạo Phụ Đề Tự Động
 
-Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video, audio, dịch SRT, thuyết minh, tạo hình nền, phù hợp với người dùng phổ thông.
+Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, tạo hình nền, render video phù hợp với người dùng phổ thông.
 
 ## Hướng Dẫn Cài Đặt Nhanh
 
@@ -8,21 +8,20 @@ Phần mềm web giúp tạo phụ đề có thời gian chính xác cho video, 
 
 - Vào mục Release tải về OSG_all_in_one.bat phiên bản mới nhất.
 
-- Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng thuyết minh)
+- Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
 
 - LƯU Ý: ĐỐI VỚI MÁY CHƯA TỪNG CÀI GIT, NODE, ... THÌ PHẢI MỞ ĐI MỞ LẠI FILE BAT CÀI NHIỀU LẦN THÌ SẼ THÀNH CÔNG
 
 ### Cài Đặt Trên macOS và Ubuntu
 
-- Vào mục Release tải về OSG_all_in_one.sh
-
-- Mở Terminal và di chuyển đến thư mục chứa file vừa tải:
+- Clone repo này về máy + chạy file OSG_all_in_one.sh:
   ```bash
-  chmod +x OSG_all_in_one.sh
+  git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
+  cd oneclick-subtitles-generator
   ./OSG_all_in_one.sh
   ```
 
-- Làm theo hướng dẫn trên màn hình (kích thước app sẽ lớn nếu cài với tính năng thuyết minh)
+- Làm theo hướng dẫn trên màn hình (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
 
 ### Cập Nhật hoặc Chạy Ứng Dụng
 

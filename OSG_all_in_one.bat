@@ -76,7 +76,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) ***
+ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Option 1: Install with Gemini + F5-TTS Narration) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -123,7 +123,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNoNarration
-ECHO *** Tuy chon 2: Cai dat (Thuyet minh thong thuong) ***
+ECHO *** Tuy chon 2: Cai dat (Thuyet minh thong thuong) (Option 2: Install with Gemini Narration) ***
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -169,7 +169,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UpdateApp
-ECHO *** Tuy chon 3: Cap nhat Ung dung ***
+ECHO *** Tuy chon 3: Cap nhat Ung dung (Option 3: Update) ***
 IF NOT EXIST "%PROJECT_PATH%\.git" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" khong tim thay hoac khong phai la kho git.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
@@ -220,7 +220,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunApp
-ECHO *** Tuy chon 4: Chay Ung dung ***
+ECHO *** Tuy chon 4: Chay Ung dung (Option 4: Run App) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
@@ -248,7 +248,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (CUDA) ***
+ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (Option 5: Run App with F5-TTS Narration) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
@@ -277,7 +277,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UninstallApp
-ECHO *** Tuy chon 6: Go cai dat Ung dung ***
+ECHO *** Tuy chon 6: Go cai dat Ung dung (Option 6: Uninstall) ***
 IF NOT EXIST "%PROJECT_PATH%" (
     ECHO THONG TIN: Thu muc du an "%PROJECT_PATH%" khong tim thay. Ung dung co the chua duoc cai dat.
     GOTO ErrorOccurred
