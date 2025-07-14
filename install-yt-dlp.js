@@ -22,7 +22,8 @@ function executeWithRetry(command, options = {}, maxRetries = 3) {
   while (retries < maxRetries) {
     try {
       console.log(`Running command: ${command}`);
-      execSync(command, { stdio: 'inherit', ...options });
+      const env = { ...process.env, UV_HTTP_TIMEOUT: '300', ...options.env }; // 5 minutes timeout
+      execSync(command, { stdio: 'inherit', env, ...options });
       return true; // Success
     } catch (error) {
       lastError = error;
@@ -79,7 +80,7 @@ if (fs.existsSync(ytdlpPath)) {
   // Try to update it
   console.log('🔄 Updating yt-dlp to the latest version...');
   try {
-    executeWithRetry('uv pip install --upgrade yt-dlp');
+    executeWithRetry('uv pip install --python .venv --upgrade yt-dlp');
     console.log('✅ yt-dlp updated successfully.');
   } catch (error) {
     console.error(`⚠️ Error updating yt-dlp: ${error.message}`);
@@ -88,7 +89,7 @@ if (fs.existsSync(ytdlpPath)) {
 } else {
   console.log('🔧 Installing yt-dlp...');
   try {
-    executeWithRetry('uv pip install yt-dlp');
+    executeWithRetry('uv pip install --python .venv yt-dlp');
     console.log('✅ yt-dlp installed successfully.');
   } catch (error) {
     console.error(`❌ Error installing yt-dlp with uv: ${error.message}`);

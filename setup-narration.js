@@ -319,8 +319,12 @@ try {
     if (installNotes) {
         console.log(`   Notes: ${installNotes}`);
     }
-    // uv automatically uses the .venv environment in the current dir if it exists
-    execSync(torchInstallCmd, { stdio: 'inherit' });
+    // Explicitly specify the virtual environment to ensure uv uses it
+    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
+    console.log(`Using explicit venv: ${torchInstallCmdWithVenv}`);
+    // Set longer timeout for large PyTorch downloads
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
     console.log(`✅ PyTorch (${gpuVendor} target) installed successfully.`);
 
     // --- 5b. Verify Installation ---
@@ -417,7 +421,7 @@ except Exception as e:
 
 } catch (error) {
     console.error(`❌ Error installing or verifying PyTorch (${gpuVendor} target) with uv: ${error.message}`);
-    console.log(`   Command attempted: ${torchInstallCmd}`); // Show the command that failed
+    console.log(`   Command attempted: ${torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`)}`); // Show the command that failed
     console.log(`   ${installNotes}`); // Remind user of potential requirements
     process.exit(1);
 }
@@ -427,9 +431,10 @@ except Exception as e:
 console.log('\n🔧 Installing F5-TTS dependencies using uv...');
 try {
     // Added torchvision here as it's commonly needed and installed with torch now
-    const depsCmd = `uv pip install flask flask-cors soundfile numpy vocos`;
+    const depsCmd = `uv pip install --python ${VENV_DIR} flask flask-cors soundfile numpy vocos`;
     console.log(`Running: ${depsCmd}`);
-    execSync(depsCmd, { stdio: 'inherit' });
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+    execSync(depsCmd, { stdio: 'inherit', env });
     console.log('✅ F5-TTS dependencies installed.');
 } catch (error) {
     console.error(`❌ Error installing F5-TTS dependencies with uv: ${error.message}`);
@@ -457,9 +462,10 @@ try {
         console.log(`✅ Found F5-TTS directory and a setup file (${fs.existsSync(pyprojectTomlPath) ? 'pyproject.toml' : 'setup.py'}).`);
     }
 
-    const installF5Cmd = `uv pip install -e ./${F5_TTS_DIR}`;
+    const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
     console.log(`Running: ${installF5Cmd}`);
-    execSync(installF5Cmd, { stdio: 'inherit' });
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+    execSync(installF5Cmd, { stdio: 'inherit', env });
 
     console.log('\n🔍 Verifying F5-TTS installation using uv run...');
     const verifyF5PyCode = `

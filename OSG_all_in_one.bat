@@ -187,9 +187,9 @@ IF %ERRORLEVEL% NEQ 0 (
 ECHO Pulling latest changes from repository...
 git reset --hard origin/main
 git pull
-uv pip install --upgrade yt-dlp
+uv pip install --python .venv --upgrade yt-dlp
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to pull updates using 'git pull' or 'uv pip install --upgrade yt-dlp'. Check messages above.
+    ECHO ERROR: Failed to pull updates using 'git pull' or 'uv pip install --python .venv --upgrade yt-dlp'. Check messages above.
     POPD
     GOTO ErrorOccurred
 )

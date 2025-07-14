@@ -451,7 +451,7 @@ update_app() {
     # Update yt-dlp if it exists
     if [ -d ".venv" ]; then
         echo "Updating yt-dlp..."
-        uv pip install --upgrade yt-dlp
+        uv pip install --python .venv --upgrade yt-dlp
     fi
 
     echo "Update check completed."
