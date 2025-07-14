@@ -7,6 +7,46 @@ PROJECT_PATH="$SCRIPT_DIR"
 GIT_REPO_URL="https://github.com/nganlinh4/oneclick-subtitles-generator.git"
 
 # --- Functions ---
+error_occurred() {
+    echo
+    echo "********** An error occurred. Please review the messages above. **********"
+    echo "Please close and reopen the terminal and run the script again if there are errors,"
+    echo "as system PATH for package managers and tools may need to be refreshed."
+    echo
+    read -p "Press Enter to return to main menu..."
+    show_menu
+}
+
+refresh_env() {
+    # Refresh environment variables (similar to REFRESHENV in Windows)
+    echo "Refreshing environment variables..."
+
+    # Source common profile files to pick up new PATH entries
+    if [ -f ~/.bashrc ]; then
+        source ~/.bashrc 2>/dev/null || true
+    fi
+    if [ -f ~/.bash_profile ]; then
+        source ~/.bash_profile 2>/dev/null || true
+    fi
+    if [ -f ~/.profile ]; then
+        source ~/.profile 2>/dev/null || true
+    fi
+
+    # For macOS, also source Homebrew environment
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [[ -f /opt/homebrew/bin/brew ]]; then
+            eval "$(/opt/homebrew/bin/brew shellenv)" 2>/dev/null || true
+        elif [[ -f /usr/local/bin/brew ]]; then
+            eval "$(/usr/local/bin/brew shellenv)" 2>/dev/null || true
+        fi
+    fi
+
+    # Add cargo/uv to PATH if it exists
+    if [[ -d "$HOME/.cargo/bin" ]]; then
+        export PATH="$HOME/.cargo/bin:$PATH"
+    fi
+}
+
 install_prerequisites() {
     echo "--- Installing prerequisites ---"
     
@@ -34,22 +74,25 @@ install_prerequisites() {
         if ! command -v git &> /dev/null; then
             echo "Git not found. Installing..."
             brew install git
+            refresh_env
         else
             echo "Git already installed."
         fi
-        
+
         # Install Node.js
         if ! command -v node &> /dev/null; then
             echo "Node.js not found. Installing..."
             brew install node
+            refresh_env
         else
             echo "Node.js already installed."
         fi
-        
+
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
             echo "FFmpeg not found. Installing..."
             brew install ffmpeg
+            refresh_env
         else
             echo "FFmpeg already installed."
         fi
@@ -65,23 +108,26 @@ install_prerequisites() {
         if ! command -v git &> /dev/null; then
             echo "Git not found. Installing..."
             sudo apt install -y git
+            refresh_env
         else
             echo "Git already installed."
         fi
-        
+
         # Install Node.js
         if ! command -v node &> /dev/null; then
             echo "Node.js not found. Installing..."
             curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
             sudo apt install -y nodejs
+            refresh_env
         else
             echo "Node.js already installed."
         fi
-        
+
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
             echo "FFmpeg not found. Installing..."
             sudo apt install -y ffmpeg
+            refresh_env
         else
             echo "FFmpeg already installed."
         fi
@@ -94,6 +140,7 @@ install_prerequisites() {
     if ! command -v uv &> /dev/null; then
         echo "uv not found. Installing..."
         curl -LsSf https://astral.sh/uv/install.sh | sh
+        refresh_env
         # Add uv to PATH for current session
         if [[ -d "$HOME/.cargo/bin" ]]; then
             export PATH="$HOME/.cargo/bin:$PATH"
@@ -101,6 +148,9 @@ install_prerequisites() {
     else
         echo "uv already installed."
     fi
+
+    echo "--- Prerequisites installation/check completed ---"
+    echo
 }
 
 # Function to detect GPU type and install appropriate PyTorch
@@ -213,11 +263,14 @@ show_menu() {
     echo "  6. Clean Install Dependencies Only"
     echo "  7. Reset Application (Clean all generated files)"
     echo
-    echo "  8. Exit"
+    echo "UNINSTALL:"
+    echo "  8. Uninstall Application"
+    echo
+    echo "  9. Exit"
     echo "======================================================="
     echo
-    
-    read -p "Enter your choice (1-8): " choice
+
+    read -p "Enter your choice (1-9): " choice
 
     case $choice in
         1) install_with_narration ;;
@@ -227,7 +280,8 @@ show_menu() {
         5) run_app_cuda ;;
         6) clean_dependencies ;;
         7) reset_app ;;
-        8) exit 0 ;;
+        8) uninstall_app ;;
+        9) exit 0 ;;
         *)
             echo "Invalid choice. Please try again."
             sleep 2
@@ -251,8 +305,7 @@ install_with_narration() {
     install_prerequisites
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to install prerequisites."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -262,8 +315,7 @@ install_with_narration() {
     clean_install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to clean install."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
     
@@ -281,8 +333,7 @@ install_with_narration() {
     npm run install:all
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed during 'npm run install:all'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -326,16 +377,14 @@ install_without_narration() {
     install_prerequisites
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to install prerequisites."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
     clean_install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to clean install."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
     
@@ -353,8 +402,7 @@ install_without_narration() {
     npm install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed during 'npm install'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -392,11 +440,11 @@ update_app() {
     fi
 
     echo "Pulling latest changes from repository..."
+    git reset --hard origin/main
     git pull
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to pull updates using 'git pull'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -447,8 +495,7 @@ run_app() {
     npm run dev
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to start application using 'npm run dev'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -500,8 +547,7 @@ run_app_cuda() {
     npm run dev:cuda
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to start application using 'npm run dev:cuda'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -522,8 +568,7 @@ clean_dependencies() {
     clean_install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to clean install."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -540,8 +585,7 @@ clean_dependencies() {
     npm install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed during 'npm install'. Check messages above."
-        read -p "Press Enter to continue..."
-        show_menu
+        error_occurred
         return
     fi
 
@@ -603,9 +647,82 @@ reset_app() {
     show_menu
 }
 
+uninstall_app() {
+    echo "*** Option 8: Uninstall Application ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
+    if [ $? -ne 0 ]; then
+        echo "INFO: Project directory structure not found. Application may not be installed."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    echo "WARNING: This action will permanently delete the project directory and all its contents:"
+    echo "$(pwd)"
+    echo
+    echo "This includes:"
+    echo "  - All source code"
+    echo "  - All dependencies (node_modules, .venv, F5-TTS)"
+    echo "  - All generated files and outputs"
+    echo "  - All configuration and settings"
+    echo
+    read -p "Are you sure you want to continue with uninstallation? (y/n): " confirm_uninstall
+    if [ "$confirm_uninstall" != "y" ] && [ "$confirm_uninstall" != "Y" ]; then
+        echo "Uninstallation cancelled."
+        show_menu
+        return
+    fi
+
+    echo "Removing project directory: $(pwd)..."
+
+    # Get parent directory before deletion
+    PARENT_DIR="$(dirname "$(pwd)")"
+    PROJECT_NAME="$(basename "$(pwd)")"
+
+    # Move to parent directory
+    cd "$PARENT_DIR"
+
+    # Remove the project directory
+    rm -rf "$PROJECT_NAME"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to remove project directory. Check permissions or if files are in use."
+        echo "You may need to manually delete: $PARENT_DIR/$PROJECT_NAME"
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    echo "Uninstallation completed. Project directory has been removed."
+    echo "The script will now exit as the project no longer exists."
+    exit 0
+}
+
 # --- Start the script ---
 # Make script executable
 chmod +x "$0"
+
+# Check for sudo privileges (for Linux package installation)
+check_sudo_privileges() {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "Checking sudo privileges..."
+        if ! sudo -n true 2>/dev/null; then
+            echo "This script requires sudo privileges for package installation on Linux."
+            echo "Please enter your password when prompted."
+            sudo -v
+            if [ $? -ne 0 ]; then
+                echo "ERROR: Sudo privileges required. Exiting."
+                exit 1
+            fi
+        fi
+        echo "Sudo privileges confirmed."
+        echo
+    fi
+}
+
+# Check sudo privileges
+check_sudo_privileges
 
 # Check if we're in the right directory before showing menu
 echo "OneClick Subtitles Generator - Setup & Manager"
