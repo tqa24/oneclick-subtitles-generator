@@ -444,6 +444,28 @@ try {
 
 // --- 7. Install F5-TTS using uv pip ---
 console.log('\n🔧 Installing F5-TTS using uv...');
+
+// Check for build dependencies on Linux
+if (process.platform === 'linux') {
+    console.log('🔍 Checking for build dependencies on Linux...');
+    try {
+        // Check if essential build tools are available
+        execSync('which gcc', { stdio: 'ignore' });
+        console.log('✅ gcc found');
+    } catch (error) {
+        console.warn('⚠️ gcc not found. You may need to install build-essential:');
+        console.warn('   sudo apt update && sudo apt install build-essential python3-dev');
+    }
+
+    try {
+        execSync('which python3-config', { stdio: 'ignore' });
+        console.log('✅ python3-dev found');
+    } catch (error) {
+        console.warn('⚠️ python3-dev not found. You may need to install it:');
+        console.warn('   sudo apt install python3-dev');
+    }
+}
+
 try {
     if (!fs.existsSync(F5_TTS_DIR)) {
         console.error(`❌ Error: Directory "${F5_TTS_DIR}" not found.`);
@@ -465,21 +487,71 @@ try {
     const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
     console.log(`Running: ${installF5Cmd}`);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(installF5Cmd, { stdio: 'inherit', env });
+
+    try {
+        execSync(installF5Cmd, { stdio: 'inherit', env });
+        console.log('✅ F5-TTS installation command completed.');
+    } catch (installError) {
+        console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
+        console.log(`   Command that failed: ${installF5Cmd}`);
+        console.log('   Trying alternative installation method (non-editable)...');
+
+        try {
+            const altInstallCmd = `uv pip install --python ${VENV_DIR} ./${F5_TTS_DIR}`;
+            console.log(`Running alternative: ${altInstallCmd}`);
+            execSync(altInstallCmd, { stdio: 'inherit', env });
+            console.log('✅ F5-TTS alternative installation completed.');
+        } catch (altError) {
+            console.error(`❌ Alternative installation also failed: ${altError.message}`);
+            console.log('   This might be due to:');
+            console.log('   - Missing build dependencies (gcc, python3-dev, etc.)');
+            console.log('   - Permission issues');
+            console.log('   - Network connectivity issues');
+            console.log('   On Ubuntu/Debian, try: sudo apt update && sudo apt install build-essential python3-dev');
+            throw altError; // Re-throw to be caught by outer try-catch
+        }
+    }
+
+    // Debug: List installed packages in the virtual environment
+    console.log('\n🔍 Checking installed packages in virtual environment...');
+    try {
+        const listCmd = `uv pip list --python ${VENV_DIR}`;
+        console.log(`Running: ${listCmd}`);
+        execSync(listCmd, { stdio: 'inherit' });
+    } catch (listError) {
+        console.warn(`⚠️ Could not list packages: ${listError.message}`);
+    }
 
     console.log('\n🔍 Verifying F5-TTS installation using uv run...');
     const verifyF5PyCode = `
 import sys
 import traceback
+import pkg_resources
+
+print("Python executable:", sys.executable)
+print("Python version:", sys.version)
+print("Python path:", sys.path[:3])  # Show first 3 entries
+
+# List installed packages that might be related
+try:
+    installed_packages = [d.project_name for d in pkg_resources.working_set]
+    f5_related = [pkg for pkg in installed_packages if 'f5' in pkg.lower() or 'tts' in pkg.lower()]
+    if f5_related:
+        print("F5/TTS related packages found:", f5_related)
+    else:
+        print("No F5/TTS related packages found in:", installed_packages[:10])  # Show first 10
+except Exception as e:
+    print(f"Could not list packages: {e}")
+
 try:
     from f5_tts.api import F5TTS
-    print('F5-TTS imported successfully')
+    print('✅ F5-TTS imported successfully')
     # Optional: Instantiate to catch potential init errors? Might be too slow/complex.
     # print('Attempting F5TTS instantiation...')
     # f5 = F5TTS() # This might require models to be downloaded/present
     # print('F5-TTS instantiated successfully (basic)')
 except Exception as e:
-    print(f'Error importing F5-TTS: {e}')
+    print(f'❌ Error importing F5-TTS: {e}')
     traceback.print_exc()
     sys.exit(1)
 `;
