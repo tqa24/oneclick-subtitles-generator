@@ -3,6 +3,7 @@
  */
 
 const { spawn } = require('child_process');
+const { getFfprobePath } = require('../shared/ffmpegUtils');
 
 /**
  * Get the total frame count of a video file
@@ -11,7 +12,8 @@ const { spawn } = require('child_process');
  */
 function getVideoFrameCount(videoPath) {
   return new Promise((resolve, reject) => {
-    const frameCountProbe = spawn('ffprobe', [
+    const ffprobePath = getFfprobePath();
+    const frameCountProbe = spawn(ffprobePath, [
       '-v', 'error',
       '-select_streams', 'v:0',
       '-count_packets',
@@ -53,7 +55,8 @@ function getVideoFrameCount(videoPath) {
  */
 function getVideoResolution(videoPath) {
   return new Promise((resolve, reject) => {
-    const resolutionProbe = spawn('ffprobe', [
+    const ffprobePath = getFfprobePath();
+    const resolutionProbe = spawn(ffprobePath, [
       '-v', 'error',
       '-select_streams', 'v:0',
       '-show_entries', 'stream=width,height',

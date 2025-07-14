@@ -7,6 +7,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const { getMediaDuration } = require('./durationUtils');
 const { getVideoResolution, getVideoFrameCount } = require('./resolutionUtils');
+const { getFfmpegPath } = require('../shared/ffmpegUtils');
 
 /**
  * Optimize a video by scaling it to a lower resolution and reducing the frame rate
@@ -104,7 +105,8 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
         outputPath
       ];
 
-      const optimizeCmd = spawn('ffmpeg', ffmpegArgs);
+      const ffmpegPath = getFfmpegPath();
+      const optimizeCmd = spawn(ffmpegPath, ffmpegArgs);
 
       optimizeCmd.stderr.on('data', (data) => {
         const output = data.toString();
@@ -212,7 +214,8 @@ function createAnalysisVideo(videoPath, outputPath) {
         outputPath
       ];
 
-      const analysisCmd = spawn('ffmpeg', ffmpegArgs);
+      const ffmpegPath = getFfmpegPath();
+      const analysisCmd = spawn(ffmpegPath, ffmpegArgs);
 
       analysisCmd.stderr.on('data', (data) => {
         const output = data.toString();

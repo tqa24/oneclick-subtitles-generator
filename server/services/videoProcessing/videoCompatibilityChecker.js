@@ -4,6 +4,7 @@
  */
 
 const { spawn } = require('child_process');
+const { getFfprobePath } = require('../shared/ffmpegUtils');
 const path = require('path');
 const fs = require('fs').promises;
 
@@ -22,7 +23,8 @@ async function checkVideoCompatibility(videoPath) {
       videoPath
     ];
 
-    const ffprobe = spawn('ffprobe', ffprobeArgs);
+    const ffprobePath = getFfprobePath();
+    const ffprobe = spawn(ffprobePath, ffprobeArgs);
     let stdout = '';
     let stderr = '';
 

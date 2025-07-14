@@ -7,6 +7,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { TEMP_AUDIO_DIR } = require('../directoryManager');
@@ -236,7 +237,8 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
 
   // Execute the ffmpeg command using spawn
   await new Promise((resolve, reject) => {
-    const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+    const ffmpegPath = getFfmpegPath();
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
     let stdoutData = '';
     let stderrData = '';
@@ -324,7 +326,8 @@ const concatenateAudioFiles = async (inputFiles, outputPath) => {
 
   // Execute the ffmpeg command
   await new Promise((resolve, reject) => {
-    const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+    const ffmpegPath = getFfmpegPath();
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
     let stdoutData = '';
     let stderrData = '';

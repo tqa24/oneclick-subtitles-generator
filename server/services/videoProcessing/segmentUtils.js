@@ -6,6 +6,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const { getMediaDuration } = require('./durationUtils');
+const { getFfmpegPath } = require('../shared/ffmpegUtils');
 
 /**
  * Split a media file (video or audio) into segments using ffmpeg
@@ -104,7 +105,8 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
 
       ffmpegArgs.push(outputPattern);
 
-      const segmentCmd = spawn('ffmpeg', ffmpegArgs);
+      const ffmpegPath = getFfmpegPath();
+      const segmentCmd = spawn(ffmpegPath, ffmpegArgs);
       const segments = [];
 
       segmentCmd.stderr.on('data', (data) => {

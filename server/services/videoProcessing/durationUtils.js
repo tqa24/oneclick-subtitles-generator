@@ -6,6 +6,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const path = require('path');
+const { getFfmpegPath, getFfprobePath } = require('../shared/ffmpegUtils');
 
 /**
  * Get the duration of a media file using ffprobe
@@ -38,7 +39,8 @@ function getMediaDuration(mediaPath) {
     }
 
     // Try to get duration using format information first
-    const durationProbe = spawn('ffprobe', [
+    const ffprobePath = getFfprobePath();
+    const durationProbe = spawn(ffprobePath, [
       '-v', 'error',
       '-show_entries', 'format=duration',
       '-of', 'default=noprint_wrappers=1:nokey=1',
@@ -73,7 +75,7 @@ function getMediaDuration(mediaPath) {
 
 
         // Try alternative method using stream information
-        const streamProbe = spawn('ffprobe', [
+        const streamProbe = spawn(ffprobePath, [
           '-v', 'error',
           '-select_streams', 'v:0',
           '-show_entries', 'stream=duration',
@@ -109,8 +111,8 @@ function getMediaDuration(mediaPath) {
             console.error(`[GET-DURATION] Alternative method error output: ${streamErrorOutput}`);
 
             // Try one more method - using ffmpeg to analyze frames
-
-            const frameProbe = spawn('ffmpeg', [
+            const ffmpegPath = getFfmpegPath();
+            const frameProbe = spawn(ffmpegPath, [
               '-i', mediaPath,
               '-f', 'null',
               '-hide_banner',
@@ -206,7 +208,8 @@ function getVideoDimensions(mediaPath) {
       return reject(new Error(`Video file does not exist: ${mediaPath}`));
     }
 
-    const ffprobeProcess = spawn('ffprobe', [
+    const ffprobePath = getFfprobePath();
+    const ffprobeProcess = spawn(ffprobePath, [
       '-v', 'quiet',
       '-print_format', 'json',
       '-show_streams',
@@ -311,7 +314,8 @@ async function ensureVideoCompatibility(videoPath) {
       videoPath
     ];
 
-    const ffprobe = spawn('ffprobe', ffprobeArgs);
+    const ffprobePath = getFfprobePath();
+    const ffprobe = spawn(ffprobePath, ffprobeArgs);
     let stdout = '';
     let stderr = '';
 
@@ -382,7 +386,8 @@ async function convertToH264(inputPath) {
 
     console.log(`[VideoCompatibility] Converting video: ${path.basename(inputPath)} -> H.264 (replacing original)`);
 
-    const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+    const ffmpegPath = getFfmpegPath();
+    const ffmpeg = spawn(ffmpegPath, ffmpegArgs);
     let stderr = '';
 
     ffmpeg.stderr.on('data', (data) => {

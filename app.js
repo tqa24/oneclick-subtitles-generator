@@ -25,6 +25,7 @@ const testAudioRoute = require('./server/routes/testAudioRoute');
 const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
 const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRoutes');
 const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
+const diagnosticsRoutes = require('./server/routes/diagnostics');
 const { scanModels } = require('./server/utils/scan-models');
 
 // Initialize Express app
@@ -164,6 +165,7 @@ app.use('/api/video', videoCompatibilityRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);
+app.use('/api/diagnostics', diagnosticsRoutes);
 
 // Simple model scanning endpoint - no Python bullshit!
 app.post('/api/scan-models', async (req, res) => {

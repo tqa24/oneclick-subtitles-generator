@@ -4,6 +4,7 @@
 
 const { spawn } = require('child_process');
 const { getMediaDuration } = require('./durationUtils');
+const { getFfmpegPath } = require('../shared/ffmpegUtils');
 
 /**
  * Convert an audio file to a video file with a black background
@@ -39,7 +40,8 @@ function convertAudioToVideo(audioPath, outputPath) {
         outputPath
       ];
 
-      const convertCmd = spawn('ffmpeg', ffmpegArgs);
+      const ffmpegPath = getFfmpegPath();
+      const convertCmd = spawn(ffmpegPath, ffmpegArgs);
 
       convertCmd.stderr.on('data', (data) => {
         const output = data.toString();
