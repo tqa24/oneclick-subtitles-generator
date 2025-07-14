@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # --- Configuration ---
-PROJECT_FOLDER_NAME="oneclick-subtitles-generator"
-GIT_REPO_URL="https://github.com/nganlinh4/oneclick-subtitles-generator.git"
+# This script assumes it's running from within the cloned repository
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_PATH="$SCRIPT_DIR/$PROJECT_FOLDER_NAME"
+PROJECT_PATH="$SCRIPT_DIR"
+GIT_REPO_URL="https://github.com/nganlinh4/oneclick-subtitles-generator.git"
 
 # --- Functions ---
 install_prerequisites() {
@@ -142,17 +142,53 @@ detect_gpu_type() {
 }
 
 clean_install() {
-    local project_path="$1"
-    
-    if [ -d "$project_path" ]; then
-        echo "Removing existing project directory: $project_path"
-        rm -rf "$project_path"
-        if [ $? -ne 0 ]; then
-            echo "ERROR: Failed to remove existing project directory."
-            return 1
-        fi
+    echo "Cleaning up previous installations..."
+
+    # Clean node_modules
+    if [ -d "node_modules" ]; then
+        echo "Removing node_modules..."
+        rm -rf node_modules
     fi
-    
+
+    # Clean Python virtual environment
+    if [ -d ".venv" ]; then
+        echo "Removing Python virtual environment..."
+        rm -rf .venv
+    fi
+
+    # Clean F5-TTS directory
+    if [ -d "F5-TTS" ]; then
+        echo "Removing F5-TTS directory..."
+        rm -rf F5-TTS
+    fi
+
+    # Clean package-lock.json
+    if [ -f "package-lock.json" ]; then
+        echo "Removing package-lock.json..."
+        rm -f package-lock.json
+    fi
+
+    echo "Clean up completed."
+    return 0
+}
+
+# --- Validation Functions ---
+check_repo_structure() {
+    if [ ! -f "package.json" ]; then
+        echo "ERROR: package.json not found. Make sure you're running this script from the repository root."
+        echo "Expected structure:"
+        echo "  oneclick-subtitles-generator/"
+        echo "  ├── package.json"
+        echo "  ├── OSG_all_in_one.sh  (this script)"
+        echo "  └── ..."
+        return 1
+    fi
+
+    if [ ! -f "server.js" ]; then
+        echo "ERROR: server.js not found. This doesn't appear to be the correct repository."
+        return 1
+    fi
+
     return 0
 }
 
@@ -160,36 +196,40 @@ clean_install() {
 show_menu() {
     clear
     echo "======================================================="
-    echo "  Quản Lý Trình Tạo Phụ Đề OneClick"
+    echo "  OneClick Subtitles Generator - Setup & Manager"
     echo "======================================================="
-    echo "CÀI ĐẶT:"
-    echo "  1. Cài đặt với Tính năng Tường thuật (Cài đặt sạch)"
-    echo "  2. Cài đặt không có Tính năng Tường thuật (Cài đặt sạch)"
-    echo "  3. Cập nhật Ứng dụng"
+    echo "Current directory: $(pwd)"
+    echo "======================================================="
+    echo "SETUP & INSTALLATION:"
+    echo "  1. Install with Narration Features (Clean Install)"
+    echo "  2. Install without Narration Features (Clean Install)"
+    echo "  3. Update Application (git pull + dependencies)"
     echo
-    echo "CHẠY ỨNG DỤNG:"
-    echo "  4. Chạy Ứng dụng (npm run dev)"
-    echo "  5. Chạy Ứng dụng với Tường thuật (npm run dev:cuda)"
+    echo "RUN APPLICATION:"
+    echo "  4. Run Application (npm run dev)"
+    echo "  5. Run Application with Narration (npm run dev:cuda)"
     echo
-    echo "GỠ CÀI ĐẶT:"
-    echo "  6. Gỡ cài đặt Ứng dụng (Xóa thư mục dự án)"
+    echo "MAINTENANCE:"
+    echo "  6. Clean Install Dependencies Only"
+    echo "  7. Reset Application (Clean all generated files)"
     echo
-    echo "  7. Thoát"
+    echo "  8. Exit"
     echo "======================================================="
     echo
     
-    read -p "Nhập lựa chọn của bạn (1-7): " choice
-    
+    read -p "Enter your choice (1-8): " choice
+
     case $choice in
         1) install_with_narration ;;
         2) install_without_narration ;;
         3) update_app ;;
         4) run_app ;;
         5) run_app_cuda ;;
-        6) uninstall_app ;;
-        7) exit 0 ;;
-        *) 
-            echo "Lựa chọn không hợp lệ. Vui lòng thử lại."
+        6) clean_dependencies ;;
+        7) reset_app ;;
+        8) exit 0 ;;
+        *)
+            echo "Invalid choice. Please try again."
             sleep 2
             show_menu
             ;;
@@ -197,9 +237,17 @@ show_menu() {
 }
 
 install_with_narration() {
-    echo "*** Tùy chọn 1: Cài đặt với Tính năng Tường thuật (Cài đặt sạch) ***"
-    echo "*** (Lưu ý: Có thể tốn nhiều dung lượng lưu trữ hơn) ***"
-    
+    echo "*** Option 1: Install with Narration Features (Clean Install) ***"
+    echo "*** (Note: Requires more storage space and GPU for optimal performance) ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
+    if [ $? -ne 0 ]; then
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
     install_prerequisites
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to install prerequisites."
@@ -207,11 +255,11 @@ install_with_narration() {
         show_menu
         return
     fi
-    
+
     # Detect GPU type
     detect_gpu_type
-    
-    clean_install "$PROJECT_PATH"
+
+    clean_install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to clean install."
         read -p "Press Enter to continue..."
@@ -219,39 +267,16 @@ install_with_narration() {
         return
     fi
     
-    echo "Cloning repository from $GIT_REPO_URL..."
-    git clone $GIT_REPO_URL "$PROJECT_PATH"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to clone repository."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Changing directory to $PROJECT_PATH"
-    cd "$PROJECT_PATH"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change directory to project folder."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
     # Fix the start script in package.json to be cross-platform
     echo "Updating package.json for cross-platform compatibility..."
-    if [[ "$OSTYPE" != "darwin"* && "$OSTYPE" != "linux-gnu"* ]]; then
-        # Skip on Windows
-        echo "Skipping package.json update on Windows."
+    # Update the start script on Mac/Linux
+    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to update package.json. The application might not work correctly."
     else
-        # Update the start script on Mac/Linux
-        sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
-        if [ $? -ne 0 ]; then
-            echo "WARNING: Failed to update package.json. The application might not work correctly."
-        else
-            echo "Successfully updated package.json for cross-platform compatibility."
-        fi
+        echo "Successfully updated package.json for cross-platform compatibility."
     fi
-    
+
     echo "Installing dependencies (using npm run install:all)..."
     npm run install:all
     if [ $? -ne 0 ]; then
@@ -268,7 +293,7 @@ install_with_narration() {
         echo "You can try installing it manually later with 'npm run install:yt-dlp'."
     fi
 
-    echo "Cài đặt hoàn tất. Đang khởi chạy ứng dụng với CUDA..."
+    echo "Installation completed. Starting application with GPU acceleration..."
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
@@ -280,17 +305,24 @@ install_with_narration() {
     else
         echo "WARNING: No supported GPU detected. TTS generation will be slow."
     fi
-    
-    echo "Nhấn Ctrl+C trong cửa sổ này để dừng ứng dụng sau."
+
+    echo "Press Ctrl+C in this window to stop the application later."
     npm run dev:cuda
-    
-    cd "$SCRIPT_DIR"
+
     show_menu
 }
 
 install_without_narration() {
-    echo "*** Tùy chọn 2: Cài đặt không có Tính năng Tường thuật (Cài đặt sạch) ***"
-    
+    echo "*** Option 2: Install without Narration Features (Clean Install) ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
+    if [ $? -ne 0 ]; then
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
     install_prerequisites
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to install prerequisites."
@@ -298,8 +330,8 @@ install_without_narration() {
         show_menu
         return
     fi
-    
-    clean_install "$PROJECT_PATH"
+
+    clean_install
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to clean install."
         read -p "Press Enter to continue..."
@@ -307,39 +339,16 @@ install_without_narration() {
         return
     fi
     
-    echo "Cloning repository from $GIT_REPO_URL..."
-    git clone $GIT_REPO_URL "$PROJECT_PATH"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to clone repository."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Changing directory to $PROJECT_PATH"
-    cd "$PROJECT_PATH"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change directory to project folder."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
     # Fix the start script in package.json to be cross-platform
     echo "Updating package.json for cross-platform compatibility..."
-    if [[ "$OSTYPE" != "darwin"* && "$OSTYPE" != "linux-gnu"* ]]; then
-        # Skip on Windows
-        echo "Skipping package.json update on Windows."
+    # Update the start script on Mac/Linux
+    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to update package.json. The application might not work correctly."
     else
-        # Update the start script on Mac/Linux
-        sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
-        if [ $? -ne 0 ]; then
-            echo "WARNING: Failed to update package.json. The application might not work correctly."
-        else
-            echo "Successfully updated package.json for cross-platform compatibility."
-        fi
+        echo "Successfully updated package.json for cross-platform compatibility."
     fi
-    
+
     echo "Installing dependencies (using npm install)..."
     npm install
     if [ $? -ne 0 ]; then
@@ -356,59 +365,52 @@ install_without_narration() {
         echo "You can try installing it manually later with 'npm run install:yt-dlp'."
     fi
 
-    echo "Cài đặt hoàn tất. Đang khởi chạy ứng dụng..."
-    echo "Nhấn Ctrl+C trong cửa sổ này để dừng ứng dụng sau."
+    echo "Installation completed. Starting application..."
+    echo "Press Ctrl+C in this window to stop the application later."
     npm run dev
-    
-    cd "$SCRIPT_DIR"
+
     show_menu
 }
 
 update_app() {
-    echo "*** Tùy chọn 3: Cập nhật Ứng dụng ***"
-    
-    if [ ! -d "$PROJECT_PATH/.git" ]; then
-        echo "LỖI: Thư mục dự án $PROJECT_PATH không tìm thấy hoặc không phải là kho git."
-        echo "Vui lòng sử dụng một trong các tùy chọn Cài đặt trước."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Changing directory to $PROJECT_PATH"
-    cd "$PROJECT_PATH"
+    echo "*** Option 3: Update Application ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change directory to project folder."
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
+
+    if [ ! -d ".git" ]; then
+        echo "ERROR: This directory is not a git repository."
+        echo "Please make sure you cloned the repository properly."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
     echo "Pulling latest changes from repository..."
     git pull
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to pull updates using 'git pull'. Check messages above."
-        cd "$SCRIPT_DIR"
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
-    echo "Kiểm tra cập nhật hoàn tất."
-    cd "$SCRIPT_DIR"
-    
+
+    # Update yt-dlp if it exists
+    if [ -d ".venv" ]; then
+        echo "Updating yt-dlp..."
+        uv pip install --upgrade yt-dlp
+    fi
+
+    echo "Update check completed."
+
     echo
-    read -p "Chạy 'npm install' ngay bây giờ trong trường hợp các phụ thuộc đã thay đổi? (c/k): " install_deps
-    if [ "$install_deps" = "c" ]; then
-        echo "Changing directory to $PROJECT_PATH"
-        cd "$PROJECT_PATH"
-        if [ $? -ne 0 ]; then
-            echo "ERROR: Failed to change directory to project folder for npm install."
-            read -p "Press Enter to continue..."
-            show_menu
-            return
-        fi
-        
+    read -p "Run 'npm install' now in case dependencies have changed? (y/n): " install_deps
+    if [ "$install_deps" = "y" ] || [ "$install_deps" = "Y" ]; then
         echo "Running 'npm install'..."
         npm install
         if [ $? -ne 0 ]; then
@@ -416,73 +418,72 @@ update_app() {
         else
             echo "'npm install' completed."
         fi
-        
-        cd "$SCRIPT_DIR"
     fi
-    
+
     read -p "Press Enter to continue..."
     show_menu
 }
 
 run_app() {
-    echo "*** Tùy chọn 4: Chạy Ứng dụng ***"
-    
-    if [ ! -f "$PROJECT_PATH/package.json" ]; then
-        echo "LỖI: Thư mục dự án $PROJECT_PATH hoặc package.json không tìm thấy."
-        echo "Vui lòng sử dụng một trong các tùy chọn Cài đặt trước."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Changing directory to $PROJECT_PATH"
-    cd "$PROJECT_PATH"
+    echo "*** Option 4: Run Application ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change directory to project folder."
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
-    echo "Đang khởi chạy ứng dụng (using npm run dev)..."
-    echo "Nhấn Ctrl+C trong cửa sổ này để dừng ứng dụng sau."
+
+    if [ ! -d "node_modules" ]; then
+        echo "ERROR: node_modules not found. Please install dependencies first (option 1, 2, or 6)."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    echo "Starting application (using npm run dev)..."
+    echo "Press Ctrl+C in this window to stop the application later."
     npm run dev
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to start application using 'npm run dev'. Check messages above."
-        cd "$SCRIPT_DIR"
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
-    cd "$SCRIPT_DIR"
+
     show_menu
 }
 
 run_app_cuda() {
-    echo "*** Tùy chọn 5: Chạy Ứng dụng với Tường thuật (CUDA) ***"
-    
-    if [ ! -f "$PROJECT_PATH/package.json" ]; then
-        echo "LỖI: Thư mục dự án $PROJECT_PATH hoặc package.json không tìm thấy."
-        echo "Vui lòng sử dụng một trong các tùy chọn Cài đặt trước."
+    echo "*** Option 5: Run Application with Narration ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
+    if [ $? -ne 0 ]; then
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
+
+    if [ ! -d "node_modules" ]; then
+        echo "ERROR: node_modules not found. Please install dependencies first (option 1)."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    if [ ! -d ".venv" ] || [ ! -d "F5-TTS" ]; then
+        echo "ERROR: Narration features not installed. Please use option 1 to install with narration features."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
     # Detect GPU type
     detect_gpu_type
-    
-    echo "Changing directory to $PROJECT_PATH"
-    cd "$PROJECT_PATH"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to change directory to project folder."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Đang khởi chạy ứng dụng với GPU acceleration (using npm run dev:cuda)..."
+
+    echo "Starting application with GPU acceleration (using npm run dev:cuda)..."
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
@@ -494,50 +495,110 @@ run_app_cuda() {
     else
         echo "WARNING: No supported GPU detected. TTS generation will be slow."
     fi
-    
-    echo "Nhấn Ctrl+C trong cửa sổ này để dừng ứng dụng sau."
+
+    echo "Press Ctrl+C in this window to stop the application later."
     npm run dev:cuda
     if [ $? -ne 0 ]; then
         echo "ERROR: Failed to start application using 'npm run dev:cuda'. Check messages above."
-        cd "$SCRIPT_DIR"
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
-    cd "$SCRIPT_DIR"
+
     show_menu
 }
 
-uninstall_app() {
-    echo "*** Tùy chọn 6: Gỡ cài đặt Ứng dụng ***"
-    
-    if [ ! -d "$PROJECT_PATH" ]; then
-        echo "Thư mục dự án không tồn tại: $PROJECT_PATH"
-        echo "Không có gì để gỡ cài đặt."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    read -p "Bạn có chắc chắn muốn xóa thư mục dự án? (c/k): " confirm
-    if [ "$confirm" != "c" ]; then
-        echo "Gỡ cài đặt đã bị hủy."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-    
-    echo "Xóa thư mục dự án: $PROJECT_PATH"
-    rm -rf "$PROJECT_PATH"
+clean_dependencies() {
+    echo "*** Option 6: Clean Install Dependencies Only ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to remove project directory."
         read -p "Press Enter to continue..."
         show_menu
         return
     fi
-    
-    echo "Gỡ cài đặt hoàn tất. Thư mục dự án đã được xóa."
+
+    clean_install
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to clean install."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    # Fix the start script in package.json to be cross-platform
+    echo "Updating package.json for cross-platform compatibility..."
+    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to update package.json. The application might not work correctly."
+    else
+        echo "Successfully updated package.json for cross-platform compatibility."
+    fi
+
+    echo "Installing basic dependencies (using npm install)..."
+    npm install
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed during 'npm install'. Check messages above."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    echo "Installing yt-dlp for YouTube video downloads..."
+    npm run install:yt-dlp
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
+        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
+    fi
+
+    echo "Dependencies installation completed."
+    read -p "Press Enter to continue..."
+    show_menu
+}
+
+reset_app() {
+    echo "*** Option 7: Reset Application ***"
+
+    # Check if we're in the right directory
+    check_repo_structure
+    if [ $? -ne 0 ]; then
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    echo "WARNING: This will remove all generated files and dependencies."
+    echo "The following will be deleted:"
+    echo "  - node_modules/"
+    echo "  - .venv/"
+    echo "  - F5-TTS/"
+    echo "  - package-lock.json"
+    echo "  - Any generated output files"
+    echo
+    read -p "Are you sure you want to continue? (y/n): " confirm
+    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+        echo "Reset cancelled."
+        read -p "Press Enter to continue..."
+        show_menu
+        return
+    fi
+
+    clean_install
+
+    # Also clean any output directories
+    if [ -d "output" ]; then
+        echo "Removing output directory..."
+        rm -rf output
+    fi
+
+    if [ -d "temp" ]; then
+        echo "Removing temp directory..."
+        rm -rf temp
+    fi
+
+    echo "Application reset completed. All generated files have been removed."
+    echo "You can now run option 1 or 2 to reinstall."
     read -p "Press Enter to continue..."
     show_menu
 }
@@ -545,6 +606,28 @@ uninstall_app() {
 # --- Start the script ---
 # Make script executable
 chmod +x "$0"
+
+# Check if we're in the right directory before showing menu
+echo "OneClick Subtitles Generator - Setup & Manager"
+echo "=============================================="
+echo
+
+# Validate repository structure
+if [ ! -f "package.json" ] || [ ! -f "server.js" ]; then
+    echo "ERROR: This script must be run from the repository root directory."
+    echo
+    echo "Expected usage:"
+    echo "1. Clone the repository:"
+    echo "   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git"
+    echo "2. Navigate to the repository:"
+    echo "   cd oneclick-subtitles-generator"
+    echo "3. Run this script:"
+    echo "   ./OSG_all_in_one.sh"
+    echo
+    echo "Current directory: $(pwd)"
+    echo "Files found: $(ls -la | head -5)"
+    exit 1
+fi
 
 # Show the menu
 show_menu
