@@ -260,7 +260,14 @@ install_with_narration() {
         show_menu
         return
     fi
-    
+
+    echo "Installing yt-dlp for YouTube video downloads..."
+    npm run install:yt-dlp
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
+        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
+    fi
+
     echo "Cài đặt hoàn tất. Đang khởi chạy ứng dụng với CUDA..."
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "NVIDIA GPU detected, using CUDA acceleration."
@@ -341,7 +348,14 @@ install_without_narration() {
         show_menu
         return
     fi
-    
+
+    echo "Installing yt-dlp for YouTube video downloads..."
+    npm run install:yt-dlp
+    if [ $? -ne 0 ]; then
+        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
+        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
+    fi
+
     echo "Cài đặt hoàn tất. Đang khởi chạy ứng dụng..."
     echo "Nhấn Ctrl+C trong cửa sổ này để dừng ứng dụng sau."
     npm run dev
