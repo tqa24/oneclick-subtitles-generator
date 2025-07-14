@@ -415,7 +415,7 @@ except Exception as e:
     sys.exit(1)
 `;
     // Escape double quotes inside the Python code string for the shell command
-    const verifyTorchCmd = `uv run -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
+    const verifyTorchCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
     execSync(verifyTorchCmd, { stdio: 'inherit', encoding: 'utf8' });
     console.log('✅ PyTorch verification check completed.');
 
@@ -555,7 +555,7 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 `;
-    const verifyF5Cmd = `uv run -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
+    const verifyF5Cmd = `uv run --python ${VENV_DIR} -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
     execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
     console.log('✅ F5-TTS installation verified (import successful).');
 
@@ -593,7 +593,7 @@ try {
         const setupScriptName = path.basename(__filename);
 
         // Update existing or add new scripts
-        packageJson.scripts['python:start:uv'] = `uv run -- python server/narrationApp.py`; // Generic name
+        packageJson.scripts['python:start:uv'] = `uv run --python .venv -- python server/narrationApp.py`; // Generic name
         packageJson.scripts['dev:uv'] = `concurrently "npm run start" "npm run server:start" "npm run python:start:uv"`; // Generic name
         packageJson.scripts['setup:narration:uv'] = `node ${setupScriptName}`;
 

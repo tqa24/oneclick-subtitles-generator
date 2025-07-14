@@ -25,9 +25,9 @@ if not exist ".venv\Scripts\python.exe" (
     )
 )
 
-REM uv automatically detects the .venv environment in the current dir
+REM Explicitly specify the .venv environment to ensure uv uses it
 echo Starting F5-TTS server (server/narrationApp.py)...
-uv run -- python server/narrationApp.py
+uv run --python .venv -- python server/narrationApp.py
 
 echo.
 echo Server stopped.
