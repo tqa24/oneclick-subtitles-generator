@@ -4,3 +4,4 @@
 [submodule "chatterbox/chatterbox"]
 	path = chatterbox/chatterbox
 	url = https://github.com/JarodMica/chatterbox.git
+	ignore = dirty
