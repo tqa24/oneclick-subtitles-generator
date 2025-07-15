@@ -10,14 +10,18 @@ const CHATTERBOX_API_BASE_URL = 'http://localhost:3011';
  */
 export const checkChatterboxAvailability = async () => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
     const response = await fetch(`${CHATTERBOX_API_BASE_URL}/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      // Add timeout
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return {
@@ -27,7 +31,7 @@ export const checkChatterboxAvailability = async () => {
     }
 
     const healthData = await response.json();
-    
+
     // Check if TTS model is loaded
     if (!healthData.models_loaded?.tts) {
       return {
@@ -42,16 +46,16 @@ export const checkChatterboxAvailability = async () => {
       models: healthData.models_loaded
     };
   } catch (error) {
-    console.error('Error checking Chatterbox availability:', error);
-    
-    if (error.name === 'TimeoutError') {
+    // Don't log to console to avoid spam when service is not running
+
+    if (error.name === 'AbortError') {
       return {
         available: false,
         message: 'Chatterbox API timeout - service may not be running'
       };
     }
-    
-    if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       return {
         available: false,
         message: 'Chatterbox API is not running. Please start the Chatterbox service.'
@@ -100,13 +104,17 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
       });
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body,
-      // Add timeout for generation (longer than health check)
-      signal: AbortSignal.timeout(60000), // 60 second timeout
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -117,11 +125,15 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
     return await response.blob();
   } catch (error) {
     console.error('Error generating Chatterbox speech:', error);
-    
-    if (error.name === 'TimeoutError') {
+
+    if (error.name === 'AbortError') {
       throw new Error('Chatterbox generation timeout - text may be too long');
     }
-    
+
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      throw new Error('Chatterbox API is not running. Please start the Chatterbox service.');
+    }
+
     throw error;
   }
 };
@@ -169,13 +181,18 @@ export const convertChatterboxVoice = async (inputAudio, targetVoice) => {
  */
 export const getChatterboxHealth = async () => {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`${CHATTERBOX_API_BASE_URL}/health`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(5000),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Health check failed: ${response.status}`);
@@ -183,7 +200,14 @@ export const getChatterboxHealth = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting Chatterbox health:', error);
+    if (error.name === 'AbortError') {
+      throw new Error('Chatterbox health check timeout');
+    }
+
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      throw new Error('Chatterbox API is not running');
+    }
+
     throw error;
   }
 };
