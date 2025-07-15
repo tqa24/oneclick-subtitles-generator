@@ -498,17 +498,38 @@ except Exception as e:
 }
 
 
-// --- 6. Install F5-TTS dependencies using uv pip ---
-console.log('\n🔧 Installing F5-TTS dependencies using uv...');
+// --- 6. Install core dependencies for both F5-TTS and Chatterbox services ---
+console.log('\n🔧 Installing core dependencies for F5-TTS and Chatterbox services using uv...');
 try {
-    // Added setuptools to ensure pkg_resources is available if needed
-    const depsCmd = `uv pip install --python ${VENV_DIR} flask flask-cors soundfile numpy vocos setuptools`;
+    // Core dependencies needed for both services
+    const coreDeps = [
+        // Flask server dependencies (for narrationApp.py)
+        'flask',
+        'flask-cors',
+        'requests',
+        'huggingface_hub',
+
+        // FastAPI/Chatterbox dependencies (for start_api.py and api.py)
+        'fastapi>=0.104.0',
+        'uvicorn[standard]>=0.24.0',
+        'python-multipart>=0.0.6',
+        'pydantic>=2.0.0',
+        'click',  // Required by uvicorn
+
+        // F5-TTS specific dependencies
+        'soundfile',
+        'numpy',
+        'vocos',
+        'setuptools'
+    ];
+
+    const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
     console.log(`Running: ${depsCmd}`);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
     execSync(depsCmd, { stdio: 'inherit', env });
-    console.log('✅ F5-TTS dependencies installed.');
+    console.log('✅ Core dependencies for F5-TTS and Chatterbox services installed.');
 } catch (error) {
-    console.error(`❌ Error installing F5-TTS dependencies with uv: ${error.message}`);
+    console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
     console.log(`   Command failed: ${error.cmd}`);
     process.exit(1);
 }
@@ -698,6 +719,21 @@ import traceback
 print("Verifying Chatterbox installation...")
 print("Python executable:", sys.executable)
 
+# Test core service dependencies
+try:
+    import flask
+    import flask_cors
+    import requests
+    import uvicorn
+    import fastapi
+    import click
+    print('✅ Core service dependencies imported successfully')
+except Exception as e:
+    print(f'❌ Error importing core service dependencies: {e}')
+    traceback.print_exc()
+    sys.exit(1)
+
+# Test Chatterbox imports
 try:
     from chatterbox.tts import ChatterboxTTS
     from chatterbox.vc import ChatterboxVC
@@ -705,6 +741,15 @@ try:
     print('✅ ChatterboxTTS and ChatterboxVC classes available')
 except Exception as e:
     print(f'❌ Error importing Chatterbox: {e}')
+    traceback.print_exc()
+    sys.exit(1)
+
+# Test transformers imports (critical for LlamaModel)
+try:
+    from transformers import LlamaModel, LlamaConfig
+    print('✅ Transformers LlamaModel and LlamaConfig imported successfully')
+except Exception as e:
+    print(f'❌ Error importing transformers: {e}')
     traceback.print_exc()
     sys.exit(1)
 `;
@@ -716,6 +761,21 @@ except Exception as e:
     console.error(`❌ Error installing/verifying Chatterbox with uv: ${error.message}`);
     console.log(`   Verification command failed. Check the output above for details from Python.`);
     process.exit(1);
+}
+
+// --- 7.6. Fix PyTorch version compatibility after Chatterbox installation ---
+console.log('\n🔧 Ensuring PyTorch version compatibility after Chatterbox installation...');
+try {
+    // Chatterbox may have overridden PyTorch versions, so reinstall the correct CUDA versions
+    const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
+    console.log(`Running: ${fixPytorchCmd}`);
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+    execSync(fixPytorchCmd, { stdio: 'inherit', env });
+    console.log('✅ PyTorch version compatibility ensured.');
+} catch (error) {
+    console.error(`❌ Error fixing PyTorch compatibility: ${error.message}`);
+    console.log(`   This may cause import issues with transformers/LlamaModel.`);
+    // Don't exit, just warn
 }
 
 // --- 8. Chatterbox Compatibility Fixes ---
@@ -828,7 +888,62 @@ try {
     console.error(`❌ Error updating package.json: ${error.message}`);
 }
 
-// --- 11. Final Summary ---
+// --- 11. Final Service Verification ---
+console.log('\n🔍 Performing final verification of all service dependencies...');
+try {
+    const finalVerifyPyCode = `
+import sys
+import traceback
+
+print("=== Final Service Verification ===")
+
+# Test Flask server imports (narrationApp.py)
+try:
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+    print('✅ Flask server dependencies verified')
+except Exception as e:
+    print(f'❌ Flask server dependencies failed: {e}')
+    sys.exit(1)
+
+# Test FastAPI/Chatterbox service imports (start_api.py)
+try:
+    import uvicorn
+    import click
+    import fastapi
+    print('✅ FastAPI/Chatterbox service dependencies verified')
+except Exception as e:
+    print(f'❌ FastAPI/Chatterbox service dependencies failed: {e}')
+    sys.exit(1)
+
+# Test F5-TTS imports
+try:
+    from f5_tts.api import F5TTS
+    print('✅ F5-TTS API verified')
+except Exception as e:
+    print(f'❌ F5-TTS API failed: {e}')
+    sys.exit(1)
+
+# Test Chatterbox API imports
+try:
+    from chatterbox.tts import ChatterboxTTS
+    print('✅ Chatterbox TTS verified')
+except Exception as e:
+    print(f'❌ Chatterbox TTS failed: {e}')
+    sys.exit(1)
+
+print('✅ All service dependencies verified successfully!')
+`;
+    const finalVerifyCmd = `uv run --python ${VENV_DIR} -- python -c "${finalVerifyPyCode.replace(/"/g, '\\"')}"`;
+    execSync(finalVerifyCmd, { stdio: 'inherit', encoding: 'utf8' });
+    console.log('✅ Final service verification completed successfully.');
+} catch (error) {
+    console.error(`❌ Final service verification failed: ${error.message}`);
+    console.log('   Some services may not work correctly. Check the output above for details.');
+    // Don't exit here, just warn the user
+}
+
+// --- 12. Final Summary ---
 console.log('\n✅ Setup using uv completed successfully!');
 console.log(`   - Target PyTorch backend: ${gpuVendor}`);
 console.log(`   - Removed any existing "${F5_TTS_DIR}" and "${CHATTERBOX_DIR}" directories.`);
@@ -836,7 +951,7 @@ console.log(`   - Cloned fresh F5-TTS repository into "${F5_TTS_DIR}".`);
 console.log(`   - Cloned fresh Chatterbox repository into "${CHATTERBOX_DIR}".`);
 console.log(`   - Shared virtual environment at: ./${VENV_DIR} (reused if already exists)`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
-console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, and dependencies installed in the shared venv.`);
+console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, Flask, FastAPI, and all service dependencies installed in the shared venv.`);
 console.log(`   - Applied compatibility fixes for Unicode encoding and model loading.`);
 if (installNotes) {
     console.log(`   - Reminder: ${installNotes}`);
