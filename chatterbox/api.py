@@ -9,6 +9,7 @@ import torch
 import torchaudio as ta
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.responses import Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import uvicorn
@@ -22,6 +23,15 @@ app = FastAPI(
     title="Chatterbox TTS API",
     description="Simple API for Chatterbox Text-to-Speech with primary controls only",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3008", "http://127.0.0.1:3008"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global model instances (loaded once on startup)

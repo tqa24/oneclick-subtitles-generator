@@ -760,8 +760,8 @@ try {
 // --- 8. Chatterbox Compatibility Fixes ---
 function applyChatterboxFixes() {
     try {
-        // Fix 1: Fix Unicode encoding in chatterbox/api.py
-        console.log('   Fixing Unicode encoding in chatterbox/api.py...');
+        // Fix 1: Fix Unicode encoding and add CORS support in chatterbox/api.py
+        console.log('   Fixing Unicode encoding and adding CORS support in chatterbox/api.py...');
         const apiPyPath = path.join('chatterbox', 'api.py');
         if (fs.existsSync(apiPyPath)) {
             let apiContent = fs.readFileSync(apiPyPath, 'utf8');
@@ -772,10 +772,29 @@ function applyChatterboxFixes() {
             apiContent = apiContent.replace(/print\("✓ VC model loaded successfully"\)/g, 'print("[SUCCESS] VC model loaded successfully")');
             apiContent = apiContent.replace(/print\(f"✗ Failed to load VC model: \{e\}"\)/g, 'print(f"[ERROR] Failed to load VC model: {e}")');
 
+            // Add CORS middleware import if not present
+            if (!apiContent.includes('from fastapi.middleware.cors import CORSMiddleware')) {
+                apiContent = apiContent.replace(
+                    /from fastapi import FastAPI, HTTPException, UploadFile, File, Form/,
+                    'from fastapi import FastAPI, HTTPException, UploadFile, File, Form\nfrom fastapi.middleware.cors import CORSMiddleware'
+                );
+            }
+
+            // Add CORS middleware configuration if not present
+            if (!apiContent.includes('app.add_middleware(CORSMiddleware')) {
+                const appInitRegex = /(app = FastAPI\([^)]*\))/;
+                if (appInitRegex.test(apiContent)) {
+                    apiContent = apiContent.replace(
+                        appInitRegex,
+                        '$1\n\n# Add CORS middleware to allow frontend requests\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=["http://localhost:3008", "http://127.0.0.1:3008"],  # Frontend URLs\n    allow_credentials=True,\n    allow_methods=["*"],\n    allow_headers=["*"],\n)'
+                    );
+                }
+            }
+
             fs.writeFileSync(apiPyPath, apiContent, 'utf8');
-            console.log('     ✅ Unicode encoding fixed in api.py');
+            console.log('     ✅ Unicode encoding fixed and CORS support added in api.py');
         } else {
-            console.log('     ⚠️ chatterbox/api.py not found, skipping Unicode fix');
+            console.log('     ⚠️ chatterbox/api.py not found, skipping Unicode and CORS fix');
         }
 
         // Fix 2: Disable model_path.json to use default Hugging Face models
