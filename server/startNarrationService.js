@@ -49,21 +49,18 @@ function startChatterboxService() {
       PYTORCH_CUDA_ALLOC_CONF: 'max_split_size_mb:512'
     };
 
-    // Change to chatterbox directory and start the service
+    // Start the Chatterbox service using the same pattern as F5-TTS
+    const chatterboxStartPath = path.join(chatterboxDir, 'start_api.py');
     const chatterboxProcess = spawn(UV_EXECUTABLE, [
       'run',
-      '--python',
-      '../.venv',  // Relative path to .venv from chatterbox directory
-      '--',
-      'python',
-      'start_api.py',  // Use relative path since we're in chatterbox directory
+      chatterboxStartPath,  // Full path to start_api.py
       '--host', '0.0.0.0',
       '--port', CHATTERBOX_PORT.toString(),
       '--reload'
     ], {
       env,
-      stdio: 'inherit',
-      cwd: chatterboxDir // Run from chatterbox directory so api.py can be found
+      stdio: 'inherit'
+      // No cwd specified - runs from project root like F5-TTS
     });
 
     // Handle process events
@@ -80,7 +77,7 @@ function startChatterboxService() {
     });
 
     console.log(`✅ Chatterbox API service starting...`);
-    console.log(`📁 Working directory: ${chatterboxDir}`);
+    console.log(`📁 Script path: ${chatterboxStartPath}`);
     console.log(`🌐 Will be available at: http://localhost:${CHATTERBOX_PORT}`);
     console.log(`📖 API documentation: http://localhost:${CHATTERBOX_PORT}/docs`);
 

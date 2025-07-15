@@ -19,10 +19,20 @@ def main():
     
     args = parser.parse_args()
     
-    # Check if api.py exists
-    if not Path("api.py").exists():
-        print("Error: api.py not found in current directory")
+    # Check if api.py exists (handle both current directory and chatterbox subdirectory)
+    script_dir = Path(__file__).parent
+    api_py_path = script_dir / "api.py"
+
+    if not api_py_path.exists():
+        print(f"Error: api.py not found at {api_py_path}")
+        print(f"Script directory: {script_dir}")
+        print(f"Current working directory: {Path.cwd()}")
         sys.exit(1)
+
+    # Change to the script directory so api.py can be found
+    import os
+    os.chdir(script_dir)
+    print(f"Changed working directory to: {script_dir}")
     
     print(f"Starting Chatterbox API server...")
     print(f"Host: {args.host}")

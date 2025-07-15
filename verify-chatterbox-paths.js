@@ -63,24 +63,21 @@ if (allGood) {
 console.log('');
 console.log('🧪 Testing spawn command simulation...');
 
-// Simulate the spawn command that will be used
+// Simulate the spawn command that will be used (updated to match F5-TTS pattern)
 const UV_EXECUTABLE = 'uv';
 const CHATTERBOX_PORT = 3011;
+const chatterboxStartPath = path.join(chatterboxDir, 'start_api.py');
 
 const spawnArgs = [
   'run',
-  '--python',
-  '../.venv',
-  '--',
-  'python',
-  'start_api.py',
+  chatterboxStartPath,
   '--host', '0.0.0.0',
   '--port', CHATTERBOX_PORT.toString(),
   '--reload'
 ];
 
 console.log(`Command: ${UV_EXECUTABLE} ${spawnArgs.join(' ')}`);
-console.log(`Working directory: ${chatterboxDir}`);
+console.log(`Working directory: ${projectRoot} (same as F5-TTS)`);
 console.log('');
 
 // Check if we can find the Python executable in the venv
