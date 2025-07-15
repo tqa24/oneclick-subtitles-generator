@@ -418,6 +418,7 @@ const UnifiedNarrationSection = ({
             groupedSubtitles={groupedSubtitles}
             groupingIntensity={groupingIntensity}
             setGroupingIntensity={setGroupingIntensity}
+            narrationMethod={narrationMethod}
             onLanguageDetected={(source, language, modelId, modelError) => {
 
 
@@ -502,7 +503,7 @@ const UnifiedNarrationSection = ({
       ) : narrationMethod === 'chatterbox' ? (
         // Chatterbox UI
         <div className="chatterbox-content">
-          {/* Audio Controls - reuse from F5-TTS */}
+          {/* Audio Controls - for reference audio upload */}
           <AudioControls
             handleFileUpload={handleFileUpload}
             fileInputRef={fileInputRef}
@@ -512,19 +513,6 @@ const UnifiedNarrationSection = ({
             isAvailable={isChatterboxAvailable}
             referenceAudio={referenceAudio}
             clearReferenceAudio={clearReferenceAudio}
-          />
-
-          {/* Reference Audio Section - reuse from F5-TTS */}
-          <ReferenceAudioSection
-            referenceAudio={referenceAudio}
-            autoRecognize={autoRecognize}
-            setAutoRecognize={setAutoRecognize}
-            isRecognizing={isRecognizing}
-            referenceText={referenceText}
-            setReferenceText={setReferenceText}
-            clearReferenceAudio={clearReferenceAudio}
-            isRecording={isRecording}
-            isExtractingSegment={isExtractingSegment}
           />
 
           {/* Subtitle Source Selection - reuse from F5-TTS */}
@@ -545,6 +533,7 @@ const UnifiedNarrationSection = ({
             groupingIntensity={groupingIntensity}
             setGroupingIntensity={setGroupingIntensity}
             onGroupedSubtitlesGenerated={setGroupedSubtitles}
+            narrationMethod={narrationMethod}
             onLanguageDetected={(source, language) => {
               if (source === 'original') {
                 setOriginalLanguage(language);

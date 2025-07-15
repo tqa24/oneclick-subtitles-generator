@@ -5,10 +5,17 @@
 const CHATTERBOX_API_BASE_URL = 'http://localhost:3011';
 
 /**
- * Check if Chatterbox API is available
+ * Sleep for a specified number of milliseconds
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Single attempt to check Chatterbox API availability
  * @returns {Promise<{available: boolean, message?: string}>}
  */
-export const checkChatterboxAvailability = async () => {
+const checkChatterboxAvailabilitySingle = async () => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -46,8 +53,6 @@ export const checkChatterboxAvailability = async () => {
       models: healthData.models_loaded
     };
   } catch (error) {
-    // Don't log to console to avoid spam when service is not running
-
     if (error.name === 'AbortError') {
       return {
         available: false,
@@ -67,6 +72,58 @@ export const checkChatterboxAvailability = async () => {
       message: `Chatterbox API error: ${error.message}`
     };
   }
+};
+
+/**
+ * Check if Chatterbox API is available with retry logic
+ * @param {number} maxAttempts - Maximum number of attempts (default: 10)
+ * @param {number} delayMs - Delay between attempts in milliseconds (default: 3000)
+ * @returns {Promise<{available: boolean, message?: string}>}
+ */
+export const checkChatterboxAvailability = async (maxAttempts = 10, delayMs = 3000) => {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await checkChatterboxAvailabilitySingle();
+
+      // If successful, return immediately
+      if (result.available) {
+        return result;
+      }
+
+      // Store the error for potential final return
+      lastError = result;
+
+      // If this is the last attempt, don't wait
+      if (attempt === maxAttempts) {
+        break;
+      }
+
+      // Wait before next attempt
+      await sleep(delayMs);
+
+    } catch (error) {
+      lastError = {
+        available: false,
+        message: `Chatterbox API error: ${error.message}`
+      };
+
+      // If this is the last attempt, don't wait
+      if (attempt === maxAttempts) {
+        break;
+      }
+
+      // Wait before next attempt
+      await sleep(delayMs);
+    }
+  }
+
+  // Return the last error if all attempts failed
+  return lastError || {
+    available: false,
+    message: 'Chatterbox API is not available after multiple attempts'
+  };
 };
 
 /**

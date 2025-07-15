@@ -33,13 +33,15 @@ const useNarrationState = (initialReferenceAudio) => {
   const [exaggeration, setExaggeration] = useState(() => {
     // Try to load from localStorage
     const savedExaggeration = localStorage.getItem('chatterbox_exaggeration');
-    return savedExaggeration ? parseFloat(savedExaggeration) : 0.5; // Default to 0.5 (neutral)
+    // Default to 0.7 for more expressive speech as recommended in Chatterbox README
+    return savedExaggeration ? parseFloat(savedExaggeration) : 0.7;
   });
 
   const [cfgWeight, setCfgWeight] = useState(() => {
     // Try to load from localStorage
     const savedCfgWeight = localStorage.getItem('chatterbox_cfg_weight');
-    return savedCfgWeight ? parseFloat(savedCfgWeight) : 0.5; // Default to 0.5
+    // Default to 0.3 for better pacing with expressive speech as recommended in Chatterbox README
+    return savedCfgWeight ? parseFloat(savedCfgWeight) : 0.3;
   });
 
   // Narration Settings state (for F5-TTS)

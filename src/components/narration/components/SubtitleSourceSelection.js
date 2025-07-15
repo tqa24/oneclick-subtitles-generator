@@ -53,7 +53,8 @@ const SubtitleSourceSelection = ({
   isGroupingSubtitles = false,
   groupedSubtitles = null,
   groupingIntensity = 'moderate',
-  setGroupingIntensity = () => {}
+  setGroupingIntensity = () => {},
+  narrationMethod = 'f5tts'
 }) => {
   const { t } = useTranslation();
   const hasTranslatedSubtitles = translatedSubtitles && translatedSubtitles.length > 0;
@@ -706,7 +707,9 @@ const SubtitleSourceSelection = ({
               </div>
             )}
 
-            <div className="model-dropdown-container narration-model-dropdown-container">
+            {/* Only show model dropdown when NOT in Chatterbox mode */}
+            {narrationMethod !== 'chatterbox' && (
+              <div className="model-dropdown-container narration-model-dropdown-container">
                 <button
                   className="model-dropdown-btn narration-model-dropdown-btn"
                   onClick={(e) => {
@@ -724,8 +727,6 @@ const SubtitleSourceSelection = ({
                   <FiChevronDown size={14} className="dropdown-icon" />
                 </button>
 
-
-
                 {modelError && (
                   <div className="model-error">
                     <span className="error-icon">⚠️</span>
@@ -733,6 +734,7 @@ const SubtitleSourceSelection = ({
                   </div>
                 )}
               </div>
+            )}
 
             {modelError && !selectedModel && !isCheckingModel && (
               <div className="model-error-standalone">
