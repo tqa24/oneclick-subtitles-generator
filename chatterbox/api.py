@@ -64,16 +64,16 @@ async def startup_event():
     
     try:
         tts_model = ChatterboxTTS.from_pretrained(DEVICE)
-        print("✓ TTS model loaded successfully")
+        print("[SUCCESS] TTS model loaded successfully")
     except Exception as e:
-        print(f"✗ Failed to load TTS model: {e}")
+        print(f"[ERROR] Failed to load TTS model: {e}")
         tts_model = None
-    
+
     try:
         vc_model = ChatterboxVC.from_pretrained(DEVICE)
-        print("✓ VC model loaded successfully")
+        print("[SUCCESS] VC model loaded successfully")
     except Exception as e:
-        print(f"✗ Failed to load VC model: {e}")
+        print(f"[ERROR] Failed to load VC model: {e}")
         vc_model = None
 
 

@@ -644,6 +644,11 @@ try {
         }
     }
 
+    // --- Apply Chatterbox fixes for proper operation ---
+    console.log('\n🔧 Applying Chatterbox compatibility fixes...');
+    applyChatterboxFixes();
+    console.log('✅ Chatterbox compatibility fixes applied.');
+
     console.log('\n🔍 Verifying Chatterbox installation using uv run...');
     const verifyChatterboxPyCode = `
 import sys
@@ -672,10 +677,77 @@ except Exception as e:
     process.exit(1);
 }
 
-// --- 8. Removed: Script generation for narration service ---
+// --- 8. Chatterbox Compatibility Fixes ---
+function applyChatterboxFixes() {
+    try {
+        // Fix 1: Fix Unicode encoding in chatterbox/api.py
+        console.log('   Fixing Unicode encoding in chatterbox/api.py...');
+        const apiPyPath = path.join('chatterbox', 'api.py');
+        if (fs.existsSync(apiPyPath)) {
+            let apiContent = fs.readFileSync(apiPyPath, 'utf8');
+
+            // Replace Unicode checkmarks with ASCII text
+            apiContent = apiContent.replace(/print\("✓ TTS model loaded successfully"\)/g, 'print("[SUCCESS] TTS model loaded successfully")');
+            apiContent = apiContent.replace(/print\(f"✗ Failed to load TTS model: \{e\}"\)/g, 'print(f"[ERROR] Failed to load TTS model: {e}")');
+            apiContent = apiContent.replace(/print\("✓ VC model loaded successfully"\)/g, 'print("[SUCCESS] VC model loaded successfully")');
+            apiContent = apiContent.replace(/print\(f"✗ Failed to load VC model: \{e\}"\)/g, 'print(f"[ERROR] Failed to load VC model: {e}")');
+
+            fs.writeFileSync(apiPyPath, apiContent, 'utf8');
+            console.log('     ✅ Unicode encoding fixed in api.py');
+        } else {
+            console.log('     ⚠️ chatterbox/api.py not found, skipping Unicode fix');
+        }
+
+        // Fix 2: Disable model_path.json to use default Hugging Face models
+        console.log('   Disabling local model_path.json to use Hugging Face models...');
+        const modelPathJsonPath = path.join(CHATTERBOX_DIR, 'model_path.json');
+        if (fs.existsSync(modelPathJsonPath)) {
+            const backupPath = modelPathJsonPath + '.disabled';
+            fs.renameSync(modelPathJsonPath, backupPath);
+            console.log('     ✅ model_path.json disabled (renamed to .disabled)');
+        } else {
+            console.log('     ✅ model_path.json not found (already using default behavior)');
+        }
+
+        // Fix 3: Fix .pth file path for proper chatterbox imports
+        console.log('   Fixing chatterbox package import path...');
+        const sitePackagesPath = path.join(VENV_DIR, 'Lib', 'site-packages');
+        if (fs.existsSync(sitePackagesPath)) {
+            const pthFiles = fs.readdirSync(sitePackagesPath).filter(file =>
+                file.startsWith('__editable__.chatterbox') && file.endsWith('.pth')
+            );
+
+            for (const pthFile of pthFiles) {
+                const pthPath = path.join(sitePackagesPath, pthFile);
+                let pthContent = fs.readFileSync(pthPath, 'utf8').trim();
+
+                // Fix the path to point to the correct directory
+                const expectedPath = path.resolve(CHATTERBOX_DIR).replace(/\\/g, '/');
+                if (pthContent !== expectedPath) {
+                    fs.writeFileSync(pthPath, expectedPath + '\n', 'utf8');
+                    console.log(`     ✅ Fixed import path in ${pthFile}`);
+                } else {
+                    console.log(`     ✅ Import path already correct in ${pthFile}`);
+                }
+            }
+
+            if (pthFiles.length === 0) {
+                console.log('     ⚠️ No chatterbox .pth files found, imports may need manual fixing');
+            }
+        } else {
+            console.log('     ⚠️ Site-packages directory not found, skipping .pth fix');
+        }
+
+    } catch (error) {
+        console.warn(`   ⚠️ Warning: Some compatibility fixes failed: ${error.message}`);
+        console.warn('   The installation may still work, but you might encounter issues.');
+    }
+}
+
+// --- 9. Removed: Script generation for narration service ---
 // The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
 
-// --- 9. Update package.json ---
+// --- 10. Update package.json ---
 console.log('\n🔧 Updating package.json with uv commands...');
 try {
     const packageJsonPath = path.join(__dirname, 'package.json');
@@ -715,7 +787,7 @@ try {
     console.error(`❌ Error updating package.json: ${error.message}`);
 }
 
-// --- Final Summary ---
+// --- 11. Final Summary ---
 console.log('\n✅ Setup using uv completed successfully!');
 console.log(`   - Target PyTorch backend: ${gpuVendor}`);
 console.log(`   - Removed any existing "${F5_TTS_DIR}" and "${CHATTERBOX_DIR}" directories.`);
@@ -724,6 +796,7 @@ console.log(`   - Cloned fresh Chatterbox repository into "${CHATTERBOX_DIR}".`)
 console.log(`   - Virtual environment created at: ./${VENV_DIR}`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
 console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, and dependencies installed in the venv.`);
+console.log(`   - Applied compatibility fixes for Unicode encoding and model loading.`);
 if (installNotes) {
     console.log(`   - Reminder: ${installNotes}`);
 }
