@@ -17,9 +17,10 @@ function startChatterboxService() {
   try {
     console.log(`🔧 Starting Chatterbox API service on port ${CHATTERBOX_PORT}...`);
 
-    // Check if Chatterbox directory exists
+    // Check if Chatterbox directory and required files exist
     const chatterboxDir = path.join(path.dirname(__dirname), 'chatterbox');
     const chatterboxApiPath = path.join(chatterboxDir, 'start_api.py');
+    const chatterboxMainApiPath = path.join(chatterboxDir, 'api.py');
 
     if (!fs.existsSync(chatterboxDir)) {
       console.warn('⚠️  Chatterbox directory not found. Chatterbox service will not be available.');
@@ -29,6 +30,14 @@ function startChatterboxService() {
 
     if (!fs.existsSync(chatterboxApiPath)) {
       console.warn('⚠️  Chatterbox start_api.py not found. Chatterbox service will not be available.');
+      console.warn(`   Expected path: ${chatterboxApiPath}`);
+      return null;
+    }
+
+    if (!fs.existsSync(chatterboxMainApiPath)) {
+      console.warn('⚠️  Chatterbox api.py not found. Chatterbox service will not be available.');
+      console.warn(`   Expected path: ${chatterboxMainApiPath}`);
+      console.warn('   Run the setup script to install Chatterbox: npm run setup:narration');
       return null;
     }
 
@@ -44,17 +53,17 @@ function startChatterboxService() {
     const chatterboxProcess = spawn(UV_EXECUTABLE, [
       'run',
       '--python',
-      '.venv',
+      '../.venv',  // Relative path to .venv from chatterbox directory
       '--',
       'python',
-      chatterboxApiPath,
+      'start_api.py',  // Use relative path since we're in chatterbox directory
       '--host', '0.0.0.0',
       '--port', CHATTERBOX_PORT.toString(),
       '--reload'
     ], {
       env,
       stdio: 'inherit',
-      cwd: path.dirname(__dirname) // Run from project root to access .venv
+      cwd: chatterboxDir // Run from chatterbox directory so api.py can be found
     });
 
     // Handle process events
@@ -70,7 +79,9 @@ function startChatterboxService() {
       }
     });
 
-    console.log(`✅ Chatterbox API service started on http://localhost:${CHATTERBOX_PORT}`);
+    console.log(`✅ Chatterbox API service starting...`);
+    console.log(`📁 Working directory: ${chatterboxDir}`);
+    console.log(`🌐 Will be available at: http://localhost:${CHATTERBOX_PORT}`);
     console.log(`📖 API documentation: http://localhost:${CHATTERBOX_PORT}/docs`);
 
     return chatterboxProcess;
@@ -87,11 +98,11 @@ function startNarrationService() {
   try {
     // Check if uv is installed
     try {
-      const uvVersionOutput = require('child_process').execSync(`${UV_EXECUTABLE} --version`, { encoding: 'utf8' });
-
+      require('child_process').execSync(`${UV_EXECUTABLE} --version`, { encoding: 'utf8' });
+      console.log(`✅ UV package manager found`);
     } catch (error) {
-      console.error(`Error checking uv version: ${error.message}`);
-
+      console.error(`❌ Error checking uv version: ${error.message}`);
+      console.error('   Please install uv: https://astral.sh/uv');
       return null;
     }
 

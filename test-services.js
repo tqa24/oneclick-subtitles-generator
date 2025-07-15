@@ -9,6 +9,7 @@ const { startNarrationService, NARRATION_PORT, CHATTERBOX_PORT } = require('./se
 console.log('🧪 Testing narration services startup...');
 console.log(`📍 Expected F5-TTS port: ${NARRATION_PORT}`);
 console.log(`📍 Expected Chatterbox port: ${CHATTERBOX_PORT}`);
+console.log(`📁 Working directory: ${process.cwd()}`);
 console.log('─'.repeat(50));
 
 // Set environment variable to simulate dev:cuda mode
