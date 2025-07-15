@@ -76,8 +76,8 @@ latest.yml
 .npm/
 .eslintcache
 
-# F5-TTS and models
-F5-TTS/
+# F5-TTS and models - now handled as git submodule
+# F5-TTS/
 # Exclude model files but not source code
 /models/
 /models/*/
@@ -88,6 +88,10 @@ F5-TTS/
 *.pt
 *.bin
 *.onnx
+
+# Installation artifacts that should not be tracked
+2.0.0
+*.0.0
 
 # Local storage and config
 localStorage.json

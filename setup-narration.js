@@ -131,7 +131,7 @@ try {
     process.exit(1);
 }
 
-// --- 2. Check for git, Remove Existing F5-TTS, and Clone Repository ---
+// --- 2. Check for git and Initialize/Update Submodules ---
 console.log('\n🔍 Checking for git...');
 if (!commandExists('git')) {
     console.error('❌ git is not installed or not found in PATH.');
@@ -140,60 +140,39 @@ if (!commandExists('git')) {
 }
 console.log('✅ git found.');
 
-console.log(`\n🔍 Preparing target directory "${F5_TTS_DIR}"...`);
-if (fs.existsSync(F5_TTS_DIR)) {
-    console.log(`   Directory "${F5_TTS_DIR}" already exists. Removing it...`);
-    try {
-        fs.rmSync(F5_TTS_DIR, { recursive: true, force: true });
-        console.log(`✅ Existing directory "${F5_TTS_DIR}" removed.`);
-    } catch (error) {
-        console.error(`❌ Error removing existing directory "${F5_TTS_DIR}": ${error.message}`);
-        console.log('   Please check permissions or if files are in use.');
-        console.log('   You may need to manually delete the directory.');
-        process.exit(1);
-    }
-} else {
-    console.log(`   Directory "${F5_TTS_DIR}" does not exist. Proceeding to clone.`);
-}
-
-console.log(`🔧 Cloning repository ${F5_TTS_REPO_URL} into "${F5_TTS_DIR}"...`);
+console.log(`\n🔧 Initializing and updating git submodules (F5-TTS and Chatterbox)...`);
 try {
-    execSync(`git clone ${F5_TTS_REPO_URL}`, { stdio: 'inherit' });
-    console.log(`✅ Repository cloned successfully into "${F5_TTS_DIR}".`);
+    // Initialize submodules if not already done
+    execSync('git submodule init', { stdio: 'inherit' });
+    console.log('✅ Git submodules initialized.');
+
+    // Update submodules to get the latest content
+    execSync('git submodule update --remote', { stdio: 'inherit' });
+    console.log('✅ Git submodules updated.');
 } catch (error) {
-    console.error(`❌ Error cloning repository: ${error.message}`);
-    console.log('   Please check your internet connection and git installation.');
-    console.log(`   You may need to manually clone the repository: git clone ${F5_TTS_REPO_URL}`);
+    console.error(`❌ Error with git submodules: ${error.message}`);
+    console.log('   Please ensure you are in a git repository with properly configured submodules.');
+    console.log('   If this is a fresh clone, the submodules should be configured automatically.');
     process.exit(1);
 }
 
-// --- 2.5. Clone Chatterbox repository ---
-console.log(`\n🔍 Preparing target directory "${CHATTERBOX_DIR}"...`);
-if (fs.existsSync(CHATTERBOX_DIR)) {
-    console.log(`   Directory "${CHATTERBOX_DIR}" already exists. Removing it...`);
-    try {
-        fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
-        console.log(`✅ Existing directory "${CHATTERBOX_DIR}" removed.`);
-    } catch (error) {
-        console.error(`❌ Error removing existing directory "${CHATTERBOX_DIR}": ${error.message}`);
-        console.log('   Please check permissions or if files are in use.');
-        console.log('   You may need to manually delete the directory.');
-        process.exit(1);
-    }
-} else {
-    console.log(`   Directory "${CHATTERBOX_DIR}" does not exist. Proceeding to clone.`);
-}
-
-console.log(`🔧 Cloning repository ${CHATTERBOX_REPO_URL} into "${CHATTERBOX_DIR}"...`);
-try {
-    execSync(`git clone ${CHATTERBOX_REPO_URL} "${CHATTERBOX_DIR}"`, { stdio: 'inherit' });
-    console.log(`✅ Chatterbox repository cloned successfully into "${CHATTERBOX_DIR}".`);
-} catch (error) {
-    console.error(`❌ Error cloning Chatterbox repository: ${error.message}`);
-    console.log('   Please check your internet connection and git installation.');
-    console.log(`   You may need to manually clone the repository: git clone ${CHATTERBOX_REPO_URL} "${CHATTERBOX_DIR}"`);
+// --- 2.5. Verify submodules are properly initialized ---
+console.log(`\n🔍 Verifying submodules are properly initialized...`);
+if (!fs.existsSync(F5_TTS_DIR)) {
+    console.error(`❌ Error: F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
+    console.log('   Please ensure git submodules are properly configured in this repository.');
+    console.log('   You may need to run: git submodule add https://github.com/SWivid/F5-TTS.git F5-TTS');
     process.exit(1);
 }
+
+if (!fs.existsSync(CHATTERBOX_DIR)) {
+    console.error(`❌ Error: Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
+    console.log('   Please ensure git submodules are properly configured in this repository.');
+    console.log('   You may need to run: git submodule add https://github.com/JarodMica/chatterbox.git chatterbox/chatterbox');
+    process.exit(1);
+}
+
+console.log(`✅ Both F5-TTS and Chatterbox submodules are properly initialized.`);
 
 
 // --- 3. Check for/Install Python 3.11 ---
@@ -946,9 +925,9 @@ print('✅ All service dependencies verified successfully!')
 // --- 12. Final Summary ---
 console.log('\n✅ Setup using uv completed successfully!');
 console.log(`   - Target PyTorch backend: ${gpuVendor}`);
-console.log(`   - Removed any existing "${F5_TTS_DIR}" and "${CHATTERBOX_DIR}" directories.`);
-console.log(`   - Cloned fresh F5-TTS repository into "${F5_TTS_DIR}".`);
-console.log(`   - Cloned fresh Chatterbox repository into "${CHATTERBOX_DIR}".`);
+console.log(`   - Updated git submodules for F5-TTS and Chatterbox (no git tracking issues).`);
+console.log(`   - F5-TTS submodule at: "${F5_TTS_DIR}"`);
+console.log(`   - Chatterbox submodule at: "${CHATTERBOX_DIR}"`);
 console.log(`   - Shared virtual environment at: ./${VENV_DIR} (reused if already exists)`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
 console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, Flask, FastAPI, and all service dependencies installed in the shared venv.`);
@@ -961,11 +940,12 @@ console.log('   1. Ensure `uv` and `npm` are in your PATH.');
 console.log('   2. Run the npm script: npm run dev:uv');
 console.log('\n💡 To just run the narration service:');
 console.log('   - npm run python:start:uv');
-console.log('\n🔧 To re-run this setup (will delete F5-TTS, Chatterbox but reuse existing venv if valid):');
+console.log('\n🔧 To re-run this setup (will update submodules and reuse existing venv if valid):');
 console.log(`   - node ${path.basename(__filename)}`);
 console.log(`   - OR npm run setup:narration:uv (if package.json was updated)`);
 console.log('\n💡 To force a specific PyTorch build (e.g., for CPU or if detection fails):');
 console.log('   Set the FORCE_GPU_VENDOR environment variable before running the setup script:');
-console.log('   Example (Powershell): $env:FORCE_GPU_VENDOR="CPU"; node setup-narration-uv.js');
-console.log('   Example (Bash/Zsh):  FORCE_GPU_VENDOR=CPU node setup-narration-uv.js');
+console.log('   Example (Powershell): $env:FORCE_GPU_VENDOR="CPU"; node setup-narration.js');
+console.log('   Example (Bash/Zsh):  FORCE_GPU_VENDOR=CPU node setup-narration.js');
 console.log('   Valid values: NVIDIA, AMD, INTEL, APPLE, CPU');
+console.log('\n📝 Note: F5-TTS and Chatterbox are now managed as git submodules to prevent tracking issues.');
