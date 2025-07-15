@@ -282,25 +282,66 @@ if (!pythonInterpreterIdentifier) {
 }
 
 
-// --- 4. Create a virtual environment with uv using the determined Python ---
-console.log(`\n🔧 Creating virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"...`);
-try {
-  execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: 'inherit' });
-  console.log(`✅ Virtual environment created at ${VENV_DIR}`);
-} catch (error) {
-  console.error(`❌ Error creating virtual environment with uv: ${error.message}`);
-   if (triedUvInstall) {
-      console.log(`   Even after attempting 'uv python install', creating the venv with '${pythonInterpreterIdentifier}' failed.`);
-      console.log(`   This might indicate an issue with the uv installation or environment.`);
-      console.log(`   Try running 'uv venv -p ${PYTHON_VERSION_TARGET} ${VENV_DIR}' manually to diagnose.`);
-   } else {
-      console.log(`   Failed to create venv with existing interpreter "${pythonInterpreterIdentifier}". Is it a valid Python executable or alias known to uv?`);
-      console.log(`   Try running 'uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}' manually.`);
-   }
-  process.exit(1);
+// --- 4. Create or verify virtual environment with uv ---
+console.log(`\n🔍 Checking for existing virtual environment at ./${VENV_DIR}...`);
+
+// Check if virtual environment already exists and is valid
+let venvExists = false;
+if (fs.existsSync(VENV_DIR)) {
+    console.log(`   Virtual environment directory "${VENV_DIR}" exists. Verifying...`);
+    try {
+        // Test if the venv is functional by checking Python version
+        const venvPythonCmd = process.platform === 'win32'
+            ? `"${path.join(VENV_DIR, 'Scripts', 'python.exe')}"`
+            : `"${path.join(VENV_DIR, 'bin', 'python')}"`;
+
+        const venvPythonVersion = execSync(`${venvPythonCmd} --version`, { encoding: 'utf8' }).trim();
+        console.log(`   Existing venv Python version: ${venvPythonVersion}`);
+
+        if (venvPythonVersion.includes(PYTHON_VERSION_TARGET)) {
+            venvExists = true;
+            console.log(`✅ Valid virtual environment found at ${VENV_DIR}. Reusing existing venv.`);
+        } else {
+            console.log(`   Existing venv has different Python version. Will recreate.`);
+        }
+    } catch (error) {
+        console.log(`   Existing venv appears to be corrupted or incomplete. Will recreate.`);
+    }
+}
+
+if (!venvExists) {
+    console.log(`🔧 Creating virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"...`);
+
+    // Remove existing directory if it exists but is invalid
+    if (fs.existsSync(VENV_DIR)) {
+        console.log(`   Removing invalid virtual environment directory...`);
+        try {
+            fs.rmSync(VENV_DIR, { recursive: true, force: true });
+        } catch (error) {
+            console.error(`❌ Error removing existing venv directory: ${error.message}`);
+            process.exit(1);
+        }
+    }
+
+    try {
+        execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: 'inherit' });
+        console.log(`✅ Virtual environment created at ${VENV_DIR}`);
+    } catch (error) {
+        console.error(`❌ Error creating virtual environment with uv: ${error.message}`);
+        if (triedUvInstall) {
+            console.log(`   Even after attempting 'uv python install', creating the venv with '${pythonInterpreterIdentifier}' failed.`);
+            console.log(`   This might indicate an issue with the uv installation or environment.`);
+            console.log(`   Try running 'uv venv -p ${PYTHON_VERSION_TARGET} ${VENV_DIR}' manually to diagnose.`);
+        } else {
+            console.log(`   Failed to create venv with existing interpreter "${pythonInterpreterIdentifier}". Is it a valid Python executable or alias known to uv?`);
+            console.log(`   Try running 'uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}' manually.`);
+        }
+        process.exit(1);
+    }
 }
 
 // --- 5. Detect GPU and Install Appropriate PyTorch Build ---
+console.log(`\n📦 The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
 const gpuVendor = detectGpuVendor(); // Call the detection function
 let torchInstallCmd = '';
 let installNotes = '';
@@ -308,9 +349,9 @@ let installNotes = '';
 switch (gpuVendor) {
     case 'NVIDIA':
         console.log('\n🔧 Installing PyTorch for NVIDIA GPU (CUDA)...');
-        // Using CUDA 12.4 as requested
-        torchInstallCmd = `uv pip install torch==2.4.0+cu124 torchvision==0.19.0+cu124 torchaudio==2.4.0+cu124 --extra-index-url https://download.pytorch.org/whl/cu124`;
-        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.4 are installed.';
+        // Using CUDA 12.8 to match system CUDA version and ensure compatibility with Chatterbox
+        torchInstallCmd = `uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
+        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.8 are installed.';
         break;
     case 'AMD':
         console.log('\n🔧 Installing PyTorch for AMD GPU (ROCm)...');
@@ -793,9 +834,9 @@ console.log(`   - Target PyTorch backend: ${gpuVendor}`);
 console.log(`   - Removed any existing "${F5_TTS_DIR}" and "${CHATTERBOX_DIR}" directories.`);
 console.log(`   - Cloned fresh F5-TTS repository into "${F5_TTS_DIR}".`);
 console.log(`   - Cloned fresh Chatterbox repository into "${CHATTERBOX_DIR}".`);
-console.log(`   - Virtual environment created at: ./${VENV_DIR}`);
+console.log(`   - Shared virtual environment at: ./${VENV_DIR} (reused if already exists)`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
-console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, and dependencies installed in the venv.`);
+console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, and dependencies installed in the shared venv.`);
 console.log(`   - Applied compatibility fixes for Unicode encoding and model loading.`);
 if (installNotes) {
     console.log(`   - Reminder: ${installNotes}`);
@@ -805,7 +846,7 @@ console.log('   1. Ensure `uv` and `npm` are in your PATH.');
 console.log('   2. Run the npm script: npm run dev:uv');
 console.log('\n💡 To just run the narration service:');
 console.log('   - npm run python:start:uv');
-console.log('\n🔧 To re-run this setup (will delete F5-TTS, Chatterbox and reinstall venv packages):');
+console.log('\n🔧 To re-run this setup (will delete F5-TTS, Chatterbox but reuse existing venv if valid):');
 console.log(`   - node ${path.basename(__filename)}`);
 console.log(`   - OR npm run setup:narration:uv (if package.json was updated)`);
 console.log('\n💡 To force a specific PyTorch build (e.g., for CPU or if detection fails):');
