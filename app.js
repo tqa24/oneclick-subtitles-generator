@@ -129,7 +129,23 @@ app.get('/api/test', (req, res) => {
 
 // Health check endpoint for frontend to verify server connection
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is healthy', timestamp: new Date().toISOString() });
+  const healthStatus = {
+    status: 'ok',
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      f5tts: {
+        running: app.get('narrationServiceRunning') || false,
+        port: app.get('narrationActualPort') || null
+      },
+      chatterbox: {
+        running: app.get('chatterboxServiceRunning') || false,
+        port: app.get('chatterboxActualPort') || null
+      }
+    }
+  };
+
+  res.json(healthStatus);
 });
 
 // Endpoint to save localStorage data for server-side use

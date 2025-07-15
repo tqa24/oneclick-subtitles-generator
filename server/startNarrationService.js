@@ -1,5 +1,5 @@
 /**
- * Script to start the F5-TTS narration service
+ * Script to start the F5-TTS narration service and Chatterbox API service
  */
 
 const { spawn } = require('child_process');
@@ -9,9 +9,78 @@ const fs = require('fs');
 // Configuration
 const NARRATION_PORT = process.env.NARRATION_PORT || 3006;
 const ALTERNATIVE_NARRATION_PORT = parseInt(NARRATION_PORT) + 1;
+const CHATTERBOX_PORT = process.env.CHATTERBOX_PORT || 3011;
 const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 
-// Start the narration service
+// Start the Chatterbox API service
+function startChatterboxService() {
+  try {
+    console.log(`🔧 Starting Chatterbox API service on port ${CHATTERBOX_PORT}...`);
+
+    // Check if Chatterbox directory exists
+    const chatterboxDir = path.join(path.dirname(__dirname), 'chatterbox');
+    const chatterboxApiPath = path.join(chatterboxDir, 'start_api.py');
+
+    if (!fs.existsSync(chatterboxDir)) {
+      console.warn('⚠️  Chatterbox directory not found. Chatterbox service will not be available.');
+      console.warn('   Run the setup script to install Chatterbox: npm run setup:narration');
+      return null;
+    }
+
+    if (!fs.existsSync(chatterboxApiPath)) {
+      console.warn('⚠️  Chatterbox start_api.py not found. Chatterbox service will not be available.');
+      return null;
+    }
+
+    // Set environment variables for Chatterbox
+    const env = {
+      ...process.env,
+      CHATTERBOX_PORT: CHATTERBOX_PORT,
+      CUDA_VISIBLE_DEVICES: '0', // Use same CUDA device as F5-TTS
+      PYTORCH_CUDA_ALLOC_CONF: 'max_split_size_mb:512'
+    };
+
+    // Change to chatterbox directory and start the service
+    const chatterboxProcess = spawn(UV_EXECUTABLE, [
+      'run',
+      '--python',
+      '.venv',
+      '--',
+      'python',
+      chatterboxApiPath,
+      '--host', '0.0.0.0',
+      '--port', CHATTERBOX_PORT.toString(),
+      '--reload'
+    ], {
+      env,
+      stdio: 'inherit',
+      cwd: path.dirname(__dirname) // Run from project root to access .venv
+    });
+
+    // Handle process events
+    chatterboxProcess.on('error', (error) => {
+      console.error('❌ Failed to start Chatterbox service:', error);
+    });
+
+    chatterboxProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`❌ Chatterbox service exited with code ${code}`);
+      } else {
+        console.log('✅ Chatterbox service stopped gracefully');
+      }
+    });
+
+    console.log(`✅ Chatterbox API service started on http://localhost:${CHATTERBOX_PORT}`);
+    console.log(`📖 API documentation: http://localhost:${CHATTERBOX_PORT}/docs`);
+
+    return chatterboxProcess;
+  } catch (error) {
+    console.error(`❌ Error starting Chatterbox service: ${error.message}`);
+    return null;
+  }
+}
+
+// Start the F5-TTS narration service
 function startNarrationService() {
 
 
@@ -113,15 +182,25 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
       }
     });
 
-    // Return the process for cleanup
-    return narrationProcess;
+    console.log(`✅ F5-TTS narration service started on port ${NARRATION_PORT}`);
+
+    // Start Chatterbox service
+    const chatterboxProcess = startChatterboxService();
+
+    // Return both processes for cleanup
+    return {
+      narrationProcess,
+      chatterboxProcess
+    };
   } catch (error) {
-    console.error(`Error starting narration service: ${error.message}`);
+    console.error(`❌ Error starting F5-TTS narration service: ${error.message}`);
     return null;
   }
 }
 
 module.exports = {
   startNarrationService,
-  NARRATION_PORT
+  startChatterboxService,
+  NARRATION_PORT,
+  CHATTERBOX_PORT
 };

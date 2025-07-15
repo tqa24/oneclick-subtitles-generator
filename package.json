@@ -29,6 +29,8 @@
     "dev:cuda": "cross-env START_PYTHON_SERVER=true concurrently --names \"FRONTEND,SERVER\" --prefix-colors \"cyan,green\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\"",
     "install:all:uv": "npm install && node setup-narration-uv.js && node install-yt-dlp.js",
     "python:start:uv": "uv run --python .venv -- python server/narrationApp.py",
+    "chatterbox:start": "cd chatterbox && uv run --python ../.venv -- python start_api.py --reload",
+    "test:services": "node test-services.js",
     "dev:uv": "concurrently \"npm run start\" \"npm run server:start\" \"npm run python:start:uv\"",
     "setup:narration:uv": "node setup-narration.js"
   },
