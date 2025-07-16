@@ -235,7 +235,7 @@ const saveChatterboxAudio = async (req, res) => {
         subtitle_id,
         sampleRate,
         mimeType,
-        prefix: 'chatterbox'
+        prefix: '' // Use empty prefix like F5-TTS to generate "1.wav" and enable cache loading
       });
 
       res.json(result);
