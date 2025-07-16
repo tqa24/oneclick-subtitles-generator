@@ -169,6 +169,16 @@ const useGeminiNarration = ({
       }));
       setGenerationResults(initialResults);
 
+      // Update state immediately if we're generating grouped subtitles
+      if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+        // Store the initial results as grouped narrations in window object
+        window.groupedNarrations = [...initialResults];
+        window.useGroupedSubtitles = true;
+        // Update the React state to reflect that we're now using grouped subtitles
+        setUseGroupedSubtitles(true);
+        console.log(`Updated state to use grouped subtitles immediately at generation start`);
+      }
+
       // Generate narration with Gemini
 
 
@@ -190,9 +200,16 @@ const useGeminiNarration = ({
 
           // Update the existing result in the array
           setGenerationResults(prev => {
-            return prev.map(item =>
+            const updatedResults = prev.map(item =>
               item.subtitle_id === result.subtitle_id ? { ...result, pending: false } : item
             );
+
+            // Update window.groupedNarrations incrementally if we're generating grouped subtitles
+            if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+              window.groupedNarrations = [...updatedResults];
+            }
+
+            return updatedResults;
           });
 
           // Update the status

@@ -216,6 +216,16 @@ const useChatterboxNarration = ({
 
       setGenerationStatus(t('narration.chatterboxStarting', 'Starting Chatterbox narration generation...'));
 
+      // Update state immediately if we're generating grouped subtitles
+      if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+        // Initialize empty grouped narrations in window object
+        window.groupedNarrations = [];
+        window.useGroupedSubtitles = true;
+        // Update the React state to reflect that we're now using grouped subtitles
+        setUseGroupedSubtitles(true);
+        console.log(`Updated state to use grouped subtitles immediately at Chatterbox generation start`);
+      }
+
       const results = [];
       
       // Generate narrations sequentially to avoid overwhelming the API
@@ -226,6 +236,11 @@ const useChatterboxNarration = ({
         
         // Update results incrementally
         setGenerationResults([...results]);
+
+        // Update window.groupedNarrations incrementally if we're generating grouped subtitles
+        if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+          window.groupedNarrations = [...results];
+        }
       }
 
       const successCount = results.filter(r => r.success === true).length;

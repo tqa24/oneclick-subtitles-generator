@@ -468,6 +468,16 @@ const useNarrationHandlers = ({
         id: subtitle.id || index + 1
       }));
 
+      // Update state immediately if we're generating grouped subtitles
+      if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+        // Initialize empty grouped narrations in window object
+        window.groupedNarrations = [];
+        window.useGroupedSubtitles = true;
+        // Update the React state to reflect that we're now using grouped subtitles
+        setUseGroupedSubtitles(true);
+        console.log(`Updated state to use grouped subtitles immediately at F5-TTS generation start`);
+      }
+
       // Add subtitle source to generation status message
       const sourceText = subtitleSource === 'original' ?
         t('narration.originalSubtitles', 'original subtitles') :
@@ -534,6 +544,11 @@ const useNarrationHandlers = ({
         // This ensures each result is shown immediately as it's received
 
         setGenerationResults([...tempResults]);
+
+        // Update window.groupedNarrations incrementally if we're generating grouped subtitles
+        if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+          window.groupedNarrations = [...tempResults];
+        }
 
         // Update the status to show which subtitle is being processed
         setGenerationStatus(
