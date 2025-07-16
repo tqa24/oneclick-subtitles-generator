@@ -117,9 +117,6 @@ async def generate_speech(request: TTSRequest):
             cfg_weight=request.cfg_weight,
             # Optimal defaults (not exposed to user)
             temperature=0.8,
-            repetition_penalty=1.2,
-            min_p=0.05,
-            top_p=1.0,
         )
         
         # Convert to bytes
@@ -131,7 +128,6 @@ async def generate_speech(request: TTSRequest):
             content=buffer.getvalue(),
             media_type="audio/wav",
             headers={
-                "Content-Disposition": "attachment; filename=generated_speech.wav",
                 "X-Sample-Rate": str(tts_model.sr)
             }
         )
@@ -173,9 +169,6 @@ async def generate_speech_with_voice(
             cfg_weight=cfg_weight,
             # Optimal defaults (not exposed to user)
             temperature=0.8,
-            repetition_penalty=1.2,
-            min_p=0.05,
-            top_p=1.0,
         )
         
         # Convert to bytes
@@ -187,7 +180,6 @@ async def generate_speech_with_voice(
             content=buffer.getvalue(),
             media_type="audio/wav",
             headers={
-                "Content-Disposition": "attachment; filename=generated_speech_with_voice.wav",
                 "X-Sample-Rate": str(tts_model.sr)
             }
         )

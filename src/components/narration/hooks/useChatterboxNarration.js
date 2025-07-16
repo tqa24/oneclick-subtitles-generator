@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { generateChatterboxSpeech } from '../../../services/chatterboxService';
+import { SERVER_URL } from '../../../config';
 
 /**
  * Custom hook for Chatterbox narration generation
@@ -97,6 +98,60 @@ const useChatterboxNarration = ({
   }, [referenceAudio]);
 
   /**
+   * Convert audio blob to base64 and save to server
+   * @param {Blob} audioBlob - Audio blob from Chatterbox API
+   * @param {number} subtitleId - Subtitle ID
+   * @returns {Promise<string>} - Filename of saved audio
+   */
+  const saveAudioBlobToServer = useCallback(async (audioBlob, subtitleId) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = async () => {
+        try {
+          // Get base64 data URL and extract the base64 part
+          const dataUrl = reader.result;
+          const base64String = dataUrl.split(',')[1]; // Remove "data:audio/wav;base64," prefix
+
+          // Send to server
+          const response = await fetch(`${SERVER_URL}/api/narration/save-chatterbox-audio`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              audioData: base64String,
+              subtitle_id: subtitleId,
+              sampleRate: 24000, // Chatterbox default sample rate
+              mimeType: 'audio/wav'
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+          }
+
+          const data = await response.json();
+
+          if (data.success) {
+            resolve(data.filename);
+          } else {
+            throw new Error(data.error || 'Unknown error saving audio to server');
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => {
+        reject(new Error('Failed to read audio blob'));
+      };
+
+      reader.readAsDataURL(audioBlob);
+    });
+  }, []);
+
+  /**
    * Generate narration for a single subtitle
    */
   const generateSingleNarration = useCallback(async (subtitle, index, total, voiceFile = null) => {
@@ -113,28 +168,27 @@ const useChatterboxNarration = ({
         voiceFile
       );
 
-      // Convert blob to URL for playback
-      const audioUrl = URL.createObjectURL(audioBlob);
+      // Save audio blob to server and get filename
+      const filename = await saveAudioBlobToServer(audioBlob, subtitle.id || index);
 
       return {
         subtitle_id: subtitle.id || index,
         text: subtitle.text,
         start_time: subtitle.start,
         end_time: subtitle.end,
-        audio_url: audioUrl,
-        audio_blob: audioBlob,
-        status: 'success',
+        filename: filename,
+        success: true,
         method: 'chatterbox'
       };
     } catch (error) {
       console.error(`Error generating narration for subtitle ${index}:`, error);
-      
+
       return {
         subtitle_id: subtitle.id || index,
         text: subtitle.text,
         start_time: subtitle.start,
         end_time: subtitle.end,
-        status: 'error',
+        success: false,
         error: error.message,
         method: 'chatterbox'
       };
@@ -174,8 +228,8 @@ const useChatterboxNarration = ({
         setGenerationResults([...results]);
       }
 
-      const successCount = results.filter(r => r.status === 'success').length;
-      const errorCount = results.filter(r => r.status === 'error').length;
+      const successCount = results.filter(r => r.success === true).length;
+      const errorCount = results.filter(r => r.success === false).length;
 
       if (errorCount === 0) {
         setGenerationStatus(t('narration.chatterboxGenerationComplete', 'Chatterbox narration generation complete'));
@@ -257,7 +311,7 @@ const useChatterboxNarration = ({
     try {
       setIsGenerating(true);
       
-      const failedResults = generationResults.filter(r => r.status === 'error');
+      const failedResults = generationResults.filter(r => r.success === false);
       
       if (failedResults.length === 0) {
         return;

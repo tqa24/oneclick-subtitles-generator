@@ -218,6 +218,38 @@ const saveF5TTSAudio = async (req, res) => {
 };
 
 /**
+ * Save Chatterbox audio data to disk (HTTP endpoint handler)
+ */
+const saveChatterboxAudio = async (req, res) => {
+  try {
+    const { audioData, subtitle_id, sampleRate, mimeType } = req.body;
+
+    if (!audioData || !subtitle_id) {
+      console.error('Missing required data');
+      return res.status(400).json({ error: 'Missing required data (audioData or subtitle_id)' });
+    }
+
+    try {
+      const result = await saveAudioToFile({
+        audioData,
+        subtitle_id,
+        sampleRate,
+        mimeType,
+        prefix: 'chatterbox'
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error(`Error saving Chatterbox audio: ${error.message}`);
+      res.status(500).json({ error: `Error saving Chatterbox audio: ${error.message}` });
+    }
+  } catch (error) {
+    console.error('Error processing Chatterbox audio:', error);
+    res.status(500).json({ error: 'Error processing Chatterbox audio' });
+  }
+};
+
+/**
  * Create a WAV header for PCM audio data
  * @param {number} dataLength - Length of the PCM data in bytes
  * @param {number} sampleRate - Sample rate of the audio (default: 24000)
@@ -260,6 +292,7 @@ const createWavHeader = (dataLength, sampleRate = 24000) => {
 module.exports = {
   saveGeminiAudio,
   saveF5TTSAudio,
+  saveChatterboxAudio,
   createWavHeader,
   saveAudioToFile
 };
