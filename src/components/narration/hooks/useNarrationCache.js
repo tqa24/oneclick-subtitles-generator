@@ -241,6 +241,25 @@ const useNarrationCache = ({
               referenceAudio: cacheEntry.referenceAudio
             }
           }));
+          return; // Exit early if we found narration cache
+        }
+      }
+
+      // Check for standalone reference audio cache (when no narrations exist yet)
+      const cachedReferenceAudioData = localStorage.getItem('reference_audio_cache');
+      if (cachedReferenceAudioData) {
+        const cacheEntry = JSON.parse(cachedReferenceAudioData);
+
+        // Check if cache is for current media
+        if (cacheEntry.mediaId === mediaId && cacheEntry.referenceAudio) {
+          console.log('Found cached reference audio, restoring immediately');
+
+          // Restore reference audio immediately
+          if (setReferenceAudio && setReferenceText) {
+            setReferenceAudio(cacheEntry.referenceAudio);
+            setReferenceText(cacheEntry.referenceAudio.text || '');
+            console.log('Restored standalone reference audio from cache');
+          }
         }
       }
     } catch (error) {

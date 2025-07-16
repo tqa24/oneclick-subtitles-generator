@@ -121,16 +121,54 @@ const useNarrationHandlers = ({
         const audioUrl = getAudioUrl(result.filename);
 
 
-        setReferenceAudio({
+        const newReferenceAudio = {
           filepath: result.filepath,
           filename: result.filename,
           url: audioUrl,
           language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
-        });
+        };
+
+        setReferenceAudio(newReferenceAudio);
 
         // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
+        const finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
         if (autoRecognize || (!referenceText && result.reference_text)) {
-          setReferenceText(result.reference_text);
+          setReferenceText(finalReferenceText);
+        }
+
+        // Cache reference audio immediately after upload
+        try {
+          const getCurrentMediaId = () => {
+            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentFileUrl = localStorage.getItem('current_file_url');
+
+            if (currentVideoUrl) {
+              const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+              return match ? match[1] : null;
+            } else if (currentFileUrl) {
+              return localStorage.getItem('current_file_cache_id');
+            }
+            return null;
+          };
+
+          const mediaId = getCurrentMediaId();
+          if (mediaId) {
+            const referenceAudioCache = {
+              mediaId,
+              timestamp: Date.now(),
+              referenceAudio: {
+                filename: newReferenceAudio.filename,
+                text: finalReferenceText || '',
+                url: newReferenceAudio.url,
+                filepath: newReferenceAudio.filepath
+              }
+            };
+
+            localStorage.setItem('reference_audio_cache', JSON.stringify(referenceAudioCache));
+            console.log('Cached reference audio immediately after upload');
+          }
+        } catch (error) {
+          console.error('Error caching reference audio after upload:', error);
         }
 
         // Notify parent component
@@ -237,16 +275,54 @@ const useNarrationHandlers = ({
           }
 
           if (result && result.success) {
-            setReferenceAudio({
+            const newReferenceAudio = {
               filepath: result.filepath,
               filename: result.filename,
               url: getAudioUrl(result.filename),
               language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
-            });
+            };
+
+            setReferenceAudio(newReferenceAudio);
 
             // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
+            const finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
             if (autoRecognize || (!referenceText && result.reference_text)) {
-              setReferenceText(result.reference_text);
+              setReferenceText(finalReferenceText);
+            }
+
+            // Cache reference audio immediately after recording
+            try {
+              const getCurrentMediaId = () => {
+                const currentVideoUrl = localStorage.getItem('current_youtube_url');
+                const currentFileUrl = localStorage.getItem('current_file_url');
+
+                if (currentVideoUrl) {
+                  const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  return match ? match[1] : null;
+                } else if (currentFileUrl) {
+                  return localStorage.getItem('current_file_cache_id');
+                }
+                return null;
+              };
+
+              const mediaId = getCurrentMediaId();
+              if (mediaId) {
+                const referenceAudioCache = {
+                  mediaId,
+                  timestamp: Date.now(),
+                  referenceAudio: {
+                    filename: newReferenceAudio.filename,
+                    text: finalReferenceText || '',
+                    url: newReferenceAudio.url,
+                    filepath: newReferenceAudio.filepath
+                  }
+                };
+
+                localStorage.setItem('reference_audio_cache', JSON.stringify(referenceAudioCache));
+                console.log('Cached reference audio immediately after recording');
+              }
+            } catch (error) {
+              console.error('Error caching reference audio after recording:', error);
             }
 
             // Notify parent component
@@ -356,16 +432,54 @@ const useNarrationHandlers = ({
       }
 
       if (result && result.success) {
-        setReferenceAudio({
+        const newReferenceAudio = {
           filepath: result.filepath,
           filename: result.filename,
           url: getAudioUrl(result.filename),
           language: result.language || (result.is_english === false ? 'a non-English language' : 'English')
-        });
+        };
+
+        setReferenceAudio(newReferenceAudio);
 
         // Update reference text if auto-recognize is enabled or we got it from transcription
+        const finalReferenceText = (autoRecognize || result.reference_text) ? result.reference_text : referenceText;
         if (autoRecognize || result.reference_text) {
-          setReferenceText(result.reference_text);
+          setReferenceText(finalReferenceText);
+        }
+
+        // Cache reference audio immediately after extraction
+        try {
+          const getCurrentMediaId = () => {
+            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentFileUrl = localStorage.getItem('current_file_url');
+
+            if (currentVideoUrl) {
+              const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+              return match ? match[1] : null;
+            } else if (currentFileUrl) {
+              return localStorage.getItem('current_file_cache_id');
+            }
+            return null;
+          };
+
+          const mediaId = getCurrentMediaId();
+          if (mediaId) {
+            const referenceAudioCache = {
+              mediaId,
+              timestamp: Date.now(),
+              referenceAudio: {
+                filename: newReferenceAudio.filename,
+                text: finalReferenceText || '',
+                url: newReferenceAudio.url,
+                filepath: newReferenceAudio.filepath
+              }
+            };
+
+            localStorage.setItem('reference_audio_cache', JSON.stringify(referenceAudioCache));
+            console.log('Cached reference audio immediately after extraction');
+          }
+        } catch (error) {
+          console.error('Error caching reference audio after extraction:', error);
         }
 
         // Notify parent component
@@ -392,6 +506,14 @@ const useNarrationHandlers = ({
     setReferenceAudio(null);
     setRecordedAudio(null);
     setReferenceText('');
+
+    // Clear reference audio cache
+    try {
+      localStorage.removeItem('reference_audio_cache');
+      console.log('Cleared reference audio cache');
+    } catch (error) {
+      console.error('Error clearing reference audio cache:', error);
+    }
 
     // Notify parent component
     if (onReferenceAudioChange) {

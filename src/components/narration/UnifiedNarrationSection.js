@@ -242,6 +242,48 @@ const UnifiedNarrationSection = ({
     groupingIntensity
   });
 
+  // Wrapper function for setReferenceText that also updates cache
+  const setReferenceTextWithCache = (newText) => {
+    setReferenceText(newText);
+
+    // Update reference audio cache if we have reference audio
+    if (referenceAudio) {
+      try {
+        const getCurrentMediaId = () => {
+          const currentVideoUrl = localStorage.getItem('current_youtube_url');
+          const currentFileUrl = localStorage.getItem('current_file_url');
+
+          if (currentVideoUrl) {
+            const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+          } else if (currentFileUrl) {
+            return localStorage.getItem('current_file_cache_id');
+          }
+          return null;
+        };
+
+        const mediaId = getCurrentMediaId();
+        if (mediaId) {
+          const referenceAudioCache = {
+            mediaId,
+            timestamp: Date.now(),
+            referenceAudio: {
+              filename: referenceAudio.filename,
+              text: newText || '',
+              url: referenceAudio.url,
+              filepath: referenceAudio.filepath
+            }
+          };
+
+          localStorage.setItem('reference_audio_cache', JSON.stringify(referenceAudioCache));
+          console.log('Updated reference audio cache with new text');
+        }
+      } catch (error) {
+        console.error('Error updating reference audio cache with new text:', error);
+      }
+    }
+  };
+
   // Update reference audio when initialReferenceAudio changes
   useEffect(() => {
     updateReferenceAudio(initialReferenceAudio);
@@ -404,7 +446,7 @@ const UnifiedNarrationSection = ({
             setAutoRecognize={setAutoRecognize}
             isRecognizing={isRecognizing}
             referenceText={referenceText}
-            setReferenceText={setReferenceText}
+            setReferenceText={setReferenceTextWithCache}
             clearReferenceAudio={clearReferenceAudio}
             isRecording={isRecording}
             isExtractingSegment={isExtractingSegment}
