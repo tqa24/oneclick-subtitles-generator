@@ -586,6 +586,52 @@ const useNarrationHandlers = ({
         // Ensure we have the final results
         setGenerationResults(results);
 
+        // Cache narrations and reference audio to localStorage for F5-TTS
+        try {
+          // Get current media ID
+          const getCurrentMediaId = () => {
+            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentFileUrl = localStorage.getItem('current_file_url');
+
+            if (currentVideoUrl) {
+              // Extract video ID from YouTube URLs
+              const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+              return match ? match[1] : null;
+            } else if (currentFileUrl) {
+              return localStorage.getItem('current_file_cache_id');
+            }
+            return null;
+          };
+
+          const mediaId = getCurrentMediaId();
+          if (mediaId && referenceAudio) {
+            // Create cache entry with narrations and reference audio
+            const cacheEntry = {
+              mediaId,
+              timestamp: Date.now(),
+              narrations: results.map(result => ({
+                subtitle_id: result.subtitle_id,
+                filename: result.filename,
+                success: result.success,
+                text: result.text,
+                method: 'f5tts'
+              })),
+              referenceAudio: {
+                filename: referenceAudio.filename,
+                text: referenceAudio.text || '',
+                url: referenceAudio.url,
+                filepath: referenceAudio.filepath
+              }
+            };
+
+            // Save to localStorage
+            localStorage.setItem('f5tts_narrations_cache', JSON.stringify(cacheEntry));
+            console.log('Cached F5-TTS narrations and reference audio');
+          }
+        } catch (error) {
+          console.error('Error caching F5-TTS narrations:', error);
+        }
+
         // Update state if we generated narrations for grouped subtitles
         if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
           // Store as grouped narrations in window object

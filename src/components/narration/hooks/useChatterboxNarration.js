@@ -246,6 +246,51 @@ const useChatterboxNarration = ({
       const successCount = results.filter(r => r.success === true).length;
       const errorCount = results.filter(r => r.success === false).length;
 
+      // Cache narrations and reference audio to localStorage
+      try {
+        // Get current media ID
+        const getCurrentMediaId = () => {
+          const currentVideoUrl = localStorage.getItem('current_youtube_url');
+          const currentFileUrl = localStorage.getItem('current_file_url');
+
+          if (currentVideoUrl) {
+            // Extract video ID from YouTube URLs
+            const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+          } else if (currentFileUrl) {
+            return localStorage.getItem('current_file_cache_id');
+          }
+          return null;
+        };
+
+        const mediaId = getCurrentMediaId();
+        if (mediaId) {
+          // Create cache entry with narrations and reference audio
+          const cacheEntry = {
+            mediaId,
+            timestamp: Date.now(),
+            narrations: results.map(result => ({
+              subtitle_id: result.subtitle_id,
+              filename: result.filename,
+              success: result.success,
+              text: result.text,
+              method: 'chatterbox'
+            })),
+            referenceAudio: referenceAudio ? {
+              filename: referenceAudio.filename,
+              text: referenceAudio.text || '',
+              url: referenceAudio.url
+            } : null
+          };
+
+          // Save to localStorage
+          localStorage.setItem('chatterbox_narrations_cache', JSON.stringify(cacheEntry));
+          console.log('Cached Chatterbox narrations and reference audio');
+        }
+      } catch (error) {
+        console.error('Error caching Chatterbox narrations:', error);
+      }
+
       // Update state if we generated narrations for grouped subtitles
       if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
         // Store as grouped narrations in window object

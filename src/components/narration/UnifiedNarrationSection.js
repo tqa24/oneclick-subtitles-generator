@@ -221,7 +221,9 @@ const UnifiedNarrationSection = ({
     originalSubtitles,
     translatedSubtitles,
     subtitles,
-    t
+    t,
+    setReferenceAudio,
+    setReferenceText
   });
 
   // Use window state manager hook
