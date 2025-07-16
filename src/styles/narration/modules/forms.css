@@ -143,7 +143,6 @@ textarea.reference-text::-webkit-resizer {
   position: relative;
   flex-shrink: 0;
   align-self: flex-start;
-  margin-top: 16px; /* Match the padding in BackgroundImageGenerator */
   box-shadow: var(--md-elevation-level1);
 }
 

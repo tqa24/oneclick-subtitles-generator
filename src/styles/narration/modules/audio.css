@@ -127,7 +127,7 @@ audio.audio-player {
   width: 100%;
   padding: 1rem;
   background-color: var(--md-surface-2);
-  border-radius: 16px;
+  border-radius: 32px;
   border: none;
   box-shadow: var(--md-elevation-level1);
 }

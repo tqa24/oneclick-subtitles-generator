@@ -70,9 +70,8 @@ const useNarrationCache = ({
       if (event.detail && event.detail.narrations) {
         // Only update if we don't already have results
         if (!generationResults || generationResults.length === 0) {
-          // Get the narrations and reference audio from the event
+          // Get the narrations from the event (reference audio is handled globally)
           const cachedNarrations = event.detail.narrations;
-          const cachedReferenceAudio = event.detail.referenceAudio;
 
           // Get subtitles for enhancing narrations with timing information
           const subtitlesForEnhancement = originalSubtitles || subtitles || [];
@@ -85,13 +84,6 @@ const useNarrationCache = ({
 
           // Immediately update the generation results
           setGenerationResults(enhancedNarrations);
-
-          // Restore reference audio if available
-          if (cachedReferenceAudio && setReferenceAudio && setReferenceText) {
-            setReferenceAudio(cachedReferenceAudio);
-            setReferenceText(cachedReferenceAudio.text || '');
-            console.log('Restored reference audio from F5-TTS cache');
-          }
 
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
@@ -126,19 +118,11 @@ const useNarrationCache = ({
       if (event.detail && event.detail.narrations) {
         // Only update if we don't already have results
         if (!generationResults || generationResults.length === 0) {
-          // Get the narrations and reference audio from the event
+          // Get the narrations from the event (reference audio is handled globally)
           const cachedNarrations = event.detail.narrations;
-          const cachedReferenceAudio = event.detail.referenceAudio;
 
           // Immediately update the generation results
           setGenerationResults(cachedNarrations);
-
-          // Restore reference audio if available
-          if (cachedReferenceAudio && setReferenceAudio && setReferenceText) {
-            setReferenceAudio(cachedReferenceAudio);
-            setReferenceText(cachedReferenceAudio.text || '');
-            console.log('Restored reference audio from Chatterbox cache');
-          }
 
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
@@ -181,7 +165,82 @@ const useNarrationCache = ({
     };
   }, [generationResults, setGenerationResults, setGenerationStatus, subtitleSource, originalSubtitles, subtitles, t, setReferenceAudio, setReferenceText]);
 
-  // Check for cached Chatterbox narrations on mount
+  // Global reference audio cache loading - runs once on mount regardless of narration method
+  useEffect(() => {
+    try {
+      // Get current media ID
+      const getCurrentMediaId = () => {
+        const currentVideoUrl = localStorage.getItem('current_youtube_url');
+        const currentFileUrl = localStorage.getItem('current_file_url');
+
+        if (currentVideoUrl) {
+          // Extract video ID from YouTube URLs
+          const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          return match ? match[1] : null;
+        } else if (currentFileUrl) {
+          return localStorage.getItem('current_file_cache_id');
+        }
+        return null;
+      };
+
+      const mediaId = getCurrentMediaId();
+      if (!mediaId) return;
+
+      // Check for reference audio in any cache (prioritize the most recent)
+      let referenceAudioToRestore = null;
+      let cacheSource = '';
+
+      // Check Chatterbox cache
+      const cachedChatterboxData = localStorage.getItem('chatterbox_narrations_cache');
+      if (cachedChatterboxData) {
+        const cacheEntry = JSON.parse(cachedChatterboxData);
+        if (cacheEntry.mediaId === mediaId && cacheEntry.referenceAudio) {
+          referenceAudioToRestore = cacheEntry.referenceAudio;
+          cacheSource = 'Chatterbox';
+        }
+      }
+
+      // Check F5-TTS cache (may override if more recent)
+      const cachedF5TTSData = localStorage.getItem('f5tts_narrations_cache');
+      if (cachedF5TTSData) {
+        const cacheEntry = JSON.parse(cachedF5TTSData);
+        if (cacheEntry.mediaId === mediaId && cacheEntry.referenceAudio) {
+          // Use F5-TTS cache if it's more recent or if no Chatterbox cache exists
+          if (!referenceAudioToRestore || (cacheEntry.timestamp > JSON.parse(cachedChatterboxData).timestamp)) {
+            referenceAudioToRestore = cacheEntry.referenceAudio;
+            cacheSource = 'F5-TTS';
+          }
+        }
+      }
+
+      // Check standalone reference audio cache (may override if more recent)
+      const cachedReferenceAudioData = localStorage.getItem('reference_audio_cache');
+      if (cachedReferenceAudioData) {
+        const cacheEntry = JSON.parse(cachedReferenceAudioData);
+        if (cacheEntry.mediaId === mediaId && cacheEntry.referenceAudio) {
+          // Use standalone cache if it's the most recent
+          if (!referenceAudioToRestore || (cacheEntry.timestamp > (
+            cacheSource === 'F5-TTS' ? JSON.parse(cachedF5TTSData).timestamp :
+            cacheSource === 'Chatterbox' ? JSON.parse(cachedChatterboxData).timestamp : 0
+          ))) {
+            referenceAudioToRestore = cacheEntry.referenceAudio;
+            cacheSource = 'standalone';
+          }
+        }
+      }
+
+      // Restore the most recent reference audio globally
+      if (referenceAudioToRestore && setReferenceAudio && setReferenceText) {
+        setReferenceAudio(referenceAudioToRestore);
+        setReferenceText(referenceAudioToRestore.text || '');
+        console.log(`Globally restored reference audio from ${cacheSource} cache`);
+      }
+    } catch (error) {
+      console.error('Error loading global reference audio from cache:', error);
+    }
+  }, []); // Run only once on mount
+
+  // Check for cached narrations on mount (separate from reference audio)
   useEffect(() => {
     // Only check cache if we don't have any generation results yet
     if (generationResults && generationResults.length > 0) return;
@@ -214,11 +273,11 @@ const useNarrationCache = ({
         if (cacheEntry.mediaId === mediaId && cacheEntry.narrations && cacheEntry.narrations.length > 0) {
           console.log('Found cached Chatterbox narrations, dispatching load event');
 
-          // Dispatch event to load cached narrations
+          // Dispatch event to load cached narrations (reference audio already loaded globally)
           window.dispatchEvent(new CustomEvent('chatterbox-narrations-loaded-from-cache', {
             detail: {
-              narrations: cacheEntry.narrations,
-              referenceAudio: cacheEntry.referenceAudio
+              narrations: cacheEntry.narrations
+              // Reference audio is handled globally, don't pass it here
             }
           }));
           return; // Exit early if we found Chatterbox cache
@@ -234,36 +293,17 @@ const useNarrationCache = ({
         if (cacheEntry.mediaId === mediaId && cacheEntry.narrations && cacheEntry.narrations.length > 0) {
           console.log('Found cached F5-TTS narrations, dispatching load event');
 
-          // Dispatch event to load cached narrations
+          // Dispatch event to load cached narrations (reference audio already loaded globally)
           window.dispatchEvent(new CustomEvent('f5tts-narrations-loaded-from-cache', {
             detail: {
-              narrations: cacheEntry.narrations,
-              referenceAudio: cacheEntry.referenceAudio
+              narrations: cacheEntry.narrations
+              // Reference audio is handled globally, don't pass it here
             }
           }));
-          return; // Exit early if we found narration cache
-        }
-      }
-
-      // Check for standalone reference audio cache (when no narrations exist yet)
-      const cachedReferenceAudioData = localStorage.getItem('reference_audio_cache');
-      if (cachedReferenceAudioData) {
-        const cacheEntry = JSON.parse(cachedReferenceAudioData);
-
-        // Check if cache is for current media
-        if (cacheEntry.mediaId === mediaId && cacheEntry.referenceAudio) {
-          console.log('Found cached reference audio, restoring immediately');
-
-          // Restore reference audio immediately
-          if (setReferenceAudio && setReferenceText) {
-            setReferenceAudio(cacheEntry.referenceAudio);
-            setReferenceText(cacheEntry.referenceAudio.text || '');
-            console.log('Restored standalone reference audio from cache');
-          }
         }
       }
     } catch (error) {
-      console.error('Error loading Chatterbox narrations from cache:', error);
+      console.error('Error loading narrations from cache:', error);
     }
   }, [generationResults]);
 };
