@@ -231,6 +231,24 @@ const useChatterboxNarration = ({
       const successCount = results.filter(r => r.success === true).length;
       const errorCount = results.filter(r => r.success === false).length;
 
+      // Update state if we generated narrations for grouped subtitles
+      if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+        // Store as grouped narrations in window object
+        window.groupedNarrations = [...results];
+        window.useGroupedSubtitles = true;
+        // Update the React state to reflect that we're now using grouped subtitles
+        setUseGroupedSubtitles(true);
+        console.log(`Stored ${results.length} Chatterbox grouped narrations and updated state`);
+      } else {
+        // Store as original/translated narrations
+        if (subtitleSource === 'original') {
+          window.originalNarrations = [...results];
+        } else {
+          window.translatedNarrations = [...results];
+        }
+        window.useGroupedSubtitles = false;
+      }
+
       if (errorCount === 0) {
         setGenerationStatus(t('narration.chatterboxGenerationComplete', 'Chatterbox narration generation complete'));
       } else {

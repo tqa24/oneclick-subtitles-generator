@@ -244,7 +244,9 @@ const useGeminiNarration = ({
               window.groupedNarrations = [...updatedResults];
               // Also store the flag to indicate we're using grouped subtitles
               window.useGroupedSubtitles = true;
-              console.log(`Stored ${updatedResults.length} grouped narrations in window.groupedNarrations`);
+              // Update the React state to reflect that we're now using grouped subtitles
+              setUseGroupedSubtitles(true);
+              console.log(`Stored ${updatedResults.length} grouped narrations in window.groupedNarrations and updated state`);
             } else {
               // Store as original narrations
               if (subtitleSource === 'original') {

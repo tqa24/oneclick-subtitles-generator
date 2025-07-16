@@ -297,6 +297,10 @@ const UnifiedNarrationSection = ({
     videoPath,
     onReferenceAudioChange,
     getSelectedSubtitles: () => {
+      // Check if we should use grouped subtitles
+      if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+        return groupedSubtitles;
+      }
       if (subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
         return translatedSubtitles;
       }
@@ -319,7 +323,10 @@ const UnifiedNarrationSection = ({
     selectedNarrationModel,
     originalLanguage,
     translatedLanguage,
-    setRetryingSubtitleId
+    setRetryingSubtitleId,
+    useGroupedSubtitles,
+    setUseGroupedSubtitles,
+    groupedSubtitles
   });
 
   // Only show the unavailable message if both F5-TTS and Gemini are unavailable

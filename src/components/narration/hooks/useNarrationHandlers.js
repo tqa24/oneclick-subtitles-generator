@@ -50,7 +50,10 @@ const useNarrationHandlers = ({
   selectedNarrationModel,
   originalLanguage,
   translatedLanguage,
-  setRetryingSubtitleId
+  setRetryingSubtitleId,
+  useGroupedSubtitles,
+  setUseGroupedSubtitles,
+  groupedSubtitles
 }) => {
   // Handle file upload
   const handleFileUpload = async (event) => {
@@ -567,6 +570,24 @@ const useNarrationHandlers = ({
         setGenerationStatus(t('narration.generationComplete', 'Narration generation complete'));
         // Ensure we have the final results
         setGenerationResults(results);
+
+        // Update state if we generated narrations for grouped subtitles
+        if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+          // Store as grouped narrations in window object
+          window.groupedNarrations = [...results];
+          window.useGroupedSubtitles = true;
+          // Update the React state to reflect that we're now using grouped subtitles
+          setUseGroupedSubtitles(true);
+          console.log(`Stored ${results.length} F5-TTS grouped narrations and updated state`);
+        } else {
+          // Store as original/translated narrations
+          if (subtitleSource === 'original') {
+            window.originalNarrations = [...results];
+          } else {
+            window.translatedNarrations = [...results];
+          }
+          window.useGroupedSubtitles = false;
+        }
       };
 
       // Call the generateNarration function with callbacks
