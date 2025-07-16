@@ -15,7 +15,8 @@ const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
 const CHATTERBOX_DIR = 'chatterbox/chatterbox'; // Define the Chatterbox directory name (inside existing chatterbox folder)
-const CHATTERBOX_REPO_URL = 'https://github.com/JarodMica/chatterbox.git';
+const CHATTERBOX_REPO_URL = 'https://github.com/fakerybakery/better-chatterbox.git'; // Using fork with CUDA fix
+const CHATTERBOX_BRANCH = 'fix-cuda-issue'; // Branch with CUDA indexing error fix
 
 // --- Helper Function to Check Command Existence ---
 function commandExists(command) {
@@ -168,7 +169,7 @@ if (!fs.existsSync(F5_TTS_DIR)) {
 if (!fs.existsSync(CHATTERBOX_DIR)) {
     console.error(`❌ Error: Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
     console.log('   Please ensure git submodules are properly configured in this repository.');
-    console.log('   You may need to run: git submodule add https://github.com/JarodMica/chatterbox.git chatterbox/chatterbox');
+    console.log(`   You may need to run: git submodule add -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} chatterbox/chatterbox`);
     process.exit(1);
 }
 
@@ -638,51 +639,25 @@ except Exception as e:
     process.exit(1);
 }
 
-// --- 7.5. Install Chatterbox using uv pip ---
-console.log('\n🔧 Installing Chatterbox using uv...');
+// --- 7.5. Install Chatterbox with CUDA fix using uv pip ---
+console.log('\n🔧 Installing Chatterbox with CUDA fix from GitHub...');
 try {
-    if (!fs.existsSync(CHATTERBOX_DIR)) {
-        console.error(`❌ Error: Directory "${CHATTERBOX_DIR}" not found.`);
-        console.log(`   The script attempted to clone it earlier, but it seems to be missing now.`);
-        process.exit(1);
-    }
-
-    const chatterboxSetupPyPath = path.join(CHATTERBOX_DIR, 'setup.py');
-    const chatterboxPyprojectTomlPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
-
-    if (!fs.existsSync(chatterboxSetupPyPath) && !fs.existsSync(chatterboxPyprojectTomlPath)) {
-        console.error(`❌ Error: Neither setup.py nor pyproject.toml found in the "${CHATTERBOX_DIR}" directory.`);
-        console.log(`   The Chatterbox source code seems incomplete or improperly structured in the cloned repository.`);
-        process.exit(1);
-    } else {
-        console.log(`✅ Found Chatterbox directory and a setup file (${fs.existsSync(chatterboxPyprojectTomlPath) ? 'pyproject.toml' : 'setup.py'}).`);
-    }
-
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} -e ./${CHATTERBOX_DIR}`;
+    // Install the fixed version directly from GitHub
+    const chatterboxGitUrl = `"chatterbox-tts @ git+${CHATTERBOX_REPO_URL}@${CHATTERBOX_BRANCH}"`;
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${chatterboxGitUrl}`;
     console.log(`Running: ${installChatterboxCmd}`);
-    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+    console.log(`   Installing from: ${CHATTERBOX_REPO_URL} (branch: ${CHATTERBOX_BRANCH})`);
+    console.log(`   This version includes fixes for CUDA indexing errors.`);
 
-    try {
-        execSync(installChatterboxCmd, { stdio: 'inherit', env });
-        console.log('✅ Chatterbox installation command completed.');
-    } catch (installError) {
-        console.error(`❌ Error during Chatterbox editable installation: ${installError.message}`);
-        console.log(`   Command that failed: ${installChatterboxCmd}`);
-        console.log('   Trying alternative installation method (non-editable)...');
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
+    execSync(installChatterboxCmd, { stdio: 'inherit', env });
+    console.log('✅ Chatterbox with CUDA fix installation completed.');
 
-        try {
-            const altInstallCmd = `uv pip install --python ${VENV_DIR} ./${CHATTERBOX_DIR}`;
-            console.log(`Running alternative: ${altInstallCmd}`);
-            execSync(altInstallCmd, { stdio: 'inherit', env });
-            console.log('✅ Chatterbox alternative installation completed.');
-        } catch (altError) {
-            console.error(`❌ Alternative Chatterbox installation also failed: ${altError.message}`);
-            console.log('   This might be due to:');
-            console.log('   - Missing build dependencies');
-            console.log('   - Permission issues');
-            console.log('   - Network connectivity issues');
-            throw altError; // Re-throw to be caught by outer try-catch
-        }
+    // Note: We still keep the local submodule for API files and compatibility
+    if (fs.existsSync(CHATTERBOX_DIR)) {
+        console.log(`✅ Local Chatterbox submodule available for API files at: ${CHATTERBOX_DIR}`);
+    } else {
+        console.log(`⚠️ Local Chatterbox submodule not found, but package installed from GitHub.`);
     }
 
     // --- Apply Chatterbox fixes for proper operation ---
@@ -808,34 +783,9 @@ function applyChatterboxFixes() {
             console.log('     ✅ model_path.json not found (already using default behavior)');
         }
 
-        // Fix 3: Fix .pth file path for proper chatterbox imports
-        console.log('   Fixing chatterbox package import path...');
-        const sitePackagesPath = path.join(VENV_DIR, 'Lib', 'site-packages');
-        if (fs.existsSync(sitePackagesPath)) {
-            const pthFiles = fs.readdirSync(sitePackagesPath).filter(file =>
-                file.startsWith('__editable__.chatterbox') && file.endsWith('.pth')
-            );
-
-            for (const pthFile of pthFiles) {
-                const pthPath = path.join(sitePackagesPath, pthFile);
-                let pthContent = fs.readFileSync(pthPath, 'utf8').trim();
-
-                // Fix the path to point to the correct directory
-                const expectedPath = path.resolve(CHATTERBOX_DIR).replace(/\\/g, '/');
-                if (pthContent !== expectedPath) {
-                    fs.writeFileSync(pthPath, expectedPath + '\n', 'utf8');
-                    console.log(`     ✅ Fixed import path in ${pthFile}`);
-                } else {
-                    console.log(`     ✅ Import path already correct in ${pthFile}`);
-                }
-            }
-
-            if (pthFiles.length === 0) {
-                console.log('     ⚠️ No chatterbox .pth files found, imports may need manual fixing');
-            }
-        } else {
-            console.log('     ⚠️ Site-packages directory not found, skipping .pth fix');
-        }
+        // Fix 3: Note about GitHub installation (no .pth files needed)
+        console.log('   Chatterbox installed from GitHub - no .pth file fixes needed...');
+        console.log('     ✅ GitHub installation handles imports automatically');
 
     } catch (error) {
         console.warn(`   ⚠️ Warning: Some compatibility fixes failed: ${error.message}`);
@@ -946,10 +896,11 @@ console.log('\n✅ Setup using uv completed successfully!');
 console.log(`   - Target PyTorch backend: ${gpuVendor}`);
 console.log(`   - Updated git submodules for F5-TTS and Chatterbox (no git tracking issues).`);
 console.log(`   - F5-TTS submodule at: "${F5_TTS_DIR}"`);
-console.log(`   - Chatterbox submodule at: "${CHATTERBOX_DIR}"`);
+console.log(`   - Chatterbox with CUDA fix installed from: ${CHATTERBOX_REPO_URL} (${CHATTERBOX_BRANCH})`);
+console.log(`   - Local Chatterbox submodule at: "${CHATTERBOX_DIR}" (for API files)`);
 console.log(`   - Shared virtual environment at: ./${VENV_DIR} (reused if already exists)`);
 console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
-console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox, Flask, FastAPI, and all service dependencies installed in the shared venv.`);
+console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox (with CUDA fix), Flask, FastAPI, and all service dependencies installed in the shared venv.`);
 console.log(`   - Applied compatibility fixes for Unicode encoding and model loading.`);
 if (installNotes) {
     console.log(`   - Reminder: ${installNotes}`);
@@ -967,4 +918,4 @@ console.log('   Set the FORCE_GPU_VENDOR environment variable before running the
 console.log('   Example (Powershell): $env:FORCE_GPU_VENDOR="CPU"; node setup-narration.js');
 console.log('   Example (Bash/Zsh):  FORCE_GPU_VENDOR=CPU node setup-narration.js');
 console.log('   Valid values: NVIDIA, AMD, INTEL, APPLE, CPU');
-console.log('\n📝 Note: F5-TTS and Chatterbox are now managed as git submodules to prevent tracking issues.');
+console.log('\n📝 Note: F5-TTS uses git submodules, Chatterbox is installed from GitHub with CUDA fixes.');
