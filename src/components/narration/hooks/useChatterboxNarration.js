@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { generateChatterboxSpeech } from '../../../services/chatterboxService';
+import { generateChatterboxSpeech, checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
 import { SERVER_URL } from '../../../config';
 
 /**
@@ -205,8 +205,18 @@ const useChatterboxNarration = ({
       setLocalError('');
       setGenerationResults([]);
 
+      // Check if Chatterbox service is initialized, if not, check availability first
+      if (!isChatterboxServiceInitialized()) {
+        setGenerationStatus(t('narration.chatterboxInitializing', 'Checking Chatterbox service availability...'));
+
+        const availability = await checkChatterboxAvailability(1, 1000); // Single attempt with 1 second timeout
+        if (!availability.available) {
+          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service.'));
+        }
+      }
+
       const selectedSubtitles = getSelectedSubtitles();
-      
+
       if (!selectedSubtitles || selectedSubtitles.length === 0) {
         throw new Error(t('narration.noSubtitlesError', 'No subtitles available for narration'));
       }

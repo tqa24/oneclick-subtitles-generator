@@ -3,6 +3,10 @@
  */
 
 const CHATTERBOX_API_BASE_URL = 'http://localhost:3011';
+const SERVER_API_BASE_URL = 'http://localhost:3007';
+
+// Track if Chatterbox service has been successfully initialized
+let chatterboxServiceInitialized = false;
 
 /**
  * Sleep for a specified number of milliseconds
@@ -10,6 +14,56 @@ const CHATTERBOX_API_BASE_URL = 'http://localhost:3011';
  * @returns {Promise<void>}
  */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Check server health to see if Chatterbox service should be running
+ * @returns {Promise<{shouldBeRunning: boolean, message?: string}>}
+ */
+const checkServerChatterboxStatus = async () => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+    const response = await fetch(`${SERVER_API_BASE_URL}/api/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return {
+        shouldBeRunning: false,
+        message: 'Server health check failed'
+      };
+    }
+
+    const healthData = await response.json();
+    const chatterboxRunning = healthData.services?.chatterbox?.running || false;
+
+    return {
+      shouldBeRunning: chatterboxRunning,
+      message: chatterboxRunning ?
+        'Chatterbox service should be running' :
+        'Chatterbox service not started (use npm run dev:cuda)'
+    };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return {
+        shouldBeRunning: false,
+        message: 'Server health check timeout'
+      };
+    }
+
+    return {
+      shouldBeRunning: false,
+      message: `Server health check error: ${error.message}`
+    };
+  }
+};
 
 /**
  * Single attempt to check Chatterbox API availability
@@ -47,6 +101,9 @@ const checkChatterboxAvailabilitySingle = async () => {
       };
     }
 
+    // Mark service as initialized when health check passes with TTS model loaded
+    chatterboxServiceInitialized = true;
+
     return {
       available: true,
       device: healthData.device,
@@ -81,6 +138,17 @@ const checkChatterboxAvailabilitySingle = async () => {
  * @returns {Promise<{available: boolean, message?: string}>}
  */
 export const checkChatterboxAvailability = async (maxAttempts = 10, delayMs = 3000) => {
+  // First, check if the server says Chatterbox should be running
+  const serverStatus = await checkServerChatterboxStatus();
+
+  if (!serverStatus.shouldBeRunning) {
+    return {
+      available: false,
+      message: serverStatus.message || 'Chatterbox service not started (use npm run dev:cuda)'
+    };
+  }
+
+  // If server says it should be running, try to connect to the actual API
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -267,4 +335,29 @@ export const getChatterboxHealth = async () => {
 
     throw error;
   }
+};
+
+/**
+ * Check if Chatterbox service has been initialized
+ * @returns {boolean} - Whether the service has been initialized
+ */
+export const isChatterboxServiceInitialized = () => {
+  return chatterboxServiceInitialized;
+};
+
+/**
+ * Reset Chatterbox service initialization status
+ * Used for testing or when service needs to be re-initialized
+ */
+export const resetChatterboxServiceInitialization = () => {
+  chatterboxServiceInitialized = false;
+};
+
+/**
+ * Quick check if Chatterbox should be available based on server configuration
+ * This provides immediate feedback without API calls, similar to F5-TTS
+ * @returns {Promise<{available: boolean, message?: string}>}
+ */
+export const checkChatterboxShouldBeAvailable = async () => {
+  return await checkServerChatterboxStatus();
 };

@@ -13,7 +13,7 @@ const useNarrationState = (initialReferenceAudio) => {
     return savedMethod || 'gemini'; // Default to Gemini if not set
   });
   const [isGeminiAvailable, setIsGeminiAvailable] = useState(true); // Assume Gemini is available by default
-  const [isChatterboxAvailable, setIsChatterboxAvailable] = useState(true); // Assume Chatterbox is available by default
+  const [isChatterboxAvailable, setIsChatterboxAvailable] = useState(false); // Start as unavailable, will be updated by availability check
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false); // Not using loading state
 
   // Gemini-specific settings

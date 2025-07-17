@@ -520,6 +520,8 @@ const UnifiedNarrationSection = ({
             downloadAlignedAudio={downloadAlignedAudio}
             cancelGeneration={cancelGeneration}
             subtitleSource={subtitleSource}
+            isServiceAvailable={isAvailable}
+            serviceUnavailableMessage={t('narration.serviceUnavailableMessage', 'Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.')}
           />
 
           {/* Generation Status */}
@@ -613,6 +615,8 @@ const UnifiedNarrationSection = ({
             downloadAllAudio={downloadAllAudio}
             downloadAlignedAudio={downloadAlignedAudio}
             generationResults={generationResults}
+            isServiceAvailable={isChatterboxAvailable}
+            serviceUnavailableMessage={t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service.')}
           />
 
           {/* Generation Status */}
@@ -700,6 +704,8 @@ const UnifiedNarrationSection = ({
             downloadAllAudio={downloadAllAudio}
             downloadAlignedAudio={downloadAlignedAudio}
             generationResults={generationResults}
+            isServiceAvailable={isGeminiAvailable}
+            serviceUnavailableMessage={t('narration.geminiUnavailableMessage', 'Gemini API is not available. Please check your API key in settings.')}
           />
 
           {/* Generation Status */}

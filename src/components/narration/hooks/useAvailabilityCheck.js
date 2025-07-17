@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { checkNarrationStatusWithRetry } from '../../../services/narrationService';
 import { checkGeminiAvailability } from '../../../services/gemini/geminiNarrationService';
-import { checkChatterboxAvailability } from '../../../services/chatterboxService';
+import { checkChatterboxAvailability, isChatterboxServiceInitialized, checkChatterboxShouldBeAvailable } from '../../../services/chatterboxService';
 
 /**
  * Custom hook for checking narration service availability
@@ -26,11 +26,14 @@ const useAvailabilityCheck = ({
   useEffect(() => {
     const checkAvailability = async () => {
       try {
+        // First, do immediate checks for services that can be determined quickly
 
+        // Check Chatterbox immediate availability (server configuration)
+        const chatterboxQuickCheck = await checkChatterboxShouldBeAvailable();
+        setIsChatterboxAvailable(chatterboxQuickCheck.shouldBeRunning);
 
         // Check F5-TTS availability in the background
         const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
-
 
         // Set F5-TTS availability based on the actual status
         setIsAvailable(f5Status.available);
@@ -38,12 +41,20 @@ const useAvailabilityCheck = ({
         // Check Gemini availability
         const geminiStatus = await checkGeminiAvailability();
 
-        // Check Chatterbox availability
-        const chatterboxStatus = await checkChatterboxAvailability();
-
-        // Set availability states
+        // Set Gemini availability
         setIsGeminiAvailable(geminiStatus.available);
-        setIsChatterboxAvailable(chatterboxStatus.available);
+
+        // If Chatterbox should be running according to server config, do a full check
+        let chatterboxStatus = chatterboxQuickCheck;
+        if (chatterboxQuickCheck.shouldBeRunning) {
+          // Use fewer retries if service is already initialized, more if not
+          const chatterboxMaxAttempts = isChatterboxServiceInitialized() ? 1 : 3;
+          const chatterboxDelay = isChatterboxServiceInitialized() ? 1000 : 2000;
+          chatterboxStatus = await checkChatterboxAvailability(chatterboxMaxAttempts, chatterboxDelay);
+
+          // Update Chatterbox availability with full check result
+          setIsChatterboxAvailable(chatterboxStatus.available);
+        }
 
         // Set error message based on current method
         if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {

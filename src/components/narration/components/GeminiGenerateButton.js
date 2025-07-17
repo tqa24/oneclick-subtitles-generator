@@ -12,6 +12,8 @@ import '../../../styles/narration/geminiGenerateButton.css';
  * @param {Function} props.downloadAllAudio - Function to download all audio files
  * @param {Function} props.downloadAlignedAudio - Function to download aligned audio
  * @param {Array} props.generationResults - Generation results
+ * @param {boolean} props.isServiceAvailable - Whether the narration service is available
+ * @param {string} props.serviceUnavailableMessage - Message to show when service is unavailable
  * @returns {JSX.Element} - Rendered component
  */
 const GeminiGenerateButton = ({
@@ -21,7 +23,9 @@ const GeminiGenerateButton = ({
   cancelGeneration,
   downloadAllAudio,
   downloadAlignedAudio,
-  generationResults
+  generationResults,
+  isServiceAvailable = true,
+  serviceUnavailableMessage = ''
 }) => {
   const { t } = useTranslation();
 
@@ -50,8 +54,11 @@ const GeminiGenerateButton = ({
             <button
               className="pill-button primary"
               onClick={handleGenerateNarration}
-              disabled={!subtitleSource}
-              title={!subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') : ''}
+              disabled={!subtitleSource || !isServiceAvailable}
+              title={
+                !isServiceAvailable ? serviceUnavailableMessage :
+                !subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') : ''
+              }
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 5.14v14l11-7-11-7z" />
