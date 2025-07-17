@@ -16,18 +16,18 @@ SET "TITLE_TEXT=Quan Ly Trinh Tao Phu De OneClick"
 TITLE %TITLE_TEXT%
 
 :: --- Check for Administrator Privileges ---
-ECHO [?] Checking administrator privileges...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow"
 net session >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     ECHO.
     ECHO ======================================================
-    ECHO [ERROR] Administrator privileges required.
-    ECHO [INFO] Requesting administrator privileges...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Administrator privileges required.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Requesting administrator privileges...' -ForegroundColor Blue"
     ECHO ======================================================
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     EXIT /B
 )
-ECHO [OK] Administrator privileges confirmed.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green"
 ECHO.
 
 GOTO %MENU_LABEL%
@@ -37,30 +37,32 @@ GOTO %MENU_LABEL%
 :: =============================================================================
 :MainMenuVI
 CLS
-ECHO ======================================================
-ECHO %TITLE_TEXT%
-ECHO Vi tri (Location): %SCRIPT_DIR%
-ECHO Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%
-ECHO ======================================================
-ECHO Vui long chon mot tuy chon:
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%TITLE_TEXT%' -ForegroundColor White -BackgroundColor DarkBlue"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Vi tri (Location): %SCRIPT_DIR%' -ForegroundColor Gray"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%' -ForegroundColor Gray"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
 ECHO.
-ECHO CAI DAT / THIET LAP:
-ECHO   1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS + Chatterbox Narration)
-ECHO      (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)
-ECHO   2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '     (Install with Gemini + F5-TTS + Chatterbox Narration)' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)' -ForegroundColor White"
 ECHO.
-ECHO BAO TRI / SU DUNG:
-ECHO   3. Cap nhat Ung dung (Update)
-ECHO   4. Chay Ung dung (Run App)
-ECHO   5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  4. Chay Ung dung (Run App)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)' -ForegroundColor White"
 ECHO.
-ECHO GO CAI DAT:
-ECHO   6. Go cai dat Ung dung (Uninstall)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  6. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
 ECHO.
-ECHO   7. Thoat (Exit)
-ECHO ======================================================
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  7. Thoat (Exit)' -ForegroundColor Gray"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
 ECHO.
-SET /P "CHOICE=%PROMPT_CHOICE%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%PROMPT_CHOICE%' -ForegroundColor Yellow -NoNewline"
+SET /P "CHOICE="
 
 :: Validate input
 IF NOT "%CHOICE%"=="" SET CHOICE=%CHOICE:~0,1%
@@ -72,16 +74,16 @@ IF "%CHOICE%"=="5" GOTO RunAppCUDA
 IF "%CHOICE%"=="6" GOTO UninstallApp
 IF "%CHOICE%"=="7" GOTO ExitScript
 
-ECHO Lua chon khong hop le. Vui long thu lai.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Lua chon khong hop le. Vui long thu lai.' -ForegroundColor Red"
 TIMEOUT /T 2 /NOBREAK > NUL
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
 ECHO.
-ECHO ======================================================
-ECHO [SETUP] Option 1: Full Installation with Voice Cloning (Preview Branch)
-ECHO ======================================================
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Option 1: Full Installation with Voice Cloning (Preview Branch)' -ForegroundColor White -BackgroundColor DarkGreen"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -90,41 +92,41 @@ IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
-ECHO [SETUP] Downloading application (preview branch)...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application (preview branch)...' -ForegroundColor Cyan"
 git clone -b preview %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [ERROR] Failed to download application.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to download application.' -ForegroundColor Red"
     GOTO ErrorOccurred
 )
-ECHO [OK] Application downloaded successfully.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Application downloaded successfully.' -ForegroundColor Green"
 
-ECHO [SETUP] Changing to project directory...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Changing to project directory...' -ForegroundColor Cyan"
 PUSHD "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [ERROR] Failed to access project folder.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to access project folder.' -ForegroundColor Red"
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO [SETUP] Installing all dependencies (this may take several minutes)...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing all dependencies (this may take several minutes)...' -ForegroundColor Cyan"
 CALL npm run install:all
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [ERROR] Failed to install dependencies. Check messages above.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to install dependencies. Check messages above.' -ForegroundColor Red"
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO [SETUP] Finalizing installation...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing installation...' -ForegroundColor Cyan"
 CALL npm run install:yt-dlp >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [WARN] YouTube downloader installation had issues.
-    ECHO [INFO] You can fix this later with 'npm run install:yt-dlp'.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] YouTube downloader installation had issues.' -ForegroundColor Yellow"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You can fix this later with ''npm run install:yt-dlp''.' -ForegroundColor Blue"
 )
 
 ECHO.
-ECHO [OK] Installation completed successfully!
-ECHO [START] Launching application with voice cloning features...
-ECHO [INFO] Press Ctrl+C to stop the application.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Installation completed successfully!' -ForegroundColor Green"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching application with voice cloning features...' -ForegroundColor Magenta"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press Ctrl+C to stop the application.' -ForegroundColor Blue"
 ECHO.
 CALL npm run dev:cuda
 POPD
@@ -133,9 +135,9 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNoNarration
 ECHO.
-ECHO ======================================================
-ECHO [SETUP] Option 2: Standard Installation (Preview Branch)
-ECHO ======================================================
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Option 2: Standard Installation (Preview Branch)' -ForegroundColor White -BackgroundColor DarkBlue"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -323,37 +325,37 @@ REM ============================================================================
 :: Subroutine: Install Prerequisites (Choco, Git, Node, FFmpeg, uv)
 :InstallPrerequisites
 ECHO.
-ECHO --- Checking System Requirements ---
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '--- Checking System Requirements ---' -ForegroundColor White -BackgroundColor DarkMagenta"
 
-ECHO [SETUP] Configuring PowerShell security settings...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Configuring PowerShell security settings...' -ForegroundColor Cyan"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;" > nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [ERROR] Failed to configure PowerShell security.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to configure PowerShell security.' -ForegroundColor Red"
     EXIT /B 1
 )
 
-ECHO [?] Checking for Chocolatey package manager...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for Chocolatey package manager...' -ForegroundColor Yellow"
 WHERE choco >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO [SETUP] Installing Chocolatey package manager...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing Chocolatey package manager...' -ForegroundColor Cyan"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Failed to install Chocolatey.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to install Chocolatey.' -ForegroundColor Red"
         EXIT /B 1
     )
-    ECHO [INFO] Waiting for Chocolatey to initialize...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Waiting for Chocolatey to initialize...' -ForegroundColor Blue"
     timeout /t 5 /nobreak > nul
     WHERE choco >nul 2>nul
     IF %ERRORLEVEL% NEQ 0 (
-       ECHO [ERROR] Chocolatey installation failed.
+       powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Chocolatey installation failed.' -ForegroundColor Red"
        EXIT /B 1
    )
-   ECHO [OK] Chocolatey installed successfully.
+   powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Chocolatey installed successfully.' -ForegroundColor Green"
 ) ELSE (
-    ECHO [OK] Chocolatey already installed.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Chocolatey already installed.' -ForegroundColor Green"
 )
 
-ECHO [?] Checking for Git...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for Git...' -ForegroundColor Yellow"
 WHERE git >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Git version control...
@@ -366,13 +368,13 @@ IF %ERRORLEVEL% NEQ 0 (
             EXIT /B 1
         )
     )
-    ECHO [OK] Git installed successfully.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed successfully.' -ForegroundColor Green"
     REFRESHENV
 ) ELSE (
-    ECHO [OK] Git already installed.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git already installed.' -ForegroundColor Green"
 )
 
-ECHO [?] Checking for Node.js...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for Node.js...' -ForegroundColor Yellow"
 WHERE node >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Node.js runtime...
@@ -385,13 +387,13 @@ IF %ERRORLEVEL% NEQ 0 (
           EXIT /B 1
       )
     )
-    ECHO [OK] Node.js installed successfully.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Node.js installed successfully.' -ForegroundColor Green"
     REFRESHENV
 ) ELSE (
-    ECHO [OK] Node.js already installed.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Node.js already installed.' -ForegroundColor Green"
 )
 
-ECHO [?] Checking for FFmpeg...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for FFmpeg...' -ForegroundColor Yellow"
 WHERE ffmpeg >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing FFmpeg media processor...
@@ -399,14 +401,14 @@ IF %ERRORLEVEL% NEQ 0 (
     IF %ERRORLEVEL% NEQ 0 (
       ECHO [WARN] Failed to install FFmpeg. Some features may not work.
     ) ELSE (
-      ECHO [OK] FFmpeg installed successfully.
+      powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg installed successfully.' -ForegroundColor Green"
     )
     REFRESHENV
 ) ELSE (
-    ECHO [OK] FFmpeg already installed.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg already installed.' -ForegroundColor Green"
 )
 
-ECHO [?] Checking for uv Python package manager...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for uv Python package manager...' -ForegroundColor Yellow"
 WHERE uv >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing uv Python package manager...
@@ -416,18 +418,18 @@ IF %ERRORLEVEL% NEQ 0 (
         ECHO [INFO] You may need to install it manually from https://astral.sh/uv
         EXIT /B 1
     )
-    ECHO [OK] uv installed successfully.
-    ECHO [INFO] You may need to restart this script if uv is not found.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] uv installed successfully.' -ForegroundColor Green"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You may need to restart this script if uv is not found.' -ForegroundColor Blue"
 ) ELSE (
-    ECHO [OK] uv already installed.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] uv already installed.' -ForegroundColor Green"
 )
 :: *********************************
 
-ECHO [SETUP] Finalizing PowerShell configuration...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing PowerShell configuration...' -ForegroundColor Cyan"
 powershell -NoProfile -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force" > nul
 
 ECHO.
-ECHO [OK] System requirements check completed.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] System requirements check completed.' -ForegroundColor Green"
 ECHO.
 EXIT /B 0
 :: End of InstallPrerequisites Subroutine
@@ -436,19 +438,19 @@ REM ============================================================================
 :: Subroutine: Clean Install - Removes existing project folder (Modified: No Confirmation)
 :CleanInstall
 SET "FOLDER_TO_CLEAN=%~1"
-ECHO [?] Checking for existing installation: %FOLDER_TO_CLEAN%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for existing installation: %FOLDER_TO_CLEAN%' -ForegroundColor Yellow"
 IF EXIST "%FOLDER_TO_CLEAN%" (
-    ECHO [WARN] Found existing installation. Removing for clean install...
-    ECHO [SETUP] Removing existing project folder...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Found existing installation. Removing for clean install...' -ForegroundColor Yellow"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Removing existing project folder...' -ForegroundColor Cyan"
     RMDIR /S /Q "%FOLDER_TO_CLEAN%" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Cannot remove existing folder "%FOLDER_TO_CLEAN%".
-        ECHO [INFO] Please close any programs using this folder and try again.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Cannot remove existing folder \"%FOLDER_TO_CLEAN%\".' -ForegroundColor Red"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Please close any programs using this folder and try again.' -ForegroundColor Blue"
         EXIT /B 1
     )
-    ECHO [OK] Existing installation removed successfully.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Existing installation removed successfully.' -ForegroundColor Green"
 ) ELSE (
-    ECHO [OK] No existing installation found. Proceeding with fresh install.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] No existing installation found. Proceeding with fresh install.' -ForegroundColor Green"
 )
 EXIT /B 0
 :: End of CleanInstall Subroutine

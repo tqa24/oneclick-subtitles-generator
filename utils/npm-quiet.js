@@ -121,7 +121,7 @@ function runNpmCommand(args, options = {}) {
 // If this script is run directly, execute the npm command with the provided arguments
 if (require.main === module) {
     const args = process.argv.slice(2);
-    
+
     if (args.length === 0) {
         logger.error('No npm command provided');
         logger.info('Usage: node npm-quiet.js <npm-command> [args...]');
@@ -129,9 +129,46 @@ if (require.main === module) {
         process.exit(1);
     }
 
+    // Show a nice progress message based on the command
+    const command = args[0];
+    let progressMessage = 'Running npm command';
+
+    switch (command) {
+        case 'install':
+        case 'i':
+            progressMessage = 'Installing Node.js dependencies';
+            break;
+        case 'update':
+            progressMessage = 'Updating Node.js dependencies';
+            break;
+        case 'audit':
+            progressMessage = 'Checking for security vulnerabilities';
+            break;
+        case 'run':
+            progressMessage = `Running npm script: ${args[1] || 'unknown'}`;
+            break;
+        default:
+            progressMessage = `Running npm ${command}`;
+    }
+
+    logger.progress(progressMessage);
+
     runNpmCommand(args)
         .then(() => {
-            logger.success('npm command completed successfully');
+            switch (command) {
+                case 'install':
+                case 'i':
+                    logger.success('Node.js dependencies installed successfully');
+                    break;
+                case 'update':
+                    logger.success('Node.js dependencies updated successfully');
+                    break;
+                case 'audit':
+                    logger.success('Security check completed');
+                    break;
+                default:
+                    logger.success('npm command completed successfully');
+            }
         })
         .catch((error) => {
             logger.error(`npm command failed: ${error.message}`);
