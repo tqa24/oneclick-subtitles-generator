@@ -450,16 +450,16 @@ install_without_narration() {
     fi
 
     # Fix the start script in package.json to be cross-platform
-    echo "[SETUP] Updating package.json for cross-platform compatibility..."
+    colored_echo "[SETUP] Updating package.json for cross-platform compatibility..."
     # Update the start script on Mac/Linux
     sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "[WARN] Failed to update package.json. The application might not work correctly."
+        colored_echo "[WARN] Failed to update package.json. The application might not work correctly."
     else
-        echo "[OK] Successfully updated package.json for cross-platform compatibility."
+        colored_echo "[OK] Successfully updated package.json for cross-platform compatibility."
     fi
 
-    echo "[SETUP] Installing dependencies..."
+    colored_echo "[SETUP] Installing dependencies..."
     npm install
     if [ $? -ne 0 ]; then
         colored_echo "[ERROR] Failed to install dependencies. Check messages above."
