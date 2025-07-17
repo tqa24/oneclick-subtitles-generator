@@ -467,17 +467,17 @@ install_without_narration() {
         return
     fi
 
-    echo "[SETUP] Finalizing installation..."
+    colored_echo "[SETUP] Finalizing installation..."
     npm run install:yt-dlp >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "[WARN] YouTube downloader installation had issues."
-        echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
+        colored_echo "[WARN] YouTube downloader installation had issues."
+        colored_echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
     fi
 
     echo
-    echo "[OK] Installation completed successfully!"
-    echo "[START] Launching application..."
-    echo "[INFO] Press Ctrl+C to stop the application."
+    colored_echo "[OK] Installation completed successfully!"
+    colored_echo "[START] Launching application..."
+    colored_echo "[INFO] Press Ctrl+C to stop the application."
     echo
     npm run dev
 
