@@ -34,15 +34,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add CORS middleware to allow frontend requests
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3008", "http://127.0.0.1:3008"],  # Frontend URLs
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Global model instances (loaded once on startup)
 tts_model = None
 vc_model = None
