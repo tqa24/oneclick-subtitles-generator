@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
+import ExampleAudioDropdown from './ExampleAudioDropdown';
 
 /**
  * Audio Controls component
@@ -13,6 +14,7 @@ import { SERVER_URL } from '../../../config';
  * @param {boolean} props.isAvailable - Whether narration service is available
  * @param {Object} props.referenceAudio - Reference audio object
  * @param {Function} props.clearReferenceAudio - Function to clear reference audio
+ * @param {Function} props.onExampleSelect - Function to handle example audio selection
  * @returns {JSX.Element} - Rendered component
  */
 
@@ -24,7 +26,8 @@ const AudioControls = ({
   stopRecording,
   isAvailable,
   referenceAudio,
-  clearReferenceAudio
+  clearReferenceAudio,
+  onExampleSelect
 }) => {
   const { t } = useTranslation();
 
@@ -80,6 +83,12 @@ const AudioControls = ({
                 {t('narration.stopRecording', 'Stop')}
               </button>
             )}
+
+            {/* Use Example Button */}
+            <ExampleAudioDropdown
+              onExampleSelect={onExampleSelect}
+              disabled={isRecording || !isAvailable}
+            />
           </div>
 
           {/* Audio Preview */}

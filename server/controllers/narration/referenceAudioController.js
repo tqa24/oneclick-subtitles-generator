@@ -181,7 +181,125 @@ const uploadReference = async (req, res) => {
   }
 };
 
+/**
+ * Get list of example audio files
+ */
+const getExampleAudioList = async (_req, res) => {
+  try {
+    const exampleAudioFiles = [
+      {
+        filename: 'basic_ref_en.wav',
+        displayName: 'basic_ref_en.wav',
+        language: 'English',
+        description: 'English reference audio'
+      },
+      {
+        filename: 'basic_ref_zh.wav',
+        displayName: 'basic_ref_zh.wav',
+        language: 'Chinese',
+        description: 'Chinese reference audio'
+      }
+    ];
+
+    res.json({
+      success: true,
+      files: exampleAudioFiles
+    });
+  } catch (error) {
+    console.error('Error getting example audio list:', error);
+    res.status(500).json({ error: 'Error getting example audio list' });
+  }
+};
+
+/**
+ * Serve example audio files from F5-TTS examples directory
+ */
+const serveExampleAudio = async (req, res) => {
+  try {
+    const { filename } = req.params;
+
+    // Validate filename to prevent directory traversal
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    // Define the path to F5-TTS examples directory
+    const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
+    const filePath = path.join(f5ttsExamplesPath, filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Example audio file not found' });
+    }
+
+    // Serve the file
+    res.sendFile(filePath, {
+      headers: {
+        'Content-Type': 'audio/wav',
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      }
+    });
+  } catch (error) {
+    console.error('Error serving example audio:', error);
+    res.status(500).json({ error: 'Error serving example audio file' });
+  }
+};
+
+/**
+ * Upload example audio as reference (simulates real upload)
+ */
+const uploadExampleAudio = async (req, res) => {
+  try {
+    const { filename } = req.body;
+
+    // Validate filename
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    // Define the path to F5-TTS examples directory
+    const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
+    const sourcePath = path.join(f5ttsExamplesPath, filename);
+
+    // Check if source file exists
+    if (!fs.existsSync(sourcePath)) {
+      return res.status(404).json({ error: 'Example audio file not found' });
+    }
+
+    // Generate a unique filename for the copied file
+    const unique_id = uuidv4();
+    const newFilename = `example_${unique_id}.wav`;
+    const destinationPath = path.join(REFERENCE_AUDIO_DIR, newFilename);
+
+    // Copy the example file to reference directory
+    fs.copyFileSync(sourcePath, destinationPath);
+
+    // Set reference text based on filename
+    let reference_text = '';
+    if (filename.includes('_en.')) {
+      reference_text = 'Some call me nature, others call me mother nature.';
+    } else if (filename.includes('_zh.')) {
+      reference_text = '对不起，我不会说中文。';
+    }
+
+    // Return success response (same format as regular upload)
+    res.json({
+      success: true,
+      filepath: destinationPath,
+      filename: newFilename,
+      reference_text: reference_text,
+      transcribe: false
+    });
+  } catch (error) {
+    console.error('Error uploading example audio:', error);
+    res.status(500).json({ error: 'Error uploading example audio' });
+  }
+};
+
 module.exports = {
   recordReference,
-  uploadReference
+  uploadReference,
+  getExampleAudioList,
+  serveExampleAudio,
+  uploadExampleAudio
 };

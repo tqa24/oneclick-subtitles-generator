@@ -64,6 +64,15 @@ router.post('/modify-audio-speed', express.json(), narrationController.modifyAud
 // Batch modify audio speed for multiple files
 router.post('/batch-modify-audio-speed', express.json(), narrationController.batchModifyAudioSpeed);
 
+// Get list of example audio files
+router.get('/example-audio', narrationController.getExampleAudioList);
+
+// Serve example audio files
+router.get('/example-audio/:filename', narrationController.serveExampleAudio);
+
+// Upload example audio as reference
+router.post('/upload-example-audio', express.json(), narrationController.uploadExampleAudio);
+
 // Proxy all other narration requests to the Python service
 router.use('/', async (req, res, next) => {
   // Skip endpoints we handle directly

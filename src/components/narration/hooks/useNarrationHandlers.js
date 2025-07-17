@@ -1446,6 +1446,41 @@ const useNarrationHandlers = ({
     setGenerationStatus(t('narration.retryingFailedNarrationsComplete', 'Completed retrying all failed narrations'));
   };
 
+  // Handle example audio selection
+  const handleExampleSelect = async (result) => {
+    try {
+      if (result.success) {
+        const audioUrl = getAudioUrl(result.filename);
+
+        setReferenceAudio({
+          filepath: result.filepath,
+          filename: result.filename,
+          url: audioUrl
+        });
+
+        // Update reference text if provided
+        if (result.reference_text) {
+          setReferenceText(result.reference_text);
+        }
+
+        // Notify parent component
+        if (onReferenceAudioChange) {
+          onReferenceAudioChange({
+            filepath: result.filepath,
+            filename: result.filename,
+            text: result.reference_text || referenceText
+          });
+        }
+      } else {
+        console.error('Example upload failed:', result.error);
+        setError(result.error || t('narration.uploadError', 'Error uploading example audio'));
+      }
+    } catch (error) {
+      console.error('Error handling example selection:', error);
+      setError(t('narration.uploadError', 'Error uploading example audio'));
+    }
+  };
+
   return {
     handleFileUpload,
     startRecording,
@@ -1458,7 +1493,8 @@ const useNarrationHandlers = ({
     downloadAlignedAudio,
     cancelGeneration,
     retryF5TTSNarration,
-    retryFailedNarrations
+    retryFailedNarrations,
+    handleExampleSelect
   };
 };
 

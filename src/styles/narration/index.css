@@ -6,3 +6,126 @@
 @import './geminiGenerateButton.css';
 @import './narrationAdvancedSettingsRedesign.css';
 @import './geminiNarrationResults.css';
+
+/* Example Audio Dropdown Styles */
+.example-audio-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* When dropdown is open, ensure container has higher z-index */
+.example-audio-dropdown-container.dropdown-open {
+  z-index: 99999; /* High z-index to ensure it appears above other elements */
+}
+
+.example-audio-dropdown-container .pill-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.example-audio-dropdown-container .pill-button.active-dropdown-btn {
+  background-color: var(--md-surface-3);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.example-audio-dropdown-container .dropdown-chevron {
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.example-audio-dropdown-container .dropdown-chevron.open {
+  transform: rotate(180deg);
+}
+
+.example-audio-dropdown {
+  position: fixed; /* Fixed position to avoid layout issues */
+  width: 240px;
+  background-color: var(--md-surface-1);
+  border-radius: 12px;
+  box-shadow: var(--md-elevation-level3);
+  border: 1px solid var(--border-color);
+  z-index: 99999; /* Very high z-index to ensure it appears above other elements */
+  overflow: hidden;
+}
+
+.example-audio-dropdown-header {
+  padding: 12px 16px;
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
+  background-color: var(--md-surface-3);
+}
+
+.example-audio-dropdown-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.example-audio-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--md-on-surface);
+  transition: background-color 0.2s;
+}
+
+.example-audio-option:hover {
+  background-color: var(--md-surface-2);
+}
+
+.example-audio-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.example-audio-option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.example-audio-option-icon svg {
+  color: var(--md-primary);
+}
+
+.example-audio-option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.example-audio-option-name {
+  font-size: var(--md-body-medium-size);
+  font-weight: var(--md-body-medium-weight);
+  color: var(--md-on-surface);
+  margin-bottom: 2px;
+}
+
+.example-audio-option-description {
+  font-size: var(--md-body-small-size);
+  color: var(--md-on-surface-variant);
+}
+
+.example-audio-error,
+.example-audio-loading {
+  padding: 12px 16px;
+  text-align: center;
+  color: var(--md-on-surface-variant);
+  font-size: var(--md-body-small-size);
+}
+
+.example-audio-error {
+  color: var(--error-color);
+}

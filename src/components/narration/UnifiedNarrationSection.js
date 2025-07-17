@@ -321,7 +321,8 @@ const UnifiedNarrationSection = ({
     downloadAlignedAudio,
     cancelGeneration,
     retryF5TTSNarration,
-    retryFailedNarrations
+    retryFailedNarrations,
+    handleExampleSelect
   } = useNarrationHandlers({
     fileInputRef,
     mediaRecorderRef,
@@ -437,6 +438,7 @@ const UnifiedNarrationSection = ({
             isAvailable={isAvailable}
             referenceAudio={referenceAudio}
             clearReferenceAudio={clearReferenceAudio}
+            onExampleSelect={handleExampleSelect}
           />
 
           {/* Reference Audio Section */}
@@ -566,6 +568,7 @@ const UnifiedNarrationSection = ({
             isAvailable={isChatterboxAvailable}
             referenceAudio={referenceAudio}
             clearReferenceAudio={clearReferenceAudio}
+            onExampleSelect={handleExampleSelect}
           />
 
           {/* Subtitle Source Selection - reuse from F5-TTS */}

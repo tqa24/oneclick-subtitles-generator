@@ -75,7 +75,7 @@
 /* Model options dropdown */
 .model-options-dropdown {
   position: fixed; /* Fixed position to avoid layout issues */
-  width: 255px;
+  width: 380px;
   background-color: var(--md-surface-1);
   border-radius: 12px;
   box-shadow: var(--md-elevation-level3);

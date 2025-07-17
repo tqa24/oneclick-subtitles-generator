@@ -616,3 +616,62 @@ export const getAudioUrl = (filename) => {
   // The filename might already include the subtitle directory path
   return `${SERVER_URL}/api/narration/audio/${filename}`;
 };
+
+/**
+ * Get list of example audio files
+ * @returns {Promise<Object>} - List of example audio files
+ */
+export const getExampleAudioList = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/example-audio`, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Upload example audio as reference
+ * @param {string} filename - Example audio filename
+ * @returns {Promise<Object>} - Upload response
+ */
+export const uploadExampleAudio = async (filename) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/narration/upload-example-audio`, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ filename })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      await response.text(); // Read the response body to avoid memory leaks
+      throw new Error('Server returned non-JSON response');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
