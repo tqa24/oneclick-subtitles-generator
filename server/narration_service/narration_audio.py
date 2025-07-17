@@ -14,6 +14,50 @@ logger = logging.getLogger(__name__)
 # Create blueprint for audio processing routes
 audio_bp = Blueprint('narration_audio', __name__)
 
+def add_silence_to_audio(input_path, output_path):
+    """
+    Add 1 second of silence to the end of an audio file using ffmpeg
+    This is required for F5-TTS to avoid truncation issues
+
+    Args:
+        input_path (str): Path to the input audio file
+        output_path (str): Path to save the processed audio file
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        logger.info(f"Adding 1s silence to audio: {input_path} -> {output_path}")
+
+        # ffmpeg command to add 1 second of silence at the end
+        # -f lavfi -t 1 -i anullsrc=channel_layout=stereo:sample_rate=44100 creates 1s of silence
+        # [0:a][1:a]concat=n=2:v=0:a=1 concatenates the original audio with the silence
+        ffmpeg_cmd = [
+            'ffmpeg',
+            '-i', input_path,
+            '-f', 'lavfi', '-t', '1', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+            '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1',
+            '-y',  # Overwrite output file if it exists
+            output_path
+        ]
+
+        result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=30)
+
+        if result.returncode == 0:
+            logger.info(f"Successfully added silence to audio: {output_path}")
+            return True
+        else:
+            logger.error(f"FFmpeg failed with code {result.returncode}")
+            logger.error(f"FFmpeg stderr: {result.stderr}")
+            return False
+
+    except subprocess.TimeoutExpired:
+        logger.error("FFmpeg timeout expired")
+        return False
+    except Exception as e:
+        logger.error(f"FFmpeg error: {str(e)}")
+        return False
+
 @audio_bp.route('/process-base64-reference', methods=['POST'])
 def process_base64_audio_reference():
     """Process base64 encoded audio data as reference"""
@@ -48,15 +92,20 @@ def process_base64_audio_reference():
 
         # Generate a unique filename
         unique_id = str(uuid.uuid4())
-        # Assume WAV format based on typical web audio recording
+
+        # Create temporary filename for initial save
+        temp_filename = f"temp_recorded_b64_{unique_id}.wav"
+        temp_filepath = os.path.join(REFERENCE_AUDIO_DIR, temp_filename)
+
+        # Final filename for processed audio
         filename = f"recorded_b64_{unique_id}.wav"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
 
-        # Decode and save the audio data
+        # Decode and save the audio data to temporary location
         try:
             audio_bytes = base64.b64decode(audio_data_base64)
 
-            with open(filepath, 'wb') as f:
+            with open(temp_filepath, 'wb') as f:
                 f.write(audio_bytes)
 
         except base64.binascii.Error as decode_error:
@@ -65,16 +114,32 @@ def process_base64_audio_reference():
             logger.error(f"Base64 data sample: {sample}")
             return jsonify({'error': f'Invalid base64 data: {str(decode_error)}'}), 400
         except IOError as e:
-             logger.error(f"Error saving decoded audio to file {filepath}: {e}", exc_info=True)
+             logger.error(f"Error saving decoded audio to file {temp_filepath}: {e}", exc_info=True)
              return jsonify({'error': f'Error saving audio file: {str(e)}'}), 500
         except Exception as e:
             logger.exception(f"Unexpected error saving base64 audio: {e}")
             return jsonify({'error': f'Internal server error saving audio: {str(e)}'}), 500
 
-        # Verify file was saved (redundant check, but useful for debugging)
-        if not os.path.exists(filepath):
-            logger.error(f"File saving failed unexpectedly for {filepath}")
+        # Verify temporary file was saved
+        if not os.path.exists(temp_filepath):
+            logger.error(f"File saving failed unexpectedly for {temp_filepath}")
             return jsonify({'error': 'Failed to save audio file after decoding'}), 500
+
+        # Add 1 second of silence to the end of the audio for F5-TTS compatibility
+        try:
+            if add_silence_to_audio(temp_filepath, filepath):
+                # Remove the temporary file after successful processing
+                os.unlink(temp_filepath)
+                logger.info(f"Removed temporary file: {temp_filepath}")
+            else:
+                # Fallback: use the original file without preprocessing
+                logger.warning("FFmpeg preprocessing failed, falling back to original audio")
+                os.rename(temp_filepath, filepath)
+        except Exception as e:
+            logger.error(f"Error during audio preprocessing: {str(e)}")
+            # Fallback: use the original file without preprocessing
+            logger.warning("Falling back to original audio without silence padding")
+            os.rename(temp_filepath, filepath)
 
         # --- Transcription Logic ---
         final_reference_text = reference_text
@@ -121,12 +186,33 @@ def upload_reference_audio():
         base, ext = os.path.splitext(original_filename)
         # Ensure extension is reasonable, default to .wav if missing/odd
         ext = ext if ext else '.wav'
+
+        # Create temporary filename for initial save
+        temp_filename = f"temp_{base}_{unique_id}{ext}"
+        temp_filepath = os.path.join(REFERENCE_AUDIO_DIR, temp_filename)
+
+        # Final filename for processed audio
         unique_filename = f"{base}_{unique_id}{ext}"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, unique_filename)
 
+        # Save the uploaded file to temporary location
+        file.save(temp_filepath)
 
-        file.save(filepath)
-
+        # Add 1 second of silence to the end of the audio for F5-TTS compatibility
+        try:
+            if add_silence_to_audio(temp_filepath, filepath):
+                # Remove the temporary file after successful processing
+                os.unlink(temp_filepath)
+                logger.info(f"Removed temporary file: {temp_filepath}")
+            else:
+                # Fallback: use the original file without preprocessing
+                logger.warning("FFmpeg preprocessing failed, falling back to original audio")
+                os.rename(temp_filepath, filepath)
+        except Exception as e:
+            logger.error(f"Error during audio preprocessing: {str(e)}")
+            # Fallback: use the original file without preprocessing
+            logger.warning("Falling back to original audio without silence padding")
+            os.rename(temp_filepath, filepath)
 
         # Get reference text from form data
         reference_text = request.form.get('reference_text', '')
@@ -202,13 +288,33 @@ def record_reference_audio():
 
         # Generate unique filename, save, and transcribe (similar to /upload-reference)
         unique_id = str(uuid.uuid4())
-        # Assume WAV format for recordings
+
+        # Create temporary filename for initial save
+        temp_filename = f"temp_recorded_form_{unique_id}.wav"
+        temp_filepath = os.path.join(REFERENCE_AUDIO_DIR, temp_filename)
+
+        # Final filename for processed audio
         filename = f"recorded_form_{unique_id}.wav"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
 
+        # Save the recorded file to temporary location
+        audio_file.save(temp_filepath)
 
-        audio_file.save(filepath)
-
+        # Add 1 second of silence to the end of the audio for F5-TTS compatibility
+        try:
+            if add_silence_to_audio(temp_filepath, filepath):
+                # Remove the temporary file after successful processing
+                os.unlink(temp_filepath)
+                logger.info(f"Removed temporary file: {temp_filepath}")
+            else:
+                # Fallback: use the original file without preprocessing
+                logger.warning("FFmpeg preprocessing failed, falling back to original audio")
+                os.rename(temp_filepath, filepath)
+        except Exception as e:
+            logger.error(f"Error during audio preprocessing: {str(e)}")
+            # Fallback: use the original file without preprocessing
+            logger.warning("Falling back to original audio without silence padding")
+            os.rename(temp_filepath, filepath)
 
         reference_text = request.form.get('reference_text', '')
 
@@ -260,10 +366,33 @@ def process_base64_audio_reference_from_override():
      try:
         # (Placeholder for Decode, Save, Transcribe logic)
         unique_id = str(uuid.uuid4())
+
+        # Create temporary filename for initial save
+        temp_filename = f"temp_recorded_override_{unique_id}.wav"
+        temp_filepath = os.path.join(REFERENCE_AUDIO_DIR, temp_filename)
+
+        # Final filename for processed audio
         filename = f"recorded_override_{unique_id}.wav"
         filepath = os.path.join(REFERENCE_AUDIO_DIR, filename)
+
         audio_bytes = base64.b64decode(audio_data_base64)
-        with open(filepath, 'wb') as f: f.write(audio_bytes)
+        with open(temp_filepath, 'wb') as f: f.write(audio_bytes)
+
+        # Add 1 second of silence to the end of the audio for F5-TTS compatibility
+        try:
+            if add_silence_to_audio(temp_filepath, filepath):
+                # Remove the temporary file after successful processing
+                os.unlink(temp_filepath)
+                logger.info(f"Removed temporary file: {temp_filepath}")
+            else:
+                # Fallback: use the original file without preprocessing
+                logger.warning("FFmpeg preprocessing failed, falling back to original audio")
+                os.rename(temp_filepath, filepath)
+        except Exception as e:
+            logger.error(f"Error during audio preprocessing: {str(e)}")
+            # Fallback: use the original file without preprocessing
+            logger.warning("Falling back to original audio without silence padding")
+            os.rename(temp_filepath, filepath)
 
         # (Placeholder for Transcription logic)
         final_reference_text = reference_text or "Transcription Placeholder"
@@ -335,10 +464,16 @@ def extract_audio_segment():
 
         # Generate unique output path
         unique_id = str(uuid.uuid4())
+
+        # Create temporary filename for initial extraction
+        temp_output_filename = f"temp_segment_{unique_id}.wav"
+        temp_output_path = os.path.join(REFERENCE_AUDIO_DIR, temp_output_filename)
+
+        # Final filename for processed audio
         output_filename = f"segment_{unique_id}.wav"
         output_path = os.path.join(REFERENCE_AUDIO_DIR, output_filename)
 
-        # Construct ffmpeg command
+        # Construct ffmpeg command for extraction
         # -vn: no video
         # -acodec pcm_s16le: Standard WAV format
         # -ar 44100: Sample rate (adjust if F5TTS prefers different)
@@ -354,7 +489,7 @@ def extract_audio_segment():
             '-acodec', 'pcm_s16le',
             '-ar', '44100', # Consider making this configurable or detecting source rate
             '-ac', '1',
-            output_path
+            temp_output_path  # Extract to temporary file first
         ]
 
 
@@ -372,8 +507,24 @@ def extract_audio_segment():
             logger.error(f"ffmpeg command failed with exit code {e.returncode}")
             logger.error(f"ffmpeg stderr:\n{e.stderr}")
             # Try to delete potentially incomplete output file
-            if os.path.exists(output_path): os.remove(output_path)
+            if os.path.exists(temp_output_path): os.remove(temp_output_path)
             return jsonify({'error': f'ffmpeg failed: {e.stderr[:200]}...'}), 500
+
+        # Add 1 second of silence to the end of the extracted audio for F5-TTS compatibility
+        try:
+            if add_silence_to_audio(temp_output_path, output_path):
+                # Remove the temporary file after successful processing
+                os.unlink(temp_output_path)
+                logger.info(f"Removed temporary file: {temp_output_path}")
+            else:
+                # Fallback: use the original file without preprocessing
+                logger.warning("FFmpeg preprocessing failed, falling back to original audio")
+                os.rename(temp_output_path, output_path)
+        except Exception as e:
+            logger.error(f"Error during audio preprocessing: {str(e)}")
+            # Fallback: use the original file without preprocessing
+            logger.warning("Falling back to original audio without silence padding")
+            os.rename(temp_output_path, output_path)
 
         # --- Skip transcription - handled by frontend ---
         reference_text = ""

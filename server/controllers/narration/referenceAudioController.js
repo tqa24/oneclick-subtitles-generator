@@ -5,14 +5,64 @@
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { safeMoveFileSync } = require('../../utils/fileOperations');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
 // Import directory paths
 const { REFERENCE_AUDIO_DIR } = require('./directoryManager');
 
 /**
+ * Add 1 second of silence to the end of an audio file using ffmpeg
+ * This is required for F5-TTS to avoid truncation issues
+ * @param {string} inputPath - Path to the input audio file
+ * @param {string} outputPath - Path to save the processed audio file
+ * @returns {Promise<boolean>} - True if successful, false otherwise
+ */
+const addSilenceToAudio = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+    console.log(`Adding 1s silence to audio: ${inputPath} -> ${outputPath}`);
+
+    // ffmpeg command to add 1 second of silence at the end
+    // -f lavfi -t 1 -i anullsrc=channel_layout=stereo:sample_rate=44100 creates 1s of silence
+    // [0:a][1:a]concat=n=2:v=0:a=1 concatenates the original audio with the silence
+    const ffmpegArgs = [
+      '-i', inputPath,
+      '-f', 'lavfi', '-t', '1', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
+      '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1',
+      '-y', // Overwrite output file if it exists
+      outputPath
+    ];
+
+    const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+
+    let stderr = '';
+
+    ffmpeg.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    ffmpeg.on('close', (code) => {
+      if (code === 0) {
+        console.log(`Successfully added silence to audio: ${outputPath}`);
+        resolve(true);
+      } else {
+        console.error(`FFmpeg failed with code ${code}`);
+        console.error(`FFmpeg stderr: ${stderr}`);
+        reject(new Error(`FFmpeg failed with code ${code}: ${stderr}`));
+      }
+    });
+
+    ffmpeg.on('error', (error) => {
+      console.error(`FFmpeg spawn error: ${error.message}`);
+      reject(error);
+    });
+  });
+};
+
+/**
  * Record reference audio
  */
-const recordReference = (req, res) => {
+const recordReference = async (req, res) => {
 
 
   if (!req.file) {
@@ -23,13 +73,32 @@ const recordReference = (req, res) => {
 
 
   try {
-    // Generate a unique filename
+    // Generate a unique filename for temporary file
     const unique_id = uuidv4();
+    const temp_filename = `temp_recorded_${unique_id}.wav`;
+    const temp_filepath = path.join(REFERENCE_AUDIO_DIR, temp_filename);
+
+    // Copy the recorded file to temporary location
+    safeMoveFileSync(req.file.path, temp_filepath);
+
+    // Generate final filename for processed audio
     const filename = `recorded_${unique_id}.wav`;
     const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
-    // Copy the file instead of renaming to avoid EPERM errors on Windows
-    safeMoveFileSync(req.file.path, filepath);
+    // Add 1 second of silence to the end of the audio for F5-TTS compatibility
+    try {
+      await addSilenceToAudio(temp_filepath, filepath);
+
+      // Remove the temporary file after successful processing
+      fs.unlinkSync(temp_filepath);
+      console.log(`Removed temporary file: ${temp_filepath}`);
+    } catch (ffmpegError) {
+      console.error('FFmpeg preprocessing failed:', ffmpegError.message);
+
+      // Fallback: use the original file without preprocessing
+      console.log('Falling back to original audio without silence padding');
+      safeMoveFileSync(temp_filepath, filepath);
+    }
 
     // Get reference text if provided
     const reference_text = req.body.reference_text || '';
@@ -54,7 +123,7 @@ const recordReference = (req, res) => {
 /**
  * Upload reference audio
  */
-const uploadReference = (req, res) => {
+const uploadReference = async (req, res) => {
 
 
   if (!req.file) {
@@ -65,13 +134,32 @@ const uploadReference = (req, res) => {
 
 
   try {
-    // Generate a unique filename
+    // Generate a unique filename for temporary file
     const unique_id = uuidv4();
+    const temp_filename = `temp_uploaded_${unique_id}.wav`;
+    const temp_filepath = path.join(REFERENCE_AUDIO_DIR, temp_filename);
+
+    // Copy the uploaded file to temporary location
+    safeMoveFileSync(req.file.path, temp_filepath);
+
+    // Generate final filename for processed audio
     const filename = `uploaded_${unique_id}.wav`;
     const filepath = path.join(REFERENCE_AUDIO_DIR, filename);
 
-    // Copy the file instead of renaming to avoid EPERM errors on Windows
-    safeMoveFileSync(req.file.path, filepath);
+    // Add 1 second of silence to the end of the audio for F5-TTS compatibility
+    try {
+      await addSilenceToAudio(temp_filepath, filepath);
+
+      // Remove the temporary file after successful processing
+      fs.unlinkSync(temp_filepath);
+      console.log(`Removed temporary file: ${temp_filepath}`);
+    } catch (ffmpegError) {
+      console.error('FFmpeg preprocessing failed:', ffmpegError.message);
+
+      // Fallback: use the original file without preprocessing
+      console.log('Falling back to original audio without silence padding');
+      safeMoveFileSync(temp_filepath, filepath);
+    }
 
     // Get reference text if provided
     const reference_text = req.body.reference_text || '';
