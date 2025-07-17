@@ -7,18 +7,48 @@ PROJECT_PATH="$SCRIPT_DIR"
 GIT_REPO_URL="https://github.com/nganlinh4/oneclick-subtitles-generator.git"
 
 # --- Functions ---
+# Colored echo function for better visual output
+colored_echo() {
+    local message="$1"
+
+    # Extract bracket content and text
+    if [[ $message =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
+        local bracket_content="${BASH_REMATCH[1]}"
+        local text="${BASH_REMATCH[2]}"
+
+        # Define colors
+        local color=""
+        case "$bracket_content" in
+            "SETUP") color="\033[36m" ;;  # Cyan
+            "OK") color="\033[32m" ;;     # Green
+            "ERROR") color="\033[31m" ;;  # Red
+            "WARN") color="\033[33m" ;;   # Yellow
+            "INFO") color="\033[34m" ;;   # Blue
+            "?") color="\033[33m" ;;      # Yellow
+            "START") color="\033[35m" ;;  # Magenta
+            *) color="\033[37m" ;;        # White
+        esac
+
+        # Print with colored brackets and white text
+        echo -e "${color}[${bracket_content}]\033[0m ${text}"
+    else
+        # If no brackets found, just print normally
+        echo "$message"
+    fi
+}
+
 error_occurred() {
     echo
     echo "======================================================"
-    echo "[ERROR] Installation failed!"
+    colored_echo "[ERROR] Installation failed!"
     echo "======================================================"
-    echo "[INFO] Common solutions:"
+    colored_echo "[INFO] Common solutions:"
     echo "  - Close this terminal and run the installer again"
     echo "  - Restart your computer and try again"
     echo "  - Check your internet connection"
     echo "  - Ensure you have proper permissions"
     echo
-    echo "[INFO] System PATH may need to be refreshed for new tools."
+    colored_echo "[INFO] System PATH may need to be refreshed for new tools."
     echo "======================================================"
     echo
     read -p "Press Enter to return to main menu..."
@@ -27,7 +57,7 @@ error_occurred() {
 
 refresh_env() {
     # Refresh environment variables (similar to REFRESHENV in Windows)
-    echo "[SETUP] Refreshing environment variables..."
+    colored_echo "[SETUP] Refreshing environment variables..."
 
     # Source common profile files to pick up new PATH entries
     if [ -f ~/.bashrc ]; then
@@ -62,11 +92,11 @@ install_prerequisites() {
     # Check OS
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        echo "[INFO] Detected macOS"
+        colored_echo "[INFO] Detected macOS"
 
         # Check if Homebrew is installed
         if ! command -v brew &> /dev/null; then
-            echo "[SETUP] Installing Homebrew package manager..."
+            colored_echo "[SETUP] Installing Homebrew package manager..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
             # Add Homebrew to PATH for current session
@@ -75,100 +105,100 @@ install_prerequisites() {
             elif [[ -f /usr/local/bin/brew ]]; then
                 eval "$(/usr/local/bin/brew shellenv)"
             fi
-            echo "[OK] Homebrew installed successfully."
+            colored_echo "[OK] Homebrew installed successfully."
         else
-            echo "[OK] Homebrew already installed."
+            colored_echo "[OK] Homebrew already installed."
         fi
 
         # Install Git
         if ! command -v git &> /dev/null; then
-            echo "[SETUP] Installing Git version control..."
+            colored_echo "[SETUP] Installing Git version control..."
             brew install git >/dev/null 2>&1
             refresh_env
-            echo "[OK] Git installed successfully."
+            colored_echo "[OK] Git installed successfully."
         else
-            echo "[OK] Git already installed."
+            colored_echo "[OK] Git already installed."
         fi
 
         # Install Node.js
         if ! command -v node &> /dev/null; then
-            echo "[SETUP] Installing Node.js runtime..."
+            colored_echo "[SETUP] Installing Node.js runtime..."
             brew install node >/dev/null 2>&1
             refresh_env
-            echo "[OK] Node.js installed successfully."
+            colored_echo "[OK] Node.js installed successfully."
         else
-            echo "[OK] Node.js already installed."
+            colored_echo "[OK] Node.js already installed."
         fi
 
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
-            echo "[SETUP] Installing FFmpeg media processor..."
+            colored_echo "[SETUP] Installing FFmpeg media processor..."
             brew install ffmpeg >/dev/null 2>&1
             refresh_env
-            echo "[OK] FFmpeg installed successfully."
+            colored_echo "[OK] FFmpeg installed successfully."
         else
-            echo "[OK] FFmpeg already installed."
+            colored_echo "[OK] FFmpeg already installed."
         fi
         
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Ubuntu/Linux
-        echo "[INFO] Detected Linux"
+        colored_echo "[INFO] Detected Linux"
 
         # Update package lists
-        echo "[SETUP] Updating package lists..."
+        colored_echo "[SETUP] Updating package lists..."
         sudo apt update >/dev/null 2>&1
 
         # Install Git
         if ! command -v git &> /dev/null; then
-            echo "[SETUP] Installing Git version control..."
+            colored_echo "[SETUP] Installing Git version control..."
             sudo apt install -y git >/dev/null 2>&1
             refresh_env
-            echo "[OK] Git installed successfully."
+            colored_echo "[OK] Git installed successfully."
         else
-            echo "[OK] Git already installed."
+            colored_echo "[OK] Git already installed."
         fi
 
         # Install Node.js
         if ! command -v node &> /dev/null; then
-            echo "[SETUP] Installing Node.js runtime..."
+            colored_echo "[SETUP] Installing Node.js runtime..."
             curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - >/dev/null 2>&1
             sudo apt install -y nodejs >/dev/null 2>&1
             refresh_env
-            echo "[OK] Node.js installed successfully."
+            colored_echo "[OK] Node.js installed successfully."
         else
-            echo "[OK] Node.js already installed."
+            colored_echo "[OK] Node.js already installed."
         fi
 
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
-            echo "[SETUP] Installing FFmpeg media processor..."
+            colored_echo "[SETUP] Installing FFmpeg media processor..."
             sudo apt install -y ffmpeg >/dev/null 2>&1
             refresh_env
-            echo "[OK] FFmpeg installed successfully."
+            colored_echo "[OK] FFmpeg installed successfully."
         else
-            echo "[OK] FFmpeg already installed."
+            colored_echo "[OK] FFmpeg already installed."
         fi
     else
-        echo "[ERROR] Unsupported operating system: $OSTYPE"
+        colored_echo "[ERROR] Unsupported operating system: $OSTYPE"
         exit 1
     fi
 
     # Install uv (cross-platform)
     if ! command -v uv &> /dev/null; then
-        echo "[SETUP] Installing uv Python package manager..."
+        colored_echo "[SETUP] Installing uv Python package manager..."
         curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
         refresh_env
         # Add uv to PATH for current session
         if [[ -d "$HOME/.cargo/bin" ]]; then
             export PATH="$HOME/.cargo/bin:$PATH"
         fi
-        echo "[OK] uv installed successfully."
+        colored_echo "[OK] uv installed successfully."
     else
-        echo "[OK] uv already installed."
+        colored_echo "[OK] uv already installed."
     fi
 
     echo
-    echo "[OK] System requirements check completed."
+    colored_echo "[OK] System requirements check completed."
     echo
 }
 
@@ -313,7 +343,7 @@ show_menu() {
 install_with_narration() {
     echo
     echo "======================================================"
-    echo "[SETUP] Option 1: Full Installation with Voice Cloning"
+    colored_echo "[SETUP] Option 1: Full Installation with Voice Cloning"
     echo "======================================================"
     echo
 
@@ -327,7 +357,7 @@ install_with_narration() {
 
     install_prerequisites
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to install prerequisites."
+        colored_echo "[ERROR] Failed to install prerequisites."
         error_occurred
         return
     fi
@@ -337,40 +367,40 @@ install_with_narration() {
 
     clean_install
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to clean install."
+        colored_echo "[ERROR] Failed to clean install."
         error_occurred
         return
     fi
 
     # Fix the start script in package.json to be cross-platform
-    echo "[SETUP] Updating package.json for cross-platform compatibility..."
+    colored_echo "[SETUP] Updating package.json for cross-platform compatibility..."
     # Update the start script on Mac/Linux
     sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "[WARN] Failed to update package.json. The application might not work correctly."
+        colored_echo "[WARN] Failed to update package.json. The application might not work correctly."
     else
-        echo "[OK] Successfully updated package.json for cross-platform compatibility."
+        colored_echo "[OK] Successfully updated package.json for cross-platform compatibility."
     fi
 
-    echo "[SETUP] Installing all dependencies (this may take several minutes)..."
+    colored_echo "[SETUP] Installing all dependencies (this may take several minutes)..."
     npm run install:all
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to install dependencies. Check messages above."
+        colored_echo "[ERROR] Failed to install dependencies. Check messages above."
         error_occurred
         return
     fi
 
-    echo "[SETUP] Finalizing installation..."
+    colored_echo "[SETUP] Finalizing installation..."
     npm run install:yt-dlp >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "[WARN] YouTube downloader installation had issues."
-        echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
+        colored_echo "[WARN] YouTube downloader installation had issues."
+        colored_echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
     fi
 
     echo
-    echo "[OK] Installation completed successfully!"
-    echo "[START] Launching application with voice cloning features..."
-    echo "[INFO] Press Ctrl+C to stop the application."
+    colored_echo "[OK] Installation completed successfully!"
+    colored_echo "[START] Launching application with voice cloning features..."
+    colored_echo "[INFO] Press Ctrl+C to stop the application."
     echo
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "[INFO] NVIDIA GPU detected, using CUDA acceleration."
@@ -393,7 +423,7 @@ install_with_narration() {
 install_without_narration() {
     echo
     echo "======================================================"
-    echo "[SETUP] Option 2: Standard Installation"
+    colored_echo "[SETUP] Option 2: Standard Installation"
     echo "======================================================"
     echo
 
@@ -407,14 +437,14 @@ install_without_narration() {
 
     install_prerequisites
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to install prerequisites."
+        colored_echo "[ERROR] Failed to install prerequisites."
         error_occurred
         return
     fi
 
     clean_install
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to clean install."
+        colored_echo "[ERROR] Failed to clean install."
         error_occurred
         return
     fi
@@ -432,7 +462,7 @@ install_without_narration() {
     echo "[SETUP] Installing dependencies..."
     npm install
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to install dependencies. Check messages above."
+        colored_echo "[ERROR] Failed to install dependencies. Check messages above."
         error_occurred
         return
     fi
