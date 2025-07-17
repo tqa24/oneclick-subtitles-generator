@@ -387,11 +387,11 @@ try {
     }
     // Explicitly specify the virtual environment to ensure uv uses it
     const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
-    console.log(`Using explicit venv: ${torchInstallCmdWithVenv}`);
+    logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
-    console.log(`✅ PyTorch (${gpuVendor} target) installed successfully.`);
+    execSync(torchInstallCmdWithVenv, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
 
     // --- 5b. Verify Installation ---
     console.log('\n🔍 Verifying PyTorch installation using uv run...');
@@ -494,7 +494,7 @@ except Exception as e:
 
 
 // --- 6. Install core dependencies for both F5-TTS and Chatterbox services ---
-console.log('\n🔧 Installing core dependencies for F5-TTS and Chatterbox services using uv...');
+logger.progress('Installing core dependencies for F5-TTS and Chatterbox services');
 try {
     // Core dependencies needed for both services
     const coreDeps = [
@@ -519,10 +519,10 @@ try {
     ];
 
     const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
-    console.log(`Running: ${depsCmd}`);
+    logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(depsCmd, { stdio: 'inherit', env });
-    console.log('✅ Core dependencies for F5-TTS and Chatterbox services installed.');
+    execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('Core dependencies for F5-TTS and Chatterbox services installed');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
     console.log(`   Command failed: ${error.cmd}`);
@@ -572,12 +572,12 @@ try {
     }
 
     const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
-    console.log(`Running: ${installF5Cmd}`);
+    logger.command(installF5Cmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
     try {
-        execSync(installF5Cmd, { stdio: 'inherit', env });
-        console.log('✅ F5-TTS installation command completed.');
+        execSync(installF5Cmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        logger.success('F5-TTS installation command completed');
     } catch (installError) {
         console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
         console.log(`   Command that failed: ${installF5Cmd}`);
@@ -599,14 +599,16 @@ try {
         }
     }
 
-    // Debug: List installed packages in the virtual environment
-    console.log('\n🔍 Checking installed packages in virtual environment...');
-    try {
-        const listCmd = `uv pip list --python ${VENV_DIR}`;
-        console.log(`Running: ${listCmd}`);
-        execSync(listCmd, { stdio: 'inherit' });
-    } catch (listError) {
-        console.warn(`⚠️ Could not list packages: ${listError.message}`);
+    // Debug: List installed packages in the virtual environment (only in verbose mode)
+    if (logger.verboseMode) {
+        logger.progress('Checking installed packages in virtual environment');
+        try {
+            const listCmd = `uv pip list --python ${VENV_DIR}`;
+            logger.command(listCmd);
+            execSync(listCmd, { stdio: 'inherit' });
+        } catch (listError) {
+            logger.warning(`Could not list packages: ${listError.message}`);
+        }
     }
 
     console.log('\n🔍 Verifying F5-TTS installation using uv run...');
@@ -660,13 +662,13 @@ try {
     // Install the fixed version directly from GitHub
     const chatterboxGitUrl = `"chatterbox-tts @ git+${CHATTERBOX_REPO_URL}@${CHATTERBOX_BRANCH}"`;
     const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${chatterboxGitUrl}`;
-    console.log(`Running: ${installChatterboxCmd}`);
-    console.log(`   Installing from: ${CHATTERBOX_REPO_URL} (branch: ${CHATTERBOX_BRANCH})`);
-    console.log(`   This version includes fixes for CUDA indexing errors.`);
+    logger.command(installChatterboxCmd);
+    logger.info(`Installing from: ${CHATTERBOX_REPO_URL} (branch: ${CHATTERBOX_BRANCH})`);
+    logger.info(`This version includes fixes for CUDA indexing errors.`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
-    execSync(installChatterboxCmd, { stdio: 'inherit', env });
-    console.log('✅ Chatterbox with CUDA fix installation completed.');
+    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('Chatterbox with CUDA fix installation completed');
 
     // Note: We still keep the local submodule for API files and compatibility
     if (fs.existsSync(CHATTERBOX_DIR)) {
@@ -733,17 +735,17 @@ except Exception as e:
 }
 
 // --- 7.6. Fix PyTorch version compatibility after Chatterbox installation ---
-console.log('\n🔧 Ensuring PyTorch version compatibility after Chatterbox installation...');
+logger.progress('Ensuring PyTorch version compatibility after Chatterbox installation');
 try {
     // Chatterbox may have overridden PyTorch versions, so reinstall the correct CUDA versions
     const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
-    console.log(`Running: ${fixPytorchCmd}`);
+    logger.command(fixPytorchCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(fixPytorchCmd, { stdio: 'inherit', env });
-    console.log('✅ PyTorch version compatibility ensured.');
+    execSync(fixPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('PyTorch version compatibility ensured');
 } catch (error) {
-    console.error(`❌ Error fixing PyTorch compatibility: ${error.message}`);
-    console.log(`   This may cause import issues with transformers/LlamaModel.`);
+    logger.error(`Error fixing PyTorch compatibility: ${error.message}`);
+    logger.warning(`This may cause import issues with transformers/LlamaModel.`);
     // Don't exit, just warn
 }
 
