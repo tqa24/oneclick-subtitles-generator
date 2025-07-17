@@ -8,6 +8,13 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// Import our logging utility
+const { Logger } = require('./utils/logger');
+const logger = new Logger({
+    verbose: process.env.VERBOSE === 'true',
+    quiet: process.env.QUIET === 'true'
+});
+
 // Define the virtual environment directory
 const VENV_DIR = '.venv';
 const isWindows = os.platform() === 'win32';
@@ -21,18 +28,20 @@ function executeWithRetry(command, options = {}, maxRetries = 3) {
 
   while (retries < maxRetries) {
     try {
-      console.log(`Running command: ${command}`);
+      logger.command(command);
       const env = { ...process.env, UV_HTTP_TIMEOUT: '300', ...options.env }; // 5 minutes timeout
-      execSync(command, { stdio: 'inherit', env, ...options });
+      execSync(command, { stdio: logger.verboseMode ? 'inherit' : 'ignore', env, ...options });
       return true; // Success
     } catch (error) {
       lastError = error;
       retries++;
-      console.error(`Attempt ${retries}/${maxRetries} failed: ${error.message}`);
+      if (logger.verboseMode) {
+        logger.warning(`Attempt ${retries}/${maxRetries} failed: ${error.message}`);
+      }
 
       if (retries < maxRetries) {
         const waitTime = retries * 2000; // Exponential backoff: 2s, 4s, 6s...
-        console.log(`Waiting ${waitTime/1000} seconds before retrying...`);
+        logger.progress(`Waiting ${waitTime/1000} seconds before retrying...`);
         try {
           execSync(`sleep ${waitTime/1000}`, { stdio: 'ignore' });
         } catch (e) {
@@ -50,50 +59,50 @@ function executeWithRetry(command, options = {}, maxRetries = 3) {
 }
 
 // Create virtual environment if it doesn't exist
-console.log('🔍 Checking for virtual environment...');
+logger.checking('virtual environment');
 if (!fs.existsSync(VENV_DIR)) {
-  console.log('⚠️ Virtual environment not found. Creating one...');
+  logger.warning('Virtual environment not found. Creating one...');
   try {
     executeWithRetry('uv venv');
-    console.log('✅ Virtual environment created.');
+    logger.success('Virtual environment created');
   } catch (error) {
-    console.error(`❌ Error creating virtual environment: ${error.message}`);
-    console.log('   Trying alternative method...');
+    logger.warning(`Error creating virtual environment: ${error.message}`);
+    logger.progress('Trying alternative method...');
 
     try {
       // Try with python -m venv as fallback
       executeWithRetry('python -m venv .venv');
-      console.log('✅ Virtual environment created using python -m venv.');
+      logger.success('Virtual environment created using python -m venv');
     } catch (fallbackError) {
-      console.error(`❌ All attempts to create virtual environment failed.`);
-      console.error(`   Last error: ${fallbackError.message}`);
+      logger.error('All attempts to create virtual environment failed');
+      logger.error(`Last error: ${fallbackError.message}`);
       process.exit(1);
     }
   }
 }
 
 // Install or update yt-dlp
-console.log('🔍 Checking if yt-dlp is already installed...');
+logger.checking('if yt-dlp is already installed');
 if (fs.existsSync(ytdlpPath)) {
-  console.log('✅ yt-dlp is already installed.');
+  logger.found('yt-dlp is already installed');
 
   // Try to update it
-  console.log('🔄 Updating yt-dlp to the latest version...');
+  logger.progress('Updating yt-dlp to the latest version');
   try {
     executeWithRetry('uv pip install --python .venv --upgrade yt-dlp');
-    console.log('✅ yt-dlp updated successfully.');
+    logger.success('yt-dlp updated successfully');
   } catch (error) {
-    console.error(`⚠️ Error updating yt-dlp: ${error.message}`);
-    console.log('   Continuing with the existing version.');
+    logger.warning(`Error updating yt-dlp: ${error.message}`);
+    logger.info('Continuing with the existing version');
   }
 } else {
-  console.log('🔧 Installing yt-dlp...');
+  logger.installing('yt-dlp');
   try {
     executeWithRetry('uv pip install --python .venv yt-dlp');
-    console.log('✅ yt-dlp installed successfully.');
+    logger.success('yt-dlp installed successfully');
   } catch (error) {
-    console.error(`❌ Error installing yt-dlp with uv: ${error.message}`);
-    console.log('   Trying alternative installation method...');
+    logger.warning(`Error installing yt-dlp with uv: ${error.message}`);
+    logger.progress('Trying alternative installation method...');
 
     try {
       // Try with pip as fallback
@@ -102,31 +111,31 @@ if (fs.existsSync(ytdlpPath)) {
       } else {
         executeWithRetry(`./${VENV_DIR}/${venvBinDir}/pip install yt-dlp`);
       }
-      console.log('✅ yt-dlp installed successfully using pip.');
+      logger.success('yt-dlp installed successfully using pip');
     } catch (fallbackError) {
-      console.error(`❌ All attempts to install yt-dlp failed.`);
-      console.error(`   Last error: ${fallbackError.message}`);
-      console.error(`   YouTube video downloads will not work without yt-dlp.`);
+      logger.error('All attempts to install yt-dlp failed');
+      logger.error(`Last error: ${fallbackError.message}`);
+      logger.error('YouTube video downloads will not work without yt-dlp');
       process.exit(1);
     }
   }
 }
 
 // Verify the installation
-console.log('🔍 Verifying yt-dlp installation...');
+logger.progress('Verifying yt-dlp installation');
 try {
   if (isWindows) {
     // On Windows, we need to use the full path to the executable
     const output = execSync(`"${ytdlpPath}" --version`).toString().trim();
-    console.log(`✅ yt-dlp version ${output} is installed and working.`);
+    logger.success(`yt-dlp version ${output} is installed and working`);
   } else {
     // On Unix-like systems, we can use the command directly if the venv is activated
     const output = execSync(`${ytdlpPath} --version`).toString().trim();
-    console.log(`✅ yt-dlp version ${output} is installed and working.`);
+    logger.success(`yt-dlp version ${output} is installed and working`);
   }
 } catch (error) {
-  console.error(`⚠️ Error verifying yt-dlp installation: ${error.message}`);
-  console.log('   Attempting to fix the installation...');
+  logger.warning(`Error verifying yt-dlp installation: ${error.message}`);
+  logger.progress('Attempting to fix the installation...');
 
   try {
     // Try reinstalling
@@ -142,15 +151,16 @@ try {
     const output = isWindows
       ? execSync(`"${ytdlpPath}" --version`).toString().trim()
       : execSync(`${ytdlpPath} --version`).toString().trim();
-    console.log(`✅ yt-dlp version ${output} is now installed and working.`);
+    logger.success(`yt-dlp version ${output} is now installed and working`);
   } catch (reinstallError) {
-    console.error(`❌ Failed to fix yt-dlp installation: ${reinstallError.message}`);
-    console.error(`   YouTube video downloads may not work properly.`);
+    logger.error(`Failed to fix yt-dlp installation: ${reinstallError.message}`);
+    logger.warning('YouTube video downloads may not work properly');
     // Continue execution but warn the user
   }
 }
 
-console.log('\n✅ yt-dlp setup completed!');
-console.log('   You can now use yt-dlp for YouTube video downloads.');
-console.log('   If you encounter any issues with video downloads, try running:');
-console.log('   npm run install:yt-dlp');
+logger.newLine();
+logger.success('yt-dlp setup completed!');
+logger.info('You can now use yt-dlp for YouTube video downloads.');
+logger.info('If you encounter any issues with video downloads, try running:');
+logger.info('npm run install:yt-dlp');

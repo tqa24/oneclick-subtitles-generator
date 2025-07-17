@@ -10,6 +10,13 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os'); // Needed for platform/arch checks
 
+// Import our logging utility
+const { Logger } = require('./utils/logger');
+const logger = new Logger({
+    verbose: process.env.VERBOSE === 'true',
+    quiet: process.env.QUIET === 'true'
+});
+
 const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
@@ -36,21 +43,21 @@ function commandExists(command) {
 // It prioritizes common tools (nvidia-smi) and platform checks.
 // User override via FORCE_GPU_VENDOR is recommended for certainty.
 function detectGpuVendor() {
-    console.log('\n🔍 Detecting GPU Vendor...');
+    logger.subsection('GPU Detection');
     const platform = process.platform;
     const arch = process.arch;
 
     // --- 1. Check Environment Variable Override ---
     const forcedVendor = process.env.FORCE_GPU_VENDOR?.toUpperCase();
     if (forcedVendor && ['NVIDIA', 'AMD', 'INTEL', 'APPLE', 'CPU'].includes(forcedVendor)) {
-        console.log(`   User override detected: FORCE_GPU_VENDOR=${forcedVendor}`);
+        logger.info(`User override detected: FORCE_GPU_VENDOR=${forcedVendor}`);
         // Map APPLE to MPS for clarity internally if needed, but keep APPLE for user consistency
         return forcedVendor === 'APPLE' ? 'APPLE_SILICON' : forcedVendor;
     }
 
     // --- 2. Apple Silicon Check (macOS arm64) ---
     if (platform === 'darwin' && arch === 'arm64') {
-        console.log('   Detected Apple Silicon (macOS arm64).');
+        logger.found('Apple Silicon (macOS arm64)');
         return 'APPLE_SILICON'; // MPS support
     }
 
@@ -59,10 +66,10 @@ function detectGpuVendor() {
     if (commandExists('nvidia-smi')) {
         try {
             execSync('nvidia-smi -L', { stdio: 'ignore' }); // Run a simple command to ensure it works
-            console.log('   Detected NVIDIA GPU (via nvidia-smi).');
+            logger.found('NVIDIA GPU', 'via nvidia-smi');
             return 'NVIDIA'; // CUDA support
         } catch (error) {
-            console.log('   nvidia-smi found but execution failed, proceeding with other checks...');
+            logger.warning('nvidia-smi found but execution failed, checking other methods...');
         }
     }
 
@@ -72,15 +79,15 @@ function detectGpuVendor() {
             // Windows: Use WMIC
             const wmicOutput = execSync('wmic path win32_VideoController get name', { encoding: 'utf8' }).toUpperCase();
             if (wmicOutput.includes('NVIDIA')) {
-                console.log('   Detected NVIDIA GPU (via WMIC).');
+                logger.found('NVIDIA GPU', 'via WMIC');
                 return 'NVIDIA';
             }
             if (wmicOutput.includes('AMD') || wmicOutput.includes('RADEON')) {
-                console.log('   Detected AMD GPU (via WMIC).');
+                logger.found('AMD GPU', 'via WMIC');
                 return 'AMD'; // ROCm (Linux mainly) or DirectML (Windows - requires different PyTorch build usually not covered by standard ROCm wheels)
             }
             if (wmicOutput.includes('INTEL')) {
-                console.log('   Detected Intel GPU (via WMIC).');
+                logger.found('Intel GPU', 'via WMIC');
                 return 'INTEL'; // XPU support
             }
         } else if (platform === 'linux') {
@@ -88,96 +95,99 @@ function detectGpuVendor() {
             if (commandExists('lspci')) {
                  const lspciOutput = execSync("lspci | grep -i 'VGA\\|3D\\|2D'", { encoding: 'utf8' }).toUpperCase();
                  if (lspciOutput.includes('NVIDIA')) {
-                    console.log('   Detected NVIDIA GPU (via lspci).');
+                    logger.found('NVIDIA GPU', 'via lspci');
                     return 'NVIDIA';
                 }
                 if (lspciOutput.includes('ADVANCED MICRO DEVICES') || lspciOutput.includes('AMD') || lspciOutput.includes('ATI') || lspciOutput.includes('RADEON')) {
-                    console.log('   Detected AMD GPU (via lspci).');
+                    logger.found('AMD GPU', 'via lspci');
                     return 'AMD'; // ROCm support (primarily on Linux)
                 }
                 if (lspciOutput.includes('INTEL')) {
-                    console.log('   Detected Intel GPU (via lspci).');
+                    logger.found('Intel GPU', 'via lspci');
                     return 'INTEL'; // XPU support
                 }
             } else {
-                console.log("   'lspci' command not found, cannot perform detailed PCI check on Linux.");
+                logger.warning("'lspci' command not found, cannot perform detailed PCI check on Linux.");
             }
         }
         // Add macOS non-ARM detection if necessary, though less common for accelerated PyTorch outside ARM/NVIDIA eGPUs
     } catch (error) {
-        console.warn(`   Warning during GPU detection using system commands: ${error.message}`);
+        logger.warning(`Error during GPU detection using system commands: ${error.message}`);
     }
 
     // --- 5. Fallback ---
-    console.log('   Could not reliably detect a supported accelerated GPU vendor (NVIDIA, AMD, Intel, Apple Silicon).');
-    console.log('   Will attempt to install the CPU-only version of PyTorch.');
-    console.log('   For specific GPU support, set the FORCE_GPU_VENDOR environment variable (NVIDIA, AMD, INTEL, APPLE).');
+    logger.warning('Could not reliably detect a supported accelerated GPU vendor.');
+    logger.info('Will install CPU-only version of PyTorch.');
+    logger.info('For specific GPU support, set FORCE_GPU_VENDOR environment variable (NVIDIA, AMD, INTEL, APPLE).');
     return 'CPU';
 }
 
 
 // --- 1. Check for uv ---
-console.log('🔍 Checking for uv...');
+logger.section('OneClick Subtitles Generator - Narration Setup');
+logger.step(1, 6, 'Checking for uv package manager');
+
 if (!commandExists('uv')) {
-    console.error('❌ uv is not installed or not found in PATH.');
-    console.log('   Please install uv first. See: https://github.com/astral-sh/uv#installation');
+    logger.error('uv is not installed or not found in PATH.');
+    logger.info('Please install uv first. See: https://github.com/astral-sh/uv#installation');
     process.exit(1);
 }
 try {
     const uvVersion = execSync('uv --version', { encoding: 'utf8' }).trim();
-    console.log(`✅ uv found: ${uvVersion}`);
+    logger.found('uv', uvVersion);
 } catch (error) {
-    console.error('❌ Failed to execute uv. Make sure it is installed and in your PATH.');
-    console.log('   See: https://github.com/astral-sh/uv#installation');
+    logger.error('Failed to execute uv. Make sure it is installed and in your PATH.');
+    logger.info('See: https://github.com/astral-sh/uv#installation');
     process.exit(1);
 }
 
 // --- 2. Check for git and Initialize/Update Submodules ---
-console.log('\n🔍 Checking for git...');
+logger.step(2, 6, 'Checking for git and updating submodules');
+
 if (!commandExists('git')) {
-    console.error('❌ git is not installed or not found in PATH.');
-    console.log('   Please install git first. See: https://git-scm.com/downloads');
+    logger.error('git is not installed or not found in PATH.');
+    logger.info('Please install git first. See: https://git-scm.com/downloads');
     process.exit(1);
 }
-console.log('✅ git found.');
+logger.found('git');
 
-console.log(`\n🔧 Initializing and updating git submodules (F5-TTS and Chatterbox)...`);
+logger.progress('Initializing and updating git submodules (F5-TTS and Chatterbox)');
 try {
     // Initialize submodules if not already done
-    execSync('git submodule init', { stdio: 'inherit' });
-    console.log('✅ Git submodules initialized.');
+    execSync('git submodule init', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+    logger.success('Git submodules initialized');
 
     // Update submodules to get the latest content
-    execSync('git submodule update --remote', { stdio: 'inherit' });
-    console.log('✅ Git submodules updated.');
+    execSync('git submodule update --remote', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+    logger.success('Git submodules updated');
 } catch (error) {
-    console.error(`❌ Error with git submodules: ${error.message}`);
-    console.log('   Please ensure you are in a git repository with properly configured submodules.');
-    console.log('   If this is a fresh clone, the submodules should be configured automatically.');
+    logger.error(`Error with git submodules: ${error.message}`);
+    logger.info('Please ensure you are in a git repository with properly configured submodules.');
+    logger.info('If this is a fresh clone, the submodules should be configured automatically.');
     process.exit(1);
 }
 
 // --- 2.5. Verify submodules are properly initialized ---
-console.log(`\n🔍 Verifying submodules are properly initialized...`);
+logger.progress('Verifying submodules are properly initialized');
 if (!fs.existsSync(F5_TTS_DIR)) {
-    console.error(`❌ Error: F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
-    console.log('   Please ensure git submodules are properly configured in this repository.');
-    console.log('   You may need to run: git submodule add https://github.com/SWivid/F5-TTS.git F5-TTS');
+    logger.error(`F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
+    logger.info('Please ensure git submodules are properly configured in this repository.');
+    logger.info('You may need to run: git submodule add https://github.com/SWivid/F5-TTS.git F5-TTS');
     process.exit(1);
 }
 
 if (!fs.existsSync(CHATTERBOX_DIR)) {
-    console.error(`❌ Error: Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
-    console.log('   Please ensure git submodules are properly configured in this repository.');
-    console.log(`   You may need to run: git submodule add -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} chatterbox/chatterbox`);
+    logger.error(`Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
+    logger.info('Please ensure git submodules are properly configured in this repository.');
+    logger.info(`You may need to run: git submodule add -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} chatterbox/chatterbox`);
     process.exit(1);
 }
 
-console.log(`✅ Both F5-TTS and Chatterbox submodules are properly initialized.`);
+logger.success('Both F5-TTS and Chatterbox submodules are properly initialized');
 
 
 // --- 3. Check for/Install Python 3.11 ---
-console.log(`\n🔍 Checking for Python ${PYTHON_VERSION_TARGET}...`);
+logger.step(3, 6, `Checking for Python ${PYTHON_VERSION_TARGET}`);
 let pythonInterpreterIdentifier = null;
 let triedUvInstall = false;
 
@@ -187,8 +197,10 @@ try {
   if (process.platform === 'win32') {
     try {
       const pyVersionsOutput = execSync('py -0p', { encoding: 'utf8' }).trim();
-      console.log('   Available Python interpreters (via py launcher):');
-      console.log(pyVersionsOutput || '   (None found or py command failed)');
+      if (logger.verboseMode) {
+        logger.info('Available Python interpreters (via py launcher):');
+        logger.raw(pyVersionsOutput || '   (None found or py command failed)');
+      }
       const lines = pyVersionsOutput.split('\n');
       const python311Line = lines.find(line => line.match(new RegExp(`^-${PYTHON_VERSION_TARGET}`)));
       if (python311Line) {
@@ -198,15 +210,15 @@ try {
             if (pythonInterpreterIdentifier.includes(' ')) {
                 pythonInterpreterIdentifier = `"${pythonInterpreterIdentifier}"`;
             }
-            console.log(`✅ Found existing Python ${PYTHON_VERSION_TARGET} interpreter via py: ${pythonInterpreterIdentifier}`);
+            logger.found(`Python ${PYTHON_VERSION_TARGET} interpreter via py`, pythonInterpreterIdentifier);
          }
       }
       if (!pythonInterpreterIdentifier && execSync('py -0', { encoding: 'utf8' }).includes(`-${PYTHON_VERSION_TARGET}`)) {
          pythonInterpreterIdentifier = `python${PYTHON_VERSION_TARGET}`;
-         console.log(`✅ Found Python ${PYTHON_VERSION_TARGET} via py launcher (using alias "${pythonInterpreterIdentifier}" for uv).`);
+         logger.found(`Python ${PYTHON_VERSION_TARGET} via py launcher`, `using alias "${pythonInterpreterIdentifier}" for uv`);
       }
     } catch (error) {
-      console.log(`   py launcher check failed or Python ${PYTHON_VERSION_TARGET} not listed.`);
+      logger.warning(`py launcher check failed or Python ${PYTHON_VERSION_TARGET} not listed`);
     }
   }
 
@@ -239,36 +251,36 @@ try {
 }
 
 if (!pythonInterpreterIdentifier) {
-    console.log(`⚠️ Python ${PYTHON_VERSION_TARGET} not found in standard locations.`);
-    console.log(`🔧 Attempting to install Python ${PYTHON_VERSION_TARGET} using "uv python install ${PYTHON_VERSION_TARGET}"...`);
+    logger.warning(`Python ${PYTHON_VERSION_TARGET} not found in standard locations`);
+    logger.installing(`Python ${PYTHON_VERSION_TARGET} using uv`);
     triedUvInstall = true;
     try {
-        execSync(`uv python install ${PYTHON_VERSION_TARGET}`, { stdio: 'inherit' });
-        console.log(`✅ Python ${PYTHON_VERSION_TARGET} installation via uv successful.`);
+        execSync(`uv python install ${PYTHON_VERSION_TARGET}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        logger.success(`Python ${PYTHON_VERSION_TARGET} installation via uv successful`);
         pythonInterpreterIdentifier = PYTHON_VERSION_TARGET;
     } catch (installError) {
-        console.error(`❌ Failed to install Python ${PYTHON_VERSION_TARGET} using uv: ${installError.message}`);
-        console.log(`   Please try installing Python ${PYTHON_VERSION_TARGET} manually (https://www.python.org/downloads/)`);
-        console.log(`   or ensure uv has the necessary permissions and network access.`);
+        logger.error(`Failed to install Python ${PYTHON_VERSION_TARGET} using uv: ${installError.message}`);
+        logger.info(`Please try installing Python ${PYTHON_VERSION_TARGET} manually (https://www.python.org/downloads/)`);
+        logger.info(`or ensure uv has the necessary permissions and network access.`);
         process.exit(1);
     }
 } else {
-     console.log(`✅ Using Python ${PYTHON_VERSION_TARGET} interpreter identifier for uv: ${pythonInterpreterIdentifier}`);
+     logger.success(`Using Python ${PYTHON_VERSION_TARGET} interpreter identifier for uv: ${pythonInterpreterIdentifier}`);
 }
 
 if (!pythonInterpreterIdentifier) {
-    console.error(`❌ Could not find or install Python ${PYTHON_VERSION_TARGET}. Cannot proceed.`);
+    logger.error(`Could not find or install Python ${PYTHON_VERSION_TARGET}. Cannot proceed.`);
     process.exit(1);
 }
 
 
 // --- 4. Create or verify virtual environment with uv ---
-console.log(`\n🔍 Checking for existing virtual environment at ./${VENV_DIR}...`);
+logger.step(4, 6, 'Setting up Python virtual environment');
 
 // Check if virtual environment already exists and is valid
 let venvExists = false;
 if (fs.existsSync(VENV_DIR)) {
-    console.log(`   Virtual environment directory "${VENV_DIR}" exists. Verifying...`);
+    logger.progress(`Virtual environment directory "${VENV_DIR}" exists. Verifying...`);
     try {
         // Test if the venv is functional by checking Python version
         const venvPythonCmd = process.platform === 'win32'
@@ -276,89 +288,92 @@ if (fs.existsSync(VENV_DIR)) {
             : `"${path.join(VENV_DIR, 'bin', 'python')}"`;
 
         const venvPythonVersion = execSync(`${venvPythonCmd} --version`, { encoding: 'utf8' }).trim();
-        console.log(`   Existing venv Python version: ${venvPythonVersion}`);
+        if (logger.verboseMode) {
+            logger.info(`Existing venv Python version: ${venvPythonVersion}`);
+        }
 
         if (venvPythonVersion.includes(PYTHON_VERSION_TARGET)) {
             venvExists = true;
-            console.log(`✅ Valid virtual environment found at ${VENV_DIR}. Reusing existing venv.`);
+            logger.success(`Valid virtual environment found at ${VENV_DIR}. Reusing existing venv.`);
         } else {
-            console.log(`   Existing venv has different Python version. Will recreate.`);
+            logger.warning(`Existing venv has different Python version. Will recreate.`);
         }
     } catch (error) {
-        console.log(`   Existing venv appears to be corrupted or incomplete. Will recreate.`);
+        logger.warning(`Existing venv appears to be corrupted or incomplete. Will recreate.`);
     }
 }
 
 if (!venvExists) {
-    console.log(`🔧 Creating virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"...`);
+    logger.installing(`virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"`);
 
     // Remove existing directory if it exists but is invalid
     if (fs.existsSync(VENV_DIR)) {
-        console.log(`   Removing invalid virtual environment directory...`);
+        logger.progress(`Removing invalid virtual environment directory...`);
         try {
             fs.rmSync(VENV_DIR, { recursive: true, force: true });
         } catch (error) {
-            console.error(`❌ Error removing existing venv directory: ${error.message}`);
+            logger.error(`Error removing existing venv directory: ${error.message}`);
             process.exit(1);
         }
     }
 
     try {
-        execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: 'inherit' });
-        console.log(`✅ Virtual environment created at ${VENV_DIR}`);
+        execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        logger.success(`Virtual environment created at ${VENV_DIR}`);
     } catch (error) {
-        console.error(`❌ Error creating virtual environment with uv: ${error.message}`);
+        logger.error(`Error creating virtual environment with uv: ${error.message}`);
         if (triedUvInstall) {
-            console.log(`   Even after attempting 'uv python install', creating the venv with '${pythonInterpreterIdentifier}' failed.`);
-            console.log(`   This might indicate an issue with the uv installation or environment.`);
-            console.log(`   Try running 'uv venv -p ${PYTHON_VERSION_TARGET} ${VENV_DIR}' manually to diagnose.`);
+            logger.info(`Even after attempting 'uv python install', creating the venv with '${pythonInterpreterIdentifier}' failed.`);
+            logger.info(`This might indicate an issue with the uv installation or environment.`);
+            logger.info(`Try running 'uv venv -p ${PYTHON_VERSION_TARGET} ${VENV_DIR}' manually to diagnose.`);
         } else {
-            console.log(`   Failed to create venv with existing interpreter "${pythonInterpreterIdentifier}". Is it a valid Python executable or alias known to uv?`);
-            console.log(`   Try running 'uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}' manually.`);
+            logger.info(`Failed to create venv with existing interpreter "${pythonInterpreterIdentifier}". Is it a valid Python executable or alias known to uv?`);
+            logger.info(`Try running 'uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}' manually.`);
         }
         process.exit(1);
     }
 }
 
 // --- 5. Detect GPU and Install Appropriate PyTorch Build ---
-console.log(`\n📦 The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
+logger.step(5, 6, 'Installing PyTorch with GPU support');
+logger.info(`The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
+
 const gpuVendor = detectGpuVendor(); // Call the detection function
 let torchInstallCmd = '';
 let installNotes = '';
 
 switch (gpuVendor) {
     case 'NVIDIA':
-        console.log('\n🔧 Installing PyTorch for NVIDIA GPU (CUDA)...');
+        logger.installing('PyTorch for NVIDIA GPU (CUDA)');
         // Using CUDA 12.8 to match system CUDA version and ensure compatibility with Chatterbox
         torchInstallCmd = `uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
         installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.8 are installed.';
         break;
     case 'AMD':
-        console.log('\n🔧 Installing PyTorch for AMD GPU (ROCm)...');
+        logger.installing('PyTorch for AMD GPU (ROCm)');
         if (process.platform !== 'linux') {
-            console.warn('⚠️ WARNING: PyTorch ROCm wheels are officially supported only on Linux.');
-            console.warn('   Installation may fail or runtime errors may occur on non-Linux systems.');
-            // Fallback to CPU? Or let the user try anyway? Let's try anyway but warn.
+            logger.warning('PyTorch ROCm wheels are officially supported only on Linux.');
+            logger.warning('Installation may fail or runtime errors may occur on non-Linux systems.');
         }
         // Using ROCm 6.2 as requested
         torchInstallCmd = `uv pip install torch==2.5.1+rocm6.2 torchvision==0.20.1+rocm6.2 torchaudio==2.5.1+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2`;
         installNotes = 'Ensure AMD ROCm drivers (v6.2 or compatible) are installed (Linux Recommended).';
         break;
     case 'INTEL':
-        console.log('\n🔧 Installing PyTorch for Intel GPU (XPU)...');
+        logger.installing('PyTorch for Intel GPU (XPU)');
         // Using XPU test channel as requested
         torchInstallCmd = `uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu`;
         installNotes = 'Ensure Intel GPU drivers and potentially Intel oneAPI Base Toolkit are installed.\n   Alternatively, investigate Intel Extension for PyTorch (IPEX): https://pytorch-extension.intel.com/';
         break;
     case 'APPLE_SILICON':
-        console.log('\n🔧 Installing PyTorch for Apple Silicon (MPS)...');
+        logger.installing('PyTorch for Apple Silicon (MPS)');
         // Standard stable PyTorch wheels include MPS support
         torchInstallCmd = `uv pip install torch torchvision torchaudio`;
         installNotes = 'Using standard PyTorch build with Metal Performance Shaders (MPS) support.';
         break;
     case 'CPU':
     default:
-        console.log('\n🔧 Installing CPU-only PyTorch...');
+        logger.installing('CPU-only PyTorch');
         // Standard stable PyTorch wheels work for CPU
         torchInstallCmd = `uv pip install torch torchvision torchaudio`;
         installNotes = 'Installed CPU-only version. No GPU acceleration will be used by PyTorch.';
@@ -875,30 +890,35 @@ print('✅ All service dependencies verified successfully!')
 }
 
 // --- 12. Final Summary ---
-console.log('\n✅ Setup using uv completed successfully!');
-console.log(`   - Target PyTorch backend: ${gpuVendor}`);
-console.log(`   - Updated git submodules for F5-TTS and Chatterbox (no git tracking issues).`);
-console.log(`   - F5-TTS submodule at: "${F5_TTS_DIR}"`);
-console.log(`   - Chatterbox with CUDA fix installed from: ${CHATTERBOX_REPO_URL} (${CHATTERBOX_BRANCH})`);
-console.log(`   - Local Chatterbox submodule at: "${CHATTERBOX_DIR}" (for API files)`);
-console.log(`   - Shared virtual environment at: ./${VENV_DIR} (reused if already exists)`);
-console.log(`   - Python ${PYTHON_VERSION_TARGET} confirmed/installed within the venv.`);
-console.log(`   - PyTorch (${gpuVendor} target), F5-TTS, Chatterbox (with CUDA fix), Flask, FastAPI, and all service dependencies installed in the shared venv.`);
-console.log(`   - Applied compatibility fixes for Unicode encoding and model loading.`);
+logger.step(6, 6, 'Setup completed successfully!');
+
+const summaryItems = [
+    `Target PyTorch backend: ${gpuVendor}`,
+    `F5-TTS submodule at: "${F5_TTS_DIR}"`,
+    `Chatterbox with CUDA fix installed from GitHub`,
+    `Shared virtual environment at: ./${VENV_DIR}`,
+    `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
+    `PyTorch, F5-TTS, Chatterbox, and all dependencies installed`,
+    `Applied compatibility fixes for Unicode encoding and model loading`
+];
+
 if (installNotes) {
-    console.log(`   - Reminder: ${installNotes}`);
+    summaryItems.push(`Reminder: ${installNotes}`);
 }
-console.log('\n🚀 To run the application with narration service:');
-console.log('   1. Ensure `uv` and `npm` are in your PATH.');
-console.log('   2. Run the npm script: npm run dev:uv');
-console.log('\n💡 To just run the narration service:');
-console.log('   - npm run python:start:uv');
-console.log('\n🔧 To re-run this setup (will update submodules and reuse existing venv if valid):');
-console.log(`   - node ${path.basename(__filename)}`);
-console.log(`   - OR npm run setup:narration:uv (if package.json was updated)`);
-console.log('\n💡 To force a specific PyTorch build (e.g., for CPU or if detection fails):');
-console.log('   Set the FORCE_GPU_VENDOR environment variable before running the setup script:');
-console.log('   Example (Powershell): $env:FORCE_GPU_VENDOR="CPU"; node setup-narration.js');
-console.log('   Example (Bash/Zsh):  FORCE_GPU_VENDOR=CPU node setup-narration.js');
-console.log('   Valid values: NVIDIA, AMD, INTEL, APPLE, CPU');
-console.log('\n📝 Note: F5-TTS uses git submodules, Chatterbox is installed from GitHub with CUDA fixes.');
+
+logger.summary('Setup Summary', summaryItems);
+
+logger.newLine();
+logger.info('🚀 To run the application with narration service:');
+logger.info('   1. Ensure `uv` and `npm` are in your PATH');
+logger.info('   2. Run: npm run dev:uv');
+
+logger.newLine();
+logger.info('💡 Other useful commands:');
+logger.info('   - Just narration service: npm run python:start:uv');
+logger.info('   - Re-run setup: npm run setup:narration:uv');
+
+logger.newLine();
+logger.info('💡 To force a specific GPU type:');
+logger.info('   Set FORCE_GPU_VENDOR environment variable (NVIDIA, AMD, INTEL, APPLE, CPU)');
+logger.info('   Example: set FORCE_GPU_VENDOR=CPU && npm run setup:narration:uv');

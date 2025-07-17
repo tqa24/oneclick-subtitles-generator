@@ -16,16 +16,18 @@ SET "TITLE_TEXT=Quan Ly Trinh Tao Phu De OneClick"
 TITLE %TITLE_TEXT%
 
 :: --- Check for Administrator Privileges ---
-ECHO Dang kiem tra quyen quan tri vien...
+ECHO [?] Checking administrator privileges...
 net session >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
+    ECHO.
     ECHO ======================================================
-    ECHO LOI: Yeu cau quyen quan tri vien.
-    ECHO Dang yeu cau quyen quan tri vien...
+    ECHO [ERROR] Administrator privileges required.
+    ECHO [INFO] Requesting administrator privileges...
+    ECHO ======================================================
     powershell -Command "Start-Process '%~f0' -Verb RunAs"
     EXIT /B
 )
-ECHO Da xac nhan quyen quan tri vien.
+ECHO [OK] Administrator privileges confirmed.
 ECHO.
 
 GOTO %MENU_LABEL%
@@ -76,7 +78,11 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNarration
-ECHO *** Tuy chon 1: Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Option 1: Install with Gemini + F5-TTS + Chatterbox Narration) ***
+ECHO.
+ECHO ======================================================
+ECHO [SETUP] Option 1: Full Installation with Voice Cloning
+ECHO ======================================================
+ECHO.
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -84,46 +90,53 @@ IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
-ECHO Cloning repository from %GIT_REPO_URL%...
-git clone %GIT_REPO_URL% "%PROJECT_PATH%"
+ECHO [SETUP] Downloading application...
+git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to clone repository.
+    ECHO [ERROR] Failed to download application.
     GOTO ErrorOccurred
 )
+ECHO [OK] Application downloaded successfully.
 
-ECHO Changing directory to "%PROJECT_PATH%"
+ECHO [SETUP] Changing to project directory...
 PUSHD "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to change directory to project folder.
+    ECHO [ERROR] Failed to access project folder.
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO Installing dependencies (using npm run install:all)...
+ECHO [SETUP] Installing all dependencies (this may take several minutes)...
 CALL npm run install:all
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed during 'npm run install:all'. Check messages above.
+    ECHO [ERROR] Failed to install dependencies. Check messages above.
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO Installing yt-dlp for YouTube video downloads...
-CALL npm run install:yt-dlp
+ECHO [SETUP] Finalizing installation...
+CALL npm run install:yt-dlp >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
-    ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
+    ECHO [WARN] YouTube downloader installation had issues.
+    ECHO [INFO] You can fix this later with 'npm run install:yt-dlp'.
 )
 
-ECHO Cai dat hoan tat. Dang khoi chay ung dung voi CUDA...
-ECHO (Requires NVIDIA GPU and CUDA Toolkit installed separately)
-ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
+ECHO.
+ECHO [OK] Installation completed successfully!
+ECHO [START] Launching application with voice cloning features...
+ECHO [INFO] Press Ctrl+C to stop the application.
+ECHO.
 CALL npm run dev:cuda
 POPD
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :InstallNoNarration
-ECHO *** Tuy chon 2: Cai dat (Thuyet minh thong thuong) (Option 2: Install with Gemini Narration) ***
+ECHO.
+ECHO ======================================================
+ECHO [SETUP] Option 2: Standard Installation
+ECHO ======================================================
+ECHO.
 
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
@@ -131,38 +144,42 @@ IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
-ECHO Cloning repository from %GIT_REPO_URL%...
-git clone %GIT_REPO_URL% "%PROJECT_PATH%"
+ECHO [SETUP] Downloading application...
+git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to clone repository.
+    ECHO [ERROR] Failed to download application.
     GOTO ErrorOccurred
 )
+ECHO [OK] Application downloaded successfully.
 
-ECHO Changing directory to "%PROJECT_PATH%"
+ECHO [SETUP] Changing to project directory...
 PUSHD "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to change directory to project folder.
+    ECHO [ERROR] Failed to access project folder.
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO Installing dependencies (using npm install)...
+ECHO [SETUP] Installing dependencies...
 CALL npm install
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed during 'npm install'. Check messages above.
+    ECHO [ERROR] Failed to install dependencies. Check messages above.
     POPD
     GOTO ErrorOccurred
 )
 
-ECHO Installing yt-dlp for YouTube video downloads...
-CALL npm run install:yt-dlp
+ECHO [SETUP] Finalizing installation...
+CALL npm run install:yt-dlp >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO WARNING: Failed to install yt-dlp. YouTube downloads might have issues.
-    ECHO You can try installing it manually later with 'npm run install:yt-dlp'.
+    ECHO [WARN] YouTube downloader installation had issues.
+    ECHO [INFO] You can fix this later with 'npm run install:yt-dlp'.
 )
 
-ECHO Cai dat hoan tat. Dang khoi chay ung dung...
-ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
+ECHO.
+ECHO [OK] Installation completed successfully!
+ECHO [START] Launching application...
+ECHO [INFO] Press Ctrl+C to stop the application.
+ECHO.
 CALL npm run dev
 POPD
 GOTO %MENU_LABEL%
@@ -305,106 +322,111 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :: Subroutine: Install Prerequisites (Choco, Git, Node, FFmpeg, uv)
 :InstallPrerequisites
-ECHO --- Dang kiem tra/cai dat cac dieu kien tien quyet ---
+ECHO.
+ECHO --- Checking System Requirements ---
 
-ECHO Configuring PowerShell settings for downloads...
+ECHO [SETUP] Configuring PowerShell security settings...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;" > nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO Failed to set PowerShell security protocol.
+    ECHO [ERROR] Failed to configure PowerShell security.
     EXIT /B 1
 )
 
-ECHO Checking/Installing Chocolatey...
+ECHO [?] Checking for Chocolatey package manager...
 WHERE choco >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO Chocolatey not found. Installing...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+    ECHO [SETUP] Installing Chocolatey package manager...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO Failed to install Chocolatey.
+        ECHO [ERROR] Failed to install Chocolatey.
         EXIT /B 1
     )
-    ECHO Chocolatey installation command executed. Verifying after delay...
+    ECHO [INFO] Waiting for Chocolatey to initialize...
     timeout /t 5 /nobreak > nul
     WHERE choco >nul 2>nul
     IF %ERRORLEVEL% NEQ 0 (
-       ECHO ERROR: choco command still not found after installation attempt.
+       ECHO [ERROR] Chocolatey installation failed.
        EXIT /B 1
    )
+   ECHO [OK] Chocolatey installed successfully.
 ) ELSE (
-    ECHO Chocolatey already installed.
+    ECHO [OK] Chocolatey already installed.
 )
 
-ECHO Checking/Installing Git...
+ECHO [?] Checking for Git...
 WHERE git >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO Git not found. Installing using Winget...
-    winget install --id Git.Git -e --source winget
+    ECHO [SETUP] Installing Git version control...
+    winget install --id Git.Git -e --source winget >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO Winget failed to install Git. Trying with Chocolatey...
-        choco install git -y
+        ECHO [INFO] Trying alternative installation method...
+        choco install git -y >nul 2>&1
         IF %ERRORLEVEL% NEQ 0 (
-            ECHO ERROR: Failed to install Git with both Winget and Chocolatey.
+            ECHO [ERROR] Failed to install Git.
             EXIT /B 1
         )
     )
+    ECHO [OK] Git installed successfully.
     REFRESHENV
 ) ELSE (
-    ECHO Git already installed.
+    ECHO [OK] Git already installed.
 )
 
-ECHO Checking/Installing Node.js LTS...
+ECHO [?] Checking for Node.js...
 WHERE node >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO Node.js not found. Installing using winget...
-    winget install --id OpenJS.NodeJS.LTS --exact --accept-package-agreements --accept-source-agreements -s winget
+    ECHO [SETUP] Installing Node.js runtime...
+    winget install --id OpenJS.NodeJS.LTS --exact --accept-package-agreements --accept-source-agreements -s winget >nul 2>&1
      IF %ERRORLEVEL% NEQ 0 (
-      ECHO ERROR: Failed to install Node.js LTS via winget. Trying Chocolatey as fallback...
-      choco install nodejs-lts -y
+      ECHO [INFO] Trying alternative installation method...
+      choco install nodejs-lts -y >nul 2>&1
       IF %ERRORLEVEL% NEQ 0 (
-          ECHO ERROR: Failed to install Node.js LTS via Chocolatey as well.
+          ECHO [ERROR] Failed to install Node.js.
           EXIT /B 1
       )
     )
+    ECHO [OK] Node.js installed successfully.
     REFRESHENV
 ) ELSE (
-    ECHO Node.js already installed.
+    ECHO [OK] Node.js already installed.
 )
 
-ECHO Checking/Installing FFmpeg...
+ECHO [?] Checking for FFmpeg...
 WHERE ffmpeg >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO FFmpeg not found. Installing using Chocolatey...
-    choco install ffmpeg -y
+    ECHO [SETUP] Installing FFmpeg media processor...
+    choco install ffmpeg -y >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-      ECHO WARNING: Failed to install FFmpeg. Application might have issues.
+      ECHO [WARN] Failed to install FFmpeg. Some features may not work.
+    ) ELSE (
+      ECHO [OK] FFmpeg installed successfully.
     )
     REFRESHENV
 ) ELSE (
-    ECHO FFmpeg already installed.
+    ECHO [OK] FFmpeg already installed.
 )
 
-:: ***** ADDED UV INSTALLATION *****
-ECHO Checking/Installing uv...
+ECHO [?] Checking for uv Python package manager...
 WHERE uv >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO uv not found. Installing...
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
+    ECHO [SETUP] Installing uv Python package manager...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO ERROR: Failed to install uv. Check messages above.
-        ECHO It might be necessary to manually install it from https://astral.sh/uv
+        ECHO [ERROR] Failed to install uv package manager.
+        ECHO [INFO] You may need to install it manually from https://astral.sh/uv
         EXIT /B 1
     )
-    ECHO uv installation command executed.
-    ECHO NOTE: You might need to restart this script or your terminal for the 'uv' command to be available in the PATH.
+    ECHO [OK] uv installed successfully.
+    ECHO [INFO] You may need to restart this script if uv is not found.
 ) ELSE (
-    ECHO uv already installed.
+    ECHO [OK] uv already installed.
 )
-:: *********************************
 
-ECHO Resetting PowerShell Execution Policy for Current User to RemoteSigned...
+ECHO [SETUP] Finalizing PowerShell configuration...
 powershell -NoProfile -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force" > nul
 
-ECHO --- Kiem tra/Cai dat Dieu kien Tien quyet Hoan tat ---
+ECHO.
+ECHO [OK] System requirements check completed.
 ECHO.
 EXIT /B 0
 :: End of InstallPrerequisites Subroutine
@@ -413,19 +435,19 @@ REM ============================================================================
 :: Subroutine: Clean Install - Removes existing project folder (Modified: No Confirmation)
 :CleanInstall
 SET "FOLDER_TO_CLEAN=%~1"
-ECHO Dang kiem tra thu muc hien co: %FOLDER_TO_CLEAN%
+ECHO [?] Checking for existing installation: %FOLDER_TO_CLEAN%
 IF EXIST "%FOLDER_TO_CLEAN%" (
-    ECHO CANH BAO: Tim thay thu muc du an hien co. No se bi XOA de thuc hien cai dat sach.
-    ECHO Dang xoa thu muc hien co: %FOLDER_TO_CLEAN%...
-    RMDIR /S /Q "%FOLDER_TO_CLEAN%"
+    ECHO [WARN] Found existing installation. Removing for clean install...
+    ECHO [SETUP] Removing existing project folder...
+    RMDIR /S /Q "%FOLDER_TO_CLEAN%" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO LOI: Khong the xoa thu muc hien co "%FOLDER_TO_CLEAN%".
-        ECHO Kiem tra quyen hoac xem co tap tin/thu muc nao dang duoc su dung khong.
+        ECHO [ERROR] Cannot remove existing folder "%FOLDER_TO_CLEAN%".
+        ECHO [INFO] Please close any programs using this folder and try again.
         EXIT /B 1
     )
-    ECHO Thu muc da duoc xoa thanh cong.
+    ECHO [OK] Existing installation removed successfully.
 ) ELSE (
-    ECHO Khong tim thay thu muc hien co "%FOLDER_TO_CLEAN%". Tiep tuc voi viec sao chep kho moi.
+    ECHO [OK] No existing installation found. Proceeding with fresh install.
 )
 EXIT /B 0
 :: End of CleanInstall Subroutine
@@ -433,12 +455,20 @@ EXIT /B 0
 REM ==============================================================================
 :ErrorOccurred
 ECHO.
-ECHO ********** Da xay ra loi. Vui long xem lai cac thong bao ben tren. (ERROR OCCURED, OPEN THE BAT FILE AND INSTALL AGAIN MAY HELP) **********
-ECHO Vui long tat di mo lai file bat va bam cai dat lan nua moi khi co loi,
-ECHO vi system PATH cho Chocolatey, Git, Node, FFmpeg, uv can duoc cap nhat lai.
+ECHO ======================================================
+ECHO [ERROR] Installation failed!
+ECHO ======================================================
+ECHO [INFO] Common solutions:
+ECHO   - Close this window and run the installer again
+ECHO   - Restart your computer and try again
+ECHO   - Check your internet connection
+ECHO   - Run as administrator
+ECHO.
+ECHO [INFO] System PATH may need to be refreshed for new tools.
+ECHO ======================================================
 ECHO.
 PAUSE
-GOTO %MENU_LABEL% :: <<<<< Changed this line from GOTO %MENU_LABEL%
+GOTO %MENU_LABEL%
 
 :ExitScript
 EXIT /B 0

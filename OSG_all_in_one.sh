@@ -9,9 +9,17 @@ GIT_REPO_URL="https://github.com/nganlinh4/oneclick-subtitles-generator.git"
 # --- Functions ---
 error_occurred() {
     echo
-    echo "********** An error occurred. Please review the messages above. **********"
-    echo "Please close and reopen the terminal and run the script again if there are errors,"
-    echo "as system PATH for package managers and tools may need to be refreshed."
+    echo "======================================================"
+    echo "[ERROR] Installation failed!"
+    echo "======================================================"
+    echo "[INFO] Common solutions:"
+    echo "  - Close this terminal and run the installer again"
+    echo "  - Restart your computer and try again"
+    echo "  - Check your internet connection"
+    echo "  - Ensure you have proper permissions"
+    echo
+    echo "[INFO] System PATH may need to be refreshed for new tools."
+    echo "======================================================"
     echo
     read -p "Press Enter to return to main menu..."
     show_menu
@@ -19,7 +27,7 @@ error_occurred() {
 
 refresh_env() {
     # Refresh environment variables (similar to REFRESHENV in Windows)
-    echo "Refreshing environment variables..."
+    echo "[SETUP] Refreshing environment variables..."
 
     # Source common profile files to pick up new PATH entries
     if [ -f ~/.bashrc ]; then
@@ -48,108 +56,119 @@ refresh_env() {
 }
 
 install_prerequisites() {
-    echo "--- Installing prerequisites ---"
-    
+    echo
+    echo "--- Checking System Requirements ---"
+
     # Check OS
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        echo "Detected macOS"
-        
+        echo "[INFO] Detected macOS"
+
         # Check if Homebrew is installed
         if ! command -v brew &> /dev/null; then
-            echo "Homebrew not found. Installing..."
+            echo "[SETUP] Installing Homebrew package manager..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            
+
             # Add Homebrew to PATH for current session
             if [[ -f /opt/homebrew/bin/brew ]]; then
                 eval "$(/opt/homebrew/bin/brew shellenv)"
             elif [[ -f /usr/local/bin/brew ]]; then
                 eval "$(/usr/local/bin/brew shellenv)"
             fi
+            echo "[OK] Homebrew installed successfully."
         else
-            echo "Homebrew already installed."
+            echo "[OK] Homebrew already installed."
         fi
-        
+
         # Install Git
         if ! command -v git &> /dev/null; then
-            echo "Git not found. Installing..."
-            brew install git
+            echo "[SETUP] Installing Git version control..."
+            brew install git >/dev/null 2>&1
             refresh_env
+            echo "[OK] Git installed successfully."
         else
-            echo "Git already installed."
+            echo "[OK] Git already installed."
         fi
 
         # Install Node.js
         if ! command -v node &> /dev/null; then
-            echo "Node.js not found. Installing..."
-            brew install node
+            echo "[SETUP] Installing Node.js runtime..."
+            brew install node >/dev/null 2>&1
             refresh_env
+            echo "[OK] Node.js installed successfully."
         else
-            echo "Node.js already installed."
+            echo "[OK] Node.js already installed."
         fi
 
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
-            echo "FFmpeg not found. Installing..."
-            brew install ffmpeg
+            echo "[SETUP] Installing FFmpeg media processor..."
+            brew install ffmpeg >/dev/null 2>&1
             refresh_env
+            echo "[OK] FFmpeg installed successfully."
         else
-            echo "FFmpeg already installed."
+            echo "[OK] FFmpeg already installed."
         fi
         
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Ubuntu/Linux
-        echo "Detected Linux"
-        
+        echo "[INFO] Detected Linux"
+
         # Update package lists
-        sudo apt update
-        
+        echo "[SETUP] Updating package lists..."
+        sudo apt update >/dev/null 2>&1
+
         # Install Git
         if ! command -v git &> /dev/null; then
-            echo "Git not found. Installing..."
-            sudo apt install -y git
+            echo "[SETUP] Installing Git version control..."
+            sudo apt install -y git >/dev/null 2>&1
             refresh_env
+            echo "[OK] Git installed successfully."
         else
-            echo "Git already installed."
+            echo "[OK] Git already installed."
         fi
 
         # Install Node.js
         if ! command -v node &> /dev/null; then
-            echo "Node.js not found. Installing..."
-            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-            sudo apt install -y nodejs
+            echo "[SETUP] Installing Node.js runtime..."
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - >/dev/null 2>&1
+            sudo apt install -y nodejs >/dev/null 2>&1
             refresh_env
+            echo "[OK] Node.js installed successfully."
         else
-            echo "Node.js already installed."
+            echo "[OK] Node.js already installed."
         fi
 
         # Install FFmpeg
         if ! command -v ffmpeg &> /dev/null; then
-            echo "FFmpeg not found. Installing..."
-            sudo apt install -y ffmpeg
+            echo "[SETUP] Installing FFmpeg media processor..."
+            sudo apt install -y ffmpeg >/dev/null 2>&1
             refresh_env
+            echo "[OK] FFmpeg installed successfully."
         else
-            echo "FFmpeg already installed."
+            echo "[OK] FFmpeg already installed."
         fi
     else
-        echo "Unsupported operating system: $OSTYPE"
+        echo "[ERROR] Unsupported operating system: $OSTYPE"
         exit 1
     fi
-    
+
     # Install uv (cross-platform)
     if ! command -v uv &> /dev/null; then
-        echo "uv not found. Installing..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "[SETUP] Installing uv Python package manager..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
         refresh_env
         # Add uv to PATH for current session
         if [[ -d "$HOME/.cargo/bin" ]]; then
             export PATH="$HOME/.cargo/bin:$PATH"
         fi
+        echo "[OK] uv installed successfully."
     else
-        echo "uv already installed."
+        echo "[OK] uv already installed."
     fi
 
-    echo "--- Prerequisites installation/check completed ---"
+    echo
+    echo "[OK] System requirements check completed."
     echo
 }
 
@@ -292,8 +311,11 @@ show_menu() {
 }
 
 install_with_narration() {
-    echo "*** Option 1: Install with Voice Cloning Features (F5-TTS + Chatterbox) (Clean Install) ***"
-    echo "*** (Note: Requires more storage space and GPU for optimal performance) ***"
+    echo
+    echo "======================================================"
+    echo "[SETUP] Option 1: Full Installation with Voice Cloning"
+    echo "======================================================"
+    echo
 
     # Check if we're in the right directory
     check_repo_structure
@@ -305,7 +327,7 @@ install_with_narration() {
 
     install_prerequisites
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to install prerequisites."
+        echo "[ERROR] Failed to install prerequisites."
         error_occurred
         return
     fi
@@ -315,39 +337,43 @@ install_with_narration() {
 
     clean_install
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to clean install."
+        echo "[ERROR] Failed to clean install."
         error_occurred
         return
     fi
-    
+
     # Fix the start script in package.json to be cross-platform
-    echo "Updating package.json for cross-platform compatibility..."
+    echo "[SETUP] Updating package.json for cross-platform compatibility..."
     # Update the start script on Mac/Linux
-    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
+    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to update package.json. The application might not work correctly."
+        echo "[WARN] Failed to update package.json. The application might not work correctly."
     else
-        echo "Successfully updated package.json for cross-platform compatibility."
+        echo "[OK] Successfully updated package.json for cross-platform compatibility."
     fi
 
-    echo "Installing dependencies (using npm run install:all)..."
+    echo "[SETUP] Installing all dependencies (this may take several minutes)..."
     npm run install:all
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed during 'npm run install:all'. Check messages above."
+        echo "[ERROR] Failed to install dependencies. Check messages above."
         error_occurred
         return
     fi
 
-    echo "Installing yt-dlp for YouTube video downloads..."
-    npm run install:yt-dlp
+    echo "[SETUP] Finalizing installation..."
+    npm run install:yt-dlp >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
-        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
+        echo "[WARN] YouTube downloader installation had issues."
+        echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
     fi
 
-    echo "Installation completed. Starting application with GPU acceleration..."
+    echo
+    echo "[OK] Installation completed successfully!"
+    echo "[START] Launching application with voice cloning features..."
+    echo "[INFO] Press Ctrl+C to stop the application."
+    echo
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
-        echo "NVIDIA GPU detected, using CUDA acceleration."
+        echo "[INFO] NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
         echo "Apple Silicon/Intel GPU detected, using Metal acceleration."
     elif [[ "$GPU_TYPE" == "amd" ]]; then
@@ -365,7 +391,11 @@ install_with_narration() {
 }
 
 install_without_narration() {
-    echo "*** Option 2: Install without Voice Cloning Features (Clean Install) ***"
+    echo
+    echo "======================================================"
+    echo "[SETUP] Option 2: Standard Installation"
+    echo "======================================================"
+    echo
 
     # Check if we're in the right directory
     check_repo_structure
@@ -377,45 +407,48 @@ install_without_narration() {
 
     install_prerequisites
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to install prerequisites."
+        echo "[ERROR] Failed to install prerequisites."
         error_occurred
         return
     fi
 
     clean_install
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to clean install."
+        echo "[ERROR] Failed to clean install."
         error_occurred
         return
     fi
-    
+
     # Fix the start script in package.json to be cross-platform
-    echo "Updating package.json for cross-platform compatibility..."
+    echo "[SETUP] Updating package.json for cross-platform compatibility..."
     # Update the start script on Mac/Linux
-    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json
+    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to update package.json. The application might not work correctly."
+        echo "[WARN] Failed to update package.json. The application might not work correctly."
     else
-        echo "Successfully updated package.json for cross-platform compatibility."
+        echo "[OK] Successfully updated package.json for cross-platform compatibility."
     fi
 
-    echo "Installing dependencies (using npm install)..."
+    echo "[SETUP] Installing dependencies..."
     npm install
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed during 'npm install'. Check messages above."
+        echo "[ERROR] Failed to install dependencies. Check messages above."
         error_occurred
         return
     fi
 
-    echo "Installing yt-dlp for YouTube video downloads..."
-    npm run install:yt-dlp
+    echo "[SETUP] Finalizing installation..."
+    npm run install:yt-dlp >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        echo "WARNING: Failed to install yt-dlp. YouTube downloads might have issues."
-        echo "You can try installing it manually later with 'npm run install:yt-dlp'."
+        echo "[WARN] YouTube downloader installation had issues."
+        echo "[INFO] You can fix this later with 'npm run install:yt-dlp'."
     fi
 
-    echo "Installation completed. Starting application..."
-    echo "Press Ctrl+C in this window to stop the application later."
+    echo
+    echo "[OK] Installation completed successfully!"
+    echo "[START] Launching application..."
+    echo "[INFO] Press Ctrl+C to stop the application."
+    echo
     npm run dev
 
     show_menu
