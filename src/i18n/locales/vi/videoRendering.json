@@ -20,7 +20,7 @@
   "noNarration": "Không có Thuyết minh",
   "generatedNarration": "Thuyết minh Đã tạo",
   "alignedNarration": "Thuyết minh Đã căn chỉnh (sẵn sàng)",
-  "narrationNotAligned": "Thuyết minh chưa được căn chỉnh - hãy sử dụng nút \"Làm mới Thuyết minh\" hoặc \"Tải xuống Đã căn chỉnh\" trước",
+  "narrationNotAligned": "Thuyết minh chưa được căn chỉnh",
   "noNarrationGenerated": "Không có thuyết minh nào được tạo",
   "files": "tập tin",
   "renderSettings": "Cài đặt Render",

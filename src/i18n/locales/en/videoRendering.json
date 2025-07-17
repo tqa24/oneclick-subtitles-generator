@@ -20,7 +20,7 @@
   "noNarration": "No Narration",
   "generatedNarration": "Generated Narration",
   "alignedNarration": "Aligned Narration (ready)",
-  "narrationNotAligned": "Narration not aligned - use \"Refresh Narration\" or \"Download Aligned\" button first",
+  "narrationNotAligned": "Narration not aligned",
   "noNarrationGenerated": "No narration generated",
   "files": "files",
   "renderSettings": "Render Settings",

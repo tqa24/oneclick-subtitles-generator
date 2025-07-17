@@ -20,7 +20,7 @@
   "noNarration": "내레이션 없음",
   "generatedNarration": "생성된 내레이션",
   "alignedNarration": "정렬된 내레이션 (준비됨)",
-  "narrationNotAligned": "내레이션이 정렬되지 않음 - 먼저 \"내레이션 새로고침\" 또는 \"정렬된 다운로드\" 버튼을 사용하세요",
+  "narrationNotAligned": "내레이션이 정렬되지 않음",
   "noNarrationGenerated": "생성된 내레이션이 없습니다",
   "files": "파일",
   "renderSettings": "렌더링 설정",
