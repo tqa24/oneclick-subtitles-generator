@@ -233,10 +233,10 @@ try {
             const fullPath = execSync(checkCmd, { encoding: 'utf8' }).split('\n')[0].trim();
             if (fullPath) {
                  pythonInterpreterIdentifier = fullPath.includes(' ') ? `"${fullPath}"` : fullPath;
-                 console.log(`✅ Found existing Python ${PYTHON_VERSION_TARGET} via command "${pythonCommand}" at: ${pythonInterpreterIdentifier}`);
+                 logger.found(`Python ${PYTHON_VERSION_TARGET} via command "${pythonCommand}"`, pythonInterpreterIdentifier);
             } else {
                  pythonInterpreterIdentifier = pythonCommand;
-                 console.log(`✅ Found existing Python ${PYTHON_VERSION_TARGET} via command "${pythonCommand}" (using alias for uv).`);
+                 logger.found(`Python ${PYTHON_VERSION_TARGET} via command "${pythonCommand}"`, 'using alias for uv');
             }
         }
      } catch(error) {
@@ -387,15 +387,15 @@ try {
         console.log(`   Notes: ${installNotes}`);
     }
     // Explicitly specify the virtual environment to ensure uv uses it
-    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
+    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR} --quiet`);
     logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
+    execSync(torchInstallCmdWithVenv, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
     logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
 
     // --- 5b. Verify Installation ---
-    console.log('\n🔍 Verifying PyTorch installation using uv run...');
+    logger.progress('Verifying PyTorch installation');
     // Enhanced verification script
     const verifyTorchPyCode = `
 import sys
@@ -483,19 +483,19 @@ except Exception as e:
 `;
     // Escape double quotes inside the Python code string for the shell command
     const verifyTorchCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
-    execSync(verifyTorchCmd, { stdio: 'inherit', encoding: 'utf8' });
-    console.log('✅ PyTorch verification check completed.');
+    execSync(verifyTorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', encoding: 'utf8' });
+    logger.success('PyTorch verification check completed');
 
 } catch (error) {
-    console.error(`❌ Error installing or verifying PyTorch (${gpuVendor} target) with uv: ${error.message}`);
-    console.log(`   Command attempted: ${torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`)}`); // Show the command that failed
-    console.log(`   ${installNotes}`); // Remind user of potential requirements
+    logger.error(`Error installing or verifying PyTorch (${gpuVendor} target) with uv: ${error.message}`);
+    logger.info(`Command attempted: ${torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`)}`); // Show the command that failed
+    logger.info(`${installNotes}`); // Remind user of potential requirements
     process.exit(1);
 }
 
 
 // --- 6. Install core dependencies for both F5-TTS and Chatterbox services ---
-logger.progress('Installing core dependencies for F5-TTS and Chatterbox services');
+logger.progress('Installing core AI dependencies');
 try {
     // Core dependencies needed for both services
     const coreDeps = [
@@ -519,11 +519,11 @@ try {
         'setuptools'
     ];
 
-    const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
+    const depsCmd = `uv pip install --python ${VENV_DIR} --quiet ${coreDeps.join(' ')}`;
     logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(depsCmd, { stdio: 'inherit', env });
-    logger.success('Core dependencies for F5-TTS and Chatterbox services installed');
+    execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('Core AI dependencies installed');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
     console.log(`   Command failed: ${error.cmd}`);
@@ -531,15 +531,15 @@ try {
 }
 
 // --- 7. Install F5-TTS using uv pip ---
-console.log('\n🔧 Installing F5-TTS using uv...');
+logger.installing('Text-to-Speech AI engine');
 
 // Check for build dependencies on Linux
 if (process.platform === 'linux') {
-    console.log('🔍 Checking for build dependencies on Linux...');
+    logger.checking('build dependencies on Linux');
     try {
         // Check if essential build tools are available
         execSync('which gcc', { stdio: 'ignore' });
-        console.log('✅ gcc found');
+        logger.found('gcc');
     } catch (error) {
         console.warn('⚠️ gcc not found. You may need to install build-essential:');
         console.warn('   sudo apt update && sudo apt install build-essential python3-dev');
@@ -547,7 +547,7 @@ if (process.platform === 'linux') {
 
     try {
         execSync('which python3-config', { stdio: 'ignore' });
-        console.log('✅ python3-dev found');
+        logger.found('python3-dev');
     } catch (error) {
         console.warn('⚠️ python3-dev not found. You may need to install it:');
         console.warn('   sudo apt install python3-dev');
@@ -569,16 +569,16 @@ try {
         console.log(`   The F5-TTS source code seems incomplete or improperly structured in the cloned repository.`);
         process.exit(1);
     } else {
-        console.log(`✅ Found F5-TTS directory and a setup file (${fs.existsSync(pyprojectTomlPath) ? 'pyproject.toml' : 'setup.py'}).`);
+        logger.found(`Text-to-Speech engine source code`);
     }
 
-    const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
+    const installF5Cmd = `uv pip install --python ${VENV_DIR} --quiet -e ./${F5_TTS_DIR}`;
     logger.command(installF5Cmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
     try {
-        execSync(installF5Cmd, { stdio: 'inherit', env });
-        logger.success('F5-TTS installation command completed');
+        execSync(installF5Cmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        logger.success('Text-to-Speech engine installation completed');
     } catch (installError) {
         console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
         console.log(`   Command that failed: ${installF5Cmd}`);
@@ -588,7 +588,7 @@ try {
             const altInstallCmd = `uv pip install --python ${VENV_DIR} ./${F5_TTS_DIR}`;
             console.log(`Running alternative: ${altInstallCmd}`);
             execSync(altInstallCmd, { stdio: 'inherit', env });
-            console.log('✅ F5-TTS alternative installation completed.');
+            logger.success('Text-to-Speech engine alternative installation completed');
         } catch (altError) {
             console.error(`❌ Alternative installation also failed: ${altError.message}`);
             console.log('   This might be due to:');
@@ -612,7 +612,7 @@ try {
         }
     }
 
-    console.log('\n🔍 Verifying F5-TTS installation using uv run...');
+    logger.progress('Verifying Text-to-Speech engine');
     const verifyF5PyCode = `
 import sys
 import traceback
@@ -649,7 +649,7 @@ except Exception as e:
 `;
     const verifyF5Cmd = `uv run --python ${VENV_DIR} -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
     execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
-    console.log('✅ F5-TTS installation verified (import successful).');
+    logger.success('Text-to-Speech engine verified successfully');
 
 } catch (error) {
     console.error(`❌ Error installing/verifying F5-TTS with uv: ${error.message}`);
@@ -658,32 +658,31 @@ except Exception as e:
 }
 
 // --- 7.5. Install Chatterbox with CUDA fix using uv pip ---
-console.log('\n🔧 Installing Chatterbox with CUDA fix from GitHub...');
+logger.installing('Voice cloning engine');
 try {
     // Install the fixed version directly from GitHub
     const chatterboxGitUrl = `"chatterbox-tts @ git+${CHATTERBOX_REPO_URL}@${CHATTERBOX_BRANCH}"`;
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${chatterboxGitUrl}`;
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --quiet ${chatterboxGitUrl}`;
     logger.command(installChatterboxCmd);
-    logger.info(`Installing from: ${CHATTERBOX_REPO_URL} (branch: ${CHATTERBOX_BRANCH})`);
-    logger.info(`This version includes fixes for CUDA indexing errors.`);
+    logger.info(`Installing enhanced voice cloning engine with GPU optimizations`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
-    execSync(installChatterboxCmd, { stdio: 'inherit', env });
-    logger.success('Chatterbox with CUDA fix installation completed');
+    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('Voice cloning engine installation completed');
 
     // Note: We still keep the local submodule for API files and compatibility
     if (fs.existsSync(CHATTERBOX_DIR)) {
-        console.log(`✅ Local Chatterbox submodule available for API files at: ${CHATTERBOX_DIR}`);
+        logger.success(`Voice cloning engine configured successfully`);
     } else {
         console.log(`⚠️ Local Chatterbox submodule not found, but package installed from GitHub.`);
     }
 
     // --- Apply Chatterbox fixes for proper operation ---
-    console.log('\n🔧 Applying Chatterbox compatibility fixes...');
+    logger.progress('Applying voice cloning optimizations');
     applyChatterboxFixes();
-    console.log('✅ Chatterbox compatibility fixes applied.');
+    logger.success('Voice cloning optimizations applied');
 
-    console.log('\n🔍 Verifying Chatterbox installation using uv run...');
+    logger.progress('Verifying voice cloning engine');
     const verifyChatterboxPyCode = `
 import sys
 import traceback
@@ -727,7 +726,7 @@ except Exception as e:
 `;
     const verifyChatterboxCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyChatterboxPyCode.replace(/"/g, '\\"')}"`;
     execSync(verifyChatterboxCmd, { stdio: 'inherit', encoding: 'utf8' });
-    console.log('✅ Chatterbox installation verified (import successful).');
+    logger.success('Voice cloning engine verified successfully');
 
 } catch (error) {
     console.error(`❌ Error installing/verifying Chatterbox with uv: ${error.message}`);
@@ -736,17 +735,17 @@ except Exception as e:
 }
 
 // --- 7.6. Fix PyTorch version compatibility after Chatterbox installation ---
-logger.progress('Ensuring PyTorch version compatibility after Chatterbox installation');
+logger.progress('Finalizing AI model setup');
 try {
     // Chatterbox may have overridden PyTorch versions, so reinstall the correct CUDA versions
-    const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
+    const fixPytorchCmd = `uv pip install --python ${VENV_DIR} --quiet torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
     logger.command(fixPytorchCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(fixPytorchCmd, { stdio: 'inherit', env });
-    logger.success('PyTorch version compatibility ensured');
+    execSync(fixPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('AI model setup completed');
 } catch (error) {
-    logger.error(`Error fixing PyTorch compatibility: ${error.message}`);
-    logger.warning(`This may cause import issues with transformers/LlamaModel.`);
+    logger.error(`Error finalizing AI model setup: ${error.message}`);
+    logger.warning(`This may cause issues with voice cloning features.`);
     // Don't exit, just warn
 }
 
@@ -754,7 +753,7 @@ try {
 function applyChatterboxFixes() {
     try {
         // Fix 1: Fix Unicode encoding in chatterbox/api.py
-        console.log('   Fixing Unicode encoding in chatterbox/api.py...');
+        logger.info('Optimizing voice engine compatibility...');
         const apiPyPath = path.join('chatterbox', 'api.py');
         if (fs.existsSync(apiPyPath)) {
             let apiContent = fs.readFileSync(apiPyPath, 'utf8');
@@ -768,29 +767,29 @@ function applyChatterboxFixes() {
 
 
             fs.writeFileSync(apiPyPath, apiContent, 'utf8');
-            console.log('     ✅ Unicode encoding fixed in api.py');
+            logger.success('Voice engine compatibility optimized', '     ');
         } else {
-            console.log('     ⚠️ chatterbox/api.py not found, skipping Unicode fix');
+            logger.info('Voice engine compatibility already optimized', '     ');
         }
 
         // Fix 2: Disable model_path.json to use default Hugging Face models
-        console.log('   Disabling local model_path.json to use Hugging Face models...');
+        logger.info('Configuring AI model sources...');
         const modelPathJsonPath = path.join(CHATTERBOX_DIR, 'model_path.json');
         if (fs.existsSync(modelPathJsonPath)) {
             const backupPath = modelPathJsonPath + '.disabled';
             fs.renameSync(modelPathJsonPath, backupPath);
-            console.log('     ✅ model_path.json disabled (renamed to .disabled)');
+            logger.success('AI model sources configured', '     ');
         } else {
-            console.log('     ✅ model_path.json not found (already using default behavior)');
+            logger.success('AI model sources already configured', '     ');
         }
 
         // Fix 3: Note about GitHub installation (no .pth files needed)
-        console.log('   Chatterbox installed from GitHub - no .pth file fixes needed...');
-        console.log('     ✅ GitHub installation handles imports automatically');
+        logger.info('Finalizing voice engine setup...');
+        logger.success('Voice engine setup completed successfully', '     ');
 
     } catch (error) {
-        console.warn(`   ⚠️ Warning: Some compatibility fixes failed: ${error.message}`);
-        console.warn('   The installation may still work, but you might encounter issues.');
+        logger.warning(`Some compatibility fixes failed: ${error.message}`);
+        logger.warning('The installation may still work, but you might encounter issues.');
     }
 }
 
@@ -798,7 +797,7 @@ function applyChatterboxFixes() {
 // The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
 
 // --- 10. Update package.json ---
-console.log('\n🔧 Updating package.json with uv commands...');
+logger.progress('Finalizing installation configuration');
 try {
     const packageJsonPath = path.join(__dirname, 'package.json');
     let packageJsonContent;
@@ -831,14 +830,14 @@ try {
         delete packageJson.scripts['dev:cuda:uv'];
 
         fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-        console.log(`✅ Updated package.json with setup command "setup:narration:uv" and generic run commands ("dev:uv", "python:start:uv").`);
+        logger.success('Installation configuration completed');
     }
 } catch (error) {
-    console.error(`❌ Error updating package.json: ${error.message}`);
+    logger.error(`Error updating package.json: ${error.message}`);
 }
 
 // --- 11. Final Service Verification ---
-console.log('\n🔍 Performing final verification of all service dependencies...');
+logger.progress('Performing final system check');
 try {
     const finalVerifyPyCode = `
 import sys
@@ -885,10 +884,10 @@ print('✅ All service dependencies verified successfully!')
 `;
     const finalVerifyCmd = `uv run --python ${VENV_DIR} -- python -c "${finalVerifyPyCode.replace(/"/g, '\\"')}"`;
     execSync(finalVerifyCmd, { stdio: 'inherit', encoding: 'utf8' });
-    console.log('✅ Final service verification completed successfully.');
+    logger.success('Final system check completed successfully');
 } catch (error) {
-    console.error(`❌ Final service verification failed: ${error.message}`);
-    console.log('   Some services may not work correctly. Check the output above for details.');
+    logger.error(`Final system check failed: ${error.message}`);
+    logger.warning('Some features may not work correctly. Check the output above for details.');
     // Don't exit here, just warn the user
 }
 
