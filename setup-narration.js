@@ -12,6 +12,7 @@ const os = require('os'); // Needed for platform/arch checks
 
 // Import our logging utility
 const { Logger } = require('./utils/logger');
+const { executeWithProgress, withSpinner } = require('./utils/progress-indicator');
 const logger = new Logger({
     verbose: process.env.VERBOSE === 'true',
     quiet: process.env.QUIET === 'true'
@@ -390,7 +391,7 @@ try {
     logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
     logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
 
     // --- 5b. Verify Installation ---
@@ -521,7 +522,7 @@ try {
     const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
     logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(depsCmd, { stdio: 'inherit', env });
     logger.success('Core dependencies for F5-TTS and Chatterbox services installed');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
@@ -576,7 +577,7 @@ try {
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
     try {
-        execSync(installF5Cmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        execSync(installF5Cmd, { stdio: 'inherit', env });
         logger.success('F5-TTS installation command completed');
     } catch (installError) {
         console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
@@ -667,7 +668,7 @@ try {
     logger.info(`This version includes fixes for CUDA indexing errors.`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
-    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(installChatterboxCmd, { stdio: 'inherit', env });
     logger.success('Chatterbox with CUDA fix installation completed');
 
     // Note: We still keep the local submodule for API files and compatibility
@@ -741,7 +742,7 @@ try {
     const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
     logger.command(fixPytorchCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(fixPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(fixPytorchCmd, { stdio: 'inherit', env });
     logger.success('PyTorch version compatibility ensured');
 } catch (error) {
     logger.error(`Error fixing PyTorch compatibility: ${error.message}`);
