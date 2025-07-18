@@ -63,9 +63,9 @@ uv run --python .venv python -c "from chatterbox.tts import ChatterboxTTS; from 
 
 The following setup scripts now include these fixes:
 - `setup-narration.js` - Main setup script called by `npm run install:all`
-- `OSG_all_in_one.bat` - Windows batch installer (calls setup-narration.js)
-- `OSG_all_in_one.sh` - Linux/Mac shell installer (calls setup-narration.js)
-- `OSG_all_in_one_preview.bat` - Preview installer (calls setup-narration.js)
+- `OSG_installer_Windows.bat` - Windows batch installer (calls setup-narration.js)
+- `OSG_installer.sh` - Linux/Mac shell installer (calls setup-narration.js)
+- `OSG_installer_Windows_preview.bat` - Preview installer (calls setup-narration.js)
 
 ## Requirements
 

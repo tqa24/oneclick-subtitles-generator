@@ -115,12 +115,12 @@ A web application for generating timed subtitles for videos using Google's Gemin
    ```
 
 ##### macOS and Ubuntu:
-1. Download the `OSG_all_in_one.sh` file from the Releases page
+1. Download the `OSG_installer.sh` file from the Releases page
 2. Open Terminal and navigate to the download location
 3. Make the script executable and run it:
    ```bash
-   chmod +x OSG_all_in_one.sh
-   ./OSG_all_in_one.sh
+   chmod +x OSG_installer.sh
+   ./OSG_installer.sh
    ```
 4. Follow the on-screen menu options
 
@@ -263,7 +263,7 @@ For more details on the F5-TTS integration, see [F5-TTS-README.md](F5-TTS-README
   or with narration: `npm run dev:cuda`
 
 #### macOS and Ubuntu:
-- Run the `OSG_all_in_one.sh` file and select option 4 or 5 from the menu
+- Run the `OSG_installer.sh` file and select option 4 or 5 from the menu
 
 ### Option 2: Using the setup-and-run script
 

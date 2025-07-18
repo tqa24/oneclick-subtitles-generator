@@ -6,7 +6,7 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
 
 ### Cài Đặt Trên Windows
 
-- Vào mục Release tải về OSG_all_in_one.bat phiên bản mới nhất.
+- Vào mục Release tải về OSG_installer_Windows.bat phiên bản mới nhất.
 
 - Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
 
@@ -14,11 +14,11 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
 
 ### Cài Đặt Trên macOS và Ubuntu
 
-- Clone repo này về máy + chạy file OSG_all_in_one.sh:
+- Clone repo này về máy + chạy file OSG_installer.sh:
   ```bash
   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
   cd oneclick-subtitles-generator
-  ./OSG_all_in_one.sh
+  ./OSG_installer.sh
   ```
 
 - Làm theo hướng dẫn trên màn hình (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
@@ -26,12 +26,12 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
 ### Cập Nhật hoặc Chạy Ứng Dụng
 
 #### Windows
-- Mở OSG_all_in_one.bat và làm theo hướng dẫn.
+- Mở OSG_installer_Windows.bat và làm theo hướng dẫn.
 
 #### macOS và Ubuntu
-- Mở Terminal và chạy lại file OSG_all_in_one.sh:
+- Mở Terminal và chạy lại file OSG_installer.sh:
   ```bash
-  ./OSG_all_in_one.sh
+  ./OSG_installer.sh
   ```
 
 - Trình duyệt sẽ tự động mở tại http://localhost:3008

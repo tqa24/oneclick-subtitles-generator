@@ -29,7 +29,7 @@ This document describes the logging improvements made to make the installation a
 ### Standard Installation (Recommended for most users)
 ```bash
 # Windows
-OSG_all_in_one.bat
+OSG_installer_Windows.bat
 
 # Or using npm
 npm run install:all
@@ -109,7 +109,7 @@ Submodule 'F5-TTS' (https://github.com/SWivid/F5-TTS.git) registered for path 'F
 ## Technical Details
 
 ### Files Modified
-- `OSG_all_in_one.bat` - Improved batch file logging with better visual indicators
+- `OSG_installer_Windows.bat` - Improved batch file logging with better visual indicators
 - `setup-narration.js` - Enhanced with new logging utility and progress tracking
 - `install-yt-dlp.js` - Streamlined output with cleaner messages
 - `package.json` - Added quiet/verbose script variants and npm silence flags

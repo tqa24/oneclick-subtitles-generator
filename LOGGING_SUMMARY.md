@@ -12,7 +12,7 @@ Successfully improved the OneClick Subtitles Generator logging system to be more
 - **Verbosity control**: Quiet, normal, and verbose modes
 - **Progress tracking**: Step counters, sections, and progress indicators
 
-### 2. Enhanced Main Installation Script (`OSG_all_in_one.bat`)
+### 2. Enhanced Main Installation Script (`OSG_installer_Windows.bat`)
 - **Before**: Plain text with redundant "ECHO" statements
 - **After**: Structured output with [OK], [ERROR], [WARN], [INFO], [SETUP] prefixes
 - **Visual improvements**: Clear section headers and progress indicators
@@ -172,7 +172,7 @@ Installed 13 packages in 2.69s
 - ✅ `utils/logger.js` - Centralized logging utility (NEW)
 - ✅ `utils/npm-quiet.js` - NPM output filter (NEW)
 - ✅ `.npmrc` - NPM configuration for reduced verbosity (NEW)
-- ✅ `OSG_all_in_one.bat` - Enhanced batch file logging
+- ✅ `OSG_installer_Windows.bat` - Enhanced batch file logging
 - ✅ `setup-narration.js` - Improved setup script logging
 - ✅ `install-yt-dlp.js` - Streamlined installation logging
 - ✅ `package.json` - Added quiet/verbose script variants

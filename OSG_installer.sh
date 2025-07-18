@@ -284,7 +284,7 @@ check_repo_structure() {
         echo "Expected structure:"
         echo "  oneclick-subtitles-generator/"
         echo "  ├── package.json"
-        echo "  ├── OSG_all_in_one.sh  (this script)"
+        echo "  ├── OSG_installer.sh  (this script)"
         echo "  └── ..."
         return 1
     fi
@@ -709,7 +709,7 @@ if [ ! -f "package.json" ] || [ ! -f "server.js" ]; then
     echo "2. Navigate to the repository:"
     echo "   cd oneclick-subtitles-generator"
     echo "3. Run this script:"
-    echo "   ./OSG_all_in_one.sh"
+    echo "   ./OSG_installer.sh"
     echo
     echo "Current directory: $(pwd)"
     echo "Files found: $(ls -la | head -5)"
