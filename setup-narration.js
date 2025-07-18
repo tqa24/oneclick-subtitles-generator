@@ -596,12 +596,23 @@ if (process.platform === 'linux') {
 try {
     if (!fs.existsSync(F5_TTS_DIR)) {
         console.error(`❌ Error: Directory "${F5_TTS_DIR}" not found.`);
-        console.log(`   The script attempted to clone it earlier, but it seems to be missing now.`);
+        console.log(`   Current working directory: ${process.cwd()}`);
+        console.log(`   Looking for: ${path.resolve(F5_TTS_DIR)}`);
         process.exit(1);
     }
 
     const setupPyPath = path.join(F5_TTS_DIR, 'setup.py');
     const pyprojectTomlPath = path.join(F5_TTS_DIR, 'pyproject.toml');
+
+    console.log(`   Debug: Checking for setup files in ${F5_TTS_DIR}`);
+    console.log(`   Debug: Current working directory: ${process.cwd()}`);
+    console.log(`   Debug: setup.py path: ${path.resolve(setupPyPath)} (exists: ${fs.existsSync(setupPyPath)})`);
+    console.log(`   Debug: pyproject.toml path: ${path.resolve(pyprojectTomlPath)} (exists: ${fs.existsSync(pyprojectTomlPath)})`);
+
+    if (fs.existsSync(F5_TTS_DIR)) {
+        const dirContents = fs.readdirSync(F5_TTS_DIR);
+        console.log(`   Debug: F5-TTS directory contents: ${dirContents.slice(0, 10).join(', ')}${dirContents.length > 10 ? '...' : ''}`);
+    }
 
     if (!fs.existsSync(setupPyPath) && !fs.existsSync(pyprojectTomlPath)) {
         console.error(`❌ Error: Neither setup.py nor pyproject.toml found in the "${F5_TTS_DIR}" directory.`);
