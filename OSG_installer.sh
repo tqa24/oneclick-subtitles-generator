@@ -300,6 +300,15 @@ check_repo_structure() {
 # --- Main Menu ---
 show_menu() {
     clear
+    echo
+    # Display the original Unicode ASCII logo with smooth blue gradient (left-to-right diagonal)
+    echo -e "\033[96m░██████╗░\033[94m░███████╗░\033[34m░██████╗░\033[0m"
+    echo -e "\033[94m██╔═══██╗░\033[34m██╔════╝░\033[90m██╔════╝░\033[0m"
+    echo -e "\033[34m██║░░░██║░\033[90m███████╗░\033[37m██║░░███╗\033[0m"
+    echo -e "\033[90m██║░░░██║░\033[37m╚════██║░\033[97m██║░░░██║\033[0m"
+    echo -e "\033[37m╚██████╔╝░\033[97m███████║░\033[97m╚██████╔╝\033[0m"
+    echo -e "\033[97m░╚═════╝░░\033[97m╚══════╝░\033[97m░╚═════╝░\033[0m"
+    echo
     echo "======================================================="
     echo "  OneClick Subtitles Generator - Setup & Manager"
     echo "======================================================="
