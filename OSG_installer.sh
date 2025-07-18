@@ -309,29 +309,33 @@ show_menu() {
     echo -e "\033[37m╚██████╔╝░\033[97m███████║░\033[97m╚██████╔╝\033[0m"
     echo -e "\033[97m░╚═════╝░░\033[97m╚══════╝░\033[97m░╚═════╝░\033[0m"
     echo
-    echo "======================================================="
-    echo "  OneClick Subtitles Generator - Setup & Manager"
-    echo "======================================================="
-    echo "Vi tri (Location): $(pwd)"
-    echo "Thu muc Du an (Project Folder): $PROJECT_FOLDER_NAME"
-    echo "======================================================="
-    echo "SETUP & INSTALLATION:"
-    echo "  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi) (Install with Gemini + F5-TTS + Chatterbox Narration)"
-    echo "  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)"
-    echo "  3. Cap nhat Ung dung (Update)"
+    echo -e "\033[96m======================================================\033[0m"
+    echo -e "\033[97m\033[44mQuan Ly Trinh Tao Phu De OneClick\033[0m"
+    echo -e "\033[90mVi tri (Location): $(pwd)\033[0m"
+    echo -e "\033[90mThu muc Du an (Project Folder): $PROJECT_FOLDER_NAME\033[0m"
+    echo -e "\033[96m======================================================\033[0m"
+    echo -e "\033[93mVui long chon mot tuy chon:\033[0m"
     echo
-    echo "RUN APPLICATION:"
-    echo "  4. Chay Ung dung (Run App)"
-    echo "  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)"
+    echo -e "\033[92m\033[40mCAI DAT / THIET LAP:\033[0m"
+    echo -e "\033[97m  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)\033[0m"
+    echo -e "\033[96m     (Install with Gemini + F5-TTS + Chatterbox Narration)\033[0m"
+    echo -e "\033[93m     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)\033[0m"
+    echo -e "\033[97m  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)\033[0m"
     echo
-    echo "UNINSTALL:"
-    echo "  6. Go cai dat Ung dung (Uninstall)"
+    echo -e "\033[94m\033[40mBAO TRI / SU DUNG:\033[0m"
+    echo -e "\033[97m  3. Cap nhat Ung dung (Update)\033[0m"
+    echo -e "\033[97m  4. Chay Ung dung (Run App)\033[0m"
+    echo -e "\033[97m  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)\033[0m"
     echo
-    echo "  7. Thoat (Exit)"
-    echo "======================================================="
+    echo -e "\033[91m\033[40mGO CAI DAT:\033[0m"
+    echo -e "\033[97m  6. Go cai dat Ung dung (Uninstall)\033[0m"
+    echo
+    echo -e "\033[90m  7. Thoat (Exit)\033[0m"
+    echo -e "\033[96m======================================================\033[0m"
     echo
 
-    read -p "Enter your choice (1-7): " choice
+    echo -ne "\033[93mNhap lua chon cua ban (1-7): \033[0m"
+    read choice
 
     case $choice in
         1) install_with_narration ;;
@@ -342,7 +346,7 @@ show_menu() {
         6) uninstall_app ;;
         7) exit 0 ;;
         *)
-            echo "Invalid choice. Please try again."
+            echo -e "\033[91m[ERROR] Lua chon khong hop le. Vui long thu lai.\033[0m"
             sleep 2
             show_menu
             ;;
