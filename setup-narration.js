@@ -199,7 +199,25 @@ if (!fs.existsSync(F5_TTS_DIR)) {
         process.exit(1);
     }
 } else {
-    logger.success('F5-TTS submodule found');
+    // Check if the submodule directory has actual content (not just .git)
+    const dirContents = fs.readdirSync(F5_TTS_DIR);
+    const hasContent = dirContents.some(item => item !== '.git' && item !== '.gitignore');
+
+    if (!hasContent) {
+        logger.warning(`F5-TTS submodule directory exists but appears empty (only contains: ${dirContents.join(', ')})`);
+        logger.info('Attempting to populate F5-TTS submodule...');
+        try {
+            // Remove the empty directory and clone fresh
+            fs.rmSync(F5_TTS_DIR, { recursive: true, force: true });
+            execSync(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+            logger.success('F5-TTS cloned successfully');
+        } catch (cloneError) {
+            logger.error(`Failed to clone F5-TTS: ${cloneError.message}`);
+            process.exit(1);
+        }
+    } else {
+        logger.success('F5-TTS submodule found with content');
+    }
 }
 
 // Check Chatterbox submodule
@@ -220,7 +238,30 @@ if (!fs.existsSync(CHATTERBOX_DIR)) {
         logger.info('Local API files may not be available, but the package will be installed from GitHub');
     }
 } else {
-    logger.success('Chatterbox submodule found');
+    // Check if the submodule directory has actual content (not just .git)
+    const dirContents = fs.readdirSync(CHATTERBOX_DIR);
+    const hasContent = dirContents.some(item => item !== '.git' && item !== '.gitignore');
+
+    if (!hasContent) {
+        logger.warning(`Chatterbox submodule directory exists but appears empty (only contains: ${dirContents.join(', ')})`);
+        logger.info('Attempting to populate Chatterbox submodule...');
+        try {
+            // Remove the empty directory and clone fresh
+            fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
+            // Create chatterbox directory if it doesn't exist
+            const chatterboxParentDir = path.dirname(CHATTERBOX_DIR);
+            if (!fs.existsSync(chatterboxParentDir)) {
+                fs.mkdirSync(chatterboxParentDir, { recursive: true });
+            }
+            execSync(`git clone -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} ${CHATTERBOX_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+            logger.success('Chatterbox cloned successfully');
+        } catch (cloneError) {
+            logger.warning(`Failed to clone Chatterbox: ${cloneError.message}`);
+            logger.info('Will proceed with GitHub installation only (Chatterbox will still work)');
+        }
+    } else {
+        logger.success('Chatterbox submodule found with content');
+    }
 }
 
 logger.success('Submodule verification completed');
@@ -596,23 +637,12 @@ if (process.platform === 'linux') {
 try {
     if (!fs.existsSync(F5_TTS_DIR)) {
         console.error(`❌ Error: Directory "${F5_TTS_DIR}" not found.`);
-        console.log(`   Current working directory: ${process.cwd()}`);
-        console.log(`   Looking for: ${path.resolve(F5_TTS_DIR)}`);
+        console.log(`   The script attempted to clone it earlier, but it seems to be missing now.`);
         process.exit(1);
     }
 
     const setupPyPath = path.join(F5_TTS_DIR, 'setup.py');
     const pyprojectTomlPath = path.join(F5_TTS_DIR, 'pyproject.toml');
-
-    console.log(`   Debug: Checking for setup files in ${F5_TTS_DIR}`);
-    console.log(`   Debug: Current working directory: ${process.cwd()}`);
-    console.log(`   Debug: setup.py path: ${path.resolve(setupPyPath)} (exists: ${fs.existsSync(setupPyPath)})`);
-    console.log(`   Debug: pyproject.toml path: ${path.resolve(pyprojectTomlPath)} (exists: ${fs.existsSync(pyprojectTomlPath)})`);
-
-    if (fs.existsSync(F5_TTS_DIR)) {
-        const dirContents = fs.readdirSync(F5_TTS_DIR);
-        console.log(`   Debug: F5-TTS directory contents: ${dirContents.slice(0, 10).join(', ')}${dirContents.length > 10 ? '...' : ''}`);
-    }
 
     if (!fs.existsSync(setupPyPath) && !fs.existsSync(pyprojectTomlPath)) {
         console.error(`❌ Error: Neither setup.py nor pyproject.toml found in the "${F5_TTS_DIR}" directory.`);
