@@ -158,9 +158,23 @@ try {
     execSync('git submodule init', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
     logger.success('Git submodules initialized');
 
-    // Update submodules to get the latest content
-    execSync('git submodule update --remote', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-    logger.success('Git submodules updated');
+    // Try to update submodules to get the latest content
+    try {
+        execSync('git submodule update --remote', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        logger.success('Git submodules updated');
+    } catch (updateError) {
+        logger.warning(`Git submodule update --remote failed: ${updateError.message}`);
+        logger.info('Trying alternative update method...');
+
+        // Try without --remote flag
+        try {
+            execSync('git submodule update', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+            logger.success('Git submodules updated (using existing commits)');
+        } catch (altError) {
+            logger.warning(`Alternative submodule update also failed: ${altError.message}`);
+            logger.info('Continuing without submodule update - will check directories manually...');
+        }
+    }
 } catch (error) {
     logger.error(`Error with git submodules: ${error.message}`);
     logger.info('Please ensure you are in a git repository with properly configured submodules.');
@@ -168,23 +182,48 @@ try {
     process.exit(1);
 }
 
-// --- 2.5. Verify submodules are properly initialized ---
+// --- 2.5. Verify submodules are properly initialized or clone them manually ---
 logger.progress('Verifying submodules are properly initialized');
+
+// Check F5-TTS submodule
 if (!fs.existsSync(F5_TTS_DIR)) {
-    logger.error(`F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
-    logger.info('Please ensure git submodules are properly configured in this repository.');
-    logger.info('You may need to run: git submodule add https://github.com/SWivid/F5-TTS.git F5-TTS');
-    process.exit(1);
+    logger.warning(`F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
+    logger.info('Attempting to clone F5-TTS manually...');
+    try {
+        execSync(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        logger.success('F5-TTS cloned successfully');
+    } catch (cloneError) {
+        logger.error(`Failed to clone F5-TTS: ${cloneError.message}`);
+        logger.info('Please manually clone F5-TTS:');
+        logger.info(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`);
+        process.exit(1);
+    }
+} else {
+    logger.success('F5-TTS submodule found');
 }
 
+// Check Chatterbox submodule
 if (!fs.existsSync(CHATTERBOX_DIR)) {
-    logger.error(`Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
-    logger.info('Please ensure git submodules are properly configured in this repository.');
-    logger.info(`You may need to run: git submodule add -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} chatterbox/chatterbox`);
-    process.exit(1);
+    logger.warning(`Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
+    logger.info('Attempting to clone Chatterbox manually...');
+    try {
+        // Create chatterbox directory if it doesn't exist
+        const chatterboxParentDir = path.dirname(CHATTERBOX_DIR);
+        if (!fs.existsSync(chatterboxParentDir)) {
+            fs.mkdirSync(chatterboxParentDir, { recursive: true });
+        }
+        execSync(`git clone -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} ${CHATTERBOX_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        logger.success('Chatterbox cloned successfully');
+    } catch (cloneError) {
+        logger.warning(`Failed to clone Chatterbox: ${cloneError.message}`);
+        logger.info('Will proceed with GitHub installation only (Chatterbox will still work)');
+        logger.info('Local API files may not be available, but the package will be installed from GitHub');
+    }
+} else {
+    logger.success('Chatterbox submodule found');
 }
 
-logger.success('Both F5-TTS and Chatterbox submodules are properly initialized');
+logger.success('Submodule verification completed');
 
 
 // --- 3. Check for/Install Python 3.11 ---
