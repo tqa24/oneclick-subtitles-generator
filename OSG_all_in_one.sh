@@ -449,16 +449,6 @@ install_without_narration() {
         return
     fi
 
-    # Fix the start script in package.json to be cross-platform
-    colored_echo "[SETUP] Updating package.json for cross-platform compatibility..."
-    # Update the start script on Mac/Linux
-    sed -i.bak 's/"start": "set PORT=3008 && react-scripts start"/"start": "cross-env PORT=3008 react-scripts start"/' package.json >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        colored_echo "[WARN] Failed to update package.json. The application might not work correctly."
-    else
-        colored_echo "[OK] Successfully updated package.json for cross-platform compatibility."
-    fi
-
     colored_echo "[SETUP] Installing dependencies..."
     npm install
     if [ $? -ne 0 ]; then
@@ -724,6 +714,17 @@ if [ ! -f "package.json" ] || [ ! -f "server.js" ]; then
     echo "Current directory: $(pwd)"
     echo "Files found: $(ls -la | head -5)"
     exit 1
+fi
+
+# Initialize git submodules if they haven't been initialized yet
+if [ -f ".gitmodules" ]; then
+    colored_echo "[SETUP] Initializing git submodules..."
+    if git submodule init >/dev/null 2>&1 && git submodule update >/dev/null 2>&1; then
+        colored_echo "[OK] Git submodules initialized successfully."
+    else
+        colored_echo "[WARN] Git submodule initialization failed. This may cause issues with voice cloning features."
+        colored_echo "[INFO] You can manually initialize submodules later with: git submodule update --init --recursive"
+    fi
 fi
 
 # Show the menu
