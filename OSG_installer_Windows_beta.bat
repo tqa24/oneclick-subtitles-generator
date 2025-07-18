@@ -46,29 +46,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2588
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x255A + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2554 + [char]0x255D) -ForegroundColor DarkGray -NoNewline; Write-Host ([char]0x2591 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2551) -ForegroundColor Gray -NoNewline; Write-Host ([char]0x2591 + [char]0x255A + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2588 + [char]0x2554 + [char]0x255D) -ForegroundColor White"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2591 + [char]0x255A + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x255D + [char]0x2591) -ForegroundColor Gray -NoNewline; Write-Host ([char]0x2591 + [char]0x255A + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x255D) -ForegroundColor White -NoNewline; Write-Host ([char]0x2591 + [char]0x2591 + [char]0x255A + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x2550 + [char]0x255D + [char]0x2591) -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%TITLE_TEXT%' -ForegroundColor White -BackgroundColor DarkBlue"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Vi tri (Location): %SCRIPT_DIR%' -ForegroundColor Gray"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%' -ForegroundColor Gray"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan; Write-Host '%TITLE_TEXT%' -ForegroundColor White -BackgroundColor DarkBlue; Write-Host 'Vi tri (Location): %SCRIPT_DIR%' -ForegroundColor Gray; Write-Host 'Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%' -ForegroundColor Gray; Write-Host '======================================================' -ForegroundColor Cyan; Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)' -ForegroundColor White"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '     (Install with Gemini + F5-TTS + Chatterbox Narration)' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)' -ForegroundColor White; Write-Host '     (Install with Gemini + F5-TTS + Chatterbox Narration)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow; Write-Host '  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  4. Chay Ung dung (Run App)' -ForegroundColor White"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  4. Chay Ung dung (Run App)' -ForegroundColor White; Write-Host '  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  6. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black; Write-Host '  6. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  7. Thoat (Exit)' -ForegroundColor Gray"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  7. Thoat (Exit)' -ForegroundColor Gray; Write-Host '======================================================' -ForegroundColor Cyan"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%PROMPT_CHOICE%' -ForegroundColor Yellow -NoNewline"
 SET /P "CHOICE="
