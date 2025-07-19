@@ -426,9 +426,10 @@ let installNotes = '';
 switch (gpuVendor) {
     case 'NVIDIA':
         logger.installing('PyTorch for NVIDIA GPU (CUDA)');
-        // Using CUDA 12.1 for better compatibility on Linux systems
-        torchInstallCmd = `uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
-        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed.';
+        // Using CUDA 12.8 with specific versions for Chatterbox compatibility
+        // PyTorch 2.7.0 requires torchvision 0.22.0 for compatibility
+        torchInstallCmd = `uv pip install torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128 --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
+        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.8+ are installed. Using PyTorch 2.7.0 for Chatterbox compatibility.';
         break;
     case 'AMD':
         logger.installing('PyTorch for AMD GPU (ROCm)');
@@ -436,28 +437,28 @@ switch (gpuVendor) {
             logger.warning('PyTorch ROCm wheels are officially supported only on Linux.');
             logger.warning('Installation may fail or runtime errors may occur on non-Linux systems.');
         }
-        // Using ROCm 6.2 as requested
-        torchInstallCmd = `uv pip install torch==2.5.1+rocm6.2 torchvision==0.20.1+rocm6.2 torchaudio==2.5.1+rocm6.2 --extra-index-url https://download.pytorch.org/whl/rocm6.2`;
-        installNotes = 'Ensure AMD ROCm drivers (v6.2 or compatible) are installed (Linux Recommended).';
+        // Using compatible versions for Chatterbox - fallback to CPU versions for ROCm compatibility
+        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.7.0 for Chatterbox compatibility. ROCm support may be limited.';
         break;
     case 'INTEL':
         logger.installing('PyTorch for Intel GPU (XPU)');
-        // Using XPU test channel as requested
-        torchInstallCmd = `uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/test/xpu`;
-        installNotes = 'Ensure Intel GPU drivers and potentially Intel oneAPI Base Toolkit are installed.\n   Alternatively, investigate Intel Extension for PyTorch (IPEX): https://pytorch-extension.intel.com/';
+        // Using compatible versions for Chatterbox - fallback to CPU versions for Intel compatibility
+        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.7.0 for Chatterbox compatibility. Intel GPU support may be limited.';
         break;
     case 'APPLE_SILICON':
         logger.installing('PyTorch for Apple Silicon (MPS)');
-        // Standard stable PyTorch wheels include MPS support
-        torchInstallCmd = `uv pip install torch torchvision torchaudio`;
-        installNotes = 'Using standard PyTorch build with Metal Performance Shaders (MPS) support.';
+        // Using compatible versions for Chatterbox with MPS support
+        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
+        installNotes = 'Using PyTorch 2.7.0 with Metal Performance Shaders (MPS) support for Chatterbox compatibility.';
         break;
     case 'CPU':
     default:
         logger.installing('CPU-only PyTorch');
-        // Standard stable PyTorch wheels work for CPU
-        torchInstallCmd = `uv pip install torch torchvision torchaudio`;
-        installNotes = 'Installed CPU-only version. No GPU acceleration will be used by PyTorch.';
+        // Using compatible versions for Chatterbox
+        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
+        installNotes = 'Installed PyTorch 2.7.0 CPU-only version for Chatterbox compatibility. No GPU acceleration will be used.';
         break;
 }
 
@@ -565,6 +566,56 @@ except Exception as e:
     const verifyTorchCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
     execSync(verifyTorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', encoding: 'utf8' });
     logger.success('PyTorch verification check completed');
+
+    // --- 5c. Validate PyTorch/torchvision compatibility ---
+    logger.progress('Validating PyTorch/torchvision compatibility');
+    const validateVersionsPyCode = `
+import sys
+import torch
+import torchvision
+import traceback
+
+try:
+    torch_version = torch.__version__
+    torchvision_version = torchvision.__version__
+
+    print(f"PyTorch version: {torch_version}")
+    print(f"torchvision version: {torchvision_version}")
+
+    # Check for the specific error that was occurring
+    try:
+        # This import was failing with the torchvision::nms error
+        from torchvision.transforms import InterpolationMode
+        print("✅ torchvision imports working correctly")
+
+        # Test a basic torchvision operation
+        import torchvision.ops
+        print("✅ torchvision.ops module accessible")
+
+    except Exception as e:
+        print(f"❌ torchvision compatibility issue detected: {e}")
+        print("This indicates a PyTorch/torchvision version mismatch")
+        sys.exit(1)
+
+    # Validate expected versions for Chatterbox compatibility
+    expected_torch = "2.7.0"
+    expected_torchvision = "0.22.0"
+
+    if not torch_version.startswith(expected_torch):
+        print(f"⚠️ Warning: Expected PyTorch {expected_torch}, got {torch_version}")
+    if not torchvision_version.startswith(expected_torchvision):
+        print(f"⚠️ Warning: Expected torchvision {expected_torchvision}, got {torchvision_version}")
+
+    print("✅ PyTorch/torchvision compatibility validation passed")
+
+except Exception as e:
+    print(f"❌ Version validation failed: {e}")
+    traceback.print_exc()
+    sys.exit(1)
+`;
+    const validateVersionsCmd = `uv run --python ${VENV_DIR} -- python -c "${validateVersionsPyCode.replace(/"/g, '\\"')}"`;
+    execSync(validateVersionsCmd, { stdio: 'inherit', encoding: 'utf8' });
+    logger.success('PyTorch/torchvision compatibility validated');
 
 } catch (error) {
     logger.error(`Error installing or verifying PyTorch (${gpuVendor} target) with uv: ${error.message}`);
@@ -740,11 +791,16 @@ except Exception as e:
 // --- 7.5. Install Chatterbox with CUDA fix using uv pip ---
 logger.installing('Voice cloning engine');
 try {
-    // Install the fixed version directly from GitHub
+    // First, install Chatterbox dependencies that don't conflict with PyTorch
+    logger.progress('Installing Chatterbox non-PyTorch dependencies');
+    const chatterboxDepsCmd = `uv pip install --python ${VENV_DIR} --quiet numpy~=1.26.0 resampy==0.4.3 librosa==0.11.0 s3tokenizer transformers>=4.52.4 diffusers==0.29.0 resemble-perth==1.0.1 omegaconf==2.3.0 conformer==0.3.2 safetensors==0.5.3 peft>=0.15.2 tensorboard>=2.19.0 datasets>=3.6.0 pykakasi>=2.3.0 pyarrow>=20.0.0 tokenizers>=0.21.1 tqdm>=4.67.1 fastapi==0.112.1 pydantic==2.6.4 gradio>=4.26.0 langdetect>=1.0.9 webdataset>=0.2.100`;
+    execSync(chatterboxDepsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
+
+    // Install the fixed version directly from GitHub without dependencies to avoid PyTorch conflicts
     const chatterboxGitUrl = `"chatterbox-tts @ git+${CHATTERBOX_REPO_URL}@${CHATTERBOX_BRANCH}"`;
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --quiet ${chatterboxGitUrl}`;
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --quiet --no-deps ${chatterboxGitUrl}`;
     logger.command(installChatterboxCmd);
-    logger.info(`Installing enhanced voice cloning engine with GPU optimizations`);
+    logger.info(`Installing enhanced voice cloning engine with GPU optimizations (preserving PyTorch versions)`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
     execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
@@ -784,6 +840,20 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
+# Test for the specific torchvision::nms error that was causing issues
+try:
+    from torchvision.transforms import InterpolationMode
+    import torchvision.ops
+    print('✅ torchvision compatibility check passed')
+except Exception as e:
+    if 'torchvision::nms does not exist' in str(e):
+        print(f'❌ CRITICAL: torchvision::nms error detected: {e}')
+        print('   This indicates a PyTorch/torchvision version mismatch')
+        print('   The installation needs to be fixed')
+        sys.exit(1)
+    else:
+        print(f'⚠️ Warning: torchvision issue: {e}')
+
 # Test Chatterbox imports (non-fatal)
 chatterbox_working = False
 try:
@@ -793,9 +863,15 @@ try:
     print('✅ ChatterboxTTS and ChatterboxVC classes available')
     chatterbox_working = True
 except Exception as e:
-    print(f'⚠️ Warning: Chatterbox import failed: {e}')
-    print('   Voice cloning features may not work, but installation will continue')
-    print('   This is often due to PyTorch/TorchVision compatibility issues on Linux')
+    error_str = str(e)
+    if 'torchvision::nms does not exist' in error_str:
+        print(f'❌ CRITICAL: Chatterbox import failed due to torchvision::nms error: {e}')
+        print('   This indicates a PyTorch/torchvision version mismatch that needs to be fixed')
+        sys.exit(1)
+    else:
+        print(f'⚠️ Warning: Chatterbox import failed: {e}')
+        print('   Voice cloning features may not work, but installation will continue')
+        print('   This is often due to PyTorch/TorchVision compatibility issues')
 
 # Test transformers imports (non-fatal if Chatterbox failed)
 if chatterbox_working:
@@ -1008,6 +1084,12 @@ if (installNotes) {
 }
 
 logger.summary('Setup Summary', summaryItems);
+
+logger.newLine();
+logger.success('✅ PyTorch/torchvision compatibility fix applied');
+logger.info('   - Using PyTorch 2.7.0 with torchvision 0.22.0 for Chatterbox compatibility');
+logger.info('   - Prevents "torchvision::nms does not exist" errors');
+logger.info('   - Dependencies installed with version pinning to avoid conflicts');
 
 logger.newLine();
 logger.info('🚀 To run the application with narration service:');

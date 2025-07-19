@@ -67,11 +67,34 @@ The following setup scripts now include these fixes:
 - `OSG_installer.sh` - Linux/Mac shell installer (calls setup-narration.js)
 - `OSG_installer_Windows_preview.bat` - Preview installer (calls setup-narration.js)
 
+## Latest Fix: PyTorch/torchvision Compatibility (2025-07-19)
+
+### Issue Fixed
+- **Error**: `RuntimeError: operator torchvision::nms does not exist`
+- **Cause**: Version mismatch between PyTorch and torchvision during Chatterbox installation
+- **Impact**: Chatterbox API service failed to start, preventing voice cloning features
+
+### Solution Applied
+1. **Version Pinning**: Install specific compatible versions:
+   - PyTorch: 2.7.0 (with appropriate CUDA suffix for GPU)
+   - torchvision: 0.22.0 (compatible with PyTorch 2.7.0)
+   - torchaudio: 2.7.0
+
+2. **Installation Order**:
+   - Install PyTorch/torchvision first with version pinning
+   - Install Chatterbox dependencies separately (non-PyTorch deps)
+   - Install Chatterbox package with `--no-deps` to prevent version conflicts
+
+3. **Validation**: Added compatibility checks to detect torchvision::nms errors early
+
+4. **Index Consistency**: Use CUDA 12.8 index for all PyTorch packages (matches Chatterbox expectations)
+
 ## Requirements
 
 ### Shared Virtual Environment
 - Both F5-TTS and Chatterbox use the same `.venv` with CUDA PyTorch
 - PyTorch version: 2.7.0+cu128 (compatible with both projects)
+- torchvision version: 0.22.0+cu128 (prevents nms operator errors)
 - Saves storage space by sharing dependencies
 
 ### GPU Support
