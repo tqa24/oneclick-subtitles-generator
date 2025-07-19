@@ -809,7 +809,10 @@ try {
     // --- Ensure Chatterbox default voice conditionals are downloaded and properly placed ---
     logger.progress('Ensuring Chatterbox default voice conditionals are available');
     try {
-        const downloadCondsCmd = `${VENV_DIR}\\Scripts\\python.exe -c "
+        const pythonExecutable = process.platform === 'win32'
+            ? `${VENV_DIR}\\Scripts\\python.exe`
+            : `${VENV_DIR}/bin/python`;
+        const downloadCondsCmd = `${pythonExecutable} -c "
 import os
 import shutil
 from huggingface_hub import hf_hub_download
