@@ -806,15 +806,22 @@ try {
     execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
     logger.success('Voice cloning engine installation completed');
 
-    // --- Ensure Chatterbox default voice conditionals are downloaded ---
+    // --- Ensure Chatterbox default voice conditionals are downloaded and properly placed ---
     logger.progress('Ensuring Chatterbox default voice conditionals are available');
     try {
         const downloadCondsCmd = `uv run --python ${VENV_DIR} -- python -c "
 import os
+import shutil
 from huggingface_hub import hf_hub_download
 from pathlib import Path
 
 print('Checking for Chatterbox default voice conditionals...')
+
+# Create the expected directory structure
+models_dir = Path('models')
+chatterbox_weights_dir = models_dir / 'chatterbox_weights'
+chatterbox_weights_dir.mkdir(parents=True, exist_ok=True)
+print(f'✅ Created directory: {chatterbox_weights_dir}')
 
 # Download the conds.pt file specifically
 try:
@@ -823,25 +830,39 @@ try:
         filename='conds.pt',
         force_download=False  # Only download if not already cached
     )
-    print(f'✅ Default voice conditionals available at: {conds_path}')
+    print(f'✅ Default voice conditionals downloaded to cache: {conds_path}')
 
-    # Verify the file is valid
+    # Copy to the expected location for the application
+    local_conds_path = chatterbox_weights_dir / 'conds.pt'
+    shutil.copy2(conds_path, local_conds_path)
+    print(f'✅ Default voice conditionals copied to: {local_conds_path}')
+
+    # Verify both files are valid
     if os.path.exists(conds_path) and os.path.getsize(conds_path) > 0:
-        print('✅ Default voice conditionals file is valid')
+        print('✅ Cached conditionals file is valid')
     else:
-        print('❌ Default voice conditionals file is invalid or empty')
+        print('❌ Cached conditionals file is invalid or empty')
+        exit(1)
+
+    if os.path.exists(local_conds_path) and os.path.getsize(local_conds_path) > 0:
+        print('✅ Local conditionals file is valid')
+        print(f'✅ File size: {os.path.getsize(local_conds_path)} bytes')
+    else:
+        print('❌ Local conditionals file is invalid or empty')
         exit(1)
 
 except Exception as e:
-    print(f'❌ Failed to download default voice conditionals: {e}')
-    print('This may cause issues with voice generation on fresh installations')
+    print(f'❌ Failed to download/copy default voice conditionals: {e}')
+    print('This may cause \\'NoneType\\' object has no attribute \\'cpu\\' errors')
     exit(1)
 "`;
         execSync(downloadCondsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-        logger.success('Default voice conditionals verified');
+        logger.success('Default voice conditionals downloaded and placed correctly');
     } catch (error) {
-        logger.warning('Failed to verify default voice conditionals - voice generation may require reference audio');
-        logger.info('This is not critical but may affect functionality on fresh installations');
+        logger.error('Failed to setup default voice conditionals - this will cause voice generation errors');
+        logger.info('The application may show "NoneType object has no attribute cpu" errors without this file');
+        logger.info('You can manually fix this by running: npm run setup:narration:uv');
+        // Don't exit here, but warn the user
     }
 
     // Note: We still keep the local submodule for API files and compatibility
@@ -1098,7 +1119,22 @@ except Exception as e:
     print(f'❌ Chatterbox TTS failed: {e}')
     sys.exit(1)
 
-print('✅ All service dependencies verified successfully!')
+# Verify conditionals file exists and is accessible
+import os
+conds_path = 'models/chatterbox_weights/conds.pt'
+if os.path.exists(conds_path):
+    file_size = os.path.getsize(conds_path)
+    if file_size > 0:
+        print(f'✅ Chatterbox conditionals file verified: {conds_path} ({file_size} bytes)')
+    else:
+        print(f'❌ Chatterbox conditionals file is empty: {conds_path}')
+        sys.exit(1)
+else:
+    print(f'❌ Chatterbox conditionals file missing: {conds_path}')
+    print('   This will cause "NoneType object has no attribute cpu" errors')
+    sys.exit(1)
+
+print('✅ All service dependencies and required files verified successfully!')
 `;
     const finalVerifyCmd = `uv run --python ${VENV_DIR} -- python -c "${finalVerifyPyCode.replace(/"/g, '\\"')}"`;
     execSync(finalVerifyCmd, { stdio: 'inherit', encoding: 'utf8' });
@@ -1116,6 +1152,7 @@ const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
     `F5-TTS submodule at: "${F5_TTS_DIR}"`,
     `Chatterbox with CUDA fix installed from GitHub`,
+    `Default voice conditionals downloaded and placed at: models/chatterbox_weights/conds.pt`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
     `PyTorch, F5-TTS, Chatterbox, and all dependencies installed`,
