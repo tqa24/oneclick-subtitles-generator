@@ -91,55 +91,16 @@ async def health_check():
 
 
 @app.post("/tts/generate")
-async def generate_speech(request: TTSRequest):
-    """
-    Generate speech from text using only the 2 primary controls.
-    Returns audio as WAV file.
-    """
-    if tts_model is None:
-        raise HTTPException(status_code=503, detail="TTS model not loaded")
-    
-    try:
-        # Generate speech with optimal defaults for all other parameters
-        wav = tts_model.generate(
-            text=request.text,
-            exaggeration=request.exaggeration,
-            cfg_weight=request.cfg_weight,
-            # Optimal defaults (not exposed to user)
-            temperature=0.8,
-            repetition_penalty=1.2,
-            min_p=0.05,
-            top_p=1.0,
-        )
-        
-        # Convert to bytes
-        buffer = io.BytesIO()
-        ta.save(buffer, wav, tts_model.sr, format="wav")
-        buffer.seek(0)
-        
-        return Response(
-            content=buffer.getvalue(),
-            media_type="audio/wav",
-            headers={
-                "Content-Disposition": "attachment; filename=generated_speech.wav",
-                "X-Sample-Rate": str(tts_model.sr)
-            }
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
-
-
-@app.post("/tts/generate-with-voice")
-async def generate_speech_with_voice(
+async def generate_speech(
     text: str = Form(..., description="Text to synthesize", max_length=300),
     exaggeration: float = Form(0.5, description="Emotional intensity (0.25-2.0)", ge=0.25, le=2.0),
     cfg_weight: float = Form(0.5, description="CFG/Pace control (0.0-1.0)", ge=0.0, le=1.0),
     voice_file: UploadFile = File(..., description="Reference voice audio file")
 ):
     """
-    Generate speech with custom voice reference.
-    Only exposes the 2 primary controls.
+    Generate speech with reference voice audio.
+    Reference audio is required for all speech generation.
+    Only exposes the 2 primary controls: exaggeration and cfg_weight.
     """
     if tts_model is None:
         raise HTTPException(status_code=503, detail="TTS model not loaded")
@@ -163,9 +124,6 @@ async def generate_speech_with_voice(
             cfg_weight=cfg_weight,
             # Optimal defaults (not exposed to user)
             temperature=0.8,
-            repetition_penalty=1.2,
-            min_p=0.05,
-            top_p=1.0,
         )
         
         # Convert to bytes
@@ -177,7 +135,7 @@ async def generate_speech_with_voice(
             content=buffer.getvalue(),
             media_type="audio/wav",
             headers={
-                "Content-Disposition": "attachment; filename=generated_speech_with_voice.wav",
+                "Content-Disposition": "attachment; filename=generated_speech.wav",
                 "X-Sample-Rate": str(tts_model.sr)
             }
         )
@@ -259,7 +217,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "api:app",
         host="0.0.0.0",
-        port=8000,
+        port=3011,
         reload=True,
         log_level="info"
     )

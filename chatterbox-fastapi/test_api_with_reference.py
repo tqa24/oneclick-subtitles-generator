@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 # Configuration
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:3011"
 REFERENCE_AUDIO = "test_reference_audio.wav"
 TEST_TEXT = "Hello! This is a test of the Chatterbox TTS API using a reference voice. The voice should sound similar to the reference audio provided."
 
@@ -26,45 +26,17 @@ def test_health():
         print(f"✗ Health check failed: {e}")
         return False
 
-def test_basic_tts():
-    """Test basic TTS without reference audio."""
-    print("\nTesting basic TTS...")
-    try:
-        payload = {
-            "text": TEST_TEXT,
-            "exaggeration": 0.7,
-            "cfg_weight": 0.4
-        }
-        
-        response = requests.post(
-            f"{API_BASE_URL}/tts/generate",
-            json=payload,
-            headers={"Content-Type": "application/json"}
-        )
-        response.raise_for_status()
-        
-        # Save the output
-        output_file = "test_output_basic.wav"
-        with open(output_file, "wb") as f:
-            f.write(response.content)
-        
-        print(f"✓ Basic TTS successful! Output saved to: {output_file}")
-        print(f"  Response headers: {dict(response.headers)}")
-        return True
-        
-    except Exception as e:
-        print(f"✗ Basic TTS failed: {e}")
-        return False
 
-def test_tts_with_reference():
-    """Test TTS with reference audio file."""
-    print(f"\nTesting TTS with reference audio: {REFERENCE_AUDIO}")
-    
+
+def test_tts_generation():
+    """Test TTS generation with reference audio file (required)."""
+    print(f"\nTesting TTS generation with reference audio: {REFERENCE_AUDIO}")
+
     # Check if reference file exists
     if not Path(REFERENCE_AUDIO).exists():
         print(f"✗ Reference audio file not found: {REFERENCE_AUDIO}")
         return False
-    
+
     try:
         # Prepare multipart form data
         files = {
@@ -75,41 +47,40 @@ def test_tts_with_reference():
             'exaggeration': '0.7',
             'cfg_weight': '0.4'
         }
-        
+
         response = requests.post(
-            f"{API_BASE_URL}/tts/generate-with-voice",
+            f"{API_BASE_URL}/tts/generate",
             files=files,
             data=data
         )
         response.raise_for_status()
-        
+
         # Save the output
-        output_file = "test_output_with_reference.wav"
+        output_file = "test_output_generated.wav"
         with open(output_file, "wb") as f:
             f.write(response.content)
-        
-        print(f"✓ TTS with reference successful! Output saved to: {output_file}")
+
+        print(f"✓ TTS generation successful! Output saved to: {output_file}")
         print(f"  Response headers: {dict(response.headers)}")
-        
+
         # Close the file
         files['voice_file'][1].close()
         return True
-        
+
     except Exception as e:
-        print(f"✗ TTS with reference failed: {e}")
+        print(f"✗ TTS generation failed: {e}")
         return False
 
 def main():
     """Run all tests."""
     print("=" * 60)
-    print("Chatterbox API Test with Reference Audio")
+    print("Chatterbox API Test - Reference Audio Required")
     print("=" * 60)
-    
+
     # Test sequence
     tests = [
         ("Health Check", test_health),
-        ("Basic TTS", test_basic_tts),
-        ("TTS with Reference", test_tts_with_reference)
+        ("TTS Generation", test_tts_generation)
     ]
     
     results = []

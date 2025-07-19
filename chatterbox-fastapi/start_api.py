@@ -11,7 +11,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description="Start Chatterbox TTS API Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to (default: 8000)")
+    parser.add_argument("--port", type=int, default=3011, help="Port to bind to (default: 3011)")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
     parser.add_argument("--workers", type=int, default=1, help="Number of worker processes (default: 1)")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error"], 
