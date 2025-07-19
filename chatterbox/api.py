@@ -174,6 +174,60 @@ async def generate_speech(request: TTSRequest):
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 
+@app.post("/tts/generate-with-voice-path")
+async def generate_speech_with_voice_path(request: dict):
+    """
+    Generate speech with voice reference using a file path.
+    This is more efficient for local files than uploading.
+    """
+    if tts_model is None:
+        raise HTTPException(status_code=503, detail="TTS model not loaded")
+
+    # Extract parameters
+    text = request.get('text', '')
+    exaggeration = request.get('exaggeration', 0.5)
+    cfg_weight = request.get('cfg_weight', 0.5)
+    voice_file_path = request.get('voice_file_path', '')
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text is required")
+
+    if not voice_file_path:
+        raise HTTPException(status_code=400, detail="Voice file path is required")
+
+    # Validate file exists
+    import os
+    if not os.path.exists(voice_file_path):
+        raise HTTPException(status_code=400, detail=f"Voice file not found: {voice_file_path}")
+
+    try:
+        # Generate speech with voice reference
+        wav = tts_model.generate(
+            text=text,
+            audio_prompt_path=voice_file_path,
+            exaggeration=exaggeration,
+            cfg_weight=cfg_weight,
+            # Optimal defaults (not exposed to user)
+            temperature=0.8,
+        )
+
+        # Convert to bytes
+        buffer = io.BytesIO()
+        ta.save(buffer, wav, tts_model.sr, format="wav")
+        buffer.seek(0)
+
+        return Response(
+            content=buffer.getvalue(),
+            media_type="audio/wav",
+            headers={
+                "X-Sample-Rate": str(tts_model.sr)
+            }
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
+
+
 @app.post("/tts/generate-with-voice")
 async def generate_speech_with_voice(
     text: str = Form(..., description="Text to synthesize", max_length=300),

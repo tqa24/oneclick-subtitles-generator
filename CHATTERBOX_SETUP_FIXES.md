@@ -91,6 +91,11 @@ The following setup scripts now include these fixes:
 
 5. **Command Correction**: Removed incorrect `dev:uv` command, ensured `dev:cuda` (used by installer) works properly
 
+6. **Reference Audio Fix**: Fixed Chatterbox API to properly handle reference audio files from frontend
+   - Added `/tts/generate-with-voice-path` endpoint for efficient file path-based voice reference
+   - Updated frontend to use file paths instead of uploading files when possible
+   - Prevents `'NoneType' object has no attribute 'cpu'` errors when using reference audio
+
 ## Requirements
 
 ### Shared Virtual Environment

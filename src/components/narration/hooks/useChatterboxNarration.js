@@ -74,19 +74,38 @@ const useChatterboxNarration = ({
   }, [useGroupedSubtitles, groupedSubtitles, subtitleSource, translatedSubtitles, originalSubtitles, subtitles]);
 
   /**
-   * Convert reference audio to File object for API
+   * Get reference audio file path for API (more efficient than file upload)
+   */
+  const getReferenceAudioPath = useCallback(() => {
+    if (!referenceAudio) {
+      return null;
+    }
+
+    // Use the filepath if available (this is the server-side path)
+    if (referenceAudio.filepath) {
+      return referenceAudio.filepath;
+    }
+
+    return null;
+  }, [referenceAudio]);
+
+  /**
+   * Convert reference audio to File object for API (fallback method)
    */
   const getReferenceAudioFile = useCallback(async () => {
-    if (!referenceAudio) return null;
+    if (!referenceAudio) {
+      return null;
+    }
 
     try {
       if (referenceAudio.url) {
         // Convert URL to File
         const response = await fetch(referenceAudio.url);
         const blob = await response.blob();
-        return new File([blob], referenceAudio.filename || 'reference.wav', { type: 'audio/wav' });
+        const file = new File([blob], referenceAudio.filename || 'reference.wav', { type: 'audio/wav' });
+        return file;
       }
-      
+
       if (referenceAudio.file) {
         return referenceAudio.file;
       }
@@ -154,7 +173,7 @@ const useChatterboxNarration = ({
   /**
    * Generate narration for a single subtitle
    */
-  const generateSingleNarration = useCallback(async (subtitle, index, total, voiceFile = null) => {
+  const generateSingleNarration = useCallback(async (subtitle, index, total, voiceFile = null, voiceFilePath = null) => {
     try {
       setGenerationStatus(t('narration.chatterboxGeneratingProgress', 'Generating {{progress}} of {{total}} narrations with Chatterbox...', {
         progress: index + 1,
@@ -165,7 +184,8 @@ const useChatterboxNarration = ({
         subtitle.text,
         exaggeration,
         cfgWeight,
-        voiceFile
+        voiceFile,
+        voiceFilePath
       );
 
       // Save audio blob to server and get filename
@@ -221,8 +241,9 @@ const useChatterboxNarration = ({
         throw new Error(t('narration.noSubtitlesError', 'No subtitles available for narration'));
       }
 
-      // Get reference audio file if available
-      const voiceFile = await getReferenceAudioFile();
+      // Get reference audio (prefer file path over file object for efficiency)
+      const voiceFilePath = getReferenceAudioPath();
+      const voiceFile = voiceFilePath ? null : await getReferenceAudioFile();
 
       setGenerationStatus(t('narration.chatterboxStarting', 'Starting Chatterbox narration generation...'));
 
@@ -237,11 +258,11 @@ const useChatterboxNarration = ({
       }
 
       const results = [];
-      
+
       // Generate narrations sequentially to avoid overwhelming the API
       for (let i = 0; i < selectedSubtitles.length; i++) {
         const subtitle = selectedSubtitles[i];
-        const result = await generateSingleNarration(subtitle, i, selectedSubtitles.length, voiceFile);
+        const result = await generateSingleNarration(subtitle, i, selectedSubtitles.length, voiceFile, voiceFilePath);
         results.push(result);
         
         // Update results incrementally

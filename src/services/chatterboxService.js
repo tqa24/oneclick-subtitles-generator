@@ -200,17 +200,40 @@ export const checkChatterboxAvailability = async (maxAttempts = 10, delayMs = 30
  * @param {number} exaggeration - Emotional intensity (0.25-2.0)
  * @param {number} cfgWeight - CFG/Pace control (0.0-1.0)
  * @param {File|null} voiceFile - Optional voice reference file
+ * @param {string|null} voiceFilePath - Optional voice reference file path (more efficient than uploading)
  * @returns {Promise<Blob>} - Audio blob
  */
-export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeight = 0.5, voiceFile = null) => {
+export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeight = 0.5, voiceFile = null, voiceFilePath = null) => {
   try {
-    const endpoint = voiceFile ? '/tts/generate-with-voice' : '/tts/generate';
-    const url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
+    // Determine which endpoint to use
+    let endpoint, url;
+    if (voiceFilePath) {
+      // Use path-based endpoint (more efficient for local files)
+      endpoint = '/tts/generate-with-voice-path';
+      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
+    } else if (voiceFile) {
+      // Use file upload endpoint
+      endpoint = '/tts/generate-with-voice';
+      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
+    } else {
+      // Use default voice endpoint
+      endpoint = '/tts/generate';
+      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
+    }
 
     let body;
     let headers = {};
 
-    if (voiceFile) {
+    if (voiceFilePath) {
+      // Use JSON for path-based generation
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({
+        text,
+        exaggeration,
+        cfg_weight: cfgWeight,
+        voice_file_path: voiceFilePath
+      });
+    } else if (voiceFile) {
       // Use FormData for file upload
       const formData = new FormData();
       formData.append('text', text);
