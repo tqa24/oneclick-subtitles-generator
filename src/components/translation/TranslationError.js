@@ -12,7 +12,10 @@ const TranslationError = ({ error }) => {
   return (
     <div className="translation-row error-row">
       <div className="row-content">
-        <div className="translation-error">{error}</div>
+        <div
+          className="translation-error"
+          dangerouslySetInnerHTML={{ __html: error }}
+        />
       </div>
     </div>
   );

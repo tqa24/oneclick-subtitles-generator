@@ -330,7 +330,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                             (errorData.error.message && errorData.error.message.includes('quota'))) {
                             // Blacklist the current API key
                             blacklistKey(geminiApiKey);
-                            throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
+                            throw new Error(i18n.t('errors.apiQuotaExceeded', 'Current API key is overloaded, please use a key from another Gmail account, or wait for some time, or add billing at https://aistudio.google.com/usage?tab=billing'));
                         }
                     }
 
@@ -353,7 +353,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     if (response.status === 429) {
                         // Blacklist the current API key
                         blacklistKey(geminiApiKey);
-                        throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
+                        throw new Error(i18n.t('errors.apiQuotaExceeded', 'Current API key is overloaded, please use a key from another Gmail account, or wait for some time, or add billing at https://aistudio.google.com/usage?tab=billing'));
                     }
 
                     throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
@@ -374,7 +374,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (response.status === 429) {
                     // Blacklist the current API key
                     blacklistKey(geminiApiKey);
-                    throw new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
+                    throw new Error(i18n.t('errors.apiQuotaExceeded', 'Current API key is overloaded, please use a key from another Gmail account, or wait for some time, or add billing at https://aistudio.google.com/usage?tab=billing'));
                 }
 
                 throw new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
@@ -453,8 +453,8 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 // Blacklist the current API key
                 blacklistKey(geminiApiKey);
 
-                // Replace the error with a more user-friendly message
-                error = new Error(i18n.t('errors.paidTierRequired', 'API quota exceeded. Please try again later or check your API key limits.'));
+                // Replace the error with a more specific user-friendly message
+                error = new Error(i18n.t('errors.apiQuotaExceeded', 'Current API key is overloaded, please use a key from another Gmail account, or wait for some time, or add billing at https://aistudio.google.com/usage?tab=billing'));
             }
 
             // Remove this controller from the map on error

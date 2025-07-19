@@ -387,7 +387,8 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       if (err.message && (err.message.includes('cancelled') || err.message.includes('aborted'))) {
         setTranslationStatus(t('translation.cancelled', 'Translation cancelled by user'));
       } else {
-        setError(t('translation.error', 'Error translating subtitles. Please try again.'));
+        // Use the specific error message if available, otherwise use generic message
+        setError(err.message || t('translation.error', 'Error translating subtitles. Please try again.'));
       }
     } finally {
       setIsTranslating(false);
