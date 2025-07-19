@@ -89,6 +89,8 @@ The following setup scripts now include these fixes:
 
 4. **Index Consistency**: Use CUDA 12.8 index for all PyTorch packages (matches Chatterbox expectations)
 
+5. **Command Correction**: Removed incorrect `dev:uv` command, ensured `dev:cuda` (used by installer) works properly
+
 ## Requirements
 
 ### Shared Virtual Environment

@@ -995,14 +995,19 @@ try {
         }
         const setupScriptName = path.basename(__filename);
 
-        // Update existing or add new scripts
-        packageJson.scripts['python:start:uv'] = `uv run --python .venv -- python server/narrationApp.py`; // Generic name
-        packageJson.scripts['dev:uv'] = `concurrently "npm run start" "npm run server:start" "npm run python:start:uv"`; // Generic name
+        // Update existing or add new scripts for uv-based setup
+        packageJson.scripts['python:start:uv'] = `uv run --python .venv -- python server/narrationApp.py`;
         packageJson.scripts['setup:narration:uv'] = `node ${setupScriptName}`;
 
-        // Remove old CUDA specific ones if they exist to avoid confusion
+        // Ensure dev:cuda is properly configured (used by OSG_installer_Windows.bat)
+        if (!packageJson.scripts['dev:cuda']) {
+            packageJson.scripts['dev:cuda'] = `cross-env START_PYTHON_SERVER=true concurrently --names "FRONTEND,SERVER" --prefix-colors "cyan,green" --prefix "[{name}]" "npm run start --silent" "npm run server:start"`;
+        }
+
+        // Remove old/unused scripts to avoid confusion
         delete packageJson.scripts['python:start:cuda:uv'];
         delete packageJson.scripts['dev:cuda:uv'];
+        delete packageJson.scripts['dev:uv'];
 
         fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
         logger.success('Installation configuration completed');
@@ -1092,9 +1097,10 @@ logger.info('   - Prevents "torchvision::nms does not exist" errors');
 logger.info('   - Dependencies installed with version pinning to avoid conflicts');
 
 logger.newLine();
-logger.info('🚀 To run the application with narration service:');
+logger.info('🚀 To run the application with ALL narration services:');
 logger.info('   1. Ensure `uv` and `npm` are in your PATH');
-logger.info('   2. Run: npm run dev:uv');
+logger.info('   2. Run: npm run dev:cuda');
+logger.info('   This starts F5-TTS (port 3006) + Chatterbox API (port 3011) + Frontend (port 3008)');
 
 logger.newLine();
 logger.info('💡 Other useful commands:');
