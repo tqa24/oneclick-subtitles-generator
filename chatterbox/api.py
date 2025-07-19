@@ -69,12 +69,20 @@ class HealthResponse(BaseModel):
 async def startup_event():
     """Load models on startup"""
     global tts_model, vc_model
-    
+
     print(f"Loading models on device: {DEVICE}")
-    
+
     try:
         tts_model = ChatterboxTTS.from_pretrained(DEVICE)
         print("[SUCCESS] TTS model loaded successfully")
+
+        # Check if default conditionals are available
+        if tts_model.conds is None:
+            print("[WARNING] TTS model loaded but no default voice conditionals (conds.pt) found")
+            print("[WARNING] Voice reference files will be required for TTS generation")
+        else:
+            print("[SUCCESS] Default voice conditionals loaded")
+
     except Exception as e:
         print(f"[ERROR] Failed to load TTS model: {e}")
         tts_model = None
@@ -90,11 +98,14 @@ async def startup_event():
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
+    # Check if TTS model is fully functional (loaded with conditionals)
+    tts_functional = tts_model is not None and tts_model.conds is not None
+
     return HealthResponse(
-        status="healthy" if tts_model is not None else "degraded",
+        status="healthy" if tts_functional else "degraded",
         device=DEVICE,
         models_loaded={
-            "tts": tts_model is not None,
+            "tts": tts_functional,
             "vc": vc_model is not None
         }
     )
@@ -108,7 +119,34 @@ async def generate_speech(request: TTSRequest):
     """
     if tts_model is None:
         raise HTTPException(status_code=503, detail="TTS model not loaded")
-    
+
+    # Check if model has default conditionals loaded
+    if tts_model.conds is None:
+        # Try to create a fallback using a default voice sample if available
+        try:
+            # Look for any available voice sample in the model's cache directory
+            import os
+            from pathlib import Path
+
+            # Common locations where voice samples might be found
+            possible_voice_paths = [
+                Path.home() / ".cache" / "huggingface" / "hub" / "models--SWivid--Chatterbox" / "snapshots" / "*" / "example_voice.wav",
+                Path.home() / ".cache" / "huggingface" / "hub" / "models--SWivid--Chatterbox" / "snapshots" / "*" / "default_voice.wav",
+                # Add more potential paths as needed
+            ]
+
+            # For now, return a clear error message
+            raise HTTPException(
+                status_code=503,
+                detail="TTS model loaded but no default voice conditionals available. This typically happens on fresh installations. Please restart the service or provide a voice reference file."
+            )
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=503,
+                detail=f"TTS model loaded but no default voice conditionals available: {str(e)}"
+            )
+
     try:
         # Generate speech with optimal defaults for all other parameters
         wav = tts_model.generate(
@@ -118,12 +156,12 @@ async def generate_speech(request: TTSRequest):
             # Optimal defaults (not exposed to user)
             temperature=0.8,
         )
-        
+
         # Convert to bytes
         buffer = io.BytesIO()
         ta.save(buffer, wav, tts_model.sr, format="wav")
         buffer.seek(0)
-        
+
         return Response(
             content=buffer.getvalue(),
             media_type="audio/wav",
@@ -131,7 +169,7 @@ async def generate_speech(request: TTSRequest):
                 "X-Sample-Rate": str(tts_model.sr)
             }
         )
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
