@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 # Configuration
-API_BASE_URL = "http://localhost:3011"
+API_BASE_URL = "http://localhost:8000"
 REFERENCE_AUDIO = "test_reference_audio.wav"
 TEST_TEXT = "Hello! This is a test of the Chatterbox TTS API using a reference voice. The voice should sound similar to the reference audio provided."
 

@@ -27,7 +27,7 @@ pip install -r requirements-api.txt
 python start_api.py
 
 # With custom settings
-python start_api.py --host 0.0.0.0 --port 3011 --reload
+python start_api.py --host 0.0.0.0 --port 8000 --reload
 
 # For production (multiple workers)
 python start_api.py --workers 4 --log-level warning
@@ -35,9 +35,9 @@ python start_api.py --workers 4 --log-level warning
 
 ### 3. Access the API
 
-- **API Documentation**: http://localhost:3011/docs
-- **Health Check**: http://localhost:3011/health
-- **Alternative Docs**: http://localhost:3011/redoc
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+- **Alternative Docs**: http://localhost:8000/redoc
 
 ## API Endpoints
 
@@ -100,7 +100,7 @@ target_voice: [reference voice file]
 import requests
 
 # Basic generation
-response = requests.post("http://localhost:3011/tts/generate", json={
+response = requests.post("http://localhost:8000/tts/generate", json={
     "text": "Hello world!",
     "exaggeration": 0.7,
     "cfg_weight": 0.4
@@ -113,13 +113,13 @@ with open("output.wav", "wb") as f:
 ### cURL
 ```bash
 # Basic TTS
-curl -X POST "http://localhost:3011/tts/generate" \
+curl -X POST "http://localhost:8000/tts/generate" \
      -H "Content-Type: application/json" \
      -d '{"text": "Hello world!", "exaggeration": 0.5, "cfg_weight": 0.5}' \
      --output output.wav
 
 # TTS with voice file
-curl -X POST "http://localhost:3011/tts/generate-with-voice" \
+curl -X POST "http://localhost:8000/tts/generate-with-voice" \
      -F "text=Hello world!" \
      -F "exaggeration=0.7" \
      -F "cfg_weight=0.4" \
@@ -130,7 +130,7 @@ curl -X POST "http://localhost:3011/tts/generate-with-voice" \
 ### JavaScript/Fetch
 ```javascript
 // Basic generation
-const response = await fetch('http://localhost:3011/tts/generate', {
+const response = await fetch('http://localhost:8000/tts/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

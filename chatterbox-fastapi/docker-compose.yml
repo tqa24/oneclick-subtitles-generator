@@ -4,7 +4,7 @@ services:
   chatterbox-api:
     build: .
     ports:
-      - "3011:3011"
+      - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
@@ -19,7 +19,7 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3011/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
