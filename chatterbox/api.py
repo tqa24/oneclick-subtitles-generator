@@ -79,7 +79,33 @@ async def startup_event():
         # Check if default conditionals are available
         if tts_model.conds is None:
             print("[WARNING] TTS model loaded but no default voice conditionals (conds.pt) found")
-            print("[WARNING] Voice reference files will be required for TTS generation")
+            print("[WARNING] Attempting to download default voice conditionals...")
+
+            # Try to download the conditionals file
+            try:
+                from huggingface_hub import hf_hub_download
+                import os
+
+                conds_path = hf_hub_download(
+                    repo_id='ResembleAI/chatterbox',
+                    filename='conds.pt',
+                    force_download=True  # Force download to ensure we get the file
+                )
+
+                if os.path.exists(conds_path) and os.path.getsize(conds_path) > 0:
+                    print(f"[SUCCESS] Downloaded default voice conditionals to: {conds_path}")
+                    # Reload the model to pick up the conditionals
+                    tts_model = ChatterboxTTS.from_pretrained(DEVICE)
+                    if tts_model.conds is not None:
+                        print("[SUCCESS] Default voice conditionals loaded after download")
+                    else:
+                        print("[WARNING] Default voice conditionals still not loaded after download")
+                else:
+                    print("[ERROR] Downloaded conditionals file is invalid")
+
+            except Exception as download_error:
+                print(f"[ERROR] Failed to download default voice conditionals: {download_error}")
+                print("[WARNING] Voice reference files will be required for TTS generation")
         else:
             print("[SUCCESS] Default voice conditionals loaded")
 
@@ -122,30 +148,10 @@ async def generate_speech(request: TTSRequest):
 
     # Check if model has default conditionals loaded
     if tts_model.conds is None:
-        # Try to create a fallback using a default voice sample if available
-        try:
-            # Look for any available voice sample in the model's cache directory
-            import os
-            from pathlib import Path
-
-            # Common locations where voice samples might be found
-            possible_voice_paths = [
-                Path.home() / ".cache" / "huggingface" / "hub" / "models--SWivid--Chatterbox" / "snapshots" / "*" / "example_voice.wav",
-                Path.home() / ".cache" / "huggingface" / "hub" / "models--SWivid--Chatterbox" / "snapshots" / "*" / "default_voice.wav",
-                # Add more potential paths as needed
-            ]
-
-            # For now, return a clear error message
-            raise HTTPException(
-                status_code=503,
-                detail="TTS model loaded but no default voice conditionals available. This typically happens on fresh installations. Please restart the service or provide a voice reference file."
-            )
-
-        except Exception as e:
-            raise HTTPException(
-                status_code=503,
-                detail=f"TTS model loaded but no default voice conditionals available: {str(e)}"
-            )
+        raise HTTPException(
+            status_code=503,
+            detail="TTS model loaded but no default voice conditionals available. This typically happens on fresh installations. Please restart the service or provide a voice reference file."
+        )
 
     try:
         # Generate speech with optimal defaults for all other parameters

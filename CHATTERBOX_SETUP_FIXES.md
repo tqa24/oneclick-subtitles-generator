@@ -96,6 +96,12 @@ The following setup scripts now include these fixes:
    - Updated frontend to use file paths instead of uploading files when possible
    - Prevents `'NoneType' object has no attribute 'cpu'` errors when using reference audio
 
+7. **Default Voice Conditionals Fix**: Ensures `conds.pt` file is properly downloaded on fresh installations
+   - Added explicit download and validation of default voice conditionals during setup
+   - Added fallback download mechanism in Chatterbox API startup if conditionals are missing
+   - Prevents `'NoneType' object has no attribute 'cpu'` errors on fresh installations
+   - Ensures voice generation works without requiring reference audio files
+
 ## Requirements
 
 ### Shared Virtual Environment

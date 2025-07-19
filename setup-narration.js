@@ -806,6 +806,44 @@ try {
     execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
     logger.success('Voice cloning engine installation completed');
 
+    // --- Ensure Chatterbox default voice conditionals are downloaded ---
+    logger.progress('Ensuring Chatterbox default voice conditionals are available');
+    try {
+        const downloadCondsCmd = `uv run --python ${VENV_DIR} -- python -c "
+import os
+from huggingface_hub import hf_hub_download
+from pathlib import Path
+
+print('Checking for Chatterbox default voice conditionals...')
+
+# Download the conds.pt file specifically
+try:
+    conds_path = hf_hub_download(
+        repo_id='ResembleAI/chatterbox',
+        filename='conds.pt',
+        force_download=False  # Only download if not already cached
+    )
+    print(f'✅ Default voice conditionals available at: {conds_path}')
+
+    # Verify the file is valid
+    if os.path.exists(conds_path) and os.path.getsize(conds_path) > 0:
+        print('✅ Default voice conditionals file is valid')
+    else:
+        print('❌ Default voice conditionals file is invalid or empty')
+        exit(1)
+
+except Exception as e:
+    print(f'❌ Failed to download default voice conditionals: {e}')
+    print('This may cause issues with voice generation on fresh installations')
+    exit(1)
+"`;
+        execSync(downloadCondsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        logger.success('Default voice conditionals verified');
+    } catch (error) {
+        logger.warning('Failed to verify default voice conditionals - voice generation may require reference audio');
+        logger.info('This is not critical but may affect functionality on fresh installations');
+    }
+
     // Note: We still keep the local submodule for API files and compatibility
     if (fs.existsSync(CHATTERBOX_DIR)) {
         logger.success(`Voice cloning engine configured successfully`);
