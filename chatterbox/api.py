@@ -73,39 +73,37 @@ async def startup_event():
     print(f"Loading models on device: {DEVICE}")
 
     try:
-        tts_model = ChatterboxTTS.from_pretrained(DEVICE)
+        # First try to use local bundled models with conditionals
+        local_models_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "chatterbox_weights")
+        if os.path.exists(local_models_dir) and os.path.exists(os.path.join(local_models_dir, "conds.pt")):
+            print(f"[INFO] Using local bundled models from: {local_models_dir}")
+
+            # Download other required model files to cache if not present
+            from huggingface_hub import hf_hub_download
+            for fpath in ["ve.safetensors", "t3_cfg.safetensors", "s3gen.safetensors", "tokenizer.json"]:
+                hf_hub_download(repo_id="ResembleAI/chatterbox", filename=fpath)
+
+            # Get the HF cache directory for other models
+            hf_cache_path = hf_hub_download(repo_id="ResembleAI/chatterbox", filename="ve.safetensors")
+            hf_cache_dir = os.path.dirname(hf_cache_path)
+
+            # Copy our bundled conds.pt to the HF cache directory
+            import shutil
+            local_conds_path = os.path.join(local_models_dir, "conds.pt")
+            hf_conds_path = os.path.join(hf_cache_dir, "conds.pt")
+            shutil.copy2(local_conds_path, hf_conds_path)
+            print(f"[SUCCESS] Using bundled conditionals: {local_conds_path}")
+
+            tts_model = ChatterboxTTS.from_local(hf_cache_dir, DEVICE)
+        else:
+            print("[INFO] Local bundled models not found, using HuggingFace models")
+            tts_model = ChatterboxTTS.from_pretrained(DEVICE)
+
         print("[SUCCESS] TTS model loaded successfully")
 
-        # Check if default conditionals are available
+        # Verify conditionals are loaded
         if tts_model.conds is None:
-            print("[WARNING] TTS model loaded but no default voice conditionals (conds.pt) found")
-            print("[WARNING] Attempting to download default voice conditionals...")
-
-            # Try to download the conditionals file
-            try:
-                from huggingface_hub import hf_hub_download
-                import os
-
-                conds_path = hf_hub_download(
-                    repo_id='ResembleAI/chatterbox',
-                    filename='conds.pt',
-                    force_download=True  # Force download to ensure we get the file
-                )
-
-                if os.path.exists(conds_path) and os.path.getsize(conds_path) > 0:
-                    print(f"[SUCCESS] Downloaded default voice conditionals to: {conds_path}")
-                    # Reload the model to pick up the conditionals
-                    tts_model = ChatterboxTTS.from_pretrained(DEVICE)
-                    if tts_model.conds is not None:
-                        print("[SUCCESS] Default voice conditionals loaded after download")
-                    else:
-                        print("[WARNING] Default voice conditionals still not loaded after download")
-                else:
-                    print("[ERROR] Downloaded conditionals file is invalid")
-
-            except Exception as download_error:
-                print(f"[ERROR] Failed to download default voice conditionals: {download_error}")
-                print("[WARNING] Voice reference files will be required for TTS generation")
+            print("[ERROR] TTS model loaded but no default voice conditionals available")
         else:
             print("[SUCCESS] Default voice conditionals loaded")
 
