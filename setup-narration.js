@@ -152,7 +152,7 @@ if (!commandExists('git')) {
 }
 logger.found('git');
 
-logger.progress('Initializing and updating git submodules (F5-TTS and Chatterbox)');
+logger.progress('Initializing and updating git submodules (F5-TTS)');
 try {
     // Initialize submodules if not already done
     execSync('git submodule init', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
@@ -220,48 +220,13 @@ if (!fs.existsSync(F5_TTS_DIR)) {
     }
 }
 
-// Check Chatterbox submodule
+// Check Chatterbox source code (now directly committed to repository)
 if (!fs.existsSync(CHATTERBOX_DIR)) {
-    logger.warning(`Chatterbox submodule directory "${CHATTERBOX_DIR}" not found.`);
-    logger.info('Attempting to clone Chatterbox manually...');
-    try {
-        // Create chatterbox directory if it doesn't exist
-        const chatterboxParentDir = path.dirname(CHATTERBOX_DIR);
-        if (!fs.existsSync(chatterboxParentDir)) {
-            fs.mkdirSync(chatterboxParentDir, { recursive: true });
-        }
-        execSync(`git clone -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} ${CHATTERBOX_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-        logger.success('Chatterbox cloned successfully');
-    } catch (cloneError) {
-        logger.warning(`Failed to clone Chatterbox: ${cloneError.message}`);
-        logger.info('Will proceed with GitHub installation only (Chatterbox will still work)');
-        logger.info('Local API files may not be available, but the package will be installed from GitHub');
-    }
+    logger.error(`Chatterbox source code directory "${CHATTERBOX_DIR}" not found.`);
+    logger.info('This should be included directly in the repository now.');
+    process.exit(1);
 } else {
-    // Check if the submodule directory has actual content (not just .git)
-    const dirContents = fs.readdirSync(CHATTERBOX_DIR);
-    const hasContent = dirContents.some(item => item !== '.git' && item !== '.gitignore');
-
-    if (!hasContent) {
-        logger.warning(`Chatterbox submodule directory exists but appears empty (only contains: ${dirContents.join(', ')})`);
-        logger.info('Attempting to populate Chatterbox submodule...');
-        try {
-            // Remove the empty directory and clone fresh
-            fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
-            // Create chatterbox directory if it doesn't exist
-            const chatterboxParentDir = path.dirname(CHATTERBOX_DIR);
-            if (!fs.existsSync(chatterboxParentDir)) {
-                fs.mkdirSync(chatterboxParentDir, { recursive: true });
-            }
-            execSync(`git clone -b ${CHATTERBOX_BRANCH} ${CHATTERBOX_REPO_URL} ${CHATTERBOX_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-            logger.success('Chatterbox cloned successfully');
-        } catch (cloneError) {
-            logger.warning(`Failed to clone Chatterbox: ${cloneError.message}`);
-            logger.info('Will proceed with GitHub installation only (Chatterbox will still work)');
-        }
-    } else {
-        logger.success('Chatterbox submodule found with content');
-    }
+    logger.success('Chatterbox source code found');
 }
 
 logger.success('Submodule verification completed');
@@ -806,73 +771,31 @@ try {
     execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
     logger.success('Voice cloning engine installation completed');
 
-    // --- Ensure Chatterbox default voice conditionals are downloaded and properly placed ---
-    logger.progress('Ensuring Chatterbox default voice conditionals are available');
-    try {
-        const pythonExecutable = process.platform === 'win32'
-            ? `${VENV_DIR}\\Scripts\\python.exe`
-            : `${VENV_DIR}/bin/python`;
-        const downloadCondsCmd = `${pythonExecutable} -c "
-import os
-import shutil
-from huggingface_hub import hf_hub_download
-from pathlib import Path
-
-print('Checking for Chatterbox default voice conditionals...')
-
-# Create the expected directory structure
-models_dir = Path('models')
-chatterbox_weights_dir = models_dir / 'chatterbox_weights'
-chatterbox_weights_dir.mkdir(parents=True, exist_ok=True)
-print(f'✅ Created directory: {chatterbox_weights_dir}')
-
-# Download the conds.pt file specifically
-try:
-    conds_path = hf_hub_download(
-        repo_id='ResembleAI/chatterbox',
-        filename='conds.pt',
-        force_download=False  # Only download if not already cached
-    )
-    print(f'✅ Default voice conditionals downloaded to cache: {conds_path}')
-
-    # Copy to the expected location for the application
-    local_conds_path = chatterbox_weights_dir / 'conds.pt'
-    shutil.copy2(conds_path, local_conds_path)
-    print(f'✅ Default voice conditionals copied to: {local_conds_path}')
-
-    # Verify both files are valid
-    if os.path.exists(conds_path) and os.path.getsize(conds_path) > 0:
-        print('✅ Cached conditionals file is valid')
-    else:
-        print('❌ Cached conditionals file is invalid or empty')
-        exit(1)
-
-    if os.path.exists(local_conds_path) and os.path.getsize(local_conds_path) > 0:
-        print('✅ Local conditionals file is valid')
-        print(f'✅ File size: {os.path.getsize(local_conds_path)} bytes')
-    else:
-        print('❌ Local conditionals file is invalid or empty')
-        exit(1)
-
-except Exception as e:
-    print(f'❌ Failed to download/copy default voice conditionals: {e}')
-    print('This may cause \\'NoneType\\' object has no attribute \\'cpu\\' errors')
-    exit(1)
-"`;
-        execSync(downloadCondsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-        logger.success('Default voice conditionals downloaded and placed correctly');
-    } catch (error) {
-        logger.error('Failed to setup default voice conditionals - this will cause voice generation errors');
-        logger.info('The application may show "NoneType object has no attribute cpu" errors without this file');
-        logger.info('You can manually fix this by running: npm run setup:narration:uv');
-        // Don't exit here, but warn the user
+    // --- Verify Chatterbox default voice conditionals are present ---
+    logger.progress('Verifying Chatterbox default voice conditionals are available');
+    const condsPath = path.join('models', 'chatterbox_weights', 'conds.pt');
+    if (fs.existsSync(condsPath)) {
+        const fileSize = fs.statSync(condsPath).size;
+        if (fileSize > 0) {
+            logger.success(`Default voice conditionals verified: ${condsPath} (${fileSize} bytes)`);
+        } else {
+            logger.error('Default voice conditionals file is empty');
+            logger.info('This will cause "NoneType object has no attribute cpu" errors');
+            process.exit(1);
+        }
+    } else {
+        logger.error('Default voice conditionals file not found');
+        logger.info(`Expected file: ${condsPath}`);
+        logger.info('This will cause "NoneType object has no attribute cpu" errors');
+        process.exit(1);
     }
 
-    // Note: We still keep the local submodule for API files and compatibility
+    // Chatterbox source code is now directly included in the repository
     if (fs.existsSync(CHATTERBOX_DIR)) {
         logger.success(`Voice cloning engine configured successfully`);
     } else {
-        console.log(`⚠️ Local Chatterbox submodule not found, but package installed from GitHub.`);
+        logger.error(`Chatterbox source code not found at ${CHATTERBOX_DIR}`);
+        process.exit(1);
     }
 
     // --- Apply Chatterbox fixes for proper operation ---
@@ -1154,8 +1077,8 @@ logger.step(6, 6, 'Setup completed successfully!');
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
     `F5-TTS submodule at: "${F5_TTS_DIR}"`,
-    `Chatterbox with CUDA fix installed from GitHub`,
-    `Default voice conditionals downloaded and placed at: models/chatterbox_weights/conds.pt`,
+    `Chatterbox source code included directly in repository`,
+    `Default voice conditionals bundled at: models/chatterbox_weights/conds.pt`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
     `PyTorch, F5-TTS, Chatterbox, and all dependencies installed`,
