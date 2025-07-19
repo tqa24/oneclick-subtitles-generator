@@ -16,18 +16,8 @@ SET "TITLE_TEXT=Quan Ly Trinh Tao Phu De OneClick"
 TITLE %TITLE_TEXT%
 
 :: --- Check for Administrator Privileges ---
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow"
-net session >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO.
-    ECHO ======================================================
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Administrator privileges required.' -ForegroundColor Red; Write-Host '[INFO] Requesting administrator privileges...' -ForegroundColor Blue"
-    ECHO ======================================================
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    EXIT /B
-)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green"
-ECHO.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow; if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) { Write-Host ''; Write-Host '======================================================'; Write-Host '[ERROR] Administrator privileges required.' -ForegroundColor Red; Write-Host '[INFO] Requesting administrator privileges...' -ForegroundColor Blue; Write-Host '======================================================'; Start-Process '%~f0' -Verb RunAs; exit 1 } else { Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green; Write-Host '' }"
+IF %ERRORLEVEL% NEQ 0 EXIT /B
 
 GOTO %MENU_LABEL%
 
