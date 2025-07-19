@@ -153,6 +153,21 @@ async def generate_speech(request: TTSRequest):
             detail="TTS model loaded but no default voice conditionals available. This typically happens on fresh installations. Please restart the service or provide a voice reference file."
         )
 
+    # Additional debugging for the conditionals structure
+    try:
+        if hasattr(tts_model.conds, 't3') and tts_model.conds.t3 is not None:
+            if hasattr(tts_model.conds.t3, 'emotion_adv') and tts_model.conds.t3.emotion_adv is not None:
+                # Try to access the specific attribute that's failing
+                test_value = tts_model.conds.t3.emotion_adv[0, 0, 0]
+                print(f"[DEBUG] Conditionals check passed: emotion_adv[0,0,0] = {test_value}")
+            else:
+                raise HTTPException(status_code=503, detail="TTS model conditionals corrupted: missing emotion_adv")
+        else:
+            raise HTTPException(status_code=503, detail="TTS model conditionals corrupted: missing t3")
+    except Exception as e:
+        print(f"[ERROR] Conditionals validation failed: {e}")
+        raise HTTPException(status_code=503, detail=f"TTS model conditionals corrupted: {str(e)}")
+
     try:
         # Generate speech with optimal defaults for all other parameters
         wav = tts_model.generate(
@@ -242,6 +257,14 @@ async def generate_speech_with_voice_path(request: dict):
 
     try:
         # Generate speech with voice reference
+        print(f"Generating speech with reference audio: {voice_file_path}")
+        print(f"Text: {text[:50]}...")
+        print(f"Parameters: exaggeration={exaggeration}, cfg_weight={cfg_weight}")
+
+        # Check if the model has default conditionals before attempting generation
+        if not hasattr(tts_model, 'conds') or tts_model.conds is None:
+            print("No default conditionals available, will use reference audio")
+
         wav = tts_model.generate(
             text=text,
             audio_prompt_path=voice_file_path,
@@ -250,6 +273,8 @@ async def generate_speech_with_voice_path(request: dict):
             # Optimal defaults (not exposed to user)
             temperature=0.8,
         )
+
+        print(f"Generation successful, output shape: {wav.shape if hasattr(wav, 'shape') else 'unknown'}")
 
         # Convert to bytes
         buffer = io.BytesIO()
