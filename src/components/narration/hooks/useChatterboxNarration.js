@@ -245,6 +245,8 @@ const useChatterboxNarration = ({
       const voiceFilePath = getReferenceAudioPath();
       const voiceFile = voiceFilePath ? null : await getReferenceAudioFile();
 
+
+
       setGenerationStatus(t('narration.chatterboxStarting', 'Starting Chatterbox narration generation...'));
 
       // Update state immediately if we're generating grouped subtitles

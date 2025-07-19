@@ -206,6 +206,40 @@ async def generate_speech_with_voice_path(request: dict):
     if not os.path.exists(voice_file_path):
         raise HTTPException(status_code=400, detail=f"Voice file not found: {voice_file_path}")
 
+    # Validate and preprocess audio file for Chatterbox compatibility
+    try:
+        import librosa
+        import soundfile as sf
+        import tempfile
+
+        # Load and validate the reference audio
+        audio_data, sr = librosa.load(voice_file_path, sr=None)
+
+        # Check if audio is too short (less than 0.5 seconds)
+        if len(audio_data) / sr < 0.5:
+            raise HTTPException(status_code=400, detail="Reference audio is too short (minimum 0.5 seconds required)")
+
+        # Check if audio is too long (more than 30 seconds) - truncate if needed
+        max_duration = 30.0
+        if len(audio_data) / sr > max_duration:
+            print(f"Warning: Reference audio is {len(audio_data) / sr:.1f}s, truncating to {max_duration}s")
+            audio_data = audio_data[:int(max_duration * sr)]
+
+        # Resample to 22050 Hz if needed (Chatterbox's expected sample rate)
+        if sr != 22050:
+            print(f"Resampling reference audio from {sr} Hz to 22050 Hz for Chatterbox compatibility")
+            audio_data = librosa.resample(audio_data, orig_sr=sr, target_sr=22050)
+            sr = 22050
+
+            # Save resampled version temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                sf.write(temp_file.name, audio_data, sr)
+                voice_file_path = temp_file.name
+                print(f"Created temporary resampled file: {voice_file_path}")
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid audio file: {str(e)}")
+
     try:
         # Generate speech with voice reference
         wav = tts_model.generate(
@@ -222,6 +256,14 @@ async def generate_speech_with_voice_path(request: dict):
         ta.save(buffer, wav, tts_model.sr, format="wav")
         buffer.seek(0)
 
+        # Clean up temporary file if we created one
+        if voice_file_path != request.get('voice_file_path', ''):
+            try:
+                os.unlink(voice_file_path)
+                print(f"Cleaned up temporary file: {voice_file_path}")
+            except:
+                pass  # Ignore cleanup errors
+
         return Response(
             content=buffer.getvalue(),
             media_type="audio/wav",
@@ -231,6 +273,12 @@ async def generate_speech_with_voice_path(request: dict):
         )
 
     except Exception as e:
+        # Clean up temporary file if we created one and there was an error
+        if voice_file_path != request.get('voice_file_path', ''):
+            try:
+                os.unlink(voice_file_path)
+            except:
+                pass  # Ignore cleanup errors
         raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 
 

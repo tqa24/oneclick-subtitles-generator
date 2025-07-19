@@ -221,6 +221,8 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
       url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
     }
 
+
+
     let body;
     let headers = {};
 
