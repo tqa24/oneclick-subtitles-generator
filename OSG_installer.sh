@@ -689,23 +689,29 @@ uninstall_app() {
 }
 
 # --- Start the script ---
-# Make script executable
-chmod +x "$0"
+# Make script executable (suppress permission errors for system directories)
+chmod +x "$0" 2>/dev/null || true
 
 # Check for sudo privileges (for Linux package installation)
 check_sudo_privileges() {
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        echo "Checking sudo privileges..."
+        colored_echo "[?] Checking sudo privileges..."
         if ! sudo -n true 2>/dev/null; then
-            echo "This script requires sudo privileges for package installation on Linux."
-            echo "Please enter your password when prompted."
+            echo
+            echo -e "\033[96m======================================================\033[0m"
+            colored_echo "[INFO] This script requires sudo privileges for package installation on Linux."
+            colored_echo "[INFO] You will be prompted to enter your password for system package installation."
+            colored_echo "[INFO] This is needed to install: Git, Node.js, FFmpeg, and system dependencies."
+            echo -e "\033[96m======================================================\033[0m"
+            echo
+            colored_echo "[SETUP] Requesting sudo privileges..."
             sudo -v
             if [ $? -ne 0 ]; then
-                echo "ERROR: Sudo privileges required. Exiting."
+                colored_echo "[ERROR] Sudo privileges required but not granted. Exiting."
                 exit 1
             fi
         fi
-        echo "Sudo privileges confirmed."
+        colored_echo "[OK] Sudo privileges confirmed."
         echo
     fi
 }
@@ -714,24 +720,30 @@ check_sudo_privileges() {
 check_sudo_privileges
 
 # Check if we're in the right directory before showing menu
-echo "OneClick Subtitles Generator - Setup & Manager"
-echo "=============================================="
+echo
+colored_echo "[SETUP] OneClick Subtitles Generator - Setup & Manager"
+echo -e "\033[96m==============================================\033[0m"
 echo
 
 # Validate repository structure
 if [ ! -f "package.json" ] || [ ! -f "server.js" ]; then
-    echo "ERROR: This script must be run from the repository root directory."
     echo
-    echo "Expected usage:"
-    echo "1. Clone the repository:"
-    echo "   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git"
-    echo "2. Navigate to the repository:"
-    echo "   cd oneclick-subtitles-generator"
-    echo "3. Run this script:"
-    echo "   ./OSG_installer.sh"
+    echo -e "\033[96m======================================================\033[0m"
+    colored_echo "[ERROR] This script must be run from the repository root directory."
+    echo -e "\033[96m======================================================\033[0m"
     echo
-    echo "Current directory: $(pwd)"
-    echo "Files found: $(ls -la | head -5)"
+    colored_echo "[INFO] Expected usage:"
+    echo -e "\033[97m1. Clone the repository:\033[0m"
+    echo -e "\033[96m   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git\033[0m"
+    echo -e "\033[97m2. Navigate to the repository:\033[0m"
+    echo -e "\033[96m   cd oneclick-subtitles-generator\033[0m"
+    echo -e "\033[97m3. Run this script:\033[0m"
+    echo -e "\033[96m   ./OSG_installer.sh\033[0m"
+    echo
+    colored_echo "[INFO] Current directory: $(pwd)"
+    colored_echo "[INFO] Files found in current directory:"
+    ls -la | head -5 | while read line; do echo -e "\033[90m   $line\033[0m"; done
+    echo -e "\033[96m======================================================\033[0m"
     exit 1
 fi
 
