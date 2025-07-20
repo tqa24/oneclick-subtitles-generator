@@ -28,6 +28,12 @@ router.get('/audio/*', (req, res) => {
   narrationController.serveAudioFile({ params: { filename } }, res);
 });
 
+// Serve reference audio files specifically (for Chatterbox API conversion)
+router.get('/reference-audio/:filename', (req, res) => {
+  // Call the controller with the filename parameter
+  narrationController.serveAudioFile(req, res);
+});
+
 // Download all narration audio files as a zip
 router.post('/download-all', express.json(), narrationController.downloadAllAudio);
 

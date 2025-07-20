@@ -299,9 +299,37 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
     let headers = {};
 
     if (voiceFilePath) {
-      // For local file paths, we need to read the file first
-      // This is a fallback - in practice, we should use voiceFile
-      throw new Error('Voice file path not supported in new API. Please use voiceFile parameter.');
+      // Convert file path to actual file by fetching it from the server
+      try {
+        console.log('Converting file path to file for Chatterbox API:', voiceFilePath);
+
+        // Create a URL to fetch the file from the server
+        // The file path is typically something like: /path/to/reference_audio/filename.wav
+        // We need to convert it to a server URL
+        const filename = voiceFilePath.split(/[/\\]/).pop(); // Get filename from path
+        const fileUrl = `${SERVER_API_BASE_URL}/api/narration/reference-audio/${filename}`;
+
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch reference audio file: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const file = new File([blob], filename, { type: 'audio/wav' });
+
+        // Use the converted file
+        const formData = new FormData();
+        formData.append('text', text);
+        formData.append('exaggeration', exaggeration.toString());
+        formData.append('cfg_weight', cfgWeight.toString());
+        formData.append('voice_file', file);
+        body = formData;
+
+        console.log('Successfully converted file path to file for Chatterbox API');
+      } catch (error) {
+        console.error('Error converting file path to file:', error);
+        throw new Error(`Failed to convert reference audio file: ${error.message}`);
+      }
     } else if (voiceFile) {
       // Use FormData for file upload (the only supported method now)
       const formData = new FormData();
