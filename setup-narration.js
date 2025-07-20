@@ -391,10 +391,10 @@ let installNotes = '';
 switch (gpuVendor) {
     case 'NVIDIA':
         logger.installing('PyTorch for NVIDIA GPU (CUDA)');
-        // Using CUDA 12.8 with specific versions for Chatterbox compatibility
-        // PyTorch 2.7.0 requires torchvision 0.22.0 for compatibility
-        torchInstallCmd = `uv pip install torch==2.7.0+cu128 torchvision==0.22.0+cu128 torchaudio==2.7.0+cu128 --index-url https://download.pytorch.org/whl/cu128 --force-reinstall`;
-        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.8+ are installed. Using PyTorch 2.7.0 for Chatterbox compatibility.';
+        // Using CUDA 12.1 with specific versions for Chatterbox compatibility
+        // PyTorch 2.5.1 with torchvision 0.20.1 for stable compatibility
+        torchInstallCmd = `uv pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
+        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed. Using PyTorch 2.5.1 for Chatterbox compatibility.';
         break;
     case 'AMD':
         logger.installing('PyTorch for AMD GPU (ROCm)');
@@ -403,27 +403,27 @@ switch (gpuVendor) {
             logger.warning('Installation may fail or runtime errors may occur on non-Linux systems.');
         }
         // Using compatible versions for Chatterbox - fallback to CPU versions for ROCm compatibility
-        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
-        installNotes = 'Using CPU versions of PyTorch 2.7.0 for Chatterbox compatibility. ROCm support may be limited.';
+        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.5.1 for Chatterbox compatibility. ROCm support may be limited.';
         break;
     case 'INTEL':
         logger.installing('PyTorch for Intel GPU (XPU)');
         // Using compatible versions for Chatterbox - fallback to CPU versions for Intel compatibility
-        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
-        installNotes = 'Using CPU versions of PyTorch 2.7.0 for Chatterbox compatibility. Intel GPU support may be limited.';
+        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.5.1 for Chatterbox compatibility. Intel GPU support may be limited.';
         break;
     case 'APPLE_SILICON':
         logger.installing('PyTorch for Apple Silicon (MPS)');
         // Using compatible versions for Chatterbox with MPS support
-        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
-        installNotes = 'Using PyTorch 2.7.0 with Metal Performance Shaders (MPS) support for Chatterbox compatibility.';
+        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+        installNotes = 'Using PyTorch 2.5.1 with Metal Performance Shaders (MPS) support for Chatterbox compatibility.';
         break;
     case 'CPU':
     default:
         logger.installing('CPU-only PyTorch');
         // Using compatible versions for Chatterbox
-        torchInstallCmd = `uv pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --force-reinstall`;
-        installNotes = 'Installed PyTorch 2.7.0 CPU-only version for Chatterbox compatibility. No GPU acceleration will be used.';
+        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+        installNotes = 'Installed PyTorch 2.5.1 CPU-only version for Chatterbox compatibility. No GPU acceleration will be used.';
         break;
 }
 
@@ -563,8 +563,8 @@ try:
         sys.exit(1)
 
     # Validate expected versions for Chatterbox compatibility
-    expected_torch = "2.7.0"
-    expected_torchvision = "0.22.0"
+    expected_torch = "2.5.1"
+    expected_torchvision = "0.20.1"
 
     if not torch_version.startswith(expected_torch):
         print(f"⚠️ Warning: Expected PyTorch {expected_torch}, got {torch_version}")
@@ -772,6 +772,42 @@ try {
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
     execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
     logger.success('Better-chatterbox installation completed');
+
+    // Apply PyTorch compatibility fix by modifying better-chatterbox dependencies
+    logger.progress('Applying PyTorch compatibility fix for better-chatterbox');
+    try {
+        // Fix better-chatterbox pyproject.toml to use compatible PyTorch versions
+        const pyprojectPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
+        if (fs.existsSync(pyprojectPath)) {
+            logger.info('Updating better-chatterbox dependencies for PyTorch compatibility...');
+
+            let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
+
+            // Replace incompatible PyTorch versions with compatible ones
+            // Handle both single and double quotes, and various version formats
+            pyprojectContent = pyprojectContent
+                .replace(/["']torch==2\.[6-9]\.\d+["']/g, '"torch>=2.5.1"')
+                .replace(/["']torchaudio==2\.[6-9]\.\d+["']/g, '"torchaudio>=2.5.1"')
+                .replace(/["']transformers==4\.4[6-9]\.\d+["']/g, '"transformers>=4.40.0,<4.47.0"')
+                .replace(/["']diffusers==0\.2[9]\.\d+["']/g, '"diffusers>=0.25.0,<0.30.0"')
+                // Fallback for exact matches
+                .replace('"torch==2.6.0"', '"torch>=2.5.1"')
+                .replace('"torchaudio==2.6.0"', '"torchaudio>=2.5.1"')
+                .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
+                .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
+
+            fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
+            logger.success('Better-chatterbox dependencies updated for compatibility');
+        }
+
+        // Reinstall compatible PyTorch versions to ensure consistency
+        logger.info('Ensuring PyTorch compatibility after better-chatterbox installation...');
+        execSync(torchInstallCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        logger.success('PyTorch compatibility fix applied successfully');
+    } catch (error) {
+        logger.warning(`PyTorch compatibility fix failed: ${error.message}`);
+        logger.warning('This may cause compatibility issues with transformers library');
+    }
 
     // Verify better-chatterbox submodule is properly installed
     if (fs.existsSync(CHATTERBOX_DIR)) {
