@@ -172,6 +172,7 @@
   "cfgWeight": "속도 제어",
   "cfgWeightTooltip": "생성 강도와 속도를 제어합니다 (0.0-1.0)",
   "cfgWeightDesc": "생성 강도와 말하기 속도를 조정합니다",
+  "chatterboxWarmingUp": "첫 사용을 위해 나레이션 서버를 준비 중입니다...",
   "chatterboxStarting": "Chatterbox 나레이션 생성을 시작합니다...",
   "chatterboxGeneratingProgress": "Chatterbox로 {{progress}}/{{total}} 나레이션을 생성 중...",
   "chatterboxGenerationComplete": "Chatterbox 나레이션 생성 완료",

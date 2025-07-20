@@ -132,20 +132,101 @@ const checkChatterboxAvailabilitySingle = async () => {
 };
 
 /**
- * Check if Chatterbox API is available with retry logic
- * @param {number} maxAttempts - Maximum number of attempts (default: 10)
- * @param {number} delayMs - Delay between attempts in milliseconds (default: 3000)
+ * Wake up the Chatterbox service by calling the wake-up endpoint
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
+export const wakeUpChatterboxService = async () => {
+  try {
+    console.log('🔧 Attempting to wake up Chatterbox service...');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for model loading
+
+    const response = await fetch(`${CHATTERBOX_API_BASE_URL}/wake-up`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: `Failed to wake up Chatterbox service: ${response.status}`
+      };
+    }
+
+    const result = await response.json();
+    console.log('✅ Chatterbox service wake-up response:', result.status);
+
+    return {
+      success: true,
+      message: result.message || 'Chatterbox service awakened successfully'
+    };
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return {
+        success: false,
+        message: 'Chatterbox service wake-up timeout - models may be loading'
+      };
+    }
+
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      return {
+        success: false,
+        message: 'Chatterbox API is not running. Please start the service with "npm run dev:cuda".'
+      };
+    }
+
+    console.error('❌ Error waking up Chatterbox service:', error);
+    return {
+      success: false,
+      message: `Error waking up Chatterbox service: ${error.message}`
+    };
+  }
+};
+
+/**
+ * Check if Chatterbox API is available with retry logic and wake-up capability
+ * @param {number} maxAttempts - Maximum number of attempts (default: 5)
+ * @param {number} delayMs - Delay between attempts in milliseconds (default: 2000)
+ * @param {boolean} attemptWakeUp - Whether to attempt waking up the service if not running (default: true)
  * @returns {Promise<{available: boolean, message?: string}>}
  */
-export const checkChatterboxAvailability = async (maxAttempts = 10, delayMs = 3000) => {
-  // First, check if the server says Chatterbox should be running
-  const serverStatus = await checkServerChatterboxStatus();
+export const checkChatterboxAvailability = async (maxAttempts = 5, delayMs = 2000, attemptWakeUp = true) => {
+  // First, try to connect directly to see if service is already running
+  let directCheck = await checkChatterboxAvailabilitySingle();
+  if (directCheck.available) {
+    return directCheck;
+  }
 
-  if (!serverStatus.shouldBeRunning) {
-    return {
-      available: false,
-      message: serverStatus.message || 'Chatterbox service not started (use npm run dev:cuda)'
-    };
+  // If not available and wake-up is enabled, try to wake up the service
+  if (attemptWakeUp) {
+    console.log('🔧 Chatterbox not available, attempting to wake up service...');
+    const wakeUpResult = await wakeUpChatterboxService();
+
+    if (!wakeUpResult.success) {
+      // If wake-up failed, return the error immediately
+      return {
+        available: false,
+        message: wakeUpResult.message || 'Failed to wake up Chatterbox service'
+      };
+    }
+
+    // Wake-up was successful, now try to connect
+    console.log('⏳ Wake-up successful, verifying service availability...');
+  } else {
+    // If wake-up is disabled, check server status first
+    const serverStatus = await checkServerChatterboxStatus();
+    if (!serverStatus.shouldBeRunning) {
+      return {
+        available: false,
+        message: serverStatus.message || 'Chatterbox service not started (use npm run dev:cuda)'
+      };
+    }
   }
 
   // If server says it should be running, try to connect to the actual API

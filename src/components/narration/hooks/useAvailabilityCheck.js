@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { checkNarrationStatusWithRetry } from '../../../services/narrationService';
 import { checkGeminiAvailability } from '../../../services/gemini/geminiNarrationService';
-import { checkChatterboxAvailability, isChatterboxServiceInitialized, checkChatterboxShouldBeAvailable } from '../../../services/chatterboxService';
+// Chatterbox imports removed - service is always available in UI, warming up handled during generation
+// import { checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
 
 /**
  * Custom hook for checking narration service availability
@@ -28,9 +29,8 @@ const useAvailabilityCheck = ({
       try {
         // First, do immediate checks for services that can be determined quickly
 
-        // Check Chatterbox immediate availability (server configuration)
-        const chatterboxQuickCheck = await checkChatterboxShouldBeAvailable();
-        setIsChatterboxAvailable(chatterboxQuickCheck.shouldBeRunning);
+        // Chatterbox is always available in UI (like F5-TTS) - will warm up on first use
+        setIsChatterboxAvailable(true);
 
         // Check F5-TTS availability in the background
         const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
@@ -44,17 +44,9 @@ const useAvailabilityCheck = ({
         // Set Gemini availability
         setIsGeminiAvailable(geminiStatus.available);
 
-        // If Chatterbox should be running according to server config, do a full check
-        let chatterboxStatus = chatterboxQuickCheck;
-        if (chatterboxQuickCheck.shouldBeRunning) {
-          // Use fewer retries if service is already initialized, more if not
-          const chatterboxMaxAttempts = isChatterboxServiceInitialized() ? 1 : 3;
-          const chatterboxDelay = isChatterboxServiceInitialized() ? 1000 : 2000;
-          chatterboxStatus = await checkChatterboxAvailability(chatterboxMaxAttempts, chatterboxDelay);
-
-          // Update Chatterbox availability with full check result
-          setIsChatterboxAvailable(chatterboxStatus.available);
-        }
+        // Chatterbox status is always considered available for UI purposes
+        // The actual service check will happen during generation with proper warming up message
+        const chatterboxStatus = { available: true, message: '' };
 
         // Set error message based on current method
         if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
@@ -79,8 +71,9 @@ const useAvailabilityCheck = ({
           setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
         }
         else if (narrationMethod === 'chatterbox') {
-          setIsChatterboxAvailable(false);
-          setError(t('narration.chatterboxUnavailableMessage', "Chatterbox API is not available. Please start the Chatterbox service."));
+          // Keep Chatterbox available in UI - errors will be handled during generation
+          setIsChatterboxAvailable(true);
+          setError('');
         }
         else {
           setIsGeminiAvailable(false);

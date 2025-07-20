@@ -8,6 +8,7 @@ import tempfile
 import torch
 import torchaudio as ta
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -22,6 +23,15 @@ app = FastAPI(
     title="Chatterbox TTS API",
     description="Simple API for Chatterbox Text-to-Speech with primary controls only",
     version="1.0.0"
+)
+
+# Add CORS middleware to handle cross-origin requests from the frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3008", "http://127.0.0.1:3008"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Global model instances (loaded once on startup)
@@ -57,24 +67,17 @@ class HealthResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Load models on startup"""
+    """Initialize service without loading models - models will be loaded on first wake-up call"""
     global tts_model, vc_model
-    
-    print(f"Loading models on device: {DEVICE}")
-    
-    try:
-        tts_model = ChatterboxTTS.from_pretrained(DEVICE)
-        print("✓ TTS model loaded successfully")
-    except Exception as e:
-        print(f"✗ Failed to load TTS model: {e}")
-        tts_model = None
-    
-    try:
-        vc_model = ChatterboxVC.from_pretrained(DEVICE)
-        print("✓ VC model loaded successfully")
-    except Exception as e:
-        print(f"✗ Failed to load VC model: {e}")
-        vc_model = None
+
+    print(f"Chatterbox API service starting on device: {DEVICE}")
+    print("Models will be loaded on first wake-up call for faster startup")
+
+    # Don't load models on startup - let them be loaded on demand via wake-up endpoint
+    tts_model = None
+    vc_model = None
+
+    print("Service ready - call /wake-up to load models")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -88,6 +91,63 @@ async def health_check():
             "vc": vc_model is not None
         }
     )
+
+
+@app.post("/wake-up")
+async def wake_up_service():
+    """
+    Wake up the service by ensuring models are loaded.
+    This endpoint can be called to initialize the service on first use.
+    """
+    global tts_model, vc_model
+
+    try:
+        # If models are already loaded, return success immediately
+        if tts_model is not None and vc_model is not None:
+            return {
+                "status": "already_awake",
+                "message": "Service is already running and models are loaded",
+                "device": DEVICE,
+                "models_loaded": {
+                    "tts": True,
+                    "vc": True
+                }
+            }
+
+        # Load models if not already loaded
+        print(f"Wake-up request received, loading models on device: {DEVICE}")
+
+        if tts_model is None:
+            print("Loading TTS model...")
+            tts_model = ChatterboxTTS.from_pretrained(DEVICE)
+            print("TTS model loaded successfully")
+
+        if vc_model is None:
+            print("Loading VC model...")
+            vc_model = ChatterboxVC.from_pretrained(DEVICE)
+            print("VC model loaded successfully")
+
+        return {
+            "status": "awakened",
+            "message": "Service has been awakened and models are loaded",
+            "device": DEVICE,
+            "models_loaded": {
+                "tts": tts_model is not None,
+                "vc": vc_model is not None
+            }
+        }
+
+    except Exception as e:
+        print(f"Error during wake-up: {e}")
+        return {
+            "status": "error",
+            "message": f"Failed to wake up service: {str(e)}",
+            "device": DEVICE,
+            "models_loaded": {
+                "tts": tts_model is not None,
+                "vc": vc_model is not None
+            }
+        }
 
 
 @app.post("/tts/generate")

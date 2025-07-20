@@ -225,13 +225,14 @@ const useChatterboxNarration = ({
       setLocalError('');
       setGenerationResults([]);
 
-      // Check if Chatterbox service is initialized, if not, check availability first
+      // Check if Chatterbox service is initialized, if not, show warming up message
       if (!isChatterboxServiceInitialized()) {
-        setGenerationStatus(t('narration.chatterboxInitializing', 'Checking Chatterbox service availability...'));
+        setGenerationStatus(t('narration.chatterboxWarmingUp', 'Đang đánh thức server thuyết minh cho lần đầu chạy...'));
 
-        const availability = await checkChatterboxAvailability(1, 1000); // Single attempt with 1 second timeout
+        // Try to wake up and connect - the wake-up endpoint will handle model loading
+        const availability = await checkChatterboxAvailability(3, 2000, true); // 3 attempts with 2 second timeout each, with wake-up
         if (!availability.available) {
-          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service.'));
+          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service using "npm run dev:cuda".'));
         }
       }
 

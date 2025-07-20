@@ -18,7 +18,7 @@ function startChatterboxService() {
     console.log(`🔧 Starting Chatterbox API service on port ${CHATTERBOX_PORT}...`);
 
     // Check if Chatterbox directory and required files exist
-    const chatterboxDir = path.join(path.dirname(__dirname), 'chatterbox');
+    const chatterboxDir = path.join(path.dirname(__dirname), 'chatterbox-fastapi');
     const chatterboxApiPath = path.join(chatterboxDir, 'start_api.py');
     const chatterboxMainApiPath = path.join(chatterboxDir, 'api.py');
 
@@ -50,17 +50,17 @@ function startChatterboxService() {
     };
 
     // Start the Chatterbox service using the same pattern as F5-TTS
-    const chatterboxStartPath = path.join(chatterboxDir, 'start_api.py');
     const chatterboxProcess = spawn(UV_EXECUTABLE, [
       'run',
-      chatterboxStartPath,  // Full path to start_api.py
+      'python',
+      'start_api.py',  // Run from chatterbox-fastapi directory
       '--host', '0.0.0.0',
       '--port', CHATTERBOX_PORT.toString(),
       '--reload'
     ], {
       env,
-      stdio: 'inherit'
-      // No cwd specified - runs from project root like F5-TTS
+      stdio: 'inherit',
+      cwd: chatterboxDir  // Set working directory to chatterbox-fastapi
     });
 
     // Handle process events
@@ -77,7 +77,7 @@ function startChatterboxService() {
     });
 
     console.log(`✅ Chatterbox API service starting...`);
-    console.log(`📁 Script path: ${chatterboxStartPath}`);
+    console.log(`📁 Working directory: ${chatterboxDir}`);
     console.log(`🌐 Will be available at: http://localhost:${CHATTERBOX_PORT}`);
     console.log(`📖 API documentation: http://localhost:${CHATTERBOX_PORT}/docs`);
 
