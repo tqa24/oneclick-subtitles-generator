@@ -34,7 +34,6 @@
     "verify:chatterbox": "node verify-chatterbox-paths.js",
     "test:chatterbox-import": "uv run test-chatterbox-import.py",
     "test:setup-fixes": "node test-setup-fixes.js",
-
     "setup:narration:uv": "node setup-narration.js",
     "setup:narration:quiet": "cross-env QUIET=true node setup-narration.js",
     "setup:narration:verbose": "cross-env VERBOSE=true node setup-narration.js",

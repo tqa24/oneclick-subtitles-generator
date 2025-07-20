@@ -241,11 +241,14 @@ const useChatterboxNarration = ({
         throw new Error(t('narration.noSubtitlesError', 'No subtitles available for narration'));
       }
 
-      // Get reference audio (prefer file path over file object for efficiency)
+      // Get reference audio - now required for all Chatterbox generation
       const voiceFilePath = getReferenceAudioPath();
       const voiceFile = voiceFilePath ? null : await getReferenceAudioFile();
 
-
+      // Validate that reference audio is provided
+      if (!voiceFile && !voiceFilePath) {
+        throw new Error(t('narration.chatterboxNoReferenceAudio', 'Reference audio is required for Chatterbox TTS generation. Please upload a reference audio file.'));
+      }
 
       setGenerationStatus(t('narration.chatterboxStarting', 'Starting Chatterbox narration generation...'));
 

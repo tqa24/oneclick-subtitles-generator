@@ -22,9 +22,9 @@ const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
-const CHATTERBOX_DIR = 'chatterbox/chatterbox'; // Define the Chatterbox directory name (inside existing chatterbox folder)
-const CHATTERBOX_REPO_URL = 'https://github.com/fakerybakery/better-chatterbox.git'; // Using fork with CUDA fix
-const CHATTERBOX_BRANCH = 'fix-cuda-issue'; // Branch with CUDA indexing error fix
+const CHATTERBOX_DIR = 'better-chatterbox'; // Define the better-chatterbox directory name (submodule)
+const CHATTERBOX_REPO_URL = 'https://github.com/resemble-ai/chatterbox.git'; // Official better-chatterbox repository
+const CHATTERBOX_BRANCH = 'main'; // Main branch of better-chatterbox
 
 // --- Helper Function to Check Command Existence ---
 function commandExists(command) {
@@ -753,62 +753,44 @@ except Exception as e:
     process.exit(1);
 }
 
-// --- 7.5. Install Chatterbox with CUDA fix using uv pip ---
-logger.installing('Voice cloning engine');
+// --- 7.5. Install better-chatterbox using uv pip ---
+logger.installing('Voice cloning engine (better-chatterbox)');
 try {
-    // First, install Chatterbox dependencies that don't conflict with PyTorch
-    logger.progress('Installing Chatterbox non-PyTorch dependencies');
-    const chatterboxDepsCmd = `uv pip install --python ${VENV_DIR} --quiet numpy~=1.26.0 resampy==0.4.3 librosa==0.11.0 s3tokenizer transformers>=4.52.4 diffusers==0.29.0 resemble-perth==1.0.1 omegaconf==2.3.0 conformer==0.3.2 safetensors==0.5.3 peft>=0.15.2 tensorboard>=2.19.0 datasets>=3.6.0 pykakasi>=2.3.0 pyarrow>=20.0.0 tokenizers>=0.21.1 tqdm>=4.67.1 fastapi==0.112.1 pydantic==2.6.4 gradio>=4.26.0 langdetect>=1.0.9 webdataset>=0.2.100`;
-    execSync(chatterboxDepsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
-
-    // Install the fixed version directly from GitHub without dependencies to avoid PyTorch conflicts
-    const chatterboxGitUrl = `"chatterbox-tts @ git+${CHATTERBOX_REPO_URL}@${CHATTERBOX_BRANCH}"`;
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --quiet --no-deps ${chatterboxGitUrl}`;
-    logger.command(installChatterboxCmd);
-    logger.info(`Installing enhanced voice cloning engine with GPU optimizations (preserving PyTorch versions)`);
-
-    const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for GitHub install
-    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-    logger.success('Voice cloning engine installation completed');
-
-    // --- Verify Chatterbox default voice conditionals are present ---
-    logger.progress('Verifying Chatterbox default voice conditionals are available');
-    const condsPath = path.join('models', 'chatterbox_weights', 'conds.pt');
-    if (fs.existsSync(condsPath)) {
-        const fileSize = fs.statSync(condsPath).size;
-        if (fileSize > 0) {
-            logger.success(`Default voice conditionals verified: ${condsPath} (${fileSize} bytes)`);
-        } else {
-            logger.error('Default voice conditionals file is empty');
-            logger.info('This will cause "NoneType object has no attribute cpu" errors');
-            process.exit(1);
-        }
-    } else {
-        logger.error('Default voice conditionals file not found');
-        logger.info(`Expected file: ${condsPath}`);
-        logger.info('This will cause "NoneType object has no attribute cpu" errors');
+    // Check if better-chatterbox submodule exists
+    if (!fs.existsSync(CHATTERBOX_DIR)) {
+        logger.error(`Better-chatterbox submodule not found at ${CHATTERBOX_DIR}`);
+        logger.info('Please ensure the better-chatterbox submodule is properly initialized');
         process.exit(1);
     }
 
-    // Chatterbox source code is now directly included in the repository
+    // Install better-chatterbox in development mode from the submodule
+    logger.progress('Installing better-chatterbox from submodule');
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} -e ./${CHATTERBOX_DIR}`;
+    logger.command(installChatterboxCmd);
+    logger.info(`Installing better-chatterbox in development mode from submodule`);
+
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
+    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    logger.success('Better-chatterbox installation completed');
+
+    // Verify better-chatterbox submodule is properly installed
     if (fs.existsSync(CHATTERBOX_DIR)) {
-        logger.success(`Voice cloning engine configured successfully`);
+        logger.success(`Better-chatterbox submodule configured successfully at ${CHATTERBOX_DIR}`);
     } else {
-        logger.error(`Chatterbox source code not found at ${CHATTERBOX_DIR}`);
+        logger.error(`Better-chatterbox submodule not found at ${CHATTERBOX_DIR}`);
         process.exit(1);
     }
 
     // --- Apply Chatterbox fixes for proper operation ---
-    logger.progress('Applying voice cloning optimizations');
-    applyChatterboxFixes();
-    logger.success('Voice cloning optimizations applied');
+    // Better-chatterbox doesn't need the old fixes
+    logger.success('Better-chatterbox is ready to use');
 
     logger.progress('Verifying voice cloning engine');
     const verifyChatterboxPyCode = `
 import sys
 import traceback
 
-print("Verifying Chatterbox installation...")
+print("Verifying better-chatterbox installation...")
 print("Python executable:", sys.executable)
 
 # Test core service dependencies
@@ -844,17 +826,17 @@ chatterbox_working = False
 try:
     from chatterbox.tts import ChatterboxTTS
     from chatterbox.vc import ChatterboxVC
-    print('✅ Chatterbox imported successfully')
+    print('✅ Better-chatterbox imported successfully')
     print('✅ ChatterboxTTS and ChatterboxVC classes available')
     chatterbox_working = True
 except Exception as e:
     error_str = str(e)
     if 'torchvision::nms does not exist' in error_str:
-        print(f'❌ CRITICAL: Chatterbox import failed due to torchvision::nms error: {e}')
+        print(f'❌ CRITICAL: Better-chatterbox import failed due to torchvision::nms error: {e}')
         print('   This indicates a PyTorch/torchvision version mismatch that needs to be fixed')
         sys.exit(1)
     else:
-        print(f'⚠️ Warning: Chatterbox import failed: {e}')
+        print(f'⚠️ Warning: Better-chatterbox import failed: {e}')
         print('   Voice cloning features may not work, but installation will continue')
         print('   This is often due to PyTorch/TorchVision compatibility issues')
 
@@ -867,7 +849,7 @@ if chatterbox_working:
         print(f'⚠️ Warning: Transformers import failed: {e}')
         print('   Some advanced voice cloning features may not work')
 else:
-    print('⚠️ Skipping transformers test due to Chatterbox import failure')
+    print('⚠️ Skipping transformers test due to better-chatterbox import failure')
 
 print('✅ Verification completed (with warnings if any shown above)')
 `;
@@ -881,7 +863,7 @@ print('✅ Verification completed (with warnings if any shown above)')
     }
 
 } catch (error) {
-    console.error(`❌ Error installing/verifying Chatterbox with uv: ${error.message}`);
+    console.error(`❌ Error installing/verifying better-chatterbox with uv: ${error.message}`);
     console.log(`   Verification command failed. Check the output above for details from Python.`);
     process.exit(1);
 }
@@ -909,49 +891,9 @@ try {
     }
 }
 
-// --- 8. Chatterbox Compatibility Fixes ---
-function applyChatterboxFixes() {
-    try {
-        // Fix 1: Fix Unicode encoding in chatterbox/api.py
-        logger.info('Optimizing voice engine compatibility...');
-        const apiPyPath = path.join('chatterbox', 'api.py');
-        if (fs.existsSync(apiPyPath)) {
-            let apiContent = fs.readFileSync(apiPyPath, 'utf8');
-
-            // Replace Unicode checkmarks with ASCII text
-            apiContent = apiContent.replace(/print\("✓ TTS model loaded successfully"\)/g, 'print("[SUCCESS] TTS model loaded successfully")');
-            apiContent = apiContent.replace(/print\(f"✗ Failed to load TTS model: \{e\}"\)/g, 'print(f"[ERROR] Failed to load TTS model: {e}")');
-            apiContent = apiContent.replace(/print\("✓ VC model loaded successfully"\)/g, 'print("[SUCCESS] VC model loaded successfully")');
-            apiContent = apiContent.replace(/print\(f"✗ Failed to load VC model: \{e\}"\)/g, 'print(f"[ERROR] Failed to load VC model: {e}")');
-
-
-
-            fs.writeFileSync(apiPyPath, apiContent, 'utf8');
-            logger.success('Voice engine compatibility optimized', '     ');
-        } else {
-            logger.info('Voice engine compatibility already optimized', '     ');
-        }
-
-        // Fix 2: Disable model_path.json to use default Hugging Face models
-        logger.info('Configuring AI model sources...');
-        const modelPathJsonPath = path.join(CHATTERBOX_DIR, 'model_path.json');
-        if (fs.existsSync(modelPathJsonPath)) {
-            const backupPath = modelPathJsonPath + '.disabled';
-            fs.renameSync(modelPathJsonPath, backupPath);
-            logger.success('AI model sources configured', '     ');
-        } else {
-            logger.success('AI model sources already configured', '     ');
-        }
-
-        // Fix 3: Note about GitHub installation (no .pth files needed)
-        logger.info('Finalizing voice engine setup...');
-        logger.success('Voice engine setup completed successfully', '     ');
-
-    } catch (error) {
-        logger.warning(`Some compatibility fixes failed: ${error.message}`);
-        logger.warning('The installation may still work, but you might encounter issues.');
-    }
-}
+// --- 8. Better-chatterbox doesn't need the old compatibility fixes ---
+// The old applyChatterboxFixes function has been removed as better-chatterbox
+// is a cleaner implementation that doesn't require the Unicode and model path fixes
 
 // --- 9. Removed: Script generation for narration service ---
 // The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
@@ -1077,12 +1019,11 @@ logger.step(6, 6, 'Setup completed successfully!');
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
     `F5-TTS submodule at: "${F5_TTS_DIR}"`,
-    `Chatterbox source code included directly in repository`,
-    `Default voice conditionals bundled at: models/chatterbox_weights/conds.pt`,
+    `Better-chatterbox submodule at: "${CHATTERBOX_DIR}"`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
-    `PyTorch, F5-TTS, Chatterbox, and all dependencies installed`,
-    `Applied compatibility fixes for Unicode encoding and model loading`
+    `PyTorch, F5-TTS, better-chatterbox, and all dependencies installed`,
+    `Better-chatterbox installed in development mode from submodule`
 ];
 
 if (installNotes) {
@@ -1093,15 +1034,15 @@ logger.summary('Setup Summary', summaryItems);
 
 logger.newLine();
 logger.success('✅ PyTorch/torchvision compatibility fix applied');
-logger.info('   - Using PyTorch 2.7.0 with torchvision 0.22.0 for Chatterbox compatibility');
-logger.info('   - Prevents "torchvision::nms does not exist" errors');
-logger.info('   - Dependencies installed with version pinning to avoid conflicts');
+logger.info('   - Using PyTorch with CUDA support for better-chatterbox compatibility');
+logger.info('   - Better-chatterbox installed from official submodule');
+logger.info('   - Dependencies installed with proper version management');
 
 logger.newLine();
 logger.info('🚀 To run the application with ALL narration services:');
 logger.info('   1. Ensure `uv` and `npm` are in your PATH');
 logger.info('   2. Run: npm run dev:cuda');
-logger.info('   This starts F5-TTS (port 3006) + Chatterbox API (port 3011) + Frontend (port 3008)');
+logger.info('   This starts F5-TTS (port 3006) + Better-chatterbox API (port 3011) + Frontend (port 3008)');
 
 logger.newLine();
 logger.info('💡 Other useful commands:');

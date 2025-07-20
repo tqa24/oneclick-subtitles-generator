@@ -179,5 +179,6 @@
   "chatterboxGeneratingProgress": "Generating {{progress}} of {{total}} narrations with Chatterbox...",
   "chatterboxGenerationComplete": "Chatterbox narration generation complete",
   "chatterboxGenerationPartial": "Chatterbox generation completed with {{success}} successes and {{errors}} errors",
-  "chatterboxGenerationError": "Error generating narration with Chatterbox: {{error}}"
+  "chatterboxGenerationError": "Error generating narration with Chatterbox: {{error}}",
+  "chatterboxNoReferenceAudio": "Reference audio is required for Chatterbox TTS generation. Please upload a reference audio file."
 }

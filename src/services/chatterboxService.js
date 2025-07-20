@@ -199,44 +199,30 @@ export const checkChatterboxAvailability = async (maxAttempts = 10, delayMs = 30
  * @param {string} text - Text to synthesize
  * @param {number} exaggeration - Emotional intensity (0.25-2.0)
  * @param {number} cfgWeight - CFG/Pace control (0.0-1.0)
- * @param {File|null} voiceFile - Optional voice reference file
+ * @param {File|null} voiceFile - Required voice reference file
  * @param {string|null} voiceFilePath - Optional voice reference file path (more efficient than uploading)
  * @returns {Promise<Blob>} - Audio blob
  */
 export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeight = 0.5, voiceFile = null, voiceFilePath = null) => {
   try {
-    // Determine which endpoint to use
-    let endpoint, url;
-    if (voiceFilePath) {
-      // Use path-based endpoint (more efficient for local files)
-      endpoint = '/tts/generate-with-voice-path';
-      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
-    } else if (voiceFile) {
-      // Use file upload endpoint
-      endpoint = '/tts/generate-with-voice';
-      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
-    } else {
-      // Use default voice endpoint
-      endpoint = '/tts/generate';
-      url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
+    // Reference audio is now required for all Chatterbox generation
+    if (!voiceFile && !voiceFilePath) {
+      throw new Error('Reference audio is required for Chatterbox TTS generation');
     }
 
-
+    // Use the single endpoint that requires reference audio
+    const endpoint = '/tts/generate';
+    const url = `${CHATTERBOX_API_BASE_URL}${endpoint}`;
 
     let body;
     let headers = {};
 
     if (voiceFilePath) {
-      // Use JSON for path-based generation
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({
-        text,
-        exaggeration,
-        cfg_weight: cfgWeight,
-        voice_file_path: voiceFilePath
-      });
+      // For local file paths, we need to read the file first
+      // This is a fallback - in practice, we should use voiceFile
+      throw new Error('Voice file path not supported in new API. Please use voiceFile parameter.');
     } else if (voiceFile) {
-      // Use FormData for file upload
+      // Use FormData for file upload (the only supported method now)
       const formData = new FormData();
       formData.append('text', text);
       formData.append('exaggeration', exaggeration.toString());
@@ -244,14 +230,6 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
       formData.append('voice_file', voiceFile);
       body = formData;
       // Don't set Content-Type header, let browser set it with boundary
-    } else {
-      // Use JSON for text-only generation
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({
-        text,
-        exaggeration,
-        cfg_weight: cfgWeight
-      });
     }
 
     const controller = new AbortController();
