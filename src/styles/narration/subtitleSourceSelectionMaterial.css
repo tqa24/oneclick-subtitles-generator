@@ -96,7 +96,6 @@
 .subtitle-grouping-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   width: 100%;
 }
 
@@ -189,8 +188,9 @@
 .grouping-intensity-container::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: -30px;
-  left: 120px;
+  top: 50%;
+  left: 260px; /* label width + select width + gap */
+  transform: translateY(-50%);
   background-color: rgba(var(--md-surface-variant-rgb), 0.9);
   color: var(--md-on-surface-variant);
   padding: 5px 10px;

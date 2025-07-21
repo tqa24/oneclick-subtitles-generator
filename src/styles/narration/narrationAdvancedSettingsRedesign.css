@@ -36,6 +36,11 @@
   height: 32px;
 }
 
+/* Chatterbox control sliders - constrain width like rest-time-slider */
+.chatterbox-control-row .slider-with-value {
+  max-width: 400px;
+}
+
 /* Use the main custom-slider styles but override height for compact version */
 .advanced-settings .custom-slider-container {
   height: 32px;
