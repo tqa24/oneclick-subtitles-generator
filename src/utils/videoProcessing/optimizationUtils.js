@@ -15,8 +15,8 @@ import { SERVER_URL } from '../../config';
 export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpdate, t) => {
   if (!mediaFile) throw new Error('No media file provided');
 
-  // Call the optimize-video endpoint
-  const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=15`, {
+  // Call the optimize-video endpoint with 1 FPS for Gemini optimization
+  const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=1`, {
     method: 'POST',
     body: mediaFile,
     headers: {

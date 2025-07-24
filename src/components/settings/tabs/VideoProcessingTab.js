@@ -22,6 +22,7 @@ const VideoProcessingTab = ({
   autoSelectDefaultPreset,
   setAutoSelectDefaultPreset,
   optimizeVideos,
+  setOptimizeVideos,
   optimizedResolution,
   setOptimizedResolution,
   useOptimizedPreview,
@@ -257,14 +258,33 @@ const VideoProcessingTab = ({
             <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
           </div>
           <div className="settings-card-content">
-            {/* Hidden: Automatically optimize uploaded videos setting */}
+            {/* Main optimization toggle */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="optimize-videos">
+                  {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="optimize-videos"
+                    checked={optimizeVideos}
+                    onChange={(e) => setOptimizeVideos(e.target.checked)}
+                    ariaLabel={t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.optimizeVideosDescription', 'Optimize videos for Gemini processing. Reduces file size and upload time while maintaining quality for AI analysis. Gemini only processes 1 FPS regardless of original video frame rate.')}
+              </p>
+            </div>
 
             <div className="compact-setting">
               <label htmlFor="optimized-resolution">
                 {t('settings.optimizedResolution', 'Optimized Resolution')}
               </label>
               <p className="setting-description">
-                {t('settings.optimizedResolutionDescription', 'Select the resolution to use for optimized videos. Lower resolutions process faster but may reduce accuracy.')}
+                {t('settings.optimizedResolutionDescription', 'Select the resolution for Gemini processing. Higher resolutions don\'t improve AI accuracy significantly but increase file size and upload time. 360p is recommended for most content.')}
               </p>
               <select
                 id="optimized-resolution"
@@ -273,8 +293,8 @@ const VideoProcessingTab = ({
                 className="enhanced-select"
                 disabled={!optimizeVideos}
               >
-                <option value="240p">240p</option>
-                <option value="360p">360p</option>
+                <option value="240p">240p (Fastest, smallest files)</option>
+                <option value="360p">360p (Recommended for Gemini)</option>
               </select>
             </div>
 
@@ -295,9 +315,29 @@ const VideoProcessingTab = ({
                 </div>
               </div>
               <p className="setting-description">
-                {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. This can improve performance on slower devices but will show lower quality video.')}
+                {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. Improves performance and reduces memory usage. The optimized video has the same quality that Gemini processes (1 FPS, optimized resolution).')}
               </p>
             </div>
+
+            {/* Optimization benefits info */}
+            {optimizeVideos && (
+              <div className="optimization-benefits">
+                <div className="benefits-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <span>{t('settings.optimizationBenefits', 'Optimization Benefits')}</span>
+                </div>
+                <ul className="benefits-list">
+                  <li>{t('settings.benefit1', '• Reduces file size by ~90% (1 FPS vs original frame rate)')}</li>
+                  <li>{t('settings.benefit2', '• Faster uploads to Gemini API')}</li>
+                  <li>{t('settings.benefit3', '• Lower bandwidth usage')}</li>
+                  <li>{t('settings.benefit4', '• No loss in AI processing quality')}</li>
+                  <li>{t('settings.benefit5', '• Matches Gemini\'s internal processing (1 FPS)')}</li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 

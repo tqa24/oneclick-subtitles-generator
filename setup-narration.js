@@ -1078,7 +1078,7 @@ logger.newLine();
 logger.info('🚀 To run the application with ALL narration services:');
 logger.info('   1. Ensure `uv` and `npm` are in your PATH');
 logger.info('   2. Run: npm run dev:cuda');
-logger.info('   This starts F5-TTS (port 3006) + Better-chatterbox API (port 3011) + Frontend (port 3008)');
+logger.info('   This starts F5-TTS (port 3035) + Better-chatterbox API (port 3036) + Frontend (port 3030)');
 
 logger.newLine();
 logger.info('💡 Other useful commands:');

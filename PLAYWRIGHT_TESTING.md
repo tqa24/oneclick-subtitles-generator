@@ -27,7 +27,7 @@ This guide documents how to test the One-Click Subtitles Generator application u
 ### Navigation
 ```javascript
 // Navigate to the application
-await page.goto('http://localhost:3011');
+await page.goto('http://localhost:3030');
 ```
 
 ### Taking Snapshots

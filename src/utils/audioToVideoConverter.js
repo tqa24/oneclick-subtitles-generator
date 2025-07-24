@@ -62,14 +62,14 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
 
 
         // Check if we already have a converted version of this audio file
-        const checkResponse = await fetch(`http://localhost:3007/api/converted-audio-exists/${audioHash}`);
+        const checkResponse = await fetch(`http://localhost:3031/api/converted-audio-exists/${audioHash}`);
         const checkResult = await checkResponse.json();
 
         if (checkResult.exists) {
 
 
             // Fetch the existing converted video
-            const videoUrl = `http://localhost:3007${checkResult.video}`;
+            const videoUrl = `http://localhost:3031${checkResult.video}`;
             const videoResponse = await fetch(videoUrl);
             const videoBlob = await videoResponse.blob();
 
@@ -106,7 +106,7 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
 
 
         // Fetch the converted video as a blob
-        const videoUrl = `http://localhost:3007${result.video}`;
+        const videoUrl = `http://localhost:3031${result.video}`;
         const videoResponse = await fetch(videoUrl);
         const videoBlob = await videoResponse.blob();
 

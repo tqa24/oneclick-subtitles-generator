@@ -1387,6 +1387,22 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 </div>
               )}
 
+              {/* Gemini FPS Info button - only show when video is loaded */}
+              {isLoaded && (
+                <div className="gemini-fps-info-button">
+                  <button
+                    onClick={() => {
+                      window.open('https://ai.google.dev/gemini-api/docs/video-understanding', '_blank');
+                    }}
+                    title="Gemini chỉ xử lý 1FPS dù gửi video có FPS cao, bấm nút để xem thêm, vui lòng chọn Render Video để có chất lượng + FPS tốt nhất"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Download audio button - only show when video is loaded */}
               {isLoaded && (
                 <div className="download-audio-button">

@@ -15,7 +15,7 @@ const { getFfmpegPath } = require('../shared/ffmpegUtils');
  * @param {string} outputPath - Path to save the optimized video
  * @param {Object} options - Optimization options
  * @param {string} options.resolution - Target resolution (e.g., '360p', '240p')
- * @param {number} options.fps - Target frame rate (default: 15)
+ * @param {number} options.fps - Target frame rate (default: 1 for Gemini optimization)
  * @returns {Promise<Object>} - Result object with optimized video path and metadata
  */
 function optimizeVideo(videoPath, outputPath, options = {}) {
@@ -44,7 +44,8 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
       }
       // Set default options
       const resolution = options.resolution || '360p';
-      const fps = options.fps || 15;
+      // Use 1 FPS for Gemini optimization since Gemini only processes 1 frame per second
+      const fps = options.fps || 1;
 
       // Map resolution string to actual dimensions
       let targetWidth, targetHeight;

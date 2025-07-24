@@ -335,7 +335,7 @@ export const downloadAndPrepareYouTubeVideo = async (
             }
 
             // Fetch the video directly from the server
-            const serverUrl = 'http://localhost:3007';
+            const serverUrl = 'http://localhost:3031';
             const directResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
               method: 'GET',
               cache: 'no-cache'
@@ -440,7 +440,7 @@ export const downloadAndPrepareYouTubeVideo = async (
           const videoId = selectedVideo.id;
 
           // Fetch the video directly from the server
-          const serverUrl = 'http://localhost:3007';
+          const serverUrl = 'http://localhost:3031';
           const retryResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
             method: 'GET',
             cache: 'no-cache'

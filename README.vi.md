@@ -34,4 +34,4 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
   ./OSG_installer.sh
   ```
 
-- Trình duyệt sẽ tự động mở tại http://localhost:3008
+- Trình duyệt sẽ tự động mở tại http://localhost:3030

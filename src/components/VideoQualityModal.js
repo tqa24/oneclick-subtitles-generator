@@ -67,7 +67,7 @@ const VideoQualityModal = ({
 
     setIsScanning(true);
     try {
-      const response = await fetch('http://localhost:3007/api/scan-video-qualities', {
+      const response = await fetch('http://localhost:3031/api/scan-video-qualities', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ const VideoQualityModal = ({
 
   // Start quality download and return video ID
   const startQualityDownload = async (quality, url) => {
-    const response = await fetch('http://localhost:3007/api/download-video-quality', {
+    const response = await fetch('http://localhost:3031/api/download-video-quality', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ const VideoQualityModal = ({
 
   // Start quality download with pre-generated video ID
   const startQualityDownloadWithId = async (quality, url, videoId) => {
-    const response = await fetch('http://localhost:3007/api/download-video-quality', {
+    const response = await fetch('http://localhost:3031/api/download-video-quality', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ const VideoQualityModal = ({
       // Fallback to API polling
       const progressInterval = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:3007/api/quality-download-progress/${videoId}`);
+          const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
           const data = await response.json();
 
           if (data.success) {
@@ -201,7 +201,7 @@ const VideoQualityModal = ({
       // Set up completion listener
       const completionInterval = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:3007/api/quality-download-progress/${videoId}`);
+          const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
           const data = await response.json();
 
           if (data.success && !completed) {

@@ -189,6 +189,21 @@
   opacity: 1;
 }
 
+/* Gemini FPS Info button - Material Design style */
+.gemini-fps-info-button {
+  position: absolute;
+  top: 16px;
+  right: 200px; /* Position to the left of download button */
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+}
+
+.video-container:hover .gemini-fps-info-button {
+  opacity: 1;
+}
+
 /* Download audio button - Material Design style */
 .download-audio-button {
   position: absolute;
@@ -204,8 +219,9 @@
   opacity: 1;
 }
 
-/* Common button styles for both refresh and download buttons */
+/* Common button styles for refresh, info, and download buttons */
 .refresh-narration-button button,
+.gemini-fps-info-button button,
 .download-audio-button button {
   display: flex;
   align-items: center;
@@ -224,6 +240,7 @@
 }
 
 .refresh-narration-button button:hover,
+.gemini-fps-info-button button:hover,
 .download-audio-button button:hover {
   background-color: var(--md-secondary-container);
   color: var(--md-on-secondary-container);
@@ -233,9 +250,30 @@
 }
 
 .refresh-narration-button button:active,
+.gemini-fps-info-button button:active,
 .download-audio-button button:active {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
+}
+
+/* Specific styling for info button */
+.gemini-fps-info-button button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%; /* Make it perfectly round */
+  padding: 0;
+  background-color: rgba(var(--md-primary-rgb), 0.1);
+  color: var(--md-primary);
+  border: 1px solid rgba(var(--md-primary-rgb), 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gemini-fps-info-button button:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: transparent;
 }
 
 /* Loading state */
@@ -285,11 +323,16 @@
   height: 24px;
 }
 
-/* Responsive styles for the refresh and download buttons */
+/* Responsive styles for the refresh, info, and download buttons */
 @media (max-width: 768px) {
   .refresh-narration-button {
     top: 12px;
     left: 12px;
+  }
+
+  .gemini-fps-info-button {
+    top: 12px;
+    right: 64px; /* Position to the left of download button on mobile */
   }
 
   .download-audio-button {
@@ -298,6 +341,7 @@
   }
 
   .refresh-narration-button button,
+  .gemini-fps-info-button button,
   .download-audio-button button {
     padding: 8px;
     min-width: 40px;
@@ -313,11 +357,13 @@
   }
 
   .refresh-narration-button svg,
+  .gemini-fps-info-button svg,
   .download-audio-button svg {
     margin-right: 0;
   }
 
   .refresh-narration-button button:hover,
+  .gemini-fps-info-button button:hover,
   .download-audio-button button:hover {
     background-color: var(--md-secondary-container);
   }

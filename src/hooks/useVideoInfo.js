@@ -47,7 +47,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
         // Fetch actual dimensions for this video
         if (selectedVideo.id && !actualDimensions) {
           console.log('[useVideoInfo] Fetching dimensions for selectedVideo:', selectedVideo.id);
-          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo.id}.mp4`);
+          fetchActualDimensions(`http://localhost:3031/videos/${selectedVideo.id}.mp4`);
         }
       }
       // Priority 2: Check if we have an uploaded file
@@ -131,7 +131,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
           if (uploadedFile && !actualDimensions) {
             const videoId = uploadedFile.name.replace('.mp4', '');
             console.log('[useVideoInfo] Fetching dimensions for uploadedFile:', videoId);
-            fetchActualDimensions(`http://localhost:3007/videos/${videoId}.mp4`);
+            fetchActualDimensions(`http://localhost:3031/videos/${videoId}.mp4`);
           }
         } else {
           // This is an actual uploaded file
@@ -230,7 +230,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
             if (videoId) {
               console.log('[useVideoInfo] Fetching dimensions for actualVideoUrl:', videoId);
-              fetchActualDimensions(`http://localhost:3007/videos/${videoId}.mp4`);
+              fetchActualDimensions(`http://localhost:3031/videos/${videoId}.mp4`);
             }
           }
         }
@@ -269,7 +269,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
         // Also try to fetch dimensions based on selectedVideo if we have it
         if (selectedVideo && selectedVideo.id) {
           console.log('[useVideoInfo] Trying to fetch dimensions from selectedVideo:', selectedVideo.id);
-          fetchActualDimensions(`http://localhost:3007/videos/${selectedVideo.id}.mp4`);
+          fetchActualDimensions(`http://localhost:3031/videos/${selectedVideo.id}.mp4`);
         }
       }
     };
@@ -314,7 +314,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       console.log('[useVideoInfo] Making API call to fetch dimensions for video ID:', videoId);
 
-      const response = await fetch(`http://localhost:3007/api/video-dimensions/${videoId}`);
+      const response = await fetch(`http://localhost:3031/api/video-dimensions/${videoId}`);
       console.log('[useVideoInfo] API response status:', response.status);
 
       const data = await response.json();
@@ -370,13 +370,13 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
       // If videoId is provided, the download was already started by the modal
       // Just construct the URL from the existing download
       if (videoId) {
-        const videoUrl = `http://localhost:3007/videos/${videoId}_${quality}.mp4`;
+        const videoUrl = `http://localhost:3031/videos/${videoId}_${quality}.mp4`;
         console.log('[useVideoInfo] Using pre-downloaded video URL:', videoUrl);
         return videoUrl;
       }
 
       // Fallback: start a new download (shouldn't happen with the new flow)
-      const response = await fetch('http://localhost:3007/api/download-video-quality', {
+      const response = await fetch('http://localhost:3031/api/download-video-quality', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -393,7 +393,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       if (data.success) {
         // Return the server URL for the downloaded video
-        const videoUrl = `http://localhost:3007${data.videoPath}`;
+        const videoUrl = `http://localhost:3031${data.videoPath}`;
         console.log('[useVideoInfo] Redownloaded video URL:', videoUrl);
         return videoUrl;
       } else {

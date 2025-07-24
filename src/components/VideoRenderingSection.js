@@ -226,7 +226,7 @@ const VideoRenderingSection = ({
   // Check if a render is still active on the server and reconnect
   const checkRenderStatus = async (renderId, queueItem) => {
     try {
-      const response = await fetch(`http://localhost:3010/render-status/${renderId}`);
+      const response = await fetch(`http://localhost:3033/render-status/${renderId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -304,7 +304,7 @@ const VideoRenderingSection = ({
       setRenderStatus(t('videoRendering.reconnecting', 'Reconnecting to render...'));
 
       // Connect to the render stream
-      const response = await fetch(`http://localhost:3010/render-stream/${renderId}`, {
+      const response = await fetch(`http://localhost:3033/render-stream/${renderId}`, {
         method: 'GET',
         signal: controller.signal
       });
@@ -507,7 +507,7 @@ const VideoRenderingSection = ({
         }));
 
         // Call the same endpoint as refresh narration button
-        const response = await fetch(`http://localhost:3007/api/narration/download-aligned`, {
+        const response = await fetch(`http://localhost:3031/api/narration/download-aligned`, {
           method: 'POST',
           mode: 'cors',
           credentials: 'include',
@@ -658,7 +658,7 @@ const VideoRenderingSection = ({
       }
 
       // Call the same endpoint as refresh narration button
-      const response = await fetch(`http://localhost:3007/api/narration/download-aligned`, {
+      const response = await fetch(`http://localhost:3031/api/narration/download-aligned`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
@@ -761,7 +761,7 @@ const VideoRenderingSection = ({
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`http://localhost:3010/upload/${type}`, {
+    const response = await fetch(`http://localhost:3033/upload/${type}`, {
       method: 'POST',
       body: formData
     });
@@ -932,7 +932,7 @@ const VideoRenderingSection = ({
 
           // Upload the file to renderer and get HTTP URL
           const uploadedNarrationFilename = await uploadFileToRenderer(narrationFileObj, 'audio');
-          narrationUrl = `http://localhost:3010/uploads/${uploadedNarrationFilename}`;
+          narrationUrl = `http://localhost:3033/uploads/${uploadedNarrationFilename}`;
         }
       }
 
@@ -952,7 +952,7 @@ const VideoRenderingSection = ({
       setRenderStatus(t('videoRendering.rendering', 'Rendering video...'));
 
       // Send the POST request for rendering
-      const response = await fetch('http://localhost:3010/render', {
+      const response = await fetch('http://localhost:3033/render', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1182,7 +1182,7 @@ const VideoRenderingSection = ({
 
     try {
       // Call the cancel endpoint on the server
-      const response = await fetch(`http://localhost:3010/cancel-render/${currentRenderId}`, {
+      const response = await fetch(`http://localhost:3033/cancel-render/${currentRenderId}`, {
         method: 'POST'
       });
 

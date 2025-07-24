@@ -79,7 +79,7 @@ const DownloadOnlyModal = ({
         source: videoInfo.source
       };
 
-      const response = await fetch('http://localhost:3007/api/download-only', {
+      const response = await fetch('http://localhost:3031/api/download-only', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ const DownloadOnlyModal = ({
             if (progressData.status === 'completed') {
               setIsDownloading(false);
               // Trigger download of the file using the download endpoint
-              const downloadUrl = `http://localhost:3007/api/download-only-file/${videoId}`;
+              const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
               const a = document.createElement('a');
               a.href = downloadUrl;
               a.download = result.filename || `download.${selectedType === 'video' ? 'mp4' : 'mp3'}`;
@@ -136,7 +136,7 @@ const DownloadOnlyModal = ({
   const pollDownloadProgress = (videoId) => {
     const interval = setInterval(async () => {
       try {
-        const response = await fetch(`http://localhost:3007/api/download-only-progress/${videoId}`);
+        const response = await fetch(`http://localhost:3031/api/download-only-progress/${videoId}`);
         const data = await response.json();
 
         if (data.success) {
@@ -148,7 +148,7 @@ const DownloadOnlyModal = ({
             
             if (data.status === 'completed') {
               // Trigger download using the download endpoint
-              const downloadUrl = `http://localhost:3007/api/download-only-file/${downloadVideoId}`;
+              const downloadUrl = `http://localhost:3031/api/download-only-file/${downloadVideoId}`;
               const a = document.createElement('a');
               a.href = downloadUrl;
               a.download = `download.${selectedType === 'video' ? 'mp4' : 'mp3'}`;

@@ -273,7 +273,7 @@ router.post('/split-existing-file', async (req, res) => {
 
         optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
-          fps: 15
+          fps: 1 // Gemini only processes 1 FPS
         });
 
         if (fs.existsSync(optimizedPath)) {
@@ -367,7 +367,7 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
 
         optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
-          fps: 15
+          fps: 1 // Gemini only processes 1 FPS
         });
 
         // Use the optimized video for splitting
@@ -481,7 +481,7 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 
         optimizedResult = await optimizeVideo(processPath, optimizedPath, {
           resolution: optimizedResolution,
-          fps: 15
+          fps: 1 // Gemini only processes 1 FPS
         });
 
         // Double-check that the optimization was successful
@@ -564,7 +564,7 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
   try {
     // Get optimization options from query params
     const resolution = req.query.resolution || '360p';
-    const fps = parseInt(req.query.fps || '15');
+    const fps = parseInt(req.query.fps || '1'); // Default to 1 FPS for Gemini optimization
 
     // Determine if this is a video or audio file based on MIME type
     const contentType = req.headers['content-type'] || 'video/mp4';
