@@ -224,7 +224,7 @@ const AppLayout = ({
   // Handle when video source is removed or added
   useEffect(() => {
     // Check if we have an actual downloaded video file (not just a pasted URL)
-    const hasDownloadedVideo = hasValidDownloadedVideo();
+    const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
 
     // If we have subtitles data but no actual video file, switch to SRT-only mode
     if (!selectedVideo && !uploadedFile && !hasDownloadedVideo && subtitlesData) {

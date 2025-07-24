@@ -183,7 +183,7 @@ const ButtonsContainer = ({
   const hasUrlAndSrtOnly = selectedVideo &&
                           !uploadedFile &&
                           hasSubtitlesData &&
-                          !hasValidDownloadedVideo() &&
+                          !hasValidDownloadedVideo(uploadedFile) &&
                           !isSrtOnlyMode;
 
   // Show retry button if:

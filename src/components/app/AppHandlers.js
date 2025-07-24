@@ -96,7 +96,7 @@ export const useAppHandlers = (appState) => {
 
       // Check if we have any video sources (including pasted URLs)
       const hasUploadedFile = activeTab === 'file-upload' && uploadedFile !== null;
-      const hasDownloadedVideo = hasValidDownloadedVideo();
+      const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
       const hasYoutubeVideo = activeTab.includes('youtube') && selectedVideo !== null;
       const hasUnifiedVideo = activeTab === 'unified-url' && selectedVideo !== null;
 
@@ -593,20 +593,25 @@ export const useAppHandlers = (appState) => {
     // Always update the current active tab
     localStorage.setItem('lastActiveTab', tab);
     setActiveTab(tab);
-    setSelectedVideo(null);
-    setUploadedFile(null);
-    setStatus({}); // Reset status
-    setSubtitlesData(null); // Reset subtitles data
 
-    // Only reset SRT-only mode if we don't have subtitles data in localStorage
-    const subtitlesData = localStorage.getItem('subtitles_data');
-    if (!subtitlesData) {
-      setIsSrtOnlyMode(false); // Reset SRT-only mode
+    // Only reset state for user-initiated tab changes
+    // System-initiated changes (like after video download) should preserve state
+    if (isUserInitiated) {
+      setSelectedVideo(null);
+      setUploadedFile(null);
+      setStatus({}); // Reset status
+      setSubtitlesData(null); // Reset subtitles data
+
+      // Only reset SRT-only mode if we don't have subtitles data in localStorage
+      const subtitlesData = localStorage.getItem('subtitles_data');
+      if (!subtitlesData) {
+        setIsSrtOnlyMode(false); // Reset SRT-only mode
+      }
+
+      localStorage.removeItem('current_video_url');
+      localStorage.removeItem('current_file_url');
+      localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
     }
-
-    localStorage.removeItem('current_video_url');
-    localStorage.removeItem('current_file_url');
-    localStorage.removeItem('current_file_cache_id'); // Also clear the file cache ID
   };
 
   /**

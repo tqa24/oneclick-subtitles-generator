@@ -99,20 +99,16 @@ const OutputContainer = ({
     // First check for uploaded file
     const uploadedFileUrl = localStorage.getItem('current_file_url');
     if (uploadedFileUrl) {
-      // Check if it's a blob URL and if it's still valid
+      // Check if it's a blob URL and if we have an uploadedFile
       if (uploadedFileUrl.startsWith('blob:')) {
-        // Blob URLs become invalid after page refresh, so check if it's accessible
-        isBlobUrlValid(uploadedFileUrl)
-          .then((isValid) => {
-            if (isValid) {
-              // Blob is still valid
-              setVideoSource(uploadedFileUrl);
-            } else {
-              // Blob is invalid, clear it from localStorage
-              localStorage.removeItem('current_file_url');
-              setVideoSource('');
-            }
-          });
+        // Only use blob URLs if we have an uploadedFile (indicates current session)
+        if (uploadedFile) {
+          setVideoSource(uploadedFileUrl);
+        } else {
+          // No uploadedFile means this is a stale blob URL, clear it
+          localStorage.removeItem('current_file_url');
+          setVideoSource('');
+        }
         return;
       } else {
         // Non-blob URL, use it directly
@@ -136,7 +132,7 @@ const OutputContainer = ({
 
       // Special case: If we have selectedVideo + subtitlesData but no downloaded video,
       // don't set videoSource to prevent VideoPreview from trying to load the URL
-      if (subtitlesData && !hasValidDownloadedVideo()) {
+      if (subtitlesData && !hasValidDownloadedVideo(uploadedFile)) {
         setVideoSource('');
         return;
       }
@@ -150,7 +146,7 @@ const OutputContainer = ({
     if (videoUrl && !selectedVideo && !isSrtOnlyMode) {
       // Special case: If we have cached URL + subtitlesData but no downloaded video,
       // don't set videoSource to prevent VideoPreview from trying to load the URL
-      if (subtitlesData && !hasValidDownloadedVideo()) {
+      if (subtitlesData && !hasValidDownloadedVideo(uploadedFile)) {
         setVideoSource('');
         return;
       }
@@ -244,12 +240,11 @@ const OutputContainer = ({
           <div className="preview-section">
             {/* Check if we should hide sections for URL + SRT without downloaded video */}
             {(() => {
-              const hasUrlAndSrtOnly = selectedVideo &&
-                                      !uploadedFile &&
-                                      subtitlesData &&
-                                      !hasValidDownloadedVideo() &&
-                                      !isSrtOnlyMode;
-              return !isSrtOnlyMode && !hasUrlAndSrtOnly;
+              // Show sections if:
+              // 1. Not in SRT-only mode AND
+              // 2. Either we have an uploaded file OR we have a valid downloaded video
+              const hasActualVideo = uploadedFile || hasValidDownloadedVideo(uploadedFile);
+              return !isSrtOnlyMode && hasActualVideo;
             })() && (
               <VideoPreview
                 currentTime={currentTabIndex}
@@ -300,12 +295,11 @@ const OutputContainer = ({
 
           {/* Translation Section */}
           {(() => {
-            const hasUrlAndSrtOnly = selectedVideo &&
-                                    !uploadedFile &&
-                                    subtitlesData &&
-                                    !hasValidDownloadedVideo() &&
-                                    !isSrtOnlyMode;
-            return !hasUrlAndSrtOnly;
+            // Show sections if:
+            // 1. Not in SRT-only mode AND
+            // 2. Either we have an uploaded file OR we have a valid downloaded video
+            const hasActualVideo = uploadedFile || hasValidDownloadedVideo(uploadedFile);
+            return !isSrtOnlyMode && hasActualVideo;
           })() && (
             <>
               <TranslationSection
@@ -318,12 +312,11 @@ const OutputContainer = ({
 
           {/* Unified Narration Section - Now separate from Translation */}
           {(() => {
-            const hasUrlAndSrtOnly = selectedVideo &&
-                                    !uploadedFile &&
-                                    subtitlesData &&
-                                    !hasValidDownloadedVideo() &&
-                                    !isSrtOnlyMode;
-            return !hasUrlAndSrtOnly;
+            // Show sections if:
+            // 1. Not in SRT-only mode AND
+            // 2. Either we have an uploaded file OR we have a valid downloaded video
+            const hasActualVideo = uploadedFile || hasValidDownloadedVideo(uploadedFile);
+            return !isSrtOnlyMode && hasActualVideo;
           })() && (
             <>
               <UnifiedNarrationSection

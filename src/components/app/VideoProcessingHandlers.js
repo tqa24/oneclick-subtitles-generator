@@ -502,7 +502,7 @@ export const downloadAndPrepareYouTubeVideo = async (
       const originalVideoUrl = localStorage.getItem('current_video_url');
 
       // Switch to the upload tab without resetting state (system-initiated, don't update user preference)
-      handleTabChange('file-upload');
+      handleTabChange('file-upload', false);
 
       // Restore the original video URL after tab change (so we can redownload later)
       if (originalVideoUrl) {
