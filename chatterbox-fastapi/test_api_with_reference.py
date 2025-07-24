@@ -8,8 +8,8 @@ import requests
 import os
 from pathlib import Path
 
-# Configuration
-API_BASE_URL = "http://localhost:3011"
+# Configuration - using unified port configuration
+API_BASE_URL = "http://localhost:3036"
 REFERENCE_AUDIO = "test_reference_audio.wav"
 TEST_TEXT = "Hello! This is a test of the Chatterbox TTS API using a reference voice. The voice should sound similar to the reference audio provided."
 

@@ -89,8 +89,8 @@ export const convertAudioToVideo = async (audioFile, onStatusUpdate = null) => {
         // No cached version found, proceed with conversion
 
 
-        // Call the server endpoint to convert audio to video
-        const response = await fetch('http://localhost:3007/api/convert-audio-to-video', {
+        // Call the server endpoint to convert audio to video - using unified port configuration
+        const response = await fetch('http://localhost:3031/api/convert-audio-to-video', {
             method: 'POST',
             body: audioFile,
             headers: {

@@ -186,7 +186,6 @@ app.use('/api/diagnostics', diagnosticsRoutes);
 // Simple model scanning endpoint - no Python bullshit!
 app.post('/api/scan-models', async (req, res) => {
   try {
-    console.log('🔍 Model scan requested');
     const success = scanModels();
 
     if (success) {

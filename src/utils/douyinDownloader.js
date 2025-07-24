@@ -8,8 +8,8 @@ const downloadQueue = {};
 // Track active download intervals for cancellation
 const activeDownloadIntervals = {};
 
-// Server URL for the local download server
-const SERVER_URL = 'http://localhost:3007';
+// Server URL for the local download server - using unified port configuration
+const SERVER_URL = 'http://localhost:3031';
 
 /**
  * Starts downloading a Douyin video to the local videos folder

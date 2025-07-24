@@ -1,6 +1,9 @@
 const { spawn } = require('child_process');
 const chalk = require('chalk');
 
+// Import port management for cleanup
+const { killProcessesOnPorts, cleanupTrackingFile } = require('./server/utils/portManager');
+
 // Colors for different services
 const colors = {
   FRONTEND: chalk.cyan,
@@ -25,33 +28,55 @@ function prefixOutput(serviceName, data) {
     .join('\n');
 }
 
-// Start all services
-console.log(chalk.bold('Starting development servers...\n'));
+// Start all services with proper sequencing
+async function startServices() {
+  console.log(chalk.bold('Starting development servers...\n'));
 
-commands.forEach(({ name, cmd, args, cwd }) => {
-  const process = spawn(cmd, args, {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    shell: true, // Use shell: true for cross-platform npm compatibility (works on Windows, Linux, macOS)
-    cwd: cwd
-  });
+  // First, clean up ports
+  console.log(chalk.yellow('🧹 Cleaning up ports before starting services...'));
+  cleanupTrackingFile();
+  await killProcessesOnPorts();
+  console.log(chalk.green('✅ Port cleanup complete\n'));
 
-  process.stdout.on('data', (data) => {
-    console.log(prefixOutput(name, data));
-  });
+  // Wait a moment for ports to be fully released
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
-  process.stderr.on('data', (data) => {
-    console.log(prefixOutput(name, data));
-  });
+  // Now start all services
+  commands.forEach(({ name, cmd, args, cwd }) => {
+    const childProcess = spawn(cmd, args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: true, // Use shell: true for cross-platform npm compatibility (works on Windows, Linux, macOS)
+      cwd: cwd,
+      env: {
+        ...process.env,
+        DEV_SERVER_MANAGED: 'true' // Tell services they're managed by dev-server
+      }
+    });
 
-  process.on('close', (code) => {
-    const color = colors[name];
-    console.log(color(`[${name}] Process exited with code ${code}`));
-  });
+    childProcess.stdout.on('data', (data) => {
+      console.log(prefixOutput(name, data));
+    });
 
-  process.on('error', (err) => {
-    const color = colors[name];
-    console.log(color(`[${name}] Error: ${err.message}`));
+    childProcess.stderr.on('data', (data) => {
+      console.log(prefixOutput(name, data));
+    });
+
+    childProcess.on('close', (code) => {
+      const color = colors[name];
+      console.log(color(`[${name}] Process exited with code ${code}`));
+    });
+
+    childProcess.on('error', (err) => {
+      const color = colors[name];
+      console.log(color(`[${name}] Error: ${err.message}`));
+    });
   });
+}
+
+// Start services
+startServices().catch(error => {
+  console.error(chalk.red('❌ Error starting services:', error));
+  process.exit(1);
 });
 
 // Handle Ctrl+C gracefully

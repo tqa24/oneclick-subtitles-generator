@@ -15,11 +15,11 @@ This guide documents how to test the One-Click Subtitles Generator application u
    ```
 
 2. **Handle port conflicts:**
-   - If port 3008 is occupied, choose 'Y' to use an alternative port
-   - Note the actual port from terminal output (usually 3009, 3010, 3011, etc.)
+   - If port 3030 is occupied, choose 'Y' to use an alternative port
+   - Note the actual port from terminal output (usually 3031, 3032, 3033, etc.)
 
 3. **Identify the correct URL:**
-   - Try common ports: `http://localhost:3009`, `http://localhost:3010`, `http://localhost:3011`
+   - Try common ports: `http://localhost:3030`, `http://localhost:3031`, `http://localhost:3032`
    - Look for the page title "Subtitles Generator" to confirm correct port
 
 ## Basic Playwright Commands
@@ -94,7 +94,7 @@ await page.getByRole('menuitem', { name: '🇺🇸 English' }).click();
 
 ### Port Detection
 - **Issue:** Application not loading on expected port
-- **Solution:** Check terminal output for actual port, try sequential ports (3009, 3010, 3011)
+- **Solution:** Check terminal output for actual port, try sequential ports (3030, 3031, 3032)
 
 ### Element Interaction Blocked
 - **Issue:** `TimeoutError` due to overlays blocking clicks

@@ -14,21 +14,22 @@ logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-# Configure CORS to allow requests from the frontend origin with credentials
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3008", "http://127.0.0.1:3008"], "supports_credentials": True}}, allow_headers=["Content-Type", "Authorization", "Accept"])
+# Configure CORS to allow requests from the frontend origin with credentials - using unified port configuration
+CORS(app, resources={r"/*": {"origins": ["http://localhost:3030", "http://127.0.0.1:3030"], "supports_credentials": True}}, allow_headers=["Content-Type", "Authorization", "Accept"])
 
 # Add CORS headers to all responses
 @app.after_request
 def add_cors_headers(response):
     # Check the request origin and set the appropriate CORS header
     request_origin = request.headers.get('Origin')
-    allowed_origins = ['http://localhost:3008', 'http://127.0.0.1:3008']
+    # Use unified port configuration - frontend is on port 3030
+    allowed_origins = ['http://localhost:3030', 'http://127.0.0.1:3030']
 
     if request_origin in allowed_origins:
         response.headers.add('Access-Control-Allow-Origin', request_origin)
     else:
         # Default to localhost if origin not in allowed list
-        response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:3008')
+        response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:3030')
 
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
@@ -68,33 +69,21 @@ def index():
     })
 
 if __name__ == '__main__':
-    # Try a range of ports starting from the specified port
-    base_port = int(os.environ.get('NARRATION_PORT', 3006))
+    # Use unified port configuration - no fallback ports
+    port = int(os.environ.get('NARRATION_PORT', 3035))
 
-    # Try ports in this range
-    port_range = [base_port, base_port + 1, base_port + 2, base_port + 3, base_port + 4]
+    try:
+        logger.info(f"Starting F5-TTS Narration Service on port {port}")
 
-    # Also try these specific ports which are less likely to be in use
-    alternative_ports = [8080, 8081, 8082, 9090, 9091, 9092]
+        # Write the port to a file so the main server can find it
+        port_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration_port.txt')
+        with open(port_file, 'w') as f:
+            f.write(str(port))
 
-    # Combine all ports to try
-    ports_to_try = port_range + alternative_ports
+        # Start the server on the specified port
+        app.run(host='0.0.0.0', port=port, debug=True)
 
-    # Try each port
-    for port in ports_to_try:
-        try:
-
-            # Write the port to a file so the main server can find it
-            port_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration_port.txt')
-            with open(port_file, 'w') as f:
-                f.write(str(port))
-
-            # Try to run on this port with all interfaces to allow both localhost and 127.0.0.1 access
-            app.run(host='0.0.0.0', port=port, debug=True)
-            break  # If we get here, the server started successfully
-        except OSError as e:
-            logger.error(f"Error starting server on port {port}: {e}")
-    else:
-        # If we get here, all ports failed
-        logger.error("Failed to start server on any port")
+    except OSError as e:
+        logger.error(f"Failed to start server on port {port}: {e}")
+        logger.error("Make sure the port is not already in use")
         sys.exit(1)

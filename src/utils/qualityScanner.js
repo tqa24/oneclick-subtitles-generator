@@ -2,7 +2,8 @@
  * Client-side utility for scanning video qualities
  */
 
-const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3007';
+// Use unified port configuration - backend is on port 3031
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3031';
 
 /**
  * Scan available video qualities for a given URL

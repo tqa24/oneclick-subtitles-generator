@@ -392,8 +392,8 @@ export const downloadAndPrepareYouTubeVideo = async (
               // Extract the video ID from the URL or use the selectedVideo.id
               const videoId = selectedVideo.id;
 
-              // Fetch the video directly from the server
-              const serverUrl = 'http://localhost:3007';
+              // Fetch the video directly from the server - using unified port configuration
+              const serverUrl = 'http://localhost:3031';
               const retryResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
                 method: 'GET',
                 cache: 'no-cache'

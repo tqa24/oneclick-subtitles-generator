@@ -13,8 +13,8 @@ import Workspace from './components/Workspace';
 import ThemeLanguageSwitcher from './components/ThemeLanguageSwitcher';
 import { v4 as uuidv4 } from 'uuid';
 
-// Get server URL from environment or default to port 3020
-const SERVER_URL = process.env.REACT_APP_API_URL || 'http://localhost:3020';
+// Get server URL from environment or default to unified port configuration
+const SERVER_URL = process.env.REACT_APP_API_URL || 'http://localhost:3033';
 
 // Create our Header component
 const Header: React.FC = () => {

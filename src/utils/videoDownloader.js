@@ -10,8 +10,8 @@ const downloadQueue = {};
 // Track active download intervals for cancellation
 const activeDownloadIntervals = {};
 
-// Server URL for the local YouTube download server
-const SERVER_URL = 'http://localhost:3007'; // Changed from 3004 to match server port
+// Server URL for the local YouTube download server - using unified port configuration
+const SERVER_URL = 'http://localhost:3031'; // Backend server port
 
 /**
  * Starts downloading a YouTube video to the local videos folder

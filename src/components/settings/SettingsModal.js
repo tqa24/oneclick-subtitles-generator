@@ -474,8 +474,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       localStorageData.gemini_token = geminiApiKey;
       localStorageData.genius_token = geniusApiKey;
 
-      // Send to server
-      const response = await fetch('http://127.0.0.1:3007/api/save-local-storage', {
+      // Send to server - using unified port configuration
+      const response = await fetch('http://127.0.0.1:3031/api/save-local-storage', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

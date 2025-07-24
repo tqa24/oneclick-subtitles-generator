@@ -438,7 +438,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
     } else if (option === 'version' && data.version) {
       // Use specific version
       const version = data.version;
-      const serverUrl = 'http://localhost:3007'; // Adjust if needed
+      const serverUrl = 'http://localhost:3031'; // Using unified port configuration
       const fullUrl = version.path.startsWith('http') ? version.path : `${serverUrl}${version.path}`;
       
       return {

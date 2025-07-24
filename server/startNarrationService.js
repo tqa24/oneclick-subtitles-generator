@@ -6,10 +6,15 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Configuration
-const NARRATION_PORT = process.env.NARRATION_PORT || 3006;
-const ALTERNATIVE_NARRATION_PORT = parseInt(NARRATION_PORT) + 1;
-const CHATTERBOX_PORT = process.env.CHATTERBOX_PORT || 3011;
+// Import unified port configuration
+const { PORTS } = require('./config');
+
+// Import port management
+const { trackProcess } = require('./utils/portManager');
+
+// Configuration using unified ports
+const NARRATION_PORT = PORTS.NARRATION;
+const CHATTERBOX_PORT = PORTS.CHATTERBOX;
 const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 
 // Start the Chatterbox API service
@@ -75,6 +80,11 @@ function startChatterboxService() {
         console.log('✅ Chatterbox service stopped gracefully');
       }
     });
+
+    // Track the Chatterbox process
+    if (chatterboxProcess.pid) {
+      trackProcess(CHATTERBOX_PORT, chatterboxProcess.pid, 'Chatterbox API');
+    }
 
     console.log(`✅ Chatterbox API service starting...`);
     console.log(`📁 Working directory: ${chatterboxDir}`);
@@ -191,6 +201,11 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
     });
 
     console.log(`✅ F5-TTS narration service started on port ${NARRATION_PORT}`);
+
+    // Track the narration process
+    if (narrationProcess.pid) {
+      trackProcess(NARRATION_PORT, narrationProcess.pid, 'F5-TTS Narration');
+    }
 
     // Start Chatterbox service
     const chatterboxProcess = startChatterboxService();

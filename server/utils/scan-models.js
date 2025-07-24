@@ -18,15 +18,12 @@ function scanModels() {
             return false;
         }
 
-        console.log('📁 Scanning directory:', MODELS_DIR);
-
         // Read current registry
         let registry = { models: [] };
         if (fs.existsSync(REGISTRY_FILE)) {
             try {
                 const registryData = fs.readFileSync(REGISTRY_FILE, 'utf8');
                 registry = JSON.parse(registryData);
-                console.log('📋 Loaded existing registry with', registry.models?.length || 0, 'models');
             } catch (e) {
                 console.log('⚠️ Error reading registry, starting fresh:', e.message);
             }
@@ -36,11 +33,9 @@ function scanModels() {
 
         // Get existing model IDs
         const existingIds = new Set((registry.models || []).map(m => m.id));
-        console.log('🔍 Existing model IDs:', Array.from(existingIds));
 
         // Scan directory
         const items = fs.readdirSync(MODELS_DIR);
-        console.log('📂 Found items:', items);
 
         let newModelsFound = 0;
 
@@ -49,7 +44,6 @@ function scanModels() {
             
             // Skip files, only process directories
             if (!fs.statSync(itemPath).isDirectory()) {
-                console.log(`⏭️ Skipping ${item} - not a directory`);
                 continue;
             }
 
@@ -129,7 +123,6 @@ function scanModels() {
             
             return true;
         } else {
-            console.log('ℹ️ No new models found');
             return true;
         }
 

@@ -2,8 +2,12 @@
  * Service for interacting with Chatterbox TTS API
  */
 
-const CHATTERBOX_API_BASE_URL = 'http://localhost:3011';
-const SERVER_API_BASE_URL = 'http://localhost:3007';
+// Unified port configuration - matches server/config.js
+const CHATTERBOX_PORT = 3036;
+const BACKEND_PORT = 3031;
+
+const CHATTERBOX_API_BASE_URL = `http://localhost:${CHATTERBOX_PORT}`;
+const SERVER_API_BASE_URL = `http://localhost:${BACKEND_PORT}`;
 
 // Track if Chatterbox service has been successfully initialized
 let chatterboxServiceInitialized = false;

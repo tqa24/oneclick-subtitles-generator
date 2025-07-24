@@ -5,6 +5,12 @@
 const WebSocket = require('ws');
 const { getDownloadProgress } = require('./progressTracker');
 
+// Import unified port configuration
+const { PORTS } = require('../../config');
+
+// Import port management
+const { trackProcess } = require('../../utils/portManager');
+
 // Store WebSocket connections by video ID
 const progressConnections = new Map();
 
@@ -17,7 +23,7 @@ let wss = null;
  */
 function initializeProgressWebSocket(server) {
   wss = new WebSocket.Server({
-    port: 3009,
+    port: PORTS.WEBSOCKET,
     perMessageDeflate: false
   });
 
@@ -77,7 +83,10 @@ function initializeProgressWebSocket(server) {
     });
   });
 
-  console.log('Progress WebSocket server started on port 3009');
+  console.log(`📡 Progress WebSocket server started on port ${PORTS.WEBSOCKET}`);
+
+  // Track the WebSocket server process (it runs in the same process as the main server)
+  // We don't track it separately since it's part of the main Express server process
 }
 
 /**

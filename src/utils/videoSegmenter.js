@@ -3,8 +3,8 @@
  * This allows processing long videos by splitting them into smaller segments
  */
 
-// Server URL for the local server
-const SERVER_URL = 'http://localhost:3007'; // Changed from 3004 to match server port
+// Server URL for the local server - using unified port configuration
+const SERVER_URL = 'http://localhost:3031'; // Backend server port
 
 /**
  * Upload a video file to the server and split it into segments

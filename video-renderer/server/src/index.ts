@@ -11,7 +11,8 @@ process.env.REMOTION_CHROME_MODE = "chrome-for-testing";
 process.env.REMOTION_GL = "vulkan";
 
 const app = express();
-const port = process.env.PORT || 3010;
+// Unified port configuration - matches main server/config.js
+const port = process.env.PORT || 3033;
 
 // Store active render processes for cancellation and status tracking
 const activeRenders = new Map<string, {
@@ -784,8 +785,17 @@ app.post('/render', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`🎬 Video Renderer Server running at http://localhost:${port}`);
   console.log('GPU settings:');
   console.log('REMOTION_CHROME_MODE:', process.env.REMOTION_CHROME_MODE);
   console.log('REMOTION_GL:', process.env.REMOTION_GL);
+
+  // Track this process (if port manager is available)
+  try {
+    const { trackProcess } = require('../../server/utils/portManager');
+    trackProcess(port, process.pid, 'Video Renderer Server');
+  } catch (error) {
+    // Port manager not available, continue without tracking
+    console.log('Note: Process tracking not available for video renderer');
+  }
 });

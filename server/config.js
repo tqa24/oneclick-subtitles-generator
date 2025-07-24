@@ -5,11 +5,25 @@
 const path = require('path');
 const fs = require('fs');
 
-// Server configuration
-const PORT = process.env.PORT || 3007; // Changed from 3004 to avoid port conflicts
-const SERVER_URL = 'http://127.0.0.1:3007'; // Using IPv4 address for better compatibility
+// Unified Port Configuration - All ports start from 3030
+const PORTS = {
+  FRONTEND: parseInt(process.env.FRONTEND_PORT) || 3030,
+  BACKEND: parseInt(process.env.BACKEND_PORT) || 3031,
+  WEBSOCKET: parseInt(process.env.WEBSOCKET_PORT) || 3032,
+  VIDEO_RENDERER: parseInt(process.env.VIDEO_RENDERER_PORT) || 3033,
+  VIDEO_RENDERER_FRONTEND: parseInt(process.env.VIDEO_RENDERER_FRONTEND_PORT) || 3034,
+  NARRATION: parseInt(process.env.NARRATION_PORT) || 3035,
+  CHATTERBOX: parseInt(process.env.CHATTERBOX_PORT) || 3036
+};
+
+// Server configuration using unified ports
+const PORT = PORTS.BACKEND;
+const SERVER_URL = `http://127.0.0.1:${PORTS.BACKEND}`; // Using IPv4 address for better compatibility
 // Allow both localhost and 127.0.0.1 for development
-const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3008', 'http://127.0.0.1:3008'];
+const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : [
+  `http://localhost:${PORTS.FRONTEND}`,
+  `http://127.0.0.1:${PORTS.FRONTEND}`
+];
 
 // Directory paths
 let VIDEOS_DIR, SUBTITLES_DIR, NARRATION_DIR;
@@ -78,6 +92,7 @@ const ensureDirectories = () => {
 };
 
 module.exports = {
+  PORTS,
   PORT,
   SERVER_URL,
   CORS_ORIGIN,

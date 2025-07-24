@@ -32,7 +32,8 @@ class ProgressWebSocketClient {
       try {
         // Extract hostname and port from SERVER_URL
         const url = new URL(SERVER_URL);
-        const wsUrl = `ws://${url.hostname}:3009`;
+        // Use unified port configuration - WebSocket port is 3032
+        const wsUrl = `ws://${url.hostname}:3032`;
 
         console.log('Connecting to progress WebSocket:', wsUrl);
         this.ws = new WebSocket(wsUrl);
