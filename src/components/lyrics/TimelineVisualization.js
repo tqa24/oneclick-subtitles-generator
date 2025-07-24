@@ -12,6 +12,9 @@ import VolumeVisualizer from './VolumeVisualizer';
 // Import optimized video streaming utilities
 import { clearUnusedChunks } from '../../utils/optimizedVideoStreaming';
 
+// Import LiquidGlass component
+import LiquidGlass from '../common/LiquidGlass';
+
 const TimelineVisualization = ({
   lyrics,
   currentTime,
@@ -425,12 +428,39 @@ const TimelineVisualization = ({
         style={{ cursor: 'pointer' }}
       />
 
-      {/* Floating zoom controls in top right corner */}
+      {/* Liquid Glass zoom controls in top right corner */}
       {setZoom && (
-        <div className="floating-zoom-controls">
+        <LiquidGlass
+          width={80}
+          height={32}
+          position="absolute"
+          top="8px"
+          right="8px"
+          borderRadius="16px"
+          className="content-center theme-primary size-small"
+          cursor="ew-resize"
+          zIndex={10}
+          effectIntensity={0.8}
+          effectRadius={0.4}
+          effectWidth={0.25}
+          effectHeight={0.15}
+          animateOnHover={true}
+          hoverScale={1.05}
+          updateOnMouseMove={true}
+          aria-label={t('timeline.dragToZoom', 'Drag to zoom')}
+          style={{
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+          }}
+        >
           <div
-            className="zoom-slider"
-            title={t('timeline.dragToZoom', 'Drag to zoom')}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'ew-resize'
+            }}
             onMouseDown={(e) => {
               const startX = e.clientX;
               const startZoom = zoom;
@@ -451,11 +481,22 @@ const TimelineVisualization = ({
 
               document.addEventListener('mousemove', handleMouseMove);
               document.addEventListener('mouseup', handleMouseUp);
+              e.preventDefault();
+              e.stopPropagation();
             }}
           >
-            <span>{Math.round(zoom * 100)}%</span>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--md-on-surface)',
+              fontFamily: 'JetBrains Mono, monospace',
+              userSelect: 'none',
+              pointerEvents: 'none'
+            }}>
+              {Math.round(zoom * 100)}%
+            </span>
           </div>
-        </div>
+        </LiquidGlass>
       )}
 
       {videoSource && showWaveform && duration <= 1800 && ( // Only show waveform for videos <= 30 minutes (1800 seconds)
