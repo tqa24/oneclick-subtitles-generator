@@ -318,26 +318,6 @@ const VideoProcessingTab = ({
                 {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. Improves performance and reduces memory usage. The optimized video has the same quality that Gemini processes (1 FPS, optimized resolution).')}
               </p>
             </div>
-
-            {/* Optimization benefits info */}
-            {optimizeVideos && (
-              <div className="optimization-benefits">
-                <div className="benefits-header">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  <span>{t('settings.optimizationBenefits', 'Optimization Benefits')}</span>
-                </div>
-                <ul className="benefits-list">
-                  <li>{t('settings.benefit1', '• Reduces file size by ~90% (1 FPS vs original frame rate)')}</li>
-                  <li>{t('settings.benefit2', '• Faster uploads to Gemini API')}</li>
-                  <li>{t('settings.benefit3', '• Lower bandwidth usage')}</li>
-                  <li>{t('settings.benefit4', '• No loss in AI processing quality')}</li>
-                  <li>{t('settings.benefit5', '• Matches Gemini\'s internal processing (1 FPS)')}</li>
-                </ul>
-              </div>
-            )}
           </div>
         </div>
 

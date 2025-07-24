@@ -42,6 +42,35 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     return localStorage.getItem('use_optimized_preview') !== 'false';
   });
 
+  // Listen for changes to the optimized preview setting from Settings modal
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'use_optimized_preview') {
+        setUseOptimizedPreview(e.newValue !== 'false');
+      }
+    };
+
+    // Listen for storage events (changes from other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check for changes periodically since storage events don't fire in the same tab
+    const checkInterval = setInterval(() => {
+      const currentValue = localStorage.getItem('use_optimized_preview') !== 'false';
+      setUseOptimizedPreview(prev => {
+        if (prev !== currentValue) {
+          console.log('[VideoPreview] Optimized preview setting changed:', currentValue);
+          return currentValue;
+        }
+        return prev;
+      });
+    }, 500); // Check every 500ms
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(checkInterval);
+    };
+  }, []);
+
   // State for custom subtitle display
   const [currentSubtitleText, setCurrentSubtitleText] = useState('');
 
@@ -179,32 +208,34 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         // Check if we have an optimized version in localStorage
         try {
           const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
+          const lastOptimizationTimestamp = localStorage.getItem('last_optimization_timestamp');
 
-          // Verify the optimized video exists and matches the current video source
-          if (splitResult.optimized && splitResult.optimized.video &&
-              splitResult.originalMedia && // Make sure we have original media info
-              // Check if this split result is for the current video
-              // by comparing the timestamp in the URL or filename
-              videoSource.includes(splitResult.originalMedia.split('/').pop().split('.')[0])) {
+          // For blob URLs, we'll use the most recent optimization result
+          // since blob URLs don't contain filename information
+          if (splitResult.optimized && splitResult.optimized.video && lastOptimizationTimestamp) {
+            // Check if this optimization is recent (within last 5 minutes)
+            const optimizationAge = Date.now() - parseInt(lastOptimizationTimestamp);
+            const fiveMinutes = 5 * 60 * 1000;
 
-            // Only log in development mode
-            if (process.env.NODE_ENV === 'development') {
+            if (optimizationAge < fiveMinutes) {
+              const optimizedUrl = `${SERVER_URL}${splitResult.optimized.video}`;
+              // Using recent optimization result for blob URL
+              setOptimizedVideoUrl(optimizedUrl);
 
+              // Store the optimization info
+              setOptimizedVideoInfo({
+                resolution: splitResult.optimized.resolution || '360p',
+                fps: splitResult.optimized.fps || 1,
+                width: splitResult.optimized.width,
+                height: splitResult.optimized.height
+              });
+            } else {
+              // Optimization result too old, clearing
+              setOptimizedVideoUrl('');
+              setOptimizedVideoInfo(null);
             }
-            setOptimizedVideoUrl(`${SERVER_URL}${splitResult.optimized.video}`);
-
-            // Store the optimization info
-            setOptimizedVideoInfo({
-              resolution: splitResult.optimized.resolution || '360p',
-              fps: splitResult.optimized.fps || 15,
-              width: splitResult.optimized.width,
-              height: splitResult.optimized.height
-            });
           } else {
-            // Only log in development mode
-            if (process.env.NODE_ENV === 'development') {
-
-            }
+            // No valid optimization result found
             setOptimizedVideoUrl('');
             setOptimizedVideoInfo(null);
           }
@@ -224,6 +255,34 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
       // For any other URL, try to use it directly
       setVideoUrl(videoSource);
+
+      // Check for optimized version for all video types
+      try {
+        const splitResult = JSON.parse(localStorage.getItem('split_result') || '{}');
+        const lastOptimizationTimestamp = localStorage.getItem('last_optimization_timestamp');
+
+        if (splitResult.optimized && splitResult.optimized.video && lastOptimizationTimestamp) {
+          // Check if this optimization is recent (within last 5 minutes)
+          const optimizationAge = Date.now() - parseInt(lastOptimizationTimestamp);
+          const fiveMinutes = 5 * 60 * 1000;
+
+          if (optimizationAge < fiveMinutes) {
+            const optimizedUrl = `${SERVER_URL}${splitResult.optimized.video}`;
+            // Using recent optimization result for regular URL
+            setOptimizedVideoUrl(optimizedUrl);
+
+            // Store the optimization info
+            setOptimizedVideoInfo({
+              resolution: splitResult.optimized.resolution || '360p',
+              fps: splitResult.optimized.fps || 1,
+              width: splitResult.optimized.width,
+              height: splitResult.optimized.height
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking optimization for regular URL:', error);
+      }
     };
 
     loadVideo();
@@ -234,10 +293,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     // Determine which URL to use based on the useOptimizedPreview setting
     const urlToUse = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
 
+    // Debug logging removed for production
+
     if (urlToUse && onVideoUrlReady) {
       onVideoUrlReady(urlToUse);
     }
   }, [videoUrl, optimizedVideoUrl, useOptimizedPreview, onVideoUrlReady]);
+
+  // Debug logging removed for production
 
   // Check download status at interval if we have a videoId
   useEffect(() => {
@@ -934,31 +997,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         {videoUrl ? (
           <div className="native-video-container">
               {/* Video quality toggle - only show when optimized video is available */}
-              {optimizedVideoUrl && (
-                <div className="video-quality-toggle" title={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}>
-                  <div className="material-switch-container">
-                    <MaterialSwitch
-                      id="video-quality-toggle"
-                      checked={useOptimizedPreview}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-                        setUseOptimizedPreview(newValue);
-                        localStorage.setItem('use_optimized_preview', newValue.toString());
-                      }}
-                      ariaLabel={t('preview.videoQualityToggle', 'Toggle between original and optimized video quality')}
-                      icons={true}
-                    />
-                  </div>
-                  <span className="toggle-label">
-                    {useOptimizedPreview ? t('preview.optimizedQuality', 'Optimized Quality') : t('preview.originalQuality', 'Original Quality')}
-                  </span>
-                  {useOptimizedPreview && optimizedVideoInfo && (
-                    <span className="quality-info">
-                      {optimizedVideoInfo.resolution}, {optimizedVideoInfo.fps}fps
-                    </span>
-                  )}
-                </div>
-              )}
+
 
               {/* Refresh Narration button - only show when video is loaded */}
               {isLoaded && (

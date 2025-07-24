@@ -86,6 +86,9 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
 
 
 
+      // Log optimization parameters for verification
+      console.log(`[OPTIMIZE-VIDEO] Optimizing video with FPS: ${fps}, Resolution: ${targetWidth}x${targetHeight}`);
+
       // Construct ffmpeg command for optimization
       const ffmpegArgs = [
         '-hwaccel', 'auto',

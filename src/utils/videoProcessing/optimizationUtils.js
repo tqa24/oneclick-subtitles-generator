@@ -31,7 +31,8 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   const result = await response.json();
 
 
-  // Store the optimization result in localStorage
+  // Store the optimization result in localStorage with timestamp for matching
+  const timestamp = Date.now();
   localStorage.setItem('split_result', JSON.stringify({
     originalMedia: result.originalVideo,
     optimized: {
@@ -40,8 +41,13 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
       fps: result.fps,
       width: result.width,
       height: result.height
-    }
+    },
+    timestamp: timestamp,
+    originalFileName: mediaFile.name // Store original file name for matching
   }));
+
+  // Also store the timestamp separately for easier access
+  localStorage.setItem('last_optimization_timestamp', timestamp.toString());
 
   // Create a blob URL for the optimized video
   const optimizedVideoUrl = `${SERVER_URL}${result.optimizedVideo}`;
