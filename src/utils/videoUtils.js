@@ -307,3 +307,55 @@ export const downloadVideo = (url, filename) => {
     URL.revokeObjectURL(url);
   }, 100);
 };
+
+/**
+ * Check if there's a valid downloaded video file
+ * This function handles the case where blob URLs become invalid after page refresh
+ * @returns {boolean} True if there's a valid downloaded video
+ */
+export const hasValidDownloadedVideo = () => {
+  const uploadedFileUrl = localStorage.getItem('current_file_url');
+  if (!uploadedFileUrl) return false;
+
+  // If it's a blob URL, it's likely invalid after page refresh
+  // Blob URLs are temporary and don't survive page refreshes
+  if (uploadedFileUrl.startsWith('blob:')) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Check if a blob URL is still valid (async)
+ * @param {string} blobUrl - The blob URL to check
+ * @returns {Promise<boolean>} True if the blob URL is still accessible
+ */
+export const isBlobUrlValid = async (blobUrl) => {
+  if (!blobUrl || !blobUrl.startsWith('blob:')) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(blobUrl, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Clean up invalid blob URLs from localStorage
+ * This should be called on page load to clean up stale blob URLs
+ */
+export const cleanupInvalidBlobUrls = async () => {
+  const uploadedFileUrl = localStorage.getItem('current_file_url');
+
+  if (uploadedFileUrl && uploadedFileUrl.startsWith('blob:')) {
+    const isValid = await isBlobUrlValid(uploadedFileUrl);
+    if (!isValid) {
+      localStorage.removeItem('current_file_url');
+      console.log('Cleaned up invalid blob URL from localStorage');
+    }
+  }
+};

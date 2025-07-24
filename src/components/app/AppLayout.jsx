@@ -13,6 +13,7 @@ import VideoQualityModal from '../VideoQualityModal';
 import FloatingScrollbar from '../FloatingScrollbar';
 import OnboardingBanner from '../OnboardingBanner';
 import { useVideoInfo } from '../../hooks/useVideoInfo';
+import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
 /**
  * Main application layout component
@@ -222,15 +223,15 @@ const AppLayout = ({
 
   // Handle when video source is removed or added
   useEffect(() => {
-    // Check if we have a video URL in localStorage
-    const hasVideoUrlInStorage = localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
+    // Check if we have an actual downloaded video file (not just a pasted URL)
+    const hasDownloadedVideo = hasValidDownloadedVideo();
 
-    // If we have subtitles data but no video source, switch to SRT-only mode
-    if (!selectedVideo && !uploadedFile && !hasVideoUrlInStorage && subtitlesData) {
+    // If we have subtitles data but no actual video file, switch to SRT-only mode
+    if (!selectedVideo && !uploadedFile && !hasDownloadedVideo && subtitlesData) {
       setIsSrtOnlyMode(true);
     }
-    // If we have a video source, switch to normal mode
-    else if ((selectedVideo || uploadedFile || hasVideoUrlInStorage) && subtitlesData && isSrtOnlyMode) {
+    // If we have an actual video file, switch to normal mode
+    else if ((uploadedFile || hasDownloadedVideo) && subtitlesData && isSrtOnlyMode) {
       setIsSrtOnlyMode(false);
     }
   }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode, setIsSrtOnlyMode]);

@@ -7,6 +7,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';
 import { UnifiedNarrationSection } from './narration';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
+import { hasValidDownloadedVideo, isBlobUrlValid } from '../utils/videoUtils';
 // BackgroundImageGenerator moved back to AppLayout
 
 const OutputContainer = ({
@@ -98,8 +99,26 @@ const OutputContainer = ({
     // First check for uploaded file
     const uploadedFileUrl = localStorage.getItem('current_file_url');
     if (uploadedFileUrl) {
-      setVideoSource(uploadedFileUrl);
-      return;
+      // Check if it's a blob URL and if it's still valid
+      if (uploadedFileUrl.startsWith('blob:')) {
+        // Blob URLs become invalid after page refresh, so check if it's accessible
+        isBlobUrlValid(uploadedFileUrl)
+          .then((isValid) => {
+            if (isValid) {
+              // Blob is still valid
+              setVideoSource(uploadedFileUrl);
+            } else {
+              // Blob is invalid, clear it from localStorage
+              localStorage.removeItem('current_file_url');
+              setVideoSource('');
+            }
+          });
+        return;
+      } else {
+        // Non-blob URL, use it directly
+        setVideoSource(uploadedFileUrl);
+        return;
+      }
     }
 
     // Then check for YouTube video
@@ -108,20 +127,41 @@ const OutputContainer = ({
       if (selectedVideo.source === 'youtube' || selectedVideo.source === 'douyin' || selectedVideo.source === 'all-sites') {
         localStorage.setItem('current_video_url', selectedVideo.url);
       }
+
+      // Special case: If we're in SRT-only mode, don't set videoSource
+      if (isSrtOnlyMode) {
+        setVideoSource('');
+        return;
+      }
+
+      // Special case: If we have selectedVideo + subtitlesData but no downloaded video,
+      // don't set videoSource to prevent VideoPreview from trying to load the URL
+      if (subtitlesData && !hasValidDownloadedVideo()) {
+        setVideoSource('');
+        return;
+      }
+
       setVideoSource(selectedVideo.url);
       return;
     }
 
     // Check if we have a video URL in localStorage but no selectedVideo object
     const videoUrl = localStorage.getItem('current_video_url');
-    if (videoUrl && !selectedVideo) {
+    if (videoUrl && !selectedVideo && !isSrtOnlyMode) {
+      // Special case: If we have cached URL + subtitlesData but no downloaded video,
+      // don't set videoSource to prevent VideoPreview from trying to load the URL
+      if (subtitlesData && !hasValidDownloadedVideo()) {
+        setVideoSource('');
+        return;
+      }
+
       setVideoSource(videoUrl);
       return;
     }
 
     // Clear video source if nothing is selected
     setVideoSource('');
-  }, [selectedVideo, uploadedFile]);
+  }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode]);
 
   // Notify parent when actualVideoUrl changes
   useEffect(() => {
@@ -153,6 +193,8 @@ const OutputContainer = ({
   if (!status?.message && !subtitlesData) {
     return null;
   }
+
+
 
   return (
     <div className="output-container">
@@ -200,7 +242,15 @@ const OutputContainer = ({
       {subtitlesData && (
         <>
           <div className="preview-section">
-            {!isSrtOnlyMode && (
+            {/* Check if we should hide sections for URL + SRT without downloaded video */}
+            {(() => {
+              const hasUrlAndSrtOnly = selectedVideo &&
+                                      !uploadedFile &&
+                                      subtitlesData &&
+                                      !hasValidDownloadedVideo() &&
+                                      !isSrtOnlyMode;
+              return !isSrtOnlyMode && !hasUrlAndSrtOnly;
+            })() && (
               <VideoPreview
                 currentTime={currentTabIndex}
                 setCurrentTime={setCurrentTabIndex}
@@ -249,25 +299,43 @@ const OutputContainer = ({
           </div>
 
           {/* Translation Section */}
-          <>
-            <TranslationSection
-              subtitles={editedLyrics || subtitlesData}
-              videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
-              onTranslationComplete={setTranslatedSubtitles}
-            />
-          </>
+          {(() => {
+            const hasUrlAndSrtOnly = selectedVideo &&
+                                    !uploadedFile &&
+                                    subtitlesData &&
+                                    !hasValidDownloadedVideo() &&
+                                    !isSrtOnlyMode;
+            return !hasUrlAndSrtOnly;
+          })() && (
+            <>
+              <TranslationSection
+                subtitles={editedLyrics || subtitlesData}
+                videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+                onTranslationComplete={setTranslatedSubtitles}
+              />
+            </>
+          )}
 
           {/* Unified Narration Section - Now separate from Translation */}
-          <>
-            <UnifiedNarrationSection
-              subtitles={translatedSubtitles || editedLyrics || subtitlesData}
-              originalSubtitles={editedLyrics || subtitlesData}
-              translatedSubtitles={translatedSubtitles}
-              referenceAudio={referenceAudio}
-              videoPath={actualVideoUrl}
-              onReferenceAudioChange={setReferenceAudio}
-            />
-          </>
+          {(() => {
+            const hasUrlAndSrtOnly = selectedVideo &&
+                                    !uploadedFile &&
+                                    subtitlesData &&
+                                    !hasValidDownloadedVideo() &&
+                                    !isSrtOnlyMode;
+            return !hasUrlAndSrtOnly;
+          })() && (
+            <>
+              <UnifiedNarrationSection
+                subtitles={translatedSubtitles || editedLyrics || subtitlesData}
+                originalSubtitles={editedLyrics || subtitlesData}
+                translatedSubtitles={translatedSubtitles}
+                referenceAudio={referenceAudio}
+                videoPath={actualVideoUrl}
+                onReferenceAudioChange={setReferenceAudio}
+              />
+            </>
+          )}
 
           {/* Background Image Generator moved back to AppLayout */}
         </>

@@ -5,6 +5,7 @@ import { cancelDouyinVideoDownload, extractDouyinVideoId } from '../../utils/dou
 import { cancelGenericVideoDownload } from '../../utils/allSitesDownloader';
 import { prepareVideoForSegments, downloadAndPrepareYouTubeVideo } from './VideoProcessingHandlers';
 import { hasValidTokens } from '../../services/youtubeApiService';
+import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
 /**
  * Hook for application event handlers
@@ -93,24 +94,23 @@ export const useAppHandlers = (appState) => {
         return;
       }
 
-      // Check if we have a valid video source
-      const hasYoutubeVideo = activeTab.includes('youtube') && selectedVideo !== null;
+      // Check if we have any video sources (including pasted URLs)
       const hasUploadedFile = activeTab === 'file-upload' && uploadedFile !== null;
+      const hasDownloadedVideo = hasValidDownloadedVideo();
+      const hasYoutubeVideo = activeTab.includes('youtube') && selectedVideo !== null;
       const hasUnifiedVideo = activeTab === 'unified-url' && selectedVideo !== null;
 
-      // Also check if we have a video URL in localStorage
-      const hasVideoUrlInStorage = localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
+      // Determine if we should go into SRT-only mode
+      // SRT-only mode: no video source at all (no uploaded file, no downloaded video, no pasted URL)
+      const hasAnyVideoSource = hasUploadedFile || hasDownloadedVideo || hasYoutubeVideo || hasUnifiedVideo;
 
-      const hasVideoSource = hasYoutubeVideo || hasUploadedFile || hasUnifiedVideo || hasVideoUrlInStorage;
-
-      // If we don't have a video source, set SRT-only mode
-      if (!hasVideoSource) {
+      if (!hasAnyVideoSource) {
         setIsSrtOnlyMode(true);
         setSubtitlesData(parsedSubtitles);
         setStatus({ message: t('output.srtOnlyMode', 'Working with SRT only. No video source available.'), type: 'info' });
         return;
       } else {
-        // If we have a video source, make sure we're not in SRT-only mode
+        // If we have any video source, make sure we're not in SRT-only mode
         setIsSrtOnlyMode(false);
 
         // Always reset downloading state when uploading an SRT file
@@ -164,10 +164,14 @@ export const useAppHandlers = (appState) => {
 
         setSubtitlesData(parsedSubtitles);
         setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+      } else if (hasDownloadedVideo) {
+        // For downloaded video, set the subtitles data directly
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
       } else {
-        // This should not happen since we already checked hasVideoSource above,
-        // but keeping it as a fallback
-        setStatus({ message: t('errors.noMediaSelected', 'Please select a video or audio file first'), type: 'error' });
+        // For any other case (like unified-url tab with no URL), just set the subtitles
+        setSubtitlesData(parsedSubtitles);
+        setStatus({ message: t('output.srtUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
       }
     } catch (error) {
       console.error('Error parsing SRT file:', error);

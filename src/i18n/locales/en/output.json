@@ -86,5 +86,6 @@
   "retrying": "Retrying...",
   "ready": "Ready",
   "segmentReady": "Ready for processing",
-  "subtitleUploadSuccess": "Subtitle file uploaded successfully!"
+  "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
+  "downloadAndViewWithSrt": "Download + View with Uploaded SRT"
 }

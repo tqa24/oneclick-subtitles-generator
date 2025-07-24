@@ -90,5 +90,6 @@
   "retrying": "Đang thử lại...",
   "ready": "Sẵn sàng",
   "segmentReady": "Sẵn sàng để xử lý",
-  "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!"
+  "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!",
+  "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload"
 }

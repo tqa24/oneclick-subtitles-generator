@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SrtUploadButton from '../SrtUploadButton';
 import AddSubtitlesButton from '../AddSubtitlesButton';
 import { abortAllRequests } from '../../services/geminiService';
+import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
 /**
  * Component for rendering the buttons container
@@ -178,6 +179,13 @@ const ButtonsContainer = ({
   const hasAnyVideoSource = selectedVideo || uploadedFile || localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
   const isNotBusy = !isGenerating && !isDownloading;
 
+  // Check if we have URL + SRT but no downloaded video yet
+  const hasUrlAndSrtOnly = selectedVideo &&
+                          !uploadedFile &&
+                          hasSubtitlesData &&
+                          !hasValidDownloadedVideo() &&
+                          !isSrtOnlyMode;
+
   // Show retry button if:
   // 1. We have subtitles data OR there's an error OR there's any video source
   // 2. AND we're not currently busy
@@ -238,7 +246,9 @@ const ButtonsContainer = ({
               </span>
               <span className="processing-dots"></span>
             </span>
-          ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') : t('header.tagline')}
+          ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
+            hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
+            t('header.tagline')}
         </button>
       )}
 

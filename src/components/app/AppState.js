@@ -5,6 +5,7 @@ import { getUserProvidedSubtitlesSync } from '../../utils/userSubtitlesStore';
 import { getTranscriptionRulesSync } from '../../utils/transcriptionRulesStore';
 import { hasValidTokens } from '../../services/youtubeApiService';
 import { PROMPT_PRESETS } from '../../services/geminiService';
+import { cleanupInvalidBlobUrls } from '../../utils/videoUtils';
 
 /**
  * Custom hook for managing application state
@@ -125,6 +126,9 @@ export const useAppState = () => {
 
     // Clear video processing flag
     localStorage.removeItem('video_processing_in_progress');
+
+    // Clean up invalid blob URLs from localStorage
+    cleanupInvalidBlobUrls();
 
     // Check if there's an active video analysis in progress
     const showAnalysis = localStorage.getItem('show_video_analysis') === 'true';
