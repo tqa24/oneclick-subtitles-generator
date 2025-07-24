@@ -4,7 +4,7 @@ import { convertAudioToVideo } from '../../utils/audioToVideoConverter';
 import { SERVER_URL } from '../../config';
 import '../../styles/FileUploadInput.css';
 
-const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode }) => {
+const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode, setStatus, subtitlesData, setVideoSegments, setSegmentsStatus }) => {
   const { t } = useTranslation();
   const [fileInfo, setFileInfo] = useState(null);
   const [error, setError] = useState('');
@@ -206,6 +206,27 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
         // Store the processed file for actual processing
         setUploadedFile(processedFile);
+
+        // If we have subtitles data already (from uploaded SRT), trigger video processing
+        if (subtitlesData && subtitlesData.length > 0 && setVideoSegments && setSegmentsStatus && setStatus) {
+          try {
+            // Import the prepareVideoForSegments function
+            const { prepareVideoForSegments } = await import('../app/VideoProcessingHandlers');
+
+            // Prepare the video for segment processing
+            await prepareVideoForSegments(processedFile, setStatus, setVideoSegments, setSegmentsStatus, t);
+
+            // Update status to show that segments are ready
+            setStatus({ message: t('output.segmentsReady', 'Video segments are ready for processing!'), type: 'success' });
+          } catch (error) {
+            console.error('Error preparing video for segments:', error);
+            // Still keep the video, but show a warning
+            setStatus({
+              message: t('warnings.segmentsPreparationFailed', 'Video uploaded, but segment preparation failed: {{message}}', { message: error.message }),
+              type: 'warning'
+            });
+          }
+        }
 
         // For non-audio files, display the file info normally
         // For audio files, we've already set the file info with the original audio details

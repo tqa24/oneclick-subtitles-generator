@@ -90,7 +90,7 @@ const AppLayout = ({
     useUserProvidedSubtitles,
     transcriptionRules,
     subtitlesData, setSubtitlesData,
-    status,
+    status, setStatus,
     timeFormat,
     showWaveform,
     useOptimizedPreview,
@@ -226,15 +226,31 @@ const AppLayout = ({
     // Check if we have an actual downloaded video file (not just a pasted URL)
     const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
 
-    // If we have subtitles data but no actual video file, switch to SRT-only mode
+    // If we have subtitles data but no video source at all, switch to SRT-only mode
     if (!selectedVideo && !uploadedFile && !hasDownloadedVideo && subtitlesData) {
       setIsSrtOnlyMode(true);
     }
-    // If we have an actual video file, switch to normal mode
-    else if ((uploadedFile || hasDownloadedVideo) && subtitlesData && isSrtOnlyMode) {
+    // If we have any video source (URL, uploaded file, or downloaded video), switch to normal mode
+    else if ((selectedVideo || uploadedFile || hasDownloadedVideo) && subtitlesData && isSrtOnlyMode) {
       setIsSrtOnlyMode(false);
     }
   }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode, setIsSrtOnlyMode]);
+
+  // Separate useEffect to clear SRT-only status messages when we have a video source
+  useEffect(() => {
+    const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
+    const hasAnyVideoSource = selectedVideo || uploadedFile || hasDownloadedVideo;
+
+    // Only clear specific SRT-only messages, not all status messages
+    if (hasAnyVideoSource && status?.message && status.type === 'info' && (
+      status.message.includes('Working with SRT only') ||
+      status.message.includes('SRT only') ||
+      status.message.includes('No video source available')
+    )) {
+      console.log('Clearing SRT-only status message:', status.message);
+      setStatus({});
+    }
+  }, [selectedVideo, uploadedFile, status, setStatus]);
 
   return (
     <>
@@ -254,6 +270,10 @@ const AppLayout = ({
             apiKeysSet={apiKeysSet}
             isSrtOnlyMode={isSrtOnlyMode}
             setIsSrtOnlyMode={setIsSrtOnlyMode}
+            setStatus={setStatus}
+            subtitlesData={subtitlesData}
+            setVideoSegments={appState.setVideoSegments}
+            setSegmentsStatus={appState.setSegmentsStatus}
           />
 
           {/* Consistent layout container for buttons and output */}
