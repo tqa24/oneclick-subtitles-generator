@@ -135,7 +135,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
   const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
-  const [useOptimizedPreview, setUseOptimizedPreview] = useState(true); // Default to optimized video in preview
+  const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
 
   // Thinking budget settings for each model
@@ -199,7 +199,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     autoSelectDefaultPreset: false,
     optimizeVideos: true,
     optimizedResolution: '360p',
-    useOptimizedPreview: true,
+    useOptimizedPreview: false,
     thinkingBudgets: {
       'gemini-2.5-pro': -1,
       'gemini-2.5-flash': -1,
@@ -253,7 +253,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
       const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
-      const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false'; // Default to true if not set
+      const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
 
       // Load thinking budgets from localStorage
       const savedThinkingBudgets = (() => {

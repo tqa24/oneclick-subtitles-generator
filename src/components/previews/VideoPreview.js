@@ -39,14 +39,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false); // Track narration refresh state
   // Native track subtitles disabled - using only custom subtitle display
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
-    return localStorage.getItem('use_optimized_preview') !== 'false';
+    return localStorage.getItem('use_optimized_preview') === 'true';
   });
 
   // Listen for changes to the optimized preview setting from Settings modal
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'use_optimized_preview') {
-        setUseOptimizedPreview(e.newValue !== 'false');
+        setUseOptimizedPreview(e.newValue === 'true');
       }
     };
 
@@ -55,7 +55,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     // Also check for changes periodically since storage events don't fire in the same tab
     const checkInterval = setInterval(() => {
-      const currentValue = localStorage.getItem('use_optimized_preview') !== 'false';
+      const currentValue = localStorage.getItem('use_optimized_preview') === 'true';
       setUseOptimizedPreview(prev => {
         if (prev !== currentValue) {
           console.log('[VideoPreview] Optimized preview setting changed:', currentValue);
