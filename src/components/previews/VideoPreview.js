@@ -1223,11 +1223,23 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
       setControlsVisible(true);
 
-      // Only auto-hide if video is playing
-      if (isPlaying && !isVideoHovered) {
-        hideControlsTimeoutRef.current = setTimeout(() => {
-          setControlsVisible(false);
-        }, 3000);
+      // Auto-hide logic
+      if (isPlaying) {
+        if (isFullscreen) {
+          // In fullscreen mode, always auto-hide after 1 second
+          hideControlsTimeoutRef.current = setTimeout(() => {
+            setControlsVisible(false);
+            const videoContainer = document.querySelector('.native-video-container');
+            if (videoContainer) {
+              videoContainer.style.cursor = 'none';
+            }
+          }, 1000);
+        } else if (!isVideoHovered) {
+          // In normal mode, auto-hide only when not hovering
+          hideControlsTimeoutRef.current = setTimeout(() => {
+            setControlsVisible(false);
+          }, 3000);
+        }
       }
     };
 
@@ -1239,21 +1251,39 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         clearTimeout(hideControlsTimeoutRef.current);
       }
     };
-  }, [isPlaying, isVideoHovered]);
+  }, [isPlaying, isVideoHovered, isFullscreen]);
 
   // Show controls on mouse movement
   useEffect(() => {
     const handleMouseMove = () => {
       setControlsVisible(true);
+
+      // Show cursor when controls are visible
+      const videoContainer = document.querySelector('.native-video-container');
+      if (videoContainer && isFullscreen) {
+        videoContainer.style.cursor = 'default';
+      }
+
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
 
-      // Auto-hide again if playing and not hovering over controls
-      if (isPlaying && !isVideoHovered) {
-        hideControlsTimeoutRef.current = setTimeout(() => {
-          setControlsVisible(false);
-        }, 3000);
+      // Auto-hide logic after mouse movement
+      if (isPlaying) {
+        if (isFullscreen) {
+          // In fullscreen mode, always auto-hide after 1 second
+          hideControlsTimeoutRef.current = setTimeout(() => {
+            setControlsVisible(false);
+            if (videoContainer) {
+              videoContainer.style.cursor = 'none';
+            }
+          }, 1000);
+        } else if (!isVideoHovered) {
+          // In normal mode, auto-hide only when not hovering
+          hideControlsTimeoutRef.current = setTimeout(() => {
+            setControlsVisible(false);
+          }, 3000);
+        }
       }
     };
 
@@ -1264,7 +1294,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         videoContainer.removeEventListener('mousemove', handleMouseMove);
       };
     }
-  }, [isPlaying, isVideoHovered]);
+  }, [isPlaying, isVideoHovered, isFullscreen]);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
@@ -1644,8 +1674,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         {videoUrl ? (
           <div
             className="native-video-container"
-            onMouseEnter={() => setIsVideoHovered(true)}
-            onMouseLeave={() => setIsVideoHovered(false)}
+            onMouseEnter={() => !isFullscreen && setIsVideoHovered(true)}
+            onMouseLeave={() => !isFullscreen && setIsVideoHovered(false)}
           >
               {/* Video quality toggle - only show when optimized video is available */}
 
@@ -2353,7 +2383,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 )}
 
                 {/* Custom Liquid Glass Video Controls */}
-                {showCustomControls && (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) && (
+                {showCustomControls && ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) && (
                   <div
                     className="custom-video-controls"
                     style={{
@@ -2366,9 +2396,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       display: 'flex',
                       alignItems: 'center',
                       padding: '0 15px',
-                      opacity: (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) ? 1 : 0,
+                      opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
                       transition: 'opacity 0.3s ease-in-out',
-                      pointerEvents: (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) ? 'auto' : 'none',
+                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none',
                       zIndex: 10
                     }}
                   >
@@ -2873,6 +2903,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                 container.style.removeProperty('left');
                                 container.style.removeProperty('z-index');
                                 container.style.removeProperty('background');
+                                // Reset cursor to default
+                                container.style.cursor = 'default';
                               }
 
                               setIsFullscreen(false);
@@ -2939,8 +2971,22 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                   videoElement.style.setProperty('min-width', '100vw', 'important');
                                   videoElement.style.setProperty('min-height', '100vh', 'important');
 
-                                  // Set React state to show controls
+                                  // Set React state to show controls initially
                                   setIsFullscreen(true);
+                                  setControlsVisible(true);
+                                  setIsVideoHovered(false); // Reset hover state in fullscreen
+
+                                  // Start auto-hide timer for fullscreen
+                                  if (hideControlsTimeoutRef.current) {
+                                    clearTimeout(hideControlsTimeoutRef.current);
+                                  }
+
+                                  if (isPlaying) {
+                                    hideControlsTimeoutRef.current = setTimeout(() => {
+                                      setControlsVisible(false);
+                                      container.style.cursor = 'none';
+                                    }, 1000);
+                                  }
 
                                   console.log('🎬 FALLBACK: All styles applied successfully');
                                 } else {
