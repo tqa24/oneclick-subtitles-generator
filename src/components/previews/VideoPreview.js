@@ -2383,7 +2383,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 )}
 
                 {/* Custom Liquid Glass Video Controls */}
-                {showCustomControls && ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) && (
+                {showCustomControls && (
                   <div
                     className="custom-video-controls"
                     style={{
@@ -2391,22 +2391,19 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       bottom: '0',
                       left: '0',
                       right: '0',
-                      height: '60px',
+                      height: '70px',
                       background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       padding: '0 15px',
-                      opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
-                      transition: 'opacity 0.3s ease-in-out',
-                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none',
                       zIndex: 10
                     }}
                   >
                     {/* Play/Pause Button */}
                     <LiquidGlass
-                      width={40}
-                      height={40}
-                      borderRadius="20px"
+                      width={50}
+                      height={50}
+                      borderRadius="25px"
                       className="content-center interactive theme-primary shape-circle"
                       cursor="pointer"
                       effectIntensity={0.6}
@@ -2426,7 +2423,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           }
                         }
                       }}
-                      style={{ marginRight: '15px' }}
+                      style={{
+                        marginRight: '15px',
+                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        transition: 'opacity 0.3s ease-in-out',
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                      }}
                     >
                       <div style={{
                         width: '100%',
@@ -2454,18 +2456,21 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       className="timeline-container"
                       style={{
                         flex: 1,
-                        height: '6px',
-                        minHeight: '6px',
-                        maxHeight: '6px',
+                        height: '8px',
+                        minHeight: '8px',
+                        maxHeight: '8px',
                         background: 'rgba(255,255,255,0.3)',
-                        borderRadius: '3px',
+                        borderRadius: '4px',
                         position: 'relative',
                         cursor: 'pointer',
                         marginRight: '15px',
                         touchAction: 'none',
                         alignSelf: 'center',
                         overflow: 'visible',
-                        margin: '0' // Reset any default margins
+                        margin: '0', // Reset any default margins
+                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        transition: 'opacity 0.3s ease-in-out',
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                       }}
                       onMouseDown={handleTimelineMouseDown}
                       onTouchStart={handleTimelineTouchStart}
@@ -2478,7 +2483,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         height: '100%',
                         width: `${bufferedProgress}%`,
                         background: 'rgba(255,255,255,0.4)',
-                        borderRadius: '3px',
+                        borderRadius: '4px',
                         transition: 'width 0.3s ease'
                       }} />
 
@@ -2490,7 +2495,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         height: '100%',
                         width: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
                         background: '#4CAF50',
-                        borderRadius: '3px',
+                        borderRadius: '4px',
                         transition: isDragging ? 'none' : 'width 0.1s ease'
                       }} />
 
@@ -2521,7 +2526,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      height: '100%'
+                      height: '100%',
+                      opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                      transition: 'opacity 0.3s ease-in-out',
+                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                     }}>
                       {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
                     </div>
@@ -2595,9 +2603,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                       {/* Volume Button */}
                       <LiquidGlass
-                        width={40}
-                        height={40}
-                        borderRadius="20px"
+                        width={50}
+                        height={50}
+                        borderRadius="25px"
                         className="content-center interactive theme-secondary shape-circle"
                         cursor="pointer"
                         effectIntensity={0.6}
@@ -2621,6 +2629,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                               videoRef.current.volume = newVolume;
                             }
                           }
+                        }}
+                        style={{
+                          opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                          transition: 'opacity 0.3s ease-in-out',
+                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                         }}
                       >
                         <div style={{
@@ -2650,7 +2663,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       </LiquidGlass>
                     </div>
 
-                    {/* Playback Speed Control */}
+                    {/* Combined Actions Pill (Speed, Download, PiP) */}
                     <div
                       style={{
                         position: 'relative',
@@ -2673,39 +2686,36 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         <div
                           style={{
                             position: 'absolute',
-                            bottom: '50px',
-                            left: '50%',
+                            bottom: '60px',
+                            left: '35px', // Moved right to align better with speed button
                             transform: 'translateX(-50%)',
                             zIndex: 20,
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '4px'
+                            gap: '6px',
+                            padding: '8px'
                           }}
                         >
                           {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => (
                             <LiquidGlass
                               key={speed}
                               width={60}
-                              height={28}
-                              borderRadius="14px"
-                              className={`content-center interactive ${playbackSpeed === speed ? 'theme-success' : 'theme-secondary'} shape-rounded`}
+                              height={32}
+                              borderRadius="16px"
+                              className={`content-center interactive ${playbackSpeed === speed ? 'theme-success' : 'theme-secondary'}`}
                               cursor="pointer"
-                              effectIntensity={0.6}
-                              effectRadius={0.4}
-                              effectWidth={0.3}
+                              effectIntensity={0.3}
+                              effectRadius={0.5}
+                              effectWidth={0.2}
                               effectHeight={0.3}
                               animateOnHover={true}
-                              hoverScale={1.05}
+                              hoverScale={1.1}
                               updateOnMouseMove={true}
                               onClick={() => {
                                 setPlaybackSpeed(speed);
                                 if (videoRef.current) {
                                   videoRef.current.playbackRate = speed;
                                 }
-                              }}
-                              style={{
-                                background: playbackSpeed === speed ? 'rgba(76, 175, 80, 0.3)' : 'rgba(0,0,0,0.8)',
-                                backdropFilter: 'blur(10px)'
                               }}
                             >
                               <div style={{
@@ -2714,9 +2724,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '11px',
-                                fontWeight: playbackSpeed === speed ? 'bold' : 'normal',
-                                color: 'white'
+                                fontSize: '12px',
+                                fontWeight: playbackSpeed === speed ? '600' : '500',
+                                color: 'white',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                               }}>
                                 {speed}x
                               </div>
@@ -2725,125 +2736,134 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         </div>
                       )}
 
-                      {/* Speed Button */}
+                      {/* Combined Actions Pill */}
                       <LiquidGlass
-                        width={40}
-                        height={40}
-                        borderRadius="20px"
-                        className="content-center interactive theme-info shape-circle"
+                        width={150}
+                        height={50}
+                        borderRadius="25px"
+                        className="content-center interactive theme-secondary"
                         cursor="pointer"
                         effectIntensity={0.6}
                         effectRadius={0.5}
                         effectWidth={0.3}
-                        effectHeight={0.3}
+                        effectHeight={0.2}
                         animateOnHover={true}
-                        hoverScale={1.1}
-                        updateOnMouseMove={true}
-                        aria-label={`Playback Speed: ${playbackSpeed}x`}
+                        hoverScale={1.02}
+                        updateOnMouseMove={false}
+                        style={{
+                          opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                          transition: 'opacity 0.3s ease-in-out',
+                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        }}
                       >
                         <div style={{
                           width: '100%',
                           height: '100%',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '10px',
-                          fontWeight: 'bold',
-                          color: 'white'
+                          justifyContent: 'space-around',
+                          padding: '0 10px'
                         }}>
-                          {playbackSpeed}x
+                          {/* Speed Button */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '40px',
+                              height: '30px',
+                              borderRadius: '15px',
+                              background: 'rgba(33, 150, 243, 0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Speed functionality handled by hover menu
+                            }}
+                          >
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              color: 'white'
+                            }}>
+                              {playbackSpeed}x
+                            </span>
+                          </div>
+
+                          {/* Download Video Button */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '15px',
+                              background: 'rgba(76, 175, 80, 0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (videoRef.current && videoRef.current.src) {
+                                const link = document.createElement('a');
+                                link.href = videoRef.current.src;
+                                link.download = `video_${Date.now()}.mp4`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                            </svg>
+                          </div>
+
+                          {/* Picture-in-Picture Button */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '30px',
+                              height: '30px',
+                              borderRadius: '15px',
+                              background: 'rgba(255, 152, 0, 0.2)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (videoRef.current) {
+                                try {
+                                  if (document.pictureInPictureElement) {
+                                    await document.exitPictureInPicture();
+                                  } else if (videoRef.current.requestPictureInPicture) {
+                                    await videoRef.current.requestPictureInPicture();
+                                  }
+                                } catch (error) {
+                                  console.error('Picture-in-Picture error:', error);
+                                }
+                              }
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                              <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+                            </svg>
+                          </div>
                         </div>
                       </LiquidGlass>
                     </div>
 
-                    {/* Download Video Button */}
-                    <LiquidGlass
-                      width={40}
-                      height={40}
-                      borderRadius="20px"
-                      className="content-center interactive theme-success shape-circle"
-                      cursor="pointer"
-                      effectIntensity={0.6}
-                      effectRadius={0.5}
-                      effectWidth={0.3}
-                      effectHeight={0.3}
-                      animateOnHover={true}
-                      hoverScale={1.1}
-                      updateOnMouseMove={true}
-                      aria-label="Download Video"
-                      onClick={() => {
-                        if (videoRef.current && videoRef.current.src) {
-                          const link = document.createElement('a');
-                          link.href = videoRef.current.src;
-                          link.download = `video_${Date.now()}.mp4`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }
-                      }}
-                      style={{ marginRight: '15px' }}
-                    >
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                        </svg>
-                      </div>
-                    </LiquidGlass>
 
-                    {/* Picture-in-Picture Button */}
-                    <LiquidGlass
-                      width={40}
-                      height={40}
-                      borderRadius="20px"
-                      className="content-center interactive theme-purple shape-circle"
-                      cursor="pointer"
-                      effectIntensity={0.6}
-                      effectRadius={0.5}
-                      effectWidth={0.3}
-                      effectHeight={0.3}
-                      animateOnHover={true}
-                      hoverScale={1.1}
-                      updateOnMouseMove={true}
-                      aria-label="Picture-in-Picture"
-                      onClick={async () => {
-                        if (videoRef.current) {
-                          try {
-                            if (document.pictureInPictureElement) {
-                              await document.exitPictureInPicture();
-                            } else if (videoRef.current.requestPictureInPicture) {
-                              await videoRef.current.requestPictureInPicture();
-                            }
-                          } catch (error) {
-                            console.error('Picture-in-Picture error:', error);
-                          }
-                        }
-                      }}
-                      style={{ marginRight: '15px' }}
-                    >
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                          <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
-                        </svg>
-                      </div>
-                    </LiquidGlass>
 
                     {/* Fullscreen Button */}
                     <LiquidGlass
-                      width={40}
-                      height={40}
-                      borderRadius="20px"
+                      width={50}
+                      height={50}
+                      borderRadius="25px"
                       className="content-center interactive theme-warning shape-circle"
                       cursor="pointer"
                       effectIntensity={0.6}
@@ -3004,6 +3024,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                             console.log('🎬 ERROR: Container not found!');
                           }
                         }
+                      }}
+                      style={{
+                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        transition: 'opacity 0.3s ease-in-out',
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                       }}
                     >
                       <div style={{
