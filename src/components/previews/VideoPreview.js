@@ -2543,7 +2543,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       {/* Expanding Volume Pill */}
                       <LiquidGlass
                         width={50}
-                        height={isVolumeSliderVisible ? 140 : 50}
+                        height={isVolumeSliderVisible ? 180 : 50}
                         borderRadius="25px"
                         className="content-center interactive theme-secondary"
                         cursor="pointer"
@@ -2556,7 +2556,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         updateOnMouseMove={true}
                         style={{
                           transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
-                          transform: isVolumeSliderVisible ? 'translateY(-45px)' : 'translateY(0px)', // Shoot upward
+                          transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
                           opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
                           pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
@@ -2579,7 +2579,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                               background: 'rgba(255,255,255,0.3)',
                               borderRadius: '3px',
                               position: 'absolute',
-                              top: '25px', // Even more space from top
+                              top: '50px', // Moved down to be more visible
                               cursor: 'pointer',
                               opacity: isVolumeSliderVisible ? 1 : 0,
                               transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2611,33 +2611,38 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                 }
                               }}
                             >
-                            {/* Volume fill */}
+                            {/* Glass-style volume fill with gradient */}
                             <div style={{
                               position: 'absolute',
                               bottom: 0,
                               left: 0,
                               width: '100%',
                               height: `${volume * 100}%`,
-                              background: 'linear-gradient(to top, #4CAF50, #81C784)',
+                              background: 'linear-gradient(to top, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.6) 100%)',
                               borderRadius: '3px',
+                              backdropFilter: 'blur(4px)',
+                              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.2)',
                               transition: isVolumeDragging ? 'none' : 'height 0.2s ease'
                             }} />
 
-                            {/* Volume handle */}
+                            {/* Glass orb handle */}
                             <div
                               style={{
                                 position: 'absolute',
                                 bottom: `${volume * 100}%`,
                                 left: '50%',
                                 transform: 'translate(-50%, 50%)',
-                                width: isVolumeDragging ? '14px' : '10px',
-                                height: isVolumeDragging ? '14px' : '10px',
-                                background: 'white',
+                                width: isVolumeDragging ? '18px' : '16px',
+                                height: isVolumeDragging ? '18px' : '16px',
+                                background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,1), rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
                                 borderRadius: '50%',
-                                boxShadow: isVolumeDragging ? '0 3px 8px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.2)',
+                                backdropFilter: 'blur(2px)',
+                                boxShadow: isVolumeDragging
+                                  ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.6), 0 0 8px rgba(255,255,255,0.4)'
+                                  : '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.6), 0 0 4px rgba(255,255,255,0.3)',
+                                border: '1px solid rgba(255,255,255,0.8)',
                                 transition: isVolumeDragging ? 'none' : 'all 0.2s ease',
                                 cursor: 'pointer',
-                                border: '2px solid #4CAF50',
                                 zIndex: 10
                               }}
                               onMouseDown={(e) => {
@@ -2646,6 +2651,27 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                 setIsVolumeDragging(true);
                               }}
                             />
+
+                            {/* Volume percentage indicator - Simple text */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '-35px', // Even higher at the very top
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: 'white',
+                                textShadow: '0 1px 3px rgba(0,0,0,0.7)',
+                                opacity: isVolumeDragging || isVolumeSliderVisible ? 1 : 0,
+                                transition: 'opacity 0.2s ease',
+                                pointerEvents: 'none',
+                                zIndex: 15,
+                                textAlign: 'center'
+                              }}
+                            >
+                              {Math.round(volume * 100)}%
+                            </div>
                           </div>
 
                           {/* Volume Icon - Fixed position at bottom */}
