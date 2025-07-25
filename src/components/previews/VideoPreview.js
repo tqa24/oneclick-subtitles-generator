@@ -726,7 +726,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         }
 
         setIsFullscreen(false);
-        setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+        setControlsVisible(false); // Reset controls to hidden when exiting fullscreen (normal mode uses hover)
         setIsVideoHovered(false); // Reset hover state
         console.log('🎬 MANUAL EXIT: Exit fullscreen styles reset');
       }
@@ -788,7 +788,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
       // Reset control states when exiting fullscreen
       if (!isVideoFullscreen) {
-        setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+        setControlsVisible(false); // Reset controls to hidden when exiting fullscreen (normal mode uses hover)
         setIsVideoHovered(false); // Reset hover state
         console.log('🎬 FULLSCREEN EXIT: Reset control states');
       }
@@ -1043,7 +1043,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
             // Ensure React state is also updated
             setIsFullscreen(false);
-            setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+            setControlsVisible(false); // Reset controls to hidden when exiting fullscreen (normal mode uses hover)
             setIsVideoHovered(false); // Reset hover state
           }, 50);
         }
@@ -1436,16 +1436,16 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   // Mouse movement with auto-hide in fullscreen
   useEffect(() => {
     const handleMouseMove = () => {
-      setControlsVisible(true);
-
-      // Always restore cursor when showing controls
-      const videoContainer = document.querySelector('.native-video-container');
-      if (videoContainer && isFullscreen) {
-        videoContainer.style.cursor = 'default';
-      }
-
-      // Auto-hide only in fullscreen mode
+      // Only set controlsVisible in fullscreen mode
       if (isFullscreen) {
+        setControlsVisible(true);
+
+        // Always restore cursor when showing controls
+        const videoContainer = document.querySelector('.native-video-container');
+        if (videoContainer) {
+          videoContainer.style.cursor = 'default';
+        }
+
         // Clear existing timer
         if (hideControlsTimeoutRef.current) {
           clearTimeout(hideControlsTimeoutRef.current);
@@ -1461,6 +1461,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           }
         }, 1000);
       }
+      // In normal mode, don't touch controlsVisible - let hover handle it
     };
 
     const videoContainer = document.querySelector('.native-video-container');
