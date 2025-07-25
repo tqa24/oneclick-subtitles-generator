@@ -2464,7 +2464,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         marginRight: '15px',
                         touchAction: 'none',
                         alignSelf: 'center',
-                        overflow: 'visible'
+                        overflow: 'visible',
+                        margin: '0' // Reset any default margins
                       }}
                       onMouseDown={handleTimelineMouseDown}
                       onTouchStart={handleTimelineTouchStart}
@@ -2516,7 +2517,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       fontWeight: '500',
                       marginRight: '15px',
                       minWidth: '80px',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%'
                     }}>
                       {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
                     </div>
