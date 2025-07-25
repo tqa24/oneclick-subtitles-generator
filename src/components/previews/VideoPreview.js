@@ -2420,9 +2420,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       }}
                       style={{
                         marginRight: '15px',
-                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                       }}
                     >
                       <div style={{
@@ -2463,9 +2463,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         alignSelf: 'center',
                         overflow: 'visible',
                         margin: '0', // Reset any default margins
-                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                       }}
                       onMouseDown={handleTimelineMouseDown}
                       onTouchStart={handleTimelineTouchStart}
@@ -2522,9 +2522,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       alignItems: 'center',
                       justifyContent: 'center',
                       height: '100%',
-                      opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                      opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
                       transition: 'opacity 0.3s ease-in-out',
-                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                     }}>
                       {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
                     </div>
@@ -2558,8 +2558,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
                           transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
-                          opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
-                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                          opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                         }}
                       >
                         <div style={{
@@ -2812,9 +2812,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         hoverScale={1.02}
                         updateOnMouseMove={false}
                         style={{
-                          opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                          opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
                           transition: 'opacity 0.3s ease-in-out',
-                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                         }}
                       >
                         <div style={{
@@ -3087,9 +3087,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         }
                       }}
                       style={{
-                        opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                       }}
                     >
                       <div style={{
