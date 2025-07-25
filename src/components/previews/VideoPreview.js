@@ -1019,22 +1019,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   }, [videoDuration]);
 
   // Handle volume slider dragging
-  const handleVolumeMouseDown = useCallback((e) => {
-    e.stopPropagation();
-    if (!videoRef.current) return;
-
-    setIsVolumeDragging(true);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const newVolume = Math.max(0, Math.min(1, 1 - (clickY / rect.height)));
-    setVolume(newVolume);
-    videoRef.current.volume = newVolume;
+  useEffect(() => {
+    if (!isVolumeDragging) return;
 
     const handleMouseMove = (e) => {
-      const rect = e.target.closest('.volume-slider')?.getBoundingClientRect();
-      if (rect) {
-        const clickY = e.clientY - rect.top;
-        const newVolume = Math.max(0, Math.min(1, 1 - (clickY / rect.height)));
+      const volumeSlider = document.querySelector('.expanding-volume-slider');
+      if (volumeSlider) {
+        const rect = volumeSlider.getBoundingClientRect();
+        const newVolume = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
         setVolume(newVolume);
         if (videoRef.current) {
           videoRef.current.volume = newVolume;
@@ -1046,13 +1038,16 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     const handleMouseUp = () => {
       setIsVolumeDragging(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, []);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isVolumeDragging]);
 
   // Handle keyboard shortcuts for video control
   useEffect(() => {
@@ -2534,7 +2529,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
                     </div>
 
-                    {/* Volume Control with Slider */}
+                    {/* Volume Control with Expanding Pill */}
                     <div
                       style={{
                         display: 'flex',
@@ -2545,94 +2540,25 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       onMouseEnter={() => setIsVolumeSliderVisible(true)}
                       onMouseLeave={() => setIsVolumeSliderVisible(false)}
                     >
-                      {/* Invisible hover area extension */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '-90px',
-                        left: '-10px',
-                        right: '-10px',
-                        height: '90px',
-                        zIndex: 5
-                      }} />
-                      {/* Volume Slider */}
-                      {isVolumeSliderVisible && (
-                        <div
-                          className="volume-slider"
-                          style={{
-                            position: 'absolute',
-                            bottom: '50px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '6px',
-                            height: '80px',
-                            background: 'rgba(255,255,255,0.3)',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            zIndex: 20
-                          }}
-                          onMouseDown={handleVolumeMouseDown}
-                        >
-                          {/* Volume fill */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            width: '100%',
-                            height: `${volume * 100}%`,
-                            background: '#4CAF50',
-                            borderRadius: '3px',
-                            transition: isVolumeDragging ? 'none' : 'height 0.1s ease'
-                          }} />
-
-                          {/* Volume handle */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: `${volume * 100}%`,
-                            left: '50%',
-                            transform: 'translate(-50%, 50%)',
-                            width: isVolumeDragging ? '12px' : '8px',
-                            height: isVolumeDragging ? '12px' : '8px',
-                            background: 'white',
-                            borderRadius: '50%',
-                            boxShadow: isVolumeDragging ? '0 2px 6px rgba(0,0,0,0.5)' : '0 1px 3px rgba(0,0,0,0.3)',
-                            transition: isVolumeDragging ? 'none' : 'width 0.2s ease, height 0.2s ease',
-                            cursor: 'pointer'
-                          }} />
-                        </div>
-                      )}
-
-                      {/* Volume Button */}
+                      {/* Expanding Volume Pill */}
                       <LiquidGlass
                         width={50}
-                        height={50}
+                        height={isVolumeSliderVisible ? 120 : 50}
                         borderRadius="25px"
-                        className="content-center interactive theme-secondary shape-circle"
+                        className="content-center interactive theme-secondary"
                         cursor="pointer"
-                        effectIntensity={0.6}
-                        effectRadius={0.5}
-                        effectWidth={0.3}
-                        effectHeight={0.3}
+                        effectIntensity={0.7}
+                        effectRadius={0.6}
+                        effectWidth={0.4}
+                        effectHeight={0.4}
                         animateOnHover={true}
-                        hoverScale={1.1}
+                        hoverScale={1.02}
                         updateOnMouseMove={true}
-                        aria-label={isMuted ? 'Unmute' : 'Mute'}
-                        onClick={() => {
-                          if (videoRef.current) {
-                            const newMuted = !videoRef.current.muted;
-                            videoRef.current.muted = newMuted;
-                            setIsMuted(newMuted);
-                            if (newMuted) {
-                              setVolume(0);
-                            } else {
-                              const newVolume = volume === 0 ? 0.5 : volume;
-                              setVolume(newVolume);
-                              videoRef.current.volume = newVolume;
-                            }
-                          }
-                        }}
                         style={{
+                          transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
+                          transform: isVolumeSliderVisible ? 'translateY(-35px)' : 'translateY(0px)', // Shoot upward
+                          transformOrigin: 'bottom center', // Expand from bottom
                           opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
-                          transition: 'opacity 0.3s ease-in-out',
                           pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
                         }}
                       >
@@ -2640,25 +2566,134 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           width: '100%',
                           height: '100%',
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
-                          justifyContent: 'center'
+                          position: 'relative'
                         }}>
-                          {isMuted || volume === 0 ? (
-                            // Muted icon
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
-                            </svg>
-                          ) : volume < 0.5 ? (
-                            // Low volume icon
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                            </svg>
-                          ) : (
-                            // High volume icon
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                            </svg>
-                          )}
+                          {/* Volume Slider - always present but with opacity transition */}
+                          <div
+                            className="expanding-volume-slider"
+                            style={{
+                              width: '6px',
+                              height: '50px',
+                              background: 'rgba(255,255,255,0.3)',
+                              borderRadius: '3px',
+                              position: 'absolute',
+                              top: '15px', // More space from top
+                              cursor: 'pointer',
+                              opacity: isVolumeSliderVisible ? 1 : 0,
+                              transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              pointerEvents: isVolumeSliderVisible ? 'auto' : 'none'
+                            }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsVolumeDragging(true);
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const newVolume = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
+                                setVolume(newVolume);
+                                if (videoRef.current) {
+                                  videoRef.current.volume = newVolume;
+                                  videoRef.current.muted = newVolume === 0;
+                                  setIsMuted(newVolume === 0);
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const newVolume = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
+                                setVolume(newVolume);
+                                if (videoRef.current) {
+                                  videoRef.current.volume = newVolume;
+                                  videoRef.current.muted = newVolume === 0;
+                                  setIsMuted(newVolume === 0);
+                                }
+                              }}
+                            >
+                            {/* Volume fill */}
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              width: '100%',
+                              height: `${volume * 100}%`,
+                              background: 'linear-gradient(to top, #4CAF50, #81C784)',
+                              borderRadius: '3px',
+                              transition: isVolumeDragging ? 'none' : 'height 0.2s ease'
+                            }} />
+
+                            {/* Volume handle */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: `${volume * 100}%`,
+                                left: '50%',
+                                transform: 'translate(-50%, 50%)',
+                                width: isVolumeDragging ? '14px' : '10px',
+                                height: isVolumeDragging ? '14px' : '10px',
+                                background: 'white',
+                                borderRadius: '50%',
+                                boxShadow: isVolumeDragging ? '0 3px 8px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.2)',
+                                transition: isVolumeDragging ? 'none' : 'all 0.2s ease',
+                                cursor: 'pointer',
+                                border: '2px solid #4CAF50',
+                                zIndex: 10
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsVolumeDragging(true);
+                              }}
+                            />
+                          </div>
+
+                          {/* Volume Icon - Fixed position at bottom */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '30px',
+                              height: '30px',
+                              cursor: 'pointer',
+                              position: 'absolute',
+                              bottom: '10px', // Fixed position from bottom
+                              left: '50%',
+                              transform: 'translateX(-50%)'
+                            }}
+                            onClick={() => {
+                              if (videoRef.current) {
+                                const newMuted = !videoRef.current.muted;
+                                videoRef.current.muted = newMuted;
+                                setIsMuted(newMuted);
+                                if (newMuted) {
+                                  setVolume(0);
+                                } else {
+                                  const newVolume = volume === 0 ? 0.5 : volume;
+                                  setVolume(newVolume);
+                                  videoRef.current.volume = newVolume;
+                                }
+                              }
+                            }}
+                          >
+                            {isMuted || volume === 0 ? (
+                              // Muted icon
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                              </svg>
+                            ) : volume < 0.5 ? (
+                              // Low volume icon
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                              </svg>
+                            ) : (
+                              // High volume icon
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                              </svg>
+                            )}
+                          </div>
                         </div>
                       </LiquidGlass>
                     </div>
