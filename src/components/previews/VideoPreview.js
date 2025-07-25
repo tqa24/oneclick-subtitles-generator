@@ -2543,7 +2543,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       {/* Expanding Volume Pill */}
                       <LiquidGlass
                         width={50}
-                        height={isVolumeSliderVisible ? 120 : 50}
+                        height={isVolumeSliderVisible ? 140 : 50}
                         borderRadius="25px"
                         className="content-center interactive theme-secondary"
                         cursor="pointer"
@@ -2556,7 +2556,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         updateOnMouseMove={true}
                         style={{
                           transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
-                          transform: isVolumeSliderVisible ? 'translateY(-35px)' : 'translateY(0px)', // Shoot upward
+                          transform: isVolumeSliderVisible ? 'translateY(-45px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
                           opacity: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 1 : 0,
                           pointerEvents: ((!isFullscreen && isVideoHovered) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
@@ -2575,11 +2575,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                             className="expanding-volume-slider"
                             style={{
                               width: '6px',
-                              height: '50px',
+                              height: '60px',
                               background: 'rgba(255,255,255,0.3)',
                               borderRadius: '3px',
                               position: 'absolute',
-                              top: '15px', // More space from top
+                              top: '25px', // Even more space from top
                               cursor: 'pointer',
                               opacity: isVolumeSliderVisible ? 1 : 0,
                               transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2658,7 +2658,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                               height: '30px',
                               cursor: 'pointer',
                               position: 'absolute',
-                              bottom: '10px', // Fixed position from bottom
+                              bottom: '10px', // Back to original position
                               left: '50%',
                               transform: 'translateX(-50%)'
                             }}
