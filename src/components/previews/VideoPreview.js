@@ -1177,7 +1177,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const handleTimelineMouseDown = useCallback((e) => {
     if (!videoRef.current || videoDuration === 0) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Store the timeline container reference for consistent dragging
+    const timelineContainer = e.currentTarget;
+    const rect = timelineContainer.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
 
@@ -1192,13 +1194,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const handleMouseMove = (e) => {
       hasMoved = true;
       setIsDragging(true);
-      const rect = e.target.closest('.timeline-container')?.getBoundingClientRect();
-      if (rect) {
-        const clickX = e.clientX - rect.left;
-        const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
-        setDragTime(newTime);
-        dragTimeRef.current = newTime;
-      }
+      // Use the stored timeline container reference instead of searching for it
+      const rect = timelineContainer.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
+      setDragTime(newTime);
+      dragTimeRef.current = newTime;
     };
 
     const handleMouseUp = () => {
@@ -1219,7 +1220,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     if (!videoRef.current || videoDuration === 0) return;
 
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Store the timeline container reference for consistent dragging
+    const timelineContainer = e.currentTarget;
+    const rect = timelineContainer.getBoundingClientRect();
     const touch = e.touches[0];
     const touchX = touch.clientX - rect.left;
     const newTime = Math.max(0, Math.min((touchX / rect.width) * videoDuration, videoDuration));
@@ -1236,8 +1239,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       e.preventDefault();
       hasMoved = true;
       setIsDragging(true);
-      const rect = e.target.closest('.timeline-container')?.getBoundingClientRect();
-      if (rect && e.touches[0]) {
+      // Use the stored timeline container reference instead of searching for it
+      if (e.touches[0]) {
+        const rect = timelineContainer.getBoundingClientRect();
         const touchX = e.touches[0].clientX - rect.left;
         const newTime = Math.max(0, Math.min((touchX / rect.width) * videoDuration, videoDuration));
         setDragTime(newTime);
