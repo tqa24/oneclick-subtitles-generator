@@ -24,7 +24,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
   // isFullscreen state is set but not directly used in rendering - used for event handling
-  const [, setIsFullscreen] = useState(false); // Track fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false); // Track fullscreen state
   const [videoUrl, setVideoUrl] = useState('');
   const [optimizedVideoUrl, setOptimizedVideoUrl] = useState('');
   const [optimizedVideoInfo, setOptimizedVideoInfo] = useState(null);
@@ -39,6 +39,25 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [renderProgress, setRenderProgress] = useState(0);
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false); // Track narration refresh state
   const [isVideoHovered, setIsVideoHovered] = useState(false); // Track video hover state for showing controls
+
+  // Custom video control states
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showCustomControls, setShowCustomControls] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragTime, setDragTime] = useState(0);
+  const dragTimeRef = useRef(0);
+  const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
+  const [isVolumeDragging, setIsVolumeDragging] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isSpeedMenuVisible, setIsSpeedMenuVisible] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(false);
+  const hideControlsTimeoutRef = useRef(null);
+  const [bufferedProgress, setBufferedProgress] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
   // Native track subtitles disabled - using only custom subtitle display
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') === 'true';
@@ -668,32 +687,156 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     // Function to handle fullscreen change events
     const handleFullscreenChange = () => {
+      console.log('🎬 FULLSCREEN CHANGE EVENT TRIGGERED');
       const isDocFullscreen = !!document.fullscreenElement ||
                              !!document.webkitFullscreenElement ||
                              !!document.mozFullScreenElement ||
                              !!document.msFullscreenElement;
+      console.log('🎬 Document fullscreen state:', isDocFullscreen);
 
-      // Check if our video is the fullscreen element
+      // Check if our video container is the fullscreen element
+      const container = document.querySelector('.native-video-container');
       const isVideoFullscreen = isDocFullscreen &&
-                              (document.fullscreenElement === videoElement ||
-                               document.webkitFullscreenElement === videoElement ||
-                               document.mozFullScreenElement === videoElement ||
-                               document.msFullscreenElement === videoElement);
+                              (document.fullscreenElement === container ||
+                               document.webkitFullscreenElement === container ||
+                               document.mozFullScreenElement === container ||
+                               document.msFullscreenElement === container);
+
+      console.log('🎬 Video fullscreen check:', {
+        container: !!container,
+        isDocFullscreen,
+        isVideoFullscreen,
+        fullscreenElement: document.fullscreenElement
+      });
 
       setIsFullscreen(isVideoFullscreen);
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
-
+        console.log('Fullscreen change:', {
+          isDocFullscreen,
+          isVideoFullscreen,
+          fullscreenElement: document.fullscreenElement,
+          container
+        });
       }
 
-      // If entering fullscreen, create the subtitle container
+      // If entering fullscreen, create the subtitle container and setup controls
       if (isVideoFullscreen) {
+        console.log('🎬 ENTERING FULLSCREEN - Starting video resize process');
         createFullscreenSubtitleContainer();
+        // Add a class to the video element to help with styling
+        videoElement.classList.add('fullscreen-video');
+
+        // Force video and container to fill fullscreen with JavaScript
+        setTimeout(() => {
+          if (videoElement) {
+            console.log('🎬 APPLYING FULLSCREEN STYLES TO VIDEO');
+            console.log('Video element before:', {
+              width: videoElement.style.width,
+              height: videoElement.style.height,
+              objectFit: videoElement.style.objectFit,
+              position: videoElement.style.position
+            });
+
+            // Use setProperty with important flag to override any existing styles
+            videoElement.style.setProperty('width', '100vw', 'important');
+            videoElement.style.setProperty('height', '100vh', 'important');
+            videoElement.style.setProperty('object-fit', 'fill', 'important');
+            videoElement.style.setProperty('position', 'fixed', 'important');
+            videoElement.style.setProperty('top', '0', 'important');
+            videoElement.style.setProperty('left', '0', 'important');
+            videoElement.style.setProperty('z-index', '1000', 'important');
+            videoElement.style.setProperty('max-width', 'none', 'important');
+            videoElement.style.setProperty('max-height', 'none', 'important');
+            videoElement.style.setProperty('min-width', '100vw', 'important');
+            videoElement.style.setProperty('min-height', '100vh', 'important');
+            videoElement.style.setProperty('transform', 'none', 'important');
+
+            // Also remove any conflicting attributes
+            videoElement.removeAttribute('width');
+            videoElement.removeAttribute('height');
+
+            console.log('Video element after:', {
+              width: videoElement.style.width,
+              height: videoElement.style.height,
+              objectFit: videoElement.style.objectFit,
+              position: videoElement.style.position,
+              computedWidth: window.getComputedStyle(videoElement).width,
+              computedHeight: window.getComputedStyle(videoElement).height,
+              computedObjectFit: window.getComputedStyle(videoElement).objectFit
+            });
+
+            // Force video wrapper styles
+            const videoWrapper = videoElement.closest('.video-wrapper');
+            if (videoWrapper) {
+              videoWrapper.style.setProperty('width', '100vw', 'important');
+              videoWrapper.style.setProperty('height', '100vh', 'important');
+              videoWrapper.style.setProperty('position', 'fixed', 'important');
+              videoWrapper.style.setProperty('top', '0', 'important');
+              videoWrapper.style.setProperty('left', '0', 'important');
+              videoWrapper.style.setProperty('z-index', '999', 'important');
+              videoWrapper.style.setProperty('overflow', 'hidden', 'important');
+            }
+
+            // Force container styles
+            if (container) {
+              container.style.setProperty('width', '100vw', 'important');
+              container.style.setProperty('height', '100vh', 'important');
+              container.style.setProperty('position', 'fixed', 'important');
+              container.style.setProperty('top', '0', 'important');
+              container.style.setProperty('left', '0', 'important');
+              container.style.setProperty('z-index', '998', 'important');
+              container.style.setProperty('display', 'block', 'important');
+              container.style.setProperty('padding', '0', 'important');
+              container.style.setProperty('margin', '0', 'important');
+            }
+          }
+        }, 100);
       } else {
-        // If exiting fullscreen, remove the subtitle container
+        // If exiting fullscreen, remove the subtitle container and cleanup
         const container = document.getElementById('fullscreen-subtitle-overlay');
         if (container) {
           document.body.removeChild(container);
+        }
+        videoElement.classList.remove('fullscreen-video');
+
+        // Reset video styles when exiting fullscreen
+        if (videoElement) {
+          videoElement.style.width = '';
+          videoElement.style.height = '';
+          videoElement.style.objectFit = '';
+          videoElement.style.position = '';
+          videoElement.style.top = '';
+          videoElement.style.left = '';
+          videoElement.style.zIndex = '';
+          videoElement.style.maxWidth = '';
+          videoElement.style.maxHeight = '';
+          videoElement.style.minWidth = '';
+          videoElement.style.minHeight = '';
+          videoElement.style.transform = '';
+
+          // Reset video wrapper styles
+          const videoWrapper = videoElement.closest('.video-wrapper');
+          if (videoWrapper) {
+            videoWrapper.style.width = '';
+            videoWrapper.style.height = '';
+            videoWrapper.style.position = '';
+            videoWrapper.style.top = '';
+            videoWrapper.style.left = '';
+            videoWrapper.style.zIndex = '';
+            videoWrapper.style.overflow = '';
+          }
+
+          // Reset container styles
+          if (container) {
+            container.style.width = '';
+            container.style.height = '';
+            container.style.position = '';
+            container.style.display = '';
+            container.style.padding = '';
+            container.style.margin = '';
+            container.style.zIndex = '';
+          }
         }
       }
     };
@@ -713,11 +856,210 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, [subtitleSettings.boxWidth]);
 
-  // Handle spacebar key press for play/pause functionality
+  // Custom video controls event handlers
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handleLoadedMetadata = () => {
+      setVideoDuration(videoElement.duration);
+      setDuration(videoElement.duration);
+      setVolume(videoElement.volume);
+      setIsMuted(videoElement.muted);
+      setShowCustomControls(true);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(videoElement.currentTime); // Use existing currentTime prop
+
+      // Update buffered progress
+      if (videoElement.buffered.length > 0 && videoDuration > 0) {
+        const bufferedEnd = videoElement.buffered.end(videoElement.buffered.length - 1);
+        setBufferedProgress((bufferedEnd / videoDuration) * 100);
+      }
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    const handleVolumeChange = () => {
+      setVolume(videoElement.volume);
+      setIsMuted(videoElement.muted);
+    };
+
+    const handleLoadStart = () => {
+      setIsVideoLoading(true);
+    };
+
+    const handleCanPlay = () => {
+      setIsVideoLoading(false);
+    };
+
+    const handleWaiting = () => {
+      setIsBuffering(true);
+    };
+
+    const handleCanPlayThrough = () => {
+      setIsBuffering(false);
+    };
+
+    // Add video event listeners
+    videoElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    videoElement.addEventListener('volumechange', handleVolumeChange);
+    videoElement.addEventListener('loadstart', handleLoadStart);
+    videoElement.addEventListener('canplay', handleCanPlay);
+    videoElement.addEventListener('waiting', handleWaiting);
+    videoElement.addEventListener('canplaythrough', handleCanPlayThrough);
+
+    return () => {
+      videoElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+      videoElement.removeEventListener('volumechange', handleVolumeChange);
+      videoElement.removeEventListener('loadstart', handleLoadStart);
+      videoElement.removeEventListener('canplay', handleCanPlay);
+      videoElement.removeEventListener('waiting', handleWaiting);
+      videoElement.removeEventListener('canplaythrough', handleCanPlayThrough);
+    };
+  }, [videoUrl]);
+
+
+
+  const handleTimelineMouseDown = useCallback((e) => {
+    if (!videoRef.current || videoDuration === 0) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
+
+    // Immediately set the video time for instant feedback
+    videoRef.current.currentTime = newTime;
+    setDragTime(newTime);
+    dragTimeRef.current = newTime;
+
+    let hasMoved = false;
+
+    // Add global mouse event listeners
+    const handleMouseMove = (e) => {
+      hasMoved = true;
+      setIsDragging(true);
+      const rect = e.target.closest('.timeline-container')?.getBoundingClientRect();
+      if (rect) {
+        const clickX = e.clientX - rect.left;
+        const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
+        setDragTime(newTime);
+        dragTimeRef.current = newTime;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (hasMoved && videoRef.current) {
+        videoRef.current.currentTime = dragTimeRef.current;
+      }
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [videoDuration]);
+
+  // Touch support for timeline
+  const handleTimelineTouchStart = useCallback((e) => {
+    if (!videoRef.current || videoDuration === 0) return;
+
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    const touchX = touch.clientX - rect.left;
+    const newTime = Math.max(0, Math.min((touchX / rect.width) * videoDuration, videoDuration));
+
+    // Immediately set the video time for instant feedback
+    videoRef.current.currentTime = newTime;
+    setDragTime(newTime);
+    dragTimeRef.current = newTime;
+
+    let hasMoved = false;
+
+    // Add global touch event listeners
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      hasMoved = true;
+      setIsDragging(true);
+      const rect = e.target.closest('.timeline-container')?.getBoundingClientRect();
+      if (rect && e.touches[0]) {
+        const touchX = e.touches[0].clientX - rect.left;
+        const newTime = Math.max(0, Math.min((touchX / rect.width) * videoDuration, videoDuration));
+        setDragTime(newTime);
+        dragTimeRef.current = newTime;
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (hasMoved && videoRef.current) {
+        videoRef.current.currentTime = dragTimeRef.current;
+      }
+      setIsDragging(false);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  }, [videoDuration]);
+
+  // Handle volume slider dragging
+  const handleVolumeMouseDown = useCallback((e) => {
+    e.stopPropagation();
+    if (!videoRef.current) return;
+
+    setIsVolumeDragging(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const newVolume = Math.max(0, Math.min(1, 1 - (clickY / rect.height)));
+    setVolume(newVolume);
+    videoRef.current.volume = newVolume;
+
+    const handleMouseMove = (e) => {
+      const rect = e.target.closest('.volume-slider')?.getBoundingClientRect();
+      if (rect) {
+        const clickY = e.clientY - rect.top;
+        const newVolume = Math.max(0, Math.min(1, 1 - (clickY / rect.height)));
+        setVolume(newVolume);
+        if (videoRef.current) {
+          videoRef.current.volume = newVolume;
+          videoRef.current.muted = newVolume === 0;
+          setIsMuted(newVolume === 0);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsVolumeDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, []);
+
+  // Handle keyboard shortcuts for video control
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // Only handle spacebar (key code 32 or ' ')
-      if (event.code !== 'Space' && event.key !== ' ') return;
+      // Handle multiple keyboard shortcuts
+      const validKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyM', 'KeyF', 'KeyK'];
+      if (!validKeys.includes(event.code) && !['j', 'l', 'k', 'm', 'f', ' '].includes(event.key.toLowerCase())) return;
 
       // Don't handle spacebar if user is typing in an input field
       const activeElement = document.activeElement;
@@ -757,17 +1099,110 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       const videoElement = videoRef.current;
       if (!videoElement || !isLoaded) return;
 
-      // Prevent default spacebar behavior (page scroll)
+      // Prevent default behavior for handled keys
       event.preventDefault();
       event.stopPropagation();
 
-      // Toggle play/pause
-      if (videoElement.paused) {
-        videoElement.play().catch(error => {
-          console.error('Error playing video:', error);
-        });
-      } else {
-        videoElement.pause();
+      // Handle different keyboard shortcuts
+      switch (event.code || event.key.toLowerCase()) {
+        case 'Space':
+        case ' ':
+        case 'KeyK':
+        case 'k':
+          // Toggle play/pause
+          if (videoElement.paused) {
+            videoElement.play().catch(error => {
+              console.error('Error playing video:', error);
+            });
+          } else {
+            videoElement.pause();
+          }
+          break;
+
+        case 'ArrowLeft':
+        case 'j':
+          // Seek backward 10 seconds
+          videoElement.currentTime = Math.max(0, videoElement.currentTime - 10);
+          break;
+
+        case 'ArrowRight':
+        case 'l':
+          // Seek forward 10 seconds
+          videoElement.currentTime = Math.min(videoDuration, videoElement.currentTime + 10);
+          break;
+
+        case 'ArrowUp':
+          // Volume up
+          videoElement.volume = Math.min(1, videoElement.volume + 0.1);
+          setVolume(videoElement.volume);
+          if (videoElement.muted) {
+            videoElement.muted = false;
+            setIsMuted(false);
+          }
+          break;
+
+        case 'ArrowDown':
+          // Volume down
+          videoElement.volume = Math.max(0, videoElement.volume - 0.1);
+          setVolume(videoElement.volume);
+          if (videoElement.volume === 0) {
+            videoElement.muted = true;
+            setIsMuted(true);
+          }
+          break;
+
+        case 'KeyM':
+        case 'm':
+          // Toggle mute
+          videoElement.muted = !videoElement.muted;
+          setIsMuted(videoElement.muted);
+          if (!videoElement.muted && videoElement.volume === 0) {
+            videoElement.volume = 0.5;
+            setVolume(0.5);
+          }
+          break;
+
+        case 'KeyF':
+        case 'f':
+          // Toggle fullscreen
+          if (isFullscreen) {
+            if (document.exitFullscreen) {
+              document.exitFullscreen().catch(console.error);
+            } else if (document.webkitExitFullscreen) {
+              document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+              document.msExitFullscreen();
+            }
+            // Force state update if needed
+            setTimeout(() => {
+              const stillFullscreen = !!(document.fullscreenElement ||
+                                       document.webkitFullscreenElement ||
+                                       document.mozFullScreenElement ||
+                                       document.msFullscreenElement);
+              if (!stillFullscreen) {
+                setIsFullscreen(false);
+              }
+            }, 100);
+          } else {
+            const container = document.querySelector('.native-video-container');
+            if (container) {
+              if (container.requestFullscreen) {
+                container.requestFullscreen();
+              } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+              } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+              } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+              }
+            }
+          }
+          break;
+
+        default:
+          break;
       }
     };
 
@@ -778,6 +1213,58 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isLoaded]); // Re-run when video load state changes
+
+  // Auto-hide controls timer
+  useEffect(() => {
+    const resetHideTimer = () => {
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+
+      setControlsVisible(true);
+
+      // Only auto-hide if video is playing
+      if (isPlaying && !isVideoHovered) {
+        hideControlsTimeoutRef.current = setTimeout(() => {
+          setControlsVisible(false);
+        }, 3000);
+      }
+    };
+
+    // Reset timer when play state or hover state changes
+    resetHideTimer();
+
+    return () => {
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+    };
+  }, [isPlaying, isVideoHovered]);
+
+  // Show controls on mouse movement
+  useEffect(() => {
+    const handleMouseMove = () => {
+      setControlsVisible(true);
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+
+      // Auto-hide again if playing and not hovering over controls
+      if (isPlaying && !isVideoHovered) {
+        hideControlsTimeoutRef.current = setTimeout(() => {
+          setControlsVisible(false);
+        }, 3000);
+      }
+    };
+
+    const videoContainer = document.querySelector('.native-video-container');
+    if (videoContainer) {
+      videoContainer.addEventListener('mousemove', handleMouseMove);
+      return () => {
+        videoContainer.removeEventListener('mousemove', handleMouseMove);
+      };
+    }
+  }, [isPlaying, isVideoHovered]);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
@@ -903,6 +1390,164 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
   return (
     <div className="video-preview">
+      {/* CSS Animation for spinner and hide native controls */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          /* Force hide native video controls in all states including fullscreen */
+          .video-player::-webkit-media-controls {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-panel {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-play-button {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-timeline {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-current-time-display {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-mute-button {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-volume-slider {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+          }
+          .video-player::-webkit-media-controls-overlay-play-button {
+            display: none !important;
+          }
+
+          /* Firefox */
+          .video-player::-moz-media-controls {
+            display: none !important;
+          }
+
+          /* Edge/IE */
+          .video-player::-ms-media-controls {
+            display: none !important;
+          }
+
+          /* Additional fallback */
+          .video-player {
+            outline: none !important;
+          }
+          .video-player:focus {
+            outline: none !important;
+          }
+
+          /* Fullscreen container styling - remove centering */
+          .native-video-container:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: black !important;
+            position: relative !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .native-video-container:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: black !important;
+            position: relative !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .native-video-container:-moz-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: black !important;
+            position: relative !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .native-video-container:-ms-fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            background: black !important;
+            position: relative !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          /* Video in fullscreen - use transform scale approach */
+          .native-video-container:fullscreen .video-player,
+          .native-video-container:-webkit-full-screen .video-player,
+          .native-video-container:-moz-full-screen .video-player,
+          .native-video-container:-ms-fullscreen .video-player {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: none !important;
+            max-height: none !important;
+            min-width: 100vw !important;
+            min-height: 100vh !important;
+            object-fit: fill !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1000 !important;
+            transform: none !important;
+          }
+
+          /* Video wrapper in fullscreen */
+          .native-video-container:fullscreen .video-wrapper,
+          .native-video-container:-webkit-full-screen .video-wrapper,
+          .native-video-container:-moz-full-screen .video-wrapper,
+          .native-video-container:-ms-fullscreen .video-wrapper {
+            width: 100vw !important;
+            height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1 !important;
+          }
+
+          /* Force video element to fill in fullscreen - multiple selectors for maximum coverage */
+          .native-video-container:fullscreen video,
+          .native-video-container:-webkit-full-screen video,
+          .native-video-container:-moz-full-screen video,
+          .native-video-container:-ms-fullscreen video,
+          .native-video-container:fullscreen .video-player,
+          .native-video-container:-webkit-full-screen .video-player,
+          .native-video-container:-moz-full-screen .video-player,
+          .native-video-container:-ms-fullscreen .video-player {
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: fill !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1000 !important;
+            transform: none !important;
+            max-width: none !important;
+            max-height: none !important;
+            min-width: 100vw !important;
+            min-height: 100vh !important;
+            cursor: pointer !important;
+            touch-action: manipulation !important;
+          }
+        `}
+      </style>
+
       {/* Narration Settings moved to unified component in translation section */}
 
       <div className="video-preview-header">
@@ -1609,9 +2254,31 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               <div className="video-wrapper" style={{ position: 'relative' }}>
                 <video
                   ref={videoRef}
-                  controls
                   className="video-player"
+                  onClick={() => {
+                    if (videoRef.current) {
+                      if (isPlaying) {
+                        videoRef.current.pause();
+                      } else {
+                        videoRef.current.play().catch(console.error);
+                      }
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Prevent double-tap zoom on mobile
+                    e.preventDefault();
+                    if (videoRef.current) {
+                      if (isPlaying) {
+                        videoRef.current.pause();
+                      } else {
+                        videoRef.current.play().catch(console.error);
+                      }
+                    }
+                  }}
+                  style={{ cursor: 'pointer', touchAction: 'manipulation' }}
                   playsInline
+                  controlsList="nodownload nofullscreen noremoteplayback"
+                  disablePictureInPicture={false}
                   src={useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl}
                   crossOrigin="anonymous"
                   onError={(e) => {
@@ -1641,6 +2308,675 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                   {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
                 </video>
+
+                {/* Loading/Buffering Spinner */}
+                {(isVideoLoading || isBuffering) && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 15
+                  }}>
+                    <LiquidGlass
+                      width={60}
+                      height={60}
+                      borderRadius="30px"
+                      className="content-center theme-primary shape-circle"
+                      effectIntensity={0.8}
+                      effectRadius={0.6}
+                      effectWidth={0.4}
+                      effectHeight={0.4}
+                      style={{
+                        background: 'rgba(0,0,0,0.7)',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                    >
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          border: '3px solid rgba(255,255,255,0.3)',
+                          borderTop: '3px solid white',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }} />
+                      </div>
+                    </LiquidGlass>
+                  </div>
+                )}
+
+                {/* Custom Liquid Glass Video Controls */}
+                {showCustomControls && (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) && (
+                  <div
+                    className="custom-video-controls"
+                    style={{
+                      position: 'absolute',
+                      bottom: '0',
+                      left: '0',
+                      right: '0',
+                      height: '60px',
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      opacity: (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) ? 1 : 0,
+                      transition: 'opacity 0.3s ease-in-out',
+                      pointerEvents: (isVideoHovered || (isPlaying && controlsVisible) || isFullscreen) ? 'auto' : 'none',
+                      zIndex: 10
+                    }}
+                  >
+                    {/* Play/Pause Button */}
+                    <LiquidGlass
+                      width={40}
+                      height={40}
+                      borderRadius="20px"
+                      className="content-center interactive theme-primary shape-circle"
+                      cursor="pointer"
+                      effectIntensity={0.6}
+                      effectRadius={0.5}
+                      effectWidth={0.3}
+                      effectHeight={0.3}
+                      animateOnHover={true}
+                      hoverScale={1.1}
+                      updateOnMouseMove={true}
+                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                      onClick={() => {
+                        if (videoRef.current) {
+                          if (isPlaying) {
+                            videoRef.current.pause();
+                          } else {
+                            videoRef.current.play().catch(console.error);
+                          }
+                        }
+                      }}
+                      style={{ marginRight: '15px' }}
+                    >
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {isPlaying ? (
+                          // Pause icon
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                          </svg>
+                        ) : (
+                          // Play icon
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        )}
+                      </div>
+                    </LiquidGlass>
+
+                    {/* Timeline/Progress Bar */}
+                    <div
+                      className="timeline-container"
+                      style={{
+                        flex: 1,
+                        height: '6px',
+                        minHeight: '6px',
+                        maxHeight: '6px',
+                        background: 'rgba(255,255,255,0.3)',
+                        borderRadius: '3px',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        marginRight: '15px',
+                        touchAction: 'none',
+                        alignSelf: 'center',
+                        overflow: 'visible'
+                      }}
+                      onMouseDown={handleTimelineMouseDown}
+                      onTouchStart={handleTimelineTouchStart}
+                    >
+                      {/* Buffered progress (background) */}
+                      <div style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        height: '100%',
+                        width: `${bufferedProgress}%`,
+                        background: 'rgba(255,255,255,0.4)',
+                        borderRadius: '3px',
+                        transition: 'width 0.3s ease'
+                      }} />
+
+                      {/* Progress fill */}
+                      <div style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        height: '100%',
+                        width: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
+                        background: '#4CAF50',
+                        borderRadius: '3px',
+                        transition: isDragging ? 'none' : 'width 0.1s ease'
+                      }} />
+
+                      {/* Progress handle */}
+                      <div style={{
+                        position: 'absolute',
+                        left: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: isDragging ? '16px' : '12px',
+                        height: isDragging ? '16px' : '12px',
+                        background: 'white',
+                        borderRadius: '50%',
+                        boxShadow: isDragging ? '0 4px 8px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.3)',
+                        transition: isDragging ? 'none' : 'left 0.1s ease, width 0.2s ease, height 0.2s ease',
+                        cursor: 'pointer'
+                      }} />
+                    </div>
+
+                    {/* Time Display */}
+                    <div style={{
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      marginRight: '15px',
+                      minWidth: '80px',
+                      textAlign: 'center'
+                    }}>
+                      {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
+                    </div>
+
+                    {/* Volume Control with Slider */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginRight: '15px',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={() => setIsVolumeSliderVisible(true)}
+                      onMouseLeave={() => setIsVolumeSliderVisible(false)}
+                    >
+                      {/* Invisible hover area extension */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '-90px',
+                        left: '-10px',
+                        right: '-10px',
+                        height: '90px',
+                        zIndex: 5
+                      }} />
+                      {/* Volume Slider */}
+                      {isVolumeSliderVisible && (
+                        <div
+                          className="volume-slider"
+                          style={{
+                            position: 'absolute',
+                            bottom: '50px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '6px',
+                            height: '80px',
+                            background: 'rgba(255,255,255,0.3)',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            zIndex: 20
+                          }}
+                          onMouseDown={handleVolumeMouseDown}
+                        >
+                          {/* Volume fill */}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${volume * 100}%`,
+                            background: '#4CAF50',
+                            borderRadius: '3px',
+                            transition: isVolumeDragging ? 'none' : 'height 0.1s ease'
+                          }} />
+
+                          {/* Volume handle */}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: `${volume * 100}%`,
+                            left: '50%',
+                            transform: 'translate(-50%, 50%)',
+                            width: isVolumeDragging ? '12px' : '8px',
+                            height: isVolumeDragging ? '12px' : '8px',
+                            background: 'white',
+                            borderRadius: '50%',
+                            boxShadow: isVolumeDragging ? '0 2px 6px rgba(0,0,0,0.5)' : '0 1px 3px rgba(0,0,0,0.3)',
+                            transition: isVolumeDragging ? 'none' : 'width 0.2s ease, height 0.2s ease',
+                            cursor: 'pointer'
+                          }} />
+                        </div>
+                      )}
+
+                      {/* Volume Button */}
+                      <LiquidGlass
+                        width={40}
+                        height={40}
+                        borderRadius="20px"
+                        className="content-center interactive theme-secondary shape-circle"
+                        cursor="pointer"
+                        effectIntensity={0.6}
+                        effectRadius={0.5}
+                        effectWidth={0.3}
+                        effectHeight={0.3}
+                        animateOnHover={true}
+                        hoverScale={1.1}
+                        updateOnMouseMove={true}
+                        aria-label={isMuted ? 'Unmute' : 'Mute'}
+                        onClick={() => {
+                          if (videoRef.current) {
+                            const newMuted = !videoRef.current.muted;
+                            videoRef.current.muted = newMuted;
+                            setIsMuted(newMuted);
+                            if (newMuted) {
+                              setVolume(0);
+                            } else {
+                              const newVolume = volume === 0 ? 0.5 : volume;
+                              setVolume(newVolume);
+                              videoRef.current.volume = newVolume;
+                            }
+                          }
+                        }}
+                      >
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {isMuted || volume === 0 ? (
+                            // Muted icon
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                            </svg>
+                          ) : volume < 0.5 ? (
+                            // Low volume icon
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                            </svg>
+                          ) : (
+                            // High volume icon
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                            </svg>
+                          )}
+                        </div>
+                      </LiquidGlass>
+                    </div>
+
+                    {/* Playback Speed Control */}
+                    <div
+                      style={{
+                        position: 'relative',
+                        marginRight: '15px'
+                      }}
+                      onMouseEnter={() => setIsSpeedMenuVisible(true)}
+                      onMouseLeave={() => setIsSpeedMenuVisible(false)}
+                    >
+                      {/* Invisible hover area extension */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '-200px',
+                        left: '-10px',
+                        right: '-10px',
+                        height: '200px',
+                        zIndex: 5
+                      }} />
+                      {/* Speed Menu */}
+                      {isSpeedMenuVisible && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '50px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            zIndex: 20,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
+                          }}
+                        >
+                          {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => (
+                            <LiquidGlass
+                              key={speed}
+                              width={60}
+                              height={28}
+                              borderRadius="14px"
+                              className={`content-center interactive ${playbackSpeed === speed ? 'theme-success' : 'theme-secondary'} shape-rounded`}
+                              cursor="pointer"
+                              effectIntensity={0.6}
+                              effectRadius={0.4}
+                              effectWidth={0.3}
+                              effectHeight={0.3}
+                              animateOnHover={true}
+                              hoverScale={1.05}
+                              updateOnMouseMove={true}
+                              onClick={() => {
+                                setPlaybackSpeed(speed);
+                                if (videoRef.current) {
+                                  videoRef.current.playbackRate = speed;
+                                }
+                              }}
+                              style={{
+                                background: playbackSpeed === speed ? 'rgba(76, 175, 80, 0.3)' : 'rgba(0,0,0,0.8)',
+                                backdropFilter: 'blur(10px)'
+                              }}
+                            >
+                              <div style={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: playbackSpeed === speed ? 'bold' : 'normal',
+                                color: 'white'
+                              }}>
+                                {speed}x
+                              </div>
+                            </LiquidGlass>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Speed Button */}
+                      <LiquidGlass
+                        width={40}
+                        height={40}
+                        borderRadius="20px"
+                        className="content-center interactive theme-info shape-circle"
+                        cursor="pointer"
+                        effectIntensity={0.6}
+                        effectRadius={0.5}
+                        effectWidth={0.3}
+                        effectHeight={0.3}
+                        animateOnHover={true}
+                        hoverScale={1.1}
+                        updateOnMouseMove={true}
+                        aria-label={`Playback Speed: ${playbackSpeed}x`}
+                      >
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          color: 'white'
+                        }}>
+                          {playbackSpeed}x
+                        </div>
+                      </LiquidGlass>
+                    </div>
+
+                    {/* Download Video Button */}
+                    <LiquidGlass
+                      width={40}
+                      height={40}
+                      borderRadius="20px"
+                      className="content-center interactive theme-success shape-circle"
+                      cursor="pointer"
+                      effectIntensity={0.6}
+                      effectRadius={0.5}
+                      effectWidth={0.3}
+                      effectHeight={0.3}
+                      animateOnHover={true}
+                      hoverScale={1.1}
+                      updateOnMouseMove={true}
+                      aria-label="Download Video"
+                      onClick={() => {
+                        if (videoRef.current && videoRef.current.src) {
+                          const link = document.createElement('a');
+                          link.href = videoRef.current.src;
+                          link.download = `video_${Date.now()}.mp4`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      }}
+                      style={{ marginRight: '15px' }}
+                    >
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                          <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                      </div>
+                    </LiquidGlass>
+
+                    {/* Picture-in-Picture Button */}
+                    <LiquidGlass
+                      width={40}
+                      height={40}
+                      borderRadius="20px"
+                      className="content-center interactive theme-purple shape-circle"
+                      cursor="pointer"
+                      effectIntensity={0.6}
+                      effectRadius={0.5}
+                      effectWidth={0.3}
+                      effectHeight={0.3}
+                      animateOnHover={true}
+                      hoverScale={1.1}
+                      updateOnMouseMove={true}
+                      aria-label="Picture-in-Picture"
+                      onClick={async () => {
+                        if (videoRef.current) {
+                          try {
+                            if (document.pictureInPictureElement) {
+                              await document.exitPictureInPicture();
+                            } else if (videoRef.current.requestPictureInPicture) {
+                              await videoRef.current.requestPictureInPicture();
+                            }
+                          } catch (error) {
+                            console.error('Picture-in-Picture error:', error);
+                          }
+                        }
+                      }}
+                      style={{ marginRight: '15px' }}
+                    >
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                          <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+                        </svg>
+                      </div>
+                    </LiquidGlass>
+
+                    {/* Fullscreen Button */}
+                    <LiquidGlass
+                      width={40}
+                      height={40}
+                      borderRadius="20px"
+                      className="content-center interactive theme-warning shape-circle"
+                      cursor="pointer"
+                      effectIntensity={0.6}
+                      effectRadius={0.5}
+                      effectWidth={0.3}
+                      effectHeight={0.3}
+                      animateOnHover={true}
+                      hoverScale={1.1}
+                      updateOnMouseMove={true}
+                      aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                      onClick={() => {
+                        if (isFullscreen) {
+                          // Try all exit fullscreen methods
+                          if (document.exitFullscreen) {
+                            document.exitFullscreen().catch(console.error);
+                          } else if (document.webkitExitFullscreen) {
+                            document.webkitExitFullscreen();
+                          } else if (document.mozCancelFullScreen) {
+                            document.mozCancelFullScreen();
+                          } else if (document.msExitFullscreen) {
+                            document.msExitFullscreen();
+                          }
+                          // Force state update if needed
+                          setTimeout(() => {
+                            const stillFullscreen = !!(document.fullscreenElement ||
+                                                     document.webkitFullscreenElement ||
+                                                     document.mozFullScreenElement ||
+                                                     document.msFullscreenElement);
+                            if (!stillFullscreen) {
+                              console.log('🎬 FALLBACK: Exiting fullscreen, resetting styles');
+
+                              // Reset all styles
+                              const videoElement = document.querySelector('.native-video-container video');
+                              const videoWrapper = document.querySelector('.native-video-container .video-wrapper');
+                              const container = document.querySelector('.native-video-container');
+
+                              if (videoElement) {
+                                videoElement.style.removeProperty('width');
+                                videoElement.style.removeProperty('height');
+                                videoElement.style.removeProperty('object-fit');
+                                videoElement.style.removeProperty('position');
+                                videoElement.style.removeProperty('top');
+                                videoElement.style.removeProperty('left');
+                                videoElement.style.removeProperty('z-index');
+                                videoElement.style.removeProperty('max-width');
+                                videoElement.style.removeProperty('max-height');
+                                videoElement.style.removeProperty('min-width');
+                                videoElement.style.removeProperty('min-height');
+                              }
+
+                              if (videoWrapper) {
+                                videoWrapper.style.removeProperty('width');
+                                videoWrapper.style.removeProperty('height');
+                                videoWrapper.style.removeProperty('position');
+                              }
+
+                              if (container) {
+                                container.style.removeProperty('width');
+                                container.style.removeProperty('height');
+                                container.style.removeProperty('position');
+                                container.style.removeProperty('top');
+                                container.style.removeProperty('left');
+                                container.style.removeProperty('z-index');
+                                container.style.removeProperty('background');
+                              }
+
+                              setIsFullscreen(false);
+                              console.log('🎬 FALLBACK: Exit fullscreen styles reset');
+                            }
+                          }, 100);
+                        } else {
+                          console.log('🎬 FULLSCREEN BUTTON CLICKED - Requesting fullscreen');
+                          const container = document.querySelector('.native-video-container');
+                          if (container) {
+                            console.log('🎬 Container found, requesting fullscreen');
+
+                            // Request fullscreen
+                            let fullscreenPromise;
+                            if (container.requestFullscreen) {
+                              fullscreenPromise = container.requestFullscreen();
+                            } else if (container.webkitRequestFullscreen) {
+                              fullscreenPromise = container.webkitRequestFullscreen();
+                            } else if (container.mozRequestFullScreen) {
+                              fullscreenPromise = container.mozRequestFullScreen();
+                            } else if (container.msRequestFullscreen) {
+                              fullscreenPromise = container.msRequestFullscreen();
+                            }
+
+                            // Fallback: Force fullscreen styles after a short delay
+                            setTimeout(() => {
+                              console.log('🎬 FALLBACK: Checking if fullscreen succeeded');
+                              const isNowFullscreen = !!document.fullscreenElement ||
+                                                    !!document.webkitFullscreenElement ||
+                                                    !!document.mozFullScreenElement ||
+                                                    !!document.msFullscreenElement;
+
+                              if (isNowFullscreen) {
+                                console.log('🎬 FALLBACK: Fullscreen detected, applying styles manually');
+                                const videoElement = document.querySelector('.native-video-container video');
+                                const videoWrapper = document.querySelector('.native-video-container .video-wrapper');
+                                const container = document.querySelector('.native-video-container');
+
+                                if (videoElement && videoWrapper && container) {
+                                  // Apply container styles
+                                  container.style.setProperty('width', '100vw', 'important');
+                                  container.style.setProperty('height', '100vh', 'important');
+                                  container.style.setProperty('position', 'fixed', 'important');
+                                  container.style.setProperty('top', '0', 'important');
+                                  container.style.setProperty('left', '0', 'important');
+                                  container.style.setProperty('z-index', '998', 'important');
+                                  container.style.setProperty('background', 'black', 'important');
+
+                                  // Apply wrapper styles
+                                  videoWrapper.style.setProperty('width', '100vw', 'important');
+                                  videoWrapper.style.setProperty('height', '100vh', 'important');
+                                  videoWrapper.style.setProperty('position', 'relative', 'important');
+
+                                  // Apply video styles - use fixed positioning to ensure full coverage
+                                  videoElement.style.setProperty('width', '100vw', 'important');
+                                  videoElement.style.setProperty('height', '100vh', 'important');
+                                  videoElement.style.setProperty('object-fit', 'fill', 'important');
+                                  videoElement.style.setProperty('position', 'fixed', 'important');
+                                  videoElement.style.setProperty('top', '0', 'important');
+                                  videoElement.style.setProperty('left', '0', 'important');
+                                  videoElement.style.setProperty('z-index', '1', 'important');
+                                  videoElement.style.setProperty('max-width', 'none', 'important');
+                                  videoElement.style.setProperty('max-height', 'none', 'important');
+                                  videoElement.style.setProperty('min-width', '100vw', 'important');
+                                  videoElement.style.setProperty('min-height', '100vh', 'important');
+
+                                  // Set React state to show controls
+                                  setIsFullscreen(true);
+
+                                  console.log('🎬 FALLBACK: All styles applied successfully');
+                                } else {
+                                  console.log('🎬 FALLBACK: Could not find all required elements');
+                                }
+                              }
+                            }, 100);
+
+                          } else {
+                            console.log('🎬 ERROR: Container not found!');
+                          }
+                        }
+                      }}
+                    >
+                      <div style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {isFullscreen ? (
+                          // Exit fullscreen icon
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+                          </svg>
+                        ) : (
+                          // Fullscreen icon
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                          </svg>
+                        )}
+                      </div>
+                    </LiquidGlass>
+                  </div>
+                )}
 
                 {/* Loading overlay for narration refresh */}
                 {isRefreshingNarration && (
