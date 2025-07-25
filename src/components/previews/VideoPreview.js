@@ -659,6 +659,80 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, []);
 
+  // Function to handle fullscreen exit (used by both button and ESC key)
+  const handleFullscreenExit = useCallback(() => {
+    console.log('🎬 MANUAL EXIT: Starting fullscreen exit process');
+
+    // Try all exit fullscreen methods
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(console.error);
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+
+    // Force state update if needed
+    setTimeout(() => {
+      const stillFullscreen = !!(document.fullscreenElement ||
+                               document.webkitFullscreenElement ||
+                               document.mozFullScreenElement ||
+                               document.msFullscreenElement);
+      if (!stillFullscreen) {
+        console.log('🎬 MANUAL EXIT: Exiting fullscreen, resetting styles');
+
+        // Reset all styles
+        const videoElement = document.querySelector('.native-video-container video');
+        const videoWrapper = document.querySelector('.native-video-container .video-wrapper');
+        const container = document.querySelector('.native-video-container');
+
+        if (videoElement) {
+          videoElement.style.removeProperty('width');
+          videoElement.style.removeProperty('height');
+          videoElement.style.removeProperty('object-fit');
+          videoElement.style.removeProperty('position');
+          videoElement.style.removeProperty('top');
+          videoElement.style.removeProperty('left');
+          videoElement.style.removeProperty('z-index');
+          videoElement.style.removeProperty('max-width');
+          videoElement.style.removeProperty('max-height');
+          videoElement.style.removeProperty('min-width');
+          videoElement.style.removeProperty('min-height');
+          videoElement.classList.remove('fullscreen-video');
+        }
+
+        if (videoWrapper) {
+          videoWrapper.style.removeProperty('width');
+          videoWrapper.style.removeProperty('height');
+          videoWrapper.style.removeProperty('position');
+          videoWrapper.style.removeProperty('top');
+          videoWrapper.style.removeProperty('left');
+          videoWrapper.style.removeProperty('z-index');
+          videoWrapper.style.removeProperty('overflow');
+        }
+
+        if (container) {
+          container.style.removeProperty('width');
+          container.style.removeProperty('height');
+          container.style.removeProperty('position');
+          container.style.removeProperty('top');
+          container.style.removeProperty('left');
+          container.style.removeProperty('z-index');
+          container.style.removeProperty('background');
+          // Reset cursor to default
+          container.style.cursor = 'default';
+        }
+
+        setIsFullscreen(false);
+        setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+        setIsVideoHovered(false); // Reset hover state
+        console.log('🎬 MANUAL EXIT: Exit fullscreen styles reset');
+      }
+    }, 100);
+  }, []);
+
   // Handle fullscreen changes
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -710,6 +784,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       });
 
       setIsFullscreen(isVideoFullscreen);
+      console.log('🎬 Setting isFullscreen state to:', isVideoFullscreen);
+
+      // Reset control states when exiting fullscreen
+      if (!isVideoFullscreen) {
+        setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+        setIsVideoHovered(false); // Reset hover state
+        console.log('🎬 FULLSCREEN EXIT: Reset control states');
+      }
+
       // Only log in development mode
       if (process.env.NODE_ENV === 'development') {
         console.log('Fullscreen change:', {
@@ -726,6 +809,47 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         createFullscreenSubtitleContainer();
         // Add a class to the video element to help with styling
         videoElement.classList.add('fullscreen-video');
+
+        console.log('🎬 ENTERING FULLSCREEN - Setting controls visible immediately');
+        setControlsVisible(true);
+        setShowCustomControls(true); // Force custom controls to be rendered
+
+        // Force controls to be visible by directly setting CSS
+        setTimeout(() => {
+          console.log('🎬 FORCE VISIBLE - Directly setting control styles');
+          const container = document.querySelector('.native-video-container');
+          if (container) {
+            const controlElements = container.querySelectorAll('[style*="opacity"]');
+            controlElements.forEach((element) => {
+              if (element.className.includes('liquid-glass') && element.className.includes('interactive')) {
+                const rect = element.getBoundingClientRect();
+                const computedStyle = getComputedStyle(element);
+
+                console.log('🎬 INVESTIGATION - Element details:', {
+                  className: element.className,
+                  opacity: computedStyle.opacity,
+                  display: computedStyle.display,
+                  visibility: computedStyle.visibility,
+                  zIndex: computedStyle.zIndex,
+                  position: computedStyle.position,
+                  transform: computedStyle.transform,
+                  width: rect.width,
+                  height: rect.height,
+                  x: rect.x,
+                  y: rect.y,
+                  isOnScreen: rect.x >= 0 && rect.y >= 0 && rect.x < window.innerWidth && rect.y < window.innerHeight
+                });
+
+                element.style.setProperty('opacity', '1', 'important');
+                element.style.setProperty('pointer-events', 'auto', 'important');
+                element.style.setProperty('z-index', '999999', 'important');
+                element.style.setProperty('display', 'flex', 'important');
+                element.style.setProperty('visibility', 'visible', 'important');
+                element.style.setProperty('transform', 'none', 'important');
+              }
+            });
+          }
+        }, 100);
 
         // Force video and container to fill fullscreen with JavaScript
         setTimeout(() => {
@@ -745,7 +869,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             videoElement.style.setProperty('position', 'fixed', 'important');
             videoElement.style.setProperty('top', '0', 'important');
             videoElement.style.setProperty('left', '0', 'important');
-            videoElement.style.setProperty('z-index', '1000', 'important');
+            videoElement.style.setProperty('z-index', '1', 'important');
             videoElement.style.setProperty('max-width', 'none', 'important');
             videoElement.style.setProperty('max-height', 'none', 'important');
             videoElement.style.setProperty('min-width', '100vw', 'important');
@@ -790,53 +914,138 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               container.style.setProperty('padding', '0', 'important');
               container.style.setProperty('margin', '0', 'important');
             }
+
+            console.log('🎬 ENTERING FULLSCREEN - Auto-hide timer will be set up by useEffect');
           }
         }, 100);
       } else {
-        // If exiting fullscreen, remove the subtitle container and cleanup
-        const container = document.getElementById('fullscreen-subtitle-overlay');
-        if (container) {
-          document.body.removeChild(container);
+        // If exiting fullscreen, force our manual exit function to ensure proper cleanup
+        console.log('🎬 FULLSCREEN CHANGE: Detected exit, calling manual exit function');
+
+        // Remove the subtitle container
+        const subtitleContainer = document.getElementById('fullscreen-subtitle-overlay');
+        if (subtitleContainer) {
+          document.body.removeChild(subtitleContainer);
         }
         videoElement.classList.remove('fullscreen-video');
 
-        // Reset video styles when exiting fullscreen
-        if (videoElement) {
-          videoElement.style.width = '';
-          videoElement.style.height = '';
-          videoElement.style.objectFit = '';
-          videoElement.style.position = '';
-          videoElement.style.top = '';
-          videoElement.style.left = '';
-          videoElement.style.zIndex = '';
-          videoElement.style.maxWidth = '';
-          videoElement.style.maxHeight = '';
-          videoElement.style.minWidth = '';
-          videoElement.style.minHeight = '';
-          videoElement.style.transform = '';
+        // Call our manual exit function to ensure all styles are properly reset
+        // Use setTimeout to avoid potential conflicts with the browser's own cleanup
+        setTimeout(() => {
+          console.log('🎬 FULLSCREEN CHANGE: Executing manual style reset');
 
-          // Reset video wrapper styles
-          const videoWrapper = videoElement.closest('.video-wrapper');
+          // Reset all styles using the same logic as the button
+          const videoElement = document.querySelector('.native-video-container video');
+          const videoWrapper = document.querySelector('.native-video-container .video-wrapper');
+          const container = document.querySelector('.native-video-container');
+
+          if (videoElement) {
+            videoElement.style.removeProperty('width');
+            videoElement.style.removeProperty('height');
+            videoElement.style.removeProperty('object-fit');
+            videoElement.style.removeProperty('position');
+            videoElement.style.removeProperty('top');
+            videoElement.style.removeProperty('left');
+            videoElement.style.removeProperty('z-index');
+            videoElement.style.removeProperty('max-width');
+            videoElement.style.removeProperty('max-height');
+            videoElement.style.removeProperty('min-width');
+            videoElement.style.removeProperty('min-height');
+            videoElement.style.removeProperty('transform');
+            videoElement.classList.remove('fullscreen-video');
+          }
+
           if (videoWrapper) {
-            videoWrapper.style.width = '';
-            videoWrapper.style.height = '';
-            videoWrapper.style.position = '';
-            videoWrapper.style.top = '';
-            videoWrapper.style.left = '';
-            videoWrapper.style.zIndex = '';
-            videoWrapper.style.overflow = '';
+            videoWrapper.style.removeProperty('width');
+            videoWrapper.style.removeProperty('height');
+            videoWrapper.style.removeProperty('position');
+            videoWrapper.style.removeProperty('top');
+            videoWrapper.style.removeProperty('left');
+            videoWrapper.style.removeProperty('z-index');
+            videoWrapper.style.removeProperty('overflow');
           }
 
-          // Reset container styles
           if (container) {
-            container.style.width = '';
-            container.style.height = '';
-            container.style.position = '';
-            container.style.display = '';
-            container.style.padding = '';
-            container.style.margin = '';
-            container.style.zIndex = '';
+            container.style.removeProperty('width');
+            container.style.removeProperty('height');
+            container.style.removeProperty('position');
+            container.style.removeProperty('top');
+            container.style.removeProperty('left');
+            container.style.removeProperty('z-index');
+            container.style.removeProperty('background');
+            container.style.removeProperty('display');
+            container.style.removeProperty('padding');
+            container.style.removeProperty('margin');
+            // Reset cursor to default
+            container.style.cursor = 'default';
           }
+
+          console.log('🎬 FULLSCREEN CHANGE: Manual style reset complete');
+        }, 50);
+
+        // Additional cleanup: If we're not in fullscreen but still have fullscreen styles, force cleanup
+        if (!isDocFullscreen) {
+          console.log('🎬 FORCE CLEANUP: Document not in fullscreen, ensuring all styles are reset');
+          setTimeout(() => {
+            // Force reset all possible fullscreen styles
+            const allVideos = document.querySelectorAll('video');
+            allVideos.forEach(video => {
+              if (video.style.position === 'fixed' || video.style.width === '100vw') {
+                console.log('🎬 FORCE CLEANUP: Removing styles from video element');
+                video.style.removeProperty('width');
+                video.style.removeProperty('height');
+                video.style.removeProperty('object-fit');
+                video.style.removeProperty('position');
+                video.style.removeProperty('top');
+                video.style.removeProperty('left');
+                video.style.removeProperty('z-index');
+                video.style.removeProperty('max-width');
+                video.style.removeProperty('max-height');
+                video.style.removeProperty('min-width');
+                video.style.removeProperty('min-height');
+                video.style.removeProperty('transform');
+                video.classList.remove('fullscreen-video');
+              }
+            });
+
+            // Force reset all video wrappers
+            const allWrappers = document.querySelectorAll('.video-wrapper');
+            allWrappers.forEach(wrapper => {
+              if (wrapper.style.position === 'fixed' || wrapper.style.width === '100vw') {
+                console.log('🎬 FORCE CLEANUP: Removing styles from video wrapper');
+                wrapper.style.removeProperty('width');
+                wrapper.style.removeProperty('height');
+                wrapper.style.removeProperty('position');
+                wrapper.style.removeProperty('top');
+                wrapper.style.removeProperty('left');
+                wrapper.style.removeProperty('z-index');
+                wrapper.style.removeProperty('overflow');
+              }
+            });
+
+            // Force reset all video containers
+            const allContainers = document.querySelectorAll('.native-video-container');
+            allContainers.forEach(container => {
+              if (container.style.position === 'fixed' || container.style.width === '100vw') {
+                console.log('🎬 FORCE CLEANUP: Removing styles from video container');
+                container.style.removeProperty('width');
+                container.style.removeProperty('height');
+                container.style.removeProperty('position');
+                container.style.removeProperty('top');
+                container.style.removeProperty('left');
+                container.style.removeProperty('z-index');
+                container.style.removeProperty('display');
+                container.style.removeProperty('padding');
+                container.style.removeProperty('margin');
+                container.style.cursor = 'default';
+              }
+            });
+
+            // Ensure React state is also updated
+            setIsFullscreen(false);
+            setControlsVisible(true); // Reset controls to visible when exiting fullscreen
+            setIsVideoHovered(false); // Reset hover state
+          }, 50);
         }
       }
     };
@@ -847,14 +1056,45 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
+    // Add window-level listener to catch any missed fullscreen changes
+    const handleWindowResize = () => {
+      // Check if we think we're in fullscreen but actually aren't
+      const isActuallyFullscreen = !!(document.fullscreenElement ||
+                                     document.webkitFullscreenElement ||
+                                     document.mozFullScreenElement ||
+                                     document.msFullscreenElement);
+
+      if (isFullscreen && !isActuallyFullscreen) {
+        console.log('🎬 WINDOW RESIZE: Detected fullscreen state mismatch, forcing cleanup');
+        handleFullscreenChange();
+      }
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+
+    // Add ESC key listener - let browser handle exit, but ensure our cleanup runs
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        console.log('🎬 ESC KEY: Detected ESC press while in fullscreen, will let browser exit and cleanup will follow');
+        // Don't prevent default - let browser handle the exit
+        // Our handleFullscreenChange will be called and will do the proper cleanup
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+
     // Clean up
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      window.removeEventListener('resize', handleWindowResize);
+      document.removeEventListener('keydown', handleEscKey);
     };
-  }, [subtitleSettings.boxWidth]);
+  }, [subtitleSettings.boxWidth, handleFullscreenExit, isFullscreen]);
+
+  // Simplified: Controls are always visible in fullscreen via CSS logic above
 
   // Custom video controls event handlers
   useEffect(() => {
@@ -1161,25 +1401,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         case 'f':
           // Toggle fullscreen
           if (isFullscreen) {
-            if (document.exitFullscreen) {
-              document.exitFullscreen().catch(console.error);
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            } else if (document.mozCancelFullScreen) {
-              document.mozCancelFullScreen();
-            } else if (document.msExitFullscreen) {
-              document.msExitFullscreen();
-            }
-            // Force state update if needed
-            setTimeout(() => {
-              const stillFullscreen = !!(document.fullscreenElement ||
-                                       document.webkitFullscreenElement ||
-                                       document.mozFullScreenElement ||
-                                       document.msFullscreenElement);
-              if (!stillFullscreen) {
-                setIsFullscreen(false);
-              }
-            }, 100);
+            handleFullscreenExit();
           } else {
             const container = document.querySelector('.native-video-container');
             if (container) {
@@ -1209,76 +1431,35 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
   }, [isLoaded]); // Re-run when video load state changes
 
-  // Auto-hide controls timer
-  useEffect(() => {
-    const resetHideTimer = () => {
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
+  // Simplified: No auto-hide logic - controls managed purely by CSS visibility conditions
 
-      setControlsVisible(true);
-
-      // Auto-hide logic
-      if (isPlaying) {
-        if (isFullscreen) {
-          // In fullscreen mode, always auto-hide after 1 second
-          hideControlsTimeoutRef.current = setTimeout(() => {
-            setControlsVisible(false);
-            const videoContainer = document.querySelector('.native-video-container');
-            if (videoContainer) {
-              videoContainer.style.cursor = 'none';
-            }
-          }, 1000);
-        } else if (!isVideoHovered) {
-          // In normal mode, auto-hide only when not hovering
-          hideControlsTimeoutRef.current = setTimeout(() => {
-            setControlsVisible(false);
-          }, 3000);
-        }
-      }
-    };
-
-    // Reset timer when play state or hover state changes
-    resetHideTimer();
-
-    return () => {
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
-    };
-  }, [isPlaying, isVideoHovered, isFullscreen]);
-
-  // Show controls on mouse movement
+  // Mouse movement with auto-hide in fullscreen
   useEffect(() => {
     const handleMouseMove = () => {
       setControlsVisible(true);
 
-      // Show cursor when controls are visible
+      // Always restore cursor when showing controls
       const videoContainer = document.querySelector('.native-video-container');
       if (videoContainer && isFullscreen) {
         videoContainer.style.cursor = 'default';
       }
 
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
-
-      // Auto-hide logic after mouse movement
-      if (isPlaying) {
-        if (isFullscreen) {
-          // In fullscreen mode, always auto-hide after 1 second
-          hideControlsTimeoutRef.current = setTimeout(() => {
-            setControlsVisible(false);
-            if (videoContainer) {
-              videoContainer.style.cursor = 'none';
-            }
-          }, 1000);
-        } else if (!isVideoHovered) {
-          // In normal mode, auto-hide only when not hovering
-          hideControlsTimeoutRef.current = setTimeout(() => {
-            setControlsVisible(false);
-          }, 3000);
+      // Auto-hide only in fullscreen mode
+      if (isFullscreen) {
+        // Clear existing timer
+        if (hideControlsTimeoutRef.current) {
+          clearTimeout(hideControlsTimeoutRef.current);
         }
+
+        // Set new timer to hide controls after 1 second
+        hideControlsTimeoutRef.current = setTimeout(() => {
+          setControlsVisible(false);
+          // Hide cursor too
+          const videoContainer = document.querySelector('.native-video-container');
+          if (videoContainer) {
+            videoContainer.style.cursor = 'none';
+          }
+        }, 1000);
       }
     };
 
@@ -1287,9 +1468,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       videoContainer.addEventListener('mousemove', handleMouseMove);
       return () => {
         videoContainer.removeEventListener('mousemove', handleMouseMove);
+        if (hideControlsTimeoutRef.current) {
+          clearTimeout(hideControlsTimeoutRef.current);
+        }
       };
     }
-  }, [isPlaying, isVideoHovered, isFullscreen]);
+  }, [isFullscreen]);
 
   // Seek to time when currentTime changes externally (from LyricsDisplay)
   useEffect(() => {
@@ -1695,9 +1879,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   hoverScale={1.05}
                   updateOnMouseMove={false}
                   style={{
-                    opacity: isVideoHovered ? 1 : 0,
+                    opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                     transition: 'opacity 0.3s ease-in-out',
-                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                    pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   aria-label={t('preview.refreshNarration', 'Refresh Narration')}
                   onClick={async () => {
@@ -2158,9 +2342,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   updateOnMouseMove={true}
                   aria-label="Gemini FPS Info"
                   style={{
-                    opacity: isVideoHovered ? 1 : 0,
+                    opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                     transition: 'opacity 0.3s ease-in-out',
-                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                    pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   onClick={() => {
                     window.open('https://ai.google.dev/gemini-api/docs/video-understanding', '_blank');
@@ -2207,9 +2391,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   updateOnMouseMove={false}
                   aria-label={t('preview.downloadAudio', 'Download Audio')}
                   style={{
-                    opacity: isVideoHovered ? 1 : 0,
+                    opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                     transition: 'opacity 0.3s ease-in-out',
-                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                    pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   onClick={async () => {
                       if (isAudioDownloading) return; // Prevent multiple clicks
@@ -2420,9 +2604,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       }}
                       style={{
                         marginRight: '15px',
-                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                     >
                       <div style={{
@@ -2463,9 +2647,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         alignSelf: 'center',
                         overflow: 'visible',
                         margin: '0', // Reset any default margins
-                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                       onMouseDown={handleTimelineMouseDown}
                       onTouchStart={handleTimelineTouchStart}
@@ -2522,9 +2706,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       alignItems: 'center',
                       justifyContent: 'center',
                       height: '100%',
-                      opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                      opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                       transition: 'opacity 0.3s ease-in-out',
-                      pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                      pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                     }}>
                       {Math.floor((isDragging ? dragTime : currentTime) / 60)}:{String(Math.floor((isDragging ? dragTime : currentTime) % 60)).padStart(2, '0')} / {Math.floor(videoDuration / 60)}:{String(Math.floor(videoDuration % 60)).padStart(2, '0')}
                     </div>
@@ -2558,8 +2742,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
                           transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
-                          opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
-                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                          opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+                          pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >
                         <div style={{
@@ -2812,9 +2996,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         hoverScale={1.02}
                         updateOnMouseMove={false}
                         style={{
-                          opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                          opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                           transition: 'opacity 0.3s ease-in-out',
-                          pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                          pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >
                         <div style={{
@@ -2937,66 +3121,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
                       onClick={() => {
                         if (isFullscreen) {
-                          // Try all exit fullscreen methods
-                          if (document.exitFullscreen) {
-                            document.exitFullscreen().catch(console.error);
-                          } else if (document.webkitExitFullscreen) {
-                            document.webkitExitFullscreen();
-                          } else if (document.mozCancelFullScreen) {
-                            document.mozCancelFullScreen();
-                          } else if (document.msExitFullscreen) {
-                            document.msExitFullscreen();
-                          }
-                          // Force state update if needed
-                          setTimeout(() => {
-                            const stillFullscreen = !!(document.fullscreenElement ||
-                                                     document.webkitFullscreenElement ||
-                                                     document.mozFullScreenElement ||
-                                                     document.msFullscreenElement);
-                            if (!stillFullscreen) {
-                              console.log('🎬 FALLBACK: Exiting fullscreen, resetting styles');
-
-                              // Reset all styles
-                              const videoElement = document.querySelector('.native-video-container video');
-                              const videoWrapper = document.querySelector('.native-video-container .video-wrapper');
-                              const container = document.querySelector('.native-video-container');
-
-                              if (videoElement) {
-                                videoElement.style.removeProperty('width');
-                                videoElement.style.removeProperty('height');
-                                videoElement.style.removeProperty('object-fit');
-                                videoElement.style.removeProperty('position');
-                                videoElement.style.removeProperty('top');
-                                videoElement.style.removeProperty('left');
-                                videoElement.style.removeProperty('z-index');
-                                videoElement.style.removeProperty('max-width');
-                                videoElement.style.removeProperty('max-height');
-                                videoElement.style.removeProperty('min-width');
-                                videoElement.style.removeProperty('min-height');
-                              }
-
-                              if (videoWrapper) {
-                                videoWrapper.style.removeProperty('width');
-                                videoWrapper.style.removeProperty('height');
-                                videoWrapper.style.removeProperty('position');
-                              }
-
-                              if (container) {
-                                container.style.removeProperty('width');
-                                container.style.removeProperty('height');
-                                container.style.removeProperty('position');
-                                container.style.removeProperty('top');
-                                container.style.removeProperty('left');
-                                container.style.removeProperty('z-index');
-                                container.style.removeProperty('background');
-                                // Reset cursor to default
-                                container.style.cursor = 'default';
-                              }
-
-                              setIsFullscreen(false);
-                              console.log('🎬 FALLBACK: Exit fullscreen styles reset');
-                            }
-                          }, 100);
+                          handleFullscreenExit();
                         } else {
                           console.log('🎬 FULLSCREEN BUTTON CLICKED - Requesting fullscreen');
                           const container = document.querySelector('.native-video-container');
@@ -3087,9 +3212,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         }
                       }}
                       style={{
-                        opacity: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 1 : 0,
+                        opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                         transition: 'opacity 0.3s ease-in-out',
-                        pointerEvents: ((!isFullscreen && isVideoHovered) || (isFullscreen && controlsVisible) || (isPlaying && controlsVisible)) ? 'auto' : 'none'
+                        pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                     >
                       <div style={{
