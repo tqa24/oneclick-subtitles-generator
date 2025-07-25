@@ -428,8 +428,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
 
     const handleTimeUpdate = () => {
-      // Only update currentTime if we're not in a seek operation
-      if (!seekLockRef.current) {
+      // Only update currentTime if we're not in a seek operation or dragging
+      if (!seekLockRef.current && !isDragging) {
         // Throttle time updates to reduce unnecessary re-renders
         // Only update if more than 100ms has passed since the last update
         const now = performance.now();
@@ -574,7 +574,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       videoElement.removeEventListener('seeking', handleSeeking);
       videoElement.removeEventListener('seeked', handleSeeked);
     };
-  }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray, translatedSubtitles, subtitleSettings]);
+  }, [videoUrl, setCurrentTime, setDuration, t, onSeek, subtitlesArray, translatedSubtitles, subtitleSettings, isDragging]);
 
   // Native track subtitles disabled - using only custom subtitle display
 
@@ -1115,7 +1115,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(videoElement.currentTime); // Use existing currentTime prop
+      // Only update currentTime if we're not dragging
+      if (!isDragging) {
+        setCurrentTime(videoElement.currentTime); // Use existing currentTime prop
+      }
 
       // Update buffered progress
       if (videoElement.buffered.length > 0 && videoDuration > 0) {
@@ -1175,7 +1178,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       videoElement.removeEventListener('waiting', handleWaiting);
       videoElement.removeEventListener('canplaythrough', handleCanPlayThrough);
     };
-  }, [videoUrl]);
+  }, [videoUrl, isDragging]);
 
 
 
@@ -1188,17 +1191,16 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const clickX = e.clientX - rect.left;
     const newTime = Math.max(0, Math.min((clickX / rect.width) * videoDuration, videoDuration));
 
-    // Immediately set the video time for instant feedback
-    videoRef.current.currentTime = newTime;
+    // Set seek lock to prevent timeupdate interference
+    seekLockRef.current = true;
+
+    // Set initial drag state
+    setIsDragging(true);
     setDragTime(newTime);
     dragTimeRef.current = newTime;
 
-    let hasMoved = false;
-
     // Add global mouse event listeners
     const handleMouseMove = (e) => {
-      hasMoved = true;
-      setIsDragging(true);
       // Use the stored timeline container reference instead of searching for it
       const rect = timelineContainer.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
@@ -1208,17 +1210,27 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
 
     const handleMouseUp = () => {
-      if (hasMoved && videoRef.current) {
+      // Always apply the final time, whether moved or just clicked
+      if (videoRef.current) {
         videoRef.current.currentTime = dragTimeRef.current;
+        setCurrentTime(dragTimeRef.current);
       }
+
+      // Reset drag state
       setIsDragging(false);
+
+      // Release seek lock after a short delay to allow video to settle
+      setTimeout(() => {
+        seekLockRef.current = false;
+      }, 100);
+
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [videoDuration]);
+  }, [videoDuration, setCurrentTime]);
 
   // Touch support for timeline
   const handleTimelineTouchStart = useCallback((e) => {
@@ -1232,18 +1244,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const touchX = touch.clientX - rect.left;
     const newTime = Math.max(0, Math.min((touchX / rect.width) * videoDuration, videoDuration));
 
-    // Immediately set the video time for instant feedback
-    videoRef.current.currentTime = newTime;
+    // Set seek lock to prevent timeupdate interference
+    seekLockRef.current = true;
+
+    // Set initial drag state
+    setIsDragging(true);
     setDragTime(newTime);
     dragTimeRef.current = newTime;
-
-    let hasMoved = false;
 
     // Add global touch event listeners
     const handleTouchMove = (e) => {
       e.preventDefault();
-      hasMoved = true;
-      setIsDragging(true);
       // Use the stored timeline container reference instead of searching for it
       if (e.touches[0]) {
         const rect = timelineContainer.getBoundingClientRect();
@@ -1255,17 +1266,27 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     };
 
     const handleTouchEnd = () => {
-      if (hasMoved && videoRef.current) {
+      // Always apply the final time
+      if (videoRef.current) {
         videoRef.current.currentTime = dragTimeRef.current;
+        setCurrentTime(dragTimeRef.current);
       }
+
+      // Reset drag state
       setIsDragging(false);
+
+      // Release seek lock after a short delay to allow video to settle
+      setTimeout(() => {
+        seekLockRef.current = false;
+      }, 100);
+
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
     };
 
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd);
-  }, [videoDuration]);
+  }, [videoDuration, setCurrentTime]);
 
   // Handle volume slider dragging
   useEffect(() => {
@@ -2655,8 +2676,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         height: '8px',
                         minHeight: '8px',
                         maxHeight: '8px',
-                        background: 'rgba(255, 255, 255, 0.1)',
+                        background: 'rgba(255, 255, 255, 0.16)',
                         borderRadius: '4px',
+                        border: '1px solid rgba(0, 0, 0, 0.35)',
                         position: 'relative',
                         cursor: 'pointer',
                         marginRight: '15px',
@@ -2678,7 +2700,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         top: 0,
                         height: '100%',
                         width: `${bufferedProgress}%`,
-                        background: 'rgba(255,255,255,0.4)',
+                        background: 'rgba(255, 255, 255, 0.19)',
                         borderRadius: '4px',
                         transition: 'width 0.3s ease'
                       }} />
@@ -2690,7 +2712,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         top: 0,
                         height: '100%',
                         width: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
-                        background: '#4CAF50',
+                        background: '#ffffffff',
                         borderRadius: '4px',
                         transition: isDragging ? 'none' : 'width 0.1s ease'
                       }} />
@@ -2701,10 +2723,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         left: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
                         top: '50%',
                         transform: 'translate(-50%, -50%)',
-                        width: isDragging ? '24px' : '18px',
+                        width: isDragging ? '38px' : '18px',
                         height: isDragging ? '24px' : '18px',
-                        background: 'white',
-                        borderRadius: '50%',
+                        background: isDragging ? '#6d84c7ff' : 'white',
+                        borderRadius: '12px',
                         boxShadow: isDragging ? '0 4px 8px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.3)',
                         transition: isDragging ? 'none' : 'left 0.1s ease, width 0.2s ease, height 0.2s ease',
                         cursor: 'pointer'
