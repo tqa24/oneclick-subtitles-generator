@@ -38,6 +38,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [isRenderingVideo, setIsRenderingVideo] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false); // Track narration refresh state
+  const [isVideoHovered, setIsVideoHovered] = useState(false); // Track video hover state for showing controls
   // Native track subtitles disabled - using only custom subtitle display
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') === 'true';
@@ -996,11 +997,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
         {/* Always show video player if we have a URL, regardless of download state */}
         {videoUrl ? (
-          <div className="native-video-container">
+          <div
+            className="native-video-container"
+            onMouseEnter={() => setIsVideoHovered(true)}
+            onMouseLeave={() => setIsVideoHovered(false)}
+          >
               {/* Video quality toggle - only show when optimized video is available */}
 
 
-              {/* Refresh Narration button - only show when video is loaded */}
+              {/* Refresh Narration button - only show when video is loaded and hovered */}
               {isLoaded && (
                 <LiquidGlass
                   width={180}
@@ -1019,6 +1024,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   animateOnHover={true}
                   hoverScale={1.05}
                   updateOnMouseMove={false}
+                  style={{
+                    opacity: isVideoHovered ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out',
+                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                  }}
                   aria-label={t('preview.refreshNarration', 'Refresh Narration')}
                   onClick={async () => {
                       try {
@@ -1457,7 +1467,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 </LiquidGlass>
               )}
 
-              {/* Gemini FPS Info button - only show when video is loaded */}
+              {/* Gemini FPS Info button - only show when video is loaded and hovered */}
               {isLoaded && (
                 <LiquidGlass
                   width={50}
@@ -1477,6 +1487,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   hoverScale={1.1}
                   updateOnMouseMove={true}
                   aria-label="Gemini FPS Info"
+                  style={{
+                    opacity: isVideoHovered ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out',
+                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                  }}
                   onClick={() => {
                     window.open('https://ai.google.dev/gemini-api/docs/video-understanding', '_blank');
                   }}
@@ -1499,7 +1514,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 </LiquidGlass>
               )}
 
-              {/* Download audio button - only show when video is loaded */}
+
+
+              {/* Download audio button - only show when video is loaded and hovered */}
               {isLoaded && (
                 <LiquidGlass
                   width={160}
@@ -1519,6 +1536,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   hoverScale={1.05}
                   updateOnMouseMove={false}
                   aria-label={t('preview.downloadAudio', 'Download Audio')}
+                  style={{
+                    opacity: isVideoHovered ? 1 : 0,
+                    transition: 'opacity 0.3s ease-in-out',
+                    pointerEvents: isVideoHovered ? 'auto' : 'none'
+                  }}
                   onClick={async () => {
                       if (isAudioDownloading) return; // Prevent multiple clicks
 
