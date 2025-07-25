@@ -700,6 +700,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           videoElement.style.removeProperty('max-height');
           videoElement.style.removeProperty('min-width');
           videoElement.style.removeProperty('min-height');
+          videoElement.style.removeProperty('transform');
+          videoElement.style.removeProperty('border-radius');
           videoElement.classList.remove('fullscreen-video');
         }
 
@@ -875,6 +877,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             videoElement.style.setProperty('min-width', '100vw', 'important');
             videoElement.style.setProperty('min-height', '100vh', 'important');
             videoElement.style.setProperty('transform', 'none', 'important');
+            videoElement.style.setProperty('border-radius', '0', 'important');
 
             // Also remove any conflicting attributes
             videoElement.removeAttribute('width');
@@ -952,6 +955,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             videoElement.style.removeProperty('min-width');
             videoElement.style.removeProperty('min-height');
             videoElement.style.removeProperty('transform');
+            videoElement.style.removeProperty('border-radius');
             videoElement.classList.remove('fullscreen-video');
           }
 
@@ -1004,6 +1008,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 video.style.removeProperty('min-width');
                 video.style.removeProperty('min-height');
                 video.style.removeProperty('transform');
+                video.style.removeProperty('border-radius');
                 video.classList.remove('fullscreen-video');
               }
             });
@@ -2489,7 +2494,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       }
                     }
                   }}
-                  style={{ cursor: 'pointer', touchAction: 'manipulation' }}
+                  style={{
+                    cursor: 'pointer',
+                    touchAction: 'manipulation',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    display: 'block'
+                  }}
                   playsInline
                   controlsList="nodownload nofullscreen noremoteplayback"
                   disablePictureInPicture={false}
@@ -2576,10 +2588,10 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       left: '0',
                       right: '0',
                       height: '70px',
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
+                      background: 'transparent',
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '0 15px',
+                      padding: '0 12px',
                       zIndex: 10
                     }}
                   >

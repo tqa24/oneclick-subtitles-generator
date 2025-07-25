@@ -13,7 +13,6 @@
  * -----------------------------------------------------------------------------
  */
 video.video-player {
-  border-radius: 16px; /* Rounded corners for MD3 */
   box-shadow: var(--md-elevation-level1);
   color-scheme: auto; /* Respect the system/browser preference by default */
   background-color: #000; /* Default background, overridden by themes */
