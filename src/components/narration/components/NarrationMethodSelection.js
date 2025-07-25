@@ -72,7 +72,7 @@ const NarrationMethodSelection = ({
                 {t('narration.chatterboxMethod', 'Chatterbox')}
                 {!isChatterboxAvailable && (
                   <span className="method-description">
-                    {t('narration.chatterboxUnavailable', '(Unavailable - Check Chatterbox API)')}
+                    {t('narration.chatterboxUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
                   </span>
                 )}
               </label>

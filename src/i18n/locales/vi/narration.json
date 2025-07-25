@@ -185,8 +185,8 @@
   "seconds": "giây",
 
   "chatterboxMethod": "Chatterbox",
-  "chatterboxUnavailable": "(Không khả dụng - Kiểm tra Chatterbox API)",
-  "chatterboxUnavailableMessage": "Chatterbox API không khả dụng. Vui lòng khởi động dịch vụ Chatterbox.",
+  "chatterboxUnavailable": "(Không khả dụng - Chạy với npm run dev:cuda)",
+  "chatterboxUnavailableMessage": "Dịch vụ Chatterbox chưa được khởi động (sử dụng npm run dev:cuda)",
   "exaggeration": "Cường độ cảm xúc",
   "exaggerationTooltip": "Điều khiển cường độ cảm xúc của giọng nói (0.25-2.0, trung tính=0.5)",
   "exaggerationDesc": "Giá trị cao hơn tăng cường biểu cảm cảm xúc",

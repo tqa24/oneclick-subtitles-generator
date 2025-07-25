@@ -164,8 +164,8 @@
   "subtitleGroupingExplanation": "이 표는 원본 자막이 더 나은 나레이션을 위해 어떻게 더 완전한 문장으로 그룹화되었는지 보여줍니다. 각 행은 원본 자막을 나타내며, 그룹화된 열은 이들이 어떻게 결합되었는지 보여줍니다.",
 
   "chatterboxMethod": "Chatterbox",
-  "chatterboxUnavailable": "(사용 불가 - Chatterbox API 확인)",
-  "chatterboxUnavailableMessage": "Chatterbox API를 사용할 수 없습니다. Chatterbox 서비스를 시작해주세요.",
+  "chatterboxUnavailable": "(사용 불가 - npm run dev:cuda로 실행)",
+  "chatterboxUnavailableMessage": "Chatterbox 서비스가 시작되지 않았습니다 (npm run dev:cuda 사용)",
   "exaggeration": "감정 강도",
   "exaggerationTooltip": "음성의 감정 강도를 제어합니다 (0.25-2.0, 중립=0.5)",
   "exaggerationDesc": "높은 값은 감정 표현을 증가시킵니다",

@@ -1,8 +1,51 @@
 import { useEffect } from 'react';
 import { checkNarrationStatusWithRetry } from '../../../services/narrationService';
 import { checkGeminiAvailability } from '../../../services/gemini/geminiNarrationService';
-// Chatterbox imports removed - service is always available in UI, warming up handled during generation
-// import { checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
+
+/**
+ * Check Chatterbox availability by tracking which command was used to start the server
+ * @returns {Promise<{available: boolean, message?: string}>}
+ */
+const checkChatterboxAvailability = async () => {
+  try {
+    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
+
+    const response = await fetch(`${API_BASE_URL}/api/startup-mode`, {
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        available: false,
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+      };
+    }
+
+    const startupData = await response.json();
+
+    // Chatterbox is available if the server was started with npm run dev:cuda
+    if (startupData.isDevCuda) {
+      return {
+        available: true
+      };
+    } else {
+      return {
+        available: false,
+        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+      };
+    }
+
+  } catch (error) {
+    return {
+      available: false,
+      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+    };
+  }
+};
 
 /**
  * Custom hook for checking narration service availability
@@ -29,24 +72,21 @@ const useAvailabilityCheck = ({
       try {
         // First, do immediate checks for services that can be determined quickly
 
-        // Chatterbox is always available in UI (like F5-TTS) - will warm up on first use
-        setIsChatterboxAvailable(true);
-
         // Check F5-TTS availability in the background
         const f5Status = await checkNarrationStatusWithRetry(20, 10000, true);
 
         // Set F5-TTS availability based on the actual status
         setIsAvailable(f5Status.available);
 
+        // Check Chatterbox availability - same logic as F5-TTS
+        const chatterboxStatus = await checkChatterboxAvailability();
+        setIsChatterboxAvailable(chatterboxStatus.available);
+
         // Check Gemini availability
         const geminiStatus = await checkGeminiAvailability();
 
         // Set Gemini availability
         setIsGeminiAvailable(geminiStatus.available);
-
-        // Chatterbox status is always considered available for UI purposes
-        // The actual service check will happen during generation with proper warming up message
-        const chatterboxStatus = { available: true, message: '' };
 
         // Set error message based on current method
         if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
@@ -71,9 +111,9 @@ const useAvailabilityCheck = ({
           setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
         }
         else if (narrationMethod === 'chatterbox') {
-          // Keep Chatterbox available in UI - errors will be handled during generation
-          setIsChatterboxAvailable(true);
-          setError('');
+          // Set Chatterbox as unavailable when not running with dev:cuda
+          setIsChatterboxAvailable(false);
+          setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
         }
         else {
           setIsGeminiAvailable(false);

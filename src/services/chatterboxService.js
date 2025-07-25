@@ -73,7 +73,7 @@ const checkServerChatterboxStatus = async () => {
  * Single attempt to check Chatterbox API availability
  * @returns {Promise<{available: boolean, message?: string}>}
  */
-const checkChatterboxAvailabilitySingle = async () => {
+export const checkChatterboxAvailabilitySingle = async () => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout

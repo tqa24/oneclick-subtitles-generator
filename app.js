@@ -148,6 +148,16 @@ app.get('/api/health', (req, res) => {
   res.json(healthStatus);
 });
 
+// Startup mode endpoint - tells frontend which command was used to start the server
+app.get('/api/startup-mode', (req, res) => {
+  const startupMode = {
+    isDevCuda: process.env.START_PYTHON_SERVER === 'true',
+    command: process.env.START_PYTHON_SERVER === 'true' ? 'npm run dev:cuda' : 'npm run dev'
+  };
+
+  res.json(startupMode);
+});
+
 // Endpoint to save localStorage data for server-side use
 app.post('/api/save-local-storage', express.json(), (req, res) => {
   try {

@@ -167,8 +167,8 @@
   "speedModifyError": "Error changing narration speed: {{error}}",
 
   "chatterboxMethod": "Chatterbox",
-  "chatterboxUnavailable": "(Unavailable - Check Chatterbox API)",
-  "chatterboxUnavailableMessage": "Chatterbox API is not available. Please start the Chatterbox service.",
+  "chatterboxUnavailable": "(Unavailable - Run with npm run dev:cuda)",
+  "chatterboxUnavailableMessage": "Chatterbox service not started (use npm run dev:cuda)",
   "exaggeration": "Emotional Intensity",
   "exaggerationTooltip": "Controls emotional intensity of the voice (0.25-2.0, neutral=0.5)",
   "exaggerationDesc": "Higher values increase emotional expression",
