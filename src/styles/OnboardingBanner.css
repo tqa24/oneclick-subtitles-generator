@@ -130,8 +130,8 @@
 
 /* Dismissing animations */
 .onboarding-overlay.dismissing {
-  animation: fadeOut 1s ease-in-out forwards;
-  animation-delay: 0.8s; /* Start fading after SVG elements have started flying out */
+  animation: fadeOut 0.6s ease-in-out forwards;
+  animation-delay: 0.5s; /* Start fading earlier and finish before SVG elements complete */
 }
 
 .onboarding-overlay.dismissing .onboarding-message {
@@ -149,8 +149,8 @@
 }
 
 .onboarding-overlay.dismissing .svg-container svg path {
-  /* Use cubic-bezier for smoother animation */
-  animation: flyOutAndZoom var(--duration, 1.2s) var(--easing, cubic-bezier(0.25, 0.1, 0.25, 1)) forwards !important;
+  /* Use custom easing for smooth start with acceleration */
+  animation: flyOutAndZoom var(--duration, 1.4s) var(--easing, cubic-bezier(0.05, 0.7, 0.3, 1)) forwards !important;
   animation-delay: var(--fly-delay, 0ms) !important; /* Variable delay for staggered effect */
   z-index: 100001 !important; /* Higher than the overlay to ensure visibility */
   position: relative !important; /* Needed for z-index to work */
@@ -172,9 +172,25 @@
     transform: scale(1) translate(var(--dismissal-start-x, 0px), var(--dismissal-start-y, 0px)) rotate(0);
     opacity: 1;
   }
-  15% {
-    transform: scale(1.3) translate(var(--dismissal-start-x, 0px), var(--dismissal-start-y, 0px)) rotate(0);
+  5% {
+    transform: scale(1.02) translate(var(--dismissal-start-x, 0px), var(--dismissal-start-y, 0px)) rotate(0);
     opacity: 1;
+  }
+  15% {
+    transform: scale(1.08) translate(calc(var(--dismissal-start-x, 0px) + var(--fly-x, 100px) * 0.05), calc(var(--dismissal-start-y, 0px) + var(--fly-y, 100px) * 0.05)) rotate(calc(var(--fly-rotate, 180deg) * 0.1));
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.25) translate(calc(var(--dismissal-start-x, 0px) + var(--fly-x, 100px) * 0.15), calc(var(--dismissal-start-y, 0px) + var(--fly-y, 100px) * 0.15)) rotate(calc(var(--fly-rotate, 180deg) * 0.3));
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.8) translate(calc(var(--dismissal-start-x, 0px) + var(--fly-x, 100px) * 0.4), calc(var(--dismissal-start-y, 0px) + var(--fly-y, 100px) * 0.4)) rotate(calc(var(--fly-rotate, 180deg) * 0.6));
+    opacity: 0.7;
+  }
+  75% {
+    transform: scale(3.2) translate(calc(var(--dismissal-start-x, 0px) + var(--fly-x, 100px) * 0.75), calc(var(--dismissal-start-y, 0px) + var(--fly-y, 100px) * 0.75)) rotate(calc(var(--fly-rotate, 180deg) * 0.85));
+    opacity: 0.3;
   }
   100% {
     transform: scale(5) translate(calc(var(--dismissal-start-x, 0px) + var(--fly-x, 100px)), calc(var(--dismissal-start-y, 0px) + var(--fly-y, 100px))) rotate(var(--fly-rotate, 180deg));
