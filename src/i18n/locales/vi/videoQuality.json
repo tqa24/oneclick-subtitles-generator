@@ -26,5 +26,7 @@
   "selectVersionDesc": "Chọn từ các phiên bản video có sẵn",
   "originalVersion": "Chất lượng gốc",
   "optimizedVersion": "Đã tối ưu ({{quality}})",
-  "redownloading": "Đang tải lại..."
+  "redownloading": "Đang tải lại...",
+  "cookieSupport": "Đã thêm Cookie trình duyệt",
+  "cookieSupportTooltip": "Sử dụng cookie trình duyệt để xác thực nhằm truy cập video chất lượng cao và bỏ qua các hạn chế đăng nhập"
 }

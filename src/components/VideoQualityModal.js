@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FiInfo } from 'react-icons/fi';
 import '../styles/VideoQualityModal.css';
 import progressWebSocketClient from '../utils/progressWebSocketClient';
 
@@ -372,7 +373,13 @@ const VideoQualityModal = ({
     <div className="video-quality-modal-overlay" onClick={onClose}>
       <div className="video-quality-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{t('videoQuality.title', 'Video Quality for Rendering')}</h3>
+          <div className="header-content">
+            <h3>{t('videoQuality.title', 'Video Quality for Rendering')}</h3>
+            <div className="header-badge" title={t('videoQuality.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')}>
+              <FiInfo className="badge-icon" />
+              <span className="badge-text">{t('videoQuality.cookieSupport', 'Browser Cookie Added')}</span>
+            </div>
+          </div>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 

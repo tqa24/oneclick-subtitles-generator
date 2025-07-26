@@ -15,5 +15,20 @@
   "consolidate": "Complete Document (TXT)",
   "summarize": "Summarize (TXT)",
   "txtNoTimings": "TXT (no timings)",
-  "consolidateExplanation": "Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning."
+  "consolidateExplanation": "Converts subtitles into a coherent document, improving flow and readability while maintaining the original meaning.",
+  "downloadOnly": {
+    "title": "Download Media",
+    "cookieSupport": "Browser Cookie Added",
+    "cookieSupportTooltip": "Uses browser cookies for authentication to access higher quality videos and bypass login restrictions",
+    "video": "Video",
+    "videoDesc": "Download video with selected quality",
+    "audio": "Audio",
+    "audioDesc": "Download audio only (MP3 format)",
+    "scanningQualities": "Scanning available qualities...",
+    "selectQuality": "Select quality:",
+    "noQualities": "No qualities available",
+    "cancel": "Cancel",
+    "download": "Download",
+    "downloading": "Downloading..."
+  }
 }

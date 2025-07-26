@@ -7,5 +7,8 @@
   "close": "Close",
   "on": "On",
   "off": "Off",
-  "note": "Note"
+  "note": "Note",
+  "recentVideos": "Recent Videos",
+  "clearAll": "Clear All",
+  "confirm": "Confirm"
 }

@@ -26,5 +26,7 @@
   "selectVersionDesc": "Choose from available video versions",
   "originalVersion": "Original Quality",
   "optimizedVersion": "Optimized ({{quality}})",
-  "redownloading": "Redownloading..."
+  "redownloading": "Redownloading...",
+  "cookieSupport": "Browser Cookie Added",
+  "cookieSupportTooltip": "Uses browser cookies for authentication to access higher quality videos and bypass login restrictions"
 }

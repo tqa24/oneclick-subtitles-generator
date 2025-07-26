@@ -7,5 +7,6 @@
   "otherSitesTitle": "Other Sites:",
   "ytDlpNote": "Powered by yt-dlp which supports 1000+ sites",
   "url": "URL:",
-  "videoId": "Video ID:"
+  "videoId": "Video ID:",
+  "downloadOnly": "Download Only"
 }

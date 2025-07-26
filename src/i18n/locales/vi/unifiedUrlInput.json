@@ -7,5 +7,6 @@
   "otherSitesTitle": "Các trang khác:",
   "ytDlpNote": "Được hỗ trợ bởi yt-dlp với hơn 1000+ trang web",
   "url": "URL:",
-  "videoId": "ID Video:"
+  "videoId": "ID Video:",
+  "downloadOnly": "Chỉ tải xuống"
 }

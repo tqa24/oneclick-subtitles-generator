@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiVideo, FiMusic, FiDownload } from 'react-icons/fi';
+import { FiX, FiVideo, FiMusic, FiDownload, FiInfo } from 'react-icons/fi';
 import '../styles/DownloadOnlyModal.css';
 import { scanVideoQualities } from '../utils/qualityScanner';
 import progressWebSocketClient from '../utils/progressWebSocketClient';
@@ -186,7 +186,13 @@ const DownloadOnlyModal = ({
       <div className="download-only-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
-          <h3>{t('downloadOnly.title', 'Download Media')}</h3>
+          <div className="header-content">
+            <h3>{t('download.downloadOnly.title', 'Download Media')}</h3>
+            <div className="header-badge" title={t('download.downloadOnly.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')}>
+              <FiInfo className="badge-icon" />
+              <span className="badge-text">{t('download.downloadOnly.cookieSupport', 'Browser Cookie Added')}</span>
+            </div>
+          </div>
           <button
             className="close-button"
             onClick={handleClose}
@@ -215,10 +221,10 @@ const DownloadOnlyModal = ({
                 <div className="option-content">
                   <div className="option-title">
                     <FiVideo size={16} />
-                    {t('downloadOnly.video', 'Video')}
+                    {t('download.downloadOnly.video', 'Video')}
                   </div>
                   <div className="option-description">
-                    {t('downloadOnly.videoDesc', 'Download video with selected quality')}
+                    {t('download.downloadOnly.videoDesc', 'Download video with selected quality')}
                   </div>
                 </div>
               </label>
@@ -236,10 +242,10 @@ const DownloadOnlyModal = ({
                 <div className="option-content">
                   <div className="option-title">
                     <FiMusic size={16} />
-                    {t('downloadOnly.audio', 'Audio')}
+                    {t('download.downloadOnly.audio', 'Audio')}
                   </div>
                   <div className="option-description">
-                    {t('downloadOnly.audioDesc', 'Download audio only (MP3 format)')}
+                    {t('download.downloadOnly.audioDesc', 'Download audio only (MP3 format)')}
                   </div>
                 </div>
               </label>
@@ -250,12 +256,12 @@ const DownloadOnlyModal = ({
               <div className="quality-selector">
                 {isScanning ? (
                   <div className="scanning-indicator">
-                    {t('downloadOnly.scanningQualities', 'Scanning available qualities...')}
+                    {t('download.downloadOnly.scanningQualities', 'Scanning available qualities...')}
                   </div>
                 ) : availableQualities.length > 0 ? (
                   <div className="quality-options-list">
                     <div className="quality-selector-title">
-                      {t('downloadOnly.selectQuality', 'Select quality:')}
+                      {t('download.downloadOnly.selectQuality', 'Select quality:')}
                     </div>
                     {availableQualities.map((quality, index) => (
                       <div key={index} className="radio-pill">
@@ -275,7 +281,7 @@ const DownloadOnlyModal = ({
                   </div>
                 ) : (
                   <div className="no-qualities">
-                    {t('downloadOnly.noQualities', 'No qualities available')}
+                    {t('download.downloadOnly.noQualities', 'No qualities available')}
                   </div>
                 )}
               </div>
@@ -290,7 +296,7 @@ const DownloadOnlyModal = ({
             onClick={handleClose}
             disabled={isDownloading}
           >
-            {t('downloadOnly.cancel', 'Cancel')}
+            {t('download.downloadOnly.cancel', 'Cancel')}
           </button>
           <button
             className="confirm-button"
@@ -299,8 +305,8 @@ const DownloadOnlyModal = ({
           >
             <FiDownload size={16} />
             {isDownloading ?
-              `${t('downloadOnly.downloading', 'Downloading...')} ${downloadProgress}%` :
-              t('downloadOnly.download', 'Download')
+              `${t('download.downloadOnly.downloading', 'Downloading...')} ${downloadProgress}%` :
+              t('download.downloadOnly.download', 'Download')
             }
           </button>
         </div>

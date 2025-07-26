@@ -7,31 +7,13 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
+const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
 } = require('../shared/progressTracker');
 
-/**
- * Get the path to yt-dlp executable
- * First checks for yt-dlp in the virtual environment, then in PATH
- * @returns {string} - Path to yt-dlp executable
- */
-function getYtDlpPath() {
-  // Check for venv at root level
-  const venvPath = path.join(process.cwd(), '.venv');
-  const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
-  const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
-  if (fs.existsSync(venvYtDlpPath)) {
-
-    return venvYtDlpPath;
-  }
-
-  // If not in venv, use the one in PATH
-
-  return 'yt-dlp';
-}
 
 /**
  * Check if yt-dlp is installed and get its version
@@ -102,8 +84,9 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
       console.log(`[allSites] Using complex format: ${formatString}`);
     }
 
-    // Use yt-dlp with site-appropriate format options
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with site-appropriate format options and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--format', formatString,
       '--merge-output-format', 'mp4',
@@ -112,7 +95,10 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
       '--no-check-certificate',
       '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       videoURL
-    ]);
+    ];
+
+    console.log(`[allSites] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';
@@ -245,14 +231,18 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '36
       console.log(`[allSites-fallback] Using quality-limited format: ${formatString}`);
     }
 
-    // Use yt-dlp with minimal options
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with minimal options and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--format', formatString,
       '--output', tempPath,
       videoURL
-    ]);
+    ];
+
+    console.log(`[allSites-fallback] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';
@@ -330,12 +320,16 @@ async function downloadVideoWithBasicOptions(videoId, videoURL) {
 
     console.log(`[allSites-basic] Attempting download with no format specification`);
 
-    // Use yt-dlp with absolute minimal options
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with absolute minimal options and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--no-check-certificate',
       '--output', tempPath,
       videoURL
-    ]);
+    ];
+
+    console.log(`[allSites-basic] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';

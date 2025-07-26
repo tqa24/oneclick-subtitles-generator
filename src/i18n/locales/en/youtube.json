@@ -7,5 +7,6 @@
   "noApiKey": "Please set your YouTube API key in the settings first.",
   "noOAuth": "Please authenticate with YouTube in the settings first.",
   "authError": "YouTube authentication required. Please set up OAuth in settings.",
-  "downloadVideoOnly": "Download Video"
+  "downloadVideoOnly": "Download Video",
+  "recentVideos": "Recent Videos"
 }

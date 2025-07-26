@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
@@ -26,6 +27,75 @@ function getYtDlpPath() {
 }
 
 /**
+ * Detect available browsers for cookie extraction
+ * @returns {string|null} - Browser name that can be used with --cookies-from-browser
+ */
+function detectAvailableBrowser() {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+
+  // List of browsers to check in order of preference
+  const browsers = [];
+
+  if (platform === 'win32') {
+    // Windows paths
+    browsers.push(
+      { name: 'chrome', path: path.join(homeDir, 'AppData', 'Local', 'Google', 'Chrome', 'User Data') },
+      { name: 'edge', path: path.join(homeDir, 'AppData', 'Local', 'Microsoft', 'Edge', 'User Data') },
+      { name: 'firefox', path: path.join(homeDir, 'AppData', 'Roaming', 'Mozilla', 'Firefox', 'Profiles') }
+    );
+  } else if (platform === 'darwin') {
+    // macOS paths
+    browsers.push(
+      { name: 'chrome', path: path.join(homeDir, 'Library', 'Application Support', 'Google', 'Chrome') },
+      { name: 'safari', path: path.join(homeDir, 'Library', 'Safari') },
+      { name: 'firefox', path: path.join(homeDir, 'Library', 'Application Support', 'Firefox', 'Profiles') },
+      { name: 'edge', path: path.join(homeDir, 'Library', 'Application Support', 'Microsoft Edge') }
+    );
+  } else {
+    // Linux paths
+    browsers.push(
+      { name: 'chrome', path: path.join(homeDir, '.config', 'google-chrome') },
+      { name: 'firefox', path: path.join(homeDir, '.mozilla', 'firefox') },
+      { name: 'chromium', path: path.join(homeDir, '.config', 'chromium') }
+    );
+  }
+
+  // Check which browser is available
+  for (const browser of browsers) {
+    try {
+      if (fs.existsSync(browser.path)) {
+        console.log(`[detectAvailableBrowser] Found ${browser.name} at: ${browser.path}`);
+        return browser.name;
+      }
+    } catch (error) {
+      // Ignore errors and continue checking
+      continue;
+    }
+  }
+
+  console.log('[detectAvailableBrowser] No supported browser found for cookie extraction');
+  return null;
+}
+
+/**
+ * Get common yt-dlp arguments including cookie support
+ * @returns {Array} - Array of common arguments
+ */
+function getCommonYtDlpArgs() {
+  const args = [];
+
+  // Try to add browser cookies for better authentication
+  const availableBrowser = detectAvailableBrowser();
+  if (availableBrowser) {
+    args.push('--cookies-from-browser', availableBrowser);
+    console.log(`[getCommonYtDlpArgs] Using cookies from browser: ${availableBrowser}`);
+  }
+
+  return args;
+}
+
+/**
  * Scan available video qualities for a given URL using yt-dlp
  * @param {string} videoURL - Video URL to scan
  * @returns {Promise<Array>} - Array of available quality options
@@ -33,14 +103,20 @@ function getYtDlpPath() {
 async function scanAvailableQualities(videoURL) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
-    
-    // Use yt-dlp to list available formats
-    const ytdlpProcess = spawn(ytDlpPath, [
+
+    // Build arguments with cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--list-formats',
       '--no-warnings',
       '--no-playlist',
       videoURL
-    ]);
+    ];
+
+    console.log(`[scanAvailableQualities] Running yt-dlp with args:`, args);
+
+    // Use yt-dlp to list available formats
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let stdout = '';
     let stderr = '';
@@ -186,14 +262,20 @@ function parseYtDlpFormats(formatOutput) {
 async function getVideoInfo(videoURL) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
-    
-    // Use yt-dlp to get video information
-    const ytdlpProcess = spawn(ytDlpPath, [
+
+    // Build arguments with cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--dump-json',
       '--no-warnings',
       '--no-playlist',
       videoURL
-    ]);
+    ];
+
+    console.log(`[getVideoInfo] Running yt-dlp with args:`, args);
+
+    // Use yt-dlp to get video information
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let stdout = '';
     let stderr = '';
@@ -305,7 +387,9 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       console.log(`[downloadWithQualityAttempt] Using complex format: ${formatString}`);
     }
 
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Build arguments with cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--format', formatString,
       '--merge-output-format', 'mp4',
       '--output', outputPath,
@@ -315,7 +399,11 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       '--force-overwrites',
       '--verbose',
       videoURL
-    ]);
+    ];
+
+    console.log(`[downloadWithQualityAttempt] Running yt-dlp with args:`, args);
+
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let stderr = '';
 

@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { safeMoveFile } = require('../../utils/fileOperations');
+const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   getDownloadProgress,
   setDownloadProgress,
@@ -46,16 +47,8 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
     const tempFilename = `${path.basename(outputPath, '.mp4')}.ytdlp.mp4`;
     const tempPath = path.join(tempDir, tempFilename);
 
-    // Determine the yt-dlp executable path
-    // First try to use the one in the virtual environment
-    const isWindows = os.platform() === 'win32';
-    const venvPath = path.join(process.cwd(), '.venv');
-    const venvBinDir = isWindows ? 'Scripts' : 'bin';
-    const ytdlpInVenv = path.join(process.cwd(), '.venv', venvBinDir, isWindows ? 'yt-dlp.exe' : 'yt-dlp');
-
-    // Check if yt-dlp exists in the virtual environment
-    const ytdlpExists = fs.existsSync(ytdlpInVenv);
-    const ytdlpCommand = ytdlpExists ? ytdlpInVenv : 'yt-dlp';
+    // Get yt-dlp path using shared utility
+    const ytdlpCommand = getYtDlpPath();
 
 
 
@@ -64,8 +57,9 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       setDownloadProgress(videoId, 0, 'starting');
     }
 
-    // Build the yt-dlp command arguments
+    // Build the yt-dlp command arguments with cookie support
     const args = [
+      ...getCommonYtDlpArgs(),
       videoURL,
       '-f', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '-o', tempPath,
@@ -74,6 +68,8 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       '--progress',  // Enable progress reporting
       '--newline'    // Force newlines for better parsing
     ];
+
+    console.log(`[ytdlpDownloader] Running yt-dlp with args:`, args);
 
 
 

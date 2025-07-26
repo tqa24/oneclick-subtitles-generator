@@ -9,31 +9,13 @@ const { VIDEOS_DIR } = require('../../config');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 const douyinPuppeteer = require('./douyin_puppeteer');
+const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
 } = require('../shared/progressTracker');
 
-/**
- * Get the path to yt-dlp executable
- * First checks for yt-dlp in the virtual environment, then in PATH
- * @returns {string} - Path to yt-dlp executable
- */
-function getYtDlpPath() {
-  // Check for venv at root level
-  const venvPath = path.join(process.cwd(), '.venv');
-  const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
-  const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
-  if (fs.existsSync(venvYtDlpPath)) {
-
-    return venvYtDlpPath;
-  }
-
-  // If not in venv, use the one in PATH
-
-  return 'yt-dlp';
-}
 
 /**
  * Check if yt-dlp is installed and get its version
@@ -129,8 +111,9 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with quality-limited options for consistency
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with quality-limited options for consistency and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
@@ -140,7 +123,10 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
       '--referer', 'https://www.douyin.com/',
       '--add-header', 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8',
       normalizedUrl
-    ]);
+    ];
+
+    console.log(`[douyin] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';
@@ -228,8 +214,9 @@ async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with different options for the fallback method but respect quality limit
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with different options for the fallback method but respect quality limit and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -241,7 +228,10 @@ async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') 
       '--merge-output-format', 'mp4',
       '--output', outputPath,
       normalizedUrl
-    ]);
+    ];
+
+    console.log(`[douyin-fallback] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';
@@ -323,8 +313,9 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with special options for short URLs but respect quality limit
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with special options for short URLs but respect quality limit and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -335,7 +326,10 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = 
       '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
       normalizedUrl
-    ]);
+    ];
+
+    console.log(`[douyin-short] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';
@@ -400,13 +394,17 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '3
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with minimal options for maximum compatibility
-    const ytdlpProcess = spawn(ytDlpPath, [
+    // Use yt-dlp with minimal options for maximum compatibility and cookie support
+    const args = [
+      ...getCommonYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--output', outputPath,
       normalizedUrl
-    ]);
+    ];
+
+    console.log(`[douyin-simple] Running yt-dlp with args:`, args);
+    const ytdlpProcess = spawn(ytDlpPath, args);
 
     let errorOutput = '';
     let stdoutData = '';

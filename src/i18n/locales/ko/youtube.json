@@ -7,5 +7,6 @@
   "noApiKey": "먼저 설정에서 YouTube API 키를 설정하세요.",
   "noOAuth": "먼저 설정에서 YouTube로 인증해 주세요.",
   "authError": "YouTube 인증이 필요합니다. 설정에서 OAuth를 설정해 주세요.",
-  "downloadVideoOnly": "비디오 다운로드"
+  "downloadVideoOnly": "비디오 다운로드",
+  "recentVideos": "최근 비디오"
 }

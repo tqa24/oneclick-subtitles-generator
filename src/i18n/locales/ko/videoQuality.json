@@ -26,5 +26,7 @@
   "selectVersionDesc": "사용 가능한 비디오 버전에서 선택",
   "originalVersion": "원본 품질",
   "optimizedVersion": "최적화됨 ({{quality}})",
-  "redownloading": "재다운로드 중..."
+  "redownloading": "재다운로드 중...",
+  "cookieSupport": "브라우저 쿠키 추가됨",
+  "cookieSupportTooltip": "인증을 위해 브라우저 쿠키를 사용하여 고품질 비디오에 액세스하고 로그인 제한을 우회합니다"
 }

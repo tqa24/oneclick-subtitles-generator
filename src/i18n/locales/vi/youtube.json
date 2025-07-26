@@ -7,5 +7,6 @@
   "noApiKey": "Vui lòng thiết lập khóa API YouTube trong cài đặt trước.",
   "noOAuth": "Vui lòng xác thực với YouTube trong cài đặt trước.",
   "authError": "Yêu cầu xác thực YouTube. Vui lòng thiết lập OAuth trong cài đặt.",
-  "downloadVideoOnly": "Tải xuống video"
+  "downloadVideoOnly": "Tải xuống video",
+  "recentVideos": "Video gần đây"
 }
