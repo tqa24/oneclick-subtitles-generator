@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import '../styles/OutputContainer.css';
 import '../styles/narration/unifiedNarrationRedesign.css';
 import VideoPreview from './previews/VideoPreview';
-// To use the new modular version, replace the above import with:
-// import { VideoPreviewModular as VideoPreview } from './previews';
 import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';
 import { UnifiedNarrationSection } from './narration';
