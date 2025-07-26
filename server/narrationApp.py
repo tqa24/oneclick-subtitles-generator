@@ -4,9 +4,10 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# Add the current directory to the path so we can import narration_service
+# Add the current directory to the path so we can import narration_service and config
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from narration_service import narration_bp
+from config.cors_config import get_flask_cors_config, get_cors_headers, get_ports
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -14,22 +15,19 @@ logger = logging.getLogger(__name__)
 
 # Create Flask app
 app = Flask(__name__)
-# Configure CORS to allow requests from the frontend origin with credentials - using unified port configuration
-CORS(app, resources={r"/*": {"origins": ["http://localhost:3030", "http://127.0.0.1:3030"], "supports_credentials": True}}, allow_headers=["Content-Type", "Authorization", "Accept"])
+# Configure CORS using centralized configuration
+flask_cors_config = get_flask_cors_config()
+CORS(app, resources={r"/*": flask_cors_config}, allow_headers=flask_cors_config['allow_headers'])
 
-# Add CORS headers to all responses
+# Add CORS headers to all responses using centralized configuration
 @app.after_request
 def add_cors_headers(response):
-    # Check the request origin and set the appropriate CORS header
+    # Get CORS headers from centralized config
     request_origin = request.headers.get('Origin')
-    # Use unified port configuration - frontend is on port 3030
-    allowed_origins = ['http://localhost:3030', 'http://127.0.0.1:3030']
+    cors_headers = get_cors_headers(request_origin)
 
-    if request_origin in allowed_origins:
-        response.headers.add('Access-Control-Allow-Origin', request_origin)
-    else:
-        # Default to localhost if origin not in allowed list
-        response.headers.add('Access-Control-Allow-Origin', 'http://127.0.0.1:3030')
+    for header, value in cors_headers.items():
+        response.headers.add(header, value)
 
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
@@ -69,8 +67,9 @@ def index():
     })
 
 if __name__ == '__main__':
-    # Use unified port configuration - no fallback ports
-    port = int(os.environ.get('NARRATION_PORT', 3035))
+    # Use centralized port configuration
+    ports = get_ports()
+    port = int(os.environ.get('NARRATION_PORT', ports['NARRATION']))
 
     try:
         logger.info(f"Starting F5-TTS Narration Service on port {port}")

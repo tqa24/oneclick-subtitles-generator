@@ -4,7 +4,9 @@ Only exposes the 2 primary controls: exaggeration and cfg_weight.
 """
 
 import io
+import sys
 import tempfile
+from pathlib import Path
 import torch
 import torchaudio as ta
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
@@ -13,6 +15,10 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import Optional
 import uvicorn
+
+# Add the server directory to the path to import the CORS config
+sys.path.append(str(Path(__file__).parent.parent / "server"))
+from config.cors_config import get_fastapi_cors_config
 
 from chatterbox.tts import ChatterboxTTS
 from chatterbox.vc import ChatterboxVC
@@ -25,13 +31,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware to handle cross-origin requests from the frontend
+# Add CORS middleware using centralized configuration
+fastapi_cors_config = get_fastapi_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3008", "http://127.0.0.1:3008"],  # Frontend URLs
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
+    **fastapi_cors_config
 )
 
 # Global model instances (loaded once on startup)

@@ -6,11 +6,15 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-// Import port management
+// Import port management and CORS setup
 const { killProcessesOnPorts, cleanupTrackingFile } = require('../server/utils/portManager');
+const { setupEnvironmentVariables } = require('./setup-cors-env');
 
 async function startAllServices() {
   console.log('🚀 Starting One-Click Subtitles Generator...');
+
+  // Setup CORS environment variables
+  setupEnvironmentVariables();
   
   try {
     // Clean up old processes and tracking

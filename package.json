@@ -4,7 +4,7 @@
   "description": "A subtitle generator application using Gemini AI",
   "homepage": "./",
   "scripts": {
-    "start": "node scripts/start-frontend.js",
+    "start": "npm run setup:react-env && node scripts/start-frontend.js",
     "start-react": "cross-env PORT=3030 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -15,7 +15,7 @@
     "python:test": "uv run --python .venv server/test-narration-service.py",
     "video-renderer:build": "cd video-renderer && npm run server:build",
     "video-renderer:start": "cd video-renderer && npm run server:start",
-    "dev": "node dev-server.js",
+    "dev": "npm run setup:react-env && node dev-server.js",
     "dev:test": "concurrently --names \"FRONTEND,SERVER,PYTHON\" --prefix-colors \"cyan,green,yellow\" --prefix \"[{name}]\" \"npm run start\" \"npm run server:start\" \"npm run python:test\"",
     "check:uv": "node check-uv.js",
     "test:python": "uv run --python .venv test-python.py",
@@ -37,13 +37,18 @@
     "test:chatterbox-import": "uv run test-chatterbox-import.py",
     "test:setup-fixes": "node test-setup-fixes.js",
     "test:port-manager": "node scripts/test-port-manager.js",
+    "setup:cors": "node scripts/setup-cors-env.js",
+    "setup:react-env": "node scripts/generate-react-env.js",
+    "test:cors": "node scripts/test-cors-configuration.js",
     "setup:narration:uv": "node setup-narration.js",
     "setup:narration:quiet": "cross-env QUIET=true node setup-narration.js",
     "setup:narration:verbose": "cross-env VERBOSE=true node setup-narration.js",
     "install:yt-dlp:quiet": "cross-env QUIET=true node install-yt-dlp.js",
     "install:yt-dlp:verbose": "cross-env VERBOSE=true node install-yt-dlp.js",
     "install:all:quiet": "cross-env QUIET=true npm install --silent && cross-env QUIET=true node setup-narration.js && cross-env QUIET=true node install-yt-dlp.js",
-    "install:all:verbose": "cross-env VERBOSE=true npm install && cross-env VERBOSE=true node setup-narration.js && cross-env VERBOSE=true node install-yt-dlp.js"
+    "install:all:verbose": "cross-env VERBOSE=true npm install && cross-env VERBOSE=true node setup-narration.js && cross-env VERBOSE=true node install-yt-dlp.js",
+    "setup:react-env": "node scripts/generate-react-env.js",
+    "start:original": "node scripts/start-frontend.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -5,11 +5,12 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-// Import port management from main server
+// Import port management and configuration from main server
 const { trackProcess } = require('../../server/utils/portManager');
+const { PORTS } = require('../../server/config');
 
-// Video renderer frontend port (from unified config)
-const FRONTEND_PORT = 3034;
+// Video renderer frontend port (from centralized config)
+const FRONTEND_PORT = PORTS.VIDEO_RENDERER_FRONTEND;
 
 console.log('🎬 Starting Video Renderer React frontend...');
 

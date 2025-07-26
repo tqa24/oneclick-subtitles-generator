@@ -1,8 +1,9 @@
 const { spawn } = require('child_process');
 const chalk = require('chalk');
 
-// Import port management for cleanup
+// Import port management for cleanup and CORS setup
 const { killProcessesOnPorts, cleanupTrackingFile } = require('./server/utils/portManager');
+const { setupEnvironmentVariables } = require('./scripts/setup-cors-env');
 
 // Colors for different services
 const colors = {
@@ -31,6 +32,11 @@ function prefixOutput(serviceName, data) {
 // Start all services with proper sequencing
 async function startServices() {
   console.log(chalk.bold('Starting development servers...\n'));
+
+  // Setup CORS environment variables
+  console.log(chalk.yellow('🔧 Setting up CORS configuration...'));
+  setupEnvironmentVariables();
+  console.log(chalk.green('✅ CORS configuration complete\n'));
 
   // First, clean up ports
   console.log(chalk.yellow('🧹 Cleaning up ports before starting services...'));

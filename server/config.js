@@ -20,9 +20,20 @@ const PORTS = {
 const PORT = PORTS.BACKEND;
 const SERVER_URL = `http://127.0.0.1:${PORTS.BACKEND}`; // Using IPv4 address for better compatibility
 // Allow both localhost and 127.0.0.1 for development
+// Include all service ports for cross-service communication
 const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : [
   `http://localhost:${PORTS.FRONTEND}`,
-  `http://127.0.0.1:${PORTS.FRONTEND}`
+  `http://127.0.0.1:${PORTS.FRONTEND}`,
+  `http://localhost:${PORTS.BACKEND}`,
+  `http://127.0.0.1:${PORTS.BACKEND}`,
+  `http://localhost:${PORTS.VIDEO_RENDERER}`,
+  `http://127.0.0.1:${PORTS.VIDEO_RENDERER}`,
+  `http://localhost:${PORTS.VIDEO_RENDERER_FRONTEND}`,
+  `http://127.0.0.1:${PORTS.VIDEO_RENDERER_FRONTEND}`,
+  `http://localhost:${PORTS.NARRATION}`,
+  `http://127.0.0.1:${PORTS.NARRATION}`,
+  `http://localhost:${PORTS.CHATTERBOX}`,
+  `http://127.0.0.1:${PORTS.CHATTERBOX}`
 ];
 
 // Directory paths

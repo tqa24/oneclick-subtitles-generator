@@ -9,6 +9,7 @@ const fs = require('fs');
 
 // Import configuration
 const { CORS_ORIGIN, VIDEOS_DIR, SUBTITLES_DIR, NARRATION_DIR, ensureDirectories } = require('./server/config');
+const { EXPRESS_CORS_CONFIG, getCorsHeaders } = require('./server/config/corsConfig');
 
 // Import routes
 const videoRoutes = require('./server/routes/videoRoutes');
@@ -34,13 +35,8 @@ const app = express();
 // Ensure directories exist
 ensureDirectories();
 
-// Configure CORS with all needed methods
-app.use(cors({
-  origin: CORS_ORIGIN,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
-  credentials: true
-}));
+// Configure CORS with unified configuration
+app.use(cors(EXPRESS_CORS_CONFIG));
 
 // Add CORS headers to all responses for health endpoint
 app.use('/api/health', (req, res, next) => {

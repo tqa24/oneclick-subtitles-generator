@@ -7,11 +7,19 @@ import argparse
 import sys
 from pathlib import Path
 
+# Add the server directory to the path to import the port config
+sys.path.append(str(Path(__file__).parent.parent / "server"))
+from config.cors_config import get_ports
+
 
 def main():
+    # Get centralized port configuration
+    ports = get_ports()
+    default_port = ports['CHATTERBOX']
+
     parser = argparse.ArgumentParser(description="Start Chatterbox TTS API Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=3011, help="Port to bind to (default: 3011)")
+    parser.add_argument("--port", type=int, default=default_port, help=f"Port to bind to (default: {default_port})")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
     parser.add_argument("--workers", type=int, default=1, help="Number of worker processes (default: 1)")
     parser.add_argument("--log-level", default="info", choices=["debug", "info", "warning", "error"], 

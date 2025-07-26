@@ -11,8 +11,9 @@ process.env.REMOTION_CHROME_MODE = "chrome-for-testing";
 process.env.REMOTION_GL = "vulkan";
 
 const app = express();
-// Unified port configuration - matches main server/config.js
-const port = process.env.PORT || 3033;
+// Import unified port configuration from centralized config
+const { PORTS } = require('../../server/config');
+const port = process.env.PORT || PORTS.VIDEO_RENDERER;
 
 // Store active render processes for cancellation and status tracking
 const activeRenders = new Map<string, {
@@ -72,9 +73,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Middleware
+// Import CORS configuration from centralized config
+const { EXPRESS_CORS_CONFIG } = require('../../server/config/corsConfig');
+
+// Middleware - Configure CORS with unified configuration
 app.use(cors({
-  exposedHeaders: ['X-Render-ID']
+  ...EXPRESS_CORS_CONFIG,
+  exposedHeaders: ['X-Render-ID']  // Add video renderer specific headers
 }));
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
