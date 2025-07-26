@@ -107,6 +107,8 @@
   "disabled": "Disabled",
   "selectVideoToPreview": "Select a video file to see the preview with subtitles",
   "noVideoSelected": "No Video Selected",
+  "selectVideoFileToPreview": "Select a video file to see preview",
+  "poweredByRemotion": "powered by Remotion",
   "emptyQueue": "Queue is Empty",
   "addVideosToQueue": "Add videos to the queue to start batch rendering",
   "clearQueue": "Clear Queue",

@@ -107,6 +107,8 @@
   "disabled": "Đã tắt",
   "selectVideoToPreview": "Chọn tập tin video để xem trước với phụ đề",
   "noVideoSelected": "Chưa chọn Video",
+  "selectVideoFileToPreview": "Chọn tập tin video để xem trước",
+  "poweredByRemotion": "được hỗ trợ bởi Remotion",
   "emptyQueue": "Hàng đợi Trống",
   "addVideosToQueue": "Thêm video vào hàng đợi để bắt đầu render hàng loạt",
   "clearQueue": "Xóa Hàng đợi",

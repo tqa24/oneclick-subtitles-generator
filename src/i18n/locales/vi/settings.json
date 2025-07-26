@@ -21,6 +21,7 @@
   "geminiApiKeyPlaceholder": "Nhập khóa API Gemini của bạn",
   "addGeminiKeyPlaceholder": "Nhập khóa API Gemini mới",
   "youtubeApiKeyPlaceholder": "Nhập khóa API YouTube của bạn",
+  "geniusApiKeyPlaceholder": "Nhập khóa API Genius của bạn",
   "geminiApiKeyHelp": "Cần thiết cho tất cả các chức năng. Lấy tại",
   "youtubeApiKeyHelp": "Cần thiết cho tìm kiếm YouTube. Lấy tại",
   "geniusApiKeyHelp": "Cần thiết cho việc lấy lời bài hát. Lấy tại",

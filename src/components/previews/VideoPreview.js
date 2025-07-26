@@ -2552,7 +2552,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     width: '100%',
                     height: '100%',
                     objectFit: 'contain',
-                    display: 'block'
+                    display: 'block',
+                    zIndex: 1
                   }}
                   playsInline
                   controlsList="nodownload nofullscreen noremoteplayback"
@@ -2586,6 +2587,20 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                   {t('preview.videoNotSupported', 'Your browser does not support the video tag.')}
                 </video>
+
+                {/* Custom subtitle display - positioned inside video-wrapper for proper layering */}
+                <div className="custom-subtitle-container" style={{ width: `${subtitleSettings.boxWidth || '80'}%` }}>
+                  {currentSubtitleText && (
+                    <div className="custom-subtitle">
+                      {currentSubtitleText.split('\n').map((line, index) => (
+                        <React.Fragment key={index}>
+                          {index > 0 && <br />}
+                          {line}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Loading/Buffering Spinner */}
                 {(isVideoLoading || isBuffering) && (
@@ -3356,10 +3371,11 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     max-width: 100%;
                     margin: 0 auto;
                     text-align: center;
-                    z-index: 999999; /* Higher than video-wrapper */
+                    z-index: 2; /* Above video (z-index: 1) but below UI controls (z-index: 3+) */
                     /* Calculate top position based on percentage (0% = top, 100% = bottom) */
                     bottom: calc(100% - var(--subtitle-position));
                     transform: translateY(50%);
+                    pointer-events: none; /* Allow clicks to pass through to video and controls */
                   }
 
                   .custom-subtitle {
@@ -3382,19 +3398,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 `}
               </style>
 
-              {/* Custom subtitle display */}
-              <div className="custom-subtitle-container" style={{ width: `${subtitleSettings.boxWidth || '80'}%` }}>
-                {currentSubtitleText && (
-                  <div className="custom-subtitle">
-                    {currentSubtitleText.split('\n').map((line, index) => (
-                      <React.Fragment key={index}>
-                        {index > 0 && <br />}
-                        {line}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-              </div>
+
             </div>
           ) : null}
 

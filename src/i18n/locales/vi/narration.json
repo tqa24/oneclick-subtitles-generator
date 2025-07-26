@@ -77,6 +77,13 @@
   "intensityEnhanced": "Nâng cao",
   "intensityAggressive": "Mạnh mẽ",
   "intensityChangeTooltip": "Thay đổi mức độ sẽ yêu cầu nhóm lại",
+
+  "speed": "Tốc độ",
+  "apply": "Áp dụng",
+  "processingSpeed": "Đang xử lý {{current}} trong {{total}}",
+  "speedModifySuccess": "Tốc độ thuyết minh đã được thay đổi thành công thành {{speed}}x",
+  "speedModifyError": "Lỗi khi thay đổi tốc độ thuyết minh: {{error}}",
+
   "noSourceSelectedError": "Vui lòng chọn nguồn phụ đề (Gốc hoặc Đã dịch)",
   "checkingModelAvailability": "Đang kiểm tra mô hình...",
   "modelNotAvailableError": "Vui lòng tải ít nhất một mô hình hỗ trợ {{language}} từ tab Quản lý Mô hình thuyết minh trong Cài đặt.",

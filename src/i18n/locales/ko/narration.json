@@ -61,6 +61,13 @@
   "intensityEnhanced": "향상",
   "intensityAggressive": "적극적",
   "intensityChangeTooltip": "강도를 변경하면 다시 그룹화해야 합니다",
+
+  "speed": "속도",
+  "apply": "적용",
+  "processingSpeed": "{{current}}/{{total}} 처리 중",
+  "speedModifySuccess": "나레이션 속도가 {{speed}}배로 성공적으로 변경되었습니다",
+  "speedModifyError": "나레이션 속도 변경 중 오류: {{error}}",
+
   "noSourceSelectedError": "자막 소스를 선택하세요 (원본 또는 번역)",
   "checkingModelAvailability": "모델 가용성 확인 중...",
   "modelNotAvailableError": "설정의 내레이션 모델 관리 탭에서 {{language}}을(를) 지원하는 모델을 하나 이상 다운로드하세요.",

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Player } from '@remotion/player';
 import { SubtitledVideoComposition } from './SubtitledVideoComposition';
 import '../styles/VideoPreviewPanel.css';
@@ -16,6 +17,7 @@ const RemotionVideoPreview = ({
   onPause,
   onSeek
 }) => {
+  const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -275,10 +277,10 @@ const RemotionVideoPreview = ({
               <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
             </svg>
           </div>
-          <p>No video selected</p>
-          <small>Select a video file to see preview</small>
+          <p>{t('videoRendering.noVideoSelected', 'No video selected')}</p>
+          <small>{t('videoRendering.selectVideoFileToPreview', 'Select a video file to see preview')}</small>
           <div className="powered-by-remotion">
-            <span>powered by Remotion</span>
+            <span>{t('videoRendering.poweredByRemotion', 'powered by Remotion')}</span>
           </div>
         </div>
       </>
