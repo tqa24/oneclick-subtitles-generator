@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../styles/OnboardingBanner.css';
 // Import the animation component from src/assets
 import OnboardingAnimation from '../assets/onboarding-banner';
+import OnboardingCursorInteraction from './OnboardingCursorInteraction';
 
 /**
  * Onboarding Banner component that shows for first-time visitors
@@ -130,13 +131,18 @@ const OnboardingBanner = () => {
       onClick={handleDismiss}
     >
       <div className="onboarding-banner-container">
-        {/* Animation component */}
+        {/* Animation component with cursor interaction */}
         <div className="svg-container">
-          <OnboardingAnimation
-            width="800px"
-            height="800px"
-            className="onboarding-banner"
-          />
+          <OnboardingCursorInteraction
+            isDismissing={isDismissing}
+            canDismiss={canDismiss}
+          >
+            <OnboardingAnimation
+              width="800px"
+              height="800px"
+              className="onboarding-banner"
+            />
+          </OnboardingCursorInteraction>
         </div>
 
         {/* Message that changes based on countdown state */}
