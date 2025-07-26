@@ -469,6 +469,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
               // Update fullscreen subtitle if in fullscreen mode
               const container = document.getElementById('fullscreen-subtitle-overlay');
+              console.log('🎬 SUBTITLE - Updating subtitle text:', {
+                text: currentSub.text,
+                containerExists: !!container,
+                isFullscreen
+              });
+
               if (container) {
                 // Clear existing content
                 container.innerHTML = '';
@@ -476,6 +482,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 // Create subtitle element
                 const subtitle = document.createElement('div');
                 subtitle.id = 'fullscreen-subtitle';
+                console.log('🎬 SUBTITLE - Created subtitle element');
 
                 // Handle newlines by splitting the text and adding <br> tags
                 const lines = currentSub.text.split('\n');
@@ -508,6 +515,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
                 // Add to container
                 container.appendChild(subtitle);
+                console.log('🎬 SUBTITLE - Subtitle added to container');
               }
             } else {
               setCurrentSubtitleText('');
@@ -742,9 +750,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     // Function to create and inject fullscreen subtitle container
     const createFullscreenSubtitleContainer = () => {
+      console.log('🎬 SUBTITLE - Creating fullscreen subtitle container');
+
       // Check if container already exists
       let container = document.getElementById('fullscreen-subtitle-overlay');
       if (!container) {
+        console.log('🎬 SUBTITLE - Container does not exist, creating new one');
         container = document.createElement('div');
         container.id = 'fullscreen-subtitle-overlay';
         container.style.position = 'fixed';
@@ -754,10 +765,30 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         container.style.width = `${subtitleSettings.boxWidth || '80'}%`;
         container.style.margin = '0 auto';
         container.style.textAlign = 'center';
-        container.style.zIndex = '9999';
+        container.style.zIndex = '999999'; // Higher than video z-index
         container.style.pointerEvents = 'none';
+        container.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'; // Debug: red background
         document.body.appendChild(container);
+        console.log('🎬 SUBTITLE - Container created and added to body');
+      } else {
+        console.log('🎬 SUBTITLE - Container already exists, reusing');
+        // Force update styles in case they were lost
+        container.style.zIndex = '999999';
+        container.style.position = 'fixed';
+        container.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'; // Debug: red background
       }
+
+      // Debug: Check container position and visibility
+      const rect = container.getBoundingClientRect();
+      console.log('🎬 SUBTITLE - Container position:', {
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y,
+        zIndex: container.style.zIndex,
+        isVisible: rect.width > 0 && rect.height > 0
+      });
+
       return container;
     };
 
@@ -901,7 +932,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
               videoWrapper.style.setProperty('position', 'fixed', 'important');
               videoWrapper.style.setProperty('top', '0', 'important');
               videoWrapper.style.setProperty('left', '0', 'important');
-              videoWrapper.style.setProperty('z-index', '999', 'important');
+              videoWrapper.style.setProperty('z-index', '1', 'important'); // Lower than subtitle container
               videoWrapper.style.setProperty('overflow', 'hidden', 'important');
             }
 
@@ -3325,7 +3356,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     max-width: 100%;
                     margin: 0 auto;
                     text-align: center;
-                    z-index: 5;
+                    z-index: 999999; /* Higher than video-wrapper */
                     /* Calculate top position based on percentage (0% = top, 100% = bottom) */
                     bottom: calc(100% - var(--subtitle-position));
                     transform: translateY(50%);
