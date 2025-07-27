@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiInfo } from 'react-icons/fi';
 import '../styles/VideoQualityModal.css';
@@ -19,7 +19,17 @@ const VideoQualityModal = ({
   const [isScanning, setIsScanning] = useState(false);
   const [availableQualities, setAvailableQualities] = useState([]);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadVideoId, setDownloadVideoId] = useState(null);
+  const progressIntervalRef = useRef(null);
+
+  // Wrapper function for onClose to ensure cleanup
+  const handleClose = () => {
+    console.log(`[VideoQualityModal] Modal closing, cleaning up progress interval`);
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    onClose();
+  };
 
   // Reset state when modal opens
   useEffect(() => {
@@ -34,7 +44,12 @@ const VideoQualityModal = ({
       setIsScanning(false);
       setAvailableQualities([]);
       setDownloadProgress(0);
-      setDownloadVideoId(null);
+
+      // Clear any existing progress interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
 
       // Don't scan qualities automatically - only when redownload is selected
       console.log('[VideoQualityModal] Modal opened, waiting for user to select redownload option');
@@ -85,26 +100,7 @@ const VideoQualityModal = ({
     }
   };
 
-  // Start quality download and return video ID
-  const startQualityDownload = async (quality, url) => {
-    const response = await fetch('http://localhost:3031/api/download-video-quality', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: url,
-        quality: quality
-      }),
-    });
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to start download');
-    }
-
-    return data;
-  };
 
   // Start quality download with pre-generated video ID
   const startQualityDownloadWithId = async (quality, url, videoId) => {
@@ -129,13 +125,19 @@ const VideoQualityModal = ({
   };
 
   // Start progress tracking using polling (WebSocket disabled to prevent duplicates)
-  const startProgressTracking = (videoId) => {
+  const startProgressTracking = (videoId, quality, url) => {
     console.log(`[VideoQualityModal] Using polling instead of WebSocket to prevent duplicates`);
     console.log(`[VideoQualityModal] Setting up polling for videoId: ${videoId}`);
 
+    // Clear any existing interval first
+    if (progressIntervalRef.current) {
+      console.log(`[VideoQualityModal] Clearing existing progress interval`);
+      clearInterval(progressIntervalRef.current);
+    }
+
     // Use polling instead of WebSocket
     console.log(`[VideoQualityModal] About to set up interval for videoId: ${videoId}`);
-    const progressInterval = setInterval(async () => {
+    const newProgressInterval = setInterval(async () => {
       console.log(`[VideoQualityModal] INTERVAL FIRED! Polling for videoId: ${videoId}`);
       try {
         console.log(`[VideoQualityModal] Making fetch request...`);
@@ -154,18 +156,30 @@ const VideoQualityModal = ({
           }
 
           if (data.status === 'completed') {
-            console.log(`[VideoQualityModal] Download completed! Cleaning up...`);
-            clearInterval(progressInterval);
+            console.log(`[VideoQualityModal] Download completed! Proceeding to render...`);
+            clearInterval(newProgressInterval);
+            progressIntervalRef.current = null;
             setIsRedownloading(false);
             setDownloadProgress(100);
 
-            // Auto-close modal after successful download
-            setTimeout(() => {
-              onClose();
+            // Call onConfirm to proceed to rendering, then close modal
+            setTimeout(async () => {
+              try {
+                await onConfirm('redownload', {
+                  quality: quality,
+                  url: url,
+                  videoId: videoId
+                });
+                handleClose();
+              } catch (error) {
+                console.error('[VideoQualityModal] Error confirming redownload:', error);
+                handleClose();
+              }
             }, 1000);
           } else if (data.status === 'error') {
             console.log(`[VideoQualityModal] Download error detected:`, data.error);
-            clearInterval(progressInterval);
+            clearInterval(newProgressInterval);
+            progressIntervalRef.current = null;
             setIsRedownloading(false);
             console.error('[VideoQualityModal] Download error:', data.error);
           }
@@ -177,65 +191,23 @@ const VideoQualityModal = ({
       }
     }, 1000);
 
-    // Store interval for cleanup
-    window.qualityDownloadInterval = progressInterval;
+    // Store interval in ref for cleanup
+    progressIntervalRef.current = newProgressInterval;
+    console.log(`[VideoQualityModal] Progress interval set up successfully for videoId: ${videoId}`);
   };
 
-  // Wait for download completion
-  const waitForDownloadCompletion = (videoId) => {
-    return new Promise((resolve, reject) => {
-      let completed = false;
 
-      // Set up completion listener
-      const completionInterval = setInterval(async () => {
-        try {
-          const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
-          const data = await response.json();
 
-          if (data.success && !completed) {
-            if (data.status === 'completed') {
-              completed = true;
-              clearInterval(completionInterval);
-
-              // WebSocket cleanup removed - using polling instead
-
-              resolve();
-            } else if (data.status === 'error') {
-              completed = true;
-              clearInterval(completionInterval);
-
-              // WebSocket cleanup removed - using polling instead
-
-              reject(new Error(data.error || 'Download failed'));
-            }
-          }
-        } catch (error) {
-          console.error('Error checking download completion:', error);
-        }
-      }, 1000); // Check every second
-
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        if (!completed) {
-          completed = true;
-          clearInterval(completionInterval);
-          // WebSocket cleanup removed - using polling instead
-          reject(new Error('Download timeout'));
-        }
-      }, 300000); // 5 minutes
-    });
-  };
-
-  // Cleanup progress tracking on unmount
+  // Cleanup progress tracking on unmount or when modal closes
   React.useEffect(() => {
     return () => {
-      if (window.qualityDownloadInterval) {
-        clearInterval(window.qualityDownloadInterval);
+      if (progressIntervalRef.current) {
+        console.log(`[VideoQualityModal] Cleaning up progress interval on unmount`);
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
       }
-
-      // WebSocket cleanup removed - using polling instead
     };
-  }, [downloadVideoId]);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -252,16 +224,14 @@ const VideoQualityModal = ({
       try {
         // Generate video ID first
         const videoId = `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        setDownloadVideoId(videoId);
 
         // Start progress tracking BEFORE starting download
-        startProgressTracking(videoId);
+        startProgressTracking(videoId, selectedQuality.quality, videoInfo.url);
 
         // Start the download with the pre-generated video ID
         await startQualityDownloadWithId(selectedQuality.quality, videoInfo.url, videoId);
 
-        // Progress tracking will handle completion and close the modal automatically
-        // No need to wait for completion or call onConfirm since the modal will auto-close
+        // Progress tracking will handle completion and proceed to rendering automatically
       } catch (error) {
         console.error('Error redownloading video:', error);
         setIsRedownloading(false);
@@ -269,7 +239,11 @@ const VideoQualityModal = ({
 
         // WebSocket cleanup removed - using polling instead
 
-        setDownloadVideoId(null);
+        // Clear progress interval on error
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+        }
         return;
       }
     } else if (selectedOption === 'version' && selectedVersion) {
@@ -278,7 +252,7 @@ const VideoQualityModal = ({
       await onConfirm('current');
     }
 
-    onClose();
+    handleClose();
   };
 
   const getVideoSourceDisplay = () => {
@@ -322,7 +296,7 @@ const VideoQualityModal = ({
   const showVersionOption = availableVersions.length > 0;
 
   return (
-    <div className="video-quality-modal-overlay" onClick={onClose}>
+    <div className="video-quality-modal-overlay" onClick={handleClose}>
       <div className="video-quality-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="header-content">
@@ -332,7 +306,7 @@ const VideoQualityModal = ({
               <span className="badge-text">{t('videoQuality.cookieSupport', 'Browser Cookie Added')}</span>
             </div>
           </div>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={handleClose}>×</button>
         </div>
 
         <div className="modal-content">
@@ -504,7 +478,7 @@ const VideoQualityModal = ({
         <div className="modal-actions">
           <button
             className="cancel-button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isRedownloading}
           >
             {t('common.cancel', 'Cancel')}
