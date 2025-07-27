@@ -109,6 +109,8 @@ const VideoRenderingSection = ({
   // Auto-fill data when autoFillData changes - with improved state management
   useEffect(() => {
     if (autoFillData) {
+      console.log('[VideoRenderingSection] Processing autoFillData:', autoFillData);
+
       // Expand if expansion is requested - override userHasCollapsed when explicitly requested
       if (autoFillData.expand) {
         setIsCollapsed(false);

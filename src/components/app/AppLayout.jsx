@@ -202,6 +202,11 @@ const AppLayout = ({
       videoFile: videoFile, // Pass selected video file if any
       source: shouldAutoScroll ? 'video-quality-modal' : 'fallback' // Track the source of the request
     });
+
+    // Clear the auto-fill data after a short delay to prevent reuse on subsequent re-renders
+    setTimeout(() => {
+      setVideoRenderingAutoFill(null);
+    }, 1000);
   };
 
   // Handler for video quality modal confirmation
