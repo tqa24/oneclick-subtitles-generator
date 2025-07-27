@@ -6,7 +6,7 @@ const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
 } = require('./shared/progressTracker');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('./shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('./shared/ytdlpUtils');
 
 
 
@@ -21,7 +21,7 @@ async function scanAvailableQualities(videoURL) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
-    // Build arguments with cookie support
+    // Build arguments with cookie support (same as main downloads)
     const args = [
       ...getCommonYtDlpArgs(),
       '--list-formats',
@@ -62,11 +62,11 @@ async function scanAvailableQualities(videoURL) {
       }
     });
 
-    // Set timeout to prevent hanging
+    // Set timeout to prevent hanging (increased due to cookie extraction time)
     setTimeout(() => {
       ytdlpProcess.kill();
       reject(new Error('Quality scan timeout'));
-    }, 30000); // 30 second timeout
+    }, 300000); // 5 minute timeout (generous for cookie extraction)
   });
 }
 
@@ -180,7 +180,7 @@ async function getVideoInfo(videoURL) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
-    // Build arguments with cookie support
+    // Build arguments with cookie support (same as main downloads)
     const args = [
       ...getCommonYtDlpArgs(),
       '--dump-json',
@@ -229,10 +229,11 @@ async function getVideoInfo(videoURL) {
     });
 
     // Set timeout to prevent hanging (increased due to cookie extraction time)
+    // Set timeout to prevent hanging (increased due to cookie extraction time)
     setTimeout(() => {
       ytdlpProcess.kill();
       reject(new Error('Video info scan timeout'));
-    }, 60000); // 60 second timeout (increased for cookie extraction)
+    }, 300000); // 5 minute timeout (generous for cookie extraction)
   });
 }
 
@@ -304,9 +305,9 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       console.log(`[downloadWithQualityAttempt] Using complex format: ${formatString}`);
     }
 
-    // Build arguments with cookie support
+    // Build arguments with optimized cookie support (use cached cookies if available)
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--format', formatString,
       '--merge-output-format', 'mp4',
       '--output', outputPath,

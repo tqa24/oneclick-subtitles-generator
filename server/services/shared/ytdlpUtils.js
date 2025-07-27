@@ -6,6 +6,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+// Cookie cache to avoid re-extraction within the same session
+let cookieCache = {
+  lastExtracted: null,
+  tempCookieFile: path.join(os.tmpdir(), 'ytdlp_cookies_cache.txt'),
+  isValid: false,
+  validityDuration: 10 * 60 * 1000 // 10 minutes
+};
+
 /**
  * Get the path to yt-dlp executable
  * First checks for yt-dlp in the virtual environment, then in PATH
@@ -155,6 +163,49 @@ function getCommonYtDlpArgs() {
 }
 
 /**
+ * Get optimized yt-dlp arguments with cookie caching for subsequent calls
+ * @param {boolean} forceRefresh - Force fresh cookie extraction
+ * @returns {Array} - Array of common arguments
+ */
+function getOptimizedYtDlpArgs(forceRefresh = false) {
+  const args = [];
+
+  // Add plugin directory if it exists
+  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  if (fs.existsSync(pluginDir)) {
+    args.push('--plugin-dirs', pluginDir);
+    console.log(`[getOptimizedYtDlpArgs] Using plugin directory: ${pluginDir}`);
+  }
+
+  // Check if we should use cached cookies
+  const now = Date.now();
+  const cacheValid = cookieCache.isValid &&
+                    cookieCache.lastExtracted &&
+                    (now - cookieCache.lastExtracted) < cookieCache.validityDuration;
+
+  if (!forceRefresh && cacheValid && cookieCache.tempCookieFile && fs.existsSync(cookieCache.tempCookieFile)) {
+    // Use cached cookies
+    console.log(`[getOptimizedYtDlpArgs] Using cached cookies (${Math.round((now - cookieCache.lastExtracted) / 1000)}s old)`);
+    args.push('--cookies', cookieCache.tempCookieFile);
+  } else {
+    // Use browser cookies (will trigger extraction)
+    const availableBrowser = detectAvailableBrowser();
+    if (availableBrowser) {
+      const hasPlugin = isChromeCookieUnlockAvailable();
+
+      console.log(`[getOptimizedYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''}`);
+      args.push('--cookies-from-browser', availableBrowser);
+
+      // Mark that we're doing fresh extraction
+      cookieCache.lastExtracted = now;
+      cookieCache.isValid = true;
+    }
+  }
+
+  return args;
+}
+
+/**
  * Check if yt-dlp is installed and get its version
  * @returns {Promise<string>} - yt-dlp version
  */
@@ -176,5 +227,6 @@ module.exports = {
   checkYtDlpVersion,
   detectAvailableBrowser,
   getCommonYtDlpArgs,
+  getOptimizedYtDlpArgs,
   isChromeCookieUnlockAvailable
 };

@@ -7,12 +7,41 @@ const { VIDEOS_DIR } = require('../config');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
 
 /**
+ * GET /api/test-quality-scan - Simple test endpoint
+ */
+router.get('/test-quality-scan', (_req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  console.log('[TEST] Quality scan test endpoint hit');
+  res.json({ success: true, message: 'Quality scan endpoint is working' });
+});
+
+/**
+ * OPTIONS /api/scan-video-qualities - Handle preflight request
+ */
+router.options('/scan-video-qualities', (_req, res) => {
+  console.log('[OPTIONS] Preflight request received for scan-video-qualities');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+/**
  * POST /api/scan-video-qualities - Scan available qualities for a video URL
  */
 router.post('/scan-video-qualities', async (req, res) => {
+  // Add explicit CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  console.log(`[QUALITY-SCAN-ROUTE] Received request:`, req.body);
   const { url } = req.body;
 
   if (!url) {
+    console.log(`[QUALITY-SCAN-ROUTE] Missing URL in request`);
     return res.status(400).json({
       success: false,
       error: 'Video URL is required'
@@ -20,24 +49,29 @@ router.post('/scan-video-qualities', async (req, res) => {
   }
 
   try {
-    console.log(`[QUALITY-SCAN] Scanning qualities for: ${url}`);
-    
+    console.log(`[QUALITY-SCAN-ROUTE] Starting quality scan for: ${url}`);
+
     // Scan available qualities
     const qualities = await scanAvailableQualities(url);
-    
-    console.log(`[QUALITY-SCAN] Found ${qualities.length} qualities:`, qualities.map(q => q.quality));
-    
-    res.json({
+
+    console.log(`[QUALITY-SCAN-ROUTE] Scan completed, found ${qualities.length} qualities:`, qualities.map(q => q.quality));
+
+    const response = {
       success: true,
       qualities,
       message: `Found ${qualities.length} available qualities`
-    });
+    };
+
+    console.log(`[QUALITY-SCAN-ROUTE] Sending response:`, response);
+    res.json(response);
   } catch (error) {
-    console.error('[QUALITY-SCAN] Error scanning qualities:', error);
-    res.status(500).json({
+    console.error('[QUALITY-SCAN-ROUTE] Error scanning qualities:', error);
+    const errorResponse = {
       success: false,
       error: error.message || 'Failed to scan video qualities'
-    });
+    };
+    console.log(`[QUALITY-SCAN-ROUTE] Sending error response:`, errorResponse);
+    res.status(500).json(errorResponse);
   }
 });
 

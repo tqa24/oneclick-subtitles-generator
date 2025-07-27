@@ -7,7 +7,7 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
@@ -84,9 +84,9 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
       console.log(`[allSites] Using complex format: ${formatString}`);
     }
 
-    // Use yt-dlp with site-appropriate format options and cookie support
+    // Use yt-dlp with site-appropriate format options and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--format', formatString,
       '--merge-output-format', 'mp4',
@@ -231,9 +231,9 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '36
       console.log(`[allSites-fallback] Using quality-limited format: ${formatString}`);
     }
 
-    // Use yt-dlp with minimal options and cookie support
+    // Use yt-dlp with minimal options and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--format', formatString,
@@ -320,9 +320,9 @@ async function downloadVideoWithBasicOptions(videoId, videoURL) {
 
     console.log(`[allSites-basic] Attempting download with no format specification`);
 
-    // Use yt-dlp with absolute minimal options and cookie support
+    // Use yt-dlp with absolute minimal options and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--no-check-certificate',
       '--output', tempPath,
       videoURL

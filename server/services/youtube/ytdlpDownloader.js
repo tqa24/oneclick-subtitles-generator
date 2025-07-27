@@ -6,7 +6,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   getDownloadProgress,
   setDownloadProgress,
@@ -57,9 +57,9 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       setDownloadProgress(videoId, 0, 'starting');
     }
 
-    // Build the yt-dlp command arguments with cookie support
+    // Build the yt-dlp command arguments with optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       videoURL,
       '-f', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '-o', tempPath,

@@ -12,26 +12,58 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3031';
  */
 export const scanVideoQualities = async (videoUrl) => {
   try {
-    console.log('[qualityScanner] Scanning qualities for:', videoUrl);
-    
-    const response = await fetch(`${SERVER_URL}/api/scan-video-qualities`, {
+    console.log('[qualityScanner] Starting quality scan for:', videoUrl);
+
+    // Step 1: Start the scan (returns immediately with scanId)
+    console.log('[qualityScanner] Starting background scan...');
+    const startResponse = await fetch(`${SERVER_URL}/api/scan-video-qualities`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         url: videoUrl
-      }),
+      })
     });
 
-    const data = await response.json();
-    
-    if (data.success) {
-      console.log('[qualityScanner] Found qualities:', data.qualities);
-      return data.qualities;
-    } else {
-      throw new Error(data.error || 'Failed to scan video qualities');
+    const startData = await startResponse.json();
+    console.log('[qualityScanner] Scan started:', startData);
+
+    if (!startData.success) {
+      throw new Error(startData.error || 'Failed to start quality scan');
     }
+
+    const scanId = startData.scanId;
+    console.log('[qualityScanner] Polling for results with scanId:', scanId);
+
+    // Step 2: Poll for results
+    const maxPolls = 60; // 5 minutes max (5 second intervals)
+    let pollCount = 0;
+
+    while (pollCount < maxPolls) {
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      pollCount++;
+
+      console.log(`[qualityScanner] Polling attempt ${pollCount}/${maxPolls}...`);
+
+      const pollResponse = await fetch(`${SERVER_URL}/api/scan-video-qualities/${scanId}`);
+      const pollData = await pollResponse.json();
+
+      console.log('[qualityScanner] Poll result:', pollData);
+
+      if (pollData.status === 'completed') {
+        console.log('[qualityScanner] Scan completed! Found qualities:', pollData.qualities);
+        return pollData.qualities;
+      } else if (pollData.status === 'error') {
+        throw new Error(pollData.error || 'Quality scan failed');
+      }
+
+      // Still scanning, continue polling
+      console.log('[qualityScanner] Still scanning, waiting...');
+    }
+
+    throw new Error('Quality scan timeout - scan took too long to complete');
+
   } catch (error) {
     console.error('[qualityScanner] Error scanning qualities:', error);
     throw error;
@@ -46,7 +78,11 @@ export const scanVideoQualities = async (videoUrl) => {
 export const getVideoInfo = async (videoUrl) => {
   try {
     console.log('[qualityScanner] Getting video info for:', videoUrl);
-    
+
+    // Create an AbortController for timeout (must be longer than backend timeout)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 360000); // 6 minute timeout (longer than backend's 5 minutes)
+
     const response = await fetch(`${SERVER_URL}/api/get-video-info`, {
       method: 'POST',
       headers: {
@@ -55,7 +91,10 @@ export const getVideoInfo = async (videoUrl) => {
       body: JSON.stringify({
         url: videoUrl
       }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     
@@ -66,6 +105,10 @@ export const getVideoInfo = async (videoUrl) => {
       throw new Error(data.error || 'Failed to get video info');
     }
   } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error('[qualityScanner] Video info timeout - this may be due to cookie extraction taking longer');
+      throw new Error('Video info timeout - please try again');
+    }
     console.error('[qualityScanner] Error getting video info:', error);
     throw error;
   }

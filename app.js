@@ -35,6 +35,8 @@ const app = express();
 // Ensure directories exist
 ensureDirectories();
 
+
+
 // Configure CORS with unified configuration
 app.use(cors(EXPRESS_CORS_CONFIG));
 
@@ -61,6 +63,151 @@ app.use('/api/health', (req, res, next) => {
 
 // Configure JSON body parser with increased limit for base64 encoded files
 app.use(express.json({ limit: '500mb' }));
+
+// In-memory storage for quality scan results
+const qualityScanResults = new Map();
+
+// NUCLEAR OPTION - Start quality scan (returns immediately)
+app.all('/api/scan-video-qualities', async (req, res) => {
+  console.log(`[NUCLEAR] ${req.method} request to scan-video-qualities from origin:`, req.headers.origin);
+
+  // Set CORS headers first
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  console.log(`[NUCLEAR] CORS headers set, processing ${req.method} request`);
+
+  // Add response tracking
+  res.on('finish', () => {
+    console.log(`[NUCLEAR] Response finished sending to client`);
+  });
+
+  res.on('close', () => {
+    console.log(`[NUCLEAR] Response connection closed`);
+  });
+
+  // Handle OPTIONS preflight
+  if (req.method === 'OPTIONS') {
+    console.log('[NUCLEAR] Handling OPTIONS preflight');
+    return res.status(200).json({ success: true });
+  }
+
+  // Handle POST request - Start scan and return immediately
+  if (req.method === 'POST') {
+    console.log(`[NUCLEAR] POST request body:`, req.body);
+    const { url } = req.body;
+
+    if (!url) {
+      console.log(`[NUCLEAR] Missing URL in request`);
+      return res.status(400).json({
+        success: false,
+        error: 'Video URL is required'
+      });
+    }
+
+    // Generate a unique scan ID
+    const scanId = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Store initial status
+    qualityScanResults.set(scanId, {
+      status: 'scanning',
+      url: url,
+      startTime: Date.now()
+    });
+
+    console.log(`[NUCLEAR] Starting background quality scan for: ${url} (ID: ${scanId})`);
+
+    // Start scan in background (don't await)
+    (async () => {
+      try {
+        const { scanAvailableQualities } = require('./server/services/qualityScanner');
+        const qualities = await scanAvailableQualities(url);
+
+        console.log(`[NUCLEAR] Background scan completed for ${scanId}, found ${qualities.length} qualities`);
+
+        // Store results
+        qualityScanResults.set(scanId, {
+          status: 'completed',
+          url: url,
+          startTime: qualityScanResults.get(scanId).startTime,
+          completedTime: Date.now(),
+          qualities: qualities,
+          success: true,
+          message: `Found ${qualities.length} available qualities`
+        });
+      } catch (error) {
+        console.error(`[NUCLEAR] Background scan failed for ${scanId}:`, error);
+        qualityScanResults.set(scanId, {
+          status: 'error',
+          url: url,
+          startTime: qualityScanResults.get(scanId).startTime,
+          completedTime: Date.now(),
+          success: false,
+          error: error.message || 'Failed to scan video qualities'
+        });
+      }
+    })();
+
+    // Return immediately with scan ID
+    const response = {
+      success: true,
+      scanId: scanId,
+      status: 'scanning',
+      message: 'Quality scan started. Use the scanId to check progress.'
+    };
+
+    console.log(`[NUCLEAR] Returning immediate response for scan ${scanId}`);
+    return res.json(response);
+  }
+
+  // Method not allowed
+  return res.status(405).json({ error: 'Method not allowed' });
+});
+
+// Polling endpoint to check scan status
+app.get('/api/scan-video-qualities/:scanId', (req, res) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  const { scanId } = req.params;
+  console.log(`[NUCLEAR-POLL] Checking status for scan ${scanId}`);
+
+  const result = qualityScanResults.get(scanId);
+
+  if (!result) {
+    return res.status(404).json({
+      success: false,
+      error: 'Scan ID not found'
+    });
+  }
+
+  console.log(`[NUCLEAR-POLL] Scan ${scanId} status: ${result.status}`);
+
+  // Return current status
+  res.json({
+    success: true,
+    scanId: scanId,
+    status: result.status,
+    ...(result.status === 'completed' ? {
+      qualities: result.qualities,
+      message: result.message
+    } : {}),
+    ...(result.status === 'error' ? {
+      error: result.error
+    } : {})
+  });
+
+  // Clean up completed/error results after 5 minutes
+  if (result.status !== 'scanning' && Date.now() - result.completedTime > 300000) {
+    qualityScanResults.delete(scanId);
+    console.log(`[NUCLEAR-POLL] Cleaned up scan ${scanId}`);
+  }
+});
 
 // Serve static directories with CORS headers
 const staticOptions = {
@@ -122,6 +269,10 @@ app.use((req, res, next) => {
 app.get('/api/test', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
+
+
+
+
 
 // Health check endpoint for frontend to verify server connection
 app.get('/api/health', (req, res) => {

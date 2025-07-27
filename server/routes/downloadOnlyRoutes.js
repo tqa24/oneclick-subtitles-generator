@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../config');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('../services/shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../services/shared/ytdlpUtils');
 const { setDownloadProgress, getDownloadProgress } = require('../services/shared/progressTracker');
 const { updateProgressFromYtdlpOutput } = require('../services/shared/progressTracker');
 
@@ -178,7 +178,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
       }
 
       args = [
-        ...getCommonYtDlpArgs(),
+        ...getOptimizedYtDlpArgs(),
         '--format', formatSelector,
         '--merge-output-format', 'mp4',
         '--output', outputPath,
@@ -191,7 +191,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
     } else {
       // Audio download
       args = [
-        ...getCommonYtDlpArgs(),
+        ...getOptimizedYtDlpArgs(),
         '--format', 'bestaudio/best',
         '--extract-audio',
         '--audio-format', 'mp3',

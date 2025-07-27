@@ -9,7 +9,7 @@ const { VIDEOS_DIR } = require('../../config');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 const douyinPuppeteer = require('./douyin_puppeteer');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
@@ -111,9 +111,9 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with quality-limited options for consistency and cookie support
+    // Use yt-dlp with quality-limited options for consistency and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
@@ -214,9 +214,9 @@ async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with different options for the fallback method but respect quality limit and cookie support
+    // Use yt-dlp with different options for the fallback method but respect quality limit and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -313,9 +313,9 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with special options for short URLs but respect quality limit and cookie support
+    // Use yt-dlp with special options for short URLs but respect quality limit and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -394,9 +394,9 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '3
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with minimal options for maximum compatibility and cookie support
+    // Use yt-dlp with minimal options for maximum compatibility and optimized cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getOptimizedYtDlpArgs(),
       '--verbose',
       '--no-check-certificate',
       '--output', outputPath,
