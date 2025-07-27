@@ -399,7 +399,7 @@ export const useSubtitles = (t) => {
         let currentSubtitles;
 
         // Try to get the current cache ID
-        const currentVideoUrl = localStorage.getItem('current_youtube_url');
+        const currentVideoUrl = localStorage.getItem('current_video_url');
         const currentFileUrl = localStorage.getItem('current_file_url');
         let cacheId = null;
 

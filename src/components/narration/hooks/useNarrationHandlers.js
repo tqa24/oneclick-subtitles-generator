@@ -139,7 +139,7 @@ const useNarrationHandlers = ({
         // Cache reference audio immediately after upload
         try {
           const getCurrentMediaId = () => {
-            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentVideoUrl = localStorage.getItem('current_video_url');
             const currentFileUrl = localStorage.getItem('current_file_url');
 
             if (currentVideoUrl) {
@@ -293,7 +293,7 @@ const useNarrationHandlers = ({
             // Cache reference audio immediately after recording
             try {
               const getCurrentMediaId = () => {
-                const currentVideoUrl = localStorage.getItem('current_youtube_url');
+                const currentVideoUrl = localStorage.getItem('current_video_url');
                 const currentFileUrl = localStorage.getItem('current_file_url');
 
                 if (currentVideoUrl) {
@@ -450,7 +450,7 @@ const useNarrationHandlers = ({
         // Cache reference audio immediately after extraction
         try {
           const getCurrentMediaId = () => {
-            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentVideoUrl = localStorage.getItem('current_video_url');
             const currentFileUrl = localStorage.getItem('current_file_url');
 
             if (currentVideoUrl) {
@@ -712,7 +712,7 @@ const useNarrationHandlers = ({
         try {
           // Get current media ID
           const getCurrentMediaId = () => {
-            const currentVideoUrl = localStorage.getItem('current_youtube_url');
+            const currentVideoUrl = localStorage.getItem('current_video_url');
             const currentFileUrl = localStorage.getItem('current_file_url');
 
             if (currentVideoUrl) {

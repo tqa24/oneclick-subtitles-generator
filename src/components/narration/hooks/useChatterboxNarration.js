@@ -287,7 +287,7 @@ const useChatterboxNarration = ({
       try {
         // Get current media ID
         const getCurrentMediaId = () => {
-          const currentVideoUrl = localStorage.getItem('current_youtube_url');
+          const currentVideoUrl = localStorage.getItem('current_video_url');
           const currentFileUrl = localStorage.getItem('current_file_url');
 
           if (currentVideoUrl) {

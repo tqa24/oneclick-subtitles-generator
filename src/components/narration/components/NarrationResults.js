@@ -5,7 +5,7 @@ import { SERVER_URL } from '../../../config';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
 
 // Constants for localStorage keys
-const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
+const CURRENT_VIDEO_ID_KEY = 'current_video_url';
 const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
 
 /**

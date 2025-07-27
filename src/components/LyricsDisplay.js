@@ -573,7 +573,7 @@ const LyricsDisplay = ({
   const handleSave = async () => {
     try {
       // Get the current video source
-      const currentVideoUrl = localStorage.getItem('current_youtube_url');
+      const currentVideoUrl = localStorage.getItem('current_video_url');
       const currentFileUrl = localStorage.getItem('current_file_url');
       let cacheId = null;
 
@@ -587,7 +587,6 @@ const LyricsDisplay = ({
 
       if (!cacheId) {
         console.error('No cache ID found for current media');
-
         return;
       }
 
@@ -598,7 +597,6 @@ const LyricsDisplay = ({
         if (latestSubtitles) {
           const parsedSubtitles = JSON.parse(latestSubtitles);
           if (Array.isArray(parsedSubtitles) && parsedSubtitles.length > 0) {
-
             subtitlesToSave = parsedSubtitles;
             // Clear the localStorage entry to avoid using it again
             localStorage.removeItem('latest_segment_subtitles');

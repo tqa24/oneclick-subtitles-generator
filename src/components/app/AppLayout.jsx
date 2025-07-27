@@ -187,19 +187,20 @@ const AppLayout = ({
     if (videoInfo) {
       setShowVideoQualityModal(true);
     } else {
-      // Fallback to original behavior if no video info
-      proceedWithVideoRendering();
+      // Fallback to original behavior if no video info - no auto-scroll for fallback
+      proceedWithVideoRendering(null, false);
     }
   };
 
   // Proceed with video rendering (original behavior)
-  const proceedWithVideoRendering = (videoFile = null) => {
+  const proceedWithVideoRendering = (videoFile = null, shouldAutoScroll = false) => {
     // Auto-fill the video rendering section and ensure it's expanded
     setVideoRenderingAutoFill({
       timestamp: Date.now(), // Use timestamp to trigger re-render
       expand: true, // Signal to expand the section
-      autoScroll: true, // Also scroll to the section
-      videoFile: videoFile // Pass selected video file if any
+      autoScroll: shouldAutoScroll, // Only scroll when explicitly requested
+      videoFile: videoFile, // Pass selected video file if any
+      source: shouldAutoScroll ? 'video-quality-modal' : 'fallback' // Track the source of the request
     });
   };
 
@@ -212,8 +213,8 @@ const AppLayout = ({
       // Close the modal
       setShowVideoQualityModal(false);
 
-      // Proceed with video rendering using the selected video
-      proceedWithVideoRendering(videoFile);
+      // Proceed with video rendering using the selected video - enable auto-scroll for quality modal
+      proceedWithVideoRendering(videoFile, true);
     } catch (error) {
       console.error('Error handling video quality selection:', error);
       // Show error to user (you might want to add a toast notification here)

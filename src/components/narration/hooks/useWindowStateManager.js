@@ -3,7 +3,7 @@ import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
 
 // Constants for localStorage keys
 const GROUPED_SUBTITLES_CACHE_KEY = 'grouped_subtitles_cache';
-const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
+const CURRENT_VIDEO_ID_KEY = 'current_video_url';
 const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
 const USER_DISABLED_GROUPING_KEY = 'user_disabled_grouping';
 

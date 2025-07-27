@@ -4,7 +4,7 @@ import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProce
 
 // Constants for localStorage keys
 const TRANSLATION_CACHE_KEY = 'translated_subtitles_cache';
-const CURRENT_VIDEO_ID_KEY = 'current_youtube_url';
+const CURRENT_VIDEO_ID_KEY = 'current_video_url';
 const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
 
 /**

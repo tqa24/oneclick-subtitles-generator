@@ -139,11 +139,16 @@ const VideoRenderingSection = ({
       // Auto-fill narration if available
       if (narrationResults && narrationResults.length > 0) {
         setSelectedNarration('generated');
-      }      // Auto-scroll if explicitly requested
-      if (autoFillData.expand && autoFillData.autoScroll) {
+      }
+
+      // Auto-scroll ONLY if explicitly requested AND from the video-quality-modal
+      if (autoFillData.expand && autoFillData.autoScroll && autoFillData.source === 'video-quality-modal') {
+        console.log('[VideoRenderingSection] Auto-scrolling to rendering section from video quality modal');
         setTimeout(() => {
           sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
+      } else if (autoFillData.autoScroll && autoFillData.source !== 'video-quality-modal') {
+        console.log('[VideoRenderingSection] Auto-scroll requested but blocked - source:', autoFillData.source);
       }
     }
   }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, userHasCollapsed]);

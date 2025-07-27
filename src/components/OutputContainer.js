@@ -130,12 +130,7 @@ const OutputContainer = ({
         return;
       }
 
-      // Special case: If we have selectedVideo + subtitlesData but no downloaded video,
-      // don't set videoSource to prevent VideoPreview from trying to load the URL
-      if (subtitlesData && !hasValidDownloadedVideo(uploadedFile)) {
-        setVideoSource('');
-        return;
-      }
+
 
       setVideoSource(selectedVideo.url);
       return;
@@ -144,12 +139,7 @@ const OutputContainer = ({
     // Check if we have a video URL in localStorage but no selectedVideo object
     const videoUrl = localStorage.getItem('current_video_url');
     if (videoUrl && !selectedVideo && !isSrtOnlyMode) {
-      // Special case: If we have cached URL + subtitlesData but no downloaded video,
-      // don't set videoSource to prevent VideoPreview from trying to load the URL
-      if (subtitlesData && !hasValidDownloadedVideo(uploadedFile)) {
-        setVideoSource('');
-        return;
-      }
+
 
       setVideoSource(videoUrl);
       return;
@@ -157,7 +147,7 @@ const OutputContainer = ({
 
     // Clear video source if nothing is selected
     setVideoSource('');
-  }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode]);
+  }, [selectedVideo, uploadedFile, isSrtOnlyMode]);
 
   // Notify parent when actualVideoUrl changes
   useEffect(() => {
