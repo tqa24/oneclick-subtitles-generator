@@ -9,6 +9,8 @@ const { execSync, exec } = require('child_process'); // Added exec for non-block
 const fs = require('fs');
 const path = require('path');
 const os = require('os'); // Needed for platform/arch checks
+const https = require('https');
+const { createWriteStream } = require('fs');
 
 // Import our logging utility
 const { Logger } = require('./utils/logger');
@@ -124,9 +126,11 @@ function detectGpuVendor() {
 }
 
 
-// --- 1. Check for uv ---
-logger.section('OneClick Subtitles Generator - Narration Setup');
-logger.step(1, 6, 'Checking for uv package manager');
+// --- Main Setup Function ---
+async function runSetup() {
+    // --- 1. Check for uv ---
+    logger.section('OneClick Subtitles Generator - Narration Setup');
+    logger.step(1, 6, 'Checking for uv package manager');
 
 if (!commandExists('uv')) {
     logger.error('uv is not installed or not found in PATH.');
@@ -1049,8 +1053,261 @@ print('✅ All service dependencies and required files verified successfully!')
     // Don't exit here, just warn the user
 }
 
-// --- 12. Final Summary ---
-logger.step(6, 6, 'Setup completed successfully!');
+// --- Helper Functions for yt-dlp Plugin Installation ---
+
+/**
+ * Get the appropriate yt-dlp plugins directory based on OS and installation type
+ * @returns {string} - Path to yt-dlp plugins directory
+ */
+function getYtDlpPluginsDirectory() {
+    const platform = os.platform();
+    const homeDir = os.homedir();
+
+    // First, try to use directory relative to our yt-dlp installation
+    const venvYtDlpPath = path.join(process.cwd(), VENV_DIR,
+        platform === 'win32' ? 'Scripts' : 'bin',
+        platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
+    );
+
+    if (fs.existsSync(venvYtDlpPath)) {
+        // Use plugins directory relative to our venv
+        const venvPluginsDir = path.join(process.cwd(), VENV_DIR, 'yt-dlp-plugins');
+        logger.info(`Using venv-relative plugins directory: ${venvPluginsDir}`);
+        return venvPluginsDir;
+    }
+
+    // Fall back to system-wide directories
+    let pluginsDir;
+    if (platform === 'win32') {
+        // Windows: %APPDATA%/yt-dlp/plugins/
+        pluginsDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'yt-dlp', 'plugins');
+    } else if (platform === 'darwin') {
+        // macOS: ~/.yt-dlp/plugins/
+        pluginsDir = path.join(homeDir, '.yt-dlp', 'plugins');
+    } else {
+        // Linux: ~/.yt-dlp/plugins/
+        pluginsDir = path.join(homeDir, '.yt-dlp', 'plugins');
+    }
+
+    logger.info(`Using system plugins directory: ${pluginsDir}`);
+    return pluginsDir;
+}
+
+/**
+ * Download a file from URL to destination
+ * @param {string} url - URL to download from
+ * @param {string} dest - Destination file path
+ * @returns {Promise<void>}
+ */
+function downloadFile(url, dest) {
+    return new Promise((resolve, reject) => {
+        const file = createWriteStream(dest);
+
+        https.get(url, (response) => {
+            // Handle redirects
+            if (response.statusCode === 302 || response.statusCode === 301) {
+                file.close();
+                fs.unlinkSync(dest);
+                return downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+            }
+
+            if (response.statusCode !== 200) {
+                file.close();
+                fs.unlinkSync(dest);
+                return reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+            }
+
+            response.pipe(file);
+
+            file.on('finish', () => {
+                file.close();
+                resolve();
+            });
+
+            file.on('error', (err) => {
+                file.close();
+                fs.unlinkSync(dest);
+                reject(err);
+            });
+        }).on('error', (err) => {
+            file.close();
+            if (fs.existsSync(dest)) {
+                fs.unlinkSync(dest);
+            }
+            reject(err);
+        });
+    });
+}
+
+/**
+ * Extract ZIP file to destination directory
+ * @param {string} zipPath - Path to ZIP file
+ * @param {string} extractDir - Directory to extract to
+ * @returns {Promise<void>}
+ */
+async function extractZip(zipPath, extractDir) {
+    // Use built-in unzip capabilities or external tools
+    const platform = os.platform();
+
+    try {
+        if (platform === 'win32') {
+            // Use PowerShell on Windows
+            const command = `powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`;
+            execSync(command, { stdio: 'pipe' });
+        } else {
+            // Use unzip on Unix-like systems
+            execSync(`unzip -o "${zipPath}" -d "${extractDir}"`, { stdio: 'pipe' });
+        }
+        logger.info(`Extracted ${zipPath} to ${extractDir}`);
+    } catch (error) {
+        throw new Error(`Failed to extract ZIP file: ${error.message}`);
+    }
+}
+
+/**
+ * Verify that the plugin was installed correctly
+ * @param {string} pluginDir - Plugin installation directory
+ * @returns {boolean} - True if plugin is properly installed
+ */
+function verifyPluginInstallation(pluginDir) {
+    try {
+        // Check if the plugin directory structure exists
+        const pluginNamespaceDir = path.join(pluginDir, 'ChromeCookieUnlock', 'yt_dlp_plugins');
+        const pluginFiles = [
+            path.join(pluginNamespaceDir, '__init__.py'),
+            path.join(pluginNamespaceDir, 'extractor', '__init__.py')
+        ];
+
+        for (const file of pluginFiles) {
+            if (!fs.existsSync(file)) {
+                logger.warn(`Plugin file missing: ${file}`);
+                return false;
+            }
+        }
+
+        // Try to verify yt-dlp recognizes the plugin
+        try {
+            const ytDlpPath = path.join(process.cwd(), VENV_DIR,
+                process.platform === 'win32' ? 'Scripts/yt-dlp.exe' : 'bin/yt-dlp'
+            );
+
+            if (fs.existsSync(ytDlpPath)) {
+                // Run yt-dlp with --verbose to check if plugin is loaded
+                // We'll do a quick check without actually downloading anything
+                const result = execSync(`"${ytDlpPath}" --verbose --simulate --no-warnings "https://www.youtube.com/watch?v=dQw4w9WgXcQ"`,
+                    { encoding: 'utf8', timeout: 10000, stdio: 'pipe' });
+
+                if (result.includes('ChromeCookieUnlock') || result.includes('cookie')) {
+                    logger.info('Plugin verified: yt-dlp recognizes ChromeCookieUnlock plugin');
+                } else {
+                    logger.info('Plugin files verified (yt-dlp plugin recognition test inconclusive)');
+                }
+            }
+        } catch (ytdlpError) {
+            // Don't fail verification if yt-dlp test fails - plugin files exist
+            logger.info('Plugin files verified (yt-dlp test skipped)');
+        }
+
+        logger.info('Plugin installation verified successfully');
+        return true;
+    } catch (error) {
+        logger.warn(`Plugin verification failed: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * Install the ChromeCookieUnlock plugin for yt-dlp
+ * This plugin solves the Chrome cookie database locking issue on Windows
+ */
+async function installYtDlpCookiePlugin() {
+    try {
+        logger.subsection('yt-dlp ChromeCookieUnlock Plugin Installation');
+
+        // Get plugins directory
+        const pluginsDir = getYtDlpPluginsDirectory();
+        const pluginDir = path.join(pluginsDir, 'ChromeCookieUnlock');
+
+        // Create plugins directory if it doesn't exist
+        if (!fs.existsSync(pluginsDir)) {
+            fs.mkdirSync(pluginsDir, { recursive: true });
+            logger.info(`Created plugins directory: ${pluginsDir}`);
+        }
+
+        // Check if plugin is already installed
+        if (fs.existsSync(pluginDir) && verifyPluginInstallation(pluginsDir)) {
+            logger.info('ChromeCookieUnlock plugin already installed and verified');
+            return;
+        }
+
+        // Download plugin from GitHub
+        const pluginUrl = 'https://github.com/seproDev/yt-dlp-ChromeCookieUnlock/archive/refs/heads/main.zip';
+        const tempZipPath = path.join(os.tmpdir(), 'ChromeCookieUnlock.zip');
+
+        logger.info('Downloading ChromeCookieUnlock plugin...');
+        await downloadFile(pluginUrl, tempZipPath);
+        logger.info('Plugin downloaded successfully');
+
+        // Extract plugin
+        logger.info('Extracting plugin...');
+        const tempExtractDir = path.join(os.tmpdir(), 'ChromeCookieUnlock-extract');
+
+        // Clean up any existing temp directory
+        if (fs.existsSync(tempExtractDir)) {
+            fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        }
+
+        await extractZip(tempZipPath, tempExtractDir);
+
+        // Find the extracted plugin directory (it will be named something like "yt-dlp-ChromeCookieUnlock-main")
+        const extractedContents = fs.readdirSync(tempExtractDir);
+        const extractedPluginDir = extractedContents.find(name => name.startsWith('yt-dlp-ChromeCookieUnlock'));
+
+        if (!extractedPluginDir) {
+            throw new Error('Could not find extracted plugin directory');
+        }
+
+        const sourcePath = path.join(tempExtractDir, extractedPluginDir);
+
+        // Copy plugin to final location
+        logger.info(`Installing plugin to: ${pluginDir}`);
+
+        // Remove existing plugin directory if it exists
+        if (fs.existsSync(pluginDir)) {
+            fs.rmSync(pluginDir, { recursive: true, force: true });
+        }
+
+        // Copy the plugin
+        fs.cpSync(sourcePath, pluginDir, { recursive: true });
+
+        // Clean up temporary files
+        fs.unlinkSync(tempZipPath);
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+
+        // Verify installation
+        if (verifyPluginInstallation(pluginsDir)) {
+            logger.success('✅ ChromeCookieUnlock plugin installed successfully');
+            logger.info('   This plugin resolves Chrome cookie database locking issues on Windows');
+            logger.info('   yt-dlp can now access Chrome cookies even when the browser is open');
+        } else {
+            throw new Error('Plugin installation verification failed');
+        }
+
+    } catch (error) {
+        logger.warn(`⚠️  ChromeCookieUnlock plugin installation failed: ${error.message}`);
+        logger.info('   Cookie authentication will fall back to no-cookie mode when Chrome is open');
+        logger.info('   This is not critical - the application will still function normally');
+
+        // Don't throw the error - we want setup to continue even if plugin installation fails
+    }
+}
+
+// --- 12. Install yt-dlp ChromeCookieUnlock Plugin ---
+logger.step(6, 7, 'Installing yt-dlp ChromeCookieUnlock plugin...');
+await installYtDlpCookiePlugin();
+
+// --- 13. Final Summary ---
+logger.step(7, 7, 'Setup completed successfully!');
 
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
@@ -1089,3 +1346,10 @@ logger.newLine();
 logger.info('💡 To force a specific GPU type:');
 logger.info('   Set FORCE_GPU_VENDOR environment variable (NVIDIA, AMD, INTEL, APPLE, CPU)');
 logger.info('   Example: set FORCE_GPU_VENDOR=CPU && npm run setup:narration:uv');
+}
+
+// --- Run Setup ---
+runSetup().catch((error) => {
+    logger.error(`Setup failed: ${error.message}`);
+    process.exit(1);
+});

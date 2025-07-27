@@ -78,6 +78,42 @@ function detectAvailableBrowser() {
 }
 
 /**
+ * Check if ChromeCookieUnlock plugin is available
+ * @returns {boolean} - True if plugin is available
+ */
+function isChromeCookieUnlockAvailable() {
+  const platform = os.platform();
+  const homeDir = os.homedir();
+
+  // Check possible plugin locations
+  const pluginPaths = [];
+
+  // Check venv-relative path first
+  const venvPluginsDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins');
+  pluginPaths.push(venvPluginsDir);
+
+  // Check system-wide paths
+  if (platform === 'win32') {
+    pluginPaths.push(path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'yt-dlp', 'plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins'));
+  } else {
+    pluginPaths.push(path.join(homeDir, '.yt-dlp', 'plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins'));
+  }
+
+  // Check if any plugin path exists
+  for (const pluginPath of pluginPaths) {
+    if (fs.existsSync(pluginPath)) {
+      const initFile = path.join(pluginPath, '__init__.py');
+      if (fs.existsSync(initFile)) {
+        console.log(`[isChromeCookieUnlockAvailable] Plugin found at: ${pluginPath}`);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Get common yt-dlp arguments including cookie support
  * @returns {Array} - Array of common arguments
  */
@@ -87,8 +123,17 @@ function getCommonYtDlpArgs() {
   // Try to add browser cookies for better authentication
   const availableBrowser = detectAvailableBrowser();
   if (availableBrowser) {
+    const hasPlugin = isChromeCookieUnlockAvailable();
+
+    if (availableBrowser === 'chrome' && os.platform() === 'win32' && !hasPlugin) {
+      // On Windows with Chrome, warn about potential cookie locking issues
+      console.log(`[getCommonYtDlpArgs] Chrome detected on Windows without ChromeCookieUnlock plugin`);
+      console.log(`[getCommonYtDlpArgs] Cookie extraction may fail if Chrome is running`);
+      console.log(`[getCommonYtDlpArgs] Consider closing Chrome or installing ChromeCookieUnlock plugin`);
+    }
+
     args.push('--cookies-from-browser', availableBrowser);
-    console.log(`[getCommonYtDlpArgs] Using cookies from browser: ${availableBrowser}`);
+    console.log(`[getCommonYtDlpArgs] Using cookies from browser: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''}`);
   }
 
   return args;
@@ -115,5 +160,6 @@ module.exports = {
   getYtDlpPath,
   checkYtDlpVersion,
   detectAvailableBrowser,
-  getCommonYtDlpArgs
+  getCommonYtDlpArgs,
+  isChromeCookieUnlockAvailable
 };
