@@ -9,7 +9,7 @@ const { VIDEOS_DIR } = require('../../config');
 const { promisify } = require('util');
 const execPromise = promisify(exec);
 const douyinPuppeteer = require('./douyin_puppeteer');
-const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
@@ -75,9 +75,10 @@ function normalizeDouyinUrl(url) {
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
+async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -111,9 +112,9 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with quality-limited options for consistency and optimized cookie support
+    // Use yt-dlp with quality-limited options for consistency and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--format', `best[height<=${resolution}]`,
       '--output', outputPath,
@@ -188,9 +189,10 @@ async function downloadDouyinVideoYtDlp(videoId, videoURL, quality = '360p') {
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') {
+async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -214,9 +216,9 @@ async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with different options for the fallback method but respect quality limit and optimized cookie support
+    // Use yt-dlp with different options for the fallback method but respect quality limit and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -282,9 +284,10 @@ async function downloadDouyinVideoFallback(videoId, videoURL, quality = '360p') 
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = '360p') {
+async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL but ensure it has a trailing slash for short URLs
@@ -313,9 +316,9 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = 
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with special options for short URLs but respect quality limit and optimized cookie support
+    // Use yt-dlp with special options for short URLs but respect quality limit and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--no-check-certificate',
       '--force-overwrites',
@@ -380,9 +383,10 @@ async function downloadDouyinVideoShortUrlFallback(videoId, videoURL, quality = 
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '360p') {
+async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
   // Normalize the URL
@@ -394,9 +398,9 @@ async function downloadDouyinVideoSimpleFallback(videoId, videoURL, quality = '3
     // Get the path to yt-dlp
     const ytDlpPath = getYtDlpPath();
 
-    // Use yt-dlp with minimal options for maximum compatibility and optimized cookie support
+    // Use yt-dlp with minimal options for maximum compatibility and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--no-check-certificate',
       '--output', outputPath,
@@ -492,9 +496,10 @@ async function downloadDouyinVideoPuppeteer(videoId, videoURL) {
  * @param {string} videoId - Douyin video ID
  * @param {string} videoURL - Douyin video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadDouyinVideoWithRetry(videoId, videoURL, quality = '360p') {
+async function downloadDouyinVideoWithRetry(videoId, videoURL, quality = '360p', useCookies = false) {
 
 
   // Use the Puppeteer approach

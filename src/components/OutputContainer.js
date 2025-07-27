@@ -27,6 +27,7 @@ const OutputContainer = ({
   timeFormat = 'seconds',
   showWaveform = true,
   useOptimizedPreview = false,
+  useCookiesForDownload = true,
   isSrtOnlyMode = false,
   onViewRules,
   userProvidedSubtitles = '',
@@ -246,6 +247,7 @@ const OutputContainer = ({
                 subtitlesArray={editedLyrics || subtitlesData}
                 onVideoUrlReady={setActualVideoUrl}
                 useOptimizedPreview={useOptimizedPreview}
+                useCookiesForDownload={useCookiesForDownload}
                 onReferenceAudioChange={setReferenceAudio}
                 onRenderVideo={onRenderVideo}
               />

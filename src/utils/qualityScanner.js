@@ -22,7 +22,8 @@ export const scanVideoQualities = async (videoUrl) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        url: videoUrl
+        url: videoUrl,
+        useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
       })
     });
 
@@ -133,7 +134,8 @@ export const downloadVideoWithQuality = async (videoUrl, quality, videoId) => {
       body: JSON.stringify({
         url: videoUrl,
         quality: quality,
-        videoId: videoId
+        videoId: videoId,
+        useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
       }),
     });
 

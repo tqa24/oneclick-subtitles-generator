@@ -21,6 +21,11 @@ const VideoQualityModal = ({
   const [downloadProgress, setDownloadProgress] = useState(0);
   const progressIntervalRef = useRef(null);
 
+  // Get current cookie setting as state
+  const [useCookiesEnabled, setUseCookiesEnabled] = useState(
+    localStorage.getItem('use_cookies_for_download') === 'true'
+  );
+
   // Wrapper function for onClose to ensure cleanup
   const handleClose = () => {
     console.log(`[VideoQualityModal] Modal closing, cleaning up progress interval`);
@@ -112,7 +117,8 @@ const VideoQualityModal = ({
       body: JSON.stringify({
         url: url,
         quality: quality,
-        videoId: videoId
+        videoId: videoId,
+        useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
       }),
     });
 
@@ -209,6 +215,33 @@ const VideoQualityModal = ({
     };
   }, []);
 
+  // Listen for changes to cookie setting and update when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Update cookie setting when modal opens
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    }
+
+    const handleStorageChange = () => {
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    };
+
+    const handleFocus = () => {
+      // Update when window regains focus (e.g., after closing settings modal)
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    };
+
+    // Listen for storage events (when localStorage changes in other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+    // Listen for focus events (when user returns to tab/window)
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
@@ -248,11 +281,11 @@ const VideoQualityModal = ({
       }
     } else if (selectedOption === 'version' && selectedVersion) {
       await onConfirm('version', { version: selectedVersion });
+      handleClose();
     } else {
       await onConfirm('current');
+      handleClose();
     }
-
-    handleClose();
   };
 
   const getVideoSourceDisplay = () => {
@@ -301,9 +334,18 @@ const VideoQualityModal = ({
         <div className="modal-header">
           <div className="header-content">
             <h3>{t('videoQuality.title', 'Video Quality for Rendering')}</h3>
-            <div className="header-badge" title={t('videoQuality.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')}>
+            <div className={`header-badge ${useCookiesEnabled ? 'cookie-enabled' : 'cookie-disabled'}`}
+                 title={useCookiesEnabled
+                   ? t('videoQuality.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')
+                   : t('videoQuality.cookieDisabledTooltip', 'Browser cookies are disabled. Downloads will be faster but may have limited quality options and fail on restricted content.')
+                 }>
               <FiInfo className="badge-icon" />
-              <span className="badge-text">{t('videoQuality.cookieSupport', 'Browser Cookie Added')}</span>
+              <span className="badge-text">
+                {useCookiesEnabled
+                  ? t('videoQuality.cookieSupport', 'Browser Cookie Added')
+                  : t('videoQuality.cookieDisabled', 'Browser Cookie Disabled')
+                }
+              </span>
             </div>
           </div>
           <button className="close-button" onClick={handleClose}>×</button>

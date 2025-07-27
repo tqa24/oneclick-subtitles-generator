@@ -7,7 +7,7 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
@@ -38,9 +38,10 @@ async function checkYtDlpVersion() {
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
+async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
 
@@ -84,9 +85,9 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
       console.log(`[allSites] Using complex format: ${formatString}`);
     }
 
-    // Use yt-dlp with site-appropriate format options and optimized cookie support
+    // Use yt-dlp with site-appropriate format options and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--format', formatString,
       '--merge-output-format', 'mp4',
@@ -167,24 +168,25 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p') {
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithRetry(videoId, videoURL, quality = '360p') {
+async function downloadVideoWithRetry(videoId, videoURL, quality = '360p', useCookies = false) {
   try {
     // First attempt with standard options
-    return await downloadVideoWithYtDlp(videoId, videoURL, quality);
+    return await downloadVideoWithYtDlp(videoId, videoURL, quality, useCookies);
   } catch (error) {
     console.error(`First download attempt failed: ${error.message}`);
 
     // Try with fallback options
     try {
-      return await downloadVideoWithFallbackOptions(videoId, videoURL, quality);
+      return await downloadVideoWithFallbackOptions(videoId, videoURL, quality, useCookies);
     } catch (fallbackError) {
       console.error(`Fallback download attempt failed: ${fallbackError.message}`);
 
       // Try with most basic options (no format specification)
       try {
-        return await downloadVideoWithBasicOptions(videoId, videoURL);
+        return await downloadVideoWithBasicOptions(videoId, videoURL, useCookies);
       } catch (basicError) {
         console.error(`Basic download attempt failed: ${basicError.message}`);
         throw basicError;
@@ -197,9 +199,11 @@ async function downloadVideoWithRetry(videoId, videoURL, quality = '360p') {
  * Download video with fallback options
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
+ * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '360p') {
+async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '360p', useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
 
@@ -231,9 +235,9 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '36
       console.log(`[allSites-fallback] Using quality-limited format: ${formatString}`);
     }
 
-    // Use yt-dlp with minimal options and optimized cookie support
+    // Use yt-dlp with minimal options and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--verbose',
       '--no-check-certificate',
       '--format', formatString,
@@ -308,9 +312,10 @@ async function downloadVideoWithFallbackOptions(videoId, videoURL, quality = '36
  * Download video with most basic options (no format specification)
  * @param {string} videoId - Generated video ID
  * @param {string} videoURL - Video URL
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadVideoWithBasicOptions(videoId, videoURL) {
+async function downloadVideoWithBasicOptions(videoId, videoURL, useCookies = false) {
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
   const tempPath = path.join(VIDEOS_DIR, `${videoId}.temp.mp4`);
 
@@ -320,9 +325,9 @@ async function downloadVideoWithBasicOptions(videoId, videoURL) {
 
     console.log(`[allSites-basic] Attempting download with no format specification`);
 
-    // Use yt-dlp with absolute minimal options and optimized cookie support
+    // Use yt-dlp with absolute minimal options and conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--no-check-certificate',
       '--output', tempPath,
       videoURL

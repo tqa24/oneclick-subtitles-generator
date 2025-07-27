@@ -28,5 +28,7 @@
   "optimizedVersion": "최적화됨 ({{quality}})",
   "redownloading": "재다운로드 중...",
   "cookieSupport": "브라우저 쿠키 추가됨",
-  "cookieSupportTooltip": "인증을 위해 브라우저 쿠키를 사용하여 고품질 비디오에 액세스하고 로그인 제한을 우회합니다"
+  "cookieSupportTooltip": "인증을 위해 브라우저 쿠키를 사용하여 고품질 비디오에 액세스하고 로그인 제한을 우회합니다",
+  "cookieDisabled": "브라우저 쿠키 비활성화됨",
+  "cookieDisabledTooltip": "브라우저 쿠키가 비활성화되었습니다. 다운로드가 더 빨라지지만 품질 옵션이 제한되고 제한된 콘텐츠에서 실패할 수 있습니다."
 }

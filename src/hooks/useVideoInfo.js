@@ -384,7 +384,8 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
         body: JSON.stringify({
           url: url,
           quality: quality,
-          videoId: `quality_${Date.now()}`
+          videoId: `quality_${Date.now()}`,
+          useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
         }),
       });
 

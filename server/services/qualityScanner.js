@@ -6,7 +6,7 @@ const {
   setDownloadProgress,
   updateProgressFromYtdlpOutput
 } = require('./shared/progressTracker');
-const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('./shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs } = require('./shared/ytdlpUtils');
 
 
 
@@ -15,15 +15,16 @@ const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('./s
 /**
  * Scan available video qualities for a given URL using yt-dlp
  * @param {string} videoURL - Video URL to scan
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Array>} - Array of available quality options
  */
-async function scanAvailableQualities(videoURL) {
+async function scanAvailableQualities(videoURL, useCookies = false) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
-    // Build arguments with cookie support (same as main downloads)
+    // Build arguments with conditional cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--list-formats',
       '--no-warnings',
       '--no-playlist',
@@ -174,15 +175,16 @@ function parseYtDlpFormats(formatOutput) {
 /**
  * Get video information including title and duration
  * @param {string} videoURL - Video URL to get info for
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Video information
  */
-async function getVideoInfo(videoURL) {
+async function getVideoInfo(videoURL, useCookies = false) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
-    // Build arguments with cookie support (same as main downloads)
+    // Build arguments with conditional cookie support
     const args = [
-      ...getCommonYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--dump-json',
       '--no-warnings',
       '--no-playlist',
@@ -243,20 +245,21 @@ async function getVideoInfo(videoURL) {
  * @param {string} outputPath - Output file path
  * @param {string} quality - Quality (e.g., '720p', '1080p')
  * @param {string} videoId - Video ID for progress tracking
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @param {Function} progressCallback - Progress callback function
  * @returns {Promise<boolean>} - Success status
  */
-async function downloadWithQuality(videoURL, outputPath, quality, videoId = null, progressCallback = null) {
+async function downloadWithQuality(videoURL, outputPath, quality, videoId = null, useCookies = false, progressCallback = null) {
   // Try with primary format first, then fallback if needed
   try {
-    await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, progressCallback, false);
+    await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, useCookies, progressCallback, false);
     return true;
   } catch (error) {
     console.warn(`[downloadWithQuality] Primary attempt failed: ${error.message}`);
     console.log(`[downloadWithQuality] Trying fallback format...`);
 
     try {
-      await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, progressCallback, true);
+      await downloadWithQualityAttempt(videoURL, outputPath, quality, videoId, useCookies, progressCallback, true);
       return true;
     } catch (fallbackError) {
       console.error(`[downloadWithQuality] Fallback attempt also failed: ${fallbackError.message}`);
@@ -268,7 +271,7 @@ async function downloadWithQuality(videoURL, outputPath, quality, videoId = null
 /**
  * Single download attempt with specific format strategy
  */
-async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId = null, progressCallback = null, useFallback = false) {
+async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId = null, useCookies = false, progressCallback = null, useFallback = false) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
 
@@ -305,9 +308,9 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       console.log(`[downloadWithQualityAttempt] Using complex format: ${formatString}`);
     }
 
-    // Build arguments with optimized cookie support (use cached cookies if available)
+    // Build arguments with conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       '--format', formatString,
       '--merge-output-format', 'mp4',
       '--output', outputPath,

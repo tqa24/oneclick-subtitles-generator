@@ -12,7 +12,8 @@ export const preloadYouTubeVideo = (videoUrl) => {
 
     // Start the background download process
     try {
-        startYoutubeVideoDownload(videoUrl);
+        const useCookies = localStorage.getItem('use_cookies_for_download') === 'true';
+        startYoutubeVideoDownload(videoUrl, false, useCookies);
     } catch (error) {
         console.warn('Failed to start background download:', error);
     }

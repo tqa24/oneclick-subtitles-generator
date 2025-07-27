@@ -24,6 +24,11 @@ const DownloadOnlyModal = ({
   // eslint-disable-next-line no-unused-vars
   const [downloadVideoId, setDownloadVideoId] = useState(null);
 
+  // Get current cookie setting as state
+  const [useCookiesEnabled, setUseCookiesEnabled] = useState(
+    localStorage.getItem('use_cookies_for_download') === 'true'
+  );
+
   // Prevent multiple modal instances
   useEffect(() => {
     if (isOpen) {
@@ -65,6 +70,33 @@ const DownloadOnlyModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType, videoInfo?.url]);
 
+  // Listen for changes to cookie setting and update when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      // Update cookie setting when modal opens
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    }
+
+    const handleStorageChange = () => {
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    };
+
+    const handleFocus = () => {
+      // Update when window regains focus (e.g., after closing settings modal)
+      setUseCookiesEnabled(localStorage.getItem('use_cookies_for_download') === 'true');
+    };
+
+    // Listen for storage events (when localStorage changes in other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+    // Listen for focus events (when user returns to tab/window)
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isOpen]);
+
   const handleScanQualities = async () => {
     if (!videoInfo?.url) return;
 
@@ -99,7 +131,8 @@ const DownloadOnlyModal = ({
         url: videoInfo.url,
         type: selectedType,
         quality: selectedType === 'video' ? selectedQuality?.quality : null,
-        source: videoInfo.source
+        source: videoInfo.source,
+        useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
       };
 
       const response = await fetch('http://localhost:3031/api/download-only', {
@@ -183,9 +216,18 @@ const DownloadOnlyModal = ({
         <div className="modal-header">
           <div className="header-content">
             <h3>{t('download.downloadOnly.title', 'Download Media')}</h3>
-            <div className="header-badge" title={t('download.downloadOnly.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')}>
+            <div className={`header-badge ${useCookiesEnabled ? 'cookie-enabled' : 'cookie-disabled'}`}
+                 title={useCookiesEnabled
+                   ? t('download.downloadOnly.cookieSupportTooltip', 'Uses browser cookies for authentication to access higher quality videos and bypass login restrictions')
+                   : t('download.downloadOnly.cookieDisabledTooltip', 'Browser cookies are disabled. Downloads will be faster but may have limited quality options and fail on restricted content.')
+                 }>
               <FiInfo className="badge-icon" />
-              <span className="badge-text">{t('download.downloadOnly.cookieSupport', 'Browser Cookie Added')}</span>
+              <span className="badge-text">
+                {useCookiesEnabled
+                  ? t('download.downloadOnly.cookieSupport', 'Browser Cookie Added')
+                  : t('download.downloadOnly.cookieDisabled', 'Browser Cookie Disabled')
+                }
+              </span>
             </div>
           </div>
           <button

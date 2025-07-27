@@ -17,7 +17,7 @@ import '../../styles/VideoPreview.css';
 import '../../styles/narration/index.css';
 import { SERVER_URL } from '../../config';
 
-const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange, onRenderVideo }) => {
+const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange, onRenderVideo, useCookiesForDownload = true }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
   const seekLockRef = useRef(false);
@@ -145,7 +145,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         extractYoutubeVideoId(url);
 
         // Start the download process but don't wait for it to complete
-        const id = startYoutubeVideoDownload(url);
+        const id = startYoutubeVideoDownload(url, false, useCookiesForDownload);
         setVideoId(id);
 
         // Check initial status - it might already be complete if cached

@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../config');
-const { getYtDlpPath, getCommonYtDlpArgs } = require('../services/shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs } = require('../services/shared/ytdlpUtils');
 const { setDownloadProgress, getDownloadProgress } = require('../services/shared/progressTracker');
 const { updateProgressFromYtdlpOutput } = require('../services/shared/progressTracker');
 
@@ -21,7 +21,7 @@ const activeYtdlpProcesses = new Map();
  * POST /api/download-only - Download video or audio only
  */
 router.post('/download-only', async (req, res) => {
-  const { url, type, quality, source } = req.body;
+  const { url, type, quality, source, useCookies = false } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -122,7 +122,7 @@ router.post('/download-only', async (req, res) => {
     }
 
     // Start download process asynchronously
-    downloadMediaAsync(url, outputPath, type, quality, videoId);
+    downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies);
 
     res.json({
       success: true,
@@ -220,7 +220,7 @@ router.get('/download-only-file/:videoId', (req, res) => {
 /**
  * Async function to download media (video or audio)
  */
-async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
+async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies = false) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
     
@@ -248,7 +248,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
       }
 
       args = [
-        ...getCommonYtDlpArgs(),
+        ...getYtDlpArgs(useCookies),
         '--format', formatSelector,
         '--merge-output-format', 'mp4',
         '--output', outputPath,

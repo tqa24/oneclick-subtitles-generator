@@ -21,6 +21,8 @@
     "title": "Tải xuống phương tiện",
     "cookieSupport": "Đã thêm Cookie trình duyệt",
     "cookieSupportTooltip": "Sử dụng cookie trình duyệt để xác thực nhằm truy cập video chất lượng cao và bỏ qua các hạn chế đăng nhập",
+    "cookieDisabled": "Cookie trình duyệt đã tắt",
+    "cookieDisabledTooltip": "Cookie trình duyệt đã bị tắt. Tải xuống sẽ nhanh hơn nhưng có thể có tùy chọn chất lượng hạn chế và thất bại trên nội dung bị hạn chế.",
     "video": "Video",
     "videoDesc": "Tải xuống video với chất lượng đã chọn",
     "audio": "Âm thanh",

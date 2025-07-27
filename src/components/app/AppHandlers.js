@@ -617,7 +617,7 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle saving API keys and settings
    */
-  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 5, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting) => {
+  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 5, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting, useCookiesForDownloadSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -673,6 +673,11 @@ export const useAppHandlers = (appState) => {
     if (useOptimizedPreviewSetting !== undefined) {
       localStorage.setItem('use_optimized_preview', useOptimizedPreviewSetting.toString());
       appState.setUseOptimizedPreview(useOptimizedPreviewSetting);
+    }
+
+    if (useCookiesForDownloadSetting !== undefined) {
+      localStorage.setItem('use_cookies_for_download', useCookiesForDownloadSetting.toString());
+      appState.setUseCookiesForDownload(useCookiesForDownloadSetting);
     }
 
     // Update state based on the selected authentication method

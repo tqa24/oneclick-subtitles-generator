@@ -324,5 +324,7 @@
   "thinkingCustom": "Custom",
   "thinkingRange": "Range",
   "tokens": "tokens",
-  "default": "Default"
+  "default": "Default",
+  "useCookiesForDownload": "Use browser cookies for video downloads",
+  "useCookiesForDownloadDescription": "Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content."
 }

@@ -18,9 +18,10 @@ const SERVER_URL = 'http://localhost:3031'; // Backend server port
  * This allows starting the download process in parallel with other operations
  * @param {string} youtubeUrl - The YouTube video URL
  * @param {boolean} forceRefresh - Force a fresh download even if the video exists in cache
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {string} - The video ID that can be used to check download status
  */
-export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
+export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false, useCookies = true) => {
   console.log(`[startYoutubeVideoDownload] Called with URL: ${youtubeUrl}, forceRefresh: ${forceRefresh}`);
   const videoId = extractYoutubeVideoId(youtubeUrl);
   console.log(`[startYoutubeVideoDownload] Extracted videoId: ${videoId}`);
@@ -88,7 +89,8 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false) => {
         },
         body: JSON.stringify({
           videoId,
-          forceRefresh: downloadQueue[videoId].forceRefresh // Pass the forceRefresh flag to the server
+          forceRefresh: downloadQueue[videoId].forceRefresh, // Pass the forceRefresh flag to the server
+          useCookies: useCookies // Pass the cookie setting to the server
         }),
         signal: controller.signal
       });
@@ -150,9 +152,10 @@ export const checkDownloadStatus = (videoId) => {
  * @param {string} youtubeUrl - The YouTube video URL
  * @param {Function} onProgress - Progress callback (0-100)
  * @param {boolean} forceRefresh - Force a fresh download even if the video exists in cache
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<string>} - A promise that resolves to a video URL
  */
-export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, forceRefresh = false) => {
+export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, forceRefresh = false, useCookies = true) => {
   // If forceRefresh is true, remove any existing download from the queue
   const videoId = extractYoutubeVideoId(youtubeUrl);
 
@@ -162,10 +165,11 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
   }
 
   // Start the download process
-  startYoutubeVideoDownload(youtubeUrl, forceRefresh);
+  startYoutubeVideoDownload(youtubeUrl, forceRefresh, useCookies);
 
-  // Store the original URL for potential redownload
+  // Store the original URL and cookie setting for potential redownload
   const originalUrl = youtubeUrl;
+  const originalUseCookies = useCookies;
 
 
 
@@ -238,7 +242,7 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
             delete downloadQueue[videoId];
 
             // Restart the download process
-            const newVideoId = startYoutubeVideoDownload(originalUrl);
+            const newVideoId = startYoutubeVideoDownload(originalUrl, false, originalUseCookies);
 
             // Set up a new interval to check the download status
             let newProgressSubscribed = false;

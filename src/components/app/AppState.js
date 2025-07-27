@@ -33,6 +33,7 @@ export const useAppState = () => {
   const [optimizeVideos, setOptimizeVideos] = useState(localStorage.getItem('optimize_videos') !== 'false');
   const [optimizedResolution, setOptimizedResolution] = useState(localStorage.getItem('optimized_resolution') || '360p');
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') !== 'false');
+  const [useCookiesForDownload, setUseCookiesForDownload] = useState(localStorage.getItem('use_cookies_for_download') === 'true');
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [currentDownloadId, setCurrentDownloadId] = useState(null);
@@ -227,6 +228,7 @@ export const useAppState = () => {
     optimizeVideos, setOptimizeVideos,
     optimizedResolution, setOptimizedResolution,
     useOptimizedPreview, setUseOptimizedPreview,
+    useCookiesForDownload, setUseCookiesForDownload,
     isDownloading, setIsDownloading,
     downloadProgress, setDownloadProgress,
     currentDownloadId, setCurrentDownloadId,

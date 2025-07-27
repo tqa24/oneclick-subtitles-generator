@@ -14,7 +14,7 @@ const { getDownloadProgress } = require('../services/shared/progressTracker');
  * POST /api/download-douyin-video - Download a Douyin video
  */
 router.post('/download-douyin-video', async (req, res) => {
-  const { videoId, url, quality = '360p' } = req.body;
+  const { videoId, url, quality = '360p', useCookies = false } = req.body;
 
 
 
@@ -35,7 +35,7 @@ router.post('/download-douyin-video', async (req, res) => {
 
   try {
     // Download the video using yt-dlp with retry and fallback
-    const result = await downloadDouyinVideoWithRetry(videoId, url, quality);
+    const result = await downloadDouyinVideoWithRetry(videoId, url, quality, useCookies);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {

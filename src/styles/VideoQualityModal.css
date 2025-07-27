@@ -78,6 +78,28 @@
   color: var(--md-on-primary);
 }
 
+/* Cookie enabled state (green) */
+.header-badge.cookie-enabled {
+  background-color: #4caf50;
+  color: white;
+}
+
+.header-badge.cookie-enabled:hover {
+  background-color: #45a049;
+  color: white;
+}
+
+/* Cookie disabled state (blue - not a bad thing) */
+.header-badge.cookie-disabled {
+  background-color: #2196f3;
+  color: white;
+}
+
+.header-badge.cookie-disabled:hover {
+  background-color: #1976d2;
+  color: white;
+}
+
 .header-badge .badge-icon {
   width: 12px;
   height: 12px;

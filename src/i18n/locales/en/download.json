@@ -20,6 +20,8 @@
     "title": "Download Media",
     "cookieSupport": "Browser Cookie Added",
     "cookieSupportTooltip": "Uses browser cookies for authentication to access higher quality videos and bypass login restrictions",
+    "cookieDisabled": "Browser Cookie Disabled",
+    "cookieDisabledTooltip": "Browser cookies are disabled. Downloads will be faster but may have limited quality options and fail on restricted content.",
     "video": "Video",
     "videoDesc": "Download video with selected quality",
     "audio": "Audio",

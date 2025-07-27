@@ -10,9 +10,10 @@ const { downloadWithYtdlp } = require('./ytdlpDownloader');
 /**
  * Download YouTube video using yt-dlp
  * @param {string} videoId - YouTube video ID
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<Object>} - Result object with success status and path
  */
-async function downloadYouTubeVideo(videoId) {
+async function downloadYouTubeVideo(videoId, useCookies = true) {
   const videoURL = `https://www.youtube.com/watch?v=${videoId}`;
   const outputPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
@@ -31,7 +32,7 @@ async function downloadYouTubeVideo(videoId) {
   try {
     // Always pass '360p' as the quality parameter to ensure consistent behavior
     // Pass videoId for progress tracking
-    await downloadWithYtdlp(videoURL, outputPath, '360p', videoId);
+    await downloadWithYtdlp(videoURL, outputPath, '360p', videoId, useCookies);
 
     return {
       success: true,

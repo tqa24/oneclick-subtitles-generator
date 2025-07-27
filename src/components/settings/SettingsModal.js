@@ -145,6 +145,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     'gemini-2.5-flash-lite-preview-06-17': 0 // Model does not think by default
   });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
+  const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
 
   // Save active tab to localStorage when it changes
   useEffect(() => {
@@ -204,7 +205,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       'gemini-2.5-pro': -1,
       'gemini-2.5-flash': -1,
       'gemini-2.5-flash-lite-preview-06-17': 0
-    }
+    },
+    useCookiesForDownload: false
   });
 
   // Listen for system theme changes and apply initial theme
@@ -254,6 +256,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
+      const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true'; // Default to false if not set
 
       // Load thinking budgets from localStorage
       const savedThinkingBudgets = (() => {
@@ -298,6 +301,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOptimizeVideos(savedOptimizeVideos);
       setOptimizedResolution(savedOptimizedResolution);
       setUseOptimizedPreview(savedUseOptimizedPreview);
+      setUseCookiesForDownload(savedUseCookiesForDownload);
       setThinkingBudgets(savedThinkingBudgets);
       setHasChanges(false); // Reset changes flag when loading settings
 
@@ -322,6 +326,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview,
+        useCookiesForDownload: savedUseCookiesForDownload,
         thinkingBudgets: savedThinkingBudgets
       });
 
@@ -424,13 +429,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview ||
+      useCookiesForDownload !== originalSettings.useCookiesForDownload ||
       JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets);
 
     setHasChanges(settingsChanged);
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, thinkingBudgets, originalSettings]);
+      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -450,6 +456,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
+    localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());
     localStorage.setItem('thinking_budgets', JSON.stringify(thinkingBudgets));
     // Save the Gemini API key to the key manager
     // The key manager will handle updating the legacy key for backward compatibility
@@ -492,8 +499,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       console.error('Error saving settings to server:', error);
     }
 
-    // Notify parent component about API keys, segment duration, model, time format, and video optimization settings
-    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview);
+    // Notify parent component about API keys, segment duration, model, time format, video optimization settings, and cookie setting
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload);
 
     // Update original settings to match current settings
     setOriginalSettings({
@@ -516,6 +523,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview,
+      useCookiesForDownload,
       thinkingBudgets
     });
 
@@ -701,6 +709,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setOptimizedResolution={setOptimizedResolution}
               useOptimizedPreview={useOptimizedPreview}
               setUseOptimizedPreview={setUseOptimizedPreview}
+              useCookiesForDownload={useCookiesForDownload}
+              setUseCookiesForDownload={setUseCookiesForDownload}
               thinkingBudgets={thinkingBudgets}
               setThinkingBudgets={setThinkingBudgets}
             />

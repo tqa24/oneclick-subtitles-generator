@@ -115,7 +115,7 @@ router.get('/segment-exists/:segmentId', (req, res) => {
  * POST /api/download-video - Download a YouTube video
  */
 router.post('/download-video', async (req, res) => {
-  const { videoId } = req.body;
+  const { videoId, useCookies = false } = req.body;
 
 
 
@@ -136,7 +136,7 @@ router.post('/download-video', async (req, res) => {
 
   try {
     // Download the video using JavaScript libraries with audio prioritized
-    const result = await downloadYouTubeVideo(videoId);
+    const result = await downloadYouTubeVideo(videoId, useCookies);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {

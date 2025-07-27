@@ -28,7 +28,9 @@ const VideoProcessingTab = ({
   useOptimizedPreview,
   setUseOptimizedPreview,
   thinkingBudgets,
-  setThinkingBudgets
+  setThinkingBudgets,
+  useCookiesForDownload,
+  setUseCookiesForDownload
 }) => {
   const { t } = useTranslation();
 
@@ -316,6 +318,27 @@ const VideoProcessingTab = ({
               </div>
               <p className="setting-description">
                 {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. Improves performance and reduces memory usage. The optimized video has the same quality that Gemini processes (1 FPS, optimized resolution).')}
+              </p>
+            </div>
+
+            {/* Cookie usage setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="use-cookies-download">
+                  {t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="use-cookies-download"
+                    checked={useCookiesForDownload}
+                    onChange={(e) => setUseCookiesForDownload(e.target.checked)}
+                    ariaLabel={t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.useCookiesForDownloadDescription', 'Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content.')}
               </p>
             </div>
           </div>

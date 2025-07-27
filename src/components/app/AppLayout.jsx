@@ -94,6 +94,7 @@ const AppLayout = ({
     timeFormat,
     showWaveform,
     useOptimizedPreview,
+    useCookiesForDownload,
     optimizeVideos,
     optimizedResolution,
     retryingSegments,
@@ -328,6 +329,7 @@ const AppLayout = ({
               timeFormat={timeFormat}
               showWaveform={showWaveform}
               useOptimizedPreview={useOptimizedPreview}
+              useCookiesForDownload={useCookiesForDownload}
               isSrtOnlyMode={isSrtOnlyMode}
               onViewRules={handleViewRules}
               userProvidedSubtitles={userProvidedSubtitles}

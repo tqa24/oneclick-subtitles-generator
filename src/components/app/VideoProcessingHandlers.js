@@ -292,7 +292,9 @@ export const downloadAndPrepareYouTubeVideo = async (
         selectedVideo.url,
         (progress) => {
           setDownloadProgress(progress);
-        }
+        },
+        false, // forceRefresh
+        localStorage.getItem('use_cookies_for_download') === 'true' // useCookies
       );
     }
 

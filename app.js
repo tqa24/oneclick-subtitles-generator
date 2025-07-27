@@ -108,7 +108,7 @@ app.all('/api/scan-video-qualities', async (req, res) => {
   // Handle POST request - Start scan and return immediately
   if (req.method === 'POST') {
     console.log(`[NUCLEAR] POST request body:`, req.body);
-    const { url } = req.body;
+    const { url, useCookies = false } = req.body;
 
     if (!url) {
       console.log(`[NUCLEAR] Missing URL in request`);
@@ -134,7 +134,7 @@ app.all('/api/scan-video-qualities', async (req, res) => {
     (async () => {
       try {
         const { scanAvailableQualities } = require('./server/services/qualityScanner');
-        const qualities = await scanAvailableQualities(url);
+        const qualities = await scanAvailableQualities(url, useCookies);
 
         console.log(`[NUCLEAR] Background scan completed for ${scanId}, found ${qualities.length} qualities`);
 

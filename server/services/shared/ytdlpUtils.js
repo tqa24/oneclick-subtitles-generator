@@ -231,6 +231,58 @@ async function extractCookiesToFile() {
 }
 
 /**
+ * Get yt-dlp arguments with conditional cookie support
+ * @param {boolean} useCookies - Whether to use browser cookies
+ * @param {boolean} forceRefresh - Force fresh cookie extraction
+ * @returns {Array} - Array of common arguments
+ */
+function getYtDlpArgs(useCookies = false, forceRefresh = false) {
+  const args = [];
+
+  console.log(`[getYtDlpArgs] Called with useCookies:`, useCookies, typeof useCookies);
+
+  // Add plugin directory if it exists
+  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  if (fs.existsSync(pluginDir)) {
+    args.push('--plugin-dirs', pluginDir);
+    console.log(`[getYtDlpArgs] Using plugin directory: ${pluginDir}`);
+  }
+
+  // Only add cookie arguments if useCookies is true
+  if (useCookies) {
+    // Check if we should use cached cookies
+    const now = Date.now();
+    const cacheValid = cookieCache.isValid &&
+                      cookieCache.lastExtracted &&
+                      (now - cookieCache.lastExtracted) < cookieCache.validityDuration;
+
+    if (!forceRefresh && cacheValid && fs.existsSync(cookieCache.tempCookieFile)) {
+      // Use cached cookies
+      const ageSeconds = Math.round((now - cookieCache.lastExtracted) / 1000);
+      console.log(`[getYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
+      args.push('--cookies', cookieCache.tempCookieFile);
+    } else {
+      // Use browser cookies (will trigger extraction)
+      const availableBrowser = detectAvailableBrowser();
+      if (availableBrowser) {
+        const hasPlugin = isChromeCookieUnlockAvailable();
+
+        console.log(`[getYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
+        args.push('--cookies-from-browser', availableBrowser);
+
+        // DON'T mark as extracted yet - wait for actual extraction to complete
+        // cookieCache.lastExtracted = now;
+        // cookieCache.isValid = true;
+      }
+    }
+  } else {
+    console.log(`[getYtDlpArgs] Cookie usage disabled - downloading without authentication`);
+  }
+
+  return args;
+}
+
+/**
  * Get optimized yt-dlp arguments with cookie caching for subsequent calls
  * @param {boolean} forceRefresh - Force fresh cookie extraction
  * @returns {Array} - Array of common arguments
@@ -296,6 +348,7 @@ module.exports = {
   checkYtDlpVersion,
   detectAvailableBrowser,
   getCommonYtDlpArgs,
+  getYtDlpArgs,
   getOptimizedYtDlpArgs,
   extractCookiesToFile,
   isChromeCookieUnlockAvailable

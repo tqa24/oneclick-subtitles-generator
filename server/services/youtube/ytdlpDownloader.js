@@ -6,7 +6,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
   getDownloadProgress,
   setDownloadProgress,
@@ -21,9 +21,10 @@ const {
  * @param {string} outputPath - Path to save the video
  * @param {string} quality - Desired video quality (e.g., '144p', '360p', '720p')
  * @param {string} videoId - Video ID for progress tracking (optional)
+ * @param {boolean} useCookies - Whether to use browser cookies for authentication
  * @returns {Promise<boolean>} - Success status
  */
-async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId = null) {
+async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId = null, useCookies = true) {
   return new Promise((resolve, reject) => {
     // Declare timeout variable for cleanup
     let downloadTimeout;
@@ -57,9 +58,9 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       setDownloadProgress(videoId, 0, 'starting');
     }
 
-    // Build the yt-dlp command arguments with optimized cookie support
+    // Build the yt-dlp command arguments with conditional cookie support
     const args = [
-      ...getOptimizedYtDlpArgs(),
+      ...getYtDlpArgs(useCookies),
       videoURL,
       '-f', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '-o', tempPath,

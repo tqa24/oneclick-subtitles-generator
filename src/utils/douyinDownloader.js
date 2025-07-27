@@ -79,7 +79,8 @@ export const startDouyinVideoDownload = (douyinUrl, forceRefresh = false) => {
           videoId,
           url: douyinUrl,
           quality,
-          forceRefresh: downloadQueue[videoId].forceRefresh
+          forceRefresh: downloadQueue[videoId].forceRefresh,
+          useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
         }),
       });
 

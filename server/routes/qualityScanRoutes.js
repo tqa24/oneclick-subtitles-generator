@@ -41,7 +41,8 @@ router.post('/scan-video-qualities', async (req, res) => {
   res.header('Access-Control-Allow-Credentials', 'true');
 
   console.log(`[QUALITY-SCAN-ROUTE] Received request:`, req.body);
-  const { url } = req.body;
+  const { url, useCookies = false } = req.body;
+  console.log(`[QUALITY-SCAN-ROUTE] useCookies parameter:`, useCookies, typeof useCookies);
 
   if (!url) {
     console.log(`[QUALITY-SCAN-ROUTE] Missing URL in request`);
@@ -55,7 +56,7 @@ router.post('/scan-video-qualities', async (req, res) => {
     console.log(`[QUALITY-SCAN-ROUTE] Starting quality scan for: ${url}`);
 
     // Scan available qualities
-    const qualities = await scanAvailableQualities(url);
+    const qualities = await scanAvailableQualities(url, useCookies);
 
     console.log(`[QUALITY-SCAN-ROUTE] Scan completed, found ${qualities.length} qualities:`, qualities.map(q => q.quality));
 
@@ -117,7 +118,7 @@ router.post('/get-video-info', async (req, res) => {
  * POST /api/download-video-quality - Download video with specific quality
  */
 router.post('/download-video-quality', async (req, res) => {
-  const { url, quality, videoId } = req.body;
+  const { url, quality, videoId, useCookies = false } = req.body;
 
   if (!url || !quality) {
     return res.status(400).json({
@@ -169,7 +170,7 @@ router.post('/download-video-quality', async (req, res) => {
 
     // Download with specific quality and progress tracking
     console.log(`[QUALITY-DOWNLOAD] Starting download with videoId: ${progressVideoId}`);
-    await downloadWithQuality(url, outputPath, quality, progressVideoId);
+    await downloadWithQuality(url, outputPath, quality, progressVideoId, useCookies);
 
     // Verify the file was actually created
     if (!fs.existsSync(outputPath)) {
