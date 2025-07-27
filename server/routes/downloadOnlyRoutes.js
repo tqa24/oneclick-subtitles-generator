@@ -4,9 +4,18 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../config');
-const { getYtDlpPath, getCommonYtDlpArgs, getOptimizedYtDlpArgs } = require('../services/shared/ytdlpUtils');
+const { getYtDlpPath, getCommonYtDlpArgs } = require('../services/shared/ytdlpUtils');
 const { setDownloadProgress, getDownloadProgress } = require('../services/shared/progressTracker');
 const { updateProgressFromYtdlpOutput } = require('../services/shared/progressTracker');
+
+// Track active downloads to prevent duplicates
+const activeDownloads = new Map();
+
+// Track active file operations to prevent race conditions
+const activeFileOperations = new Set();
+
+// Track active yt-dlp processes to prevent multiple spawns
+const activeYtdlpProcesses = new Map();
 
 /**
  * POST /api/download-only - Download video or audio only
@@ -31,14 +40,75 @@ router.post('/download-only', async (req, res) => {
   try {
     console.log(`[DOWNLOAD-ONLY] Starting ${type} download:`, { url, type, quality, source });
 
+    // Create a unique key for this download request
+    const downloadKey = `${url}_${type}_${quality || 'default'}`;
+
+    // Check if this exact download is already in progress
+    if (activeDownloads.has(downloadKey)) {
+      const existingVideoId = activeDownloads.get(downloadKey);
+      console.log(`[DOWNLOAD-ONLY] DUPLICATE DOWNLOAD DETECTED! Returning existing videoId: ${existingVideoId}`);
+      return res.json({
+        success: true,
+        videoId: existingVideoId,
+        message: 'Download already in progress',
+        isDuplicate: true
+      });
+    }
+
     // Generate unique video ID for progress tracking
     const timestamp = Date.now();
     const videoId = `download_${type}_${timestamp}`;
+
+    // Register this download to prevent duplicates
+    activeDownloads.set(downloadKey, videoId);
+    console.log(`[DOWNLOAD-ONLY] Registered download: ${downloadKey} -> ${videoId}`);
 
     // Generate output filename
     const extension = type === 'video' ? 'mp4' : 'mp3';
     const outputFilename = `${videoId}.${extension}`;
     const outputPath = path.join(VIDEOS_DIR, outputFilename);
+
+    // Check if this exact file is already being created (race condition protection)
+    if (activeFileOperations.has(outputPath)) {
+      console.log(`[DOWNLOAD-ONLY] File operation already in progress: ${outputPath}`);
+      return res.json({
+        success: false,
+        error: 'File operation already in progress',
+        videoId: videoId
+      });
+    }
+
+    // Check if file already exists
+    if (fs.existsSync(outputPath)) {
+      console.log(`[DOWNLOAD-ONLY] File already exists: ${outputPath}`);
+      return res.json({
+        success: true,
+        videoId: videoId,
+        message: 'File already exists',
+        filename: outputFilename,
+        isExisting: true
+      });
+    }
+
+    // Lock this file operation
+    activeFileOperations.add(outputPath);
+    console.log(`[DOWNLOAD-ONLY] Locked file operation: ${outputPath}`);
+
+    // Check if yt-dlp process is already running for this exact command
+    const processKey = `${url}_${type}_${quality || 'default'}`;
+    if (activeYtdlpProcesses.has(processKey)) {
+      console.log(`[DOWNLOAD-ONLY] yt-dlp process already running for: ${processKey}`);
+      activeFileOperations.delete(outputPath);
+      return res.json({
+        success: false,
+        error: 'Download process already running',
+        videoId: videoId
+      });
+    }
+
+    // Lock the yt-dlp process
+    activeYtdlpProcesses.set(processKey, videoId);
+    console.log(`[DOWNLOAD-ONLY] Locked yt-dlp process: ${processKey} -> ${videoId}`);
 
     // Ensure videos directory exists
     if (!fs.existsSync(VIDEOS_DIR)) {
@@ -178,7 +248,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
       }
 
       args = [
-        ...getOptimizedYtDlpArgs(),
+        ...getCommonYtDlpArgs(),
         '--format', formatSelector,
         '--merge-output-format', 'mp4',
         '--output', outputPath,
@@ -206,6 +276,26 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
     }
 
     console.log(`[DOWNLOAD-ONLY] Starting yt-dlp with args:`, args);
+
+    // FINAL CHECK: Ensure no other process is writing to this exact file
+    try {
+      // Try to open the file exclusively to check if it's being written to
+      const fd = fs.openSync(outputPath, 'wx');
+      fs.closeSync(fd);
+      fs.unlinkSync(outputPath); // Remove the test file
+    } catch (error) {
+      if (error.code === 'EEXIST') {
+        console.log(`[DOWNLOAD-ONLY] CRITICAL: File is being written by another process: ${outputPath}`);
+        activeDownloads.delete(downloadKey);
+        activeFileOperations.delete(outputPath);
+        activeYtdlpProcesses.delete(processKey);
+        return res.json({
+          success: false,
+          error: 'File is being written by another process',
+          videoId: videoId
+        });
+      }
+    }
 
     const ytdlpProcess = spawn(ytDlpPath, args);
     let stderr = '';
@@ -245,6 +335,20 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
     });
 
     ytdlpProcess.on('close', (code) => {
+      // Clean up the active download tracking
+      const cleanupKey = `${url}_${type}_${quality || 'default'}`;
+      activeDownloads.delete(cleanupKey);
+      console.log(`[DOWNLOAD-ONLY] Cleaned up download tracking for: ${cleanupKey}`);
+
+      // Clean up the file operation lock
+      activeFileOperations.delete(outputPath);
+      console.log(`[DOWNLOAD-ONLY] Released file operation lock: ${outputPath}`);
+
+      // Clean up the yt-dlp process lock
+      const processKey = `${url}_${type}_${quality || 'default'}`;
+      activeYtdlpProcesses.delete(processKey);
+      console.log(`[DOWNLOAD-ONLY] Released yt-dlp process lock: ${processKey}`);
+
       if (code === 0) {
         console.log(`[DOWNLOAD-ONLY] Download completed successfully for ${videoId}`);
         setDownloadProgress(videoId, 100, 'completed');

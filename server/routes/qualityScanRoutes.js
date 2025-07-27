@@ -6,6 +6,9 @@ const fs = require('fs');
 const { VIDEOS_DIR } = require('../config');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
 
+// Track active quality downloads to prevent duplicates
+const activeQualityDownloads = new Map();
+
 /**
  * GET /api/test-quality-scan - Simple test endpoint
  */
@@ -126,9 +129,28 @@ router.post('/download-video-quality', async (req, res) => {
   try {
     console.log(`[QUALITY-DOWNLOAD] Downloading ${quality} for: ${url}`);
 
+    // Create a unique key for this download request
+    const downloadKey = `${url}_video_${quality}`;
+
+    // Check if this exact download is already in progress
+    if (activeQualityDownloads.has(downloadKey)) {
+      const existingVideoId = activeQualityDownloads.get(downloadKey);
+      console.log(`[QUALITY-DOWNLOAD] DUPLICATE DOWNLOAD DETECTED! Returning existing videoId: ${existingVideoId}`);
+      return res.json({
+        success: true,
+        videoId: existingVideoId,
+        message: 'Download already in progress',
+        isDuplicate: true
+      });
+    }
+
     // Use provided video ID or generate unique one for progress tracking
     const progressVideoId = videoId || `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     console.log(`[QUALITY-DOWNLOAD] Using video ID: ${progressVideoId}`);
+
+    // Register this download to prevent duplicates
+    activeQualityDownloads.set(downloadKey, progressVideoId);
+    console.log(`[QUALITY-DOWNLOAD] Registered download: ${downloadKey} -> ${progressVideoId}`);
 
     // Generate output path (with quality suffix for filename)
     const outputFilename = `${progressVideoId}_${quality}.mp4`;
@@ -166,6 +188,11 @@ router.post('/download-video-quality', async (req, res) => {
       console.warn(`[QUALITY-DOWNLOAD] Could not get video metadata: ${metadataError.message}`);
     }
 
+    // Clean up the active download tracking
+    const cleanupKey = `${url}_video_${quality}`;
+    activeQualityDownloads.delete(cleanupKey);
+    console.log(`[QUALITY-DOWNLOAD] Cleaned up download tracking for: ${cleanupKey}`);
+
     res.json({
       success: true,
       videoPath: `/videos/${outputFilename}`,
@@ -175,6 +202,11 @@ router.post('/download-video-quality', async (req, res) => {
       fileSize: stats.size
     });
   } catch (error) {
+    // Clean up the active download tracking on error
+    const cleanupKey = `${url}_video_${quality}`;
+    activeQualityDownloads.delete(cleanupKey);
+    console.log(`[QUALITY-DOWNLOAD] Cleaned up download tracking after error for: ${cleanupKey}`);
+
     console.error('[QUALITY-DOWNLOAD] Error downloading video:', error);
     res.status(500).json({
       success: false,

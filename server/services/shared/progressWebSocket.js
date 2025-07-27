@@ -35,11 +35,20 @@ function initializeProgressWebSocket(server) {
         const data = JSON.parse(message);
 
         if (data.type === 'subscribe' && data.videoId) {
-          // Subscribe to progress updates for a specific video
+          // Check if this WebSocket is already subscribed to this video
           if (!progressConnections.has(data.videoId)) {
             progressConnections.set(data.videoId, new Set());
           }
-          progressConnections.get(data.videoId).add(ws);
+
+          const existingConnections = progressConnections.get(data.videoId);
+          if (existingConnections.has(ws)) {
+            console.log(`[WebSocket] Client already subscribed to progress for video: ${data.videoId}`);
+            return; // Already subscribed, don't add again
+          }
+
+          // Subscribe to progress updates for a specific video
+          existingConnections.add(ws);
+          console.log(`[WebSocket] Client subscribed to progress for video: ${data.videoId} (${existingConnections.size} total subscribers)`);
 
           // Send current progress immediately
           const currentProgress = getDownloadProgress(data.videoId);

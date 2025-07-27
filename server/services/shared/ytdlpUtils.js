@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawn } = require('child_process');
 
 // Cookie cache to avoid re-extraction within the same session
 let cookieCache = {
@@ -163,6 +164,73 @@ function getCommonYtDlpArgs() {
 }
 
 /**
+ * Extract cookies to a file for caching
+ * @returns {Promise<string>} - Path to the cookie file
+ */
+async function extractCookiesToFile() {
+  const availableBrowser = detectAvailableBrowser();
+  if (!availableBrowser) {
+    throw new Error('No browser available for cookie extraction');
+  }
+
+  const ytdlpPath = getYtDlpPath();
+  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+
+  const args = [];
+
+  // Add plugin directory if it exists
+  if (fs.existsSync(pluginDir)) {
+    args.push('--plugin-dirs', pluginDir);
+  }
+
+  args.push(
+    '--cookies-from-browser', availableBrowser,
+    '--cookies', cookieCache.tempCookieFile,
+    '--print', 'cookies_extracted',
+    '--no-download',
+    'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Dummy URL just to trigger cookie extraction
+  );
+
+  console.log(`[extractCookiesToFile] Extracting cookies to: ${cookieCache.tempCookieFile}`);
+
+  return new Promise((resolve, reject) => {
+    const process = spawn(ytdlpPath, args);
+
+    let output = '';
+    let errorOutput = '';
+
+    process.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    process.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+      if (errorOutput.includes('Attempting to unlock cookies')) {
+        console.log('[extractCookiesToFile] Cookie extraction in progress...');
+      }
+    });
+
+    process.on('close', (code) => {
+      if (code === 0 && fs.existsSync(cookieCache.tempCookieFile)) {
+        console.log('[extractCookiesToFile] Cookies extracted successfully');
+        cookieCache.lastExtracted = Date.now();
+        cookieCache.isValid = true;
+        resolve(cookieCache.tempCookieFile);
+      } else {
+        console.error('[extractCookiesToFile] Cookie extraction failed:', errorOutput);
+        reject(new Error('Cookie extraction failed'));
+      }
+    });
+
+    // Timeout after 5 minutes
+    setTimeout(() => {
+      process.kill();
+      reject(new Error('Cookie extraction timeout'));
+    }, 300000);
+  });
+}
+
+/**
  * Get optimized yt-dlp arguments with cookie caching for subsequent calls
  * @param {boolean} forceRefresh - Force fresh cookie extraction
  * @returns {Array} - Array of common arguments
@@ -183,9 +251,10 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
                     cookieCache.lastExtracted &&
                     (now - cookieCache.lastExtracted) < cookieCache.validityDuration;
 
-  if (!forceRefresh && cacheValid && cookieCache.tempCookieFile && fs.existsSync(cookieCache.tempCookieFile)) {
+  if (!forceRefresh && cacheValid && fs.existsSync(cookieCache.tempCookieFile)) {
     // Use cached cookies
-    console.log(`[getOptimizedYtDlpArgs] Using cached cookies (${Math.round((now - cookieCache.lastExtracted) / 1000)}s old)`);
+    const ageSeconds = Math.round((now - cookieCache.lastExtracted) / 1000);
+    console.log(`[getOptimizedYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
     args.push('--cookies', cookieCache.tempCookieFile);
   } else {
     // Use browser cookies (will trigger extraction)
@@ -193,12 +262,12 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
     if (availableBrowser) {
       const hasPlugin = isChromeCookieUnlockAvailable();
 
-      console.log(`[getOptimizedYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''}`);
+      console.log(`[getOptimizedYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
       args.push('--cookies-from-browser', availableBrowser);
 
-      // Mark that we're doing fresh extraction
-      cookieCache.lastExtracted = now;
-      cookieCache.isValid = true;
+      // DON'T mark as extracted yet - wait for actual extraction to complete
+      // cookieCache.lastExtracted = now;
+      // cookieCache.isValid = true;
     }
   }
 
@@ -228,5 +297,6 @@ module.exports = {
   detectAvailableBrowser,
   getCommonYtDlpArgs,
   getOptimizedYtDlpArgs,
+  extractCookiesToFile,
   isChromeCookieUnlockAvailable
 };

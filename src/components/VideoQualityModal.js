@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiInfo } from 'react-icons/fi';
 import '../styles/VideoQualityModal.css';
-import progressWebSocketClient from '../utils/progressWebSocketClient';
+// import progressWebSocketClient from '../utils/progressWebSocketClient'; // DISABLED - using polling instead
 
 const VideoQualityModal = ({
   isOpen,
@@ -62,34 +62,24 @@ const VideoQualityModal = ({
     }
   }, [availableVersions, selectedVersion]);
 
-  // Scan available video qualities
+  // Scan available video qualities using the new polling system
   const scanVideoQualities = async () => {
     if (!videoInfo || !videoInfo.url) return;
 
     setIsScanning(true);
     try {
-      const response = await fetch('http://localhost:3031/api/scan-video-qualities', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: videoInfo.url
-        }),
-      });
+      // Import the polling-based quality scanner
+      const { scanVideoQualities: scanQualities } = await import('../utils/qualityScanner');
+      const qualities = await scanQualities(videoInfo.url);
 
-      const data = await response.json();
-      if (data.success) {
-        setAvailableQualities(data.qualities);
-        // Default to highest quality
-        if (data.qualities.length > 0) {
-          setSelectedQuality(data.qualities[0]);
-        }
-      } else {
-        console.error('Failed to scan qualities:', data.error);
+      setAvailableQualities(qualities);
+      // Default to highest quality
+      if (qualities.length > 0) {
+        setSelectedQuality(qualities[0]);
       }
     } catch (error) {
       console.error('Error scanning qualities:', error);
+      setAvailableQualities([]);
     } finally {
       setIsScanning(false);
     }
@@ -138,60 +128,57 @@ const VideoQualityModal = ({
     return data;
   };
 
-  // Start progress tracking for a video ID using WebSocket
-  const startProgressTracking = async (videoId) => {
-    try {
-      console.log(`[VideoQualityModal] Starting WebSocket progress tracking for: ${videoId}`);
+  // Start progress tracking using polling (WebSocket disabled to prevent duplicates)
+  const startProgressTracking = (videoId) => {
+    console.log(`[VideoQualityModal] Using polling instead of WebSocket to prevent duplicates`);
+    console.log(`[VideoQualityModal] Setting up polling for videoId: ${videoId}`);
 
-      await progressWebSocketClient.subscribe(videoId, (progressData) => {
-        console.log(`[VideoQualityModal] Progress update: ${progressData.progress}% (${progressData.phase || 'unknown'}) - Status: ${progressData.status}`);
+    // Use polling instead of WebSocket
+    console.log(`[VideoQualityModal] About to set up interval for videoId: ${videoId}`);
+    const progressInterval = setInterval(async () => {
+      console.log(`[VideoQualityModal] INTERVAL FIRED! Polling for videoId: ${videoId}`);
+      try {
+        console.log(`[VideoQualityModal] Making fetch request...`);
+        const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
+        console.log(`[VideoQualityModal] Response status:`, response.status, response.statusText);
+        const data = await response.json();
 
-        const newProgress = progressData.progress || 0;
+        console.log(`[VideoQualityModal] Polling response:`, data);
 
-        // Filter out unreasonable progress values
-        if (newProgress >= 0 && newProgress <= 100) {
-          // Allow progress updates, but smooth out big jumps
-          if (newProgress === 100 && downloadProgress < 90 && progressData.phase !== 'merge') {
-            console.log(`[VideoQualityModal] Smoothing jump to 100% from ${downloadProgress}% (phase: ${progressData.phase})`);
-            setDownloadProgress(90); // Set to 90% instead of jumping to 100%
-          } else {
+        if (data.success) {
+          const newProgress = data.progress || 0;
+
+          // Filter out unreasonable progress values
+          if (newProgress >= 0 && newProgress <= 100) {
             setDownloadProgress(newProgress);
           }
-        } else {
-          console.log(`[VideoQualityModal] Ignoring invalid progress: ${newProgress}%`);
-        }
 
-        // Update status if needed
-        if (progressData.status === 'error') {
-          console.error('[VideoQualityModal] Download error:', progressData.error);
-        }
-      });
+          if (data.status === 'completed') {
+            console.log(`[VideoQualityModal] Download completed! Cleaning up...`);
+            clearInterval(progressInterval);
+            setIsRedownloading(false);
+            setDownloadProgress(100);
 
-      console.log(`[VideoQualityModal] WebSocket subscription successful for: ${videoId}`);
-    } catch (error) {
-      console.warn('[VideoQualityModal] Failed to subscribe to WebSocket progress:', error);
-
-      // Fallback to API polling
-      const progressInterval = setInterval(async () => {
-        try {
-          const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
-          const data = await response.json();
-
-          if (data.success) {
-            setDownloadProgress(data.progress || 0);
-
-            if (data.status === 'completed' || data.status === 'error') {
-              clearInterval(progressInterval);
-            }
+            // Auto-close modal after successful download
+            setTimeout(() => {
+              onClose();
+            }, 1000);
+          } else if (data.status === 'error') {
+            console.log(`[VideoQualityModal] Download error detected:`, data.error);
+            clearInterval(progressInterval);
+            setIsRedownloading(false);
+            console.error('[VideoQualityModal] Download error:', data.error);
           }
-        } catch (error) {
-          console.error('Error fetching download progress:', error);
+        } else {
+          console.log(`[VideoQualityModal] Polling failed:`, data);
         }
-      }, 500);
+      } catch (error) {
+        console.error('Error fetching download progress:', error);
+      }
+    }, 1000);
 
-      // Store interval for cleanup
-      window.qualityDownloadInterval = progressInterval;
-    }
+    // Store interval for cleanup
+    window.qualityDownloadInterval = progressInterval;
   };
 
   // Wait for download completion
@@ -210,24 +197,14 @@ const VideoQualityModal = ({
               completed = true;
               clearInterval(completionInterval);
 
-              // Unsubscribe from WebSocket
-              try {
-                progressWebSocketClient.unsubscribe(videoId);
-              } catch (error) {
-                console.warn('Error unsubscribing from WebSocket:', error);
-              }
+              // WebSocket cleanup removed - using polling instead
 
               resolve();
             } else if (data.status === 'error') {
               completed = true;
               clearInterval(completionInterval);
 
-              // Unsubscribe from WebSocket
-              try {
-                progressWebSocketClient.unsubscribe(videoId);
-              } catch (error) {
-                console.warn('Error unsubscribing from WebSocket:', error);
-              }
+              // WebSocket cleanup removed - using polling instead
 
               reject(new Error(data.error || 'Download failed'));
             }
@@ -242,11 +219,7 @@ const VideoQualityModal = ({
         if (!completed) {
           completed = true;
           clearInterval(completionInterval);
-          try {
-            progressWebSocketClient.unsubscribe(videoId);
-          } catch (error) {
-            console.warn('Error unsubscribing from WebSocket:', error);
-          }
+          // WebSocket cleanup removed - using polling instead
           reject(new Error('Download timeout'));
         }
       }, 300000); // 5 minutes
@@ -260,14 +233,7 @@ const VideoQualityModal = ({
         clearInterval(window.qualityDownloadInterval);
       }
 
-      // Unsubscribe from WebSocket if we have a video ID
-      if (downloadVideoId) {
-        try {
-          progressWebSocketClient.unsubscribe(downloadVideoId);
-        } catch (error) {
-          console.warn('Error unsubscribing from WebSocket on unmount:', error);
-        }
-      }
+      // WebSocket cleanup removed - using polling instead
     };
   }, [downloadVideoId]);
 
@@ -289,33 +255,19 @@ const VideoQualityModal = ({
         setDownloadVideoId(videoId);
 
         // Start progress tracking BEFORE starting download
-        await startProgressTracking(videoId);
+        startProgressTracking(videoId);
 
         // Start the download with the pre-generated video ID
-        const result = await startQualityDownloadWithId(selectedQuality.quality, videoInfo.url, videoId);
+        await startQualityDownloadWithId(selectedQuality.quality, videoInfo.url, videoId);
 
-        // Wait for download to complete
-        await waitForDownloadCompletion(videoId);
-
-        // Proceed with rendering
-        await onConfirm('redownload', {
-          quality: selectedQuality.quality,
-          url: videoInfo.url,
-          videoId: videoId
-        });
+        // Progress tracking will handle completion and close the modal automatically
+        // No need to wait for completion or call onConfirm since the modal will auto-close
       } catch (error) {
         console.error('Error redownloading video:', error);
         setIsRedownloading(false);
         setDownloadProgress(0);
 
-        // Cleanup WebSocket subscription on error
-        if (downloadVideoId) {
-          try {
-            progressWebSocketClient.unsubscribe(downloadVideoId);
-          } catch (error) {
-            console.warn('Error unsubscribing from WebSocket on error:', error);
-          }
-        }
+        // WebSocket cleanup removed - using polling instead
 
         setDownloadVideoId(null);
         return;

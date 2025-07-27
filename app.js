@@ -64,6 +64,17 @@ app.use('/api/health', (req, res, next) => {
 // Configure JSON body parser with increased limit for base64 encoded files
 app.use(express.json({ limit: '500mb' }));
 
+// Global download tracking middleware - logs ALL download requests
+app.use((req, res, next) => {
+  if (req.path.includes('download') && req.method === 'POST') {
+    console.log(`[GLOBAL-DOWNLOAD-TRACKER] ${req.method} ${req.path}`, {
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+  }
+  next();
+});
+
 // In-memory storage for quality scan results
 const qualityScanResults = new Map();
 

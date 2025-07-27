@@ -6,6 +6,9 @@ import '../styles/DownloadOnlyModal.css';
 import { scanVideoQualities } from '../utils/qualityScanner';
 import progressWebSocketClient from '../utils/progressWebSocketClient';
 
+// Global singleton to prevent multiple download modals
+let activeDownloadModal = null;
+
 const DownloadOnlyModal = ({
   isOpen,
   onClose,
@@ -20,6 +23,26 @@ const DownloadOnlyModal = ({
   const [downloadProgress, setDownloadProgress] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [downloadVideoId, setDownloadVideoId] = useState(null);
+
+  // Prevent multiple modal instances
+  useEffect(() => {
+    if (isOpen) {
+      if (activeDownloadModal && activeDownloadModal !== onClose) {
+        console.log('[DownloadOnlyModal] Another modal is already active, closing this one');
+        onClose();
+        return;
+      }
+      activeDownloadModal = onClose;
+      console.log('[DownloadOnlyModal] Registered as active modal');
+    }
+
+    return () => {
+      if (activeDownloadModal === onClose) {
+        activeDownloadModal = null;
+        console.log('[DownloadOnlyModal] Unregistered active modal');
+      }
+    };
+  }, [isOpen, onClose]);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -93,37 +116,9 @@ const DownloadOnlyModal = ({
         const videoId = result.videoId;
         setDownloadVideoId(videoId);
 
-        // Subscribe to progress updates
-        try {
-          await progressWebSocketClient.subscribe(videoId, (progressData) => {
-            console.log(`[DownloadOnlyModal] Progress update: ${progressData.progress}% - Status: ${progressData.status}`);
-            
-            const newProgress = progressData.progress || 0;
-            if (newProgress >= 0 && newProgress <= 100) {
-              setDownloadProgress(newProgress);
-            }
-
-            if (progressData.status === 'completed') {
-              setIsDownloading(false);
-              // Trigger download of the file using the download endpoint
-              const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
-              const a = document.createElement('a');
-              a.href = downloadUrl;
-              a.download = result.filename || `download.${selectedType === 'video' ? 'mp4' : 'mp3'}`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              onClose();
-            } else if (progressData.status === 'error') {
-              setIsDownloading(false);
-              console.error('Download error:', progressData.error);
-            }
-          });
-        } catch (error) {
-          console.warn('Failed to subscribe to WebSocket progress:', error);
-          // Fallback to polling if WebSocket fails
-          pollDownloadProgress(videoId);
-        }
+        // TEMPORARILY DISABLE WEBSOCKET - Use polling instead to prevent duplicates
+        console.log('[DownloadOnlyModal] Using polling instead of WebSocket to prevent duplicates');
+        pollDownloadProgress(videoId);
       } else {
         throw new Error(result.error || 'Download failed');
       }
@@ -148,7 +143,7 @@ const DownloadOnlyModal = ({
             
             if (data.status === 'completed') {
               // Trigger download using the download endpoint
-              const downloadUrl = `http://localhost:3031/api/download-only-file/${downloadVideoId}`;
+              const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
               const a = document.createElement('a');
               a.href = downloadUrl;
               a.download = `download.${selectedType === 'video' ? 'mp4' : 'mp3'}`;
