@@ -298,12 +298,12 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId) {
       reject(error);
     });
 
-    // Set timeout to prevent hanging
+    // Set timeout to prevent hanging (increased due to cookie extraction time)
     setTimeout(() => {
       ytdlpProcess.kill();
       setDownloadProgress(videoId, 0, 'error');
       reject(new Error('Download timeout'));
-    }, 300000); // 5 minute timeout
+    }, 600000); // 10 minute timeout
   });
 }
 

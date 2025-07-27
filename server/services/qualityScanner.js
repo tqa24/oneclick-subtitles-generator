@@ -228,11 +228,11 @@ async function getVideoInfo(videoURL) {
       }
     });
 
-    // Set timeout to prevent hanging
+    // Set timeout to prevent hanging (increased due to cookie extraction time)
     setTimeout(() => {
       ytdlpProcess.kill();
       reject(new Error('Video info scan timeout'));
-    }, 15000); // 15 second timeout
+    }, 60000); // 60 second timeout (increased for cookie extraction)
   });
 }
 

@@ -25,7 +25,8 @@ const {
  */
 async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId = null) {
   return new Promise((resolve, reject) => {
-
+    // Declare timeout variable for cleanup
+    let downloadTimeout;
 
     // Convert quality string to resolution for yt-dlp
     let resolution;
@@ -65,7 +66,9 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       '--no-playlist',
       '--merge-output-format', 'mp4',
       '--progress',  // Enable progress reporting
-      '--newline'    // Force newlines for better parsing
+      '--newline',   // Force newlines for better parsing
+      '--no-post-overwrites',  // Prevent hanging on post-processing
+      '--prefer-ffmpeg'        // Use ffmpeg for merging (more reliable)
     ];
 
     console.log(`[ytdlpDownloader] Running yt-dlp with args:`, args);
@@ -82,6 +85,11 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       const output = data.toString();
       stdoutData += output;
 
+      // Log merge-related messages for debugging
+      if (output.includes('Merging') || output.includes('merger') || output.includes('ffmpeg')) {
+        console.log(`[yt-dlp merge] ${output.trim()}`);
+      }
+
       // Parse progress information if videoId is provided
       if (videoId) {
         updateProgressFromYtdlpOutput(videoId, output);
@@ -92,14 +100,23 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       const output = data.toString();
       stderrData += output;
       console.error(`[yt-dlp error] ${output.trim()}`);
+
+      // Log merge-related messages for debugging
+      if (output.includes('Merging') || output.includes('merger') || output.includes('ffmpeg')) {
+        console.log(`[yt-dlp merge] ${output.trim()}`);
+      }
     });
 
     ytdlpProcess.on('close', (code) => {
+      clearTimeout(downloadTimeout);
+      console.log(`[ytdlpDownloader] Process closed with code: ${code} for video: ${videoId || 'unknown'}`);
       if (code === 0) {
         // Success - move the file to the final location
         try {
+          console.log(`[ytdlpDownloader] Checking for file: ${tempPath}`);
           // Check if the file exists
           if (fs.existsSync(tempPath)) {
+            console.log(`[ytdlpDownloader] File exists, setting progress to 100% for: ${videoId}`);
             // Set progress to 100% before moving file
             if (videoId) {
               setDownloadProgress(videoId, 100, 'completed');
@@ -143,6 +160,7 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
     });
 
     ytdlpProcess.on('error', (error) => {
+      clearTimeout(downloadTimeout);
       if (videoId) {
         setDownloadProgress(videoId, 0, 'error');
       }
@@ -156,6 +174,16 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
         reject(error);
       }
     });
+
+    // Set timeout to prevent hanging (especially important with cookie extraction)
+    downloadTimeout = setTimeout(() => {
+      console.error(`[ytdlpDownloader] Download timeout for ${videoId || 'unknown'}`);
+      ytdlpProcess.kill();
+      if (videoId) {
+        setDownloadProgress(videoId, 0, 'error');
+      }
+      reject(new Error('Download timeout - process took too long'));
+    }, 600000); // 10 minute timeout (increased due to cookie extraction time)
   });
 }
 

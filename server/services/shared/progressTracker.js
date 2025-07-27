@@ -24,6 +24,7 @@ function getDownloadProgress(videoId) {
  * @param {string} status - Download status
  */
 function setDownloadProgress(videoId, progress, status = 'downloading') {
+  console.log(`[setDownloadProgress] ${videoId}: ${progress}% - ${status}`);
   downloadProgress.set(videoId, { progress, status, timestamp: Date.now() });
 }
 
@@ -74,8 +75,12 @@ function parseYtdlpProgress(output) {
     };
   }
 
-  // Check for completion
-  if (output.includes('[download] 100%') || output.includes('has already been downloaded')) {
+  // Check for completion (including merge completion)
+  if (output.includes('[download] 100%') ||
+      output.includes('has already been downloaded') ||
+      output.includes('Deleting original file') ||
+      output.includes('merger complete') ||
+      (output.includes('[Merger]') && output.includes('100%'))) {
     return {
       progress: 100,
       status: 'completed',
@@ -83,7 +88,7 @@ function parseYtdlpProgress(output) {
     };
   }
 
-  // Check for merge operations
+  // Check for merge operations (in progress)
   if (output.includes('[Merger]') || output.includes('Merging formats')) {
     return {
       progress: 95, // Assume 95% when merging
