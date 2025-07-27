@@ -5,7 +5,6 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const { safeMoveFile } = require('../../utils/fileOperations');
 const { getYtDlpPath, getCommonYtDlpArgs } = require('../shared/ytdlpUtils');
 const {
@@ -134,99 +133,12 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
           reject(error);
         }
       } else {
-        // Check if this is a Chrome cookie database error
-        const isCookieError = stderrData.includes('Could not copy Chrome cookie database') ||
-                             stderrData.includes('https://github.com/yt-dlp/yt-dlp/issues/7271');
-
-        if (isCookieError && args.includes('--cookies-from-browser')) {
-          console.log(`[yt-dlp fallback] Chrome cookie error detected, retrying without cookies...`);
-
-          // Retry without cookie arguments
-          const fallbackArgs = args.filter(arg => arg !== '--cookies-from-browser' && arg !== 'chrome');
-          console.log(`[yt-dlp fallback] Retry args:`, fallbackArgs);
-
-          // Reset progress for retry
-          if (videoId) {
-            setDownloadProgress(videoId, 0, 'downloading');
-          }
-
-          // Spawn new process without cookies
-          const fallbackProcess = spawn(ytdlpCommand, fallbackArgs);
-          let fallbackStdout = '';
-          let fallbackStderr = '';
-
-          fallbackProcess.stdout.on('data', (data) => {
-            const output = data.toString();
-            fallbackStdout += output;
-            if (videoId) {
-              updateProgressFromYtdlpOutput(videoId, output);
-            }
-          });
-
-          fallbackProcess.stderr.on('data', (data) => {
-            const output = data.toString();
-            fallbackStderr += output;
-            console.error(`[yt-dlp fallback error] ${output.trim()}`);
-          });
-
-          fallbackProcess.on('close', (fallbackCode) => {
-            if (fallbackCode === 0) {
-              // Success with fallback
-              try {
-                if (fs.existsSync(tempPath)) {
-                  if (videoId) {
-                    setDownloadProgress(videoId, 100, 'completed');
-                  }
-                  console.log(`[yt-dlp fallback] Download successful without cookies`);
-                  safeMoveFile(tempPath, outputPath)
-                    .then(() => resolve(true))
-                    .catch((err) => {
-                      if (videoId) {
-                        setDownloadProgress(videoId, 0, 'error');
-                      }
-                      console.error(`Error moving fallback downloaded file: ${err.message}`);
-                      reject(err);
-                    });
-                } else {
-                  if (videoId) {
-                    setDownloadProgress(videoId, 0, 'error');
-                  }
-                  console.error(`Fallback process completed but file not found: ${tempPath}`);
-                  reject(new Error('Fallback process completed but file not found'));
-                }
-              } catch (error) {
-                if (videoId) {
-                  setDownloadProgress(videoId, 0, 'error');
-                }
-                console.error(`Error in fallback process: ${error.message}`);
-                reject(error);
-              }
-            } else {
-              // Fallback also failed
-              if (videoId) {
-                setDownloadProgress(videoId, 0, 'error');
-              }
-              console.error(`yt-dlp fallback also failed with code ${fallbackCode}`);
-              reject(new Error(`yt-dlp failed both with cookies (${stderrData}) and without cookies (${fallbackStderr})`));
-            }
-          });
-
-          fallbackProcess.on('error', (error) => {
-            if (videoId) {
-              setDownloadProgress(videoId, 0, 'error');
-            }
-            console.error(`Error in fallback yt-dlp process: ${error.message}`);
-            reject(error);
-          });
-
-        } else {
-          // Not a cookie error or already tried without cookies
-          if (videoId) {
-            setDownloadProgress(videoId, 0, 'error');
-          }
-          console.error(`yt-dlp process exited with code ${code}`);
-          reject(new Error(`yt-dlp process failed with code ${code}: ${stderrData}`));
+        // Process failed
+        if (videoId) {
+          setDownloadProgress(videoId, 0, 'error');
         }
+        console.error(`yt-dlp process exited with code ${code}`);
+        reject(new Error(`yt-dlp process failed with code ${code}: ${stderrData}`));
       }
     });
 

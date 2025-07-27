@@ -47,7 +47,6 @@
     "install:yt-dlp:verbose": "cross-env VERBOSE=true node install-yt-dlp.js",
     "install:all:quiet": "cross-env QUIET=true npm install --silent && cross-env QUIET=true node setup-narration.js && cross-env QUIET=true node install-yt-dlp.js",
     "install:all:verbose": "cross-env VERBOSE=true npm install && cross-env VERBOSE=true node setup-narration.js && cross-env VERBOSE=true node install-yt-dlp.js",
-    "setup:react-env": "node scripts/generate-react-env.js",
     "start:original": "node scripts/start-frontend.js"
   },
   "dependencies": {

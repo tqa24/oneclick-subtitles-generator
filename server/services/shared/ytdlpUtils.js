@@ -88,28 +88,36 @@ function isChromeCookieUnlockAvailable() {
   // Check possible plugin locations
   const pluginPaths = [];
 
-  // Check venv-relative path first
-  const venvPluginsDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins');
+  // Check venv-relative path first (this is where our setup installs it)
+  const venvPluginsDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins', 'ChromeCookieUnlock');
   pluginPaths.push(venvPluginsDir);
 
   // Check system-wide paths
   if (platform === 'win32') {
-    pluginPaths.push(path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'yt-dlp', 'plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins'));
+    pluginPaths.push(path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'), 'yt-dlp', 'plugins', 'ChromeCookieUnlock'));
   } else {
-    pluginPaths.push(path.join(homeDir, '.yt-dlp', 'plugins', 'ChromeCookieUnlock', 'yt_dlp_plugins'));
+    pluginPaths.push(path.join(homeDir, '.yt-dlp', 'plugins', 'ChromeCookieUnlock'));
   }
 
-  // Check if any plugin path exists
+  // Check if any plugin path exists with the correct structure
   for (const pluginPath of pluginPaths) {
     if (fs.existsSync(pluginPath)) {
-      const initFile = path.join(pluginPath, '__init__.py');
-      if (fs.existsSync(initFile)) {
+      // Check for the postprocessor plugin structure: ChromeCookieUnlock/yt_dlp_plugins/postprocessor/
+      const namespacePath = path.join(pluginPath, 'yt_dlp_plugins');
+      const namespaceInit = path.join(namespacePath, '__init__.py');
+      const postprocessorDir = path.join(namespacePath, 'postprocessor');
+      const postprocessorDirInit = path.join(postprocessorDir, '__init__.py');
+      const postprocessorPlugin = path.join(postprocessorDir, 'chrome_cookie_unlock.py');
+
+      if (fs.existsSync(namespacePath) && fs.existsSync(namespaceInit) && fs.existsSync(postprocessorDir) &&
+          fs.existsSync(postprocessorDirInit) && fs.existsSync(postprocessorPlugin)) {
         console.log(`[isChromeCookieUnlockAvailable] Plugin found at: ${pluginPath}`);
         return true;
       }
     }
   }
 
+  console.log(`[isChromeCookieUnlockAvailable] Plugin not found in any of these locations:`, pluginPaths);
   return false;
 }
 
@@ -119,6 +127,13 @@ function isChromeCookieUnlockAvailable() {
  */
 function getCommonYtDlpArgs() {
   const args = [];
+
+  // Add plugin directory if it exists
+  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  if (fs.existsSync(pluginDir)) {
+    args.push('--plugin-dirs', pluginDir);
+    console.log(`[getCommonYtDlpArgs] Using plugin directory: ${pluginDir}`);
+  }
 
   // Try to add browser cookies for better authentication
   const availableBrowser = detectAvailableBrowser();

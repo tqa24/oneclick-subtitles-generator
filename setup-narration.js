@@ -1172,16 +1172,23 @@ async function extractZip(zipPath, extractDir) {
 function verifyPluginInstallation(pluginDir) {
     try {
         // Check if the plugin directory structure exists
-        const pluginNamespaceDir = path.join(pluginDir, 'ChromeCookieUnlock', 'yt_dlp_plugins');
+        // The ChromeCookieUnlock plugin has the structure: ChromeCookieUnlock/yt_dlp_plugins/postprocessor/
+        // pluginDir should point to the ChromeCookieUnlock directory which contains yt_dlp_plugins
+        const pluginNamespacePath = path.join(pluginDir, 'yt_dlp_plugins');
         const pluginFiles = [
-            path.join(pluginNamespaceDir, '__init__.py'),
-            path.join(pluginNamespaceDir, 'extractor', '__init__.py')
+            path.join(pluginNamespacePath, '__init__.py'),
+            path.join(pluginNamespacePath, 'postprocessor', '__init__.py'),
+            path.join(pluginNamespacePath, 'postprocessor', 'chrome_cookie_unlock.py')
         ];
+
+        logger.info(`Checking plugin files in: ${pluginNamespacePath}`);
 
         for (const file of pluginFiles) {
             if (!fs.existsSync(file)) {
                 logger.warn(`Plugin file missing: ${file}`);
                 return false;
+            } else {
+                logger.info(`✓ Found: ${file}`);
             }
         }
 
@@ -1268,8 +1275,15 @@ async function installYtDlpCookiePlugin() {
         }
 
         const sourcePath = path.join(tempExtractDir, extractedPluginDir);
+        const sourcePluginPath = path.join(sourcePath, 'yt_dlp_plugins');
+
+        // Verify the source has the expected structure
+        if (!fs.existsSync(sourcePluginPath)) {
+            throw new Error(`Plugin source directory not found: ${sourcePluginPath}`);
+        }
 
         // Copy plugin to final location
+        logger.info(`Installing plugin from: ${sourcePluginPath}`);
         logger.info(`Installing plugin to: ${pluginDir}`);
 
         // Remove existing plugin directory if it exists
@@ -1277,15 +1291,29 @@ async function installYtDlpCookiePlugin() {
             fs.rmSync(pluginDir, { recursive: true, force: true });
         }
 
-        // Copy the plugin
-        fs.cpSync(sourcePath, pluginDir, { recursive: true });
+        // Copy the yt_dlp_plugins directory to the plugin directory, preserving the namespace
+        const finalPluginPath = path.join(pluginDir, 'yt_dlp_plugins');
+        fs.cpSync(sourcePluginPath, finalPluginPath, { recursive: true });
+
+        // Create missing __init__.py files if they don't exist
+        const initFiles = [
+            path.join(finalPluginPath, '__init__.py'),
+            path.join(finalPluginPath, 'postprocessor', '__init__.py')
+        ];
+
+        for (const initFile of initFiles) {
+            if (!fs.existsSync(initFile)) {
+                fs.writeFileSync(initFile, '# yt-dlp plugin namespace\n');
+                logger.info(`Created missing __init__.py: ${initFile}`);
+            }
+        }
 
         // Clean up temporary files
         fs.unlinkSync(tempZipPath);
         fs.rmSync(tempExtractDir, { recursive: true, force: true });
 
         // Verify installation
-        if (verifyPluginInstallation(pluginsDir)) {
+        if (verifyPluginInstallation(pluginDir)) {
             logger.success('✅ ChromeCookieUnlock plugin installed successfully');
             logger.info('   This plugin resolves Chrome cookie database locking issues on Windows');
             logger.info('   yt-dlp can now access Chrome cookies even when the browser is open');
