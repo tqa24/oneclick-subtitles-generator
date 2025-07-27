@@ -12,7 +12,7 @@ process.env.REMOTION_GL = "vulkan";
 
 const app = express();
 // Import unified port configuration from centralized config
-const { PORTS } = require('../../server/config');
+const { PORTS } = require('../../../server/config');
 const port = process.env.PORT || PORTS.VIDEO_RENDERER;
 
 // Store active render processes for cancellation and status tracking
@@ -74,7 +74,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Import CORS configuration from centralized config
-const { EXPRESS_CORS_CONFIG } = require('../../server/config/corsConfig');
+const { EXPRESS_CORS_CONFIG } = require('../../../server/config/corsConfig');
 
 // Middleware - Configure CORS with unified configuration
 app.use(cors({
@@ -797,7 +797,7 @@ app.listen(port, () => {
 
   // Track this process (if port manager is available)
   try {
-    const { trackProcess } = require('../../server/utils/portManager');
+    const { trackProcess } = require('../../../server/utils/portManager');
     trackProcess(port, process.pid, 'Video Renderer Server');
   } catch (error) {
     // Port manager not available, continue without tracking
