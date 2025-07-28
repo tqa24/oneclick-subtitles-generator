@@ -1,5 +1,7 @@
 # One-Click Subtitles Generator
 
+Xem bản tiếng Việt [tại đây](README.vi.md).
+
 ## Screenshots
 
 Here are some screenshots showcasing the application:
