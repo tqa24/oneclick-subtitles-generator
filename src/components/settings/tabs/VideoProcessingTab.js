@@ -15,6 +15,7 @@ const VideoProcessingTab = ({
   showWaveform,
   setShowWaveform,
   useVideoAnalysis,
+  setUseVideoAnalysis,
   videoAnalysisModel,
   setVideoAnalysisModel,
   videoAnalysisTimeout,
@@ -186,7 +187,25 @@ const VideoProcessingTab = ({
             <h4>{t('settings.videoAnalysisSection', 'Video Analysis')}</h4>
           </div>
           <div className="settings-card-content">
-            {/* Hidden: Preset Detect + Context Memory/Rules setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="use-video-analysis">
+                  {t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="use-video-analysis"
+                    checked={useVideoAnalysis}
+                    onChange={(e) => setUseVideoAnalysis(e.target.checked)}
+                    ariaLabel={t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.useVideoAnalysisDescription', 'Before splitting video, analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules. Turn off for faster processing.')}
+              </p>
+            </div>
 
             <div className="compact-setting">
               <label htmlFor="video-analysis-model">

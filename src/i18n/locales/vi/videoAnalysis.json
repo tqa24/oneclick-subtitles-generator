@@ -18,5 +18,6 @@
   "autoSelectCountdown": "Tự động chọn mẫu đề xuất trong (nhấp bất kỳ đâu để hủy)",
   "autoSelectRecommendedCountdown": "Tự động chọn mẫu đề xuất trong (nhấp bất kỳ đâu để hủy)",
   "autoSelectDefaultCountdown": "Tự động chọn mẫu mặc định trong (nhấp bất kỳ đâu để hủy)",
-  "seconds": "giây"
+  "seconds": "giây",
+  "back": "Quay lại"
 }
