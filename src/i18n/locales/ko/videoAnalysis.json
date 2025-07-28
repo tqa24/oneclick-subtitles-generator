@@ -18,5 +18,6 @@
   "autoSelectCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
   "autoSelectRecommendedCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
   "autoSelectDefaultCountdown": "기본 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
-  "seconds": "초"
+  "seconds": "초",
+  "back": "뒤로"
 }

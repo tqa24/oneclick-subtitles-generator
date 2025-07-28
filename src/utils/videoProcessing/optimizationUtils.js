@@ -15,8 +15,11 @@ import { SERVER_URL } from '../../config';
 export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpdate, t) => {
   if (!mediaFile) throw new Error('No media file provided');
 
+  // Check if video analysis is enabled
+  const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
+
   // Call the optimize-video endpoint with 1 FPS for Gemini optimization
-  const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=1`, {
+  const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=1&useVideoAnalysis=${useVideoAnalysis}`, {
     method: 'POST',
     body: mediaFile,
     headers: {

@@ -10,9 +10,24 @@ import { getCacheIdForMedia } from './cacheUtils';
 import { createSegmentStatusUpdater, formatTime } from './segmentUtils';
 import { optimizeVideo } from './optimizationUtils';
 import { analyzeVideoAndWaitForUserChoice } from './analysisUtils';
-import { setCurrentCacheId as setRulesCacheId } from '../transcriptionRulesStore';
+import { setCurrentCacheId as setRulesCacheId, setTranscriptionRules } from '../transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../userSubtitlesStore';
 import { API_BASE_URL } from '../../config';
+
+/**
+ * Apply default settings when video analysis is disabled or fails
+ * This ensures the system uses the user's default preset and settings
+ */
+const applyDefaultSettings = () => {
+  // Clear any session-specific settings to ensure we use user's defaults
+  sessionStorage.removeItem('current_session_prompt');
+  sessionStorage.removeItem('current_session_preset_id');
+
+  // Clear any existing transcription rules to use defaults
+  setTranscriptionRules(null);
+
+  console.log('Applied default settings - using user\'s default preset and transcription settings');
+};
 
 /**
  * Process a short video/audio file (shorter than max segment duration)
@@ -44,17 +59,26 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
       // Optimize the video
       const { optimizedFile, analysisFile } = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
 
-      // Check if we should skip analysis when user-provided subtitles are present
-      const skipAnalysis = !!userProvidedSubtitles;
+      // Check if we should skip analysis
+      // Skip analysis if user-provided subtitles are present OR if video analysis is disabled
+      const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+      const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
 
       if (skipAnalysis) {
-
-        // Update status message to indicate we're using custom subtitles
-        onStatusUpdate({
-          message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
-          type: 'loading'
-        });
-        // Skip directly to processing with user-provided subtitles
+        // Update status message based on why we're skipping analysis
+        if (userProvidedSubtitles) {
+          onStatusUpdate({
+            message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
+            type: 'loading'
+          });
+        } else {
+          // Apply default settings when video analysis is disabled
+          applyDefaultSettings();
+          onStatusUpdate({
+            message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
+            type: 'loading'
+          });
+        }
 
         return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
       }
@@ -73,13 +97,14 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
         return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
       } catch (analysisError) {
         console.error('Error analyzing video:', analysisError);
+        // Apply default settings when video analysis fails
+        applyDefaultSettings();
         onStatusUpdate({
           message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
           type: 'warning'
         });
 
         // Continue with processing without analysis
-
         return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
       }
     } catch (error) {
@@ -217,19 +242,25 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
             type: 'loading'
           });
         } else {
+          // Video analysis is disabled, proceed with default settings
           if (userProvidedSubtitles) {
-
-            // Update status message to indicate we're using custom subtitles
             onStatusUpdate({
               message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
               type: 'loading'
             });
           } else {
-
+            // Apply default settings when video analysis is disabled
+            applyDefaultSettings();
+            onStatusUpdate({
+              message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
+              type: 'loading'
+            });
           }
         }
       } catch (error) {
         console.error('Error optimizing or analyzing video:', error);
+        // Apply default settings when video analysis fails
+        applyDefaultSettings();
         onStatusUpdate({
           message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
           type: 'warning'

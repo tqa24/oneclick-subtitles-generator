@@ -565,6 +565,7 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     // Get optimization options from query params
     const resolution = req.query.resolution || '360p';
     const fps = parseInt(req.query.fps || '1'); // Default to 1 FPS for Gemini optimization
+    const useVideoAnalysis = req.query.useVideoAnalysis !== 'false'; // Default to true if not specified
 
     // Determine if this is a video or audio file based on MIME type
     const contentType = req.headers['content-type'] || 'video/mp4';
@@ -620,17 +621,18 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     const wasOptimized = result.optimized !== false;
     const videoForAnalysis = wasOptimized ? optimizedPath : videoPath;
 
-    // Create an analysis video with 500 frames
+    // Create an analysis video with 500 frames only if video analysis is enabled
+    let analysisResult = null;
+    if (useVideoAnalysis) {
+      analysisResult = await createAnalysisVideo(videoForAnalysis, analysisPath);
 
-
-
-    const analysisResult = await createAnalysisVideo(videoForAnalysis, analysisPath);
-
-    if (analysisResult.isOriginal) {
-
+      if (analysisResult.isOriginal) {
+        console.log('[OPTIMIZE-VIDEO] Using optimized video for analysis (fewer than 500 frames)');
+      } else {
+        console.log(`[OPTIMIZE-VIDEO] Created analysis video with ${analysisResult.frameCount} frames from ${analysisResult.originalFrameCount} original frames`);
+      }
     } else {
-
-
+      console.log('[OPTIMIZE-VIDEO] Video analysis disabled, skipping analysis video creation');
     }
 
     // Return the optimized and analysis video information
@@ -651,8 +653,8 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
       message: wasOptimized
         ? `${isAudio ? 'Audio' : 'Video'} optimized successfully to ${result.resolution} at ${result.fps}fps`
         : `${isAudio ? 'Audio' : 'Video'} resolution (${result.width}x${result.height}) is already ${result.height}p or lower. No optimization needed.`,
-      // Include analysis video information
-      analysis: analysisResult.isOriginal ? {
+      // Include analysis video information only if analysis was performed
+      analysis: analysisResult ? (analysisResult.isOriginal ? {
         // If the video has fewer than 500 frames, we use the optimized video (or original if not optimized)
         video: optimizedVideoPath,
         frameCount: analysisResult.frameCount,
@@ -663,7 +665,7 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
         originalFrameCount: analysisResult.originalFrameCount,
         frameInterval: analysisResult.frameInterval,
         message: `Created 500-frame analysis video from ${analysisResult.originalFrameCount} original frames`
-      }
+      }) : null
     });
   } catch (error) {
     const errorMediaType = req.headers['content-type']?.startsWith('audio/') ? 'audio' : 'video';

@@ -76,6 +76,7 @@
   "srtOnlyModeInfo": "Đang làm việc chỉ với tệp SRT. Không có nguồn video.",
   "srtOnlyModeHint": "Bạn vẫn có thể chỉnh sửa, dịch và tải xuống phụ đề.",
   "processingWithCustomSubtitles": "Đang xử lý video với phụ đề bạn đã cung cấp...",
+  "processingWithoutAnalysis": "Đang xử lý video với cài đặt mặc định...",
   "analyzingVideo": "Đang phân tích nội dung video...",
   "optimizingVideo": "Đang tối ưu hóa video để xử lý... (Thời gian xử lý tuỳ theo độ dài video và cấu hình máy)",
   "processingAudio": "Đang xử lý âm thanh...",
