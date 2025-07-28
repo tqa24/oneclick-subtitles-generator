@@ -105,6 +105,62 @@ const CacheTab = () => {
     }
   };
 
+  // Handle clear individual cache type
+  const handleClearIndividualCache = async (cacheType, displayName) => {
+    setClearingCache(true);
+    setCacheStatus({ message: '', type: '' }); // Reset status message
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/clear-cache/${cacheType}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Clear localStorage for specific types if needed
+        if (cacheType === 'videos' || cacheType === 'subtitles') {
+          localStorage.removeItem('current_video_url');
+          localStorage.removeItem('current_file_url');
+          localStorage.removeItem('current_file_cache_id');
+        }
+
+        if (cacheType === 'narrationOutput' || cacheType === 'narrationReference') {
+          localStorage.removeItem('narration_cache');
+        }
+
+        // Set success message
+        const clearedData = data.details[Object.keys(data.details)[0]];
+        const clearedFiles = clearedData?.count || 0;
+        const clearedSize = clearedData?.formattedSize || '0 Bytes';
+
+        setCacheStatus({
+          message: t('settings.individualCacheCleared', '{{displayName}} cleared: {{count}} files ({{size}})', {
+            displayName,
+            count: clearedFiles,
+            size: clearedSize
+          }),
+          type: 'success'
+        });
+
+        // Refresh cache info to update the display
+        await fetchCacheInfoQuietly();
+      } else {
+        throw new Error(data.error || `Failed to clear ${displayName}`);
+      }
+    } catch (error) {
+      console.error(`Error clearing ${cacheType} cache:`, error);
+      setCacheStatus({
+        message: t('settings.individualCacheClearError', 'Error clearing {{displayName}}: {{errorMessage}}', {
+          displayName,
+          errorMessage: error.message
+        }),
+        type: 'error'
+      });
+    } finally {
+      setClearingCache(false);
+    }
+  };
+
   // Fetch cache info without showing loading state (to prevent UI flashing)
   const fetchCacheInfoQuietly = async () => {
     try {
@@ -217,28 +273,80 @@ const CacheTab = () => {
             {/* Column 1 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
-                <h4>{t('settings.videos', 'Videos')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videos', 'Videos')}:</h4>
+                  {(cacheDetails.videos?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videos', t('settings.videos', 'Videos'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideos', 'Clear Videos')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videosCount', '{{count}} files ({{size}})', { count: cacheDetails.videos?.count || 0, size: cacheDetails.videos?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
+                  {(cacheDetails.subtitles?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('subtitles', t('settings.subtitles', 'Subtitles'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearSubtitles', 'Clear Subtitles')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.subtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.subtitles?.count || 0, size: cacheDetails.subtitles?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.userSubtitles', 'User Subtitles')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.userSubtitles', 'User Subtitles')}:</h4>
+                  {(cacheDetails.userSubtitles?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('userSubtitles', t('settings.userSubtitles', 'User Subtitles'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearUserSubtitles', 'Clear User Subtitles')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.userSubtitlesCount', '{{count}} files ({{size}})', { count: cacheDetails.userSubtitles?.count || 0, size: cacheDetails.userSubtitles?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.rules', 'Transcription Rules')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.rules', 'Transcription Rules')}:</h4>
+                  {(cacheDetails.rules?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('rules', t('settings.rules', 'Transcription Rules'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearRules', 'Clear Transcription Rules')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.rulesCount', '{{count}} files ({{size}})', { count: cacheDetails.rules?.count || 0, size: cacheDetails.rules?.formattedSize || '0 Bytes' })}
                 </p>
@@ -248,28 +356,80 @@ const CacheTab = () => {
             {/* Column 2 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
-                <h4>{t('settings.lyrics', 'Lyrics')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.lyrics', 'Lyrics')}:</h4>
+                  {(cacheDetails.lyrics?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('lyrics', t('settings.lyrics', 'Lyrics'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearLyrics', 'Clear Lyrics')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.lyricsCount', '{{count}} files ({{size}})', { count: cacheDetails.lyrics?.count || 0, size: cacheDetails.lyrics?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.albumArt', 'Album Art')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.albumArt', 'Album Art')}:</h4>
+                  {(cacheDetails.albumArt?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('albumArt', t('settings.albumArt', 'Album Art'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearAlbumArt', 'Clear Album Art')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.albumArtCount', '{{count}} files ({{size}})', { count: cacheDetails.albumArt?.count || 0, size: cacheDetails.albumArt?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.uploads', 'Uploaded Files')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.uploads', 'Uploaded Files')}:</h4>
+                  {(cacheDetails.uploads?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('uploads', t('settings.uploads', 'Uploaded Files'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearUploads', 'Clear Uploaded Files')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.uploadsCount', '{{count}} files ({{size}})', { count: cacheDetails.uploads?.count || 0, size: cacheDetails.uploads?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.output', 'Generated Videos')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.output', 'Generated Videos')}:</h4>
+                  {(cacheDetails.output?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('output', t('settings.output', 'Generated Videos'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearOutput', 'Clear Generated Videos')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.outputCount', '{{count}} files ({{size}})', { count: cacheDetails.output?.count || 0, size: cacheDetails.output?.formattedSize || '0 Bytes' })}
                 </p>
@@ -279,28 +439,80 @@ const CacheTab = () => {
             {/* Column 3 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
-                <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
+                  {(cacheDetails.narrationReference?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('narrationReference', t('settings.narrationReference', 'Narration Reference Audio'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearNarrationReference', 'Clear Narration Reference Audio')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.narrationReferenceCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationReference?.count || 0, size: cacheDetails.narrationReference?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
+                  {(cacheDetails.narrationOutput?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('narrationOutput', t('settings.narrationOutput', 'Narration Output Audio'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearNarrationOutput', 'Clear Narration Output Audio')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.narrationOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.narrationOutput?.count || 0, size: cacheDetails.narrationOutput?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.videoRendered', 'Rendered Videos')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videoRendered', 'Rendered Videos')}:</h4>
+                  {(cacheDetails.videoRendered?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videoRendered', t('settings.videoRendered', 'Rendered Videos'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideoRendered', 'Clear Rendered Videos')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videoRenderedCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendered?.count || 0, size: cacheDetails.videoRendered?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.videoTemp', 'Temporary Videos')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videoTemp', 'Temporary Videos')}:</h4>
+                  {(cacheDetails.videoTemp?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videoTemp', t('settings.videoTemp', 'Temporary Videos'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideoTemp', 'Clear Temporary Videos')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videoTempCount', '{{count}} files ({{size}})', { count: cacheDetails.videoTemp?.count || 0, size: cacheDetails.videoTemp?.formattedSize || '0 Bytes' })}
                 </p>
@@ -310,21 +522,60 @@ const CacheTab = () => {
             {/* Column 4 */}
             <div className="cache-details-column">
               <div className="cache-details-item">
-                <h4>{t('settings.videoAlbumArt', 'Video Album Art')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videoAlbumArt', 'Video Album Art')}:</h4>
+                  {(cacheDetails.videoAlbumArt?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videoAlbumArt', t('settings.videoAlbumArt', 'Video Album Art'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideoAlbumArt', 'Clear Video Album Art')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videoAlbumArtCount', '{{count}} files ({{size}})', { count: cacheDetails.videoAlbumArt?.count || 0, size: cacheDetails.videoAlbumArt?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.videoRendererUploads', 'Video Renderer Uploads')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videoRendererUploads', 'Video Renderer Uploads')}:</h4>
+                  {(cacheDetails.videoRendererUploads?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videoRendererUploads', t('settings.videoRendererUploads', 'Video Renderer Uploads'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideoRendererUploads', 'Clear Video Renderer Uploads')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videoRendererUploadsCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendererUploads?.count || 0, size: cacheDetails.videoRendererUploads?.formattedSize || '0 Bytes' })}
                 </p>
               </div>
 
               <div className="cache-details-item">
-                <h4>{t('settings.videoRendererOutput', 'Video Renderer Output')}:</h4>
+                <div className="cache-item-header">
+                  <h4>{t('settings.videoRendererOutput', 'Video Renderer Output')}:</h4>
+                  {(cacheDetails.videoRendererOutput?.count || 0) > 0 && (
+                    <button
+                      type="button"
+                      className="remove-key"
+                      onClick={() => handleClearIndividualCache('videoRendererOutput', t('settings.videoRendererOutput', 'Video Renderer Output'))}
+                      disabled={clearingCache}
+                      title={t('settings.clearVideoRendererOutput', 'Clear Video Renderer Output')}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
                 <p>
                   {t('settings.videoRendererOutputCount', '{{count}} files ({{size}})', { count: cacheDetails.videoRendererOutput?.count || 0, size: cacheDetails.videoRendererOutput?.formattedSize || '0 Bytes' })}
                 </p>
