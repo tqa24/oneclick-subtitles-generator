@@ -299,8 +299,8 @@ const VideoProcessingTab = ({
                 onChange={(e) => setOptimizedResolution(e.target.value)}
                 className="enhanced-select"
               >
-                <option value="240p">240p (Fastest, smallest files)</option>
-                <option value="360p">360p (Recommended for Gemini)</option>
+                <option value="240p">{t('settings.resolution240p', '240p (Fastest, smallest files)')}</option>
+                <option value="360p">{t('settings.resolution360p', '360p (Recommended for Gemini)')}</option>
               </select>
             </div>
 

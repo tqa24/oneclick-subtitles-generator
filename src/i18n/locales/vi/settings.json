@@ -336,5 +336,7 @@
   "thinkingMaximumDesc": "Suy nghĩ mở rộng cho tác vụ rất phức tạp",
   "tokens": "token",
   "useCookiesForDownload": "Sử dụng cookie trình duyệt cho tải video",
-  "useCookiesForDownloadDescription": "Bật xác thực cookie trình duyệt để truy cập video chất lượng cao hơn và bỏ qua hạn chế đăng nhập. Tắt tính năng này sẽ làm cho việc tải xuống nhanh hơn nhưng có thể hạn chế chất lượng video có sẵn và gây lỗi trên nội dung bị hạn chế."
+  "useCookiesForDownloadDescription": "Bật xác thực cookie trình duyệt để truy cập video chất lượng cao hơn và bỏ qua hạn chế đăng nhập. Tắt tính năng này sẽ làm cho việc tải xuống nhanh hơn nhưng có thể hạn chế chất lượng video có sẵn và gây lỗi trên nội dung bị hạn chế.",
+  "resolution240p": "240p (Nhanh nhất, tệp nhỏ nhất)",
+  "resolution360p": "360p (Khuyến nghị cho Gemini)"
 }

@@ -328,5 +328,7 @@
   "tokens": "tokens",
   "default": "Default",
   "useCookiesForDownload": "Use browser cookies for video downloads",
-  "useCookiesForDownloadDescription": "Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content."
+  "useCookiesForDownloadDescription": "Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content.",
+  "resolution240p": "240p (Fastest, smallest files)",
+  "resolution360p": "360p (Recommended for Gemini)"
 }
