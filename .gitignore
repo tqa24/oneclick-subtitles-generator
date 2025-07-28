@@ -45,6 +45,9 @@ logs
 *.env
 config.local.js
 
+# Generated configuration files
+src/config/appConfig.js
+
 # debugging files
 debug/
 
