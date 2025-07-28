@@ -113,6 +113,84 @@ const useNarrationCache = ({
       }
     };
 
+    // Handle Edge TTS narrations loaded from cache
+    const handleEdgeTTSNarrationsLoadedFromCache = (event) => {
+      if (event.detail && event.detail.narrations) {
+        // Only update if we don't already have results
+        if (!generationResults || generationResults.length === 0) {
+          // Get the narrations from the event
+          const cachedNarrations = event.detail.narrations;
+
+          // Immediately update the generation results
+          setGenerationResults(cachedNarrations);
+
+          // Show a status message
+          setGenerationStatus(t('narration.loadedFromCache', 'Loaded Edge TTS narrations from previous session'));
+
+          // Update global narration references
+          if (subtitleSource === 'original') {
+            window.originalNarrations = [...cachedNarrations];
+          } else {
+            window.translatedNarrations = [...cachedNarrations];
+          }
+
+          // Dispatch a custom event to notify other components
+          const updateEvent = new CustomEvent('narrations-updated', {
+            detail: {
+              source: subtitleSource,
+              narrations: cachedNarrations,
+              fromCache: true
+            }
+          });
+          window.dispatchEvent(updateEvent);
+
+          // Force a re-render after a short delay to ensure the UI updates
+          setTimeout(() => {
+            setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded Edge TTS narrations from previous session'));
+          }, 200);
+        }
+      }
+    };
+
+    // Handle gTTS narrations loaded from cache
+    const handleGTTSNarrationsLoadedFromCache = (event) => {
+      if (event.detail && event.detail.narrations) {
+        // Only update if we don't already have results
+        if (!generationResults || generationResults.length === 0) {
+          // Get the narrations from the event
+          const cachedNarrations = event.detail.narrations;
+
+          // Immediately update the generation results
+          setGenerationResults(cachedNarrations);
+
+          // Show a status message
+          setGenerationStatus(t('narration.loadedFromCache', 'Loaded gTTS narrations from previous session'));
+
+          // Update global narration references
+          if (subtitleSource === 'original') {
+            window.originalNarrations = [...cachedNarrations];
+          } else {
+            window.translatedNarrations = [...cachedNarrations];
+          }
+
+          // Dispatch a custom event to notify other components
+          const updateEvent = new CustomEvent('narrations-updated', {
+            detail: {
+              source: subtitleSource,
+              narrations: cachedNarrations,
+              fromCache: true
+            }
+          });
+          window.dispatchEvent(updateEvent);
+
+          // Force a re-render after a short delay to ensure the UI updates
+          setTimeout(() => {
+            setGenerationStatus(t('narration.loadedFromCacheComplete', 'Successfully loaded gTTS narrations from previous session'));
+          }, 200);
+        }
+      }
+    };
+
     // Handle Chatterbox narrations loaded from cache
     const handleChatterboxNarrationsLoadedFromCache = (event) => {
       if (event.detail && event.detail.narrations) {
@@ -155,12 +233,16 @@ const useNarrationCache = ({
     // Add event listeners
     window.addEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
     window.addEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
+    window.addEventListener('edge-tts-narrations-loaded-from-cache', handleEdgeTTSNarrationsLoadedFromCache);
+    window.addEventListener('gtts-narrations-loaded-from-cache', handleGTTSNarrationsLoadedFromCache);
     window.addEventListener('chatterbox-narrations-loaded-from-cache', handleChatterboxNarrationsLoadedFromCache);
 
     // Clean up
     return () => {
       window.removeEventListener('narrations-loaded-from-cache', handleNarrationsLoadedFromCache);
       window.removeEventListener('f5tts-narrations-loaded-from-cache', handleF5TTSNarrationsLoadedFromCache);
+      window.removeEventListener('edge-tts-narrations-loaded-from-cache', handleEdgeTTSNarrationsLoadedFromCache);
+      window.removeEventListener('gtts-narrations-loaded-from-cache', handleGTTSNarrationsLoadedFromCache);
       window.removeEventListener('chatterbox-narrations-loaded-from-cache', handleChatterboxNarrationsLoadedFromCache);
     };
   }, [generationResults, setGenerationResults, setGenerationStatus, subtitleSource, originalSubtitles, subtitles, t, setReferenceAudio, setReferenceText]);
@@ -281,6 +363,46 @@ const useNarrationCache = ({
             }
           }));
           return; // Exit early if we found Chatterbox cache
+        }
+      }
+
+      // Check for cached Edge TTS narrations
+      const cachedEdgeTTSData = localStorage.getItem('edge_tts_narrations_cache');
+      if (cachedEdgeTTSData) {
+        const cacheEntry = JSON.parse(cachedEdgeTTSData);
+
+        // Check if cache is for current media
+        if (cacheEntry.mediaId === mediaId && cacheEntry.narrations && cacheEntry.narrations.length > 0) {
+          console.log('Found cached Edge TTS narrations, dispatching load event');
+
+          // Dispatch event to load cached narrations
+          window.dispatchEvent(new CustomEvent('edge-tts-narrations-loaded-from-cache', {
+            detail: {
+              narrations: cacheEntry.narrations,
+              settings: cacheEntry.settings
+            }
+          }));
+          return; // Exit early if we found Edge TTS cache
+        }
+      }
+
+      // Check for cached gTTS narrations
+      const cachedGTTSData = localStorage.getItem('gtts_narrations_cache');
+      if (cachedGTTSData) {
+        const cacheEntry = JSON.parse(cachedGTTSData);
+
+        // Check if cache is for current media
+        if (cacheEntry.mediaId === mediaId && cacheEntry.narrations && cacheEntry.narrations.length > 0) {
+          console.log('Found cached gTTS narrations, dispatching load event');
+
+          // Dispatch event to load cached narrations
+          window.dispatchEvent(new CustomEvent('gtts-narrations-loaded-from-cache', {
+            detail: {
+              narrations: cacheEntry.narrations,
+              settings: cacheEntry.settings
+            }
+          }));
+          return; // Exit early if we found gTTS cache
         }
       }
 

@@ -221,9 +221,13 @@ const UnifiedNarrationSection = ({
     originalLanguage,
     translatedLanguage,
     selectedVoice: edgeTTSVoice,
+    setSelectedVoice: setEdgeTTSVoice,
     rate: edgeTTSRate,
+    setRate: setEdgeTTSRate,
     volume: edgeTTSVolume,
+    setVolume: setEdgeTTSVolume,
     pitch: edgeTTSPitch,
+    setPitch: setEdgeTTSPitch,
     t,
     setRetryingSubtitleId
   });
@@ -247,8 +251,11 @@ const UnifiedNarrationSection = ({
     originalLanguage,
     translatedLanguage,
     selectedLanguage: gttsLanguage,
+    setSelectedLanguage: setGttsLanguage,
     tld: gttsTld,
+    setTld: setGttsTld,
     slow: gttsSlow,
+    setSlow: setGttsSlow,
     t,
     setRetryingSubtitleId
   });

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { SERVER_URL } from '../../../config';
 
 /**
@@ -35,8 +35,11 @@ const useGTTSNarration = ({
   originalLanguage,
   translatedLanguage,
   selectedLanguage,
+  setSelectedLanguage,
   tld,
+  setTld,
   slow,
+  setSlow,
   t,
   setRetryingSubtitleId
 }) => {
@@ -143,8 +146,54 @@ const useGTTSNarration = ({
                   setGenerationResults([...results]);
                 }
               } else if (data.status === 'completed') {
-                setGenerationResults(data.results || results);
+                const finalResults = data.results || results;
+                setGenerationResults(finalResults);
                 setGenerationStatus(t('narration.gttsGenerationComplete', 'gTTS narration generation completed successfully!'));
+
+                // Cache narrations to localStorage
+                try {
+                  // Get current media ID
+                  const getCurrentMediaId = () => {
+                    const currentVideoUrl = localStorage.getItem('current_video_url');
+                    const currentFileUrl = localStorage.getItem('current_file_url');
+
+                    if (currentVideoUrl) {
+                      // Extract video ID from YouTube URLs
+                      const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                      return match ? match[1] : null;
+                    } else if (currentFileUrl) {
+                      return localStorage.getItem('current_file_cache_id');
+                    }
+                    return null;
+                  };
+
+                  const mediaId = getCurrentMediaId();
+                  if (mediaId) {
+                    // Create cache entry with narrations
+                    const cacheEntry = {
+                      mediaId,
+                      timestamp: Date.now(),
+                      narrations: finalResults.map(result => ({
+                        subtitle_id: result.subtitle_id,
+                        filename: result.filename,
+                        success: result.success,
+                        text: result.text,
+                        method: 'gtts'
+                      })),
+                      settings: {
+                        lang: selectedLanguage,
+                        tld: tld || 'com',
+                        slow: slow || false
+                      }
+                    };
+
+                    // Save to localStorage
+                    localStorage.setItem('gtts_narrations_cache', JSON.stringify(cacheEntry));
+                    console.log('Cached gTTS narrations');
+                  }
+                } catch (error) {
+                  console.error('Error caching gTTS narrations:', error);
+                }
               }
             } catch (parseError) {
               console.warn('Failed to parse SSE data:', parseError);
@@ -379,6 +428,31 @@ const useGTTSNarration = ({
     setGenerationStatus,
     t
   ]);
+
+  // Listen for cached narrations loaded event
+  useEffect(() => {
+    const handleCachedNarrationsLoaded = (event) => {
+      if (event.detail && event.detail.narrations) {
+        console.log('gTTS: Received cached narrations from cache hook');
+        setGenerationResults(event.detail.narrations);
+        setGenerationStatus(t('narration.loadedFromCache', 'Loaded gTTS narrations from previous session'));
+
+        // Restore settings if available
+        if (event.detail.settings) {
+          const settings = event.detail.settings;
+          if (settings.lang && setSelectedLanguage) setSelectedLanguage(settings.lang);
+          if (settings.tld && setTld) setTld(settings.tld);
+          if (typeof settings.slow === 'boolean' && setSlow) setSlow(settings.slow);
+        }
+      }
+    };
+
+    window.addEventListener('gtts-narrations-loaded-from-cache', handleCachedNarrationsLoaded);
+
+    return () => {
+      window.removeEventListener('gtts-narrations-loaded-from-cache', handleCachedNarrationsLoaded);
+    };
+  }, [setGenerationResults, setGenerationStatus, t, setSelectedLanguage, setTld, setSlow]);
 
   return {
     handleGTTSNarration,

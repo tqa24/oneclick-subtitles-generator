@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { SERVER_URL } from '../../../config';
 import { saveAudioBlobToServer } from '../../../services/narrationService';
 
@@ -37,9 +37,13 @@ const useEdgeTTSNarration = ({
   originalLanguage,
   translatedLanguage,
   selectedVoice,
+  setSelectedVoice,
   rate,
+  setRate,
   volume,
+  setVolume,
   pitch,
+  setPitch,
   t,
   setRetryingSubtitleId
 }) => {
@@ -147,8 +151,55 @@ const useEdgeTTSNarration = ({
                   setGenerationResults([...results]);
                 }
               } else if (data.status === 'completed') {
-                setGenerationResults(data.results || results);
+                const finalResults = data.results || results;
+                setGenerationResults(finalResults);
                 setGenerationStatus(t('narration.edgeTTSGenerationComplete', 'Edge TTS narration generation completed successfully!'));
+
+                // Cache narrations to localStorage
+                try {
+                  // Get current media ID
+                  const getCurrentMediaId = () => {
+                    const currentVideoUrl = localStorage.getItem('current_video_url');
+                    const currentFileUrl = localStorage.getItem('current_file_url');
+
+                    if (currentVideoUrl) {
+                      // Extract video ID from YouTube URLs
+                      const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                      return match ? match[1] : null;
+                    } else if (currentFileUrl) {
+                      return localStorage.getItem('current_file_cache_id');
+                    }
+                    return null;
+                  };
+
+                  const mediaId = getCurrentMediaId();
+                  if (mediaId) {
+                    // Create cache entry with narrations
+                    const cacheEntry = {
+                      mediaId,
+                      timestamp: Date.now(),
+                      narrations: finalResults.map(result => ({
+                        subtitle_id: result.subtitle_id,
+                        filename: result.filename,
+                        success: result.success,
+                        text: result.text,
+                        method: 'edge-tts'
+                      })),
+                      settings: {
+                        voice: selectedVoice,
+                        rate: rate || '+0%',
+                        volume: volume || '+0%',
+                        pitch: pitch || '+0Hz'
+                      }
+                    };
+
+                    // Save to localStorage
+                    localStorage.setItem('edge_tts_narrations_cache', JSON.stringify(cacheEntry));
+                    console.log('Cached Edge TTS narrations');
+                  }
+                } catch (error) {
+                  console.error('Error caching Edge TTS narrations:', error);
+                }
               }
             } catch (parseError) {
               console.warn('Failed to parse SSE data:', parseError);
@@ -388,6 +439,32 @@ const useEdgeTTSNarration = ({
     setGenerationStatus,
     t
   ]);
+
+  // Listen for cached narrations loaded event
+  useEffect(() => {
+    const handleCachedNarrationsLoaded = (event) => {
+      if (event.detail && event.detail.narrations) {
+        console.log('Edge TTS: Received cached narrations from cache hook');
+        setGenerationResults(event.detail.narrations);
+        setGenerationStatus(t('narration.loadedFromCache', 'Loaded Edge TTS narrations from previous session'));
+
+        // Restore settings if available
+        if (event.detail.settings) {
+          const settings = event.detail.settings;
+          if (settings.voice && setSelectedVoice) setSelectedVoice(settings.voice);
+          if (settings.rate && setRate) setRate(settings.rate);
+          if (settings.volume && setVolume) setVolume(settings.volume);
+          if (settings.pitch && setPitch) setPitch(settings.pitch);
+        }
+      }
+    };
+
+    window.addEventListener('edge-tts-narrations-loaded-from-cache', handleCachedNarrationsLoaded);
+
+    return () => {
+      window.removeEventListener('edge-tts-narrations-loaded-from-cache', handleCachedNarrationsLoaded);
+    };
+  }, [setGenerationResults, setGenerationStatus, t, setSelectedVoice, setRate, setVolume, setPitch]);
 
   return {
     handleEdgeTTSNarration,
