@@ -442,6 +442,172 @@ router.get('/cache-info', (req, res) => {
 });
 
 /**
+ * DELETE /api/clear-cache/:type - Clear specific type of cached files
+ */
+router.delete('/clear-cache/:type', async (req, res) => {
+  const { type } = req.params;
+
+  // Define valid cache types and their corresponding directories/logic
+  const cacheTypes = {
+    'videos': { dir: VIDEOS_DIR, key: 'videos' },
+    'subtitles': { dir: SUBTITLES_DIR, key: 'subtitles' },
+    'userSubtitles': { dir: USER_SUBTITLES_DIR, key: 'userSubtitles' },
+    'rules': { dir: RULES_DIR, key: 'rules' },
+    'narrationReference': { dir: REFERENCE_AUDIO_DIR, key: 'narrationReference' },
+    'narrationOutput': { dir: OUTPUT_AUDIO_DIR, key: 'narrationOutput' },
+    'lyrics': { dir: LYRICS_DIR, key: 'lyrics' },
+    'albumArt': { dir: ALBUM_ART_DIR, key: 'albumArt' },
+    'uploads': { dir: UPLOADS_DIR, key: 'uploads' },
+    'output': { dir: OUTPUT_DIR, key: 'output' },
+    'videoRendered': { dir: VIDEO_RENDERED_DIR, key: 'videoRendered' },
+    'videoTemp': { dir: VIDEO_TEMP_DIR, key: 'videoTemp' },
+    'videoAlbumArt': { dir: VIDEO_ALBUM_ART_DIR, key: 'videoAlbumArt' },
+    'videoRendererUploads': { dir: VIDEO_RENDERER_UPLOADS_DIR, key: 'videoRendererUploads' },
+    'videoRendererOutput': { dir: VIDEO_RENDERER_OUTPUT_DIR, key: 'videoRendererOutput' }
+  };
+
+  if (!cacheTypes[type]) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid cache type: ${type}. Valid types are: ${Object.keys(cacheTypes).join(', ')}`
+    });
+  }
+
+  try {
+    const cacheType = cacheTypes[type];
+    const details = {
+      [cacheType.key]: { count: 0, size: 0, files: [] }
+    };
+
+    // Clear the specific cache type
+    await clearSpecificCacheType(cacheType.dir, cacheType.key, details, type);
+
+    // Format the size
+    details[cacheType.key].formattedSize = formatBytes(details[cacheType.key].size);
+
+    res.json({
+      success: true,
+      message: `${type} cache cleared successfully`,
+      details: details
+    });
+  } catch (error) {
+    console.error(`Error clearing ${type} cache:`, error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to clear ${type} cache`
+    });
+  }
+});
+
+/**
+ * Helper function to clear specific cache type
+ */
+async function clearSpecificCacheType(directory, key, details, type) {
+  if (!fs.existsSync(directory)) {
+    return;
+  }
+
+  // Handle special cases for recursive directories
+  if (type === 'uploads' || type === 'videoRendererUploads') {
+    const clearDirectory = async (dirPath, prefix = '') => {
+      const items = fs.readdirSync(dirPath);
+      for (const item of items) {
+        const itemPath = path.join(dirPath, item);
+        try {
+          const stats = fs.statSync(itemPath);
+          if (stats.isDirectory()) {
+            await clearDirectory(itemPath, prefix ? `${prefix}/${item}` : item);
+            // Remove empty directory
+            try {
+              fs.rmdirSync(itemPath);
+              console.log(`Removed directory: ${itemPath}`);
+            } catch (rmError) {
+              console.error(`Error removing directory ${itemPath}:`, rmError);
+            }
+          } else {
+            const fileSize = stats.size;
+            details[key].count++;
+            details[key].size += fileSize;
+            details[key].files.push({ name: prefix ? `${prefix}/${item}` : item, size: fileSize });
+            await safeDeleteFile(itemPath);
+          }
+        } catch (error) {
+          console.error(`Error processing item ${itemPath}:`, error);
+        }
+      }
+    };
+    await clearDirectory(directory);
+  } else if (type === 'videos') {
+    // Special handling for videos with safe batch deletion
+    const videoFiles = fs.readdirSync(directory);
+    const videoFilePaths = [];
+
+    for (const file of videoFiles) {
+      const filePath = path.join(directory, file);
+      try {
+        const stats = fs.statSync(filePath);
+        if (!stats.isDirectory()) {
+          const fileSize = stats.size;
+          details[key].count++;
+          details[key].size += fileSize;
+          details[key].files.push({ name: file, size: fileSize });
+          videoFilePaths.push(filePath);
+        }
+      } catch (error) {
+        console.error(`Error processing video file ${filePath}:`, error);
+      }
+    }
+
+    // Safely delete all video files
+    if (videoFilePaths.length > 0) {
+      console.log(`Safely deleting ${videoFilePaths.length} video files...`);
+      const deleteResults = await safeDeleteMultipleFiles(videoFilePaths, (deleted, total, currentFile) => {
+        if (currentFile) {
+          console.log(`Deleting video file ${deleted + 1}/${total}: ${path.basename(currentFile)}`);
+        }
+      });
+      console.log(`Video deletion results: ${deleteResults.deleted} deleted, ${deleteResults.failed} failed`);
+    }
+  } else {
+    // Standard file deletion for other types
+    const files = fs.readdirSync(directory);
+    for (const file of files) {
+      const filePath = path.join(directory, file);
+      try {
+        const stats = fs.statSync(filePath);
+        if (!stats.isDirectory()) {
+          const fileSize = stats.size;
+          details[key].count++;
+          details[key].size += fileSize;
+          details[key].files.push({ name: file, size: fileSize });
+          await safeDeleteFile(filePath);
+        }
+      } catch (error) {
+        console.error(`Error processing file ${filePath}:`, error);
+      }
+    }
+  }
+
+  // Handle temp directory cleanup for narration
+  if (type === 'narrationOutput') {
+    if (fs.existsSync(TEMP_AUDIO_DIR)) {
+      const tempFiles = fs.readdirSync(TEMP_AUDIO_DIR);
+      for (const file of tempFiles) {
+        const filePath = path.join(TEMP_AUDIO_DIR, file);
+        try {
+          const stats = fs.statSync(filePath);
+          if (!stats.isDirectory()) {
+            await safeDeleteFile(filePath);
+          }
+        } catch (error) {
+          console.error(`Error processing temp file ${filePath}:`, error);
+        }
+      }
+    }
+  }
+}
+
+/**
  * DELETE /api/clear-cache - Clear all cached files
  */
 router.delete('/clear-cache', async (req, res) => {

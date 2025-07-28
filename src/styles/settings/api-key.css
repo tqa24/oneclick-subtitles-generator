@@ -502,13 +502,16 @@
   background-color: var(--md-surface-2);
   border: 1px solid var(--md-outline-variant);
   border-radius: 50%;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   transition: all var(--md-duration-medium2) var(--md-easing-standard);
   color: var(--md-on-surface-variant);
   padding: 0;
   line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .remove-key:hover {
