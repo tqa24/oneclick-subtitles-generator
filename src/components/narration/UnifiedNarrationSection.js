@@ -229,7 +229,10 @@ const UnifiedNarrationSection = ({
     pitch: edgeTTSPitch,
     setPitch: setEdgeTTSPitch,
     t,
-    setRetryingSubtitleId
+    setRetryingSubtitleId,
+    useGroupedSubtitles,
+    groupedSubtitles,
+    setUseGroupedSubtitles
   });
 
   // Use gTTS narration hook
@@ -257,7 +260,10 @@ const UnifiedNarrationSection = ({
     slow: gttsSlow,
     setSlow: setGttsSlow,
     t,
-    setRetryingSubtitleId
+    setRetryingSubtitleId,
+    useGroupedSubtitles,
+    groupedSubtitles,
+    setUseGroupedSubtitles
   });
 
   // Use audio playback hook

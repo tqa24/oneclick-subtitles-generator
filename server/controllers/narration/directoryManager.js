@@ -93,6 +93,73 @@ const ensureNarrationDirectories = () => {
 };
 
 /**
+ * Clean up old subtitle directories when using grouped narrations
+ * This removes directories for subtitle IDs that are not used in the grouped narrations
+ * @param {Array} groupedSubtitles - Array of grouped subtitle objects with subtitle_id
+ */
+const cleanupOldSubtitleDirectories = (groupedSubtitles) => {
+  try {
+    if (!groupedSubtitles || groupedSubtitles.length === 0) {
+      console.log('No grouped subtitles provided for cleanup');
+      return;
+    }
+
+    // Get all existing subtitle directories
+    if (!fs.existsSync(OUTPUT_AUDIO_DIR)) {
+      return;
+    }
+
+    const existingItems = fs.readdirSync(OUTPUT_AUDIO_DIR);
+    const existingSubtitleDirs = existingItems.filter(item => {
+      const itemPath = path.join(OUTPUT_AUDIO_DIR, item);
+      return fs.statSync(itemPath).isDirectory() && item.startsWith('subtitle_');
+    });
+
+    // Extract subtitle IDs that should be kept (from grouped narrations)
+    const usedSubtitleIds = new Set();
+    groupedSubtitles.forEach(subtitle => {
+      const id = subtitle.subtitle_id || subtitle.id;
+      if (id) {
+        usedSubtitleIds.add(id.toString());
+      }
+    });
+
+    console.log(`Cleanup: Found ${existingSubtitleDirs.length} existing subtitle directories`);
+    console.log(`Cleanup: Keeping directories for subtitle IDs: ${Array.from(usedSubtitleIds).join(', ')}`);
+
+    // Remove directories for subtitle IDs that are not used in grouped narrations
+    let deletedCount = 0;
+    existingSubtitleDirs.forEach(dirName => {
+      // Extract subtitle ID from directory name (e.g., "subtitle_5" -> "5")
+      const match = dirName.match(/^subtitle_(\d+)$/);
+      if (match) {
+        const subtitleId = match[1];
+        if (!usedSubtitleIds.has(subtitleId)) {
+          const dirPath = path.join(OUTPUT_AUDIO_DIR, dirName);
+          try {
+            // Delete all files in the directory first
+            const files = fs.readdirSync(dirPath);
+            files.forEach(file => {
+              fs.unlinkSync(path.join(dirPath, file));
+            });
+            // Then remove the directory
+            fs.rmdirSync(dirPath);
+            console.log(`Cleanup: Deleted unused subtitle directory: ${dirName}`);
+            deletedCount++;
+          } catch (error) {
+            console.error(`Cleanup: Error deleting directory ${dirName}:`, error);
+          }
+        }
+      }
+    });
+
+    console.log(`Cleanup: Deleted ${deletedCount} unused subtitle directories`);
+  } catch (error) {
+    console.error('Error during subtitle directory cleanup:', error);
+  }
+};
+
+/**
  * Clear narration output files endpoint handler
  */
 const clearOutput = (_, res) => {
@@ -113,5 +180,6 @@ module.exports = {
   ensureSubtitleDirectory,
   clearNarrationOutputFiles,
   ensureNarrationDirectories,
-  clearOutput
+  clearOutput,
+  cleanupOldSubtitleDirectories
 };

@@ -125,19 +125,19 @@ const downloadAlignedAudio = async (req, res) => {
           const subtitleDir = path.dirname(filePath);
 
           if (fs.existsSync(subtitleDir)) {
-            // Check if there are any wav files in the directory
+            // Check if there are any audio files in the directory (wav or mp3)
             const files = fs.readdirSync(subtitleDir);
-            const wavFiles = files.filter(file => file.endsWith('.wav'));
+            const audioFiles = files.filter(file => file.endsWith('.wav') || file.endsWith('.mp3'));
 
-            if (wavFiles.length > 0) {
-              console.log(`Found alternative wav files in ${subtitleDir}:`, wavFiles);
+            if (audioFiles.length > 0) {
+              console.log(`Found alternative audio files in ${subtitleDir}:`, audioFiles);
 
-              // Use the first wav file as an alternative
-              const alternativeFilePath = path.join(subtitleDir, wavFiles[0]);
+              // Use the first audio file as an alternative
+              const alternativeFilePath = path.join(subtitleDir, audioFiles[0]);
               console.log(`Using alternative file: ${alternativeFilePath}`);
 
               // Update the narration object with the new filename
-              narration.filename = `${path.basename(subtitleDir)}/${wavFiles[0]}`;
+              narration.filename = `${path.basename(subtitleDir)}/${audioFiles[0]}`;
 
               // Ensure we have valid timing information
               const start = typeof narration.start === 'number' ? narration.start : 0;

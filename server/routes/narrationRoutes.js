@@ -57,6 +57,19 @@ router.get('/status', narrationController.getNarrationStatus);
 // Clear narration output files
 router.post('/clear-output', narrationController.clearOutput);
 
+// Clean up old subtitle directories for grouped narrations
+router.post('/cleanup-old-directories', express.json(), (req, res) => {
+  try {
+    const { groupedSubtitles } = req.body;
+    const { cleanupOldSubtitleDirectories } = require('../controllers/narration/directoryManager');
+    cleanupOldSubtitleDirectories(groupedSubtitles);
+    res.json({ success: true, message: 'Old subtitle directories cleaned up successfully' });
+  } catch (error) {
+    console.error('Error cleaning up old subtitle directories:', error);
+    res.status(500).json({ success: false, error: 'Failed to clean up old subtitle directories' });
+  }
+});
+
 // Save Gemini audio data to disk
 router.post('/save-gemini-audio', express.json({ limit: '10mb' }), narrationController.saveGeminiAudio);
 

@@ -29,19 +29,21 @@ const saveAudioToFile = async (options) => {
   // Ensure the subtitle directory exists
   const subtitleDir = ensureSubtitleDirectory(subtitle_id);
 
-  // Count existing files to determine the next file number
-  let fileNumber = 1;
-  if (fs.existsSync(subtitleDir)) {
-    const existingFiles = fs.readdirSync(subtitleDir);
-    fileNumber = existingFiles.length + 1;
-  }
+  // Always use 1.wav to override existing narrations for the same video/subtitle set
+  // This ensures align-narration always finds the latest narration
+  const fileNumber = 1;
 
-  // Generate a filename with sequential numbering and optional prefix
+  // Generate a filename with optional prefix (but always use 1 as the number)
   const filename = prefix ? `${prefix}_${fileNumber}.wav` : `${fileNumber}.wav`;
 
   // Full path includes the subtitle directory - use forward slashes for URLs
   const fullFilename = `subtitle_${subtitle_id}/${filename}`;
   const filepath = path.join(subtitleDir, filename);
+
+  // Log if we're overriding an existing file
+  if (fs.existsSync(filepath)) {
+    console.log(`Overriding existing narration: ${filepath}`);
+  }
 
   // Decode the base64 audio data
   const audioBuffer = Buffer.from(audioData, 'base64');
@@ -169,7 +171,7 @@ const saveGeminiAudio = async (req, res) => {
         subtitle_id,
         sampleRate,
         mimeType,
-        prefix: 'gemini'
+        prefix: '' // Use empty prefix like F5-TTS and Chatterbox for consistent naming
       });
 
       res.json(result);

@@ -5,6 +5,9 @@
 // Import narration service configuration
 const { NARRATION_PORT } = require('../startNarrationService');
 
+// Import cleanup function
+const { cleanupOldSubtitleDirectories } = require('../controllers/narration/directoryManager');
+
 /**
  * Check if the narration service is running - DRASTICALLY SIMPLIFIED VERSION
  * @returns {Promise<Object>} - Status object with available, device, and gpu_info properties
@@ -165,6 +168,13 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
               // Send a final enhanced complete event if we have results
               if (allResults.length > 0) {
+                // Clean up old subtitle directories if using grouped subtitles
+                const hasGroupedSubtitles = subtitles.some(subtitle => subtitle.original_ids && subtitle.original_ids.length > 0);
+                if (hasGroupedSubtitles) {
+                  console.log('F5-TTS: Detected grouped subtitles, cleaning up old directories');
+                  cleanupOldSubtitleDirectories(subtitles);
+                }
+
                 // Removed enhancement logging
                 const enhancedResults = enhanceF5TTSNarrations(allResults, subtitles);
 

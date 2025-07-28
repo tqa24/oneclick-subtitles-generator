@@ -8,6 +8,25 @@ import {
 import { groupSubtitlesForNarration } from '../../../services/gemini/subtitleGroupingService';
 import { retryFailedGeminiNarrations as retryFailedGeminiNarrationsUtil } from '../utils/geminiRetryUtils';
 
+// Cleanup function for grouped subtitles
+const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
+  try {
+    const response = await fetch(`${SERVER_URL}/api/narration/cleanup-old-directories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ groupedSubtitles })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to cleanup old subtitle directories');
+    }
+  } catch (error) {
+    console.error('Error calling cleanup API:', error);
+  }
+};
+
 /**
  * Custom hook for Gemini narration generation
  * @param {Object} params - Parameters
@@ -264,6 +283,10 @@ const useGeminiNarration = ({
               // Update the React state to reflect that we're now using grouped subtitles
               setUseGroupedSubtitles(true);
               console.log(`Stored ${updatedResults.length} grouped narrations in window.groupedNarrations and updated state`);
+
+              // Clean up old subtitle directories for grouped narrations
+              console.log('Gemini: Detected grouped subtitles, cleaning up old directories');
+              cleanupOldSubtitleDirectories(groupedSubtitles);
             } else {
               // Store as original narrations
               if (subtitleSource === 'original') {

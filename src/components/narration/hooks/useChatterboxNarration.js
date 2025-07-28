@@ -2,6 +2,25 @@ import { useState, useCallback } from 'react';
 import { generateChatterboxSpeech, checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
 import { SERVER_URL } from '../../../config';
 
+// Import cleanup function
+const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
+  try {
+    const response = await fetch(`${SERVER_URL}/api/narration/cleanup-old-directories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ groupedSubtitles })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to cleanup old subtitle directories');
+    }
+  } catch (error) {
+    console.error('Error calling cleanup API:', error);
+  }
+};
+
 /**
  * Custom hook for Chatterbox narration generation
  * @param {Object} params - Hook parameters
@@ -336,6 +355,10 @@ const useChatterboxNarration = ({
         // Update the React state to reflect that we're now using grouped subtitles
         setUseGroupedSubtitles(true);
         console.log(`Stored ${results.length} Chatterbox grouped narrations and updated state`);
+
+        // Clean up old subtitle directories for grouped narrations
+        console.log('Chatterbox: Detected grouped subtitles, cleaning up old directories');
+        cleanupOldSubtitleDirectories(groupedSubtitles);
       } else {
         // Store as original/translated narrations
         if (subtitleSource === 'original') {

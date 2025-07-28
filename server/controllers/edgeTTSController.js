@@ -7,6 +7,9 @@ const fs = require('fs');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 
+// Import cleanup function
+const { cleanupOldSubtitleDirectories } = require('./narration/directoryManager');
+
 // Check if we're in the project directory and have .venv
 const projectRoot = process.cwd();
 const venvPath = path.join(projectRoot, '.venv');
@@ -146,9 +149,25 @@ const generateNarration = async (req, res) => {
       try {
         // Create temporary Python script for this subtitle
         const tempScript = path.join(os.tmpdir(), `edge_tts_generate_${uuidv4()}.py`);
-        const timestamp = Date.now();
-        const filename = `edge-tts_${timestamp}_${subtitle.id || i}.mp3`;
-        const outputPath = path.join(outputDir, filename);
+
+        // Create subtitle directory (same as F5-TTS/Chatterbox pattern)
+        const subtitleDir = path.join(outputDir, `subtitle_${subtitle.id || i}`);
+        if (!fs.existsSync(subtitleDir)) {
+          fs.mkdirSync(subtitleDir, { recursive: true });
+        }
+
+        // Always use 1.mp3 to override existing narrations for the same video/subtitle set
+        // This ensures align-narration always finds the latest narration
+        const filename = '1.mp3';
+        const outputPath = path.join(subtitleDir, filename);
+
+        // If file exists, it will be overwritten (this is intentional)
+        if (fs.existsSync(outputPath)) {
+          console.log(`Overriding existing narration: ${outputPath}`);
+        }
+
+        // Full filename for response (includes subtitle directory)
+        const fullFilename = `subtitle_${subtitle.id || i}/${filename}`;
 
         const scriptContent = `
 import asyncio
@@ -194,7 +213,7 @@ try:
             # Run the command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-            print(json.dumps({'success': True, 'filename': '${filename}'}))
+            print(json.dumps({'success': True, 'filename': '${fullFilename}'}))
 
         finally:
             # Clean up temporary file
@@ -296,6 +315,13 @@ except Exception as e:
           result: errorResult
         })}\n\n`);
       }
+    }
+
+    // Clean up old subtitle directories if using grouped subtitles
+    const hasGroupedSubtitles = subtitles.some(subtitle => subtitle.original_ids && subtitle.original_ids.length > 0);
+    if (hasGroupedSubtitles) {
+      console.log('Edge TTS: Detected grouped subtitles, cleaning up old directories');
+      cleanupOldSubtitleDirectories(subtitles);
     }
 
     // Send completion event

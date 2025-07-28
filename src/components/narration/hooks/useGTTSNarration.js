@@ -41,14 +41,24 @@ const useGTTSNarration = ({
   slow,
   setSlow,
   t,
-  setRetryingSubtitleId
+  setRetryingSubtitleId,
+  useGroupedSubtitles,
+  groupedSubtitles,
+  setUseGroupedSubtitles
 }) => {
   const [abortController, setAbortController] = useState(null);
 
   /**
-   * Get the appropriate subtitles based on source
+   * Get the appropriate subtitles based on source and grouping
    */
   const getSubtitlesForGeneration = useCallback(() => {
+    // If using grouped subtitles, return them instead of individual subtitles
+    if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+      console.log(`gTTS: Using ${groupedSubtitles.length} grouped subtitles`);
+      return groupedSubtitles;
+    }
+
+    // Otherwise, return individual subtitles based on source
     if (subtitleSource === 'original' && originalSubtitles?.length > 0) {
       return originalSubtitles;
     } else if (subtitleSource === 'translated' && translatedSubtitles?.length > 0) {
@@ -57,7 +67,7 @@ const useGTTSNarration = ({
       return subtitles;
     }
     return [];
-  }, [subtitleSource, originalSubtitles, translatedSubtitles, subtitles]);
+  }, [subtitleSource, originalSubtitles, translatedSubtitles, subtitles, useGroupedSubtitles, groupedSubtitles]);
 
   /**
    * Handle gTTS narration generation
@@ -193,6 +203,24 @@ const useGTTSNarration = ({
                   }
                 } catch (error) {
                   console.error('Error caching gTTS narrations:', error);
+                }
+
+                // Handle grouped narrations storage and cleanup
+                if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
+                  // Store as grouped narrations in window object
+                  window.groupedNarrations = [...finalResults];
+                  window.useGroupedSubtitles = true;
+                  // Update the React state to reflect that we're now using grouped subtitles
+                  setUseGroupedSubtitles(true);
+                  console.log(`Stored ${finalResults.length} gTTS grouped narrations and updated state`);
+                } else {
+                  // Store as original/translated narrations
+                  if (subtitleSource === 'original') {
+                    window.originalNarrations = [...finalResults];
+                  } else {
+                    window.translatedNarrations = [...finalResults];
+                  }
+                  window.useGroupedSubtitles = false;
                 }
               }
             } catch (parseError) {
