@@ -8,9 +8,11 @@
  */
 export const getSegmentDurationMinutes = () => {
     const savedDuration = parseInt(localStorage.getItem('segment_duration') || '5');
-    // Ensure the value is one of the allowed options: 1, 2, 3, 5, 10, 15, 20, 30, 45
-    const allowedDurations = [1, 2, 3, 5, 10, 15, 20, 30, 45];
-    return allowedDurations.includes(savedDuration) ? savedDuration : 5;
+    // Ensure the value is within the allowed range: 1 to 45 minutes
+    if (savedDuration >= 1 && savedDuration <= 45) {
+        return savedDuration;
+    }
+    return 5; // Default to 5 minutes if out of range
 };
 
 /**

@@ -125,22 +125,36 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
               </p>
-              <select
-                id="segment-duration"
-                value={segmentDuration}
-                onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
-                className="enhanced-select"
-              >
-                <option value="1">1 {t('settings.minutes', 'minutes')}</option>
-                <option value="2">2 {t('settings.minutes', 'minutes')}</option>
-                <option value="3">3 {t('settings.minutes', 'minutes')}</option>
-                <option value="5">5 {t('settings.minutes', 'minutes')}</option>
-                <option value="10">10 {t('settings.minutes', 'minutes')}</option>
-                <option value="15">15 {t('settings.minutes', 'minutes')}</option>
-                <option value="20">20 {t('settings.minutes', 'minutes')}</option>
-                <option value="30">30 {t('settings.minutes', 'minutes')}</option>
-                <option value="45">45 {t('settings.minutes', 'minutes')}</option>
-              </select>
+              <div className="segment-duration-slider-container">
+                <div className="slider-with-value">
+                  <div className="custom-slider-container segment-duration-slider">
+                    <div className="custom-slider-track">
+                      <div
+                        className="custom-slider-fill"
+                        style={{ width: `${((segmentDuration - 1) / (45 - 1)) * 100}%` }}
+                      ></div>
+                      <div
+                        className="custom-slider-thumb"
+                        style={{ left: `${((segmentDuration - 1) / (45 - 1)) * 100}%` }}
+                      ></div>
+                    </div>
+                    <input
+                      type="range"
+                      id="segment-duration"
+                      min="1"
+                      max="45"
+                      step="1"
+                      value={segmentDuration}
+                      onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
+                      className="custom-slider-input"
+                      title={`${t('settings.thinkingRange', 'Range')}: 1 - 45 ${t('settings.minutes', 'minutes')}`}
+                    />
+                  </div>
+                  <div className="slider-value-display">
+                    {segmentDuration} {t('settings.minutes', 'minutes')}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Gemini Model Setting */}
@@ -281,9 +295,12 @@ const VideoProcessingTab = ({
           <div className="settings-card-content">
             {/* Video optimization is now always enabled - no toggle needed */}
             <div className="compact-setting">
-              <p className="setting-description optimization-always-enabled">
-                {t('settings.optimizeVideosAlwaysEnabled', 'Videos are automatically optimized for Gemini processing. This reduces file size and upload time while maintaining quality for AI analysis. Gemini processes videos at 1 FPS by default.')}
-              </p>
+              <p
+                className="setting-description optimization-always-enabled"
+                dangerouslySetInnerHTML={{
+                  __html: t('settings.optimizeVideosAlwaysEnabled', 'Videos are automatically optimized for Gemini processing. This reduces file size and upload time while maintaining quality for AI analysis. Gemini processes videos at 1 FPS by default.')
+                }}
+              />
             </div>
 
             <div className="compact-setting">
