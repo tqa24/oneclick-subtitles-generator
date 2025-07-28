@@ -168,6 +168,7 @@
   "videoOptimization": "Tối ưu hóa video",
   "optimizeVideos": "Tự động tối ưu hóa video đã tải lên",
   "optimizeVideosDescription": "Tự động giảm video xuống độ phân giải thấp hơn và 15fps để xử lý nhanh hơn. Chất lượng video gốc được giữ nguyên để phát lại.",
+  "optimizeVideosAlwaysEnabled": "Video được tự động tối ưu hóa cho xử lý Gemini bằng cách giảm tốc độ khung hình xuống 1 FPS và điều chỉnh độ phân giải khi cần. Điều này có thể giảm kích thước tệp lên đến 30 lần trong khi duy trì chất lượng cho phân tích AI.",
   "videoOptimizationSection": "Tối ưu hóa video",
   "optimizedResolution": "Độ phân giải tối ưu",
   "optimizedResolutionDescription": "Chọn độ phân giải để sử dụng cho video đã tối ưu hóa. Độ phân giải thấp hơn xử lý nhanh hơn nhưng có thể giảm độ chính xác.",

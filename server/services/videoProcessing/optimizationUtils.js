@@ -65,35 +65,33 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
       const { width: sourceWidth, height: sourceHeight } = await getVideoResolution(videoPath);
 
 
-      // Only optimize if the source resolution is higher than the target resolution
-      // For 360p, that means height > 360
+      // Always optimize for frame rate reduction to 1 FPS, even if resolution is already at target
+      // This is important because most videos have much higher frame rates (24-60 FPS)
+      // and Gemini only processes 1 FPS, so we can significantly reduce file size and upload time
+      // Example: A 360p video at 30 FPS becomes 30x smaller when reduced to 1 FPS
+      console.log(`[OPTIMIZE-VIDEO] Source resolution: ${sourceWidth}x${sourceHeight}, Target: ${targetWidth}x${targetHeight}`);
+
+      // If resolution is already at or below target, we still optimize for frame rate
+      // but use the original resolution to avoid upscaling
+      let finalWidth = targetWidth;
+      let finalHeight = targetHeight;
+
       if (sourceHeight <= targetHeight) {
-
-
-        // Return the original video path and metadata
-        const duration = await getMediaDuration(videoPath);
-        resolve({
-          path: videoPath,
-          duration,
-          resolution: `${sourceHeight}p`,
-          fps,
-          width: sourceWidth,
-          height: sourceHeight,
-          optimized: false
-        });
-        return;
+        finalWidth = sourceWidth;
+        finalHeight = sourceHeight;
+        console.log(`[OPTIMIZE-VIDEO] Using original resolution ${sourceWidth}x${sourceHeight} (already at target), optimizing frame rate only`);
       }
 
 
 
       // Log optimization parameters for verification
-      console.log(`[OPTIMIZE-VIDEO] Optimizing video with FPS: ${fps}, Resolution: ${targetWidth}x${targetHeight}`);
+      console.log(`[OPTIMIZE-VIDEO] Optimizing video with FPS: ${fps}, Resolution: ${finalWidth}x${finalHeight}`);
 
       // Construct ffmpeg command for optimization
       const ffmpegArgs = [
         '-hwaccel', 'auto',
         '-i', videoPath,
-        '-vf', `scale=${targetWidth}:${targetHeight}`,
+        '-vf', `scale=${finalWidth}:${finalHeight}`,
         '-r', fps.toString(),
         '-c:v', 'libx264',
         '-preset', 'veryfast',
@@ -147,10 +145,10 @@ function optimizeVideo(videoPath, outputPath, options = {}) {
           resolve({
             path: outputPath,
             duration,
-            resolution,
+            resolution: `${finalHeight}p`,
             fps,
-            width: targetWidth,
-            height: targetHeight,
+            width: finalWidth,
+            height: finalHeight,
             optimized: true
           });
         } catch (error) {

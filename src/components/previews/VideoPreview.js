@@ -71,15 +71,24 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       }
     };
 
+    // Listen for immediate custom event from settings save
+    const handleCustomEvent = (e) => {
+      console.log('[VideoPreview] Received immediate optimized preview change:', e.detail.value);
+      setUseOptimizedPreview(e.detail.value);
+    };
+
     // Listen for storage events (changes from other tabs/windows)
     window.addEventListener('storage', handleStorageChange);
 
-    // Also check for changes periodically since storage events don't fire in the same tab
+    // Listen for immediate custom event (same tab changes)
+    window.addEventListener('optimizedPreviewChanged', handleCustomEvent);
+
+    // Also check for changes periodically as fallback
     const checkInterval = setInterval(() => {
       const currentValue = localStorage.getItem('use_optimized_preview') === 'true';
       setUseOptimizedPreview(prev => {
         if (prev !== currentValue) {
-          console.log('[VideoPreview] Optimized preview setting changed:', currentValue);
+          console.log('[VideoPreview] Optimized preview setting changed (periodic check):', currentValue);
           return currentValue;
         }
         return prev;
@@ -88,6 +97,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('optimizedPreviewChanged', handleCustomEvent);
       clearInterval(checkInterval);
     };
   }, []);
@@ -320,6 +330,65 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       onVideoUrlReady(urlToUse);
     }
   }, [videoUrl, optimizedVideoUrl, useOptimizedPreview, onVideoUrlReady]);
+
+  // Handle video source switching while preserving playback state
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    // Store current state before source change
+    const wasPlaying = !videoElement.paused;
+    const currentVideoTime = videoElement.currentTime;
+
+    // Determine the new source
+    const newSrc = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
+
+    // Only update if the source actually changed
+    if (newSrc && videoElement.src !== newSrc) {
+      console.log('[VideoPreview] Switching video source, preserving state:', {
+        wasPlaying,
+        currentVideoTime,
+        useOptimizedPreview,
+        optimizedVideoUrl: !!optimizedVideoUrl,
+        videoUrl: !!videoUrl,
+        newSrc: newSrc.substring(0, 50) + '...'
+      });
+
+      // Set new source
+      videoElement.src = newSrc;
+
+      // Handle the load event to restore state
+      const handleLoadedData = () => {
+        // Restore time position (with safety checks)
+        if (currentVideoTime > 0 && videoElement.duration && currentVideoTime < videoElement.duration) {
+          videoElement.currentTime = currentVideoTime;
+        }
+
+        // Restore play state
+        if (wasPlaying) {
+          videoElement.play().then(() => {
+            setIsPlaying(true);
+          }).catch(error => {
+            console.warn('[VideoPreview] Could not auto-resume playback:', error);
+            // Ensure UI reflects the actual state
+            setIsPlaying(false);
+          });
+        } else {
+          // Ensure UI reflects paused state and controls are clickable
+          setIsPlaying(false);
+        }
+
+        // Clean up event listener
+        videoElement.removeEventListener('loadeddata', handleLoadedData);
+      };
+
+      // Add event listener for when new video is loaded
+      videoElement.addEventListener('loadeddata', handleLoadedData);
+
+      // Load the new source
+      videoElement.load();
+    }
+  }, [useOptimizedPreview, optimizedVideoUrl, videoUrl]);
 
   // Debug logging removed for production
 

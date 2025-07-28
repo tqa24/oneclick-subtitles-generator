@@ -26,13 +26,11 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
   const { userProvidedSubtitles } = options;
   const isAudio = mediaFile.type.startsWith('audio/');
 
-  // Get video optimization settings from localStorage
-  const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+  // Video optimization is now always enabled
   const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
-  // For videos that don't need splitting, still optimize if enabled
-  // For audio files, always convert to video first
-  if (isAudio || (!isAudio && optimizeVideos)) {
+  // Always optimize videos and convert audio files to video first
+  if (isAudio || !isAudio) {
     onStatusUpdate({
       message: isAudio
         ? t('output.processingAudio', 'Processing audio file...')
@@ -177,16 +175,14 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
       type: 'loading'
     });
 
-    // Get video optimization settings from localStorage
-    const optimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true
+    // Video optimization is now always enabled
     const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
     // For videos and audio files, optimize and analyze before splitting
     let optimizedFile = mediaFile;
 
-    // Always process audio files through the optimize-video endpoint
-    // For videos, only if optimization is enabled
-    if (isAudio || (!isAudio && optimizeVideos)) {
+    // Always process audio files and videos through the optimize-video endpoint
+    if (isAudio || !isAudio) {
       try {
         // First optimize the video or process audio
         onStatusUpdate({

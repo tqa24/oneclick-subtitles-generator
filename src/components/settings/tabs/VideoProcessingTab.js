@@ -260,24 +260,10 @@ const VideoProcessingTab = ({
             <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
           </div>
           <div className="settings-card-content">
-            {/* Main optimization toggle */}
+            {/* Video optimization is now always enabled - no toggle needed */}
             <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="optimize-videos">
-                  {t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="optimize-videos"
-                    checked={optimizeVideos}
-                    onChange={(e) => setOptimizeVideos(e.target.checked)}
-                    ariaLabel={t('settings.optimizeVideos', 'Automatically optimize uploaded videos')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p className="setting-description">
-                {t('settings.optimizeVideosDescription', 'Optimize videos for Gemini processing. Reduces file size and upload time while maintaining quality for AI analysis. Gemini only processes 1 FPS regardless of original video frame rate.')}
+              <p className="setting-description optimization-always-enabled">
+                {t('settings.optimizeVideosAlwaysEnabled', 'Videos are automatically optimized for Gemini processing. This reduces file size and upload time while maintaining quality for AI analysis. Gemini processes videos at 1 FPS by default.')}
               </p>
             </div>
 
@@ -293,7 +279,6 @@ const VideoProcessingTab = ({
                 value={optimizedResolution}
                 onChange={(e) => setOptimizedResolution(e.target.value)}
                 className="enhanced-select"
-                disabled={!optimizeVideos}
               >
                 <option value="240p">240p (Fastest, smallest files)</option>
                 <option value="360p">360p (Recommended for Gemini)</option>
@@ -310,7 +295,6 @@ const VideoProcessingTab = ({
                     id="use-optimized-preview"
                     checked={useOptimizedPreview}
                     onChange={(e) => setUseOptimizedPreview(e.target.checked)}
-                    disabled={!optimizeVideos}
                     ariaLabel={t('settings.useOptimizedPreview', 'Use optimized video for preview')}
                     icons={true}
                   />

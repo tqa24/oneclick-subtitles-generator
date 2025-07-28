@@ -253,7 +253,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
-      const savedOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false'; // Default to true if not set
+      const savedOptimizeVideos = true; // Video optimization is now always enabled
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true'; // Default to false if not set
@@ -453,7 +453,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
     localStorage.setItem('auto_select_default_preset', autoSelectDefaultPreset.toString());
-    localStorage.setItem('optimize_videos', optimizeVideos.toString());
+    // Video optimization is now always enabled - no need to save this setting
+    localStorage.setItem('optimize_videos', 'true');
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
     localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());
@@ -500,7 +501,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     }
 
     // Notify parent component about API keys, segment duration, model, time format, video optimization settings, and cookie setting
-    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload);
+    // Note: optimizeVideos parameter removed since it's always enabled now
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizedResolution, useOptimizedPreview, useCookiesForDownload);
 
     // Update original settings to match current settings
     setOriginalSettings({

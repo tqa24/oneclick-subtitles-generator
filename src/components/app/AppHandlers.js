@@ -617,7 +617,7 @@ export const useAppHandlers = (appState) => {
   /**
    * Handle saving API keys and settings
    */
-  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 5, geminiModel, timeFormat, showWaveformSetting, optimizeVideosSetting, optimizedResolutionSetting, useOptimizedPreviewSetting, useCookiesForDownloadSetting) => {
+  const saveApiKeys = (geminiKey, youtubeKey, geniusKey, segmentDuration = 5, geminiModel, timeFormat, showWaveformSetting, optimizedResolutionSetting, useOptimizedPreviewSetting, useCookiesForDownloadSetting) => {
     // Save to localStorage
     if (geminiKey) {
       localStorage.setItem('gemini_api_key', geminiKey);
@@ -659,11 +659,7 @@ export const useAppHandlers = (appState) => {
       localStorage.setItem('gemini_model', geminiModel);
     }
 
-    // Save video optimization settings
-    if (optimizeVideosSetting !== undefined) {
-      localStorage.setItem('optimize_videos', optimizeVideosSetting.toString());
-      appState.setOptimizeVideos(optimizeVideosSetting);
-    }
+    // Video optimization is now always enabled - no need to save this setting
 
     if (optimizedResolutionSetting) {
       localStorage.setItem('optimized_resolution', optimizedResolutionSetting);
@@ -673,6 +669,13 @@ export const useAppHandlers = (appState) => {
     if (useOptimizedPreviewSetting !== undefined) {
       localStorage.setItem('use_optimized_preview', useOptimizedPreviewSetting.toString());
       appState.setUseOptimizedPreview(useOptimizedPreviewSetting);
+      console.log('[AppHandlers] Updated useOptimizedPreview setting:', useOptimizedPreviewSetting);
+
+      // Trigger a custom event to immediately notify VideoPreview component
+      // This ensures immediate synchronization without waiting for the 500ms interval
+      window.dispatchEvent(new CustomEvent('optimizedPreviewChanged', {
+        detail: { value: useOptimizedPreviewSetting }
+      }));
     }
 
     if (useCookiesForDownloadSetting !== undefined) {

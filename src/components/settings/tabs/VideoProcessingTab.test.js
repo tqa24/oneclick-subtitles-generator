@@ -27,7 +27,7 @@ describe('VideoProcessingTab Component', () => {
     setVideoAnalysisTimeout: jest.fn(),
     autoSelectDefaultPreset: false,
     setAutoSelectDefaultPreset: mockSetAutoSelectDefaultPreset,
-    optimizeVideos: true,
+    optimizeVideos: true, // Always true now
     optimizedResolution: '360p',
     setOptimizedResolution: jest.fn(),
     useOptimizedPreview: true,

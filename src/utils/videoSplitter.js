@@ -71,9 +71,9 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
 
     }
 
-    // Get video optimization settings from options
-    // IMPORTANT: Set optimizeVideos to false by default since we're already optimizing in the optimize-video endpoint
-    const optimizeVideos = options.optimizeVideos !== undefined ? options.optimizeVideos : false; // Default to false to avoid duplication
+    // Video optimization is now always handled by the optimize-video endpoint
+    // Set optimizeVideos to false here to avoid duplication since optimization happens before splitting
+    const optimizeVideos = false; // Always false to avoid duplication with optimize-video endpoint
     const optimizedResolution = options.optimizedResolution || '360p'; // Default to 360p
 
     // Create URL with query parameters

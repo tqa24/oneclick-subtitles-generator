@@ -166,6 +166,7 @@
   "videoOptimization": "Video Optimization",
   "optimizeVideos": "Automatically optimize uploaded videos",
   "optimizeVideosDescription": "Automatically reduce videos to lower resolution and 15fps for faster processing. Original video quality is preserved for playback.",
+  "optimizeVideosAlwaysEnabled": "Videos are automatically optimized for Gemini processing by reducing frame rate to 1 FPS and adjusting resolution when needed. This can reduce file size by up to 30x while maintaining quality for AI analysis.",
   "videoOptimizationSection": "Video Optimization",
   "optimizedResolution": "Optimized Resolution",
   "optimizedResolutionDescription": "Select the resolution to use for optimized videos. Lower resolutions process faster but may reduce accuracy.",

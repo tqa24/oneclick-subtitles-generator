@@ -175,8 +175,9 @@ export const useAppEffects = (props) => {
       }
 
       if (event.key === 'optimize_videos' || !event.key) {
-        const newOptimizeVideos = localStorage.getItem('optimize_videos') !== 'false';
-        setOptimizeVideos(newOptimizeVideos);
+        // Video optimization is now always enabled - force to true
+        localStorage.setItem('optimize_videos', 'true');
+        setOptimizeVideos(true);
       }
 
       if (event.key === 'optimized_resolution' || !event.key) {
@@ -185,7 +186,7 @@ export const useAppEffects = (props) => {
       }
 
       if (event.key === 'use_optimized_preview' || !event.key) {
-        const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') !== 'false';
+        const newUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true';
         setUseOptimizedPreview(newUseOptimizedPreview);
       }
 

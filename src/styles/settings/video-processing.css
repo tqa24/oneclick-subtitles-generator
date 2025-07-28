@@ -34,6 +34,16 @@
   font-size: 0.9rem;
 }
 
+.setting-description.optimization-always-enabled {
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-small);
+  padding: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
 /* Material Design 3 pill-style select controls */
 .segment-duration-select,
 .gemini-model-select,
