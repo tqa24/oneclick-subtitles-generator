@@ -6,7 +6,7 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
 
 ### Cài Đặt Trên Windows
 
-- Vào mục Release tải về OSG_installer_Windows.bat phiên bản mới nhất.
+- Vào mục [Releases](https://github.com/nganlinh4/oneclick-subtitles-generator/releases) tải về OSG_installer_Windows.bat phiên bản mới nhất.
 
 - Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
 
