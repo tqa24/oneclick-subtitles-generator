@@ -261,7 +261,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
     } else {
       // Audio download
       args = [
-        ...getOptimizedYtDlpArgs(),
+        ...getYtDlpArgs(useCookies),
         '--format', 'bestaudio/best',
         '--extract-audio',
         '--audio-format', 'mp3',
