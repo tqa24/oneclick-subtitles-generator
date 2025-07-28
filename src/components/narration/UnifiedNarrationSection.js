@@ -8,6 +8,8 @@ import useNarrationState from './hooks/useNarrationState';
 import useAvailabilityCheck from './hooks/useAvailabilityCheck';
 import useGeminiNarration from './hooks/useGeminiNarration';
 import useChatterboxNarration from './hooks/useChatterboxNarration';
+import useEdgeTTSNarration from './hooks/useEdgeTTSNarration';
+import useGTTSNarration from './hooks/useGTTSNarration';
 import useAudioPlayback from './hooks/useAudioPlayback';
 import useNarrationStorage from './hooks/useNarrationStorage';
 import useUIEffects from './hooks/useUIEffects';
@@ -20,6 +22,8 @@ import AudioControls from './components/AudioControls';
 import SubtitleSourceSelection from './components/SubtitleSourceSelection';
 import GeminiSubtitleSourceSelection from './components/GeminiSubtitleSourceSelection';
 import ChatterboxControls from './components/ChatterboxControls';
+import EdgeTTSControls from './components/EdgeTTSControls';
+import GTTSControls from './components/GTTSControls';
 import GeminiVoiceSelection from './components/GeminiVoiceSelection';
 import GeminiConcurrentClientsSlider from './components/GeminiConcurrentClientsSlider';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
@@ -79,6 +83,17 @@ const UnifiedNarrationSection = ({
     // Chatterbox-specific settings
     exaggeration, setExaggeration,
     cfgWeight, setCfgWeight,
+
+    // Edge TTS-specific settings
+    edgeTTSVoice, setEdgeTTSVoice,
+    edgeTTSRate, setEdgeTTSRate,
+    edgeTTSVolume, setEdgeTTSVolume,
+    edgeTTSPitch, setEdgeTTSPitch,
+
+    // gTTS-specific settings
+    gttsLanguage, setGttsLanguage,
+    gttsTld, setGttsTld,
+    gttsSlow, setGttsSlow,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio, setReferenceAudio,
@@ -183,6 +198,57 @@ const UnifiedNarrationSection = ({
     isGroupingSubtitles,
     setIsGroupingSubtitles,
     groupingIntensity,
+    t,
+    setRetryingSubtitleId
+  });
+
+  // Use Edge TTS narration hook
+  const {
+    handleEdgeTTSNarration,
+    cancelEdgeTTSGeneration,
+    retryEdgeTTSNarration,
+    retryFailedEdgeTTSNarrations
+  } = useEdgeTTSNarration({
+    setIsGenerating,
+    setGenerationStatus,
+    setError,
+    setGenerationResults,
+    generationResults,
+    subtitleSource,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    originalLanguage,
+    translatedLanguage,
+    selectedVoice: edgeTTSVoice,
+    rate: edgeTTSRate,
+    volume: edgeTTSVolume,
+    pitch: edgeTTSPitch,
+    t,
+    setRetryingSubtitleId
+  });
+
+  // Use gTTS narration hook
+  const {
+    handleGTTSNarration,
+    cancelGTTSGeneration,
+    retryGTTSNarration,
+    retryFailedGTTSNarrations
+  } = useGTTSNarration({
+    setIsGenerating,
+    setGenerationStatus,
+    setError,
+    setGenerationResults,
+    generationResults,
+    subtitleSource,
+    originalSubtitles,
+    translatedSubtitles,
+    subtitles,
+    originalLanguage,
+    translatedLanguage,
+    selectedLanguage: gttsLanguage,
+    tld: gttsTld,
+    slow: gttsSlow,
     t,
     setRetryingSubtitleId
   });
@@ -419,6 +485,8 @@ const UnifiedNarrationSection = ({
         isF5Available={isAvailable}
         isChatterboxAvailable={isChatterboxAvailable}
         isGeminiAvailable={isGeminiAvailable}
+        isEdgeTTSAvailable={true}
+        isGTTSAvailable={true}
       />
 
       {/* Error Message - only show when there's an actual error message */}
@@ -638,6 +706,182 @@ const UnifiedNarrationSection = ({
             retryingSubtitleId={retryingSubtitleId}
             onRetryFailed={retryFailedChatterboxNarrations}
             hasGenerationError={!!error && error.includes('Chatterbox')}
+            currentAudio={currentAudio}
+            isPlaying={isPlaying}
+            playAudio={playAudio}
+            getAudioUrl={getAudioUrl}
+            subtitleSource={subtitleSource}
+          />
+
+          {/* Hidden audio player for playback */}
+          <audio
+            ref={audioRef}
+            src={currentAudio?.url}
+            onEnded={handleAudioEnded}
+            style={{ display: 'none' }}
+          />
+        </div>
+      ) : narrationMethod === 'edge-tts' ? (
+        // Edge TTS UI
+        <div className="edge-tts-content">
+          {/* Subtitle Source Selection */}
+          <SubtitleSourceSelection
+            subtitleSource={subtitleSource}
+            setSubtitleSource={setSubtitleSource}
+            isGenerating={isGenerating}
+            translatedSubtitles={translatedSubtitles}
+            originalSubtitles={originalSubtitles || subtitles}
+            originalLanguage={originalLanguage}
+            translatedLanguage={translatedLanguage}
+            setOriginalLanguage={setOriginalLanguage}
+            setTranslatedLanguage={setTranslatedLanguage}
+            useGroupedSubtitles={useGroupedSubtitles}
+            setUseGroupedSubtitles={setUseGroupedSubtitles}
+            isGroupingSubtitles={isGroupingSubtitles}
+            groupedSubtitles={groupedSubtitles}
+            groupingIntensity={groupingIntensity}
+            setGroupingIntensity={setGroupingIntensity}
+            onGroupedSubtitlesGenerated={setGroupedSubtitles}
+            narrationMethod={narrationMethod}
+            onLanguageDetected={(source, language) => {
+              if (source === 'original') {
+                setOriginalLanguage(language);
+              } else if (source === 'translated') {
+                setTranslatedLanguage(language);
+              }
+            }}
+          />
+
+          {/* Edge TTS Controls */}
+          <EdgeTTSControls
+            selectedVoice={edgeTTSVoice}
+            setSelectedVoice={setEdgeTTSVoice}
+            rate={edgeTTSRate}
+            setRate={setEdgeTTSRate}
+            volume={edgeTTSVolume}
+            setVolume={setEdgeTTSVolume}
+            pitch={edgeTTSPitch}
+            setPitch={setEdgeTTSPitch}
+            isGenerating={isGenerating}
+            detectedLanguage={subtitleSource === 'original' ? originalLanguage : translatedLanguage}
+          />
+
+          {/* Generate Button */}
+          <GeminiGenerateButton
+            handleGenerateNarration={handleEdgeTTSNarration}
+            isGenerating={isGenerating}
+            subtitleSource={subtitleSource}
+            cancelGeneration={cancelEdgeTTSGeneration}
+            downloadAllAudio={downloadAllAudio}
+            downloadAlignedAudio={downloadAlignedAudio}
+            generationResults={generationResults}
+            isServiceAvailable={true}
+            serviceUnavailableMessage=""
+          />
+
+          {/* Generation Status */}
+          <StatusMessage
+            message={(isGenerating || retryingSubtitleId) ? generationStatus : ''}
+            type="info"
+            statusRef={statusRef}
+            showProgress={isGenerating && generationStatus && generationStatus.includes('Generating')}
+            isGenerating={isGenerating}
+          />
+
+          {/* Edge TTS Results */}
+          <NarrationResults
+            generationResults={generationResults}
+            onRetry={retryEdgeTTSNarration}
+            retryingSubtitleId={retryingSubtitleId}
+            onRetryFailed={retryFailedEdgeTTSNarrations}
+            hasGenerationError={!!error && error.includes('Edge TTS')}
+            currentAudio={currentAudio}
+            isPlaying={isPlaying}
+            playAudio={playAudio}
+            getAudioUrl={getAudioUrl}
+            subtitleSource={subtitleSource}
+          />
+
+          {/* Hidden audio player for playback */}
+          <audio
+            ref={audioRef}
+            src={currentAudio?.url}
+            onEnded={handleAudioEnded}
+            style={{ display: 'none' }}
+          />
+        </div>
+      ) : narrationMethod === 'gtts' ? (
+        // gTTS UI
+        <div className="gtts-content">
+          {/* Subtitle Source Selection */}
+          <SubtitleSourceSelection
+            subtitleSource={subtitleSource}
+            setSubtitleSource={setSubtitleSource}
+            isGenerating={isGenerating}
+            translatedSubtitles={translatedSubtitles}
+            originalSubtitles={originalSubtitles || subtitles}
+            originalLanguage={originalLanguage}
+            translatedLanguage={translatedLanguage}
+            setOriginalLanguage={setOriginalLanguage}
+            setTranslatedLanguage={setTranslatedLanguage}
+            useGroupedSubtitles={useGroupedSubtitles}
+            setUseGroupedSubtitles={setUseGroupedSubtitles}
+            isGroupingSubtitles={isGroupingSubtitles}
+            groupedSubtitles={groupedSubtitles}
+            groupingIntensity={groupingIntensity}
+            setGroupingIntensity={setGroupingIntensity}
+            onGroupedSubtitlesGenerated={setGroupedSubtitles}
+            narrationMethod={narrationMethod}
+            onLanguageDetected={(source, language) => {
+              if (source === 'original') {
+                setOriginalLanguage(language);
+              } else if (source === 'translated') {
+                setTranslatedLanguage(language);
+              }
+            }}
+          />
+
+          {/* gTTS Controls */}
+          <GTTSControls
+            selectedLanguage={gttsLanguage}
+            setSelectedLanguage={setGttsLanguage}
+            tld={gttsTld}
+            setTld={setGttsTld}
+            slow={gttsSlow}
+            setSlow={setGttsSlow}
+            isGenerating={isGenerating}
+            detectedLanguage={subtitleSource === 'original' ? originalLanguage : translatedLanguage}
+          />
+
+          {/* Generate Button */}
+          <GeminiGenerateButton
+            handleGenerateNarration={handleGTTSNarration}
+            isGenerating={isGenerating}
+            subtitleSource={subtitleSource}
+            cancelGeneration={cancelGTTSGeneration}
+            downloadAllAudio={downloadAllAudio}
+            downloadAlignedAudio={downloadAlignedAudio}
+            generationResults={generationResults}
+            isServiceAvailable={true}
+            serviceUnavailableMessage=""
+          />
+
+          {/* Generation Status */}
+          <StatusMessage
+            message={(isGenerating || retryingSubtitleId) ? generationStatus : ''}
+            type="info"
+            statusRef={statusRef}
+            showProgress={isGenerating && generationStatus && generationStatus.includes('Generating')}
+            isGenerating={isGenerating}
+          />
+
+          {/* gTTS Results */}
+          <NarrationResults
+            generationResults={generationResults}
+            onRetry={retryGTTSNarration}
+            retryingSubtitleId={retryingSubtitleId}
+            onRetryFailed={retryFailedGTTSNarrations}
+            hasGenerationError={!!error && error.includes('gTTS')}
             currentAudio={currentAudio}
             isPlaying={isPlaying}
             playAudio={playAudio}

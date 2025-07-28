@@ -616,14 +616,18 @@ try {
         'soundfile',
         'numpy',
         'vocos',
-        'setuptools'
+        'setuptools',
+
+        // Additional TTS libraries
+        'edge-tts',  // Microsoft Edge TTS
+        'gtts'       // Google Text-to-Speech
     ];
 
     const depsCmd = `uv pip install --python ${VENV_DIR} --quiet ${coreDeps.join(' ')}`;
     logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
     execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-    logger.success('Core AI dependencies installed');
+    logger.success('Core AI dependencies installed (including edge-tts and gtts)');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
     console.log(`   Command failed: ${error.cmd}`);

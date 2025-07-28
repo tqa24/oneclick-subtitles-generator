@@ -707,8 +707,8 @@ const SubtitleSourceSelection = ({
               </div>
             )}
 
-            {/* Only show model dropdown when NOT in Chatterbox mode */}
-            {narrationMethod !== 'chatterbox' && (
+            {/* Only show model dropdown for F5-TTS and Gemini methods */}
+            {narrationMethod !== 'chatterbox' && narrationMethod !== 'edge-tts' && narrationMethod !== 'gtts' && (
               <div className="model-dropdown-container narration-model-dropdown-container">
                 <button
                   className="model-dropdown-btn narration-model-dropdown-btn"

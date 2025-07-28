@@ -44,6 +44,50 @@ const useNarrationState = (initialReferenceAudio) => {
     return savedCfgWeight ? parseFloat(savedCfgWeight) : 0.3;
   });
 
+  // Edge TTS-specific settings
+  const [edgeTTSVoice, setEdgeTTSVoice] = useState(() => {
+    // Try to load from localStorage
+    const savedVoice = localStorage.getItem('edge_tts_voice');
+    return savedVoice || 'en-US-AriaNeural'; // Default to Aria Neural voice
+  });
+
+  const [edgeTTSRate, setEdgeTTSRate] = useState(() => {
+    // Try to load from localStorage
+    const savedRate = localStorage.getItem('edge_tts_rate');
+    return savedRate || '+0%'; // Default to normal rate
+  });
+
+  const [edgeTTSVolume, setEdgeTTSVolume] = useState(() => {
+    // Try to load from localStorage
+    const savedVolume = localStorage.getItem('edge_tts_volume');
+    return savedVolume || '+0%'; // Default to normal volume
+  });
+
+  const [edgeTTSPitch, setEdgeTTSPitch] = useState(() => {
+    // Try to load from localStorage
+    const savedPitch = localStorage.getItem('edge_tts_pitch');
+    return savedPitch || '+0Hz'; // Default to normal pitch
+  });
+
+  // gTTS-specific settings
+  const [gttsLanguage, setGttsLanguage] = useState(() => {
+    // Try to load from localStorage
+    const savedLanguage = localStorage.getItem('gtts_language');
+    return savedLanguage || 'en'; // Default to English
+  });
+
+  const [gttsTld, setGttsTld] = useState(() => {
+    // Try to load from localStorage
+    const savedTld = localStorage.getItem('gtts_tld');
+    return savedTld || 'com'; // Default to .com
+  });
+
+  const [gttsSlow, setGttsSlow] = useState(() => {
+    // Try to load from localStorage
+    const savedSlow = localStorage.getItem('gtts_slow');
+    return savedSlow === 'true'; // Default to false
+  });
+
   // Narration Settings state (for F5-TTS)
   const [referenceAudio, setReferenceAudio] = useState(initialReferenceAudio);
   const [referenceText, setReferenceText] = useState(initialReferenceAudio?.text || '');
@@ -134,6 +178,36 @@ const useNarrationState = (initialReferenceAudio) => {
     }
   }, [groupingIntensity]);
 
+  // Save Edge TTS settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('edge_tts_voice', edgeTTSVoice);
+  }, [edgeTTSVoice]);
+
+  useEffect(() => {
+    localStorage.setItem('edge_tts_rate', edgeTTSRate);
+  }, [edgeTTSRate]);
+
+  useEffect(() => {
+    localStorage.setItem('edge_tts_volume', edgeTTSVolume);
+  }, [edgeTTSVolume]);
+
+  useEffect(() => {
+    localStorage.setItem('edge_tts_pitch', edgeTTSPitch);
+  }, [edgeTTSPitch]);
+
+  // Save gTTS settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('gtts_language', gttsLanguage);
+  }, [gttsLanguage]);
+
+  useEffect(() => {
+    localStorage.setItem('gtts_tld', gttsTld);
+  }, [gttsTld]);
+
+  useEffect(() => {
+    localStorage.setItem('gtts_slow', gttsSlow.toString());
+  }, [gttsSlow]);
+
   // Update local state when initialReferenceAudio changes
   const updateReferenceAudio = (newReferenceAudio) => {
     if (newReferenceAudio) {
@@ -164,6 +238,24 @@ const useNarrationState = (initialReferenceAudio) => {
     setExaggeration,
     cfgWeight,
     setCfgWeight,
+
+    // Edge TTS-specific settings
+    edgeTTSVoice,
+    setEdgeTTSVoice,
+    edgeTTSRate,
+    setEdgeTTSRate,
+    edgeTTSVolume,
+    setEdgeTTSVolume,
+    edgeTTSPitch,
+    setEdgeTTSPitch,
+
+    // gTTS-specific settings
+    gttsLanguage,
+    setGttsLanguage,
+    gttsTld,
+    setGttsTld,
+    gttsSlow,
+    setGttsSlow,
 
     // Narration Settings state (for F5-TTS)
     referenceAudio,

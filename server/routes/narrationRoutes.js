@@ -8,6 +8,8 @@ const multer = require('multer');
 const path = require('path');
 const narrationController = require('../controllers/narrationController');
 const narrationServiceClient = require('../services/narrationServiceClient');
+const edgeTTSController = require('../controllers/edgeTTSController');
+const gttsController = require('../controllers/gttsController');
 
 // Ensure narration directories exist
 narrationController.ensureNarrationDirectories();
@@ -79,6 +81,14 @@ router.get('/example-audio/:filename', narrationController.serveExampleAudio);
 // Upload example audio as reference
 router.post('/upload-example-audio', express.json(), narrationController.uploadExampleAudio);
 
+// Edge TTS routes (handled directly by Node.js)
+router.get('/edge-tts/voices', edgeTTSController.getVoices);
+router.post('/edge-tts/generate', edgeTTSController.generateNarration);
+
+// gTTS routes (handled directly by Node.js)
+router.get('/gtts/languages', gttsController.getLanguages);
+router.post('/gtts/generate', gttsController.generateNarration);
+
 // Proxy all other narration requests to the Python service
 router.use('/', async (req, res, next) => {
   // Skip endpoints we handle directly
@@ -86,7 +96,8 @@ router.use('/', async (req, res, next) => {
       req.url === '/generate' || req.url === '/record-reference' || req.url === '/upload-reference' ||
       req.url === '/clear-output' || req.url === '/save-gemini-audio' ||
       req.url === '/save-f5tts-audio' || req.url === '/save-chatterbox-audio' || req.url === '/modify-audio-speed' ||
-      req.url === '/batch-modify-audio-speed' || req.url.startsWith('/audio/')) {
+      req.url === '/batch-modify-audio-speed' || req.url.startsWith('/audio/') ||
+      req.url.startsWith('/edge-tts/') || req.url.startsWith('/gtts/')) {
     return next();
   }
 

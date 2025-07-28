@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import '../../../styles/narration/narrationMethodSelectionMaterial.css';
 
 /**
- * Component for selecting the narration method (F5-TTS, Chatterbox, or Gemini)
+ * Component for selecting the narration method (F5-TTS, Chatterbox, Gemini, Edge TTS, or gTTS)
  * @param {Object} props - Component props
  * @param {string} props.narrationMethod - Current narration method
  * @param {Function} props.setNarrationMethod - Function to set narration method
@@ -11,6 +11,8 @@ import '../../../styles/narration/narrationMethodSelectionMaterial.css';
  * @param {boolean} props.isF5Available - Whether F5-TTS is available
  * @param {boolean} props.isChatterboxAvailable - Whether Chatterbox is available
  * @param {boolean} props.isGeminiAvailable - Whether Gemini is available
+ * @param {boolean} props.isEdgeTTSAvailable - Whether Edge TTS is available
+ * @param {boolean} props.isGTTSAvailable - Whether gTTS is available
  * @returns {JSX.Element} - Rendered component
  */
 const NarrationMethodSelection = ({
@@ -19,7 +21,9 @@ const NarrationMethodSelection = ({
   isGenerating,
   isF5Available = true,
   isChatterboxAvailable = true,
-  isGeminiAvailable = true
+  isGeminiAvailable = true,
+  isEdgeTTSAvailable = true,
+  isGTTSAvailable = true
 }) => {
   const { t } = useTranslation();
 
@@ -92,6 +96,44 @@ const NarrationMethodSelection = ({
                 {!isGeminiAvailable && (
                   <span className="method-description">
                     {t('narration.geminiUnavailable', '(Unavailable - Check API key in settings)')}
+                  </span>
+                )}
+              </label>
+            </div>
+            <div className="radio-pill">
+              <input
+                type="radio"
+                id="method-edge-tts"
+                name="narration-method"
+                value="edge-tts"
+                checked={narrationMethod === 'edge-tts'}
+                onChange={() => handleMethodChange('edge-tts')}
+                disabled={isGenerating || !isEdgeTTSAvailable}
+              />
+              <label htmlFor="method-edge-tts" className={!isEdgeTTSAvailable ? 'unavailable' : ''}>
+                {t('narration.edgeTTSMethod', 'Edge TTS')}
+                {!isEdgeTTSAvailable && (
+                  <span className="method-description">
+                    {t('narration.edgeTTSUnavailable', '(Unavailable)')}
+                  </span>
+                )}
+              </label>
+            </div>
+            <div className="radio-pill">
+              <input
+                type="radio"
+                id="method-gtts"
+                name="narration-method"
+                value="gtts"
+                checked={narrationMethod === 'gtts'}
+                onChange={() => handleMethodChange('gtts')}
+                disabled={isGenerating || !isGTTSAvailable}
+              />
+              <label htmlFor="method-gtts" className={!isGTTSAvailable ? 'unavailable' : ''}>
+                {t('narration.gttsMethod', 'gTTS')}
+                {!isGTTSAvailable && (
+                  <span className="method-description">
+                    {t('narration.gttsUnavailable', '(Unavailable)')}
                   </span>
                 )}
               </label>
