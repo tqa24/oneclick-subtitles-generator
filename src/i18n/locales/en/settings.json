@@ -107,6 +107,7 @@
   "apiEnableWarning": "You must enable the YouTube Data API v3 in your Google Cloud project before using your API key. If you get an error about \"API not enabled\", click the link above to enable it.",
   "videoProcessing": "Processing",
   "displaySettings": "Display Settings",
+  "downloadSettings": "Download Settings",
   "modelSettings": "AI Model",
   "segmentSettings": "Segment Settings",
   "processingSettings": "Processing Settings",

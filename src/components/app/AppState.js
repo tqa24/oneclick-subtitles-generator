@@ -193,19 +193,18 @@ export const useAppState = () => {
       genius: !!geniusApiKey
     });
 
-    // Check API keys status and show message if needed
+    // Check API keys status and show message if needed (only for YouTube-specific messages)
+    // The general Gemini API key message is handled by the reactive useEffect below
     // eslint-disable-next-line no-mixed-operators
-    if (!geminiApiKey || (activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens)))) {
+    if (activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
       let message;
 
       // eslint-disable-next-line no-mixed-operators
-      if (!geminiApiKey && activeTab === 'youtube-search' && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
+      if (!geminiApiKey && ((!youtubeApiKey && !useOAuth) || (useOAuth && !hasOAuthTokens))) {
         message = t('errors.bothKeysRequired', 'Please set your Gemini API key and configure YouTube authentication in the settings to use this application.');
-      } else if (!geminiApiKey) {
-        message = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
-      } else if (useOAuth && !hasOAuthTokens && activeTab === 'youtube-search') {
+      } else if (useOAuth && !hasOAuthTokens) {
         message = t('errors.youtubeAuthRequired', 'YouTube authentication required. Please set up OAuth in settings.');
-      } else if (activeTab === 'youtube-search') {
+      } else {
         message = t('errors.youtubeApiKeyRequired', 'Please set your YouTube API key in the settings to use this application.');
       }
 
@@ -214,6 +213,29 @@ export const useAppState = () => {
       }
     }
   }, [setStatus, activeTab, t]);
+
+  // Reactively update status messages based on API key changes
+  useEffect(() => {
+    // If we have a Gemini API key and the current status is an API key required message, clear it
+    if (apiKeysSet.gemini && status?.message && status.type === 'info') {
+      const isApiKeyRequiredMessage =
+        status.message.includes('Please set your API key') ||
+        status.message.includes('Vui lòng cài đặt khóa API') ||
+        status.message.includes('API key') ||
+        status.message.includes('khóa API');
+
+      if (isApiKeyRequiredMessage) {
+        setStatus({});
+      }
+    }
+    // If we don't have a Gemini API key and there's no current status message, show the required message
+    else if (!apiKeysSet.gemini && (!status?.message || status.type !== 'info')) {
+      setStatus({
+        message: t('errors.apiKeyRequired', 'Please set your API key in the settings first.'),
+        type: 'info'
+      });
+    }
+  }, [apiKeysSet.gemini, status, setStatus, t]);
 
   // Apply theme to document
   useEffect(() => {
