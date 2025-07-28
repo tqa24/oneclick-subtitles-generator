@@ -354,6 +354,14 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         newSrc: newSrc.substring(0, 50) + '...'
       });
 
+      // Pause the video first to prevent UI state issues
+      if (wasPlaying) {
+        videoElement.pause();
+      }
+
+      // Immediately update UI to reflect paused state during transition
+      setIsPlaying(false);
+
       // Set new source
       videoElement.src = newSrc;
 
@@ -367,7 +375,17 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         // Restore play state
         if (wasPlaying) {
           videoElement.play().then(() => {
+            console.log('[VideoPreview] Successfully resumed playback after source switch');
             setIsPlaying(true);
+
+            // Double-check UI state after a short delay to ensure synchronization
+            setTimeout(() => {
+              const actuallyPlaying = !videoElement.paused;
+              if (actuallyPlaying !== isPlaying) {
+                console.log('[VideoPreview] Correcting UI state mismatch:', { actuallyPlaying, uiState: isPlaying });
+                setIsPlaying(actuallyPlaying);
+              }
+            }, 100);
           }).catch(error => {
             console.warn('[VideoPreview] Could not auto-resume playback:', error);
             // Ensure UI reflects the actual state
@@ -382,11 +400,36 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         videoElement.removeEventListener('loadeddata', handleLoadedData);
       };
 
-      // Add event listener for when new video is loaded
+      // Handle loading errors
+      const handleLoadError = () => {
+        console.error('[VideoPreview] Error loading new video source');
+        setIsPlaying(false);
+        videoElement.removeEventListener('loadeddata', handleLoadedData);
+        videoElement.removeEventListener('error', handleLoadError);
+      };
+
+      // Add event listeners
       videoElement.addEventListener('loadeddata', handleLoadedData);
+      videoElement.addEventListener('error', handleLoadError);
 
       // Load the new source
       videoElement.load();
+
+      // Additional safety: sync UI state after source change is complete
+      const syncTimeout = setTimeout(() => {
+        const actuallyPlaying = !videoElement.paused;
+        if (actuallyPlaying !== isPlaying) {
+          console.log('[VideoPreview] Final UI state sync after source switch:', { actuallyPlaying, uiState: isPlaying });
+          setIsPlaying(actuallyPlaying);
+        }
+      }, 500); // Give enough time for the video to load and play if needed
+
+      // Clean up timeout if component unmounts
+      return () => {
+        clearTimeout(syncTimeout);
+        videoElement.removeEventListener('loadeddata', handleLoadedData);
+        videoElement.removeEventListener('error', handleLoadError);
+      };
     }
   }, [useOptimizedPreview, optimizedVideoUrl, videoUrl]);
 
@@ -2602,6 +2645,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       } else {
                         videoRef.current.play().catch(console.error);
                       }
+
+                      // Force sync UI state after a short delay to ensure it matches video state
+                      setTimeout(() => {
+                        const actuallyPlaying = !videoRef.current.paused;
+                        if (actuallyPlaying !== isPlaying) {
+                          console.log('[VideoPreview] Force syncing UI state after video click:', { actuallyPlaying, uiState: isPlaying });
+                          setIsPlaying(actuallyPlaying);
+                        }
+                      }, 50);
                     }
                   }}
                   onTouchEnd={(e) => {
@@ -2753,6 +2805,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           } else {
                             videoRef.current.play().catch(console.error);
                           }
+
+                          // Force sync UI state after a short delay to ensure it matches video state
+                          setTimeout(() => {
+                            const actuallyPlaying = !videoRef.current.paused;
+                            if (actuallyPlaying !== isPlaying) {
+                              console.log('[VideoPreview] Force syncing UI state after button click:', { actuallyPlaying, uiState: isPlaying });
+                              setIsPlaying(actuallyPlaying);
+                            }
+                          }, 50);
                         }
                       }}
                       style={{
