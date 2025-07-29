@@ -77,8 +77,12 @@ const useEdgeTTSNarration = ({
    * Handle Edge TTS narration generation
    */
   const handleEdgeTTSNarration = useCallback(async () => {
+    // Clear all caches and files for fresh generation
+    const { clearNarrationCachesAndFiles } = await import('../utils/cacheManager');
+    await clearNarrationCachesAndFiles(setGenerationResults);
+
     const subtitlesToProcess = getSubtitlesForGeneration();
-    
+
     if (!subtitlesToProcess || subtitlesToProcess.length === 0) {
       setError(t('narration.noSubtitlesError', 'No subtitles available for narration generation.'));
       return;

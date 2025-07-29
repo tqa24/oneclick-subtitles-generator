@@ -119,6 +119,10 @@ const useGeminiNarration = ({
   }, [t, setIsGenerating, setGenerationStatus, setGenerationResults]);
   // Handle Gemini narration generation
   const handleGeminiNarration = async () => {
+    // Clear all caches and files for fresh generation
+    const { clearNarrationCachesAndFiles } = await import('../utils/cacheManager');
+    await clearNarrationCachesAndFiles(setGenerationResults);
+
     if (!subtitleSource) {
       setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
       return;

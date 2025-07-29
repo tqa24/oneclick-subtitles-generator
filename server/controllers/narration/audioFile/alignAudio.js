@@ -162,22 +162,20 @@ const downloadAlignedAudio = async (req, res) => {
             }
           }
 
-          // If no alternative found, return a more detailed error
-          // Clean up temp dir before exiting on error
-          return res.status(404).json({
-            error: `Audio file not found: ${narration.filename}`,
-            details: {
-              subtitle_id: narration.subtitle_id,
-              expected_path: filePath,
-              subtitle_dir_exists: fs.existsSync(subtitleDir),
-              subtitle_dir: subtitleDir
-            }
-          });
+          // If no alternative found, skip this narration instead of failing
+          console.warn(`Audio file not found, skipping: ${narration.filename}`);
+          console.warn(`Expected path: ${filePath}`);
+          console.warn(`Subtitle directory exists: ${fs.existsSync(subtitleDir)}`);
+          console.warn(`Subtitle directory: ${subtitleDir}`);
+          console.log(`Skipping missing narration for subtitle_id: ${narration.subtitle_id}`);
+
+          // Continue with the next narration instead of returning an error
+          continue;
         }
       } else if (!narration.audioData) {
-        // If neither filename nor audioData is present, return an error
-
-        return res.status(400).json({ error: `No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}` });
+        // If neither filename nor audioData is present, skip this narration
+        console.warn(`No audio data or filename for narration with subtitle ID: ${narration.subtitle_id}, skipping`);
+        continue;
       }
 
       // Check file size to ensure it's a valid audio file (only for file-based narrations)
@@ -259,6 +257,21 @@ const downloadAlignedAudio = async (req, res) => {
         }
       }
     }
+
+    // Check if we have any audio segments to process
+    if (audioSegments.length === 0) {
+      console.warn('No valid audio segments found for aligned narration generation');
+      return res.status(400).json({
+        error: 'No valid audio files found for aligned narration generation',
+        details: {
+          total_narrations: narrations.length,
+          processed_segments: 0,
+          message: 'All narration files were missing or invalid. Please ensure narrations are generated successfully before creating aligned audio.'
+        }
+      });
+    }
+
+    console.log(`Successfully processed ${audioSegments.length} audio segments out of ${narrations.length} narrations`);
 
     // Sort segments by start time (redundant if narrations already sorted, but safe)
     audioSegments.sort((a, b) => a.start - b.start);

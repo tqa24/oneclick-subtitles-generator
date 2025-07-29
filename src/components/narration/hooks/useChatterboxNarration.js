@@ -239,6 +239,10 @@ const useChatterboxNarration = ({
    */
   const handleChatterboxNarration = useCallback(async () => {
     try {
+      // Clear all caches and files for fresh generation
+      const { clearNarrationCachesAndFiles } = await import('../utils/cacheManager');
+      await clearNarrationCachesAndFiles(setGenerationResults);
+
       setIsGenerating(true);
       setError('');
       setLocalError('');

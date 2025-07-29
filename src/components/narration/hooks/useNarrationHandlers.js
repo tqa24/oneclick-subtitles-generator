@@ -523,6 +523,10 @@ const useNarrationHandlers = ({
 
   // Generate narration for all subtitles
   const handleGenerateNarration = async () => {
+    // Clear all caches and files for fresh generation
+    const { clearNarrationCachesAndFiles } = await import('../utils/cacheManager');
+    await clearNarrationCachesAndFiles(setGenerationResults);
+
     if (!referenceAudio || !referenceAudio.filepath) {
       setError(t('narration.noReferenceError', 'Please set up reference audio using one of the options above'));
       return;

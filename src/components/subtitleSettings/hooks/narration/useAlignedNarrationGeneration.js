@@ -102,8 +102,23 @@ const useAlignedNarrationGeneration = ({
       // Create a map of subtitles by ID for quick lookup
       const subtitleMap = createSubtitleMap(allSubtitles);
 
-      // Add timing information to each narration result
-      const enhancedResults = enhanceNarrationWithTiming(generationResults, subtitleMap);
+      // Filter generation results to only include successful ones with audio files
+      // This ensures we only process narrations that actually exist
+      const availableResults = generationResults.filter(result =>
+        result.success && (result.filename || result.audioData)
+      );
+
+      console.log(`Aligned narration: Processing ${availableResults.length} available narrations out of ${generationResults.length} total results`);
+      console.log('Available narration results:', availableResults.map(r => ({
+        subtitle_id: r.subtitle_id,
+        filename: r.filename,
+        hasAudioData: !!r.audioData,
+        original_ids: r.original_ids,
+        isGrouped: r.original_ids && r.original_ids.length > 1
+      })));
+
+      // Add timing information to each available narration result
+      const enhancedResults = enhanceNarrationWithTiming(availableResults, subtitleMap);
 
 
 
