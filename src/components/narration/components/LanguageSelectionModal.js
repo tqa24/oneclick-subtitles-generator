@@ -33,8 +33,22 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
     };
   }, [isOpen, onClose]);
 
-  // Group languages alphabetically by first letter
-  const groupedLanguages = languages.reduce((acc, language) => {
+  // Get recommended language based on detected language
+  const getRecommendedLanguage = () => {
+    if (!detectedLanguage?.languageCode) return null;
+
+    return languages.find(lang => lang.code === detectedLanguage.languageCode);
+  };
+
+  // Get other languages (not recommended)
+  const getOtherLanguages = () => {
+    if (!detectedLanguage?.languageCode) return languages;
+
+    return languages.filter(lang => lang.code !== detectedLanguage.languageCode);
+  };
+
+  // Group other languages alphabetically by first letter
+  const groupedLanguages = getOtherLanguages().reduce((acc, language) => {
     const firstLetter = language.name.charAt(0).toUpperCase();
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
@@ -48,8 +62,25 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
     groupedLanguages[letter].sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  // Get unique first letters for category filter
-  const availableCategories = ['All', ...Object.keys(groupedLanguages).sort()];
+  // Get filtered recommended language
+  const getFilteredRecommendedLanguage = () => {
+    const recommendedLanguage = getRecommendedLanguage();
+    if (!recommendedLanguage || (selectedCategory !== 'All' && selectedCategory !== 'Recommended')) {
+      return null;
+    }
+
+    const matchesSearch = recommendedLanguage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         recommendedLanguage.code.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesSearch ? recommendedLanguage : null;
+  };
+
+  // Get unique first letters for category filter (including Recommended if applicable)
+  const availableCategories = [
+    'All',
+    ...(detectedLanguage?.languageCode ? ['Recommended'] : []),
+    ...Object.keys(groupedLanguages).sort()
+  ];
 
   // Filter languages based on search term and category
   const filteredGroups = Object.entries(groupedLanguages).reduce((acc, [letter, languageList]) => {
@@ -117,7 +148,14 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
             >
               {availableCategories.map(category => (
                 <option key={category} value={category}>
-                  {category === 'All' ? t('narration.allCategories', 'All') : category}
+                  {category === 'All'
+                    ? t('narration.allCategories', 'All')
+                    : category === 'Recommended'
+                    ? t('narration.recommendedLanguage', 'Recommended for {{language}}', {
+                        language: detectedLanguage?.languageName || detectedLanguage?.languageCode
+                      })
+                    : category
+                  }
                 </option>
               ))}
             </select>
@@ -126,6 +164,31 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
 
         {/* Language Grid */}
         <div className="voice-modal-content">
+          {/* Recommended Language Section */}
+          {detectedLanguage?.languageCode && getFilteredRecommendedLanguage() && (
+            <div className="voice-category-section">
+              <h3 className="voice-category-title recommended">
+                {t('narration.recommendedLanguage', 'Recommended for {{language}}', {
+                  language: detectedLanguage.languageName || detectedLanguage.languageCode
+                })}
+              </h3>
+              <div className="voice-grid">
+                <div
+                  className={`voice-card ${getFilteredRecommendedLanguage().code === selectedLanguage ? 'selected' : ''}`}
+                  onClick={() => handleLanguageSelect(getFilteredRecommendedLanguage())}
+                >
+                  <div className="voice-info">
+                    <span className="voice-name">{getFilteredRecommendedLanguage().name}</span>
+                    <div className="voice-meta">
+                      <span className="voice-locale">{getFilteredRecommendedLanguage().code}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Other Languages Sections */}
           {Object.entries(filteredGroups).map(([letter, languageList]) => (
             <div key={letter} className="voice-category-section">
               <h3 className="voice-category-title">{letter}</h3>
@@ -148,7 +211,8 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
             </div>
           ))}
 
-          {Object.keys(filteredGroups).length === 0 && (
+          {/* No Results */}
+          {!getFilteredRecommendedLanguage() && Object.keys(filteredGroups).length === 0 && (
             <div className="no-results">
               <div className="no-results-icon">🔍</div>
               <h3>{t('narration.noLanguagesFound', 'No languages found')}</h3>
@@ -163,8 +227,8 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
         {/* Modal Footer */}
         <div className="voice-modal-footer">
           <div className="voice-count">
-            {t('narration.languagesAvailable', '{{count}} languages available', { 
-              count: Object.values(filteredGroups).flat().length 
+            {t('narration.languagesAvailable', '{{count}} languages available', {
+              count: (getFilteredRecommendedLanguage() ? 1 : 0) + Object.values(filteredGroups).flat().length
             })}
           </div>
           <div className="modal-actions">

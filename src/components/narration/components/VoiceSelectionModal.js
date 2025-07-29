@@ -33,8 +33,28 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
     };
   }, [isOpen, onClose]);
 
-  // Group voices alphabetically by language
-  const groupedVoices = voices.reduce((acc, voice) => {
+  // Get recommended voices based on detected language
+  const getRecommendedVoices = () => {
+    if (!detectedLanguage?.languageCode) return [];
+
+    return voices.filter(voice =>
+      voice.language === detectedLanguage.languageCode ||
+      voice.locale.startsWith(detectedLanguage.languageCode + '-')
+    ).sort((a, b) => a.short_name.localeCompare(b.short_name));
+  };
+
+  // Get other voices (not recommended)
+  const getOtherVoices = () => {
+    if (!detectedLanguage?.languageCode) return voices;
+
+    return voices.filter(voice =>
+      voice.language !== detectedLanguage.languageCode &&
+      !voice.locale.startsWith(detectedLanguage.languageCode + '-')
+    );
+  };
+
+  // Group voices alphabetically by language (for other voices)
+  const groupedVoices = getOtherVoices().reduce((acc, voice) => {
     const language = voice.locale.split('-')[0].toUpperCase();
     if (!acc[language]) {
       acc[language] = [];
@@ -48,8 +68,27 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
     groupedVoices[language].sort((a, b) => a.short_name.localeCompare(b.short_name));
   });
 
-  // Get unique languages for category filter
-  const availableLanguages = ['All', ...Object.keys(groupedVoices).sort()];
+  // Get recommended voices with filtering
+  const getFilteredRecommendedVoices = () => {
+    const recommendedVoices = getRecommendedVoices();
+    if (selectedCategory !== 'All' && selectedCategory !== 'Recommended') {
+      return [];
+    }
+
+    return recommendedVoices.filter(voice =>
+      voice.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voice.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voice.gender.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      voice.locale.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  // Get unique languages for category filter (including Recommended if applicable)
+  const availableLanguages = [
+    'All',
+    ...(detectedLanguage?.languageCode ? ['Recommended'] : []),
+    ...Object.keys(groupedVoices).sort()
+  ];
 
   // Filter voices based on search term and category
   const filteredGroups = Object.entries(groupedVoices).reduce((acc, [language, voiceList]) => {
@@ -146,7 +185,14 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
             >
               {availableLanguages.map(language => (
                 <option key={language} value={language}>
-                  {language === 'All' ? t('narration.allLanguages', 'All Languages') : getLanguageName(language)}
+                  {language === 'All'
+                    ? t('narration.allLanguages', 'All Languages')
+                    : language === 'Recommended'
+                    ? t('narration.recommendedVoices', 'Recommended for {{language}}', {
+                        language: detectedLanguage?.languageName || detectedLanguage?.languageCode
+                      })
+                    : getLanguageName(language)
+                  }
                 </option>
               ))}
             </select>
@@ -155,6 +201,35 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
 
         {/* Voice Grid */}
         <div className="voice-modal-content">
+          {/* Recommended Voices Section */}
+          {detectedLanguage?.languageCode && getFilteredRecommendedVoices().length > 0 && (
+            <div className="voice-category-section">
+              <h3 className="voice-category-title recommended">
+                {t('narration.recommendedVoices', 'Recommended for {{language}}', {
+                  language: detectedLanguage.languageName || detectedLanguage.languageCode
+                })}
+              </h3>
+              <div className="voice-grid">
+                {getFilteredRecommendedVoices().map(voice => (
+                  <div
+                    key={voice.name}
+                    className={`voice-card ${voice.name === selectedVoice ? 'selected' : ''}`}
+                    onClick={() => handleVoiceSelect(voice)}
+                  >
+                    <div className="voice-info">
+                      <span className="voice-name">{voice.short_name}</span>
+                      <div className="voice-meta">
+                        <span className="voice-gender">{voice.gender}</span>
+                        <span className="voice-locale">{voice.locale}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Other Voices Sections */}
           {Object.entries(filteredGroups).map(([language, voiceList]) => (
             <div key={language} className="voice-category-section">
               <h3 className="voice-category-title">{getLanguageName(language)}</h3>
@@ -178,7 +253,8 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
             </div>
           ))}
 
-          {Object.keys(filteredGroups).length === 0 && (
+          {/* No Results */}
+          {getFilteredRecommendedVoices().length === 0 && Object.keys(filteredGroups).length === 0 && (
             <div className="no-results">
               <div className="no-results-icon">🔍</div>
               <h3>{t('narration.noVoicesFound', 'No voices found')}</h3>
@@ -193,8 +269,8 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
         {/* Modal Footer */}
         <div className="voice-modal-footer">
           <div className="voice-count">
-            {t('narration.voicesAvailable', '{{count}} voices available', { 
-              count: Object.values(filteredGroups).flat().length 
+            {t('narration.voicesAvailable', '{{count}} voices available', {
+              count: getFilteredRecommendedVoices().length + Object.values(filteredGroups).flat().length
             })}
           </div>
           <div className="modal-actions">
