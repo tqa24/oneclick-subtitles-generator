@@ -45,8 +45,7 @@ export const createLanguageDetectionSchema = () => {
  */
 export const createSubtitleSchema = (isUserProvided = false) => {
     if (isUserProvided) {
-        // For user-provided subtitles, we need timing information and the exact text
-        // This ensures the model provides both timing and the exact subtitle text
+        // For user-provided subtitles, simple schema to avoid complexity errors
         return {
             type: "array",
             items: {
@@ -54,19 +53,19 @@ export const createSubtitleSchema = (isUserProvided = false) => {
                 properties: {
                     index: {
                         type: "integer",
-                        description: "Index of the subtitle in the provided list (starting from 0). MUST be a valid index from the provided list."
+                        description: "Index from the provided list (0-based)"
                     },
                     startTime: {
                         type: "string",
-                        description: "Start time in format MMmSSsNNNms (e.g., '00m00s500ms')"
+                        description: "Start time in MMmSSsNNNms format"
                     },
                     endTime: {
                         type: "string",
-                        description: "End time in format MMmSSsNNNms (e.g., '00m01s000ms')"
+                        description: "End time in MMmSSsNNNms format"
                     },
                     text: {
                         type: "string",
-                        description: "The exact subtitle text from the provided list. MUST match exactly with the text at the corresponding index."
+                        description: "Exact text from the provided list"
                     }
                 },
                 required: ["index", "startTime", "endTime", "text"],

@@ -143,50 +143,78 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
         let simplifiedPrompt;
         if (isSegment) {
             // For segments, we need a more flexible approach
-            simplifiedPrompt = `CRITICAL INSTRUCTION: I have a segment of a video and a list of all possible subtitles for the entire video. Your task is to:
+            simplifiedPrompt = `🚨 CRITICAL INSTRUCTION: I have a segment of a video and a list of all possible subtitles for the entire video.
 
-1. IDENTIFY which of the numbered subtitles below appear in this specific video segment
-2. Provide ACCURATE TIMESTAMPS for ONLY those subtitles that appear in this segment
+YOUR TASKS:
+1. IDENTIFY which numbered subtitles appear in this specific video segment
+2. Provide ACCURATE TIMESTAMPS for those subtitles
+3. Each numbered line that appears gets exactly ONE separate entry
 
-DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.${segmentInfoText}
+⚠️ ABSOLUTE PROHIBITION:
+- DO NOT combine multiple subtitle lines into one entry
+- DO NOT merge similar or repetitive lines
+- DO NOT modify or paraphrase any text
+- DO NOT transcribe new content${segmentInfoText}
 
-You MUST return timing entries ONLY for subtitles that appear in this segment, in the following JSON format with the exact text included:
+✅ MANDATORY FORMAT: Return timing entries for subtitles in this segment using this JSON format:
 ${exampleJson}
 
-IMPORTANT RULES:
-1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
-2. The index must match the subtitle number in brackets from the list below
-3. Only include subtitles that actually appear in this segment
-4. INCLUDE the exact subtitle text in your response along with timing information
-5. If you hear something different in the audio, use the EXACT text from the numbered list below
-6. Timestamps should be relative to the START of this segment (start at 0:00)
-7. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
-8. If you're not 100% certain a subtitle appears in this segment, DO NOT include it.
-9. Each entry in your response must correspond to a subtitle that actually appears in this segment.
-10. Include BOTH the index AND the exact text to prevent mismatches.
+🔒 STRICT RULES - VIOLATION WILL RESULT IN FAILURE:
+1. ✅ Each numbered subtitle that appears = exactly ONE separate entry (1:1 mapping)
+2. ✅ DO NOT combine lines, even if they seem identical like "나가 나가"
+3. ✅ Use EXACT text from numbered list, including parentheses like "(나 는 여 기 에 있 어)"
+4. ✅ Include ALL instances of repetitive content as separate entries
+5. ✅ Use leading zeros for time format (00m05s100ms, not 0m5s100ms)
+6. ✅ Index must match the subtitle number in brackets from list below
+7. ✅ If audio differs from text, still use EXACT text from numbered list
+8. ✅ Timestamps relative to START of this segment (start at 0:00)
+9. ✅ ONLY use index numbers that exist in list below (0 to ${subtitleCount - 1})
+10. ✅ Include BOTH index AND exact text to prevent mismatches
+11. ✅ Even very short or repetitive lines get separate entries
 
-Here are ALL possible subtitles for the entire video (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
+🎯 EXAMPLE VERIFICATION:
+If you hear "[5] 나가" in this segment, output: {"index": 5, "startTime": "...", "endTime": "...", "text": "나가"}
+If you hear "[10] 나가" in this segment, output: {"index": 10, "startTime": "...", "endTime": "...", "text": "나가"}
+These are TWO SEPARATE entries, never combine them.
+
+Here are ALL possible subtitles for the entire video (each numbered line that appears in this segment gets its own separate entry):\n\n${numberedSubtitles}`;
         } else {
-            // For full video processing, use the same successful pattern as translation prompt
-            simplifiedPrompt = `CRITICAL INSTRUCTION: Your ONLY task is to provide accurate timestamps for the ${subtitleCount} subtitles below.
+            // For full video processing, enforce absolute strict one-to-one correspondence
+            simplifiedPrompt = `🚨 CRITICAL INSTRUCTION: You MUST provide timing for ALL ${subtitleCount} subtitles below. NO EXCEPTIONS. NO COMBINING. NO MERGING.
 
-DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.
+⚠️ ABSOLUTE PROHIBITION:
+- DO NOT combine multiple lines into one entry
+- DO NOT merge similar or repetitive lines
+- DO NOT skip any lines
+- DO NOT paraphrase or modify any text
+- DO NOT transcribe or generate new content
 
-You MUST return timing entries in the following JSON format with the exact text included:
+✅ MANDATORY REQUIREMENT: Return exactly ${subtitleCount} separate timing entries in this JSON format:
 ${exampleJson}
 
-IMPORTANT RULES:
-1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
-2. The index must match the subtitle number in brackets below
-3. MAINTAIN exactly ${subtitleCount} entries in the same order
-4. Each entry in your response must correspond to the same line in the input
-5. INCLUDE the exact subtitle text in your response along with timing information
-6. If you hear something different in the audio, use the EXACT text from the numbered list below
-7. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
-8. Include BOTH the index AND the exact text to prevent mismatches.
-9. If a subtitle doesn't appear clearly in the audio, still include it with your best estimate of timing.
+🔒 STRICT RULES - VIOLATION WILL RESULT IN FAILURE:
+1. ✅ MANDATORY: Return exactly ${subtitleCount} entries, no more, no less
+2. ✅ MANDATORY: Each entry = exactly ONE line from the numbered list (1:1 mapping)
+3. ✅ MANDATORY: Use EXACT text from each numbered line (copy-paste accuracy)
+4. ✅ MANDATORY: Include ALL lines, even repetitive ones like "나가 나가" or "(나 는 여 기 에 있 어)"
+5. ✅ MANDATORY: Each line [0] through [${subtitleCount - 1}] gets its own separate entry
+6. ✅ MANDATORY: Preserve ALL parentheses, spaces, and punctuation exactly
+7. ✅ MANDATORY: Use leading zeros for time format (00m05s100ms, not 0m5s100ms)
+8. ✅ MANDATORY: Index must match the line number in brackets [0] to [${subtitleCount - 1}]
+9. ✅ MANDATORY: Even if lines seem identical or very short, each gets separate entry
+10. ✅ MANDATORY: If audio differs from text, still use EXACT text from numbered list
 
-Here are the ${subtitleCount} subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
+🎯 SUCCESS CRITERIA:
+- Input: ${subtitleCount} numbered lines
+- Output: ${subtitleCount} JSON entries
+- Mapping: Line [0] → Entry with index 0, Line [1] → Entry with index 1, etc.
+
+📝 EXAMPLE VERIFICATION:
+If you see "[5] 나가" in the list, your response must include: {"index": 5, "startTime": "...", "endTime": "...", "text": "나가"}
+If you see "[10] 나가" in the list, your response must include: {"index": 10, "startTime": "...", "endTime": "...", "text": "나가"}
+These are TWO SEPARATE entries, not one combined entry.
+
+Here are ALL ${subtitleCount} subtitles to time (each numbered line = one separate entry):\n\n${numberedSubtitles}`;
         }
 
 
