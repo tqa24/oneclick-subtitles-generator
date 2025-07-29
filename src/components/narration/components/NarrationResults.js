@@ -195,6 +195,12 @@ const NarrationResults = ({
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
 
+  // Speed control state
+  const [speedValue, setSpeedValue] = useState(1.0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [currentFile, setCurrentFile] = useState('');
+
   // Download audio as WAV file
   const downloadAudio = (result) => {
     if (result.filename) {
@@ -246,6 +252,92 @@ const NarrationResults = ({
     } else {
       console.error('No filename available for download');
       alert(t('narration.downloadError', 'No audio file available for download'));
+    }
+  };
+
+  // Speed modification function
+  const modifyAudioSpeed = async () => {
+    if (!generationResults || generationResults.length === 0) {
+      console.log('No narration results to modify');
+      return;
+    }
+
+    // Filter successful narrations
+    const successfulNarrations = generationResults.filter(result => result.success && result.filename);
+
+    if (successfulNarrations.length === 0) {
+      console.log('No successful narrations to modify');
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingProgress({ current: 0, total: successfulNarrations.length });
+    setCurrentFile('');
+
+    try {
+      console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
+
+      // Use batch endpoint to process all files at once
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
+      console.log(`Sending request to: ${apiUrl}`);
+
+      // Use fetch with streaming response to get real-time progress updates
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filenames: successfulNarrations.map(result => result.filename),
+          speedFactor: speedValue
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      // Read the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.status === 'progress') {
+                setProcessingProgress({ current: data.current, total: data.total });
+                setCurrentFile(data.filename || '');
+              } else if (data.status === 'completed') {
+                console.log('Speed modification completed successfully');
+                setProcessingProgress({ current: data.total, total: data.total });
+                setCurrentFile('');
+              } else if (data.status === 'error') {
+                throw new Error(data.error || 'Unknown error occurred');
+              }
+            } catch (parseError) {
+              console.error('Error parsing progress data:', parseError);
+            }
+          }
+        }
+      }
+
+      console.log('All files processed successfully');
+    } catch (error) {
+      console.error('Error modifying audio speed:', error);
+      alert(t('narration.speedModificationError', `Error modifying audio speed: ${error.message}`));
+    } finally {
+      setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
+      setCurrentFile('');
     }
   };
 
@@ -445,6 +537,57 @@ const NarrationResults = ({
             </svg>
             {t('narration.retryFailed', 'Retry Failed Narrations')}
           </button>
+        )}
+
+        {/* Speed Control Slider */}
+        {generationResults && generationResults.length > 0 && (
+          <div className="speed-control-container">
+            <span className="speed-control-label">{t('narration.speed', 'Speed')}:</span>
+            <div className="speed-control-slider-container">
+              <div className="speed-control-slider-track">
+                <div
+                  className="speed-control-slider-fill"
+                  style={{ width: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                ></div>
+                <div
+                  className="speed-control-slider-thumb"
+                  style={{ left: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                ></div>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="2.0"
+                step="0.1"
+                value={speedValue}
+                onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
+                className="speed-control-slider-input"
+                disabled={isProcessing}
+              />
+            </div>
+            <div className="speed-control-value">{speedValue.toFixed(1)}x</div>
+            {isProcessing ? (
+              <div className="speed-control-progress">
+                <div className="speed-control-spinner"></div>
+                <div className="speed-control-progress-info">
+                  <span>{processingProgress.current}/{processingProgress.total}</span>
+                  {currentFile && (
+                    <span className="speed-control-filename" title={currentFile}>
+                      {currentFile.length > 10 ? currentFile.substring(0, 10) + '...' : currentFile}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <button
+                className="speed-control-apply-button"
+                onClick={modifyAudioSpeed}
+                disabled={!generationResults || generationResults.length === 0}
+              >
+                {t('narration.apply', 'Apply')}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

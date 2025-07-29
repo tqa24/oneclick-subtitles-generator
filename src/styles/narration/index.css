@@ -6,6 +6,7 @@
 @import './geminiGenerateButton.css';
 @import './narrationAdvancedSettingsRedesign.css';
 @import './geminiNarrationResults.css';
+@import './speedControlSlider.css';
 
 /* Example Audio Dropdown Styles */
 .example-audio-dropdown-container {

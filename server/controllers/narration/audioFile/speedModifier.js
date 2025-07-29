@@ -69,12 +69,26 @@ const modifyAudioSpeed = async (req, res) => {
       return res.status(400).json({ error: 'Speed factor must be between 0.25 and 4.0' });
     }
 
+    // Determine the appropriate codec based on file extension
+    const fileExtension = path.extname(audioPath).toLowerCase();
+    let codecArgs;
+
+    if (fileExtension === '.mp3') {
+      // For MP3 files, use libmp3lame codec
+      codecArgs = ['-c:a', 'libmp3lame', '-b:a', '192k'];
+    } else if (fileExtension === '.wav') {
+      // For WAV files, use pcm_s16le codec
+      codecArgs = ['-c:a', 'pcm_s16le', '-ar', '44100'];
+    } else {
+      // For other formats, let ffmpeg auto-detect
+      codecArgs = ['-c:a', 'copy'];
+    }
+
     // Build the ffmpeg command arguments
     const ffmpegArgs = [
       '-i', sourceFile,
       '-filter:a', filterComplex,
-      '-c:a', 'pcm_s16le',  // Use same codec as original files
-      '-ar', '44100',       // Maintain sample rate
+      ...codecArgs,         // Use appropriate codec
       '-y',                 // Overwrite output file
       audioPath             // Output to the original file location
     ];
@@ -139,18 +153,20 @@ const batchModifyAudioSpeed = async (req, res) => {
       return res.status(400).json({ error: 'Speed factor must be between 0.5 and 2.0' });
     }
 
-    // Set up response headers for streaming
-    res.setHeader('Content-Type', 'application/json');
+    // Set up response headers for streaming (Server-Sent Events format)
+    res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     // Send initial response
-    res.write(JSON.stringify({
+    res.write(`data: ${JSON.stringify({
       success: true,
-      status: 'processing',
+      status: 'progress',
       total: filenames.length,
-      processed: 0,
+      current: 0,
       message: 'Starting audio speed modification'
-    }));
+    })}\n\n`);
 
     // Process each file
     const results = [];
@@ -209,37 +225,51 @@ const batchModifyAudioSpeed = async (req, res) => {
           processedCount++;
 
           // Send progress update
-          res.write(JSON.stringify({
+          res.write(`data: ${JSON.stringify({
             success: true,
-            status: 'processing',
+            status: 'progress',
             total: filenames.length,
-            processed: processedCount,
-            current: filename,
+            current: processedCount,
+            filename: filename,
             message: `Invalid speed factor for ${filename}`
-          }));
+          })}\n\n`);
 
           continue;
+        }
+
+        // Determine the appropriate codec based on file extension
+        const fileExtension = path.extname(audioPath).toLowerCase();
+        let codecArgs;
+
+        if (fileExtension === '.mp3') {
+          // For MP3 files, use libmp3lame codec
+          codecArgs = ['-c:a', 'libmp3lame', '-b:a', '192k'];
+        } else if (fileExtension === '.wav') {
+          // For WAV files, use pcm_s16le codec
+          codecArgs = ['-c:a', 'pcm_s16le', '-ar', '44100'];
+        } else {
+          // For other formats, let ffmpeg auto-detect
+          codecArgs = ['-c:a', 'copy'];
         }
 
         // Build the ffmpeg command arguments
         const ffmpegArgs = [
           '-i', sourceFile,
           '-filter:a', filterComplex,
-          '-c:a', 'pcm_s16le',
-          '-ar', '44100',
+          ...codecArgs,         // Use appropriate codec
           '-y',
           audioPath
         ];
 
         // Send progress update before starting ffmpeg
-        res.write(JSON.stringify({
+        res.write(`data: ${JSON.stringify({
           success: true,
-          status: 'processing',
+          status: 'progress',
           total: filenames.length,
-          processed: processedCount,
-          current: filename,
+          current: processedCount,
+          filename: filename,
           message: `Processing file ${index + 1}/${filenames.length}: ${filename}`
-        }));
+        })}\n\n`);
 
         // Execute the ffmpeg command and wait for it to complete
         await new Promise((resolve, reject) => {
@@ -313,15 +343,15 @@ const batchModifyAudioSpeed = async (req, res) => {
     }
 
     // Send final results
-    res.end(JSON.stringify({
+    res.end(`data: ${JSON.stringify({
       success: true,
-      status: 'complete',
+      status: 'completed',
       total: filenames.length,
-      processed: processedCount,
+      current: processedCount,
       results,
       errors,
       message: 'Audio speed modification complete'
-    }));
+    })}\n\n`);
   } catch (error) {
     console.error(`Error in batchModifyAudioSpeed: ${error.message}`);
 
@@ -333,11 +363,11 @@ const batchModifyAudioSpeed = async (req, res) => {
       });
     } else {
       // If we've already started streaming, end with an error
-      res.end(JSON.stringify({
+      res.end(`data: ${JSON.stringify({
         success: false,
         status: 'error',
         error: `Server error: ${error.message}`
-      }));
+      })}\n\n`);
     }
   }
 };

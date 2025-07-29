@@ -63,7 +63,7 @@ const GeminiGenerateButton = ({
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 5.14v14l11-7-11-7z" />
               </svg>
-              {t('narration.generateWithGemini', 'Generate Narration with Gemini')}
+              {t('narration.generate', 'Generate Narration')}
             </button>
           )}
         </div>
