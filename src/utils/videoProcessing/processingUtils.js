@@ -394,9 +394,18 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
             error.message.includes('UNAVAILABLE') ||
             error.message.includes('Status code: 503')
         ))) {
+            // Check if this is specifically a 503 error for more specific messaging
+            const is503Error = error.message && (
+                error.message.includes('503') ||
+                error.message.includes('Status code: 503')
+            );
+
+            const errorMessage = is503Error
+                ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
+                : t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.');
 
             // Make sure to pass the timeRange parameter
-            updateSegmentStatus(i, 'overloaded', t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.'), t, timeRange);
+            updateSegmentStatus(i, 'overloaded', errorMessage, t, timeRange);
         } else {
             updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'), t, timeRange);
         }

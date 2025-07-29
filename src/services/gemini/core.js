@@ -319,7 +319,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                             errorData.error.message.includes('overloaded')) {
                             // Blacklist the current API key
                             blacklistKey(geminiApiKey);
-                            const overloadError = new Error(`API error: ${errorData.error.message || response.statusText}`);
+                            const overloadError = new Error(i18n.t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)'));
                             overloadError.isOverloaded = true;
                             throw overloadError;
                         }
@@ -344,7 +344,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     if (response.status === 503) {
                         // Blacklist the current API key
                         blacklistKey(geminiApiKey);
-                        const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                        const overloadError = new Error(i18n.t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)'));
                         overloadError.isOverloaded = true;
                         throw overloadError;
                     }
@@ -365,7 +365,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (response.status === 503) {
                     // Blacklist the current API key
                     blacklistKey(geminiApiKey);
-                    const overloadError = new Error(`API error: ${response.statusText}. Status code: ${response.status}`);
+                    const overloadError = new Error(i18n.t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)'));
                     overloadError.isOverloaded = true;
                     throw overloadError;
                 }
@@ -442,6 +442,10 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 if (!error.isOverloaded) {
                     error.isOverloaded = true;
                 }
+
+                // Replace the error message with a user-friendly localized message
+                error = new Error(i18n.t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)'));
+                error.isOverloaded = true;
             }
 
             // Check for quota exceeded errors in the error message

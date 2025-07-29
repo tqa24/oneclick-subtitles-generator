@@ -109,13 +109,13 @@ export const parseStructuredJsonResponse = (response) => {
             let allEmpty = true;
             let emptyCount = 0;
 
-            // Skip this check for timing-only format (with index property)
-            const isTimingOnlyFormat = structuredJson.length > 0 &&
-                                      structuredJson[0].index !== undefined &&
-                                      structuredJson[0].startTime &&
-                                      structuredJson[0].endTime;
+            // Skip this check for user-provided subtitles format (with index property)
+            const isUserProvidedFormat = structuredJson.length > 0 &&
+                                        structuredJson[0].index !== undefined &&
+                                        structuredJson[0].startTime &&
+                                        structuredJson[0].endTime;
 
-            if (!isTimingOnlyFormat) {
+            if (!isUserProvidedFormat) {
                 for (let i = 0; i < structuredJson.length; i++) {
                     const item = structuredJson[i];
                     if (item.startTime === '00m00s000ms' &&
@@ -128,7 +128,7 @@ export const parseStructuredJsonResponse = (response) => {
                     }
                 }
             } else {
-                // For timing-only format, we don't need to check for empty subtitles
+                // For user-provided subtitles format, we don't need to check for empty subtitles
                 allEmpty = false;
 
             }
@@ -147,8 +147,8 @@ export const parseStructuredJsonResponse = (response) => {
             // Skip empty subtitles at 00m00s000ms
             let startIndex = 0;
 
-            // Skip this check for timing-only format
-            if (!isTimingOnlyFormat) {
+            // Skip this check for user-provided subtitles format
+            if (!isUserProvidedFormat) {
                 while (startIndex < structuredJson.length &&
                        structuredJson[startIndex].startTime === '00m00s000ms' &&
                        structuredJson[startIndex].endTime === '00m00s000ms' &&
@@ -163,7 +163,7 @@ export const parseStructuredJsonResponse = (response) => {
             for (let i = startIndex; i < structuredJson.length; i++) {
                 const item = structuredJson[i];
 
-                // Handle timing-only format (for user-provided subtitles)
+                // Handle timing format for user-provided subtitles (with or without text)
                 if (item.startTime && item.endTime && item.index !== undefined) {
                     try {
                         // Convert time format from MMmSSsNNNms to seconds
@@ -171,31 +171,36 @@ export const parseStructuredJsonResponse = (response) => {
                         const end = convertTimeStringToSeconds(item.endTime);
                         const index = item.index;
 
+                        let text = '';
 
-
-                        // Get the corresponding text from user-provided subtitles
-                        const userProvidedSubtitles = localStorage.getItem('user_provided_subtitles');
-                        if (userProvidedSubtitles) {
-                            const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
-                            if (index < subtitleLines.length) {
-                                const text = subtitleLines[index].trim();
-
-
-                                subtitles.push({
-                                    id: i + 1,
-                                    start,
-                                    end,
-                                    text: text
-                                });
-                            } else {
-                                console.warn(`Index ${index} out of range for user-provided subtitles (length: ${subtitleLines.length}) - skipping this entry`);
-                                // Skip this entry instead of throwing an error
-                            }
+                        // Check if text is included in the response (new format)
+                        if (item.text && item.text.trim() !== '') {
+                            text = item.text.trim();
                         } else {
-                            console.error('No user-provided subtitles found in localStorage');
+                            // Fallback to getting text from localStorage (old format)
+                            const userProvidedSubtitles = localStorage.getItem('user_provided_subtitles');
+                            if (userProvidedSubtitles) {
+                                const subtitleLines = userProvidedSubtitles.trim().split('\n').filter(line => line.trim() !== '');
+                                if (index < subtitleLines.length) {
+                                    text = subtitleLines[index].trim();
+                                } else {
+                                    console.warn(`Index ${index} out of range for user-provided subtitles (length: ${subtitleLines.length}) - skipping this entry`);
+                                    continue; // Skip this entry
+                                }
+                            } else {
+                                console.error('No user-provided subtitles found in localStorage');
+                                continue; // Skip this entry
+                            }
                         }
+
+                        subtitles.push({
+                            id: i + 1,
+                            start,
+                            end,
+                            text: text
+                        });
                     } catch (error) {
-                        console.error(`Error processing timing-only item ${i + 1}:`, error);
+                        console.error(`Error processing timing item ${i + 1}:`, error);
                     }
                 }
                 // Handle regular subtitle format

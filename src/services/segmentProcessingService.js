@@ -121,17 +121,27 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 };
                 const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
+                // Check if this is specifically a 503 error for more specific messaging
+                const is503Error = error.message && (
+                    error.message.includes('503') ||
+                    error.message.includes('Status code: 503')
+                );
+
+                const errorMessage = is503Error
+                    ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
+                    : t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.');
+
                 // Update segment status with the time range
                 updateSegmentStatus(
                     segmentIndex,
                     'overloaded',
-                    t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.'),
+                    errorMessage,
                     t,
                     timeRange
                 );
 
                 // If we hit an overload error, stop retrying and throw the error
-                const overloadError = new Error(`Segment ${segmentIndex+1}: ${t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.')}`);
+                const overloadError = new Error(`Segment ${segmentIndex+1}: ${errorMessage}`);
                 overloadError.isOverloaded = true;
                 throw overloadError;
             }

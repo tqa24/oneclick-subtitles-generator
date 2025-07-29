@@ -129,6 +129,17 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
             segmentInfoText = `\nIMPORTANT SEGMENT INFORMATION:\n- This is segment #${segmentIndex + 1} of a longer video\n- This segment starts at ${segmentStartTime.toFixed(2)} seconds in the original video\n- This segment is ${segmentDuration.toFixed(2)} seconds long\n- The total video duration is ${totalDuration.toFixed(2)} seconds\n\nNOTE: Even though this is a segment of a longer video, please provide timestamps starting from 0:00 for this segment. We will adjust the timestamps later.`;
         }
 
+        // Build example JSON with ALL subtitle lines (exactly like translation prompt)
+        let exampleJson = '[\n';
+
+        // Add ALL subtitle lines as examples (not just a few)
+        for (let i = 0; i < subtitleLines.length; i++) {
+            const escapedLine = subtitleLines[i].replace(/"/g, "'");
+            exampleJson += `  { "index": ${i}, "startTime": "00m00s500ms", "endTime": "00m01s000ms", "text": "${escapedLine}" }${i < subtitleLines.length - 1 ? ',' : ''}\n`;
+        }
+
+        exampleJson += ']';
+
         let simplifiedPrompt;
         if (isSegment) {
             // For segments, we need a more flexible approach
@@ -139,47 +150,43 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
 
 DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.${segmentInfoText}
 
-You MUST return timing entries ONLY for subtitles that appear in this segment, in the following JSON format:
-[
-  { "index": 3, "startTime": "00m00s500ms", "endTime": "00m01s000ms" },
-  { "index": 4, "startTime": "00m01s100ms", "endTime": "00m02s000ms" },
-  ...
-]
+You MUST return timing entries ONLY for subtitles that appear in this segment, in the following JSON format with the exact text included:
+${exampleJson}
 
 IMPORTANT RULES:
 1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
 2. The index must match the subtitle number in brackets from the list below
 3. Only include subtitles that actually appear in this segment
-4. DO NOT include the subtitle text in your response, ONLY the timing information and index
+4. INCLUDE the exact subtitle text in your response along with timing information
 5. If you hear something different in the audio, use the EXACT text from the numbered list below
 6. Timestamps should be relative to the START of this segment (start at 0:00)
 7. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
 8. If you're not 100% certain a subtitle appears in this segment, DO NOT include it.
+9. Each entry in your response must correspond to a subtitle that actually appears in this segment.
+10. Include BOTH the index AND the exact text to prevent mismatches.
 
 Here are ALL possible subtitles for the entire video (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
         } else {
-            // For full video processing, we can use the original approach
-            simplifiedPrompt = `CRITICAL INSTRUCTION: Your ONLY task is to provide accurate timestamps for the subtitles below.
+            // For full video processing, use the same successful pattern as translation prompt
+            simplifiedPrompt = `CRITICAL INSTRUCTION: Your ONLY task is to provide accurate timestamps for the ${subtitleCount} subtitles below.
 
 DO NOT transcribe or generate any new text content. DO NOT translate or modify the provided subtitles in any way.
 
-You MUST return timing entries in the following JSON format:
-[
-  { "index": 0, "startTime": "00m00s500ms", "endTime": "00m01s000ms" },
-  { "index": 1, "startTime": "00m01s100ms", "endTime": "00m02s000ms" },
-  ...
-]
+You MUST return timing entries in the following JSON format with the exact text included:
+${exampleJson}
 
 IMPORTANT RULES:
 1. Always use leading zeros for minutes and seconds (e.g., 00m05s100ms, not 0m5s100ms)
 2. The index must match the subtitle number in brackets below
-3. Only include subtitles that actually appear in the video
-4. DO NOT include the subtitle text in your response, ONLY the timing information
-5. If you hear something different in the audio, use the EXACT text from the numbered list below
-6. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
-7. If you're not 100% certain a subtitle appears in the video, DO NOT include it.
+3. MAINTAIN exactly ${subtitleCount} entries in the same order
+4. Each entry in your response must correspond to the same line in the input
+5. INCLUDE the exact subtitle text in your response along with timing information
+6. If you hear something different in the audio, use the EXACT text from the numbered list below
+7. CRITICAL: ONLY use index numbers that exist in the list below (0 to ${subtitleCount - 1}). DO NOT make up new indices.
+8. Include BOTH the index AND the exact text to prevent mismatches.
+9. If a subtitle doesn't appear clearly in the audio, still include it with your best estimate of timing.
 
-Here are the subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
+Here are the ${subtitleCount} subtitles to time (with index numbers from 0 to ${subtitleCount - 1}):\n\n${numberedSubtitles}`;
         }
 
 

@@ -100,7 +100,7 @@ export const parseGeminiResponse = (response) => {
                         };
                         return parseStructuredJsonResponse(mockResponse);
                     }
-                    // Check for timing-only format with index (for user-provided subtitles)
+                    // Check for timing format with index (for user-provided subtitles, with or without text)
                     else if (firstItem.startTime && firstItem.endTime && firstItem.index !== undefined) {
 
                         // Create a mock structured response

@@ -45,13 +45,17 @@ export const createLanguageDetectionSchema = () => {
  */
 export const createSubtitleSchema = (isUserProvided = false) => {
     if (isUserProvided) {
-        // For user-provided subtitles, we only need timing information
-        // This simplifies the task for the model and ensures it doesn't modify the text
+        // For user-provided subtitles, we need timing information and the exact text
+        // This ensures the model provides both timing and the exact subtitle text
         return {
             type: "array",
             items: {
                 type: "object",
                 properties: {
+                    index: {
+                        type: "integer",
+                        description: "Index of the subtitle in the provided list (starting from 0). MUST be a valid index from the provided list."
+                    },
                     startTime: {
                         type: "string",
                         description: "Start time in format MMmSSsNNNms (e.g., '00m00s500ms')"
@@ -60,13 +64,13 @@ export const createSubtitleSchema = (isUserProvided = false) => {
                         type: "string",
                         description: "End time in format MMmSSsNNNms (e.g., '00m01s000ms')"
                     },
-                    index: {
-                        type: "integer",
-                        description: "Index of the subtitle in the provided list (starting from 0). MUST be a valid index from the provided list."
+                    text: {
+                        type: "string",
+                        description: "The exact subtitle text from the provided list. MUST match exactly with the text at the corresponding index."
                     }
                 },
-                required: ["startTime", "endTime", "index"],
-                propertyOrdering: ["index", "startTime", "endTime"]
+                required: ["index", "startTime", "endTime", "text"],
+                propertyOrdering: ["index", "startTime", "endTime", "text"]
             }
         };
     } else {

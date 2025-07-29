@@ -204,7 +204,12 @@ export const useSubtitles = (t) => {
                     (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                     error.message.includes('The model is overloaded')
                 )) {
-                    setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                    // Use specific 503 error message if it's a 503 error
+                    const is503Error = error.message.includes('503');
+                    const errorMessage = is503Error
+                        ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
+                        : t('errors.geminiOverloaded', 'Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration. Or create a new Google Cloud Project and get an API Key.');
+                    setStatus({ message: errorMessage, type: 'error' });
                 } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
                     setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
                 } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
@@ -237,7 +242,12 @@ export const useSubtitles = (t) => {
                     (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                     error.message.includes('The model is overloaded')
                 )) {
-                    setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                    // Use specific 503 error message if it's a 503 error
+                    const is503Error = error.message.includes('503');
+                    const errorMessage = is503Error
+                        ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
+                        : t('errors.geminiOverloaded', 'Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration. Or create a new Google Cloud Project and get an API Key.');
+                    setStatus({ message: errorMessage, type: 'error' });
                 } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
                     setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
                 } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
@@ -356,7 +366,12 @@ export const useSubtitles = (t) => {
                 (error.message.includes('503') && error.message.includes('Service Unavailable')) ||
                 error.message.includes('The model is overloaded')
             )) {
-                setStatus({ message: t('errors.geminiOverloaded'), type: 'error' });
+                // Use specific 503 error message if it's a 503 error
+                const is503Error = error.message.includes('503');
+                const errorMessage = is503Error
+                    ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
+                    : t('errors.geminiOverloaded', 'Strong model tends to get overloaded, please consider using other model and try again, or try lower the segment duration. Or create a new Google Cloud Project and get an API Key.');
+                setStatus({ message: errorMessage, type: 'error' });
             } else if (error.message && error.message.includes('token') && error.message.includes('exceeds the maximum')) {
                 setStatus({ message: t('errors.tokenLimitExceeded'), type: 'error' });
             } else if (error.message && error.message.includes('File size') && error.message.includes('exceeds the recommended maximum')) {
