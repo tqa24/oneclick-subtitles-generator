@@ -276,15 +276,7 @@ const EdgeTTSControls = ({
         </div>
       </div>
 
-      {/* Info Section */}
-      <div className="narration-row edge-tts-info-row">
-        <div className="row-content">
-          <div className="info-message">
-            <span className="info-icon">ℹ️</span>
-            {t('narration.edgeTTSInfo', 'Edge TTS uses Microsoft\'s high-quality neural voices. No API key required.')}
-          </div>
-        </div>
-      </div>
+
 
       {/* Voice Selection Modal */}
       {isVoiceModalOpen && (
@@ -339,7 +331,6 @@ const EdgeTTSControls = ({
                               voice.language !== detectedLanguage.languageCode &&
                               !voice.locale.startsWith(detectedLanguage.languageCode + '-')
                             )
-                            .slice(0, 20) // Limit to first 20 to avoid overwhelming UI
                             .map(voice => (
                               <button
                                 key={voice.name}
@@ -365,7 +356,7 @@ const EdgeTTSControls = ({
                         {t('narration.availableVoices', 'Available voices')}
                       </h4>
                       <div className="model-options-grid">
-                        {voices.slice(0, 30).map(voice => (
+                        {voices.map(voice => (
                           <button
                             key={voice.name}
                             className={`model-option-card ${voice.name === selectedVoice ? 'selected' : ''}`}

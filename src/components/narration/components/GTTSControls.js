@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
+import MaterialSwitch from '../../common/MaterialSwitch';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
 import '../../../styles/narration/narrationModelDropdown.css';
@@ -76,6 +77,16 @@ const GTTSControls = ({
     loadLanguages();
   }, [selectedLanguage, setSelectedLanguage, detectedLanguage]);
 
+  // Reset TLD when language changes to ensure it's valid for the new language
+  useEffect(() => {
+    const availableTlds = getTldOptions();
+    const currentTldValid = availableTlds.some(option => option.value === tld);
+
+    if (!currentTldValid && availableTlds.length > 0) {
+      setTld(availableTlds[0].value); // Set to first available TLD for the language
+    }
+  }, [selectedLanguage, tld, setTld]);
+
   // Handle language selection change
   const handleLanguageChange = (e) => {
     const newLanguage = e.target.value;
@@ -94,22 +105,41 @@ const GTTSControls = ({
     setSlow(newSlow);
   };
 
-  // Common TLD options for different accents
-  const tldOptions = [
-    { value: 'com', label: t('narration.tldCom', 'Global (.com)') },
-    { value: 'com.au', label: t('narration.tldAu', 'Australian (.com.au)') },
-    { value: 'co.uk', label: t('narration.tldUk', 'British (.co.uk)') },
-    { value: 'us', label: t('narration.tldUs', 'American (.us)') },
-    { value: 'ca', label: t('narration.tldCa', 'Canadian (.ca)') },
-    { value: 'co.in', label: t('narration.tldIn', 'Indian (.co.in)') },
-    { value: 'ie', label: t('narration.tldIe', 'Irish (.ie)') },
-    { value: 'co.za', label: t('narration.tldZa', 'South African (.co.za)') },
-    { value: 'com.br', label: t('narration.tldBr', 'Brazilian (.com.br)') },
-    { value: 'pt', label: t('narration.tldPt', 'Portuguese (.pt)') },
-    { value: 'es', label: t('narration.tldEs', 'Spanish (.es)') },
-    { value: 'com.mx', label: t('narration.tldMx', 'Mexican (.com.mx)') },
-    { value: 'fr', label: t('narration.tldFr', 'French (.fr)') }
-  ];
+  // TLD options grouped by language
+  const tldOptionsByLanguage = {
+    'en': [
+      { value: 'com', label: t('narration.tldCom', 'Global (.com)') },
+      { value: 'com.au', label: t('narration.tldAu', 'Australian (.com.au)') },
+      { value: 'co.uk', label: t('narration.tldUk', 'British (.co.uk)') },
+      { value: 'us', label: t('narration.tldUs', 'American (.us)') },
+      { value: 'ca', label: t('narration.tldCa', 'Canadian (.ca)') },
+      { value: 'co.in', label: t('narration.tldIn', 'Indian (.co.in)') },
+      { value: 'ie', label: t('narration.tldIe', 'Irish (.ie)') },
+      { value: 'co.za', label: t('narration.tldZa', 'South African (.co.za)') }
+    ],
+    'pt': [
+      { value: 'com', label: t('narration.tldCom', 'Global (.com)') },
+      { value: 'com.br', label: t('narration.tldBr', 'Brazilian (.com.br)') },
+      { value: 'pt', label: t('narration.tldPt', 'Portuguese (.pt)') }
+    ],
+    'es': [
+      { value: 'com', label: t('narration.tldCom', 'Global (.com)') },
+      { value: 'es', label: t('narration.tldEs', 'Spanish (.es)') },
+      { value: 'com.mx', label: t('narration.tldMx', 'Mexican (.com.mx)') }
+    ],
+    'fr': [
+      { value: 'com', label: t('narration.tldCom', 'Global (.com)') },
+      { value: 'fr', label: t('narration.tldFr', 'French (.fr)') },
+      { value: 'ca', label: t('narration.tldCa', 'Canadian (.ca)') }
+    ]
+  };
+
+  // Get TLD options for the selected language, fallback to global options
+  const getTldOptions = () => {
+    return tldOptionsByLanguage[selectedLanguage] || [
+      { value: 'com', label: t('narration.tldCom', 'Global (.com)') }
+    ];
+  };
 
   // Handle language modal
   const openLanguageModal = () => setIsLanguageModalOpen(true);
@@ -177,7 +207,7 @@ const GTTSControls = ({
             disabled={isGenerating}
             className="grouping-intensity-select"
           >
-            {tldOptions.map(option => (
+            {getTldOptions().map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -192,31 +222,23 @@ const GTTSControls = ({
           <label htmlFor="gtts-slow">{t('narration.gttsSlow', 'Slow Speech')}:</label>
         </div>
         <div className="row-content">
-          <div className="checkbox-container">
-            <input
-              type="checkbox"
+          <div className="material-switch-container">
+            <MaterialSwitch
               id="gtts-slow"
               checked={slow}
               onChange={handleSlowChange}
               disabled={isGenerating}
-              className="slow-checkbox"
+              ariaLabel={t('narration.gttsSlowDescription', 'Speak more slowly for better clarity')}
+              icons={true}
             />
-            <label htmlFor="gtts-slow" className="checkbox-label">
+            <label htmlFor="gtts-slow" className="material-switch-label">
               {t('narration.gttsSlowDescription', 'Speak more slowly for better clarity')}
             </label>
           </div>
         </div>
       </div>
 
-      {/* Info Section */}
-      <div className="narration-row gtts-info-row">
-        <div className="row-content">
-          <div className="info-message">
-            <span className="info-icon">ℹ️</span>
-            {t('narration.gttsInfo', 'gTTS uses Google Translate\'s text-to-speech service. Different regions provide different accents for supported languages.')}
-          </div>
-        </div>
-      </div>
+
 
       {/* Language-specific TLD recommendations */}
       {selectedLanguage === 'en' && (
@@ -332,7 +354,7 @@ const GTTSControls = ({
                         {t('narration.availableLanguages', 'Available languages')}
                       </h4>
                       <div className="model-options-grid">
-                        {languages.slice(0, 30).map(language => (
+                        {languages.map(language => (
                           <button
                             key={language.code}
                             className={`model-option-card ${language.code === selectedLanguage ? 'selected' : ''}`}
