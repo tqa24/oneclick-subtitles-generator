@@ -75,7 +75,7 @@
   "srtOnlyMode": "Working with SRT only. No video source available.",
   "srtOnlyModeInfo": "Working with SRT file only. No video source available.",
   "srtOnlyModeHint": "You can still edit, translate, and download the subtitles.",
-  "processingWithCustomSubtitles": "Processing video with your provided subtitles...",
+  "processingWithCustomSubtitles": "Creating AI timing for your provided subtitles...",
   "processingWithoutAnalysis": "Processing video with default settings...",
   "analyzingVideo": "Analyzing video content...",
   "uploadingVideoToServer": "Uploading video to server...",

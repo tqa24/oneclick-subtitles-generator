@@ -13,7 +13,7 @@
   "contentBlocked": "Nội dung video không an toàn và đã bị Gemini chặn",
   "paidTierRequired": "Đã vượt quá hạn ngạch API. Vui lòng thử lại sau hoặc kiểm tra giới hạn khóa API của bạn.",
   "apiQuotaExceeded": "API key hiện tại đang quá tải, vui lòng dùng key từ gmail khác, hoặc đợi 1 thời gian, hoặc nạp tiền vào <a href='https://aistudio.google.com/usage?tab=billing' target='_blank' rel='noopener noreferrer'>Gemini API Billing</a>",
-  "geminiServiceUnavailable": "Phía Gemini hiện đang quá tải, hãy chờ và thử lại sau (mã lỗi 503)",
+  "geminiServiceUnavailable": "Phía Gemini hiện đang quá tải, hãy chờ hoặc đổi mô hình và thử lại sau (mã lỗi 503)",
   "invalidSrtFile": "Vui lòng chọn tập tin SRT hợp lệ",
   "invalidSubtitleFile": "Vui lòng chọn tập tin SRT hoặc JSON phụ đề hợp lệ",
   "invalidJsonFile": "Tập tin JSON phải chứa một mảng phụ đề",
