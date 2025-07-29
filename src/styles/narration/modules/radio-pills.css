@@ -1,10 +1,10 @@
 /* Radio pill group */
 .radio-pill-group {
   display: flex;
-  flex-wrap: nowrap; /* Keep buttons in a row */
+  flex-wrap: wrap; /* Allow wrapping for many methods */
   gap: 0.5rem;
   align-items: center;
-  height: 42px; /* Match the height of narration-row */
+  min-height: 42px; /* Minimum height, can grow with wrapping */
   justify-content: flex-start; /* Align to the left */
 }
 

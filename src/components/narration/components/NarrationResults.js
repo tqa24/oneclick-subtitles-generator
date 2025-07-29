@@ -543,29 +543,31 @@ const NarrationResults = ({
         {generationResults && generationResults.length > 0 && (
           <div className="speed-control-container">
             <span className="speed-control-label">{t('narration.speed', 'Speed')}:</span>
-            <div className="speed-control-slider-container">
-              <div className="speed-control-slider-track">
-                <div
-                  className="speed-control-slider-fill"
-                  style={{ width: `${((speedValue - 0.5) / 1.5) * 100}%` }}
-                ></div>
-                <div
-                  className="speed-control-slider-thumb"
-                  style={{ left: `${((speedValue - 0.5) / 1.5) * 100}%` }}
-                ></div>
+            <div className="slider-with-value">
+              <div className="custom-slider-container">
+                <div className="custom-slider-track">
+                  <div
+                    className="custom-slider-fill"
+                    style={{ width: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                  ></div>
+                  <div
+                    className="custom-slider-thumb"
+                    style={{ left: `${((speedValue - 0.5) / 1.5) * 100}%` }}
+                  ></div>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={speedValue}
+                  onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
+                  className="custom-slider-input"
+                  disabled={isProcessing}
+                />
               </div>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={speedValue}
-                onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
-                className="speed-control-slider-input"
-                disabled={isProcessing}
-              />
+              <div className="slider-value-display">{speedValue.toFixed(1)}x</div>
             </div>
-            <div className="speed-control-value">{speedValue.toFixed(1)}x</div>
             {isProcessing ? (
               <div className="speed-control-progress">
                 <div className="speed-control-spinner"></div>

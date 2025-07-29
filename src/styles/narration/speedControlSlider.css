@@ -1,4 +1,4 @@
-/* Speed Control Slider for Narration Results */
+/* Speed Control Slider for Narration Results - Using Modern Custom Slider */
 
 .speed-control-container {
   display: flex;
@@ -16,71 +16,36 @@
   white-space: nowrap;
 }
 
-.speed-control-slider-container {
+/* Use the modern custom slider styling - no need to redefine slider components */
+.speed-control-container .slider-with-value {
+  max-width: none; /* Override the default max-width for speed control */
   flex: 1;
-  position: relative;
+}
+
+/* Compact version for speed control */
+.speed-control-container .custom-slider-container {
   height: 32px; /* Compact height */
-  display: flex;
-  align-items: center;
-  /* Add minimal padding to ensure thumb is fully draggable at extremes */
   padding: 0 7px; /* Half thumb width (14px / 2 = 7px) */
+  width: 120px; /* Fixed width for speed control slider */
 }
 
-.speed-control-slider-track {
-  position: absolute;
-  width: 100%;
+.speed-control-container .custom-slider-track {
   height: 3px; /* Thinner track for compact design */
-  background-color: var(--md-outline-variant);
   border-radius: 1.5px;
-  top: 50%;
-  transform: translateY(-50%);
+  width: calc(100% - 14px); /* Adjust for compact padding */
+  left: 7px; /* Match compact padding */
 }
 
-.speed-control-slider-fill {
-  position: absolute;
-  height: 100%;
-  background-color: var(--md-primary);
+.speed-control-container .custom-slider-fill {
   border-radius: 1.5px 0 0 1.5px;
-  left: 0;
 }
 
-.speed-control-slider-thumb {
-  position: absolute;
+.speed-control-container .custom-slider-thumb {
   width: 14px; /* Smaller thumb for compact design */
   height: 14px;
-  background-color: var(--md-primary);
-  border-radius: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: var(--md-elevation-level1);
-  transition: all 0.2s ease;
-  cursor: pointer;
 }
 
-.speed-control-slider-thumb:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.speed-control-slider-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-}
-
-.speed-control-value {
-  min-width: 40px;
-  font-size: 0.9rem;
-  color: var(--md-primary);
-  font-weight: 500;
-  text-align: center;
-}
+/* Speed control value styling is now handled by .slider-value-display in custom-slider.css */
 
 .speed-control-apply-button {
   padding: 0.25rem 0.75rem;
@@ -157,15 +122,7 @@
   100% { opacity: 0.7; }
 }
 
-/* Dark mode specific styles */
-[data-theme="dark"] .speed-control-slider-track {
-  background-color: var(--md-surface-variant);
-}
-
-[data-theme="dark"] .speed-control-slider-fill,
-[data-theme="dark"] .speed-control-slider-thumb {
-  background-color: var(--md-primary);
-}
+/* Dark mode styles are now handled by the modern custom-slider.css */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

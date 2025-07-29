@@ -25,14 +25,13 @@
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 12px;
+  gap: 8px;
   height: 42px;
 }
 
 /* Custom slider styling is imported from components/custom-slider.css */
 
 .slider-value-display {
-  min-width: 70px;
   font-size: 0.9rem;
   color: var(--md-primary);
   font-weight: 500;

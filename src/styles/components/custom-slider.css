@@ -120,6 +120,7 @@
   display: flex;
   align-items: center;
   width: 100%;
+  max-width: 400px; /* Elegant width constraint like rest-time-slider */
   gap: 12px;
   height: 42px;
 }

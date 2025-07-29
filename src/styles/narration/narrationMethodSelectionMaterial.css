@@ -13,13 +13,14 @@
 
 .narration-method-selection .radio-pill-group {
   display: flex;
-  flex-wrap: nowrap; /* Keep buttons in a row */
+  flex-wrap: wrap; /* Allow wrapping for many methods */
   gap: 12px;
   align-items: center;
-  height: 42px; /* Match the height of narration-row */
+  min-height: 42px; /* Minimum height, can grow with wrapping */
   justify-content: flex-start; /* Align to the left */
   flex-shrink: 0;
   order: 1; /* Ensure it appears before error messages */
+  max-width: fit-content; /* Force wrapping when too many methods */
 }
 
 .narration-method-selection .radio-pill {
