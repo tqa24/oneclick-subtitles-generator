@@ -32,7 +32,7 @@
 .subtitle-selection-container .radio-pill label {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 5px 18px;
   height: 36px; /* Match the height of pill buttons in audio-controls */
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
@@ -60,6 +60,7 @@
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   border-color: var(--md-primary);
+  padding: 5px 18px;
 }
 
 .subtitle-selection-container .radio-pill input[type="radio"]:checked + label:hover {
@@ -300,6 +301,46 @@
   display: inline-flex;
   gap: 4px;
   margin-left: 8px;
+}
+
+/* Language refresh button */
+.language-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  padding: 4px;
+  background-color: var(--md-surface-3);
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  transition: all 0.2s var(--md-easing-standard);
+  font-size: 0;
+}
+
+.language-refresh-button:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+  transform: rotate(90deg);
+}
+
+.language-refresh-button:active {
+  transform: rotate(180deg) scale(0.95);
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label .language-refresh-button {
+  background-color: rgba(var(--md-on-primary-container-rgb), 0.1);
+  color: var(--md-on-primary-container);
+  border-color: rgba(var(--md-primary-rgb), 0.3);
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label .language-refresh-button:hover {
+  background-color: rgba(var(--md-on-primary-container-rgb), 0.2);
+  transform: rotate(90deg);
 }
 
 /* Loading animation */

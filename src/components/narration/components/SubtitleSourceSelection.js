@@ -8,7 +8,7 @@ import {
   getAvailableModels,
   MODEL_LIST_CHANGED_EVENT
 } from '../../../services/modelAvailabilityService';
-import { FiChevronDown } from 'react-icons/fi';
+import { FiChevronDown, FiRefreshCw } from 'react-icons/fi';
 import '../../../styles/narration/modelDropdown.css';
 import '../../../styles/narration/languageBadges.css';
 import '../../../styles/narration/narrationModelDropdown.css';
@@ -621,6 +621,36 @@ const SubtitleSourceSelection = ({
     );
   };
 
+  // Helper to render refresh button when no language is detected
+  const renderRefreshButton = (source, subtitles, isDetecting) => {
+    if (!subtitles || subtitles.length === 0 || isDetecting) return null;
+
+    const handleRefresh = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Trigger language detection for the specific source
+      if (source === 'original') {
+        setOriginalLanguage(null);
+        detectSubtitleLanguage(originalSubtitles, 'original');
+      } else if (source === 'translated') {
+        setTranslatedLanguage(null);
+        detectSubtitleLanguage(translatedSubtitles, 'translated');
+      }
+    };
+
+    return (
+      <button
+        className="language-refresh-button"
+        onClick={handleRefresh}
+        title={t('narration.detectLanguage', 'Detect language')}
+        type="button"
+      >
+        <FiRefreshCw size={12} />
+      </button>
+    );
+  };
+
   // Helper to render model languages in dropdown
   const renderModelLanguages = (model) => {
     // If model has multiple languages
@@ -664,6 +694,7 @@ const SubtitleSourceSelection = ({
                     <>
                       {t('narration.originalSubtitles', 'Original Subtitles')}
                       {originalLanguage && renderLanguageBadge(originalLanguage)}
+                      {!originalLanguage && renderRefreshButton('original', originalSubtitles, isDetectingOriginal)}
                     </>
                   )}
                 </label>
@@ -688,6 +719,7 @@ const SubtitleSourceSelection = ({
                     <>
                       {t('narration.translatedSubtitles', 'Translated Subtitles')}
                       {translatedLanguage && renderLanguageBadge(translatedLanguage)}
+                      {!translatedLanguage && hasTranslatedSubtitles && renderRefreshButton('translated', translatedSubtitles, isDetectingTranslated)}
                       {!hasTranslatedSubtitles && (
                         <span className="unavailable-indicator">
                           {t('narration.unavailable', '(unavailable)')}
