@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import '../../../styles/common/material-switch.css';
-import { detectSubtitleLanguage, getNarrationModelForLanguage } from '../../../services/gemini/languageDetectionService';
+import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import {
-  checkModelAvailabilityForLanguage,
   getAvailableModels,
   MODEL_LIST_CHANGED_EVENT
 } from '../../../services/modelAvailabilityService';
@@ -231,156 +230,24 @@ const SubtitleSourceSelection = ({
       }
     };
 
-    const handleDetectionComplete = async (event) => {
+    const handleDetectionComplete = (event) => {
       const { result, source } = event.detail;
 
       if (source === 'original') {
         setIsDetectingOriginal(false);
         setOriginalLanguage(result);
 
-        // If this is the currently selected source, check model availability and update
-        if (subtitleSource === 'original') {
-          // Clear any previous errors
-          setModelError(null);
-
-          // Get all language codes to check (primary + secondary)
-          const languagesToCheck = result.isMultiLanguage &&
-            Array.isArray(result.secondaryLanguages) &&
-            result.secondaryLanguages.length > 0
-              ? result.secondaryLanguages
-              : result.languageCode;
-
-          // First use the fallback function to get a suggested model
-          const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
-
-          // Then check if a model is actually available for this language
-          setIsCheckingModel(true);
-          try {
-            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
-            setIsCheckingModel(false);
-
-            if (modelAvailability.available) {
-              // Only auto-select if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = modelAvailability.modelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and model
-              if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelId);
-              }
-            } else {
-              // No model available, show error and use fallback
-              // Use a more user-friendly error message with language name
-              const languageName = result.languageName || result.languageCode;
-              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
-              setModelError(customError);
-
-              // Only auto-select fallback if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = suggestedModelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and fallback model
-              if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelId, customError);
-              }
-            }
-          } catch (error) {
-            // Error checking model availability, use fallback
-            setIsCheckingModel(false);
-            setModelError(`Error checking model availability: ${error.message}`);
-
-            // Only auto-select fallback if user hasn't manually chosen a model
-            let modelId = selectedModel;
-            if (!userHasManuallySelectedModel) {
-              modelId = suggestedModelId;
-              setSelectedModel(modelId);
-            }
-
-            // Call the callback with the detected language and fallback model
-            if (onLanguageDetected) {
-              onLanguageDetected(source, result, modelId, `Error checking model availability: ${error.message}`);
-            }
-          }
+        // If this is the currently selected source, call the callback
+        if (subtitleSource === 'original' && onLanguageDetected) {
+          onLanguageDetected(source, result);
         }
       } else if (source === 'translated') {
         setIsDetectingTranslated(false);
         setTranslatedLanguage(result);
 
-        // If this is the currently selected source, check model availability and update
-        if (subtitleSource === 'translated') {
-          // Clear any previous errors
-          setModelError(null);
-
-          // Get all language codes to check (primary + secondary)
-          const languagesToCheck = result.isMultiLanguage &&
-            Array.isArray(result.secondaryLanguages) &&
-            result.secondaryLanguages.length > 0
-              ? result.secondaryLanguages
-              : result.languageCode;
-
-          // First use the fallback function to get a suggested model
-          const suggestedModelId = getNarrationModelForLanguage(languagesToCheck);
-
-          // Then check if a model is actually available for this language
-          setIsCheckingModel(true);
-          try {
-            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
-            setIsCheckingModel(false);
-
-            if (modelAvailability.available) {
-              // Only auto-select if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = modelAvailability.modelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and model
-              if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelId);
-              }
-            } else {
-              // No model available, show error and use fallback
-              // Use a more user-friendly error message with language name
-              const languageName = result.languageName || result.languageCode;
-              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
-              setModelError(customError);
-
-              // Only auto-select fallback if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = suggestedModelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and fallback model
-              if (onLanguageDetected) {
-                onLanguageDetected(source, result, modelId, customError);
-              }
-            }
-          } catch (error) {
-            // Error checking model availability, use fallback
-            setIsCheckingModel(false);
-            setModelError(`Error checking model availability: ${error.message}`);
-
-            // Only auto-select fallback if user hasn't manually chosen a model
-            let modelId = selectedModel;
-            if (!userHasManuallySelectedModel) {
-              modelId = suggestedModelId;
-              setSelectedModel(modelId);
-            }
-
-            // Call the callback with the detected language and fallback model
-            if (onLanguageDetected) {
-              onLanguageDetected(source, result, modelId, `Error checking model availability: ${error.message}`);
-            }
-          }
+        // If this is the currently selected source, call the callback
+        if (subtitleSource === 'translated' && onLanguageDetected) {
+          onLanguageDetected(source, result);
         }
       }
     };
@@ -474,123 +341,17 @@ const SubtitleSourceSelection = ({
         if (!originalLanguage) {
           // Only detect if we don't already have the language
           detectSubtitleLanguage(originalSubtitles, 'original');
-        } else {
-          // We already have the language, check model availability
-          setIsCheckingModel(true);
-
-          try {
-            // Check if a model is available for this language
-            const languagesToCheck = originalLanguage.isMultiLanguage &&
-              Array.isArray(originalLanguage.secondaryLanguages) &&
-              originalLanguage.secondaryLanguages.length > 0
-                ? originalLanguage.secondaryLanguages
-                : originalLanguage.languageCode;
-
-            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
-            setIsCheckingModel(false);
-
-            if (modelAvailability.available) {
-              // Only auto-select if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = modelAvailability.modelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and model
-              if (onLanguageDetected) {
-                onLanguageDetected('original', originalLanguage, modelId);
-              }
-            } else {
-              // No model available, show error and use fallback
-              const fallbackModelId = getNarrationModelForLanguage(originalLanguage.languageCode);
-
-              // Use a more user-friendly error message with language name
-              const languageName = originalLanguage.languageName || originalLanguage.languageCode;
-              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
-              setModelError(customError);
-
-              // Only auto-select fallback if user hasn't manually chosen a model
-              let modelId = selectedModel;
-              if (!userHasManuallySelectedModel) {
-                modelId = fallbackModelId;
-                setSelectedModel(modelId);
-              }
-
-              // Call the callback with the detected language and fallback model
-              if (onLanguageDetected) {
-                onLanguageDetected('original', originalLanguage, modelId, customError);
-              }
-            }
-          } catch (error) {
-            // Error checking model availability, use fallback
-            setIsCheckingModel(false);
-            const fallbackModelId = getNarrationModelForLanguage(originalLanguage.languageCode);
-            setModelError(`Error checking model availability: ${error.message}`);
-
-            setSelectedModel(fallbackModelId);
-
-            // Call the callback with the detected language and fallback model
-            if (onLanguageDetected) {
-              onLanguageDetected('original', originalLanguage, fallbackModelId, `Error checking model availability: ${error.message}`);
-            }
-          }
+        } else if (onLanguageDetected) {
+          // We already have the language, just call the callback
+          onLanguageDetected('original', originalLanguage);
         }
       } else if (source === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
         if (!translatedLanguage) {
           // Only detect if we don't already have the language
           detectSubtitleLanguage(translatedSubtitles, 'translated');
-        } else {
-          // We already have the language, check model availability
-          setIsCheckingModel(true);
-
-          try {
-            // Check if a model is available for this language
-            const languagesToCheck = translatedLanguage.isMultiLanguage &&
-              Array.isArray(translatedLanguage.secondaryLanguages) &&
-              translatedLanguage.secondaryLanguages.length > 0
-                ? translatedLanguage.secondaryLanguages
-                : translatedLanguage.languageCode;
-
-            const modelAvailability = await checkModelAvailabilityForLanguage(languagesToCheck);
-            setIsCheckingModel(false);
-
-            if (modelAvailability.available) {
-              // Auto-select the best available model for this language
-              setSelectedModel(modelAvailability.modelId);
-
-              // Call the callback with the detected language and model
-              if (onLanguageDetected) {
-                onLanguageDetected('translated', translatedLanguage, modelAvailability.modelId);
-              }
-            } else {
-              // No model available, show error and use fallback
-              const fallbackModelId = getNarrationModelForLanguage(translatedLanguage.languageCode);
-
-              // Use a more user-friendly error message with language name
-              const languageName = translatedLanguage.languageName || translatedLanguage.languageCode;
-              const customError = t('narration.modelNotAvailableError', 'Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.', { language: languageName });
-              setModelError(customError);
-              setSelectedModel(fallbackModelId);
-
-              // Call the callback with the detected language and fallback model
-              if (onLanguageDetected) {
-                onLanguageDetected('translated', translatedLanguage, fallbackModelId, customError);
-              }
-            }
-          } catch (error) {
-            // Error checking model availability, use fallback
-            setIsCheckingModel(false);
-            const fallbackModelId = getNarrationModelForLanguage(translatedLanguage.languageCode);
-            setModelError(`Error checking model availability: ${error.message}`);
-
-            setSelectedModel(fallbackModelId);
-
-            // Call the callback with the detected language and fallback model
-            if (onLanguageDetected) {
-              onLanguageDetected('translated', translatedLanguage, fallbackModelId, `Error checking model availability: ${error.message}`);
-            }
-          }
+        } else if (onLanguageDetected) {
+          // We already have the language, just call the callback
+          onLanguageDetected('translated', translatedLanguage);
         }
       }
     }
