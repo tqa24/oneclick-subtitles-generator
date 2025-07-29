@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
+import VoiceSelectionModal from './VoiceSelectionModal';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
 import '../../../styles/narration/narrationModelDropdown.css';
@@ -280,107 +281,15 @@ const EdgeTTSControls = ({
 
       {/* Voice Selection Modal */}
       {isVoiceModalOpen && (
-        <div className="modal-overlay" onClick={closeVoiceModal}>
-          <div className="model-selection-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{t('narration.selectVoice', 'Select narration voice')}</h3>
-              <button className="modal-close-btn" onClick={closeVoiceModal}>×</button>
-            </div>
-            <div className="modal-content">
-              {voices.length > 0 ? (
-                <>
-                  {/* Recommended voices based on detected language */}
-                  {detectedLanguage?.languageCode && (
-                    <>
-                      <div className="model-section">
-                        <h4 className="model-section-title">
-                          {t('narration.recommendedVoices', 'Recommended for {{language}}', {
-                            language: detectedLanguage.languageName || detectedLanguage.languageCode
-                          })}
-                        </h4>
-                        <div className="model-options-grid">
-                          {voices
-                            .filter(voice =>
-                              voice.language === detectedLanguage.languageCode ||
-                              voice.locale.startsWith(detectedLanguage.languageCode + '-')
-                            )
-                            .map(voice => (
-                              <button
-                                key={voice.name}
-                                className={`model-option-card ${voice.name === selectedVoice ? 'selected' : ''}`}
-                                onClick={() => handleVoiceSelect(voice.name)}
-                              >
-                                <div className="model-option-name">{voice.short_name}</div>
-                                <div className="model-option-description">
-                                  {voice.gender} • {voice.locale}
-                                </div>
-                              </button>
-                            ))
-                          }
-                        </div>
-                      </div>
-
-                      {/* Other voices */}
-                      <div className="model-section">
-                        <h4 className="model-section-title">
-                          {t('narration.otherVoices', 'Other voices')}
-                        </h4>
-                        <div className="model-options-grid">
-                          {voices
-                            .filter(voice =>
-                              voice.language !== detectedLanguage.languageCode &&
-                              !voice.locale.startsWith(detectedLanguage.languageCode + '-')
-                            )
-                            .map(voice => (
-                              <button
-                                key={voice.name}
-                                className={`model-option-card ${voice.name === selectedVoice ? 'selected' : ''}`}
-                                onClick={() => handleVoiceSelect(voice.name)}
-                              >
-                                <div className="model-option-name">{voice.short_name}</div>
-                                <div className="model-option-description">
-                                  {voice.gender} • {voice.locale}
-                                </div>
-                              </button>
-                            ))
-                          }
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* If no language detected, show all voices grouped by language */}
-                  {!detectedLanguage?.languageCode && (
-                    <div className="model-section">
-                      <h4 className="model-section-title">
-                        {t('narration.availableVoices', 'Available voices')}
-                      </h4>
-                      <div className="model-options-grid">
-                        {voices.map(voice => (
-                          <button
-                            key={voice.name}
-                            className={`model-option-card ${voice.name === selectedVoice ? 'selected' : ''}`}
-                            onClick={() => handleVoiceSelect(voice.name)}
-                          >
-                            <div className="model-option-name">{voice.short_name}</div>
-                            <div className="model-option-description">
-                              {voice.gender} • {voice.locale}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="no-models-message">
-                  <div className="model-option-name">{t('narration.noVoicesAvailable', 'No voices available')}</div>
-                  <div className="model-option-description">{t('narration.checkConnection', 'Please check your connection and try again')}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <VoiceSelectionModal
+          isOpen={isVoiceModalOpen}
+          onClose={closeVoiceModal}
+          voices={voices}
+          selectedVoice={selectedVoice}
+          onVoiceSelect={handleVoiceSelect}
+          detectedLanguage={detectedLanguage}
+          t={t}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import LanguageSelectionModal from './LanguageSelectionModal';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
 import '../../../styles/narration/narrationModelDropdown.css';
@@ -287,96 +288,15 @@ const GTTSControls = ({
 
       {/* Language Selection Modal */}
       {isLanguageModalOpen && (
-        <div className="modal-overlay" onClick={closeLanguageModal}>
-          <div className="model-selection-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{t('narration.selectLanguage', 'Select narration voice')}</h3>
-              <button className="modal-close-btn" onClick={closeLanguageModal}>×</button>
-            </div>
-            <div className="modal-content">
-              {languages.length > 0 ? (
-                <>
-                  {/* Recommended language based on detected language */}
-                  {detectedLanguage?.languageCode && (
-                    <>
-                      <div className="model-section">
-                        <h4 className="model-section-title">
-                          {t('narration.recommendedLanguage', 'Recommended for {{language}}', {
-                            language: detectedLanguage.languageName || detectedLanguage.languageCode
-                          })}
-                        </h4>
-                        <div className="model-options-grid">
-                          {languages
-                            .filter(lang => lang.code === detectedLanguage.languageCode)
-                            .map(language => (
-                              <button
-                                key={language.code}
-                                className={`model-option-card ${language.code === selectedLanguage ? 'selected' : ''}`}
-                                onClick={() => handleLanguageSelect(language.code)}
-                              >
-                                <div className="model-option-name">{language.name}</div>
-                                <div className="model-option-description">{language.code}</div>
-                              </button>
-                            ))
-                          }
-                        </div>
-                      </div>
-
-                      {/* Other languages */}
-                      <div className="model-section">
-                        <h4 className="model-section-title">
-                          {t('narration.otherLanguages', 'Other languages')}
-                        </h4>
-                        <div className="model-options-grid">
-                          {languages
-                            .filter(lang => lang.code !== detectedLanguage.languageCode)
-                            .slice(0, 20) // Limit to first 20 to avoid overwhelming UI
-                            .map(language => (
-                              <button
-                                key={language.code}
-                                className={`model-option-card ${language.code === selectedLanguage ? 'selected' : ''}`}
-                                onClick={() => handleLanguageSelect(language.code)}
-                              >
-                                <div className="model-option-name">{language.name}</div>
-                                <div className="model-option-description">{language.code}</div>
-                              </button>
-                            ))
-                          }
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* If no language detected, show all languages */}
-                  {!detectedLanguage?.languageCode && (
-                    <div className="model-section">
-                      <h4 className="model-section-title">
-                        {t('narration.availableLanguages', 'Available languages')}
-                      </h4>
-                      <div className="model-options-grid">
-                        {languages.map(language => (
-                          <button
-                            key={language.code}
-                            className={`model-option-card ${language.code === selectedLanguage ? 'selected' : ''}`}
-                            onClick={() => handleLanguageSelect(language.code)}
-                          >
-                            <div className="model-option-name">{language.name}</div>
-                            <div className="model-option-description">{language.code}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="no-models-message">
-                  <div className="model-option-name">{t('narration.noLanguagesAvailable', 'No languages available')}</div>
-                  <div className="model-option-description">{t('narration.checkConnection', 'Please check your connection and try again')}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <LanguageSelectionModal
+          isOpen={isLanguageModalOpen}
+          onClose={closeLanguageModal}
+          languages={languages}
+          selectedLanguage={selectedLanguage}
+          onLanguageSelect={handleLanguageSelect}
+          detectedLanguage={detectedLanguage}
+          t={t}
+        />
       )}
     </div>
   );

@@ -33,7 +33,7 @@
   "downloadAligned": "Download Aligned",
   "downloading": "Downloading audio...",
   "noResults": "No narration results to download",
-  "cancel": "Cancel Generation",
+  "cancel": "Cancel",
   "generationCancelled": "Narration generation cancelled by user",
   "failed": "Generation failed",
   "noReferenceError": "Please set up reference audio using one of the options above",
