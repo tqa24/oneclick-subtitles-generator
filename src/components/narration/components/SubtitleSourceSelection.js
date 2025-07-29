@@ -237,16 +237,18 @@ const SubtitleSourceSelection = ({
         setIsDetectingOriginal(false);
         setOriginalLanguage(result);
 
-        // If this is the currently selected source, call the callback
-        if (subtitleSource === 'original' && onLanguageDetected) {
+        // Always call the callback when language is detected, regardless of current selection
+        // This ensures modals update their recommended sections
+        if (onLanguageDetected) {
           onLanguageDetected(source, result);
         }
       } else if (source === 'translated') {
         setIsDetectingTranslated(false);
         setTranslatedLanguage(result);
 
-        // If this is the currently selected source, call the callback
-        if (subtitleSource === 'translated' && onLanguageDetected) {
+        // Always call the callback when language is detected, regardless of current selection
+        // This ensures modals update their recommended sections
+        if (onLanguageDetected) {
           onLanguageDetected(source, result);
         }
       }
