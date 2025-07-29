@@ -107,6 +107,24 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
       }
     } catch (error) {
       console.error('Error optimizing video:', error);
+
+      // Check if this is a Gemini API error - if so, re-throw it instead of treating it as optimization error
+      if (error.message && (
+        error.message.includes('API error:') ||
+        error.message.includes('Gemini') ||
+        error.message.includes('503') ||
+        error.message.includes('Service Unavailable') ||
+        error.message.includes('overloaded') ||
+        error.message.includes('UNAVAILABLE') ||
+        error.message.includes('quota') ||
+        error.message.includes('RESOURCE_EXHAUSTED') ||
+        error.isOverloaded
+      )) {
+        // This is a Gemini API error, not a video optimization error - re-throw it
+        throw error;
+      }
+
+      // This is actually a video optimization error
       onStatusUpdate({
         message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
         type: 'warning'
