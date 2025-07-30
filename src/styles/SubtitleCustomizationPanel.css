@@ -76,8 +76,8 @@
 
 /* Label column - override narration layout.css with more specific selector */
 .subtitle-customization-panel .customization-row .row-label {
-  flex: 0 0 100px !important;
-  min-width: 100px !important;
+  flex: 0 0 80px !important;
+  min-width: 80px !important;
   text-align: right;
   display: flex;
   align-items: center;
@@ -100,10 +100,9 @@
 .customization-row .row-content {
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 100px - 1rem);
   display: flex;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Preset buttons */
@@ -1163,18 +1162,34 @@
   gap: 0.75rem;
 }
 
-.color-picker {
-  width: 40px;
-  height: 32px;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 6px;
+input[type="color"].color-picker {
+  width: 32px !important;
+  height: 32px !important;
+  border: 1px solid var(--md-outline-variant) !important;
+  border-radius: 6px !important;
   cursor: pointer;
-  background: none;
+  background: none !important;
+  flex-shrink: 0;
+  padding: 0 !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="color"].color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+}
+
+input[type="color"].color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
 }
 
 .color-input {
-  flex: 1;
-  min-width: 80px;
+  width: auto;
+  min-width: 90px;
+  max-width: 90px;
   padding: 0.5rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: 6px;

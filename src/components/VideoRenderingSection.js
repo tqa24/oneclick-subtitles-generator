@@ -76,7 +76,7 @@ const VideoRenderingSection = ({
     const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
 
     // Constrain between 30% and 80%
-    const constrainedWidth = Math.min(Math.max(newLeftWidth, 30), 80);
+    const constrainedWidth = Math.min(Math.max(newLeftWidth, 30), 75);
     setLeftPanelWidth(constrainedWidth);
   };
 
