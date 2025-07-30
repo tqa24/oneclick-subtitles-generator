@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { calculateThumbPosition, calculateFillWidth } from '../../utils/sliderUtils';
+import StandardSlider from '../common/StandardSlider';
 
 /**
  * Split duration slider component
@@ -58,31 +58,22 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
         <div className="split-duration-slider-container">
           <div className="slider-control-row">
             <div className="slider-with-value">
-              <div className="custom-slider-container split-duration-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${(splitDuration / 20) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${(splitDuration / 20) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="20"
-                  step="1"
-                  value={splitDuration}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    onSplitDurationChange(value);
-                  }}
-                  className="custom-slider-input"
-                  title={t('translation.splitDurationTooltip', 'Split subtitles into chunks for translation to avoid token limits')}
-                />
-              </div>
+              <StandardSlider
+                value={splitDuration}
+                onChange={(value) => onSplitDurationChange(parseInt(value))}
+                min={0}
+                max={20}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state={disabled ? "Disabled" : "Enabled"}
+                showValueIndicator={false} // We'll use custom value display
+                showIcon={false}
+                showStops={false}
+                className="split-duration-slider"
+                id="split-duration-slider"
+                ariaLabel={t('translation.splitDuration', 'Split Duration')}
+              />
               <div className="slider-value-display">
                 {splitDuration === 0
                   ? t('translation.noSplit', 'No Split')

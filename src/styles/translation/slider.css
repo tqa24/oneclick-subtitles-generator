@@ -25,17 +25,21 @@
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 8px;
-  height: 42px;
+  max-width: 420px; /* Reduced: StandardSlider + smaller gap + compact value */
+  gap: 6px; /* Smaller gap for closer spacing */
+  height: 44px; /* Match StandardSlider height */
 }
 
 /* Custom slider styling is imported from components/custom-slider.css */
 
 .slider-value-display {
+  min-width: 50px; /* Smaller minimum width, closer to track */
   font-size: 0.9rem;
   color: var(--md-primary);
   font-weight: 500;
   text-align: right;
+  flex-shrink: 0; /* Don't allow shrinking */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 /* Compact segment preview styling */

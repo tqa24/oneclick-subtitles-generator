@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
 import { FiCpu } from 'react-icons/fi';
 import MaterialSwitch from '../../common/MaterialSwitch';
@@ -127,29 +128,22 @@ const VideoProcessingTab = ({
               </p>
               <div className="segment-duration-slider-container">
                 <div className="slider-with-value">
-                  <div className="custom-slider-container segment-duration-slider">
-                    <div className="custom-slider-track">
-                      <div
-                        className="custom-slider-fill"
-                        style={{ width: `${((segmentDuration - 1) / (45 - 1)) * 100}%` }}
-                      ></div>
-                      <div
-                        className="custom-slider-thumb"
-                        style={{ left: `${((segmentDuration - 1) / (45 - 1)) * 100}%` }}
-                      ></div>
-                    </div>
-                    <input
-                      type="range"
-                      id="segment-duration"
-                      min="1"
-                      max="45"
-                      step="1"
-                      value={segmentDuration}
-                      onChange={(e) => setSegmentDuration(parseInt(e.target.value))}
-                      className="custom-slider-input"
-                      title={`${t('settings.thinkingRange', 'Range')}: 1 - 45 ${t('settings.minutes', 'minutes')}`}
-                    />
-                  </div>
+                  <StandardSlider
+                    value={segmentDuration}
+                    onChange={(value) => setSegmentDuration(parseInt(value))}
+                    min={1}
+                    max={45}
+                    step={1}
+                    orientation="Horizontal"
+                    size="XSmall"
+                    state="Enabled"
+                    showValueIndicator={false} // Using custom value display
+                    showIcon={false}
+                    showStops={false}
+                    className="segment-duration-slider"
+                    id="segment-duration"
+                    ariaLabel={t('settings.segmentDuration', 'Segment Duration')}
+                  />
                   <div className="slider-value-display">
                     {segmentDuration} {t('settings.minutes', 'minutes')}
                   </div>
@@ -461,28 +455,22 @@ const VideoProcessingTab = ({
               {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
-                    <div className="custom-slider-container thinking-budget-slider">
-                      <div className="custom-slider-track">
-                        <div
-                          className="custom-slider-fill"
-                          style={{ width: `${getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}%` }}
-                        ></div>
-                        <div
-                          className="custom-slider-thumb"
-                          style={{ left: `${getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}%` }}
-                        ></div>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}
-                        onChange={(e) => handleSliderChange('gemini-2.5-pro', parseInt(e.target.value))}
-                        className="custom-slider-input"
-                        title={`${t('settings.thinkingRange', 'Range')}: 128 - 32,768 ${t('settings.tokens', 'tokens')}`}
-                      />
-                    </div>
+                    <StandardSlider
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-pro', parseInt(value))}
+                      min={0}
+                      max={100}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false} // Using custom value display
+                      showIcon={false}
+                      showStops={false}
+                      className="thinking-budget-slider"
+                      id="thinking-budget-pro"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                    />
                     <div className="slider-value-display">
                       {thinkingBudgets['gemini-2.5-pro']} {t('settings.tokens', 'tokens')}
                     </div>
@@ -516,28 +504,22 @@ const VideoProcessingTab = ({
               {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
-                    <div className="custom-slider-container thinking-budget-slider">
-                      <div className="custom-slider-track">
-                        <div
-                          className="custom-slider-fill"
-                          style={{ width: `${getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}%` }}
-                        ></div>
-                        <div
-                          className="custom-slider-thumb"
-                          style={{ left: `${getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}%` }}
-                        ></div>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}
-                        onChange={(e) => handleSliderChange('gemini-2.5-flash', parseInt(e.target.value))}
-                        className="custom-slider-input"
-                        title={`${t('settings.thinkingRange', 'Range')}: 1 - 24,576 ${t('settings.tokens', 'tokens')}`}
-                      />
-                    </div>
+                    <StandardSlider
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-flash', parseInt(value))}
+                      min={0}
+                      max={100}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false} // Using custom value display
+                      showIcon={false}
+                      showStops={false}
+                      className="thinking-budget-slider"
+                      id="thinking-budget-flash"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                    />
                     <div className="slider-value-display">
                       {thinkingBudgets['gemini-2.5-flash']} {t('settings.tokens', 'tokens')}
                     </div>
@@ -571,28 +553,22 @@ const VideoProcessingTab = ({
               {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
-                    <div className="custom-slider-container thinking-budget-slider">
-                      <div className="custom-slider-track">
-                        <div
-                          className="custom-slider-fill"
-                          style={{ width: `${getSliderValue(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'], 'gemini-2.5-flash-lite-preview-06-17')}%` }}
-                        ></div>
-                        <div
-                          className="custom-slider-thumb"
-                          style={{ left: `${getSliderValue(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'], 'gemini-2.5-flash-lite-preview-06-17')}%` }}
-                        ></div>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'], 'gemini-2.5-flash-lite-preview-06-17')}
-                        onChange={(e) => handleSliderChange('gemini-2.5-flash-lite-preview-06-17', parseInt(e.target.value))}
-                        className="custom-slider-input"
-                        title={`${t('settings.thinkingRange', 'Range')}: 512 - 24,576 ${t('settings.tokens', 'tokens')}`}
-                      />
-                    </div>
+                    <StandardSlider
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'], 'gemini-2.5-flash-lite-preview-06-17')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-flash-lite-preview-06-17', parseInt(value))}
+                      min={0}
+                      max={100}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false} // Using custom value display
+                      showIcon={false}
+                      showStops={false}
+                      className="thinking-budget-slider"
+                      id="thinking-budget-lite"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                    />
                     <div className="slider-value-display">
                       {thinkingBudgets['gemini-2.5-flash-lite-preview-06-17']} {t('settings.tokens', 'tokens')}
                     </div>

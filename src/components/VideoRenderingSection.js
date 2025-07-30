@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from './common/StandardSlider';
 import SubtitleCustomizationPanel, { defaultCustomization } from './SubtitleCustomizationPanel';
 import RemotionVideoPreview from './RemotionVideoPreview';
 import QueueManagerPanel from './QueueManagerPanel';
@@ -1400,32 +1401,23 @@ const VideoRenderingSection = ({
               {/* Original Audio Volume Control */}
               <div className="compact-volume-control">
                 <label className="volume-label">{t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%</label>
-                <div
-                  className="custom-slider-container original-audio-volume-slider"
-                  onDragEnter={(e) => e.stopPropagation()}
-                  onDragLeave={(e) => e.stopPropagation()}
-                  onDragOver={(e) => e.stopPropagation()}
-                  onDrop={(e) => e.stopPropagation()}
-                >
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${renderSettings.originalAudioVolume}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${renderSettings.originalAudioVolume}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={renderSettings.originalAudioVolume}
-                    onChange={(e) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(e.target.value) }))}
-                    className="custom-slider-input"
-                  />
-                </div>
+                <StandardSlider
+                  value={renderSettings.originalAudioVolume}
+                  onChange={(value) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(value) }))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state="Enabled"
+                  width="compact"
+                  showValueIndicator={false} // Using custom label
+                  showIcon={false}
+                  showStops={false}
+                  className="original-audio-volume-slider"
+                  id="original-audio-volume"
+                  ariaLabel={t('videoRendering.originalAudioVolume', 'Original Audio Volume')}
+                />
               </div>
             </div>
 
@@ -1506,33 +1498,23 @@ const VideoRenderingSection = ({
               {/* Narration Volume Control */}
               <div className="compact-volume-control">
                 <label className="volume-label">{t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%</label>
-                <div
-                  className={`custom-slider-container narration-volume-slider ${selectedNarration === 'none' ? 'disabled' : ''}`}
-                  onDragEnter={(e) => e.stopPropagation()}
-                  onDragLeave={(e) => e.stopPropagation()}
-                  onDragOver={(e) => e.stopPropagation()}
-                  onDrop={(e) => e.stopPropagation()}
-                >
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${renderSettings.narrationVolume}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${renderSettings.narrationVolume}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={renderSettings.narrationVolume}
-                    onChange={(e) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(e.target.value) }))}
-                    className="custom-slider-input"
-                    disabled={selectedNarration === 'none'}
-                  />
-                </div>
+                <StandardSlider
+                  value={renderSettings.narrationVolume}
+                  onChange={(value) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(value) }))}
+                  min={0}
+                  max={100}
+                  step={1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state={selectedNarration === 'none' ? "Disabled" : "Enabled"}
+                  width="compact"
+                  showValueIndicator={false} // Using custom label
+                  showIcon={false}
+                  showStops={false}
+                  className="narration-volume-slider"
+                  id="narration-volume"
+                  ariaLabel={t('videoRendering.narrationVolume', 'Narration Volume')}
+                />
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
@@ -544,28 +545,23 @@ const NarrationResults = ({
           <div className="speed-control-container">
             <span className="speed-control-label">{t('narration.speed', 'Speed')}:</span>
             <div className="slider-with-value">
-              <div className="custom-slider-container">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${((speedValue - 0.5) / 1.5) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${((speedValue - 0.5) / 1.5) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2.0"
-                  step="0.1"
-                  value={speedValue}
-                  onChange={(e) => setSpeedValue(parseFloat(e.target.value))}
-                  className="custom-slider-input"
-                  disabled={isProcessing}
-                />
-              </div>
+              <StandardSlider
+                value={speedValue}
+                onChange={(value) => setSpeedValue(parseFloat(value))}
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                orientation="Horizontal"
+                size="XSmall"
+                state={isProcessing ? "Disabled" : "Enabled"}
+                width="compact" // Compact width for speed control
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="speed-control-slider"
+                id="narration-speed-control"
+                ariaLabel={t('narration.speed', 'Speed')}
+              />
               <div className="slider-value-display">{speedValue.toFixed(1)}x</div>
             </div>
             {isProcessing ? (

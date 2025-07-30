@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 import { groupFontsByCategory, getFontSupportFlags } from './fontOptions';
 import FontSelectionModal from './FontSelectionModal';
 
@@ -56,26 +57,22 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fontSize}px</span>
-            <div className="custom-slider-container font-size-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.fontSize - 8) / (120 - 8)) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="8"
-                max="120"
-                value={customization.fontSize}
-                onChange={(e) => updateCustomization({ fontSize: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.fontSize}
+              onChange={(value) => updateCustomization({ fontSize: parseInt(value) })}
+              min={8}
+              max={120}
+              step={1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="font-size-slider"
+              id="font-size-slider"
+              ariaLabel={t('videoRendering.fontSize', 'Font Size')}
+            />
           </div>
         </div>
       </div>
@@ -88,27 +85,22 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fontWeight}</span>
-            <div className="custom-slider-container font-weight-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.fontWeight - 100) / (900 - 100)) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="100"
-                max="900"
-                step="100"
-                value={customization.fontWeight}
-                onChange={(e) => updateCustomization({ fontWeight: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.fontWeight}
+              onChange={(value) => updateCustomization({ fontWeight: parseInt(value) })}
+              min={100}
+              max={900}
+              step={100}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="font-weight-slider"
+              id="font-weight-slider"
+              ariaLabel={t('videoRendering.fontWeight', 'Font Weight')}
+            />
           </div>
         </div>
       </div>
@@ -163,27 +155,22 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.lineHeight}</span>
-            <div className="custom-slider-container line-height-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.lineHeight - 0.5) / (3.0 - 0.5)) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0.5"
-                max="3.0"
-                step="0.1"
-                value={customization.lineHeight}
-                onChange={(e) => updateCustomization({ lineHeight: parseFloat(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.lineHeight}
+              onChange={(value) => updateCustomization({ lineHeight: parseFloat(value) })}
+              min={0.5}
+              max={3.0}
+              step={0.1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="line-height-slider"
+              id="line-height-slider"
+              ariaLabel={t('videoRendering.lineHeight', 'Line Height')}
+            />
           </div>
         </div>
       </div>
@@ -196,27 +183,22 @@ const TextControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.letterSpacing}px</span>
-            <div className="custom-slider-container letter-spacing-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.letterSpacing + 10) / 20) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="-10"
-                max="10"
-                step="0.5"
-                value={customization.letterSpacing}
-                onChange={(e) => updateCustomization({ letterSpacing: parseFloat(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.letterSpacing}
+              onChange={(value) => updateCustomization({ letterSpacing: parseFloat(value) })}
+              min={-10}
+              max={10}
+              step={0.5}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="letter-spacing-slider"
+              id="letter-spacing-slider"
+              ariaLabel={t('videoRendering.letterSpacing', 'Letter Spacing')}
+            />
           </div>
         </div>
       </div>

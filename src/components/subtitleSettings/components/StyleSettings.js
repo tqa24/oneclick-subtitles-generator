@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import '../../../styles/common/material-switch.css';
 
@@ -31,28 +32,22 @@ const StyleSettings = ({ settings, handleSettingChange, textAlignOptions, textTr
       <div className="setting-group">
         <label htmlFor="opacity">{t('subtitleSettings.opacity', 'Opacity')}</label>
         <div className="slider-with-value">
-          <div className="custom-slider-container">
-            <div className="custom-slider-track">
-              <div
-                className="custom-slider-fill"
-                style={{ width: `${settings.opacity * 100}%` }}
-              ></div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${settings.opacity * 100}%` }}
-              ></div>
-            </div>
-            <input
-              type="range"
-              id="opacity"
-              min="0"
-              max="1"
-              step="0.1"
-              value={settings.opacity}
-              onChange={(e) => handleSettingChange('opacity', e.target.value)}
-              className="custom-slider-input"
-            />
-          </div>
+          <StandardSlider
+            value={parseFloat(settings.opacity)}
+            onChange={(value) => handleSettingChange('opacity', value.toString())}
+            min={0}
+            max={1}
+            step={0.1}
+            orientation="Horizontal"
+            size="XSmall"
+            state="Enabled"
+            showValueIndicator={false} // Using custom value display
+            showIcon={false}
+            showStops={false}
+            className="opacity-slider"
+            id="opacity"
+            ariaLabel={t('subtitleSettings.opacity', 'Opacity')}
+          />
           <div className="slider-value-display">{Math.round(settings.opacity * 100)}%</div>
         </div>
       </div>

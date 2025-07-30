@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 import MaterialSwitch from '../common/MaterialSwitch';
 import '../../styles/common/material-switch.css';
 
@@ -51,26 +52,22 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.textShadowBlur}px</span>
-              <div className="custom-slider-container shadow-blur-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${(customization.textShadowBlur / 50) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${(customization.textShadowBlur / 50) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="50"
-                  value={customization.textShadowBlur}
-                  onChange={(e) => updateCustomization({ textShadowBlur: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.textShadowBlur}
+                onChange={(value) => updateCustomization({ textShadowBlur: parseInt(value) })}
+                min={0}
+                max={50}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state="Enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="shadow-blur-slider"
+                id="shadow-blur-slider"
+                ariaLabel={t('videoRendering.shadowBlur', 'Shadow Blur')}
+              />
             </div>
           </div>
         </div>

@@ -1,49 +1,56 @@
 /**
  * Universal slider drag handler to ensure smooth thumb movement
  * Adds/removes 'dragging' class to disable transitions during interaction
+ * Updated to support both legacy custom-slider and new StandardSlider components
  */
 
-// Initialize drag handlers for all custom sliders
+// Initialize drag handlers for all sliders
 export const initializeSliderDragHandlers = () => {
-  // Handle all existing sliders
-  document.querySelectorAll('.custom-slider-container').forEach(addSliderDragHandler);
-  
+  // Handle all existing sliders (both legacy and new)
+  document.querySelectorAll('.custom-slider-container, .standard-slider-container').forEach(addSliderDragHandler);
+
   // Handle dynamically added sliders using MutationObserver
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          // Check if the added node is a slider container
-          if (node.classList && node.classList.contains('custom-slider-container')) {
+          // Check if the added node is a slider container (legacy or new)
+          if (node.classList && (
+            node.classList.contains('custom-slider-container') ||
+            node.classList.contains('standard-slider-container')
+          )) {
             addSliderDragHandler(node);
           }
           // Check for slider containers within the added node
-          node.querySelectorAll && node.querySelectorAll('.custom-slider-container').forEach(addSliderDragHandler);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('.custom-slider-container, .standard-slider-container').forEach(addSliderDragHandler);
+          }
         }
       });
     });
   });
-  
+
   observer.observe(document.body, {
     childList: true,
     subtree: true
   });
-  
+
   return observer;
 };
 
-// Add drag handler to a specific slider container
+// Add drag handler to a specific slider container (legacy or new)
 const addSliderDragHandler = (sliderContainer) => {
-  const input = sliderContainer.querySelector('.custom-slider-input');
+  // Support both legacy and new slider input selectors
+  const input = sliderContainer.querySelector('.custom-slider-input, .standard-slider-input');
   if (!input || input.hasAttribute('data-drag-handler-added')) return;
-  
+
   // Mark as handled to avoid duplicate handlers
   input.setAttribute('data-drag-handler-added', 'true');
-  
+
   const startDragging = () => {
     sliderContainer.classList.add('dragging');
   };
-  
+
   const stopDragging = () => {
     sliderContainer.classList.remove('dragging');
   };

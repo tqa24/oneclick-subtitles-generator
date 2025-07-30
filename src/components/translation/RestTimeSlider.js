@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 
 /**
  * Rest time slider component
@@ -21,46 +22,22 @@ const RestTimeSlider = ({ restTime, onRestTimeChange, disabled = false }) => {
         <div className="split-duration-slider-container">
           <div className="slider-control-row">
             <div className="slider-with-value">
-              {!disabled ? (
-                <div className="custom-slider-container rest-time-slider">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${(restTime / 20) * 100}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${(restTime / 20) * 100}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="1"
-                    value={restTime}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      onRestTimeChange(value);
-                    }}
-                    className="custom-slider-input"
-                    title={t('translation.restTimeTooltip', 'Delay between requests when translating')}
-                  />
-                </div>
-              ) : (
-                <div className="custom-slider-container rest-time-slider disabled">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${(restTime / 20) * 100}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${(restTime / 20) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+              <StandardSlider
+                value={restTime}
+                onChange={(value) => onRestTimeChange(parseInt(value))}
+                min={0}
+                max={20}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state={disabled ? "Disabled" : "Enabled"}
+                showValueIndicator={false} // We'll use custom value display
+                showIcon={false}
+                showStops={false}
+                className="rest-time-slider"
+                id="rest-time-slider"
+                ariaLabel={t('translation.restTime', 'Rest Time')}
+              />
               <div className="slider-value-display">
                 {restTime === 0
                   ? t('translation.noRest', 'No delay')

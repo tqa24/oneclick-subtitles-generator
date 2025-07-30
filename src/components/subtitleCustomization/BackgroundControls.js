@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 
 const BackgroundControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -42,26 +43,22 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.backgroundOpacity}%</span>
-            <div className="custom-slider-container background-opacity-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${customization.backgroundOpacity}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${customization.backgroundOpacity}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={customization.backgroundOpacity}
-                onChange={(e) => updateCustomization({ backgroundOpacity: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.backgroundOpacity}
+              onChange={(value) => updateCustomization({ backgroundOpacity: parseInt(value) })}
+              min={0}
+              max={100}
+              step={1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="background-opacity-slider"
+              id="background-opacity-slider"
+              ariaLabel={t('videoRendering.backgroundOpacity', 'Background Opacity')}
+            />
           </div>
         </div>
       </div>
@@ -74,26 +71,22 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.borderRadius}px</span>
-            <div className="custom-slider-container border-radius-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.borderRadius / 100) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.borderRadius / 100) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={customization.borderRadius}
-                onChange={(e) => updateCustomization({ borderRadius: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.borderRadius}
+              onChange={(value) => updateCustomization({ borderRadius: parseInt(value) })}
+              min={0}
+              max={100}
+              step={1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="border-radius-slider"
+              id="border-radius-slider"
+              ariaLabel={t('videoRendering.borderRadius', 'Border Radius')}
+            />
           </div>
         </div>
       </div>
@@ -106,26 +99,22 @@ const BackgroundControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.borderWidth}px</span>
-            <div className="custom-slider-container border-width-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.borderWidth / 20) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.borderWidth / 20) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="20"
-                value={customization.borderWidth}
-                onChange={(e) => updateCustomization({ borderWidth: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.borderWidth}
+              onChange={(value) => updateCustomization({ borderWidth: parseInt(value) })}
+              min={0}
+              max={20}
+              step={1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="border-width-slider"
+              id="border-width-slider"
+              ariaLabel={t('videoRendering.borderWidth', 'Border Width')}
+            />
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 
 const PositionControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -38,26 +39,22 @@ const PositionControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.customPositionX}%</span>
-              <div className="custom-slider-container position-x-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${customization.customPositionX}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${customization.customPositionX}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={customization.customPositionX}
-                  onChange={(e) => updateCustomization({ customPositionX: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.customPositionX}
+                onChange={(value) => updateCustomization({ customPositionX: parseInt(value) })}
+                min={0}
+                max={100}
+                step={1}
+                orientation="horizontal"
+                size="xsmall"
+                state="enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="position-x-slider"
+                id="position-x-slider"
+                ariaLabel={t('videoRendering.customPositionX', 'Position X')}
+              />
             </div>
           </div>
         </div>
@@ -72,26 +69,22 @@ const PositionControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.customPositionY}%</span>
-              <div className="custom-slider-container position-y-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${customization.customPositionY}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${customization.customPositionY}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={customization.customPositionY}
-                  onChange={(e) => updateCustomization({ customPositionY: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.customPositionY}
+                onChange={(value) => updateCustomization({ customPositionY: parseInt(value) })}
+                min={0}
+                max={100}
+                step={1}
+                orientation="horizontal"
+                size="xsmall"
+                state="enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="position-y-slider"
+                id="position-y-slider"
+                ariaLabel={t('videoRendering.customPositionY', 'Position Y')}
+              />
             </div>
           </div>
         </div>
@@ -105,26 +98,22 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.maxWidth}%</span>
-            <div className="custom-slider-container max-width-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((customization.maxWidth - 10) / (150 - 10)) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="150"
-                value={customization.maxWidth}
-                onChange={(e) => updateCustomization({ maxWidth: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.maxWidth}
+              onChange={(value) => updateCustomization({ maxWidth: parseInt(value) })}
+              min={10}
+              max={150}
+              step={1}
+              orientation="horizontal"
+              size="xsmall"
+              state="enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="max-width-slider"
+              id="max-width-slider"
+              ariaLabel={t('videoRendering.maxWidth', 'Max Width')}
+            />
           </div>
         </div>
       </div>
@@ -137,26 +126,22 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginBottom}px</span>
-            <div className="custom-slider-container margin-bottom-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.marginBottom / 400) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginBottom / 400) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="400"
-                value={customization.marginBottom}
-                onChange={(e) => updateCustomization({ marginBottom: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.marginBottom}
+              onChange={(value) => updateCustomization({ marginBottom: parseInt(value) })}
+              min={0}
+              max={400}
+              step={1}
+              orientation="horizontal"
+              size="xsmall"
+              state="enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="margin-bottom-slider"
+              id="margin-bottom-slider"
+              ariaLabel={t('videoRendering.marginBottom', 'Margin Bottom')}
+            />
           </div>
         </div>
       </div>
@@ -169,26 +154,22 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginTop}px</span>
-            <div className="custom-slider-container margin-top-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.marginTop / 400) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginTop / 400) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="400"
-                value={customization.marginTop}
-                onChange={(e) => updateCustomization({ marginTop: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.marginTop}
+              onChange={(value) => updateCustomization({ marginTop: parseInt(value) })}
+              min={0}
+              max={400}
+              step={1}
+              orientation="horizontal"
+              size="xsmall"
+              state="enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="margin-top-slider"
+              id="margin-top-slider"
+              ariaLabel={t('videoRendering.marginTop', 'Margin Top')}
+            />
           </div>
         </div>
       </div>
@@ -201,26 +182,22 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginLeft}px</span>
-            <div className="custom-slider-container margin-left-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.marginLeft / 400) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginLeft / 400) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="400"
-                value={customization.marginLeft}
-                onChange={(e) => updateCustomization({ marginLeft: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.marginLeft}
+              onChange={(value) => updateCustomization({ marginLeft: parseInt(value) })}
+              min={0}
+              max={400}
+              step={1}
+              orientation="horizontal"
+              size="xsmall"
+              state="enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="margin-left-slider"
+              id="margin-left-slider"
+              ariaLabel={t('videoRendering.marginLeft', 'Margin Left')}
+            />
           </div>
         </div>
       </div>
@@ -233,26 +210,22 @@ const PositionControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.marginRight}px</span>
-            <div className="custom-slider-container margin-right-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.marginRight / 400) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.marginRight / 400) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="400"
-                value={customization.marginRight}
-                onChange={(e) => updateCustomization({ marginRight: parseInt(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.marginRight}
+              onChange={(value) => updateCustomization({ marginRight: parseInt(value) })}
+              min={0}
+              max={400}
+              step={1}
+              orientation="horizontal"
+              size="xsmall"
+              state="enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="margin-right-slider"
+              id="margin-right-slider"
+              ariaLabel={t('videoRendering.marginRight', 'Margin Right')}
+            />
           </div>
         </div>
       </div>

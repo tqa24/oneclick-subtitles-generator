@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 import MaterialSwitch from '../common/MaterialSwitch';
 import '../../styles/common/material-switch.css';
 import '../../styles/narration/narrationAdvancedSettingsRedesign.css';
@@ -23,15 +24,9 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
     });
   };
 
-  // Handle slider changes
-  const handleSliderChange = (e) => {
-    const { name, value } = e.target;
+  // Handle slider changes for StandardSlider
+  const handleSliderChange = (name, value) => {
     handleSettingChange(name, parseFloat(value));
-  };
-
-  // Calculate slider fill percentage
-  const calculateFillPercentage = (value, min, max) => {
-    return ((value - min) / (max - min)) * 100;
   };
 
   // Handle checkbox changes
@@ -60,30 +55,22 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
             </div>
             <div className="row-content">
               <div className="slider-with-value">
-                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${calculateFillPercentage(settings.speechRate || 1.3, 0.5, 2.0)}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${calculateFillPercentage(settings.speechRate || 1.3, 0.5, 2.0)}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    id="speechRate"
-                    name="speechRate"
-                    min="0.5"
-                    max="2.0"
-                    step="0.1"
-                    value={settings.speechRate || 1.3}
-                    onChange={handleSliderChange}
-                    disabled={disabled}
-                    className="custom-slider-input"
-                  />
-                </div>
+                <StandardSlider
+                  value={settings.speechRate || 1.3}
+                  onChange={(value) => handleSliderChange('speechRate', value)}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state={disabled ? "Disabled" : "Enabled"}
+                  showValueIndicator={false} // Using custom value display
+                  showIcon={false}
+                  showStops={false}
+                  className="speech-rate-slider"
+                  id="speechRate"
+                  ariaLabel={t('narration.speechRate', 'Speed')}
+                />
                 <div className="slider-value-display">{(settings.speechRate || 1.3).toFixed(1)}x</div>
               </div>
             </div>
@@ -95,30 +82,22 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
             </div>
             <div className="row-content">
               <div className="slider-with-value">
-                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${calculateFillPercentage(settings.cfgStrength || 2.0, 1.0, 5.0)}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${calculateFillPercentage(settings.cfgStrength || 2.0, 1.0, 5.0)}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    id="cfgStrength"
-                    name="cfgStrength"
-                    min="1.0"
-                    max="5.0"
-                    step="0.1"
-                    value={settings.cfgStrength || 2.0}
-                    onChange={handleSliderChange}
-                    disabled={disabled}
-                    className="custom-slider-input"
-                  />
-                </div>
+                <StandardSlider
+                  value={settings.cfgStrength || 2.0}
+                  onChange={(value) => handleSliderChange('cfgStrength', value)}
+                  min={1.0}
+                  max={5.0}
+                  step={0.1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state={disabled ? "Disabled" : "Enabled"}
+                  showValueIndicator={false} // Using custom value display
+                  showIcon={false}
+                  showStops={false}
+                  className="cfg-strength-slider"
+                  id="cfgStrength"
+                  ariaLabel={t('narration.cfgStrength', 'Similarity')}
+                />
                 <div className="slider-value-display">{(settings.cfgStrength || 2.0).toFixed(1)}</div>
               </div>
               <div className="setting-description">
@@ -166,30 +145,22 @@ const NarrationAdvancedSettings = ({ settings, onSettingsChange, disabled = fals
             </div>
             <div className="row-content">
               <div className="slider-with-value">
-                <div className={`custom-slider-container ${disabled ? 'disabled' : ''}`}>
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${calculateFillPercentage(settings.swayCoef || -1.0, -1.1, 1.7)}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${calculateFillPercentage(settings.swayCoef || -1.0, -1.1, 1.7)}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    id="swayCoef"
-                    name="swayCoef"
-                    min="-1.1"
-                    max="1.7"
-                    step="0.1"
-                    value={settings.swayCoef || -1.0}
-                    onChange={handleSliderChange}
-                    disabled={disabled}
-                    className="custom-slider-input"
-                  />
-                </div>
+                <StandardSlider
+                  value={settings.swayCoef || -1.0}
+                  onChange={(value) => handleSliderChange('swayCoef', value)}
+                  min={-1.1}
+                  max={1.7}
+                  step={0.1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state={disabled ? "Disabled" : "Enabled"}
+                  showValueIndicator={false} // Using custom value display
+                  showIcon={false}
+                  showStops={false}
+                  className="sway-coef-slider"
+                  id="swayCoef"
+                  ariaLabel={t('narration.swayCoef', 'Sway')}
+                />
                 <div className="slider-value-display">{(settings.swayCoef || -1.0).toFixed(1)}</div>
               </div>
               <div className="setting-description">

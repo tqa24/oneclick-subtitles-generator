@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 
 /**
  * Narration Menu component
@@ -156,45 +157,24 @@ const NarrationMenu = ({
                 </span>
               </label>
               <div className="slider-with-value">
-                {hasAnyNarrations ? (
-                  <div className="custom-slider-container">
-                    <div className="custom-slider-track">
-                      <div
-                        className="custom-slider-fill"
-                        style={{ width: `${narrationVolume * 100}%` }}
-                      ></div>
-                      <div
-                        className="custom-slider-thumb"
-                        style={{ left: `${narrationVolume * 100}%` }}
-                      ></div>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={narrationVolume}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setNarrationVolume(parseFloat(e.target.value));
-                      }}
-                      className="custom-slider-input"
-                    />
-                  </div>
-                ) : (
-                  <div className="custom-slider-container disabled">
-                    <div className="custom-slider-track">
-                      <div
-                        className="custom-slider-fill"
-                        style={{ width: `${narrationVolume * 100}%` }}
-                      ></div>
-                      <div
-                        className="custom-slider-thumb"
-                        style={{ left: `${narrationVolume * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
+                <StandardSlider
+                  value={narrationVolume}
+                  onChange={(value) => {
+                    setNarrationVolume(parseFloat(value));
+                  }}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state={hasAnyNarrations ? "Enabled" : "Disabled"}
+                  showValueIndicator={false} // Using custom value display
+                  showIcon={false}
+                  showStops={false}
+                  className="narration-volume-slider"
+                  id="narration-volume"
+                  ariaLabel={t('narration.narrationVolume', 'Narration Volume')}
+                />
                 <div className="slider-value-display">{Math.round(narrationVolume * 100)}%</div>
               </div>
             </div>
@@ -227,30 +207,24 @@ const NarrationMenu = ({
                 </span>
               </label>
               <div className="slider-with-value">
-                <div className="custom-slider-container video-volume-slider">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${videoVolume * 100}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${videoVolume * 100}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={videoVolume}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      setVideoVolume(parseFloat(e.target.value));
-                    }}
-                    className="custom-slider-input"
-                  />
-                </div>
+                <StandardSlider
+                  value={videoVolume}
+                  onChange={(value) => {
+                    setVideoVolume(parseFloat(value));
+                  }}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state="Enabled"
+                  showValueIndicator={false} // Using custom value display
+                  showIcon={false}
+                  showStops={false}
+                  className="video-volume-slider"
+                  id="video-volume"
+                  ariaLabel={t('narration.videoVolume', 'Video Audio Volume')}
+                />
                 <div className="slider-value-display">{Math.round(videoVolume * 100)}%</div>
               </div>
             </div>

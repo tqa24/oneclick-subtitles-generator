@@ -1,59 +1,186 @@
-/* Custom slider component styles for use across the application */
+/* Standard slider component styles based on Figma design with Material 3 specifications */
 
-/* Custom slider container */
-.custom-slider-container {
+/* Standard slider container - flexible width with Figma default */
+.standard-slider-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: 100%; /* Flexible width - adapts to parent container */
+  min-width: 60px; /* Very small minimum width for tight spaces */
+  max-width: 354px; /* Figma default as maximum */
+  height: auto; /* hug content */
   position: relative;
+}
+
+/* Full width variant - when parent wants to control exact width */
+.standard-slider-container.width-full {
+  width: 354px; /* Figma exact width */
+  min-width: 354px;
+  max-width: 354px;
+}
+
+/* Compact variant - for constrained spaces like speed controls */
+.standard-slider-container.width-compact {
+  width: 100px;
+  min-width: 60px;
+  max-width: 120px;
+}
+
+/* Auto variant - fills available space (default behavior) */
+.standard-slider-container.width-auto {
+  width: 100%;
+  min-width: 60px; /* Very small for tight spaces */
+  max-width: none; /* No maximum constraint */
+}
+
+/* Mini variant - for extremely tight spaces like customization rows */
+.standard-slider-container.width-mini {
+  width: 80px;
+  min-width: 60px;
+  max-width: 100px;
+}
+
+/* Slider track container - holds active and inactive tracks with gaps */
+.standard-slider-track-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   flex: 1;
-  height: 42px;
+  height: 44px; /* Full height to accommodate handle */
+  gap: 2px; /* Small gap between active track, handle, and inactive track */
+}
+
+/* Active track - left portion with Material 3 primary color */
+.standard-slider-active-track {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  height: 16px; /* Proper Material 3 track height */
+  min-width: 0; /* Allow flex shrinking */
+  margin-right: 1px; /* Small gap before handle */
+}
+
+.standard-slider-active-track .track {
+  width: 100%;
+  height: 100%;
+  background-color: var(--md-secondary, #2979FF); /* Use your blue secondary color */
+  border-radius: 16px 2px 2px 16px; /* Figma design: rounded start, small radius at handle */
+}
+
+/* Inactive track - right portion with Material 3 secondary color */
+.standard-slider-inactive-track {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: center;
+  height: 16px; /* Proper Material 3 track height */
+  min-width: 0; /* Allow flex shrinking */
+  margin-left: 1px; /* Small gap after handle */
+}
+
+.standard-slider-inactive-track .track {
+  width: 100%;
+  height: 100%;
+  background-color: var(--md-outline-variant, #CAC4D0); /* Use your outline variant color */
+  border-radius: 2px 16px 16px 2px; /* Figma design: small radius at handle, rounded end */
+}
+
+/* Handle - Material 3 slider handle (tall thin pill) */
+.standard-slider-handle {
+  position: relative;
+  width: 4px; /* Thin pill width */
+  height: 44px; /* Tall pill height */
+  background-color: var(--md-secondary, #2979FF); /* Use your blue secondary color */
+  border-radius: 2px; /* Pill shape */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); /* Material motion */
+  z-index: 10;
+  flex-shrink: 0; /* Don't shrink */
   display: flex;
   align-items: center;
-  /* Add minimal padding to ensure thumb is fully draggable at extremes */
-  padding: 0 8px; /* Half thumb width - just enough for edge coverage */
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 }
 
-.custom-slider-track {
+/* Pressed/dragged state - handle becomes even thinner */
+.standard-slider-container.dragging .standard-slider-handle {
+  width: 2px; /* Even thinner when dragging */
+  height: 44px; /* Same height */
+  border-radius: 1px; /* Adjust border radius for thinner width */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Value badge that appears above handle when dragging */
+.standard-slider-value-badge {
   position: absolute;
-  width: calc(100% - 16px); /* Match the utility function: container width minus 8px padding on each side */
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background-color: var(--md-surface-container-highest, #EBE1F4);
+  color: var(--md-on-surface, #1C1B1F);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Show badge when dragging */
+.standard-slider-container.dragging .standard-slider-value-badge {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Track stop - small dot indicator */
+.standard-slider-track-stop {
+  position: absolute;
+  width: 4px;
   height: 4px;
-  background-color: var(--md-outline-variant);
-  border-radius: 2px;
   top: 50%;
-  left: 8px; /* Match the utility function: 8px padding */
   transform: translateY(-50%);
+  /* Position controlled by JavaScript */
 }
 
-.custom-slider-fill {
-  position: absolute;
-  height: 100%;
-  background-color: var(--md-primary);
-  border-radius: 2px 0 0 2px;
-  /* NO default left or width - completely controlled by inline styles from JavaScript */
-}
-
-.custom-slider-thumb {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background-color: var(--md-primary);
+.standard-slider-track-stop .dot {
+  width: 4px;
+  height: 4px;
+  background-color: var(--md-outline, #79747E);
   border-radius: 50%;
+}
+
+/* End stop - dot at the end of inactive track (Material Design 3) */
+.standard-slider-end-stop {
+  position: absolute;
+  right: 6px; /* 6px from the end of the track */
   top: 50%;
-  transform: translate(-50%, -50%);
-  box-shadow: var(--md-elevation-level1);
-  transition: all 0.2s ease;
-  cursor: pointer;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background-color: var(--md-outline, #79747E);
+  border-radius: 50%;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Disable transitions during dragging for instant response */
-.custom-slider-container.dragging .custom-slider-thumb {
-  transition: none !important;
+/* Hide end stop when handle is near the end (>85% value) */
+.standard-slider-end-stop.hidden {
+  opacity: 0;
 }
 
-.custom-slider-thumb:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.custom-slider-input {
+/* Hidden input for accessibility and interaction */
+.standard-slider-input {
   position: absolute;
   top: 0;
   left: 0;
@@ -63,64 +190,172 @@
   cursor: pointer;
   margin: 0;
   padding: 0;
-  z-index: 10; /* Put input above visual elements so it can capture mouse events */
+  z-index: 15; /* Above all visual elements */
 }
 
-/* Also disable fill transitions during dragging for consistency */
-.custom-slider-container.dragging .custom-slider-fill {
+/* Hover effects */
+.standard-slider-handle:hover {
+  width: 6px; /* Slightly wider on hover */
+  box-shadow: 0 2px 8px rgba(41, 121, 255, 0.3); /* Blue shadow */
+}
+
+/* Disable transitions during dragging for instant response */
+.standard-slider-container.dragging .standard-slider-handle {
   transition: none !important;
 }
 
-/* Disabled state */
-.custom-slider-container.disabled {
+.standard-slider-container.dragging .standard-slider-active-track {
+  transition: none !important;
+}
+
+/* State variants - support both lowercase and Figma capitalized */
+.standard-slider-container.disabled,
+.standard-slider-container.state-disabled,
+.standard-slider-container.state-Disabled {
   pointer-events: none;
-  position: relative;
-}
-
-/* Fix for ghost duplicate effect */
-.custom-slider-container.disabled::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: transparent;
-  z-index: 2;
-}
-
-.custom-slider-container.disabled .custom-slider-track,
-.custom-slider-container.disabled .custom-slider-fill,
-.custom-slider-container.disabled .custom-slider-thumb {
   opacity: 0.5;
 }
 
-.custom-slider-container.disabled .custom-slider-thumb {
+.standard-slider-container.disabled .standard-slider-handle,
+.standard-slider-container.state-disabled .standard-slider-handle,
+.standard-slider-container.state-Disabled .standard-slider-handle {
   cursor: not-allowed;
 }
 
-.custom-slider-container.disabled .custom-slider-input {
+.standard-slider-container.disabled .standard-slider-input,
+.standard-slider-container.state-disabled .standard-slider-input,
+.standard-slider-container.state-Disabled .standard-slider-input {
   cursor: not-allowed;
   pointer-events: none;
-  opacity: 0;
 }
 
-/* Slider value display */
-.slider-value-display {
-  min-width: 70px;
+.standard-slider-container.hover,
+.standard-slider-container.state-hover,
+.standard-slider-container.state-Hover {
+  /* Hover state styles */
+}
+
+.standard-slider-container.focus,
+.standard-slider-container.state-focus,
+.standard-slider-container.state-Focus {
+  /* Focus state styles */
+}
+
+/* Size variants - support both lowercase and Figma capitalized */
+/* Note: Width is now controlled by width variants, sizes only affect max-width when width=auto */
+.standard-slider-container.size-xsmall,
+.standard-slider-container.size-XSmall {
+  /* Default size - max-width controlled by width variant */
+}
+
+.standard-slider-container.size-small,
+.standard-slider-container.size-Small {
+  /* Larger size - increase max-width when width=auto */
+}
+
+.standard-slider-container.size-medium,
+.standard-slider-container.size-Medium {
+  /* Medium size - increase max-width when width=auto */
+}
+
+.standard-slider-container.size-large,
+.standard-slider-container.size-Large {
+  /* Large size - increase max-width when width=auto */
+}
+
+/* Size + Width combinations for specific control */
+.standard-slider-container.width-auto.size-small,
+.standard-slider-container.width-auto.size-Small {
+  max-width: 400px;
+}
+
+.standard-slider-container.width-auto.size-medium,
+.standard-slider-container.width-auto.size-Medium {
+  max-width: 480px;
+}
+
+.standard-slider-container.width-auto.size-large,
+.standard-slider-container.width-auto.size-Large {
+  max-width: 560px;
+}
+
+/* Orientation variants - support both lowercase and Figma capitalized */
+.standard-slider-container.orientation-vertical,
+.standard-slider-container.orientation-Vertical {
+  flex-direction: column;
+  width: 44px;
+  height: 354px;
+}
+
+.standard-slider-container.orientation-vertical .standard-slider-track-container,
+.standard-slider-container.orientation-Vertical .standard-slider-track-container {
+  flex-direction: column;
+  width: 16px;
+  height: 100%;
+}
+
+.standard-slider-container.orientation-vertical .standard-slider-handle,
+.standard-slider-container.orientation-Vertical .standard-slider-handle {
+  width: 44px;
+  height: 4px;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* Value indicator - shown when enabled */
+.standard-slider-value-indicator {
+  min-width: 50px; /* Smaller minimum width, closer to track */
   font-size: 0.9rem;
-  color: var(--md-primary);
+  color: #6750A4; /* Figma primary color */
   font-weight: 500;
   text-align: right;
+  flex-shrink: 0; /* Don't allow shrinking */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
-/* Slider with value container */
+/* Slider with value container - adjusted for StandardSlider */
 .slider-with-value {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 400px; /* Elegant width constraint like rest-time-slider */
-  gap: 12px;
-  height: 42px;
+  max-width: 420px; /* Reduced gap: StandardSlider (354px) + gap (8px) + value (50px) */
+  gap: 8px; /* Smaller gap for closer spacing */
+  height: 44px; /* Match Figma height */
+}
+
+/* Legacy support - keep old class names working */
+.custom-slider-container {
+  /* Redirect to new standard slider */
+  @extend .standard-slider-container;
+}
+
+.custom-slider-track {
+  /* Legacy support - map to new structure */
+  display: none;
+}
+
+.custom-slider-fill {
+  /* Legacy support - map to new structure */
+  display: none;
+}
+
+.custom-slider-thumb {
+  /* Legacy support - map to new structure */
+  display: none;
+}
+
+.custom-slider-input {
+  /* Legacy support - map to new structure */
+  @extend .standard-slider-input;
+}
+
+.slider-value-display {
+  /* Legacy support - compact value display */
+  min-width: 50px; /* Smaller minimum width, closer to track */
+  font-size: 0.9rem;
+  color: var(--md-primary, #6750A4);
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0; /* Don't allow shrinking */
+  white-space: nowrap; /* Prevent text wrapping */
 }

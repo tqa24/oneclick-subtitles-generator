@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
+import StandardSlider from '../../common/StandardSlider';
 import VoiceSelectionModal from './VoiceSelectionModal';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
@@ -176,30 +177,22 @@ const EdgeTTSControls = ({
         </div>
         <div className="row-content">
           <div className="slider-with-value">
-            <div className={`custom-slider-container ${isGenerating ? 'disabled' : ''}`}>
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((parseInt(rate.replace('%', '')) + 50) / 100) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((parseInt(rate.replace('%', '')) + 50) / 100) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                id="edge-tts-rate"
-                min="-50"
-                max="50"
-                step="5"
-                value={parseInt(rate.replace('%', ''))}
-                onChange={(e) => setRate(`${e.target.value >= 0 ? '+' : ''}${e.target.value}%`)}
-                disabled={isGenerating}
-                className="custom-slider-input"
-                style={{ opacity: 0, position: 'absolute', width: '100%', height: '100%', cursor: 'pointer' }}
-              />
-            </div>
+            <StandardSlider
+              value={parseInt(rate.replace('%', ''))}
+              onChange={(value) => setRate(`${value >= 0 ? '+' : ''}${value}%`)}
+              min={-50}
+              max={50}
+              step={5}
+              orientation="Horizontal"
+              size="XSmall"
+              state={isGenerating ? "Disabled" : "Enabled"}
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="edge-tts-rate-slider"
+              id="edge-tts-rate"
+              ariaLabel={t('narration.edgeTTSRate', 'Speech Rate')}
+            />
             <div className="slider-value-display">{rate}</div>
           </div>
         </div>
@@ -212,30 +205,22 @@ const EdgeTTSControls = ({
         </div>
         <div className="row-content">
           <div className="slider-with-value">
-            <div className={`custom-slider-container ${isGenerating ? 'disabled' : ''}`}>
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((parseInt(volume.replace('%', '')) + 50) / 100) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((parseInt(volume.replace('%', '')) + 50) / 100) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                id="edge-tts-volume"
-                min="-50"
-                max="50"
-                step="5"
-                value={parseInt(volume.replace('%', ''))}
-                onChange={(e) => setVolume(`${e.target.value >= 0 ? '+' : ''}${e.target.value}%`)}
-                disabled={isGenerating}
-                className="custom-slider-input"
-                style={{ opacity: 0, position: 'absolute', width: '100%', height: '100%', cursor: 'pointer' }}
-              />
-            </div>
+            <StandardSlider
+              value={parseInt(volume.replace('%', ''))}
+              onChange={(value) => setVolume(`${value >= 0 ? '+' : ''}${value}%`)}
+              min={-50}
+              max={50}
+              step={5}
+              orientation="Horizontal"
+              size="XSmall"
+              state={isGenerating ? "Disabled" : "Enabled"}
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="edge-tts-volume-slider"
+              id="edge-tts-volume"
+              ariaLabel={t('narration.edgeTTSVolume', 'Volume')}
+            />
             <div className="slider-value-display">{volume}</div>
           </div>
         </div>
@@ -248,30 +233,22 @@ const EdgeTTSControls = ({
         </div>
         <div className="row-content">
           <div className="slider-with-value">
-            <div className={`custom-slider-container ${isGenerating ? 'disabled' : ''}`}>
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${((parseInt(pitch.replace('Hz', '')) + 50) / 100) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${((parseInt(pitch.replace('Hz', '')) + 50) / 100) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                id="edge-tts-pitch"
-                min="-50"
-                max="50"
-                step="5"
-                value={parseInt(pitch.replace('Hz', ''))}
-                onChange={(e) => setPitch(`${e.target.value >= 0 ? '+' : ''}${e.target.value}Hz`)}
-                disabled={isGenerating}
-                className="custom-slider-input"
-                style={{ opacity: 0, position: 'absolute', width: '100%', height: '100%', cursor: 'pointer' }}
-              />
-            </div>
+            <StandardSlider
+              value={parseInt(pitch.replace('Hz', ''))}
+              onChange={(value) => setPitch(`${value >= 0 ? '+' : ''}${value}Hz`)}
+              min={-50}
+              max={50}
+              step={5}
+              orientation="Horizontal"
+              size="XSmall"
+              state={isGenerating ? "Disabled" : "Enabled"}
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="edge-tts-pitch-slider"
+              id="edge-tts-pitch"
+              ariaLabel={t('narration.edgeTTSPitch', 'Pitch')}
+            />
             <div className="slider-value-display">{pitch}</div>
           </div>
         </div>

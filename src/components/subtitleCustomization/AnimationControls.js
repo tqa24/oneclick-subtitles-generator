@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 import { getAnimationTypes, getAnimationEasing } from './fontOptions';
 
 const AnimationControls = ({ customization, onChange }) => {
@@ -63,27 +64,22 @@ const AnimationControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fadeInDuration}s</span>
-            <div className="custom-slider-container fade-in-duration-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.fadeInDuration / 2.0) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.fadeInDuration / 2.0) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="2.0"
-                step="0.1"
-                value={customization.fadeInDuration}
-                onChange={(e) => updateCustomization({ fadeInDuration: parseFloat(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.fadeInDuration}
+              onChange={(value) => updateCustomization({ fadeInDuration: parseFloat(value) })}
+              min={0}
+              max={2.0}
+              step={0.1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="fade-in-duration-slider"
+              id="fade-in-duration-slider"
+              ariaLabel={t('videoRendering.fadeInDuration', 'Fade In Duration')}
+            />
           </div>
         </div>
       </div>
@@ -96,27 +92,22 @@ const AnimationControls = ({ customization, onChange }) => {
         <div className="row-content">
           <div className="slider-control">
             <span className="slider-value">{customization.fadeOutDuration}s</span>
-            <div className="custom-slider-container fade-out-duration-slider">
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${(customization.fadeOutDuration / 2.0) * 100}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${(customization.fadeOutDuration / 2.0) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="2.0"
-                step="0.1"
-                value={customization.fadeOutDuration}
-                onChange={(e) => updateCustomization({ fadeOutDuration: parseFloat(e.target.value) })}
-                className="custom-slider-input"
-              />
-            </div>
+            <StandardSlider
+              value={customization.fadeOutDuration}
+              onChange={(value) => updateCustomization({ fadeOutDuration: parseFloat(value) })}
+              min={0}
+              max={2.0}
+              step={0.1}
+              orientation="Horizontal"
+              size="XSmall"
+              state="Enabled"
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="fade-out-duration-slider"
+              id="fade-out-duration-slider"
+              ariaLabel={t('videoRendering.fadeOutDuration', 'Fade Out Duration')}
+            />
           </div>
         </div>
       </div>

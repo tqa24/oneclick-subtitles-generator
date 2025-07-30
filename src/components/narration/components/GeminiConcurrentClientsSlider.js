@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 import '../../../styles/narration/geminiConcurrentClientsSlider.css';
 
 /**
@@ -48,8 +49,7 @@ const GeminiConcurrentClientsSlider = ({
     }
   };
 
-  // Calculate percentage for slider fill and thumb position (1-10 range)
-  const sliderPercentage = ((localConcurrentClients - 1) / 9) * 100;
+  // No need for percentage calculation - StandardSlider handles this automatically
 
   return (
     <div className="narration-row gemini-concurrent-clients-row animated-row">
@@ -60,43 +60,22 @@ const GeminiConcurrentClientsSlider = ({
         <div className="split-duration-slider-container">
           <div className="slider-control-row">
             <div className="slider-with-value">
-              {!isGenerating ? (
-                <div className="custom-slider-container gemini-concurrent-clients-slider">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${sliderPercentage}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${sliderPercentage}%` }}
-                    ></div>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={localConcurrentClients}
-                    onChange={handleConcurrentClientsChange}
-                    className="custom-slider-input"
-                    title={t('narration.concurrentClientsTooltip', 'Number of concurrent WebSocket connections')}
-                  />
-                </div>
-              ) : (
-                <div className="custom-slider-container gemini-concurrent-clients-slider disabled">
-                  <div className="custom-slider-track">
-                    <div
-                      className="custom-slider-fill"
-                      style={{ width: `${sliderPercentage}%` }}
-                    ></div>
-                    <div
-                      className="custom-slider-thumb"
-                      style={{ left: `${sliderPercentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+              <StandardSlider
+                value={localConcurrentClients}
+                onChange={(value) => handleConcurrentClientsChange({ target: { value: parseInt(value) } })}
+                min={1}
+                max={10}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state={isGenerating ? "Disabled" : "Enabled"}
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="gemini-concurrent-clients-slider"
+                id="gemini-concurrent-clients"
+                ariaLabel={t('narration.concurrentClients', 'Chế độ cực nhanh')}
+              />
               <div className="slider-value-display">
                 {`${localConcurrentClients}x`}
               </div>

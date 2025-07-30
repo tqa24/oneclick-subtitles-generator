@@ -247,6 +247,14 @@
   flex: none;
 }
 
+/* StandardSlider in volume controls should match subtitle-selection-compact layout */
+.compact-volume-control .standard-slider-container {
+  width: 100% !important; /* Match subtitle-selection-compact full width */
+  min-width: 280px !important; /* Minimum width for proper layout */
+  max-width: 350px !important; /* Maximum width to match compact sections */
+  flex: none;
+}
+
 /* Video preview panel - matches customization panel height */
 .video-preview-panel {
   display: flex;

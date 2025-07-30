@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
 
 /**
@@ -50,31 +51,22 @@ const ChatterboxControls = ({
         </div>
         <div className="row-content">
           <div className="slider-with-value">
-            <div className={`custom-slider-container ${isGenerating ? 'disabled' : ''}`}>
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${calculateFillPercentage(exaggeration, 0.25, 2.0)}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${calculateFillPercentage(exaggeration, 0.25, 2.0)}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                id="chatterbox-exaggeration"
-                name="exaggeration"
-                min="0.25"
-                max="2.0"
-                step="0.05"
-                value={exaggeration}
-                onChange={handleExaggerationChange}
-                disabled={isGenerating}
-                className="custom-slider-input"
-                title={t('narration.exaggerationTooltip', 'Controls emotional intensity of the voice (0.25-2.0, neutral=0.5)')}
-              />
-            </div>
+            <StandardSlider
+              value={exaggeration}
+              onChange={(value) => handleExaggerationChange({ target: { value } })}
+              min={0.25}
+              max={2.0}
+              step={0.05}
+              orientation="horizontal"
+              size="xsmall"
+              state={isGenerating ? "disabled" : "enabled"}
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="chatterbox-exaggeration-slider"
+              id="chatterbox-exaggeration"
+              ariaLabel={t('narration.exaggeration', 'Emotional Intensity')}
+            />
             <div className="slider-value-display">{exaggeration.toFixed(2)}</div>
           </div>
           <div className="setting-description">
@@ -90,31 +82,22 @@ const ChatterboxControls = ({
         </div>
         <div className="row-content">
           <div className="slider-with-value">
-            <div className={`custom-slider-container ${isGenerating ? 'disabled' : ''}`}>
-              <div className="custom-slider-track">
-                <div
-                  className="custom-slider-fill"
-                  style={{ width: `${calculateFillPercentage(cfgWeight, 0.0, 1.0)}%` }}
-                ></div>
-                <div
-                  className="custom-slider-thumb"
-                  style={{ left: `${calculateFillPercentage(cfgWeight, 0.0, 1.0)}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                id="chatterbox-cfg-weight"
-                name="cfgWeight"
-                min="0.0"
-                max="1.0"
-                step="0.05"
-                value={cfgWeight}
-                onChange={handleCfgWeightChange}
-                disabled={isGenerating}
-                className="custom-slider-input"
-                title={t('narration.cfgWeightTooltip', 'Controls generation strength and pace (0.0-1.0)')}
-              />
-            </div>
+            <StandardSlider
+              value={cfgWeight}
+              onChange={(value) => handleCfgWeightChange({ target: { value } })}
+              min={0.0}
+              max={1.0}
+              step={0.05}
+              orientation="Horizontal"
+              size="XSmall"
+              state={isGenerating ? "Disabled" : "Enabled"}
+              showValueIndicator={false} // Using custom value display
+              showIcon={false}
+              showStops={false}
+              className="chatterbox-cfg-weight-slider"
+              id="chatterbox-cfg-weight"
+              ariaLabel={t('narration.cfgWeight', 'Pace Control')}
+            />
             <div className="slider-value-display">{cfgWeight.toFixed(2)}</div>
           </div>
           <div className="setting-description">

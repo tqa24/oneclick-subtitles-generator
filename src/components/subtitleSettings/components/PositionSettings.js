@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../../common/StandardSlider';
 
 /**
  * Position Settings component
@@ -17,28 +18,22 @@ const PositionSettings = ({ settings, handleSettingChange }) => {
       <div className="setting-group">
         <label htmlFor="position">{t('subtitleSettings.position', 'Y Position')}</label>
         <div className="slider-with-value">
-          <div className="custom-slider-container">
-            <div className="custom-slider-track">
-              <div
-                className="custom-slider-fill"
-                style={{ width: `${settings.position}%` }}
-              ></div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${settings.position}%` }}
-              ></div>
-            </div>
-            <input
-              type="range"
-              id="position"
-              min="0"
-              max="100"
-              step="1"
-              value={settings.position}
-              onChange={(e) => handleSettingChange('position', e.target.value)}
-              className="custom-slider-input"
-            />
-          </div>
+          <StandardSlider
+            value={settings.position}
+            onChange={(value) => handleSettingChange('position', value)}
+            min={0}
+            max={100}
+            step={1}
+            orientation="horizontal"
+            size="xsmall"
+            state="enabled"
+            showValueIndicator={false} // Using custom value display
+            showIcon={false}
+            showStops={false}
+            className="position-slider"
+            id="position"
+            ariaLabel={t('subtitleSettings.position', 'Y Position')}
+          />
           <div className="slider-value-display">{settings.position}%</div>
         </div>
         <div className="position-labels">
@@ -50,28 +45,22 @@ const PositionSettings = ({ settings, handleSettingChange }) => {
       <div className="setting-group">
         <label htmlFor="box-width">{t('subtitleSettings.boxWidth', 'Box Width')}</label>
         <div className="slider-with-value">
-          <div className="custom-slider-container">
-            <div className="custom-slider-track">
-              <div
-                className="custom-slider-fill"
-                style={{ width: `${((settings.boxWidth - 50) / 50) * 100}%` }}
-              ></div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${((settings.boxWidth - 50) / 50) * 100}%` }}
-              ></div>
-            </div>
-            <input
-              type="range"
-              id="box-width"
-              min="50"
-              max="100"
-              step="5"
-              value={settings.boxWidth}
-              onChange={(e) => handleSettingChange('boxWidth', e.target.value)}
-              className="custom-slider-input"
-            />
-          </div>
+          <StandardSlider
+            value={parseInt(settings.boxWidth)}
+            onChange={(value) => handleSettingChange('boxWidth', value.toString())}
+            min={50}
+            max={100}
+            step={5}
+            orientation="Horizontal"
+            size="XSmall"
+            state="Enabled"
+            showValueIndicator={false} // Using custom value display
+            showIcon={false}
+            showStops={false}
+            className="box-width-slider"
+            id="box-width"
+            ariaLabel={t('subtitleSettings.boxWidth', 'Box Width')}
+          />
           <div className="slider-value-display">{settings.boxWidth}%</div>
         </div>
       </div>
@@ -79,28 +68,22 @@ const PositionSettings = ({ settings, handleSettingChange }) => {
       <div className="setting-group">
         <label htmlFor="background-radius">{t('subtitleSettings.backgroundRadius', 'Background Radius')}</label>
         <div className="slider-with-value">
-          <div className="custom-slider-container">
-            <div className="custom-slider-track">
-              <div
-                className="custom-slider-fill"
-                style={{ width: `${(parseFloat(settings.backgroundRadius || 0) / 20) * 100}%` }}
-              ></div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(parseFloat(settings.backgroundRadius || 0) / 20) * 100}%` }}
-              ></div>
-            </div>
-            <input
-              type="range"
-              id="background-radius"
-              min="0"
-              max="20"
-              step="1"
-              value={settings.backgroundRadius || '0'}
-              onChange={(e) => handleSettingChange('backgroundRadius', e.target.value)}
-              className="custom-slider-input"
-            />
-          </div>
+          <StandardSlider
+            value={parseFloat(settings.backgroundRadius || '0')}
+            onChange={(value) => handleSettingChange('backgroundRadius', value.toString())}
+            min={0}
+            max={20}
+            step={1}
+            orientation="Horizontal"
+            size="XSmall"
+            state="Enabled"
+            showValueIndicator={false} // Using custom value display
+            showIcon={false}
+            showStops={false}
+            className="background-radius-slider"
+            id="background-radius"
+            ariaLabel={t('subtitleSettings.backgroundRadius', 'Background Radius')}
+          />
           <div className="slider-value-display">{settings.backgroundRadius || '0'}px</div>
         </div>
       </div>
@@ -108,28 +91,22 @@ const PositionSettings = ({ settings, handleSettingChange }) => {
       <div className="setting-group">
         <label htmlFor="background-padding">{t('subtitleSettings.backgroundPadding', 'Background Padding')}</label>
         <div className="slider-with-value">
-          <div className="custom-slider-container">
-            <div className="custom-slider-track">
-              <div
-                className="custom-slider-fill"
-                style={{ width: `${(parseFloat(settings.backgroundPadding || 10) / 30) * 100}%` }}
-              ></div>
-              <div
-                className="custom-slider-thumb"
-                style={{ left: `${(parseFloat(settings.backgroundPadding || 10) / 30) * 100}%` }}
-              ></div>
-            </div>
-            <input
-              type="range"
-              id="background-padding"
-              min="0"
-              max="30"
-              step="2"
-              value={settings.backgroundPadding || '10'}
-              onChange={(e) => handleSettingChange('backgroundPadding', e.target.value)}
-              className="custom-slider-input"
-            />
-          </div>
+          <StandardSlider
+            value={parseFloat(settings.backgroundPadding || '10')}
+            onChange={(value) => handleSettingChange('backgroundPadding', value.toString())}
+            min={0}
+            max={30}
+            step={2}
+            orientation="Horizontal"
+            size="XSmall"
+            state="Enabled"
+            showValueIndicator={false} // Using custom value display
+            showIcon={false}
+            showStops={false}
+            className="background-padding-slider"
+            id="background-padding"
+            ariaLabel={t('subtitleSettings.backgroundPadding', 'Background Padding')}
+          />
           <div className="slider-value-display">{settings.backgroundPadding || '10'}px</div>
         </div>
       </div>
