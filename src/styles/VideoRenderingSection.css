@@ -562,7 +562,7 @@
 .narration-selection-compact .radio-option input[type="radio"]:disabled + label {
   opacity: 0.38;
   cursor: not-allowed;
-  background-color: var(--md-surface-1);
+  background-color: var(--md-surface-variant);
   color: var(--md-on-surface-variant);
   border-color: var(--md-outline-variant);
   box-shadow: none;
@@ -573,7 +573,7 @@
 .narration-selection-compact .radio-option input[type="radio"]:disabled + label:hover {
   box-shadow: none;
   transform: none;
-  background-color: var(--md-surface-1);
+  background-color: var(--md-surface-variant);
   color: var(--md-on-surface-variant);
   border-color: var(--md-outline-variant);
 }
@@ -652,6 +652,25 @@
   color: var(--md-on-surface-variant);
   opacity: 0.38;
   cursor: not-allowed;
+}
+
+.narration-selection-compact .narration-status.not-aligned {
+  color: var(--md-on-surface-variant);
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surface-variant);
+  border-color: var(--md-outline-variant);
+}
+
+.narration-selection-compact .narration-status.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.narration-selection-compact .narration-status.clickable:hover {
+  background-color: var(--md-surface-2);
+  transform: translateY(-1px);
+  box-shadow: var(--md-elevation-level2);
 }
 
 /* Refresh icon button */

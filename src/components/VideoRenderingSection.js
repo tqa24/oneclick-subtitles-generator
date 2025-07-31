@@ -1452,46 +1452,45 @@ const VideoRenderingSection = ({
                   </div>
                 )}
 
-                {/* Narration status and refresh button - always visible, grayed out when not needed */}
-                <div className="narration-status-container">
-                  <span className={`narration-status ${!hasNarrationSegments() ? 'disabled' : ''}`}>
-                    {isAlignedNarrationAvailable()
-                      ? t('videoRendering.alignedNarration', 'Aligned Narration (ready)')
-                      : (hasNarrationSegments()
-                          ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
-                          : t('videoRendering.noNarrationGenerated', 'No narration generated')
-                        )
-                    }
-                  </span>
-                  <button
-                    type="button"
-                    className="refresh-icon-button"
-                    onClick={handleRefreshNarration}
-                    disabled={isRefreshingNarration || isAlignedNarrationAvailable() || !hasNarrationSegments()}
-                    style={{
-                      animation: (!isAlignedNarrationAvailable() && hasNarrationSegments() && !isRefreshingNarration)
-                        ? 'breathe 2s ease-in-out infinite'
-                        : 'none'
-                    }}
-                    title={
-                      isAlignedNarrationAvailable()
-                        ? t('videoRendering.narrationAlreadyReady', 'Narration already aligned')
-                        : (!hasNarrationSegments())
+                {/* Narration status and refresh button - only show when narration is not aligned but available */}
+                {!isAlignedNarrationAvailable() && (
+                  <div className="narration-status-container">
+                    <span
+                      className={`narration-status ${!hasNarrationSegments() ? 'disabled' : 'not-aligned'}`}
+                    >
+                      {hasNarrationSegments()
+                        ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
+                        : t('videoRendering.noNarrationGenerated', 'No narration generated')
+                      }
+                    </span>
+                    <button
+                      type="button"
+                      className="refresh-icon-button"
+                      onClick={handleRefreshNarration}
+                      disabled={isRefreshingNarration || !hasNarrationSegments()}
+                      style={{
+                        animation: (hasNarrationSegments() && !isRefreshingNarration)
+                          ? 'breathe 2s ease-in-out infinite'
+                          : 'none'
+                      }}
+                      title={
+                        !hasNarrationSegments()
                           ? t('videoRendering.generateNarrationFirst', 'Generate narration first')
                           : t('videoRendering.refreshNarration', 'Click to align narration for video rendering')
-                    }
-                  >
-                    {isRefreshingNarration ? (
-                      <svg className="spinner" viewBox="0 0 24 24" style={{ animation: 'rotate 1.5s linear infinite' }}>
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3"></circle>
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
+                      }
+                    >
+                      {isRefreshingNarration ? (
+                        <svg className="spinner" viewBox="0 0 24 24" style={{ animation: 'rotate 1.5s linear infinite' }}>
+                          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="3"></circle>
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
 
               </div>
 
