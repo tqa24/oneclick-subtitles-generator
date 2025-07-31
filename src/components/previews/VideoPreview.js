@@ -2054,7 +2054,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   updateOnMouseMove={false}
                   style={{
                     opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out',
+                    transition: 'opacity 0.6s ease-in-out',
                     pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   aria-label={t('preview.refreshNarration', 'Refresh Narration')}
@@ -2517,7 +2517,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   aria-label="Gemini FPS Info"
                   style={{
                     opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out',
+                    transition: 'opacity 0.6s ease-in-out',
                     pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   onClick={() => {
@@ -2566,7 +2566,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   aria-label={t('preview.downloadAudio', 'Download Audio')}
                   style={{
                     opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out',
+                    transition: 'opacity 0.6s ease-in-out',
                     pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                   }}
                   onClick={async () => {
@@ -2819,7 +2819,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       style={{
                         marginRight: '15px',
                         opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                        transition: 'opacity 0.3s ease-in-out',
+                        transition: 'opacity 0.6s ease-in-out',
                         pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                     >
@@ -2863,7 +2863,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         overflow: 'visible',
                         margin: '0', // Reset any default margins
                         opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                        transition: 'opacity 0.3s ease-in-out',
+                        transition: 'none',
                         pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                       onMouseDown={handleTimelineMouseDown}
@@ -2922,7 +2922,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       justifyContent: 'center',
                       height: '100%',
                       opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                      transition: 'opacity 0.3s ease-in-out',
+                      transition: 'none',
                       pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none',
                       userSelect: 'none'
                     }}>
@@ -2945,7 +2945,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         width={50}
                         height={isVolumeSliderVisible ? 180 : 50}
                         borderRadius="25px"
-                        className="content-center interactive theme-secondary"
+                        className="content-center interactive theme-secondary volume-pill-slow"
                         cursor="pointer"
                         effectIntensity={0.7}
                         effectRadius={0.6}
@@ -2954,11 +2954,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         animateOnHover={true}
                         hoverScale={1.02}
                         updateOnMouseMove={true}
+
                         style={{
-                          transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out',
                           transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
                           opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+                          transition: 'opacity 0s', // Instant appearance/disappearance, no fade animation
                           pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >
@@ -2982,7 +2983,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                               top: '50px', // Moved down to be more visible
                               cursor: 'pointer',
                               opacity: isVolumeSliderVisible ? 1 : 0,
-                              transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                               pointerEvents: isVolumeSliderVisible ? 'auto' : 'none'
                             }}
                               onMouseDown={(e) => {
@@ -3213,7 +3214,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                         updateOnMouseMove={false}
                         style={{
                           opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                          transition: 'opacity 0.3s ease-in-out',
+                          transition: 'opacity 0.6s ease-in-out',
                           pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >

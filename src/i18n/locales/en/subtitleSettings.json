@@ -29,5 +29,10 @@
   "textColor": "Text Color",
   "resetToDefault": "Reset to Default",
   "fontSettings": "Font Settings",
-  "textFormatting": "Text Formatting"
+  "textFormatting": "Text Formatting",
+  "textTransform": "Text Transform",
+  "textTransformNone": "None",
+  "textTransformUppercase": "UPPERCASE",
+  "textTransformLowercase": "lowercase",
+  "textTransformCapitalize": "Capitalize"
 }

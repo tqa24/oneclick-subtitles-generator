@@ -35,17 +35,7 @@ const FontSettings = ({ settings, handleSettingChange, fontGroups, fontWeightOpt
             </optgroup>
           ))}
         </select>
-        <p className="setting-description">
-          {t('subtitleSettings.fontSupportNote', 'Fonts marked with 🇰🇷 support Korean, 🇻🇳 support Vietnamese')}
-        </p>
-        <div className="font-preview" style={{ fontFamily: settings.fontFamily }}>
-          <span className="font-preview-label">{t('subtitleSettings.fontPreview', 'Preview')}:</span>
-          <div className="font-preview-samples">
-            <span className="font-preview-text">안녕하세요 (Korean)</span>
-            <span className="font-preview-text">Xin chào (Vietnamese)</span>
-            <span className="font-preview-text">Hello 123</span>
-          </div>
-        </div>
+
       </div>
 
       <div className="setting-group">

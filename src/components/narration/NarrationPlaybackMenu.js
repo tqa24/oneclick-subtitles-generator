@@ -24,8 +24,8 @@ const NarrationPlaybackMenu = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [narrationSource, setNarrationSource] = useState('original'); // 'original' or 'translated'
-  const [narrationVolume, setNarrationVolume] = useState(0.8); // 0 to 1
-  const [videoVolume, setVideoVolume] = useState(0.3); // 0 to 1
+  const [narrationVolume, setNarrationVolume] = useState(0.0); // 0 to 1
+  const [videoVolume, setVideoVolume] = useState(1.0); // 0 to 1
   const [activeNarrations, setActiveNarrations] = useState([]);
   const [currentNarration, setCurrentNarration] = useState(null);
 

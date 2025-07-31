@@ -12,8 +12,8 @@ const useNarrationState = (originalNarrations = [], translatedNarrations = []) =
   const [showNarrationMenu, setShowNarrationMenu] = useState(false);
   // Always use 'original' as the narration source since we no longer have a source selector
   const [narrationSource, setNarrationSource] = useState('original');
-  const [narrationVolume, setNarrationVolume] = useState(0.8);
-  const [videoVolume, setVideoVolume] = useState(0.3);
+  const [narrationVolume, setNarrationVolume] = useState(0.0);
+  const [videoVolume, setVideoVolume] = useState(1.0);
   const [currentNarration, setCurrentNarration] = useState(null);
 
   // State to track narrations internally

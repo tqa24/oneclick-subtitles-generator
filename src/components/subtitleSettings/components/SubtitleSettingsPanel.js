@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import FontSettings from './FontSettings';
 import PositionSettings from './PositionSettings';
 import StyleSettings from './StyleSettings';
-import { fontOptions, fontWeightOptions, textAlignOptions, textTransformOptions } from '../constants';
+import { fontOptions, fontWeightOptions, textAlignOptions, getTextTransformOptions } from '../constants';
 import { groupFontsByCategory } from '../utils/fontUtils';
 
 /**
@@ -91,11 +91,11 @@ const SubtitleSettingsPanel = ({
         />
 
         {/* Style Settings */}
-        <StyleSettings 
-          settings={settings} 
-          handleSettingChange={handleSettingChange} 
+        <StyleSettings
+          settings={settings}
+          handleSettingChange={handleSettingChange}
           textAlignOptions={textAlignOptions}
-          textTransformOptions={textTransformOptions}
+          textTransformOptions={getTextTransformOptions(t)}
         />
 
         <button

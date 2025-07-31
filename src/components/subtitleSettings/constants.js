@@ -85,10 +85,10 @@ export const textAlignOptions = [
   { value: 'right', label: 'Right' }
 ];
 
-// Text transform options
-export const textTransformOptions = [
-  { value: 'none', label: 'None' },
-  { value: 'uppercase', label: 'UPPERCASE' },
-  { value: 'lowercase', label: 'lowercase' },
-  { value: 'capitalize', label: 'Capitalize' }
+// Text transform options - using translation keys
+export const getTextTransformOptions = (t) => [
+  { value: 'none', label: t('subtitleSettings.textTransformNone', 'None') },
+  { value: 'uppercase', label: t('subtitleSettings.textTransformUppercase', 'UPPERCASE') },
+  { value: 'lowercase', label: t('subtitleSettings.textTransformLowercase', 'lowercase') },
+  { value: 'capitalize', label: t('subtitleSettings.textTransformCapitalize', 'Capitalize') }
 ];
