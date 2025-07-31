@@ -82,26 +82,22 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.textShadowOffsetY}px</span>
-              <div className="custom-slider-container shadow-offset-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${((customization.textShadowOffsetY + 25) / 50) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="-25"
-                  max="25"
-                  value={customization.textShadowOffsetY}
-                  onChange={(e) => updateCustomization({ textShadowOffsetY: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.textShadowOffsetY}
+                onChange={(value) => updateCustomization({ textShadowOffsetY: parseInt(value) })}
+                min={-25}
+                max={25}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state="Enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="shadow-offset-slider"
+                id="shadow-offset-slider"
+                ariaLabel={t('videoRendering.shadowOffset', 'Shadow Offset')}
+              />
             </div>
           </div>
         </div>
@@ -146,26 +142,22 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.glowIntensity}px</span>
-              <div className="custom-slider-container glow-intensity-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${(customization.glowIntensity / 100) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${(customization.glowIntensity / 100) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={customization.glowIntensity}
-                  onChange={(e) => updateCustomization({ glowIntensity: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.glowIntensity}
+                onChange={(value) => updateCustomization({ glowIntensity: parseInt(value) })}
+                min={0}
+                max={100}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state="Enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="glow-intensity-slider"
+                id="glow-intensity-slider"
+                ariaLabel={t('videoRendering.glowIntensity', 'Glow Intensity')}
+              />
             </div>
           </div>
         </div>
@@ -301,26 +293,22 @@ const EffectsControls = ({ customization, onChange }) => {
           <div className="row-content">
             <div className="slider-control">
               <span className="slider-value">{customization.strokeWidth}px</span>
-              <div className="custom-slider-container stroke-width-slider">
-                <div className="custom-slider-track">
-                  <div
-                    className="custom-slider-fill"
-                    style={{ width: `${(customization.strokeWidth / 10) * 100}%` }}
-                  ></div>
-                  <div
-                    className="custom-slider-thumb"
-                    style={{ left: `${(customization.strokeWidth / 10) * 100}%` }}
-                  ></div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  value={customization.strokeWidth}
-                  onChange={(e) => updateCustomization({ strokeWidth: parseInt(e.target.value) })}
-                  className="custom-slider-input"
-                />
-              </div>
+              <StandardSlider
+                value={customization.strokeWidth}
+                onChange={(value) => updateCustomization({ strokeWidth: parseInt(value) })}
+                min={0}
+                max={10}
+                step={1}
+                orientation="Horizontal"
+                size="XSmall"
+                state="Enabled"
+                showValueIndicator={false} // Using custom value display
+                showIcon={false}
+                showStops={false}
+                className="stroke-width-slider"
+                id="stroke-width-slider"
+                ariaLabel={t('videoRendering.strokeWidth', 'Stroke Width')}
+              />
             </div>
           </div>
         </div>

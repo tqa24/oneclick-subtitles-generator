@@ -329,6 +329,8 @@
   "default": "Default",
   "useCookiesForDownload": "Use browser cookies for video downloads",
   "useCookiesForDownloadDescription": "Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content.",
+  "concurrentClients": "Concurrent Clients",
+  "concurrentClientsDescription": "Number of simultaneous API requests to process in parallel. Higher values increase speed but may hit rate limits.",
   "resolution240p": "240p (Fastest, smallest files)",
   "resolution360p": "360p (Recommended for Gemini)"
 }

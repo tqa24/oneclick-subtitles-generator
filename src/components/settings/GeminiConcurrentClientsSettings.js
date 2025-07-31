@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import StandardSlider from '../common/StandardSlider';
 import '../../styles/components/custom-slider.css';
 
 /**
@@ -51,28 +52,22 @@ const GeminiConcurrentClientsSettings = () => {
         )}
       </p>
       <div className="slider-with-value">
-        <div className="custom-slider-container">
-          <div className="custom-slider-track">
-            <div
-              className="custom-slider-fill"
-              style={{ width: `${sliderPercentage}%` }}
-            ></div>
-            <div
-              className="custom-slider-thumb"
-              style={{ left: `${sliderPercentage}%` }}
-            ></div>
-          </div>
-          <input
-            type="range"
-            id="concurrent-clients-slider"
-            min="1"
-            max="10"
-            step="1"
-            value={concurrentClients}
-            onChange={handleSliderChange}
-            className="custom-slider-input"
-          />
-        </div>
+        <StandardSlider
+          value={concurrentClients}
+          onChange={(value) => handleSliderChange({ target: { value } })}
+          min={1}
+          max={10}
+          step={1}
+          orientation="Horizontal"
+          size="XSmall"
+          state="Enabled"
+          showValueIndicator={false} // Using custom value display
+          showIcon={false}
+          showStops={false}
+          className="gemini-concurrent-clients-slider"
+          id="concurrent-clients-slider"
+          ariaLabel={t('settings.concurrentClients', 'Concurrent Clients')}
+        />
         <div className="slider-value-display">
           <input
             type="number"

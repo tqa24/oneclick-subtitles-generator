@@ -339,6 +339,8 @@
   "tokens": "token",
   "useCookiesForDownload": "Sử dụng cookie trình duyệt cho tải video",
   "useCookiesForDownloadDescription": "Bật xác thực cookie trình duyệt để truy cập video chất lượng cao hơn và bỏ qua hạn chế đăng nhập. Tắt tính năng này sẽ làm cho việc tải xuống nhanh hơn nhưng có thể hạn chế chất lượng video có sẵn và gây lỗi trên nội dung bị hạn chế.",
+  "concurrentClients": "Khách hàng Đồng thời",
+  "concurrentClientsDescription": "Số lượng yêu cầu API đồng thời để xử lý song song. Giá trị cao hơn tăng tốc độ nhưng có thể đạt giới hạn tốc độ.",
   "resolution240p": "240p (Nhanh nhất, tệp nhỏ nhất)",
   "resolution360p": "360p (Khuyến nghị cho Gemini)"
 }

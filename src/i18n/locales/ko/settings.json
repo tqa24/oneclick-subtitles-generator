@@ -335,6 +335,8 @@
   "tokens": "토큰",
   "useCookiesForDownload": "비디오 다운로드에 브라우저 쿠키 사용",
   "useCookiesForDownloadDescription": "브라우저 쿠키 인증을 활성화하여 더 높은 품질의 비디오에 액세스하고 로그인 제한을 우회합니다. 이 기능을 비활성화하면 다운로드가 더 빨라지지만 사용 가능한 비디오 품질이 제한되고 제한된 콘텐츠에서 실패할 수 있습니다.",
+  "concurrentClients": "동시 클라이언트",
+  "concurrentClientsDescription": "병렬로 처리할 동시 API 요청 수입니다. 값이 높을수록 속도가 증가하지만 속도 제한에 도달할 수 있습니다.",
   "resolution240p": "240p (가장 빠름, 가장 작은 파일)",
   "resolution360p": "360p (Gemini에 권장)"
 }
