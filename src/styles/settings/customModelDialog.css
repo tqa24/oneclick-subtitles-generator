@@ -74,23 +74,7 @@
   flex: 1;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  color: var(--text-color-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border-radius: 50%;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.close-button:hover {
-  background-color: rgba(var(--md-outline-variant-rgb), 0.3);
-  color: var(--text-primary);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 .custom-modal-content {
   padding: 20px;

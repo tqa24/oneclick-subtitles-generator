@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import CloseButton from '../../common/CloseButton';
 import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import {
@@ -625,9 +626,7 @@ const SubtitleSourceSelection = ({
           <div className="modal-content model-selection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{t('narration.selectNarrationModel', 'Select narration model')}</h3>
-              <button className="modal-close-btn" onClick={closeModelModal}>
-                ×
-              </button>
+              <CloseButton onClick={closeModelModal} variant="modal" size="medium" />
             </div>
             <div className="modal-body">
               {isLoadingModels ? (

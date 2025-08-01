@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import CloseButton from './common/CloseButton';
 import '../styles/PromptEditor.css';
 
 const PromptEditor = ({
@@ -185,7 +186,7 @@ const PromptEditor = ({
       <div className="prompt-editor-modal" ref={modalRef}>
         <div className="prompt-editor-header">
           <h3>{title || t('promptEditor.editPrompt', 'Add Custom Instructions')}</h3>
-          <button className="close-button" onClick={onClose}>×</button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         <div className="prompt-editor-content">

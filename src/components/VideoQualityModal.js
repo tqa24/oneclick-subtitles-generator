@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiInfo } from 'react-icons/fi';
+import CloseButton from './common/CloseButton';
 import '../styles/VideoQualityModal.css';
 // import progressWebSocketClient from '../utils/progressWebSocketClient'; // DISABLED - using polling instead
 
@@ -348,7 +349,7 @@ const VideoQualityModal = ({
               </span>
             </div>
           </div>
-          <button className="close-button" onClick={handleClose}>×</button>
+          <CloseButton onClick={handleClose} variant="modal" size="medium" />
         </div>
 
         <div className="modal-content">

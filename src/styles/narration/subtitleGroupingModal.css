@@ -82,38 +82,7 @@
   letter-spacing: 0.25px;
 }
 
-.close-button {
-  background: rgba(var(--md-surface-variant-rgb), 0.5);
-  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.15rem;
-  border-radius: 50%;
-  color: var(--md-on-surface-variant);
-  transition: all 0.2s var(--md-easing-standard);
-  box-shadow: var(--md-elevation-level1);
-  width: 32px;
-  height: 32px;
-}
-
-.close-button:hover {
-  background-color: var(--md-surface-3);
-  color: var(--md-on-surface);
-  transform: translateY(-2px);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.close-button:active {
-  transform: translateY(0);
-  box-shadow: var(--md-elevation-level1);
-}
-
-.close-button svg {
-  width: 20px;
-  height: 20px;
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Modal content */
 .modal-content {

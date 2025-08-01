@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import ModelDropdown from './ModelDropdown';
 import PromptEditor from './PromptEditor';
+import CloseButton from './common/CloseButton';
 // Import default prompts from geminiService if needed in the future
 // import { getDefaultConsolidatePrompt, getDefaultSummarizePrompt } from '../services/geminiService';
 import '../styles/DownloadOptionsModal.css';
@@ -135,7 +136,7 @@ const DownloadOptionsModal = ({
       <div className="download-options-modal" ref={modalRef}>
         <div className="modal-header">
           <h3>{t('download.options', 'Download & Process Options')}</h3>
-          <button className="close-button" onClick={onClose}>×</button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         <div className="modal-content">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiCheck, FiZap, FiStar, FiCpu, FiArrowRight, FiTrendingUp, FiActivity } from 'react-icons/fi';
+import { FiCheck, FiZap, FiStar, FiCpu, FiArrowRight, FiTrendingUp, FiActivity } from 'react-icons/fi';
+import CloseButton from './common/CloseButton';
 import '../styles/SegmentRetryModal.css';
 
 /**
@@ -181,9 +182,7 @@ const SegmentRetryModal = ({
             <span className="step-divider"></span>
             <span className={`step ${currentStep === 2 ? 'active' : ''}`}>2</span>
           </div>
-          <button className="close-button" onClick={onClose}>
-            <FiX />
-          </button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         <div className="segment-retry-modal-content">

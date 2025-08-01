@@ -18,51 +18,7 @@
   min-width: 120px; /* Ensure the title can shrink */
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-secondary);
-  padding: 0;
-  transition: all 0.2s ease;
-  transform-origin: center;
-  /* Increase clickable area */
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  /* Ensure the close button is always visible */
-  position: absolute;
-  right: 1rem;
-  top: 1rem;
-  z-index: 10;
-  background-color: var(--background-primary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.close-btn svg {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.2s ease;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-  transform: rotate(90deg);
-  background-color: rgba(var(--md-surface-variant-rgb, 128, 128, 128), 0.3);
-}
-
-.close-btn:active {
-  transform: rotate(90deg) scale(0.95);
-  background-color: rgba(var(--md-surface-variant-rgb, 128, 128, 128), 0.5);
-}
-
-.close-btn:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: 2px;
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Footer with action buttons */
 .settings-footer {

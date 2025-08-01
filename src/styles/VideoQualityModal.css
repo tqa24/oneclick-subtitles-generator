@@ -110,25 +110,7 @@
   font-size: 0.75rem;
 }
 
-.close-button {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: var(--md-on-surface-variant);
-  padding: 6px;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.close-button:hover {
-  background-color: rgba(var(--md-on-surface-rgb), 0.1);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Content - flat design with clean spacing */
 .modal-content {

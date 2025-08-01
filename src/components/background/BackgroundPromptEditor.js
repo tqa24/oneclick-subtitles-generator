@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import CloseButton from '../common/CloseButton';
 import '../../styles/PromptEditor.css';
 import '../../styles/background/BackgroundPromptEditor.css';
 
@@ -145,7 +146,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
       <div className="prompt-editor-modal background-prompt-editor" ref={modalRef}>
         <div className="prompt-editor-header">
           <h3>{t('promptEditor.editBackgroundPrompts', 'Edit Background Generation Prompts')}</h3>
-          <button className="close-button" onClick={onClose}>×</button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         <div className="prompt-editor-content">

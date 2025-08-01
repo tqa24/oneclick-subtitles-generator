@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
 import { getAllKeys, addKey, removeKey, getActiveKeyIndex, setActiveKeyIndex } from '../../../services/gemini/keyManager';
+import CloseButton from '../../common/CloseButton';
 
 // Helper function for animating input visibility toggle with subtle fade
 const animateToggle = (elementId, currentState, setState) => {

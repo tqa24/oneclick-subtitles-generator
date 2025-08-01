@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiVideo, FiMusic, FiDownload, FiInfo } from 'react-icons/fi';
+import { FiVideo, FiMusic, FiDownload, FiInfo } from 'react-icons/fi';
+import CloseButton from './common/CloseButton';
 import '../styles/DownloadOnlyModal.css';
 import { scanVideoQualities } from '../utils/qualityScanner';
 import progressWebSocketClient from '../utils/progressWebSocketClient';
@@ -230,13 +231,12 @@ const DownloadOnlyModal = ({
               </span>
             </div>
           </div>
-          <button
-            className="close-button"
+          <CloseButton
             onClick={handleClose}
             disabled={isDownloading}
-          >
-            <FiX />
-          </button>
+            variant="modal"
+            size="medium"
+          />
         </div>
 
         {/* Content */}

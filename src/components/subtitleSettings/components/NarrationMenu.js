@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
+import CloseButton from '../../common/CloseButton';
 
 /**
  * Narration Menu component
@@ -107,15 +108,14 @@ const NarrationMenu = ({
           <div className="settings-header">
             <h4>{t('narration.playbackTitle', 'Narration')}</h4>
             <div className="settings-header-actions">
-              <button
-                className="close-settings-btn"
+              <CloseButton
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowNarrationMenu(false);
                 }}
-              >
-                &times;
-              </button>
+                variant="default"
+                size="small"
+              />
             </div>
           </div>
 

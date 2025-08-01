@@ -48,34 +48,7 @@
   letter-spacing: 0.25px;
 }
 
-.advanced-settings-modal-header .close-button {
-  background: rgba(var(--md-surface-variant-rgb), 0.5);
-  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
-  font-size: 1.25rem;
-  color: var(--md-on-surface-variant);
-  cursor: pointer;
-  padding: 0.15rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  transition: all var(--md-duration-medium2) var(--md-easing-standard);
-  box-shadow: var(--md-elevation-level1);
-}
-
-.advanced-settings-modal-header .close-button:hover {
-  background-color: var(--md-surface-3);
-  color: var(--md-on-surface);
-  transform: translateY(-2px);
-  box-shadow: var(--md-elevation-level2);
-}
-
-.advanced-settings-modal-header .close-button:active {
-  transform: translateY(0);
-  box-shadow: var(--md-elevation-level1);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 .advanced-settings-modal-content {
   padding: 0;

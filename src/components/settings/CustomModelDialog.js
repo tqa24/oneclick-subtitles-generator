@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import CloseButton from '../common/CloseButton';
 import '../../styles/settings/customModelDialog.css';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -65,9 +66,7 @@ const CustomModelDialog = ({ isOpen, onClose, title, children, footer }) => {
       >
         <div className="custom-modal-header">
           <h4 className="custom-modal-title">{title}</h4>
-          <button className="close-button" onClick={onClose}>
-            <CloseIcon />
-          </button>
+          <CloseButton onClick={onClose} variant="modal" size="small" />
         </div>
         <div className="custom-modal-content">
           {children}

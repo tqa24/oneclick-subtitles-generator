@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
+import CloseButton from '../common/CloseButton';
 import '../../styles/subtitle-customization/FontSelectionModal.css';
 
 const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => {
@@ -88,9 +89,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
         {/* Modal Header */}
         <div className="font-modal-header">
           <h2>{t('fontModal.selectFont', 'Select Font')}</h2>
-          <button className="font-modal-close" onClick={onClose}>
-            ✕
-          </button>
+          <CloseButton onClick={onClose} variant="modal" size="large" />
         </div>
 
         {/* Search and Filter Controls */}

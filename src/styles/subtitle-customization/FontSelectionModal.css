@@ -65,30 +65,7 @@
   font-family: var(--md-sys-typescale-headline-small-font);
 }
 
-.font-modal-close {
-  background: none;
-  border: none;
-  font-size: 1.25rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background-color 0.2s var(--md-easing-standard);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-}
-
-.font-modal-close:hover {
-  background-color: var(--md-surface-3);
-}
-
-.font-modal-close:focus {
-  outline: none;
-  background-color: var(--md-surface-3);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 .font-modal-controls {
   display: flex;

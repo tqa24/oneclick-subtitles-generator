@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import CloseButton from '../common/CloseButton';
 
 /**
  * Simple Narration Menu - A simplified version of the narration playback menu
@@ -61,22 +62,7 @@ const SimpleNarrationMenu = () => {
           {/* Menu Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ margin: 0 }}>{t('narration.playbackTitle', 'Narration')}</h3>
-            <button
-              onClick={closeMenu}
-              style={{
-                backgroundColor: 'rgba(0,0,0,0.1)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '30px',
-                height: '30px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer'
-              }}
-            >
-              ✕
-            </button>
+            <CloseButton onClick={closeMenu} variant="default" size="small" />
           </div>
 
           {/* Menu Content */}

@@ -5,6 +5,7 @@ import PositionSettings from './PositionSettings';
 import StyleSettings from './StyleSettings';
 import { fontOptions, fontWeightOptions, textAlignOptions, getTextTransformOptions } from '../constants';
 import { groupFontsByCategory } from '../utils/fontUtils';
+import CloseButton from '../../common/CloseButton';
 
 /**
  * Subtitle Settings Panel component
@@ -44,12 +45,11 @@ const SubtitleSettingsPanel = ({
       <div className="settings-header">
         <h4>{t('subtitleSettings.title', 'Subtitle Settings')}</h4>
         <div className="settings-header-actions">
-          <button
-            className="close-settings-btn"
+          <CloseButton
             onClick={() => setIsOpen(false)}
-          >
-            &times;
-          </button>
+            variant="default"
+            size="small"
+          />
         </div>
       </div>
 

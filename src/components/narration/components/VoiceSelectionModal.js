@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import CloseButton from '../../common/CloseButton';
 import '../../../styles/narration/VoiceSelectionModal.css';
 
 const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSelect, detectedLanguage, t }) => {
@@ -154,9 +155,7 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
         {/* Modal Header */}
         <div className="voice-modal-header">
           <h2>{t('narration.selectVoice', 'Select Voice')}</h2>
-          <button className="voice-modal-close" onClick={onClose}>
-            ✕
-          </button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         {/* Search and Filter Controls */}

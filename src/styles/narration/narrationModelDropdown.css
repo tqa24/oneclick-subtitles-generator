@@ -151,25 +151,7 @@
   color: var(--md-on-surface);
 }
 
-.modal-close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: var(--md-on-surface-variant);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.modal-close-btn:hover {
-  background-color: var(--md-surface-3);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 .modal-body {
   padding: 24px;

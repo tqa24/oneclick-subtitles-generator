@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import CloseButton from './common/CloseButton';
 import '../styles/TranscriptionRulesEditor.css';
 import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService';
 
@@ -173,7 +174,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
       <div className="rules-editor-modal">
         <div className="modal-header">
           <h2>{t('rulesEditor.title', 'Edit Transcription Rules')}</h2>
-          <button className="close-button" onClick={handleCancel}>×</button>
+          <CloseButton onClick={handleCancel} variant="modal" size="medium" />
         </div>
 
         <div className="prompt-preset-selector">

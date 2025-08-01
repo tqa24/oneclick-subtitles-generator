@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactDOM from 'react-dom';
+import CloseButton from '../../common/CloseButton';
 import '../../../styles/narration/subtitleGroupingModal.css';
 
 /**
@@ -92,12 +93,7 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
       <div className="subtitle-grouping-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <h2>{t('narration.subtitleGroupingTitle', 'Subtitle Grouping Comparison')}</h2>
-            <button className="close-button" onClick={onClose} aria-label="close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            <CloseButton onClick={onClose} variant="modal" size="medium" />
           </div>
         <div className="modal-content">
           <p className="subtitle-grouping-explanation">

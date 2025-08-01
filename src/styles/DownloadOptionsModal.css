@@ -57,24 +57,7 @@
   color: var(--md-on-surface);
 }
 
-.close-button {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--md-on-surface-variant);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-}
-
-.close-button:hover {
-  background-color: var(--md-surface-3);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Modal content */
 .modal-content {

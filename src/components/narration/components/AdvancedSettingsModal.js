@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import NarrationAdvancedSettings from '../NarrationAdvancedSettings';
+import CloseButton from '../../common/CloseButton';
 import '../../../styles/narration/advancedSettingsModal.css';
 
 // Default advanced settings
@@ -84,7 +85,7 @@ const AdvancedSettingsModal = ({
       <div className="advanced-settings-modal" ref={modalRef} onClick={(e) => e.stopPropagation()}>
         <div className="advanced-settings-modal-header">
           <h3>{t('narration.advancedSettings', 'Advanced Settings')}</h3>
-          <button className="close-button" onClick={onClose}>×</button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
         <div className="advanced-settings-modal-content">
           <NarrationAdvancedSettings

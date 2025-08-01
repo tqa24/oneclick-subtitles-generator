@@ -21,7 +21,9 @@ const TabBar: React.FC = () => {
               e.stopPropagation();
               closeTab(tab.id);
             }}>
-              &times;
+              <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+                <path d="M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z"/>
+              </svg>
             </CloseButton>
           </TabItem>
         ))}
@@ -125,20 +127,25 @@ const CloseButton = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  line-height: 1;
   color: var(--text-color);
   opacity: 0.6;
   cursor: pointer;
   transition: all 0.2s ease;
   background-color: transparent;
-  
+  transform-origin: center;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+  }
+
   &:hover {
     background-color: var(--hover-color);
     opacity: 1;
     transform: scale(1.1);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }

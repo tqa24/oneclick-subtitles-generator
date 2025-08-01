@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiX, FiMusic, FiImage } from 'react-icons/fi';
+import { FiMusic, FiImage } from 'react-icons/fi';
+import CloseButton from './common/CloseButton';
 import '../styles/SubtitlesInputModal.css';
 import LyricsInputSection from './LyricsInputSection';
 
@@ -79,9 +80,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
       <div className={`subtitles-input-modal ${isClosing ? 'closing' : ''}`}>
         <div className="subtitles-input-modal-header">
           <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
-          <button className="close-button" onClick={handleClose}>
-            <FiX />
-          </button>
+          <CloseButton onClick={handleClose} variant="modal" size="medium" />
         </div>
 
         <div className="subtitles-input-modal-content">
