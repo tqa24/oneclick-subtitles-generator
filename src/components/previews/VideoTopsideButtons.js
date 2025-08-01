@@ -26,7 +26,7 @@ const VideoTopsideButtons = ({
       {/* Refresh Narration button - only show when custom controls are available */}
       {showCustomControls && (
         <LiquidGlass
-          width={180}
+          width={240}
           height={50}
           position="absolute"
           top="10px"
@@ -226,7 +226,7 @@ const VideoTopsideButtons = ({
           height={50}
           position="absolute"
           top="10px"
-          left="200px"
+          left="260px"
           borderRadius="25px"
           className="content-center interactive theme-warning shape-circle"
           cursor="pointer"

@@ -136,7 +136,7 @@ const VideoBottomControls = ({
                         overflow: 'visible',
                         margin: '0', // Reset any default margins
                         opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                        transition: 'none',
+                        transition: 'opacity 0.6s ease-in-out',
                         pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                       onMouseDown={handleTimelineMouseDown}
@@ -195,7 +195,7 @@ const VideoBottomControls = ({
                       justifyContent: 'center',
                       height: '100%',
                       opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                      transition: 'none',
+                      transition: 'opacity 0.6s ease-in-out',
                       pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none',
                       userSelect: 'none'
                     }}>
@@ -232,7 +232,7 @@ const VideoBottomControls = ({
                           transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
                           opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                          transition: 'opacity 0s', // Instant appearance/disappearance, no fade animation
+                          transition: 'opacity 0.6s ease-in-out, transform 0.6s ease-in-out',
                           pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >
@@ -338,7 +338,7 @@ const VideoBottomControls = ({
                                 color: 'white',
                                 textShadow: '0 1px 3px rgba(0,0,0,0.7)',
                                 opacity: isVolumeDragging || isVolumeSliderVisible ? 1 : 0,
-                                transition: 'opacity 0.2s ease',
+                                transition: 'opacity 0.6s ease-in-out',
                                 pointerEvents: 'none',
                                 zIndex: 15,
                                 textAlign: 'center'
@@ -702,7 +702,7 @@ const VideoBottomControls = ({
                       }}
                       style={{
                         opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                        transition: 'opacity 0.3s ease-in-out',
+                        transition: 'opacity 0.6s ease-in-out',
                         pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                       }}
                     >

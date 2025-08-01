@@ -271,9 +271,9 @@
   pointer-events: auto;
 }
 
-/* Volume pill animation - only height/width, no opacity */
+/* Volume pill animation - including opacity for consistent fade */
 .liquid-glass.volume-pill-slow {
-  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1), width 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1), width 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-in-out !important;
 }
 
 /* Ensure buttons don't interfere with video controls */
