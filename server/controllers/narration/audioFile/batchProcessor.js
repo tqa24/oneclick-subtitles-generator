@@ -16,8 +16,138 @@ const { TEMP_AUDIO_DIR } = require('../directoryManager');
 const { getMediaDuration } = require('../../../services/videoProcessing/durationUtils');
 
 /**
+ * Find blank spaces (gaps) between segments where we can potentially move segments
+ * @param {Array} segments - Array of segments with timing information
+ * @returns {Array} - Array of blank spaces with start and end times
+ */
+const findBlankSpaces = (segments) => {
+  const blankSpaces = [];
+
+  // Sort segments by start time
+  const sortedSegments = [...segments].sort((a, b) => a.start - b.start);
+
+  for (let i = 0; i < sortedSegments.length - 1; i++) {
+    const currentSegment = sortedSegments[i];
+    const nextSegment = sortedSegments[i + 1];
+
+    // Calculate the effective end time (allowing 0.2s overlap at the end)
+    const currentEffectiveEnd = currentSegment.naturalEnd - 0.2;
+
+    // Check if there's a gap between current segment's effective end and next segment's start
+    if (nextSegment.start > currentEffectiveEnd) {
+      const gapStart = currentEffectiveEnd;
+      const gapEnd = nextSegment.start;
+      const gapDuration = gapEnd - gapStart;
+
+      if (gapDuration > 0.1) { // Only consider gaps larger than 0.1s
+        blankSpaces.push({
+          start: gapStart,
+          end: gapEnd,
+          duration: gapDuration,
+          afterSegmentId: currentSegment.subtitle_id,
+          beforeSegmentId: nextSegment.subtitle_id
+        });
+      }
+    }
+  }
+
+  return blankSpaces;
+};
+
+/**
+ * Calculate distributed shifting across multiple blank spaces with gradual decrease
+ * @param {Array} segmentsToShift - The segments that need to be shifted (current and following)
+ * @param {Array} blankSpaces - Available blank spaces to the left
+ * @param {number} requiredShift - How much shift is needed to avoid overlap
+ * @returns {Object} - Object with distributed shift amounts and strategy info
+ */
+const calculateDistributedGroupShift = (segmentsToShift, blankSpaces, requiredShift) => {
+  if (blankSpaces.length === 0) {
+    return { totalShiftAmount: 0, strategy: 'push-right', canUseBlankSpaces: false, distributedShifts: [] };
+  }
+
+  // Find up to 5 blank spaces to the left, sorted by distance from the first segment (nearest first)
+  const usableBlankSpaces = blankSpaces
+    .filter(space => space.end <= segmentsToShift[0].start)
+    .map(space => ({
+      ...space,
+      distanceFromSegment: segmentsToShift[0].start - space.end,
+      maxUsableSpace: Math.min(space.duration - 0.1, segmentsToShift[0].start - space.start)
+    }))
+    .sort((a, b) => a.distanceFromSegment - b.distanceFromSegment) // Nearest first
+    .slice(0, 5); // Take up to 5 blank spaces
+
+  if (usableBlankSpaces.length === 0) {
+    return { totalShiftAmount: 0, strategy: 'push-right', canUseBlankSpaces: false, distributedShifts: [] };
+  }
+
+  // Calculate total available space across all usable blank spaces
+  const totalAvailableSpace = usableBlankSpaces.reduce((sum, space) => sum + space.maxUsableSpace, 0);
+
+  if (totalAvailableSpace < 0.1) {
+    return { totalShiftAmount: 0, strategy: 'push-right', canUseBlankSpaces: false, distributedShifts: [] };
+  }
+
+  // Calculate how much we can actually shift (limited by available space and required shift)
+  const actualShiftAmount = Math.min(requiredShift, totalAvailableSpace);
+
+  // Distribute the shift across blank spaces with gradual decrease (giảm dần)
+  // Nearest space gets the most shift, furthest gets the least
+  const distributedShifts = [];
+  let remainingShift = actualShiftAmount;
+
+  // Create a decreasing weight system: nearest = 1.0, next = 0.8, next = 0.6, etc.
+  const weights = usableBlankSpaces.map((_, index) => Math.max(0.2, 1.0 - (index * 0.2)));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  for (let i = 0; i < usableBlankSpaces.length && remainingShift > 0.05; i++) {
+    const space = usableBlankSpaces[i];
+    const weight = weights[i];
+
+    // Calculate this space's share of the total shift (proportional to weight)
+    const proposedShift = (actualShiftAmount * weight) / totalWeight;
+
+    // Limit by space availability and remaining shift
+    const actualSpaceShift = Math.min(
+      proposedShift,
+      space.maxUsableSpace,
+      remainingShift
+    );
+
+    if (actualSpaceShift > 0.05) { // Only use shifts larger than 0.05s
+      distributedShifts.push({
+        blankSpace: space,
+        shiftAmount: actualSpaceShift,
+        weight: weight,
+        segmentRange: i === 0 ? 'all' : `from-${i}`
+      });
+      remainingShift -= actualSpaceShift;
+    }
+  }
+
+  const totalShiftAchieved = distributedShifts.reduce((sum, shift) => sum + shift.shiftAmount, 0);
+
+  if (totalShiftAchieved > 0.1) {
+    return {
+      totalShiftAmount: totalShiftAchieved,
+      strategy: `distributed-shift-across-${distributedShifts.length}-spaces`,
+      canUseBlankSpaces: true,
+      distributedShifts: distributedShifts,
+      totalAvailableSpace: totalAvailableSpace
+    };
+  }
+
+  return { totalShiftAmount: 0, strategy: 'push-right', canUseBlankSpaces: false, distributedShifts: [] };
+};
+
+/**
  * Analyze audio segments and adjust their timing to avoid overlaps
  * This creates a more natural narration by ensuring segments don't talk over each other
+ *
+ * Improvements:
+ * 1. Allows 0.2s overlap at the end of each segment (more natural)
+ * 2. When large adjustments (>0.5s) are needed, tries to find blank spaces to the left
+ *    to move segments into, reducing the overall audio length
  *
  * @param {Array} audioSegments - Array of audio segments to analyze
  * @returns {Promise<Array>} - Array of adjusted audio segments
@@ -58,73 +188,168 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
     }
   }
 
-  // Second pass: Detect and resolve overlaps
+  // Second pass: Detect and resolve overlaps with group-shifting algorithm
   const adjustedSegments = [];
-  let previousSegment = null;
 
-  for (const segment of segmentsWithDuration) {
-    if (!previousSegment) {
+  for (let i = 0; i < segmentsWithDuration.length; i++) {
+    const segment = segmentsWithDuration[i];
+
+    if (i === 0) {
       // First segment doesn't need adjustment
       adjustedSegments.push(segment);
-      previousSegment = segment;
       continue;
     }
 
+    const previousSegment = adjustedSegments[i - 1];
+
     // Check if this segment would overlap with the previous one
-    const wouldOverlap = segment.start < previousSegment.naturalEnd;
+    // Allow 0.2s overlap at the end of the previous segment
+    const previousEffectiveEnd = previousSegment.naturalEnd - 0.2;
+    const wouldOverlap = segment.start < previousEffectiveEnd;
 
     if (wouldOverlap) {
       // Calculate how much overlap would occur
-      const overlapAmount = previousSegment.naturalEnd - segment.start;
+      const overlapAmount = previousEffectiveEnd - segment.start;
 
       // Log the overlap detection
       const prevIsGrouped = previousSegment.isGrouped ? ` (grouped with ${previousSegment.original_ids?.length || 0} original IDs)` : '';
       const currIsGrouped = segment.isGrouped ? ` (grouped with ${segment.original_ids?.length || 0} original IDs)` : '';
 
       console.log(`Detected overlap of ${overlapAmount.toFixed(2)}s between segments:
-        - Previous: ID ${previousSegment.subtitle_id}${prevIsGrouped}, Start: ${previousSegment.start.toFixed(2)}, Natural End: ${previousSegment.naturalEnd.toFixed(2)}
+        - Previous: ID ${previousSegment.subtitle_id}${prevIsGrouped}, Start: ${previousSegment.start.toFixed(2)}, Effective End: ${previousEffectiveEnd.toFixed(2)}
         - Current: ID ${segment.subtitle_id}${currIsGrouped}, Start: ${segment.start.toFixed(2)}, End: ${segment.end.toFixed(2)}`);
 
-      // Adjust the start time of the current segment to avoid overlap
-      // Add a small gap (0.1s) between segments for natural pacing
-      const adjustedStart = previousSegment.naturalEnd + 0.1;
+      // Calculate the basic adjustment (push to the right)
+      const basicAdjustedStart = previousEffectiveEnd + 0.1;
+      const basicShiftAmount = basicAdjustedStart - segment.start;
 
-      // Calculate how much we need to shift this segment
-      const shiftAmount = adjustedStart - segment.start;
+      let finalAdjustedStart = basicAdjustedStart;
+      let finalShiftAmount = basicShiftAmount;
+      let adjustmentStrategy = 'push-right';
+      let groupShiftApplied = false;
+
+      // If the adjustment is significant (>0.5s), try to shift the group left into blank spaces
+      if (basicShiftAmount > 0.5) {
+        console.log(`Large adjustment needed (${basicShiftAmount.toFixed(2)}s), looking for blank spaces to shift group left...`);
+
+        // Find all blank spaces in the current adjusted segments
+        const blankSpaces = findBlankSpaces(adjustedSegments);
+
+        if (blankSpaces.length > 0) {
+          console.log(`Found ${blankSpaces.length} blank spaces:`,
+            blankSpaces.map(space => `${space.duration.toFixed(2)}s gap after segment ${space.afterSegmentId}`));
+
+          // Get all remaining segments (current and following) that might need to be shifted
+          const remainingSegments = segmentsWithDuration.slice(i);
+
+          // Calculate distributed group shift across multiple blank spaces
+          const distributedShiftResult = calculateDistributedGroupShift(remainingSegments, blankSpaces, basicShiftAmount);
+
+          if (distributedShiftResult.canUseBlankSpaces && distributedShiftResult.totalShiftAmount > 0) {
+            // Apply the distributed shift
+            const totalLeftShift = Math.min(distributedShiftResult.totalShiftAmount, basicShiftAmount);
+
+            console.log(`Applying distributed shift across ${distributedShiftResult.distributedShifts.length} blank spaces:`);
+            distributedShiftResult.distributedShifts.forEach((shift, index) => {
+              console.log(`  Space ${index + 1}: ${shift.shiftAmount.toFixed(2)}s into gap after segment ${shift.blankSpace.afterSegmentId} (weight: ${shift.weight.toFixed(1)})`);
+            });
+            console.log(`  Total shift: ${totalLeftShift.toFixed(2)}s left for ${remainingSegments.length} segments`);
+
+            // Shift the current segment left instead of right
+            finalAdjustedStart = segment.start - totalLeftShift;
+            finalShiftAmount = -totalLeftShift; // Negative because moving left
+            adjustmentStrategy = distributedShiftResult.strategy;
+            groupShiftApplied = true;
+
+            // Apply distributed shifts to all following segments
+            // Each segment gets shifted by the cumulative amount from spaces to its left
+            for (let j = i + 1; j < segmentsWithDuration.length; j++) {
+              // Calculate how much this segment should be shifted based on its position
+              const segmentIndex = j - i; // 0-based index within the group being shifted
+
+              // For now, apply the same total shift to all segments in the group
+              // In a more advanced version, we could apply different amounts based on position
+              const segmentShift = totalLeftShift;
+
+              segmentsWithDuration[j] = {
+                ...segmentsWithDuration[j],
+                start: segmentsWithDuration[j].start - segmentShift,
+                naturalEnd: segmentsWithDuration[j].start - segmentShift + segmentsWithDuration[j].actualDuration,
+                groupShiftAmount: -segmentShift,
+                distributedShiftApplied: true
+              };
+            }
+
+            console.log(`Distributed shift applied: moved segments ${segment.subtitle_id}-${segmentsWithDuration[segmentsWithDuration.length - 1].subtitle_id} left by ${totalLeftShift.toFixed(2)}s total`);
+          }
+        }
+      }
 
       // Create adjusted segment
       const adjustedSegment = {
         ...segment,
-        start: adjustedStart,
+        start: finalAdjustedStart,
         // Update the natural end based on the new start time
-        naturalEnd: adjustedStart + segment.actualDuration,
+        naturalEnd: finalAdjustedStart + segment.actualDuration,
         // Keep track of the original timing for reference
         originalStart: segment.start,
         // Note how much we shifted this segment
-        shiftAmount
+        shiftAmount: finalShiftAmount,
+        adjustmentStrategy,
+        groupShiftApplied
       };
 
       // Log the adjustment
-      console.log(`Adjusted segment ${segment.subtitle_id}: Shifted by ${shiftAmount.toFixed(2)}s to start at ${adjustedStart.toFixed(2)}s`);
+      const direction = finalShiftAmount > 0 ? 'right' : 'left';
+      console.log(`Adjusted segment ${segment.subtitle_id}: ${adjustmentStrategy}, shifted by ${Math.abs(finalShiftAmount).toFixed(2)}s ${direction} to start at ${finalAdjustedStart.toFixed(2)}s`);
 
       adjustedSegments.push(adjustedSegment);
-      previousSegment = adjustedSegment;
     } else {
-      // No overlap, keep as is
-      adjustedSegments.push(segment);
-      previousSegment = segment;
+      // No overlap, but check if this segment was affected by a previous distributed shift
+      let segmentToAdd = segment;
+      if (segment.groupShiftAmount) {
+        const strategyName = segment.distributedShiftApplied ? 'distributed-shift' : 'group-shift-left';
+        segmentToAdd = {
+          ...segment,
+          shiftAmount: segment.groupShiftAmount,
+          adjustmentStrategy: strategyName,
+          groupShiftApplied: true
+        };
+        console.log(`Segment ${segment.subtitle_id}: affected by ${strategyName}, moved ${Math.abs(segment.groupShiftAmount).toFixed(2)}s left to start at ${segment.start.toFixed(2)}s`);
+      }
+
+      adjustedSegments.push(segmentToAdd);
     }
   }
 
   // Log summary of adjustments
   const adjustedCount = adjustedSegments.filter(s => s.shiftAmount).length;
+  const leftMoves = adjustedSegments.filter(s => s.shiftAmount && s.shiftAmount < 0).length;
+  const rightMoves = adjustedSegments.filter(s => s.shiftAmount && s.shiftAmount > 0).length;
+
   if (adjustedCount > 0) {
-    console.log(`Smart overlap resolution complete: Adjusted ${adjustedCount} of ${audioSegments.length} segments for natural narration flow.`);
+    console.log(`Smart overlap resolution complete: Adjusted ${adjustedCount} of ${audioSegments.length} segments (${leftMoves} moved left, ${rightMoves} moved right) for optimized narration flow.`);
   } else {
     console.log(`No overlaps detected among ${audioSegments.length} segments. No adjustments needed.`);
   }
 
-  return adjustedSegments;
+  // Final step: Move all segments 0.5s earlier for better timing
+  console.log(`Applying final timing adjustment: moving all segments 0.5s earlier...`);
+  const finalAdjustedSegments = adjustedSegments.map(segment => {
+    const newStart = Math.max(0, segment.start - 0.5); // Don't go below 0
+    return {
+      ...segment,
+      start: newStart,
+      naturalEnd: newStart + segment.actualDuration,
+      // Track this final adjustment
+      finalTimingAdjustment: segment.start - newStart, // How much we actually moved (might be less than 0.5 if original start was < 0.5)
+      originalStartBeforeFinalAdjustment: segment.start
+    };
+  });
+
+  console.log(`Final timing adjustment applied: all segments moved 0.5s earlier (or to start at 0s minimum).`);
+
+  return finalAdjustedSegments;
 };
 
 /**
@@ -168,10 +393,22 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
     // Calculate delay in milliseconds for the current segment
     const delayMs = Math.round(segment.start * 1000);
 
-    // Log the delay being applied for each segment
-    const wasAdjusted = segment.shiftAmount ? ` (adjusted by ${segment.shiftAmount.toFixed(2)}s)` : '';
+    // Log the delay being applied for each segment with enhanced information
+    let adjustmentInfo = '';
+    if (segment.shiftAmount) {
+      const direction = segment.shiftAmount > 0 ? 'right' : 'left';
+      const strategy = segment.adjustmentStrategy || 'push-right';
+      adjustmentInfo = ` (adjusted ${Math.abs(segment.shiftAmount).toFixed(2)}s ${direction} via ${strategy})`;
+    }
+
+    // Add final timing adjustment info
+    let finalTimingInfo = '';
+    if (segment.finalTimingAdjustment) {
+      finalTimingInfo = ` + ${segment.finalTimingAdjustment.toFixed(2)}s earlier`;
+    }
+
     const isGrouped = segment.isGrouped ? ` (grouped subtitle with ${segment.original_ids?.length || 0} original IDs)` : '';
-    console.log(`Segment ${segment.subtitle_id}: Applying delay of ${delayMs}ms${wasAdjusted}${isGrouped}`);
+    console.log(`[SERVER] Segment ${segment.subtitle_id}: Applying delay of ${delayMs}ms${adjustmentInfo}${finalTimingInfo}${isGrouped}`);
 
     // Use `index + 1` because input [0] is anullsrc
     const inputIndex = index + 1;
