@@ -42,13 +42,14 @@ export const showAudioAlignmentWarning = (durationDifference) => {
   });
   const closeLabel = i18n.t('narration.closeNotification');
 
-  // Create React component for the notification using proper LiquidGlass
+  // Create React component for the notification using LiquidGlass with added blur
   const NotificationComponent = () => (
     <LiquidGlass
       width={600}
       height={120}
       position="relative"
-      borderRadius="16px"
+      borderRadius="32px"
+      backdropFilter="blur(2px) contrast(1.2) brightness(1.05) saturate(1.1)"
       className="content-center theme-warning"
       style={{
         cursor: 'default',
