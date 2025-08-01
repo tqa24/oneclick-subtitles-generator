@@ -127,6 +127,24 @@ const LiquidGlass = ({
     return { x: constrainedX, y: constrainedY };
   }, [constrainToViewport, viewportOffset, width, height]);
 
+  // Helper function to parse dimensions
+  const parseDimension = useCallback((value, containerRef) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      if (value.endsWith('%')) {
+        const percentage = parseFloat(value);
+        if (containerRef?.current?.parentElement) {
+          const parentRect = containerRef.current.parentElement.getBoundingClientRect();
+          return (percentage / 100) * parentRect.width; // Assume width for both width and height percentages
+        }
+        return 100; // Fallback
+      }
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? 100 : parsed; // Fallback to 100 if invalid
+    }
+    return 100; // Fallback
+  }, []);
+
   // Update shader effect
   const updateShader = useCallback(() => {
     if (!canvasRef.current || !contextRef.current) return;
@@ -140,8 +158,18 @@ const LiquidGlass = ({
 
     mouseUsedRef.current = false;
 
-    const w = width * canvasDPI;
-    const h = height * canvasDPI;
+    // Parse dimensions properly
+    const parsedWidth = parseDimension(width, containerRef);
+    const parsedHeight = parseDimension(height, containerRef);
+    const w = parsedWidth * canvasDPI;
+    const h = parsedHeight * canvasDPI;
+
+    // Validate dimensions before creating ImageData
+    if (!w || !h || w <= 0 || h <= 0 || !Number.isFinite(w) || !Number.isFinite(h)) {
+      console.warn('LiquidGlass: Invalid dimensions for ImageData', { width, height, w, h, canvasDPI });
+      return;
+    }
+
     const data = new Uint8ClampedArray(w * h * 4);
 
     let maxScale = 0;
@@ -172,7 +200,14 @@ const LiquidGlass = ({
       data[i + 3] = 255;
     }
 
-    contextRef.current.putImageData(new ImageData(data, w, h), 0, 0);
+    // Double-check dimensions before creating ImageData
+    if (w > 0 && h > 0 && Number.isFinite(w) && Number.isFinite(h)) {
+      try {
+        contextRef.current.putImageData(new ImageData(data, w, h), 0, 0);
+      } catch (error) {
+        console.error('LiquidGlass: Failed to create ImageData', { w, h, dataLength: data.length, error });
+      }
+    }
     
     // Update SVG filter
     const feImage = svgRef.current?.querySelector(`#${uniqueIdRef.current}_map`);
@@ -187,22 +222,24 @@ const LiquidGlass = ({
     if (onEffectUpdate) {
       onEffectUpdate({ maxScale, mouseUsed: mouseUsedRef.current });
     }
-  }, [width, height, canvasDPI, fragmentShader, onEffectUpdate]);
+  }, [width, height, canvasDPI, fragmentShader, onEffectUpdate, parseDimension]);
 
   // Initialize canvas and SVG
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Setup canvas
+    // Setup canvas with parsed dimensions
     const canvas = canvasRef.current;
-    canvas.width = width * canvasDPI;
-    canvas.height = height * canvasDPI;
+    const parsedWidth = parseDimension(width, containerRef);
+    const parsedHeight = parseDimension(height, containerRef);
+    canvas.width = parsedWidth * canvasDPI;
+    canvas.height = parsedHeight * canvasDPI;
     canvas.style.display = 'none';
     contextRef.current = canvas.getContext('2d');
 
     // Initial shader update
     updateShader();
-  }, [width, height, canvasDPI, updateShader]);
+  }, [width, height, canvasDPI, updateShader, parseDimension]);
 
   // Handle mouse events for dragging
   useEffect(() => {
