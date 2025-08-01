@@ -301,10 +301,16 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
   cursor: pointer;
   transition: background-color 0.2s;
+  transform-origin: center;
   flex-shrink: 0;
+}
+
+.remove-item-button svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
 }
 
 .remove-item-button:hover {

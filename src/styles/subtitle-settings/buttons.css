@@ -128,33 +128,7 @@
   box-shadow: var(--md-elevation-level1);
 }
 
-/* Header buttons */
-.close-settings-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  color: var(--md-on-surface-variant);
-  padding: 0;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.close-settings-btn {
-  font-size: 1.25rem;
-  line-height: 1;
-  transition: background-color 0.2s var(--md-easing-standard),
-              color 0.2s var(--md-easing-standard);
-}
-
-.close-settings-btn:hover {
-  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.08);
-  color: var(--md-on-surface);
-}
+/* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Reset button */
 .reset-settings-btn {

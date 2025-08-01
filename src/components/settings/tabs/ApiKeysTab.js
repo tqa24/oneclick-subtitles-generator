@@ -269,13 +269,12 @@ const ApiKeysTab = ({
           <div className="message-content">
             <span>{t('settings.gemini25ProPaused')}</span>
           </div>
-          <button
-            className="close-message-btn"
+          <CloseButton
             onClick={handleCloseGeminiPausedMessage}
-            aria-label={t('settings.closeMessage')}
-          >
-            ×
-          </button>
+            variant="default"
+            size="small"
+            ariaLabel={t('settings.closeMessage')}
+          />
         </div>
       )}
 
@@ -339,7 +338,9 @@ const ApiKeysTab = ({
                                 onClick={() => handleRemoveGeminiKey(key)}
                                 title={t('settings.removeKey', 'Remove key')}
                               >
-                                ×
+                                <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+                                  <path d="M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z"/>
+                                </svg>
                               </button>
                             </div>
                           </div>
@@ -378,7 +379,9 @@ const ApiKeysTab = ({
                               onClick={() => handleRemoveGeminiKey(key)}
                               title={t('settings.removeKey', 'Remove key')}
                             >
-                              ×
+                              <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
+                                <path d="M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z"/>
+                              </svg>
                             </button>
                           </div>
                         </div>

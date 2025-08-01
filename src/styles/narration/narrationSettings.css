@@ -48,13 +48,19 @@
   background: none;
   border: none;
   color: var(--text-color-secondary);
-  font-size: 1.2rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform-origin: center;
+}
+
+.clear-reference-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
 }
 
 .clear-reference-btn:hover {
