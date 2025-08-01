@@ -527,6 +527,9 @@ const VideoRenderingSection = ({
         });
 
         if (response.ok) {
+          // Check for audio alignment notification
+          const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
+          checkAudioAlignmentFromResponse(response);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
 
@@ -676,6 +679,12 @@ const VideoRenderingSection = ({
         },
         body: JSON.stringify({ narrations: narrationData })
       });
+
+      // Check for audio alignment notification after successful response
+      if (response.ok) {
+        const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
+        checkAudioAlignmentFromResponse(response);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();

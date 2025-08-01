@@ -206,5 +206,8 @@
   "chatterboxGenerationComplete": "Tạo thuyết minh Chatterbox hoàn tất",
   "chatterboxGenerationPartial": "Tạo Chatterbox hoàn tất với {{success}} thành công và {{errors}} lỗi",
   "chatterboxGenerationError": "Lỗi khi tạo thuyết minh với Chatterbox: {{error}}",
-  "chatterboxNoReferenceAudio": "Âm thanh tham chiếu là bắt buộc cho việc tạo TTS Chatterbox. Vui lòng tải lên tệp âm thanh tham chiếu."
+  "chatterboxNoReferenceAudio": "Âm thanh tham chiếu là bắt buộc cho việc tạo TTS Chatterbox. Vui lòng tải lên tệp âm thanh tham chiếu.",
+
+  "audioAlignmentWarning": "Dù đã áp dụng sắp xếp thuyết minh thông minh, nhưng audio kết quả dài hơn dự tính tận {{duration}} giây, vui lòng dùng thanh chỉnh tốc độ phía trên danh sách audio (chỉnh nhanh hơn) rồi tạo lại thuyết minh tổng bằng nút Làm mới thuyết minh trên trình phát hoặc nút Tải xuống sắp xếp",
+  "closeNotification": "Đóng thông báo"
 }

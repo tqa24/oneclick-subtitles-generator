@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import AppLayout from './AppLayout';
 import { useAppState } from './AppState';
@@ -6,6 +6,7 @@ import { useAppHandlers } from './AppHandlers';
 import { useModalHandlers } from './ModalHandlers';
 import { useAppEffects } from './AppEffects';
 import OnboardingBanner from '../OnboardingBanner';
+import { initializeAudioAlignmentNotifications } from '../../utils/audioAlignmentNotification';
 
 // Import CSS files
 import '../../styles/App.css';
@@ -16,6 +17,7 @@ import '../../styles/VideoAnalysisModal.css';
 import '../../styles/TranscriptionRulesEditor.css';
 import '../../styles/OnboardingBanner.css';
 import '../../styles/spinner-fix.css'; // Fix for loading spinners not rotating
+import '../../styles/lyrics/save-message.css'; // Audio alignment notification styles
 
 /**
  * Main App component
@@ -39,6 +41,11 @@ function App() {
     prepareVideoForSegments: appHandlers.prepareVideoForSegments,
     t
   });
+
+  // Initialize audio alignment notification system
+  useEffect(() => {
+    initializeAudioAlignmentNotifications();
+  }, []);
 
   // State change effects removed to reduce console logs
 

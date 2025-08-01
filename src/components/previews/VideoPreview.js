@@ -2255,6 +2255,13 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                           body: JSON.stringify({ narrations: narrationData })
                         });
 
+                        // Check for audio alignment notification after successful response
+                        if (response.ok) {
+                          // Import and check for duration notification
+                          const { checkAudioAlignmentFromResponse } = await import('../../utils/audioAlignmentNotification.js');
+                          checkAudioAlignmentFromResponse(response);
+                        }
+
                         console.log('Response status:', response.status);
                         console.log('Response headers:', [...response.headers.entries()]);
 

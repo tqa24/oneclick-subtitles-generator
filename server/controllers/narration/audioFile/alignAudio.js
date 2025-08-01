@@ -13,6 +13,9 @@ const { OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../directoryManager');
 // Import batch processing functions
 const { processBatch, concatenateAudioFiles } = require('./batchProcessor');
 
+// Import duration utility
+const { getMediaDuration } = require('../../../services/videoProcessing/durationUtils');
+
 // Maximum number of segments to process in a single batch
 const MAX_SEGMENTS_PER_BATCH = 200;
 
@@ -276,10 +279,10 @@ const downloadAlignedAudio = async (req, res) => {
     // Sort segments by start time (redundant if narrations already sorted, but safe)
     audioSegments.sort((a, b) => a.start - b.start);
 
-    // Find the total duration needed (end time of the last subtitle)
-    // Use 0 as initial value for max in case audioSegments is empty (though handled earlier)
+    // Find the total duration needed (end time of the last adjusted segment)
+    // Use the adjusted segments to get the actual final duration
     const totalDuration = audioSegments.length > 0
-      ? Math.max(...audioSegments.map(s => s.end)) + 1 // Add 1 second buffer at the end
+      ? Math.max(...audioSegments.map(s => s.naturalEnd || (s.start + s.actualDuration) || s.end)) + 1 // Add 1 second buffer for FFmpeg processing
       : 1; // Default to 1 second if no segments
 
 
@@ -339,16 +342,54 @@ const downloadAlignedAudio = async (req, res) => {
     if (outputStats.size === 0) {
       console.error(`Output file is empty: ${outputPath}`);
       // Attempt cleanup even on error
-      try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch (e) { console.error('Error cleaning up empty output file:', e); }
+      try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch (e) { console.error('Error cleaned up empty output file:', e); }
       return res.status(500).json({ error: 'Created aligned audio file is empty' });
     }
 
+    // Calculate duration information for notification check
+    const firstSubtitleStart = Math.min(...narrations.map(n => n.start || 0));
+    const lastSubtitleEnd = Math.max(...narrations.map(n => n.end || 0));
+    const expectedDuration = lastSubtitleEnd - firstSubtitleStart;
 
+    // Get REAL duration from the actual generated audio file using FFmpeg
+    let actualDuration = 0;
+    let durationDifference = 0;
+
+    try {
+      console.log(`[SERVER] Getting real duration from generated audio file: ${outputPath}`);
+      const actualDurationResult = await getMediaDuration(outputPath);
+      actualDuration = actualDurationResult;
+      durationDifference = actualDuration - expectedDuration;
+
+      console.log(`[SERVER] Duration calculation for notification:`);
+      console.log(`[SERVER]   Original subtitle range: ${firstSubtitleStart.toFixed(2)}s to ${lastSubtitleEnd.toFixed(2)}s`);
+      console.log(`[SERVER]   Expected duration: ${expectedDuration.toFixed(2)}s`);
+      console.log(`[SERVER]   REAL audio file duration: ${actualDuration.toFixed(2)}s (measured from file)`);
+      console.log(`[SERVER]   Duration difference: ${durationDifference.toFixed(2)}s`);
+
+      if (durationDifference > 3) {
+        console.log(`[SERVER]   ⚠️  Duration difference > 3s - notification will be triggered`);
+      } else {
+        console.log(`[SERVER]   ✅ Duration difference <= 3s - no notification needed`);
+      }
+    } catch (error) {
+      console.error(`[SERVER] Error getting real audio duration: ${error.message}`);
+      // Fallback to 0 difference if we can't measure
+      actualDuration = expectedDuration;
+      durationDifference = 0;
+    }
 
     // Set the appropriate headers
     res.setHeader('Content-Type', 'audio/wav');
     res.setHeader('Content-Disposition', `attachment; filename=${outputFilename}`);
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+
+    // Add duration information to headers for frontend notification
+    res.setHeader('X-Duration-Difference', durationDifference.toFixed(2));
+    res.setHeader('X-Expected-Duration', expectedDuration.toFixed(2));
+    res.setHeader('X-Actual-Duration', actualDuration.toFixed(2));
+
+    // Expose custom headers to frontend
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Duration-Difference, X-Expected-Duration, X-Actual-Duration');
 
     // Send the file
     res.sendFile(outputPath, (err) => {

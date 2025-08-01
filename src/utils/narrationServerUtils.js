@@ -238,6 +238,13 @@ export const downloadAlignedAudio = async (generationResults, t) => {
         body: JSON.stringify({ narrations: narrationData })
       });
 
+      // Check for audio alignment notification after successful response
+      if (response.ok) {
+        // Import and check for duration notification
+        const { checkAudioAlignmentFromResponse } = await import('./audioAlignmentNotification.js');
+        checkAudioAlignmentFromResponse(response);
+      }
+
 
 
     } catch (fetchError) {

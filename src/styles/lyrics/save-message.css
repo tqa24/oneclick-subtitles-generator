@@ -35,3 +35,12 @@
     opacity: 0;
   }
 }
+
+/* Audio alignment warning message - now using LiquidGlass component */
+.audio-alignment-warning-container {
+  /* Container styles are handled inline in the component */
+}
+
+.audio-alignment-warning {
+  /* LiquidGlass component handles all styling */
+}
