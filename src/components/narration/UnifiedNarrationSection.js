@@ -28,7 +28,7 @@ import GeminiVoiceSelection from './components/GeminiVoiceSelection';
 import GeminiConcurrentClientsSlider from './components/GeminiConcurrentClientsSlider';
 import AdvancedSettingsToggle from './components/AdvancedSettingsToggle';
 import GenerateButton from './components/GenerateButton';
-import GeminiGenerateButton from './components/GeminiGenerateButton';
+
 import NarrationResults from './components/NarrationResults';
 import GeminiNarrationResults from './components/GeminiNarrationResults';
 import StatusMessage from './components/StatusMessage';
@@ -780,9 +780,10 @@ const UnifiedNarrationSection = ({
           />
 
           {/* Generate Button */}
-          <GeminiGenerateButton
+          <GenerateButton
             handleGenerateNarration={handleEdgeTTSNarration}
             isGenerating={isGenerating}
+            referenceAudio={null}
             subtitleSource={subtitleSource}
             cancelGeneration={cancelEdgeTTSGeneration}
             downloadAllAudio={downloadAllAudio}
@@ -867,9 +868,10 @@ const UnifiedNarrationSection = ({
           />
 
           {/* Generate Button */}
-          <GeminiGenerateButton
+          <GenerateButton
             handleGenerateNarration={handleGTTSNarration}
             isGenerating={isGenerating}
+            referenceAudio={null}
             subtitleSource={subtitleSource}
             cancelGeneration={cancelGTTSGeneration}
             downloadAllAudio={downloadAllAudio}
@@ -955,10 +957,11 @@ const UnifiedNarrationSection = ({
             isGenerating={isGenerating}
           />
 
-          {/* Gemini Generate Button */}
-          <GeminiGenerateButton
+          {/* Generate Button */}
+          <GenerateButton
             handleGenerateNarration={handleGeminiNarration}
             isGenerating={isGenerating}
+            referenceAudio={null}
             subtitleSource={subtitleSource}
             cancelGeneration={cancelGeminiGeneration}
             downloadAllAudio={downloadAllAudio}

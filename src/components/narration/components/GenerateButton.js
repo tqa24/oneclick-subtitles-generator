@@ -50,11 +50,11 @@ const GenerateButton = ({
             <button
               className="pill-button primary"
               onClick={handleGenerateNarration}
-              disabled={!referenceAudio || !subtitleSource || !isServiceAvailable}
+              disabled={(referenceAudio !== null && !referenceAudio) || !subtitleSource || !isServiceAvailable}
               title={
                 !isServiceAvailable ? serviceUnavailableMessage :
                 !subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') :
-                !referenceAudio ? t('narration.noReferenceAudioError', 'Please upload or record reference audio') : ''
+                (referenceAudio !== null && !referenceAudio) ? t('narration.noReferenceAudioError', 'Please upload or record reference audio') : ''
               }
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -66,35 +66,37 @@ const GenerateButton = ({
         </div>
 
         {/* Right side - Download buttons */}
-        {generationResults.length > 0 && (
-          <div className="generate-button-right">
-            <div className="pill-button-group">
-              <button
-                className="pill-button secondary download-all-btn"
-                onClick={downloadAllAudio}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                {t('narration.downloadAll', 'Download All')}
-              </button>
+        <div className="generate-button-right">
+          <div className="pill-button-group">
+            <button
+              className="pill-button secondary download-all-btn"
+              onClick={downloadAllAudio}
+              title={t('narration.downloadAllTooltip', 'Download all generated audio files')}
+              disabled={!generationResults || generationResults.length === 0 || !generationResults.some(r => r.success && (r.audioData || r.filename))}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {t('narration.downloadAll', 'Tải xuống tất cả')}
+            </button>
 
-              <button
-                className="pill-button secondary"
-                onClick={downloadAlignedAudio}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                {t('narration.downloadAligned', 'Download Aligned')}
-              </button>
-            </div>
+            <button
+              className="pill-button secondary"
+              onClick={downloadAlignedAudio}
+              title={t('narration.downloadAlignedTooltip', 'Tải xuống một tập tin thuyết minh đã sắp xếp')}
+              disabled={!generationResults || generationResults.length === 0 || !generationResults.some(r => r.success && (r.audioData || r.filename))}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {t('narration.downloadAligned', 'Tải xuống như đã sắp xếp trên timeline')}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

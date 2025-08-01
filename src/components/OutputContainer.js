@@ -286,41 +286,21 @@ const OutputContainer = ({
           </div>
 
           {/* Translation Section */}
-          {(() => {
-            // Show sections if:
-            // 1. Not in SRT-only mode AND
-            // 2. Either we have an uploaded file OR we have a valid downloaded video
-            const hasActualVideo = uploadedFile || hasValidDownloadedVideo(uploadedFile);
-            return !isSrtOnlyMode && hasActualVideo;
-          })() && (
-            <>
-              <TranslationSection
-                subtitles={editedLyrics || subtitlesData}
-                videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
-                onTranslationComplete={setTranslatedSubtitles}
-              />
-            </>
-          )}
+          <TranslationSection
+            subtitles={editedLyrics || subtitlesData}
+            videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+            onTranslationComplete={setTranslatedSubtitles}
+          />
 
           {/* Unified Narration Section - Now separate from Translation */}
-          {(() => {
-            // Show sections if:
-            // 1. Not in SRT-only mode AND
-            // 2. Either we have an uploaded file OR we have a valid downloaded video
-            const hasActualVideo = uploadedFile || hasValidDownloadedVideo(uploadedFile);
-            return !isSrtOnlyMode && hasActualVideo;
-          })() && (
-            <>
-              <UnifiedNarrationSection
-                subtitles={translatedSubtitles || editedLyrics || subtitlesData}
-                originalSubtitles={editedLyrics || subtitlesData}
-                translatedSubtitles={translatedSubtitles}
-                referenceAudio={referenceAudio}
-                videoPath={actualVideoUrl}
-                onReferenceAudioChange={setReferenceAudio}
-              />
-            </>
-          )}
+          <UnifiedNarrationSection
+            subtitles={translatedSubtitles || editedLyrics || subtitlesData}
+            originalSubtitles={editedLyrics || subtitlesData}
+            translatedSubtitles={translatedSubtitles}
+            referenceAudio={referenceAudio}
+            videoPath={actualVideoUrl}
+            onReferenceAudioChange={setReferenceAudio}
+          />
 
           {/* Background Image Generator moved back to AppLayout */}
         </>

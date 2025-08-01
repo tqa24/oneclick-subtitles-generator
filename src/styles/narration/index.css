@@ -3,7 +3,6 @@
 /* Import component styles */
 @import './narrationSettings.css';
 @import './unifiedNarrationRedesign.css';
-@import './geminiGenerateButton.css';
 @import './narrationAdvancedSettingsRedesign.css';
 @import './geminiNarrationResults.css';
 @import './speedControlSlider.css';
