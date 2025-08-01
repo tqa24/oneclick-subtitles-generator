@@ -28,7 +28,7 @@
 /* Cache actions row with buttons */
 .cache-actions-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
@@ -231,6 +231,7 @@
 .cache-status-message {
   padding: 12px 16px;
   margin: 0; /* Reset margin */
+  margin-right: auto; /* Push buttons to the right */
   border-radius: var(--card-border-radius);
   font-size: var(--md-body-medium-size);
   animation: fadeIn var(--md-duration-medium2) var(--md-easing-standard);
@@ -278,7 +279,7 @@
 }
 
 .cache-details-item h4 {
-  margin: 0;
+  margin: 1px;
   font-size: var(--md-title-small-size);
   line-height: var(--md-title-small-height);
   font-weight: var(--md-title-small-weight);
@@ -293,6 +294,28 @@
   font-size: var(--md-body-medium-size);
   line-height: var(--md-body-medium-height);
   transition: color var(--transition-speed);
+}
+
+/* Empty cache item styling - grayed out appearance */
+.cache-details-item.empty-cache-item {
+  opacity: 0.6;
+}
+
+.cache-details-item.empty-cache-item h4 {
+  color: var(--text-disabled, rgba(0, 0, 0, 0.38));
+}
+
+.cache-details-item.empty-cache-item p {
+  color: var(--text-disabled, rgba(0, 0, 0, 0.38));
+}
+
+/* Dark mode specific styling for empty cache items */
+[data-theme="dark"] .cache-details-item.empty-cache-item h4 {
+  color: var(--text-disabled, rgba(255, 255, 255, 0.38));
+}
+
+[data-theme="dark"] .cache-details-item.empty-cache-item p {
+  color: var(--text-disabled, rgba(255, 255, 255, 0.38));
 }
 
 

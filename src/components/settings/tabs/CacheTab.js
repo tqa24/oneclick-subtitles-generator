@@ -273,7 +273,7 @@ const CacheTab = () => {
           <div className="cache-details-grid">
             {/* Column 1 */}
             <div className="cache-details-column">
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videos?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videos', 'Videos')}:</h4>
                   {(cacheDetails.videos?.count || 0) > 0 && (
@@ -295,7 +295,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.subtitles?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.subtitles', 'Subtitles')}:</h4>
                   {(cacheDetails.subtitles?.count || 0) > 0 && (
@@ -317,7 +317,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.userSubtitles?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.userSubtitles', 'User Subtitles')}:</h4>
                   {(cacheDetails.userSubtitles?.count || 0) > 0 && (
@@ -339,7 +339,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.rules?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.rules', 'Transcription Rules')}:</h4>
                   {(cacheDetails.rules?.count || 0) > 0 && (
@@ -364,7 +364,7 @@ const CacheTab = () => {
 
             {/* Column 2 */}
             <div className="cache-details-column">
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.lyrics?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.lyrics', 'Lyrics')}:</h4>
                   {(cacheDetails.lyrics?.count || 0) > 0 && (
@@ -386,7 +386,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.albumArt?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.albumArt', 'Album Art')}:</h4>
                   {(cacheDetails.albumArt?.count || 0) > 0 && (
@@ -408,7 +408,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.uploads?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.uploads', 'Uploaded Files')}:</h4>
                   {(cacheDetails.uploads?.count || 0) > 0 && (
@@ -430,7 +430,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.output?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.output', 'Generated Videos')}:</h4>
                   {(cacheDetails.output?.count || 0) > 0 && (
@@ -455,7 +455,7 @@ const CacheTab = () => {
 
             {/* Column 3 */}
             <div className="cache-details-column">
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.narrationReference?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.narrationReference', 'Narration Reference Audio')}:</h4>
                   {(cacheDetails.narrationReference?.count || 0) > 0 && (
@@ -477,7 +477,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.narrationOutput?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.narrationOutput', 'Narration Output Audio')}:</h4>
                   {(cacheDetails.narrationOutput?.count || 0) > 0 && (
@@ -499,7 +499,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videoRendered?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videoRendered', 'Rendered Videos')}:</h4>
                   {(cacheDetails.videoRendered?.count || 0) > 0 && (
@@ -521,7 +521,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videoTemp?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videoTemp', 'Temporary Videos')}:</h4>
                   {(cacheDetails.videoTemp?.count || 0) > 0 && (
@@ -546,7 +546,7 @@ const CacheTab = () => {
 
             {/* Column 4 */}
             <div className="cache-details-column">
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videoAlbumArt?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videoAlbumArt', 'Video Album Art')}:</h4>
                   {(cacheDetails.videoAlbumArt?.count || 0) > 0 && (
@@ -568,7 +568,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videoRendererUploads?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videoRendererUploads', 'Video Renderer Uploads')}:</h4>
                   {(cacheDetails.videoRendererUploads?.count || 0) > 0 && (
@@ -590,7 +590,7 @@ const CacheTab = () => {
                 </p>
               </div>
 
-              <div className="cache-details-item">
+              <div className={`cache-details-item ${(cacheDetails.videoRendererOutput?.count || 0) === 0 ? 'empty-cache-item' : ''}`}>
                 <div className="cache-item-header">
                   <h4>{t('settings.videoRendererOutput', 'Video Renderer Output')}:</h4>
                   {(cacheDetails.videoRendererOutput?.count || 0) > 0 && (
