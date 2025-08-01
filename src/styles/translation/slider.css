@@ -33,7 +33,7 @@
 /* Custom slider styling is imported from components/custom-slider.css */
 
 .slider-value-display {
-  min-width: 50px; /* Smaller minimum width, closer to track */
+  min-width: 55px; /* Smaller minimum width, closer to track */
   font-size: 0.9rem;
   color: var(--md-primary);
   font-weight: 500;

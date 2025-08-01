@@ -93,21 +93,21 @@ const LiquidGlass = ({
     return { type: 't', x, y };
   }, []);
 
-  // Fragment shader function
+  // Fragment shader function - restored original refraction effect
   const fragmentShader = useCallback((uv, mouse) => {
     const ix = uv.x - 0.5;
     const iy = uv.y - 0.5;
     const distanceToEdge = roundedRectSDF(
       ix,
       iy,
-      effectWidth,
-      effectHeight,
-      effectRadius
+      0.4,  // Fixed width for stronger edge effect
+      0.4,  // Fixed height for stronger edge effect
+      0.9   // Fixed radius for stronger edge effect
     );
-    const displacement = smoothStep(0.8, 0, distanceToEdge - effectOffset);
-    const scaled = smoothStep(0, 1, displacement) * effectIntensity;
+    const displacement = smoothStep(0.8, 0, distanceToEdge - 0.1); // Fixed offset for stronger edge effect
+    const scaled = smoothStep(0, 1.5, displacement); // Removed effectIntensity multiplier to reduce zoom
     return texture(ix * scaled + 0.5, iy * scaled + 0.5);
-  }, [roundedRectSDF, smoothStep, texture, effectWidth, effectHeight, effectRadius, effectOffset, effectIntensity]);
+  }, [roundedRectSDF, smoothStep, texture]);
 
   // Constrain position within viewport
   const constrainPosition = useCallback((x, y) => {
