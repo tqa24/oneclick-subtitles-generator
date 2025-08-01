@@ -1010,7 +1010,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             // Use setProperty with important flag to override any existing styles
             videoElement.style.setProperty('width', '100vw', 'important');
             videoElement.style.setProperty('height', '100vh', 'important');
-            videoElement.style.setProperty('object-fit', 'fill', 'important');
+            videoElement.style.setProperty('object-fit', 'contain', 'important');
             videoElement.style.setProperty('position', 'fixed', 'important');
             videoElement.style.setProperty('top', '0', 'important');
             videoElement.style.setProperty('left', '0', 'important');
@@ -1883,7 +1883,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
             max-height: none !important;
             min-width: 100vw !important;
             min-height: 100vh !important;
-            object-fit: fill !important;
+            object-fit: contain !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -1915,7 +1915,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           .native-video-container:-ms-fullscreen .video-player {
             width: 100vw !important;
             height: 100vh !important;
-            object-fit: fill !important;
+            object-fit: contain !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -3390,7 +3390,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                                   // Apply video styles - use fixed positioning to ensure full coverage
                                   videoElement.style.setProperty('width', '100vw', 'important');
                                   videoElement.style.setProperty('height', '100vh', 'important');
-                                  videoElement.style.setProperty('object-fit', 'fill', 'important');
+                                  videoElement.style.setProperty('object-fit', 'contain', 'important');
                                   videoElement.style.setProperty('position', 'fixed', 'important');
                                   videoElement.style.setProperty('top', '0', 'important');
                                   videoElement.style.setProperty('left', '0', 'important');
