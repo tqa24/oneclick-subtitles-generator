@@ -9,5 +9,6 @@
   "downloadingAudio": "다운로드 중...",
   "audioExtractionError": "비디오에서 오디오 추출에 실패했습니다. 다시 시도해 주세요.",
   "refreshNarration": "나레이션 새로고침",
-  "refreshingNarration": "나레이션 새로고침 중..."
+  "refreshingNarration": "나레이션 새로고침 중...",
+  "extractFrame": "프레임 추출"
 }

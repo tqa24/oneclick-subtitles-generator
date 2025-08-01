@@ -7,5 +7,6 @@
   "downloading": "Downloading video...",
   "downloadAudio": "Download Audio",
   "downloadingAudio": "Downloading...",
-  "audioExtractionError": "Failed to extract audio from video. Please try again."
+  "audioExtractionError": "Failed to extract audio from video. Please try again.",
+  "extractFrame": "Extract Frame"
 }

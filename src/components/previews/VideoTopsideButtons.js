@@ -23,30 +23,45 @@ const VideoTopsideButtons = ({
 
   return (
     <>
-      {/* Refresh Narration button - only show when custom controls are available */}
-      {showCustomControls && (
-        <LiquidGlass
-          width={240}
-          height={50}
-          position="absolute"
-          top="10px"
-          left="10px"
-          borderRadius="25px"
-          className="content-center interactive theme-primary"
-          cursor="pointer"
-          zIndex={10}
-          effectIntensity={0.6}
-          effectRadius={0.5}
-          effectWidth={0.3}
-          effectHeight={0.2}
-          animateOnHover={true}
-          hoverScale={1.05}
-          updateOnMouseMove={false}
-          style={{
-            opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-            transition: 'opacity 0.6s ease-in-out',
-            pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
-          }}
+      {/* Top buttons container */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        right: '10px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        zIndex: 10,
+        pointerEvents: 'none' // Allow clicks to pass through the container
+      }}>
+        {/* Left side buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center'
+        }}>
+          {/* Refresh Narration button - only show when custom controls are available */}
+          {showCustomControls && (
+            <LiquidGlass
+              width="auto"
+              height={50}
+              position="relative"
+              borderRadius="25px"
+              className="content-center interactive theme-primary"
+              cursor="pointer"
+              effectIntensity={0.6}
+              effectRadius={0.5}
+              effectWidth={0.3}
+              effectHeight={0.2}
+              animateOnHover={true}
+              hoverScale={1.05}
+              updateOnMouseMove={false}
+              style={{
+                opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+                transition: 'opacity 0.6s ease-in-out',
+                pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+              }}
           aria-label={t('preview.refreshNarration', 'Refresh Narration')}
           onClick={async () => {
             try {
@@ -191,6 +206,7 @@ const VideoTopsideButtons = ({
             gap: '8px',
             width: '100%',
             height: '100%',
+            padding: '0 16px',
             opacity: isRefreshingNarration ? 0.7 : 1,
             cursor: isRefreshingNarration ? 'not-allowed' : 'pointer'
           }}>
@@ -216,38 +232,35 @@ const VideoTopsideButtons = ({
               </>
             )}
           </div>
-        </LiquidGlass>
-      )}
+            </LiquidGlass>
+          )}
 
-      {/* Gemini FPS Info button - only show when custom controls are available */}
-      {showCustomControls && (
-        <LiquidGlass
-          width={50}
-          height={50}
-          position="absolute"
-          top="10px"
-          left="260px"
-          borderRadius="25px"
-          className="content-center interactive theme-warning shape-circle"
-          cursor="pointer"
-          zIndex={10}
-          effectIntensity={0.7}
-          effectRadius={0.6}
-          effectWidth={0.4}
-          effectHeight={0.4}
-          animateOnHover={true}
-          hoverScale={1.1}
-          updateOnMouseMove={true}
-          aria-label="Gemini FPS Info"
-          style={{
-            opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-            transition: 'opacity 0.6s ease-in-out',
-            pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
-          }}
-          onClick={() => {
-            window.open('https://ai.google.dev/gemini-api/docs/video-understanding', '_blank');
-          }}
-        >
+          {/* Gemini FPS Info button - only show when custom controls are available */}
+          {showCustomControls && (
+            <LiquidGlass
+              width="auto"
+              height={50}
+              position="relative"
+              borderRadius="25px"
+              className="content-center interactive theme-warning shape-circle"
+              cursor="pointer"
+              effectIntensity={0.7}
+              effectRadius={0.6}
+              effectWidth={0.4}
+              effectHeight={0.4}
+              animateOnHover={true}
+              hoverScale={1.1}
+              updateOnMouseMove={true}
+              aria-label="Gemini FPS Info"
+              style={{
+                opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+                transition: 'opacity 0.6s ease-in-out',
+                pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+              }}
+              onClick={() => {
+                window.open('https://ai.google.dev/gemini-api/docs/video-understanding', '_blank');
+              }}
+            >
           <div
             title="Gemini chỉ xử lý 1FPS dù gửi video có FPS cao, bấm nút để xem thêm, vui lòng chọn Render Video để có chất lượng + FPS tốt nhất"
             style={{
@@ -256,41 +269,140 @@ const VideoTopsideButtons = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              padding: '0 12px',
+              minWidth: 'fit-content'
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
             </svg>
-          </div>
-        </LiquidGlass>
-      )}
+            </div>
+          </LiquidGlass>
+        )}
+        </div>
 
-      {/* Download audio button - only show when custom controls are available */}
-      {showCustomControls && (
-        <LiquidGlass
-          width={160}
-          height={50}
-          position="absolute"
-          top="10px"
-          right="10px"
-          borderRadius="25px"
-          className={`content-center interactive ${isAudioDownloading ? 'theme-secondary' : 'theme-success'}`}
-          cursor={isAudioDownloading ? 'not-allowed' : 'pointer'}
-          zIndex={10}
-          effectIntensity={isAudioDownloading ? 0.3 : 0.6}
-          effectRadius={0.5}
-          effectWidth={0.3}
-          effectHeight={0.2}
-          animateOnHover={!isAudioDownloading}
-          hoverScale={1.05}
-          updateOnMouseMove={false}
-          aria-label={t('preview.downloadAudio', 'Download Audio')}
-          style={{
-            opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-            transition: 'opacity 0.6s ease-in-out',
-            pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+        {/* Right side buttons */}
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center'
+        }}>
+          {/* Extract frame button - only show when custom controls are available */}
+          {showCustomControls && (
+            <LiquidGlass
+              width="auto"
+              height={50}
+                  position="relative"
+              borderRadius="25px"
+              className="content-center interactive theme-info"
+              cursor="pointer"
+              effectIntensity={0.6}
+              effectRadius={0.5}
+              effectWidth={0.3}
+              effectHeight={0.2}
+              animateOnHover={true}
+              hoverScale={1.05}
+              updateOnMouseMove={false}
+              style={{
+                opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+                transition: 'opacity 0.6s ease-in-out',
+                pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+              }}
+          aria-label={t('preview.extractFrame', 'Extract Frame')}
+          onClick={async () => {
+            try {
+              const videoElement = document.querySelector('.native-video-container video');
+              if (!videoElement) {
+                console.error('Video element not found');
+                return;
+              }
+
+              // Create canvas to capture current frame
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+
+              // Set canvas dimensions to match video
+              canvas.width = videoElement.videoWidth;
+              canvas.height = videoElement.videoHeight;
+
+              // Draw current video frame to canvas
+              ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+              // Convert canvas to blob
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  // Create download link
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+
+                  // Generate filename with timestamp
+                  const currentTime = Math.floor(videoElement.currentTime);
+                  const minutes = Math.floor(currentTime / 60);
+                  const seconds = currentTime % 60;
+                  const timestamp = `${minutes}m${seconds}s`;
+
+                  link.download = `frame_${timestamp}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+
+                  console.log('Frame extracted successfully');
+                } else {
+                  console.error('Failed to create blob from canvas');
+                }
+              }, 'image/png');
+
+            } catch (error) {
+              console.error('Error extracting frame:', error);
+            }
           }}
+        >
+          <div style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '0 16px',
+            minWidth: 'fit-content',
+            whiteSpace: 'nowrap'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+            </svg>
+            <span style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>
+              {t('preview.extractFrame', 'Extract Frame')}
+            </span>
+          </div>
+          </LiquidGlass>
+        )}
+
+        {/* Download audio button - only show when custom controls are available */}
+        {showCustomControls && (
+          <LiquidGlass
+            width="auto"
+            height={50}
+            position="relative"
+            borderRadius="25px"
+            className={`content-center interactive ${isAudioDownloading ? 'theme-secondary' : 'theme-success'}`}
+            cursor={isAudioDownloading ? 'not-allowed' : 'pointer'}
+            effectIntensity={isAudioDownloading ? 0.3 : 0.6}
+            effectRadius={0.5}
+            effectWidth={0.3}
+            effectHeight={0.2}
+            animateOnHover={!isAudioDownloading}
+            hoverScale={1.05}
+            updateOnMouseMove={false}
+            aria-label={t('preview.downloadAudio', 'Download Audio')}
+            style={{
+              opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
+              transition: 'opacity 0.6s ease-in-out',
+              pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+            }}
           onClick={async () => {
             if (isAudioDownloading) return; // Prevent multiple clicks
 
@@ -328,7 +440,10 @@ const VideoTopsideButtons = ({
             width: '100%',
             height: '100%',
             opacity: isAudioDownloading ? 0.7 : 1,
-            cursor: isAudioDownloading ? 'not-allowed' : 'pointer'
+            cursor: isAudioDownloading ? 'not-allowed' : 'pointer',
+            padding: '0 16px',
+            minWidth: 'fit-content',
+            whiteSpace: 'nowrap'
           }}>
             {isAudioDownloading ? (
               // Material Design loading spinner
@@ -353,7 +468,9 @@ const VideoTopsideButtons = ({
             )}
           </div>
         </LiquidGlass>
-      )}
+        )}
+        </div>
+      </div>
     </>
   );
 };

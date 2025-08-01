@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 /**
  * LiquidGlass - A highly customizable liquid glass effect component
@@ -72,6 +72,9 @@ const LiquidGlass = ({
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, initialX: 0, initialY: 0 });
   const uniqueIdRef = useRef(`liquid-glass-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Get actual dimensions for auto width - must be declared before any functions that use it
+  const [actualDimensions, setActualDimensions] = useState({ width: 200, height });
 
   // Utility functions
   const smoothStep = useCallback((a, b, t) => {
@@ -158,8 +161,8 @@ const LiquidGlass = ({
 
     mouseUsedRef.current = false;
 
-    // Parse dimensions properly
-    const parsedWidth = parseDimension(width, containerRef);
+    // Parse dimensions properly - use effective dimensions for auto width
+    const parsedWidth = width === 'auto' ? actualDimensions.width : parseDimension(width, containerRef);
     const parsedHeight = parseDimension(height, containerRef);
     const w = parsedWidth * canvasDPI;
     const h = parsedHeight * canvasDPI;
@@ -222,15 +225,15 @@ const LiquidGlass = ({
     if (onEffectUpdate) {
       onEffectUpdate({ maxScale, mouseUsed: mouseUsedRef.current });
     }
-  }, [width, height, canvasDPI, fragmentShader, onEffectUpdate, parseDimension]);
+  }, [width, height, canvasDPI, fragmentShader, onEffectUpdate, parseDimension, actualDimensions]);
 
   // Initialize canvas and SVG
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Setup canvas with parsed dimensions
+    // Setup canvas with parsed dimensions - use effective dimensions for auto width
     const canvas = canvasRef.current;
-    const parsedWidth = parseDimension(width, containerRef);
+    const parsedWidth = width === 'auto' ? actualDimensions.width : parseDimension(width, containerRef);
     const parsedHeight = parseDimension(height, containerRef);
     canvas.width = parsedWidth * canvasDPI;
     canvas.height = parsedHeight * canvasDPI;
@@ -239,7 +242,7 @@ const LiquidGlass = ({
 
     // Initial shader update
     updateShader();
-  }, [width, height, canvasDPI, updateShader, parseDimension]);
+  }, [width, height, canvasDPI, updateShader, parseDimension, actualDimensions]);
 
   // Handle mouse events for dragging
   useEffect(() => {
@@ -323,10 +326,34 @@ const LiquidGlass = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [constrainToViewport, constrainPosition]);
 
+  useEffect(() => {
+    if (width === 'auto' && containerRef.current) {
+      const updateDimensions = () => {
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.width > 0) {
+          setActualDimensions({ width: rect.width, height: rect.height });
+        }
+      };
+
+      // Initial measurement
+      updateDimensions();
+
+      // Use ResizeObserver for dynamic updates
+      const resizeObserver = new ResizeObserver(updateDimensions);
+      resizeObserver.observe(containerRef.current);
+
+      return () => resizeObserver.disconnect();
+    }
+  }, [width, height]);
+
+  // Use actual dimensions for SVG filter when width is auto
+  const effectiveWidth = width === 'auto' ? actualDimensions.width : width;
+  const effectiveHeight = height;
+
   // Combine styles
   const containerStyle = {
     position,
-    width: `${width}px`,
+    width: width === 'auto' ? 'auto' : `${width}px`,
     height: `${height}px`,
     borderRadius,
     boxShadow,
@@ -336,8 +363,8 @@ const LiquidGlass = ({
     cursor: draggable ? (isDraggingRef.current ? 'grabbing' : 'grab') : cursor,
     zIndex,
     transition: animateOnHover ? transition : undefined,
-    transform: animateOnHover && containerRef.current?.matches(':hover') 
-      ? `${transform || ''} scale(${hoverScale})`.trim() 
+    transform: animateOnHover && containerRef.current?.matches(':hover')
+      ? `${transform || ''} scale(${hoverScale})`.trim()
       : transform,
     top,
     left,
@@ -369,13 +396,13 @@ const LiquidGlass = ({
             colorInterpolationFilters="sRGB"
             x="0"
             y="0"
-            width={width.toString()}
-            height={height.toString()}
+            width={effectiveWidth.toString()}
+            height={effectiveHeight.toString()}
           >
             <feImage
               id={`${uniqueIdRef.current}_map`}
-              width={width.toString()}
-              height={height.toString()}
+              width={effectiveWidth.toString()}
+              height={effectiveHeight.toString()}
             />
             <feDisplacementMap
               in="SourceGraphic"
