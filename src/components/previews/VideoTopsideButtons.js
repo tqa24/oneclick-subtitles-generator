@@ -77,36 +77,38 @@ const VideoTopsideButtons = ({
               // Use the EXACT same implementation as the download aligned button
               const { SERVER_URL } = await import('../../config');
 
-              // Get narration data from window objects (same as download button)
+              // Get narration data from window objects (same as VideoRenderingSection.js)
+              const isUsingGroupedSubtitles = window.useGroupedSubtitles || false;
+              const groupedNarrations = window.groupedNarrations || [];
               const originalNarrations = window.originalNarrations || [];
               const translatedNarrations = window.translatedNarrations || [];
 
               let generationResults = [];
-              if (translatedNarrations.length > 0) {
+
+              // Use grouped narrations if available and enabled, otherwise use original/translated narrations
+              if (isUsingGroupedSubtitles && groupedNarrations.length > 0) {
+                generationResults = groupedNarrations;
+                console.log(`Using grouped narrations for refresh. Found ${generationResults.length} grouped narrations.`);
+              } else if (translatedNarrations.length > 0) {
                 generationResults = translatedNarrations;
+                console.log(`Using translated narrations for refresh. Found ${generationResults.length} narrations.`);
               } else if (originalNarrations.length > 0) {
                 generationResults = originalNarrations;
+                console.log(`Using original narrations for refresh. Found ${generationResults.length} narrations.`);
               }
 
               if (generationResults.length === 0) {
                 throw new Error('No narration results to generate aligned audio');
               }
 
-              // EXACT same subtitle timing lookup as downloadAlignedAudio
-              // Get all subtitles from the video for timing information
-              const allSubtitles = [];
+              // EXACT same subtitle timing lookup as VideoRenderingSection.js
+              // Get all subtitles from the window object, prioritizing grouped subtitles if using them
+              const allSubtitles = isUsingGroupedSubtitles && window.groupedSubtitles ?
+                window.groupedSubtitles :
+                (window.subtitlesData || window.originalSubtitles || window.subtitles || []);
 
-              // Also try window.subtitles (main source)
-              if (window.subtitles && Array.isArray(window.subtitles)) {
-                allSubtitles.push(...window.subtitles);
-              }
-
-              // Also try original and translated subtitles
-              if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-                allSubtitles.push(...window.originalSubtitles);
-              }
-
-              if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+              // Also try translated subtitles if no other subtitles found
+              if (allSubtitles.length === 0 && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
                 allSubtitles.push(...window.translatedSubtitles);
               }
 
@@ -122,17 +124,50 @@ const VideoTopsideButtons = ({
               const narrationData = generationResults
                 .filter(result => result.success && result.filename)
                 .map(result => {
-                  // Find the corresponding subtitle for timing information
-                  const subtitle = subtitleMap[result.subtitle_id];
+                  // Get the correct subtitle ID from the result
+                  const subtitleId = result.subtitle_id;
+                  const isGrouped = result.original_ids && result.original_ids.length > 1;
 
-                  // If we found a matching subtitle, use its timing
+                  // Find the corresponding subtitle for timing information
+                  let subtitle = subtitleMap[subtitleId];
+
+                  // If this is a grouped subtitle and we couldn't find it directly in the map,
+                  // we might need to calculate its timing from the original subtitles
+                  if (!subtitle && isGrouped && result.original_ids) {
+                    console.log(`Handling grouped subtitle ${subtitleId} with ${result.original_ids.length} original IDs`);
+
+                    // Get all the original subtitles that are part of this group
+                    const originalSubtitles = result.original_ids
+                      .map(id => subtitleMap[id])
+                      .filter(Boolean);
+
+                    if (originalSubtitles.length > 0) {
+                      // Calculate start and end times from the original subtitles
+                      const start = Math.min(...originalSubtitles.map(sub => sub.start));
+                      const end = Math.max(...originalSubtitles.map(sub => sub.end));
+
+                      // Create a synthetic subtitle with the calculated timing
+                      subtitle = {
+                        id: subtitleId,
+                        start,
+                        end,
+                        text: result.text
+                      };
+
+                      console.log(`Created synthetic timing for grouped subtitle ${subtitleId}: start=${start}, end=${end}`);
+                    }
+                  }
+
+                  // If we found a matching subtitle or created synthetic timing, use it
                   if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
                     return {
                       filename: result.filename,
                       subtitle_id: result.subtitle_id,
                       start: subtitle.start,
                       end: subtitle.end,
-                      text: subtitle.text || result.text || ''
+                      text: subtitle.text || result.text || '',
+                      // Preserve original_ids if they exist
+                      original_ids: result.original_ids || [subtitleId]
                     };
                   }
 
@@ -142,7 +177,9 @@ const VideoTopsideButtons = ({
                     subtitle_id: result.subtitle_id,
                     start: result.start || 0,
                     end: result.end || (result.start ? result.start + 5 : 5),
-                    text: result.text || ''
+                    text: result.text || '',
+                    // Preserve original_ids if they exist
+                    original_ids: result.original_ids || [subtitleId]
                   };
                 });
 

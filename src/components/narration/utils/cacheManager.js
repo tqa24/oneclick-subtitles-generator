@@ -40,6 +40,14 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
       window.translatedNarrations = [];
       console.log('Cleared window.translatedNarrations');
     }
+    if (window.groupedNarrations) {
+      window.groupedNarrations = [];
+      console.log('Cleared window.groupedNarrations');
+    }
+    if (window.useGroupedSubtitles !== undefined) {
+      window.useGroupedSubtitles = false;
+      console.log('Reset window.useGroupedSubtitles to false');
+    }
 
     // 3. Clear browser cache for narration audio files
     if ('caches' in window) {
@@ -116,6 +124,12 @@ export const clearBrowserCaches = () => {
   }
   if (window.translatedNarrations) {
     window.translatedNarrations = [];
+  }
+  if (window.groupedNarrations) {
+    window.groupedNarrations = [];
+  }
+  if (window.useGroupedSubtitles !== undefined) {
+    window.useGroupedSubtitles = false;
   }
 
   console.log('Browser cache clearing completed');

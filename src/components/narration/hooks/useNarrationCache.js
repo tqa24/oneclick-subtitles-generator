@@ -40,11 +40,23 @@ const useNarrationCache = ({
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
 
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
+          // Check if these are grouped narrations by looking for original_ids property
+          const isGroupedNarrations = cachedNarrations.some(narration =>
+            narration.original_ids && narration.original_ids.length > 1
+          );
+
+          // Update global narration references based on whether they are grouped
+          if (isGroupedNarrations) {
+            window.groupedNarrations = [...cachedNarrations];
+            window.useGroupedSubtitles = true;
+            console.log(`Loaded ${cachedNarrations.length} grouped narrations from cache`);
           } else {
-            window.translatedNarrations = [...cachedNarrations];
+            if (subtitleSource === 'original') {
+              window.originalNarrations = [...cachedNarrations];
+            } else {
+              window.translatedNarrations = [...cachedNarrations];
+            }
+            window.useGroupedSubtitles = false;
           }
 
           // Dispatch a custom event to notify other components
@@ -52,7 +64,8 @@ const useNarrationCache = ({
             detail: {
               source: subtitleSource,
               narrations: cachedNarrations,
-              fromCache: true
+              fromCache: true,
+              isGrouped: isGroupedNarrations
             }
           });
           window.dispatchEvent(updateEvent);
@@ -88,11 +101,23 @@ const useNarrationCache = ({
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
 
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...enhancedNarrations];
+          // Check if these are grouped narrations by looking for original_ids property
+          const isGroupedNarrations = enhancedNarrations.some(narration =>
+            narration.original_ids && narration.original_ids.length > 1
+          );
+
+          // Update global narration references based on whether they are grouped
+          if (isGroupedNarrations) {
+            window.groupedNarrations = [...enhancedNarrations];
+            window.useGroupedSubtitles = true;
+            console.log(`Loaded ${enhancedNarrations.length} grouped F5-TTS narrations from cache`);
           } else {
-            window.translatedNarrations = [...enhancedNarrations];
+            if (subtitleSource === 'original') {
+              window.originalNarrations = [...enhancedNarrations];
+            } else {
+              window.translatedNarrations = [...enhancedNarrations];
+            }
+            window.useGroupedSubtitles = false;
           }
 
           // Dispatch a custom event to notify other components
@@ -100,7 +125,8 @@ const useNarrationCache = ({
             detail: {
               source: subtitleSource,
               narrations: enhancedNarrations,
-              fromCache: true
+              fromCache: true,
+              isGrouped: isGroupedNarrations
             }
           });
           window.dispatchEvent(updateEvent);
@@ -127,11 +153,23 @@ const useNarrationCache = ({
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded Edge TTS narrations from previous session'));
 
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
+          // Check if these are grouped narrations by looking for original_ids property
+          const isGroupedNarrations = cachedNarrations.some(narration =>
+            narration.original_ids && narration.original_ids.length > 1
+          );
+
+          // Update global narration references based on whether they are grouped
+          if (isGroupedNarrations) {
+            window.groupedNarrations = [...cachedNarrations];
+            window.useGroupedSubtitles = true;
+            console.log(`Loaded ${cachedNarrations.length} grouped Edge TTS narrations from cache`);
           } else {
-            window.translatedNarrations = [...cachedNarrations];
+            if (subtitleSource === 'original') {
+              window.originalNarrations = [...cachedNarrations];
+            } else {
+              window.translatedNarrations = [...cachedNarrations];
+            }
+            window.useGroupedSubtitles = false;
           }
 
           // Dispatch a custom event to notify other components
@@ -139,7 +177,8 @@ const useNarrationCache = ({
             detail: {
               source: subtitleSource,
               narrations: cachedNarrations,
-              fromCache: true
+              fromCache: true,
+              isGrouped: isGroupedNarrations
             }
           });
           window.dispatchEvent(updateEvent);
@@ -166,11 +205,23 @@ const useNarrationCache = ({
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded gTTS narrations from previous session'));
 
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
+          // Check if these are grouped narrations by looking for original_ids property
+          const isGroupedNarrations = cachedNarrations.some(narration =>
+            narration.original_ids && narration.original_ids.length > 1
+          );
+
+          // Update global narration references based on whether they are grouped
+          if (isGroupedNarrations) {
+            window.groupedNarrations = [...cachedNarrations];
+            window.useGroupedSubtitles = true;
+            console.log(`Loaded ${cachedNarrations.length} grouped gTTS narrations from cache`);
           } else {
-            window.translatedNarrations = [...cachedNarrations];
+            if (subtitleSource === 'original') {
+              window.originalNarrations = [...cachedNarrations];
+            } else {
+              window.translatedNarrations = [...cachedNarrations];
+            }
+            window.useGroupedSubtitles = false;
           }
 
           // Dispatch a custom event to notify other components
@@ -178,7 +229,8 @@ const useNarrationCache = ({
             detail: {
               source: subtitleSource,
               narrations: cachedNarrations,
-              fromCache: true
+              fromCache: true,
+              isGrouped: isGroupedNarrations
             }
           });
           window.dispatchEvent(updateEvent);
@@ -205,11 +257,23 @@ const useNarrationCache = ({
           // Show a status message
           setGenerationStatus(t('narration.loadedFromCache', 'Loaded narrations from previous session'));
 
-          // Update global narration references
-          if (subtitleSource === 'original') {
-            window.originalNarrations = [...cachedNarrations];
+          // Check if these are grouped narrations by looking for original_ids property
+          const isGroupedNarrations = cachedNarrations.some(narration =>
+            narration.original_ids && narration.original_ids.length > 1
+          );
+
+          // Update global narration references based on whether they are grouped
+          if (isGroupedNarrations) {
+            window.groupedNarrations = [...cachedNarrations];
+            window.useGroupedSubtitles = true;
+            console.log(`Loaded ${cachedNarrations.length} grouped Chatterbox narrations from cache`);
           } else {
-            window.translatedNarrations = [...cachedNarrations];
+            if (subtitleSource === 'original') {
+              window.originalNarrations = [...cachedNarrations];
+            } else {
+              window.translatedNarrations = [...cachedNarrations];
+            }
+            window.useGroupedSubtitles = false;
           }
 
           // Dispatch a custom event to notify other components
@@ -217,7 +281,8 @@ const useNarrationCache = ({
             detail: {
               source: subtitleSource,
               narrations: cachedNarrations,
-              fromCache: true
+              fromCache: true,
+              isGrouped: isGroupedNarrations
             }
           });
           window.dispatchEvent(updateEvent);

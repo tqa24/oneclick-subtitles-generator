@@ -933,31 +933,26 @@ const useNarrationHandlers = ({
       const { SERVER_URL } = require('../../../config');
 
       // Get all subtitles from the video for timing information
-      const allSubtitles = [];
+      // Check if we're using grouped subtitles (same logic as VideoRenderingSection.js)
+      const isUsingGroupedSubtitles = window.useGroupedSubtitles || false;
+      const allSubtitles = isUsingGroupedSubtitles && window.groupedSubtitles ?
+        window.groupedSubtitles :
+        (window.subtitlesData || window.originalSubtitles || window.subtitles || []);
 
-      // First try to get subtitles from the getSelectedSubtitles function
-      const selectedSubtitles = getSelectedSubtitles();
-      if (selectedSubtitles && Array.isArray(selectedSubtitles) && selectedSubtitles.length > 0) {
-
-        allSubtitles.push(...selectedSubtitles);
+      // First try to get subtitles from the getSelectedSubtitles function if no grouped subtitles
+      if (allSubtitles.length === 0) {
+        const selectedSubtitles = getSelectedSubtitles();
+        if (selectedSubtitles && Array.isArray(selectedSubtitles) && selectedSubtitles.length > 0) {
+          allSubtitles.push(...selectedSubtitles);
+        }
       }
 
-      // Also try window.subtitles (main source)
-      if (window.subtitles && Array.isArray(window.subtitles)) {
-
-        allSubtitles.push(...window.subtitles);
-      }
-
-      // Also try original and translated subtitles
-      if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
-
-        allSubtitles.push(...window.originalSubtitles);
-      }
-
-      if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
-
+      // Also try translated subtitles if no other subtitles found
+      if (allSubtitles.length === 0 && window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
         allSubtitles.push(...window.translatedSubtitles);
       }
+
+      console.log(`Download aligned: Using ${isUsingGroupedSubtitles ? 'grouped' : 'individual'} subtitles. Found ${allSubtitles.length} subtitles.`);
 
       // Create a map for faster lookup
       const subtitleMap = {};
@@ -973,18 +968,50 @@ const useNarrationHandlers = ({
       const narrationData = generationResults
         .filter(result => result.success && result.filename)
         .map(result => {
+          // Get the correct subtitle ID from the result
+          const subtitleId = result.subtitle_id;
+          const isGrouped = result.original_ids && result.original_ids.length > 1;
+
           // Find the corresponding subtitle for timing information
-          const subtitle = subtitleMap[result.subtitle_id];
+          let subtitle = subtitleMap[subtitleId];
 
-          // If we found a matching subtitle, use its timing
+          // If this is a grouped subtitle and we couldn't find it directly in the map,
+          // we might need to calculate its timing from the original subtitles
+          if (!subtitle && isGrouped && result.original_ids) {
+            console.log(`Download aligned: Handling grouped subtitle ${subtitleId} with ${result.original_ids.length} original IDs`);
+
+            // Get all the original subtitles that are part of this group
+            const originalSubtitles = result.original_ids
+              .map(id => subtitleMap[id])
+              .filter(Boolean);
+
+            if (originalSubtitles.length > 0) {
+              // Calculate start and end times from the original subtitles
+              const start = Math.min(...originalSubtitles.map(sub => sub.start));
+              const end = Math.max(...originalSubtitles.map(sub => sub.end));
+
+              // Create a synthetic subtitle with the calculated timing
+              subtitle = {
+                id: subtitleId,
+                start,
+                end,
+                text: result.text
+              };
+
+              console.log(`Download aligned: Created synthetic timing for grouped subtitle ${subtitleId}: start=${start}, end=${end}`);
+            }
+          }
+
+          // If we found a matching subtitle or created synthetic timing, use it
           if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-
             return {
               filename: result.filename,
               subtitle_id: result.subtitle_id,
               start: subtitle.start,
               end: subtitle.end,
-              text: subtitle.text || result.text || ''
+              text: subtitle.text || result.text || '',
+              // Preserve original_ids if they exist
+              original_ids: result.original_ids || [subtitleId]
             };
           }
 
@@ -994,7 +1021,9 @@ const useNarrationHandlers = ({
             subtitle_id: result.subtitle_id,
             start: result.start || 0,
             end: result.end || (result.start ? result.start + 5 : 5),
-            text: result.text || ''
+            text: result.text || '',
+            // Preserve original_ids if they exist
+            original_ids: result.original_ids || [subtitleId]
           };
         });
 
