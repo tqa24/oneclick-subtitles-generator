@@ -76,13 +76,27 @@ router.post('/copy-large-file', upload.single('file'), async (req, res) => {
  */
 router.get('/video-exists/:videoId', (req, res) => {
   const { videoId } = req.params;
-  const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+  let videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+  let filename = `${videoId}.mp4`;
+
+  // If exact match doesn't exist, look for files starting with videoId
+  if (!fs.existsSync(videoPath)) {
+    const files = fs.readdirSync(VIDEOS_DIR);
+    const matchingFile = files.find(file =>
+      file.startsWith(`${videoId}_`) && file.endsWith('.mp4')
+    );
+
+    if (matchingFile) {
+      videoPath = path.join(VIDEOS_DIR, matchingFile);
+      filename = matchingFile;
+    }
+  }
 
   if (fs.existsSync(videoPath)) {
     const stats = fs.statSync(videoPath);
     res.json({
       exists: true,
-      url: `/videos/${videoId}.mp4`,
+      url: `/videos/${filename}`,
       size: stats.size,
       createdAt: stats.birthtime
     });
@@ -207,7 +221,20 @@ router.get('/video-dimensions/:videoId', async (req, res) => {
   }
 
   try {
-    const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+    // Look for video file with pattern matching (handles files with titles)
+    let videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+
+    // If exact match doesn't exist, look for files starting with videoId
+    if (!fs.existsSync(videoPath)) {
+      const files = fs.readdirSync(VIDEOS_DIR);
+      const matchingFile = files.find(file =>
+        file.startsWith(`${videoId}_`) && file.endsWith('.mp4')
+      );
+
+      if (matchingFile) {
+        videoPath = path.join(VIDEOS_DIR, matchingFile);
+      }
+    }
 
     if (!fs.existsSync(videoPath)) {
       return res.status(404).json({
