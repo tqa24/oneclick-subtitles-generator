@@ -160,7 +160,13 @@ const NarrationMenu = ({
                 <StandardSlider
                   value={narrationVolume}
                   onChange={(value) => {
-                    setNarrationVolume(parseFloat(value));
+                    const newVolume = parseFloat(value);
+                    setNarrationVolume(newVolume);
+
+                    // Dispatch volume change event for aligned narration
+                    window.dispatchEvent(new CustomEvent('narration-volume-change', {
+                      detail: { volume: newVolume }
+                    }));
                   }}
                   min={0}
                   max={1}

@@ -74,203 +74,301 @@ const VideoTopsideButtons = ({
               // Set refreshing state
               setIsRefreshingNarration(true);
 
-              // Clear any existing aligned narration
-              if (typeof window.resetAlignedNarration === 'function') {
-                console.log('Clearing existing aligned narration before regeneration');
-                window.resetAlignedNarration();
+              // Use the EXACT same implementation as the download aligned button
+              const { SERVER_URL } = await import('../../config');
+
+              // Get narration data from window objects (same as download button)
+              const originalNarrations = window.originalNarrations || [];
+              const translatedNarrations = window.translatedNarrations || [];
+
+              let generationResults = [];
+              if (translatedNarrations.length > 0) {
+                generationResults = translatedNarrations;
+              } else if (originalNarrations.length > 0) {
+                generationResults = originalNarrations;
               }
 
-              // Clean up any existing audio element
-              if (window.alignedAudioElement) {
-                try {
-                  console.log('Cleaning up existing alignedAudioElement before regeneration');
-                  window.alignedAudioElement.pause();
-                  window.alignedAudioElement.src = '';
-                  window.alignedAudioElement.load();
-                  window.alignedAudioElement = null;
-                } catch (e) {
-                  console.warn('Error cleaning up existing alignedAudioElement:', e);
+              if (generationResults.length === 0) {
+                throw new Error('No narration results to generate aligned audio');
+              }
+
+              // EXACT same subtitle timing lookup as downloadAlignedAudio
+              // Get all subtitles from the video for timing information
+              const allSubtitles = [];
+
+              // Also try window.subtitles (main source)
+              if (window.subtitles && Array.isArray(window.subtitles)) {
+                allSubtitles.push(...window.subtitles);
+              }
+
+              // Also try original and translated subtitles
+              if (window.originalSubtitles && Array.isArray(window.originalSubtitles)) {
+                allSubtitles.push(...window.originalSubtitles);
+              }
+
+              if (window.translatedSubtitles && Array.isArray(window.translatedSubtitles)) {
+                allSubtitles.push(...window.translatedSubtitles);
+              }
+
+              // Create a map for faster lookup
+              const subtitleMap = {};
+              allSubtitles.forEach(sub => {
+                if (sub.id !== undefined) {
+                  subtitleMap[sub.id] = sub;
                 }
-              }
+              });
 
-              // Remove existing event handlers
-              if (window.alignedNarrationEventHandlers && videoRef.current) {
-                const { handleVideoPlay, handleVideoPause, handleVideoSeeked, handleVideoTimeUpdate } = window.alignedNarrationEventHandlers;
-                videoRef.current.removeEventListener('play', handleVideoPlay);
-                videoRef.current.removeEventListener('pause', handleVideoPause);
-                videoRef.current.removeEventListener('seeked', handleVideoSeeked);
-                videoRef.current.removeEventListener('timeupdate', handleVideoTimeUpdate);
-                window.alignedNarrationEventHandlers = null;
-              }
+              // EXACT same data preparation as downloadAlignedAudio in useNarrationHandlers.js
+              const narrationData = generationResults
+                .filter(result => result.success && result.filename)
+                .map(result => {
+                  // Find the corresponding subtitle for timing information
+                  const subtitle = subtitleMap[result.subtitle_id];
 
-              // Trigger regeneration by dispatching the event
-              const regenerateEvent = new CustomEvent('regenerate-aligned-narration');
-              window.dispatchEvent(regenerateEvent);
-
-              // Set up direct playback after regeneration
-              const setupDirectPlayback = async () => {
-                console.log('Setting up direct playback for aligned narration');
-
-                // Create new audio element for aligned narration
-                const audio = new Audio();
-                audio.preload = 'auto';
-                audio.volume = 1.0;
-
-                // Store globally for cleanup
-                window.alignedAudioElement = audio;
-
-                // Generate aligned narration audio file using the correct API endpoint
-                try {
-                  // Get narration data from window objects (same as download button)
-                  const originalNarrations = window.originalNarrations || [];
-                  const translatedNarrations = window.translatedNarrations || [];
-
-                  // Use the most recent narrations available
-                  let narrationData = [];
-                  if (translatedNarrations.length > 0) {
-                    narrationData = translatedNarrations;
-                  } else if (originalNarrations.length > 0) {
-                    narrationData = originalNarrations;
-                  }
-
-                  if (narrationData.length === 0) {
-                    console.warn('No narration data available for aligned audio playback');
-                    return;
-                  }
-
-                  // Format narration data for the API (same format as download button)
-                  const formattedNarrations = narrationData
-                    .filter(result => result.success && (result.audioData || result.filename))
-                    .map(result => ({
+                  // If we found a matching subtitle, use its timing
+                  if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+                    return {
                       filename: result.filename,
                       subtitle_id: result.subtitle_id,
-                      start: result.start || 0,
-                      end: result.end || (result.start ? result.start + 5 : 5),
-                      text: result.text || ''
-                    }))
-                    .sort((a, b) => a.start - b.start);
-
-                  if (formattedNarrations.length === 0) {
-                    console.warn('No valid narration files found for aligned audio playback');
-                    return;
+                      start: subtitle.start,
+                      end: subtitle.end,
+                      text: subtitle.text || result.text || ''
+                    };
                   }
 
-                  // Generate aligned audio file on server (same as download button)
-                  const response = await fetch(`${SERVER_URL}/api/narration/download-aligned`, {
-                    method: 'POST',
-                    mode: 'cors',
-                    credentials: 'include',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Accept': 'audio/wav'
-                    },
-                    body: JSON.stringify({ narrations: formattedNarrations })
-                  });
-
-                  // Check for audio alignment notification after successful response
-                  if (response.ok) {
-                    // Import and check for duration notification
-                    const { checkAudioAlignmentFromResponse } = await import('../../utils/audioAlignmentNotification.js');
-                    checkAudioAlignmentFromResponse(response);
-                  }
-
-                  if (!response.ok) {
-                    throw new Error(`Failed to generate aligned audio: ${response.statusText}`);
-                  }
-
-                  // Get the blob from the response (same as download button)
-                  const blob = await response.blob();
-
-                  // Create a URL for the blob for audio playback
-                  const alignedNarrationUrl = URL.createObjectURL(blob);
-                  console.log('Loading aligned narration audio from generated file blob');
-                  audio.src = alignedNarrationUrl;
-
-                  // Clean up blob URL when audio is no longer needed
-                  audio.addEventListener('loadeddata', () => {
-                    // Don't revoke immediately, keep it for playback
-                    console.log('Aligned narration audio loaded and ready for playback');
-                  });
-
-                  // Store cleanup function globally
-                  window.cleanupAlignedNarrationUrl = () => {
-                    URL.revokeObjectURL(alignedNarrationUrl);
+                  // Otherwise, use existing timing or defaults
+                  return {
+                    filename: result.filename,
+                    subtitle_id: result.subtitle_id,
+                    start: result.start || 0,
+                    end: result.end || (result.start ? result.start + 5 : 5),
+                    text: result.text || ''
                   };
+                });
 
-                } catch (error) {
-                  console.error('Error setting up aligned narration playback:', error);
-                  return;
+              // Sort by start time to ensure correct order
+              narrationData.sort((a, b) => a.start - b.start);
+
+              // EXACT same fetch call as downloadAlignedAudio
+              const response = await fetch(`${SERVER_URL}/api/narration/download-aligned`, {
+                method: 'POST',
+                mode: 'cors',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'audio/wav'
+                },
+                body: JSON.stringify({ narrations: narrationData })
+              });
+
+              // Check for audio alignment notification after successful response
+              if (response.ok) {
+                // Import and check for duration notification
+                const { checkAudioAlignmentFromResponse } = await import('../../utils/audioAlignmentNotification.js');
+                checkAudioAlignmentFromResponse(response);
+              }
+
+              // Check if the response is successful
+              if (!response.ok) {
+                // Try to parse error message if it's JSON
+                try {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || 'Failed to generate aligned audio');
+                } catch (jsonError) {
+                  // If it's not JSON, use the status text
+                  throw new Error(`Failed to generate aligned audio: ${response.statusText}`);
                 }
+              }
 
-                // Set up event handlers for video-audio synchronization
-                function handleVideoPlay() {
-                  console.log('Video play detected, syncing aligned narration');
-                  if (audio && videoRef.current) {
-                    audio.currentTime = videoRef.current.currentTime;
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(error => {
-                        console.error('Error playing aligned narration:', error);
-                      });
-                    }
+              // Get the blob from the response
+              const blob = await response.blob();
+
+              // Create a blob URL for the aligned narration service
+              const blobUrl = URL.createObjectURL(blob);
+
+              console.log('🎵 Aligned narration generated, integrating with service...');
+              console.log('📦 Blob size:', blob.size, 'bytes');
+              console.log('🔗 Blob URL:', blobUrl);
+
+              // Use the proper aligned narration service
+              const {
+                getAlignedAudioElement
+              } = await import('../../services/alignedNarrationService.js');
+
+              // DON'T reset the audio element first - this clears the cache!
+              // resetAlignedAudioElement();
+
+              // Update the aligned narration cache FIRST (the service needs this)
+              window.alignedNarrationCache = {
+                blob: blob,
+                url: blobUrl,
+                timestamp: Date.now(),
+                subtitleTimestamps: {}
+              };
+              console.log('💾 Updated alignedNarrationCache:', window.alignedNarrationCache);
+
+              // Set a flag to indicate that aligned narration is available
+              window.isAlignedNarrationAvailable = true;
+              console.log('✅ Set isAlignedNarrationAvailable to true');
+
+              // Now get the audio element using the service (this should work now)
+              console.log('🎧 Getting audio element from service...');
+              const audioElement = getAlignedAudioElement();
+              console.log('🎧 Audio element:', audioElement);
+
+              // The service MUST return an audio element or we have a bug
+              if (!audioElement) {
+                console.error('❌ CRITICAL: Service failed to create audio element');
+                throw new Error('Service failed to create audio element');
+              }
+
+              console.log('🔧 Setting up audio element with blob URL...');
+              audioElement.src = blobUrl;
+              console.log('📍 Audio element src set to:', audioElement.src);
+
+              audioElement.load();
+              console.log('⏳ Audio element load() called');
+
+              // Add event listeners to track audio loading
+              audioElement.onloadstart = () => console.log('🔄 Audio loading started');
+              audioElement.oncanplay = () => console.log('▶️ Audio can start playing');
+              audioElement.oncanplaythrough = () => console.log('🎯 Audio can play through');
+              audioElement.onerror = (e) => console.error('❌ Audio error:', e);
+              audioElement.onloadeddata = () => console.log('📊 Audio data loaded');
+              audioElement.onloadedmetadata = () => {
+                console.log('📋 Audio metadata loaded - Duration:', audioElement.duration, 'seconds');
+              };
+
+              console.log('✅ Aligned narration audio element set up with service');
+
+              console.log('📡 Dispatching aligned-narration-ready event...');
+              // Notify the system that aligned narration is available
+              // This will trigger the aligned narration hooks to start working
+              window.dispatchEvent(new CustomEvent('aligned-narration-ready', {
+                detail: {
+                  url: blobUrl,
+                  timestamp: Date.now()
+                }
+              }));
+
+              console.log('📡 Dispatching aligned-narration-status event...');
+              // Also dispatch the status event that the hooks listen for
+              window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+                detail: {
+                  status: 'complete',
+                  message: 'Aligned narration generation complete',
+                  isStillGenerating: false,
+                  available: true,
+                  url: blobUrl,
+                  timestamp: Date.now()
+                }
+              }));
+
+              // Set up proper video-audio synchronization
+              console.log('🎬 Setting up video-audio synchronization...');
+              console.log('🎬 Video element:', videoRef.current);
+              console.log('🎬 Video paused:', videoRef.current?.paused);
+              console.log('🎬 Video current time:', videoRef.current?.currentTime);
+
+              if (videoRef.current && audioElement) {
+                console.log('🔗 Setting up video event listeners for audio sync...');
+
+                // Set up video event listeners for synchronized playback
+                const handleVideoPlay = () => {
+                  console.log('▶️ Video play detected, syncing audio...');
+                  audioElement.currentTime = videoRef.current.currentTime;
+                  audioElement.play().catch(e => console.warn('Audio play error:', e));
+                };
+
+                const handleVideoPause = () => {
+                  console.log('⏸️ Video pause detected, pausing audio...');
+                  audioElement.pause();
+                };
+
+                const handleVideoSeeked = () => {
+                  console.log('⏭️ Video seeked, syncing audio time...');
+                  audioElement.currentTime = videoRef.current.currentTime;
+                };
+
+                const handleVideoTimeUpdate = () => {
+                  // Only sync if there's a significant difference
+                  if (Math.abs(audioElement.currentTime - videoRef.current.currentTime) > 0.3) {
+                    audioElement.currentTime = videoRef.current.currentTime;
                   }
-                }
+                };
 
-                function handleVideoPause() {
-                  console.log('Video pause detected, pausing aligned narration');
-                  if (audio) {
-                    audio.pause();
-                  }
-                }
-
-                function handleVideoSeeked() {
-                  console.log('Video seeked, syncing aligned narration time');
-                  if (audio) {
-                    audio.currentTime = videoRef.current.currentTime;
-                    if (!videoRef.current.paused) {
-                      const playPromise = audio.play();
-                      if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                          console.error('Error playing aligned narration after seek:', error);
-                        });
-                      }
-                    }
-                  }
-                }
-
-                function handleVideoTimeUpdate() {
-                  // Only update if the difference is significant
-                  if (audio && Math.abs(audio.currentTime - videoRef.current.currentTime) > 0.3) {
-                    audio.currentTime = videoRef.current.currentTime;
-                  }
-                }
+                const handleVideoRateChange = () => {
+                  console.log('⚡ Video speed changed to:', videoRef.current.playbackRate);
+                  // Sync audio playback rate with video
+                  audioElement.playbackRate = videoRef.current.playbackRate;
+                  console.log('🎵 Audio speed synced to:', audioElement.playbackRate);
+                };
 
                 // Add event listeners
                 videoRef.current.addEventListener('play', handleVideoPlay);
                 videoRef.current.addEventListener('pause', handleVideoPause);
                 videoRef.current.addEventListener('seeked', handleVideoSeeked);
                 videoRef.current.addEventListener('timeupdate', handleVideoTimeUpdate);
+                videoRef.current.addEventListener('ratechange', handleVideoRateChange);
 
-                // Store the event handlers on the window for cleanup
-                window.alignedNarrationEventHandlers = {
-                  handleVideoPlay,
-                  handleVideoPause,
-                  handleVideoSeeked,
-                  handleVideoTimeUpdate
+                // Store cleanup function
+                window.cleanupAlignedNarrationSync = () => {
+                  if (videoRef.current) {
+                    videoRef.current.removeEventListener('play', handleVideoPlay);
+                    videoRef.current.removeEventListener('pause', handleVideoPause);
+                    videoRef.current.removeEventListener('seeked', handleVideoSeeked);
+                    videoRef.current.removeEventListener('timeupdate', handleVideoTimeUpdate);
+                    videoRef.current.removeEventListener('ratechange', handleVideoRateChange);
+                  }
                 };
 
-                // If the video is playing, start playing the aligned narration
-                if (videoRef.current && !videoRef.current.paused) {
-                  console.log('Video is currently playing, starting aligned narration');
-                  handleVideoPlay();
-                }
-              };
+                // Sync initial playback rate
+                audioElement.playbackRate = videoRef.current.playbackRate;
+                console.log('🎵 Initial audio speed set to:', audioElement.playbackRate);
 
-              // Set up direct playback
-              await setupDirectPlayback();
+                // Set up volume control integration
+                console.log('🔊 Setting up volume control integration...');
+
+                // Get current narration volume from the system
+                const currentNarrationVolume = window.narrationVolume || 1.0;
+                audioElement.volume = currentNarrationVolume;
+                console.log('🔊 Initial audio volume set to:', audioElement.volume);
+
+                // Listen for volume changes from the narration menu
+                const handleVolumeChange = (event) => {
+                  if (event.detail && typeof event.detail.volume === 'number') {
+                    audioElement.volume = event.detail.volume;
+                    console.log('🔊 Audio volume updated to:', audioElement.volume);
+                  }
+                };
+
+                // Listen for volume change events
+                window.addEventListener('narration-volume-change', handleVolumeChange);
+
+                // Store cleanup function for volume listener
+                const originalCleanup = window.cleanupAlignedNarrationSync;
+                window.cleanupAlignedNarrationSync = () => {
+                  if (originalCleanup) originalCleanup();
+                  window.removeEventListener('narration-volume-change', handleVolumeChange);
+                };
+
+                // If video is currently playing, start audio immediately
+                if (!videoRef.current.paused) {
+                  console.log('▶️ Video is playing, starting audio sync...');
+                  audioElement.currentTime = videoRef.current.currentTime;
+                  audioElement.play().catch(e => console.warn('Initial audio play error:', e));
+                } else {
+                  console.log('⏸️ Video is paused, audio will start when video plays');
+                }
+
+                console.log('✅ Video-audio synchronization set up successfully');
+              }
+
+              console.log('✅ Aligned narration regenerated successfully and integrated with service');
 
             } catch (error) {
               console.error('Error during aligned narration regeneration:', error);
+              setError(error.message || 'Failed to refresh narration');
             } finally {
               // Clear refreshing state
               setIsRefreshingNarration(false);

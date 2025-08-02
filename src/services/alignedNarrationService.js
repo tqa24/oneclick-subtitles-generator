@@ -317,14 +317,18 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
  * @returns {HTMLAudioElement} - Audio element
  */
 export const getAlignedAudioElement = () => {
-  // Check if we have a URL in the cache
-  if (!alignedNarrationCache.url) {
-    // Only log in development mode to reduce console spam
-    if (process.env.NODE_ENV === 'development') {
+  // Use the window cache instead of the local cache
+  const cache = window.alignedNarrationCache || alignedNarrationCache;
 
-    }
+  // Check if we have a URL in the cache
+  console.log('🔍 Service: Checking cache URL...', cache.url);
+  console.log('🔍 Service: Using cache:', cache === window.alignedNarrationCache ? 'window' : 'local');
+  if (!cache.url) {
+    console.error('❌ Service: No URL in cache, returning null');
+    console.log('🔍 Service: Cache contents:', cache);
     return null;
   }
+  console.log('✅ Service: Cache URL found, proceeding...');
 
   // Check if we need to create or update the audio element
   // Don't log every time this function is called to reduce console spam
@@ -333,7 +337,7 @@ export const getAlignedAudioElement = () => {
     // If we already have an audio element, check if it's valid and has the correct source
     if (alignedAudioElement) {
       // If the URL has changed or the audio element has no source, update it
-      if (alignedAudioElement.src !== alignedNarrationCache.url) {
+      if (alignedAudioElement.src !== cache.url) {
 
 
         try {
@@ -341,7 +345,7 @@ export const getAlignedAudioElement = () => {
           alignedAudioElement.pause();
 
           // Update source and reload
-          alignedAudioElement.src = alignedNarrationCache.url;
+          alignedAudioElement.src = cache.url;
           alignedAudioElement.load();
 
           // Reset any custom properties
@@ -403,7 +407,7 @@ export const getAlignedAudioElement = () => {
       };
 
       // Set the source and load
-      alignedAudioElement.src = alignedNarrationCache.url;
+      alignedAudioElement.src = cache.url;
       alignedAudioElement.load();
 
 
