@@ -6,6 +6,16 @@
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3031';
 
 /**
+ * Check if URL is a Douyin URL
+ * @param {string} url - URL to check
+ * @returns {boolean} - Whether the URL is a Douyin URL
+ */
+const isDouyinUrl = (url) => {
+  const douyinRegex = /^(https?:\/\/)?(www\.|v\.)?douyin\.com\/(video\/\d+|[a-zA-Z0-9]+\/?)/;
+  return douyinRegex.test(url);
+};
+
+/**
  * Scan available video qualities for a given URL
  * @param {string} videoUrl - The video URL to scan
  * @returns {Promise<Array>} - Array of available quality options
@@ -13,6 +23,13 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || 'http://localhost:3031';
 export const scanVideoQualities = async (videoUrl) => {
   try {
     console.log('[qualityScanner] Starting quality scan for:', videoUrl);
+
+    // Check if this is a Douyin URL and use Playwright scanner
+    if (isDouyinUrl(videoUrl)) {
+      console.log('[qualityScanner] Detected Douyin URL, using Playwright scanner...');
+      const { scanDouyinQualitiesPlaywright } = await import('./douyinPlaywrightDownloader');
+      return await scanDouyinQualitiesPlaywright(videoUrl);
+    }
 
     // Step 1: Start the scan (returns immediately with scanId)
     console.log('[qualityScanner] Starting background scan...');

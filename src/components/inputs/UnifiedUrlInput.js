@@ -66,8 +66,38 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   const historyDropdownRef = useRef(null);
   const inputRef = useRef(null);
 
+  // State for direct Douyin download
+  const [isDouyinDownloading, setIsDouyinDownloading] = useState(false);
+  const [douyinDownloadProgress, setDouyinDownloadProgress] = useState(0);
+
+  // Debug: Component mounted
+  useEffect(() => {
+    console.log('[UnifiedUrlInput] Component mounted');
+  }, []);
+
   useEffect(() => {
     if (selectedVideo) {
+      // CRITICAL FIX: Check if this is a Douyin URL that was incorrectly classified as all-sites
+      if (selectedVideo.source === 'all-sites' && selectedVideo.url && isValidDouyinUrl(selectedVideo.url)) {
+        console.log('[UnifiedUrlInput] Converting all-sites Douyin video to Playwright:', selectedVideo.url);
+
+        // Convert to douyin-playwright
+        const videoId = extractDouyinVideoId(selectedVideo.url);
+        if (videoId) {
+          setSelectedVideo({
+            id: videoId,
+            url: selectedVideo.url,
+            source: 'douyin-playwright',
+            title: 'Douyin Video',
+            thumbnail: ''
+          });
+          setUrlType('douyin-playwright');
+          setVideoTitle('Douyin Video');
+          console.log('[UnifiedUrlInput] Converted to douyin-playwright with ID:', videoId);
+          return;
+        }
+      }
+
       setVideoTitle(selectedVideo.title || 'Video');
       setUrlType(selectedVideo.source);
 
@@ -75,7 +105,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       if (selectedVideo.id && selectedVideo.url) {
         if (selectedVideo.source === 'youtube') {
           addYoutubeUrlToHistory(selectedVideo);
-        } else if (selectedVideo.source === 'douyin') {
+        } else if (selectedVideo.source === 'douyin' || selectedVideo.source === 'douyin-playwright') {
           addDouyinUrlToHistory(selectedVideo);
         } else if (selectedVideo.source === 'all-sites') {
           addAllSitesUrlToHistory(selectedVideo);
@@ -131,8 +161,10 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   };
 
   const isValidDouyinUrl = (url) => {
-    const douyinRegex = /^(https?:\/\/)?(www\.|v\.)?douyin\.com\/(video\/\d+|[a-zA-Z0-9]+\/?)/;
-    return douyinRegex.test(url);
+    const douyinRegex = /^(https?:\/\/)?(www\.|v\.)?douyin\.com\/(video\/\d+|[a-zA-Z0-9]+\/?.*)/;
+    const isValid = douyinRegex.test(url);
+    console.log('[UnifiedUrlInput] Testing Douyin URL:', url, 'Result:', isValid);
+    return isValid;
   };
 
   const isValidUrl = (url) => {
@@ -213,6 +245,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     const inputUrl = e.target.value.trim();
     setUrl(inputUrl);
     setError(''); // Clear any previous errors
+    console.log('[UnifiedUrlInput] URL changed to:', inputUrl);
 
     if (!inputUrl) {
       setSelectedVideo(null);
@@ -241,26 +274,31 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       return;
     }
 
-    // Check for Douyin URL next
+    // Check for Douyin URL next - NOW USING PLAYWRIGHT
     if (isValidDouyinUrl(inputUrl)) {
-      setUrlType('douyin');
+      console.log('[UnifiedUrlInput] Detected Douyin URL, using Playwright:', inputUrl);
+      setUrlType('douyin-playwright');
       const videoId = extractDouyinVideoId(inputUrl);
+      console.log('[UnifiedUrlInput] Extracted Douyin video ID:', videoId);
       if (videoId) {
         // Store the video URL in localStorage to maintain state
         localStorage.setItem('current_video_url', inputUrl);
         setSelectedVideo({
           id: videoId,
           url: inputUrl,
-          source: 'douyin',
+          source: 'douyin-playwright',
           title: 'Douyin Video', // Default title
           thumbnail: '' // No thumbnail available initially
         });
+        console.log('[UnifiedUrlInput] Set selectedVideo with source: douyin-playwright');
       }
       return;
     }
 
     // If not YouTube or Douyin, check if it's a valid URL for all-sites
+    console.log('[UnifiedUrlInput] URL not detected as YouTube or Douyin, checking all-sites:', inputUrl);
     if (isValidUrl(inputUrl)) {
+      console.log('[UnifiedUrlInput] Setting URL type to all-sites');
       setUrlType('all-sites');
       try {
         const videoId = generateAllSitesVideoId(inputUrl);
@@ -304,6 +342,27 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
   // Handle selecting a video from history
   const handleSelectFromHistory = (historyItem) => {
     setUrl(historyItem.url);
+
+    // CRITICAL FIX: Check if this is a Douyin URL that should use Playwright
+    if (isValidDouyinUrl(historyItem.url)) {
+      console.log('[UnifiedUrlInput] History item is Douyin URL, converting to Playwright:', historyItem.url);
+      const videoId = extractDouyinVideoId(historyItem.url);
+      if (videoId) {
+        setSelectedVideo({
+          id: videoId,
+          url: historyItem.url,
+          source: 'douyin-playwright',
+          title: 'Douyin Video',
+          thumbnail: ''
+        });
+        setUrlType('douyin-playwright');
+        setShowHistory(false);
+        console.log('[UnifiedUrlInput] History item converted to douyin-playwright with ID:', videoId);
+        return;
+      }
+    }
+
+    // Use original history item for non-Douyin URLs
     setSelectedVideo({
       id: historyItem.id,
       url: historyItem.url,
@@ -313,6 +372,98 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     });
     setUrlType(historyItem.source);
     setShowHistory(false);
+  };
+
+  // Direct download function for Douyin videos
+  const handleDouyinDirectDownload = async () => {
+    if (!selectedVideo || !selectedVideo.url) return;
+
+    setIsDouyinDownloading(true);
+    setDouyinDownloadProgress(0);
+
+    try {
+      console.log('[UnifiedUrlInput] Starting direct Douyin download:', selectedVideo.url);
+
+      // Generate videoId for download
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 9);
+      const videoId = `douyin_direct_${timestamp}_${randomId}`;
+
+      // Start download
+      const response = await fetch('http://localhost:3031/api/download-douyin-playwright', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId,
+          url: selectedVideo.url,
+          quality: 'original',
+          useCookies: false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[UnifiedUrlInput] Download started:', result);
+
+      // Poll for progress
+      const pollProgress = setInterval(async () => {
+        try {
+          const progressResponse = await fetch(`http://localhost:3031/api/douyin-playwright-progress/${videoId}`);
+          const progressData = await progressResponse.json();
+
+          if (progressData.success) {
+            setDouyinDownloadProgress(progressData.progress || 0);
+
+            if (progressData.completed && progressData.path) {
+              clearInterval(pollProgress);
+              setIsDouyinDownloading(false);
+
+              // Use proper download endpoint with attachment headers
+              try {
+                const filename = progressData.filename || 'douyin_video.mp4';
+                const downloadUrl = `http://localhost:3031/api/douyin-playwright-download/${encodeURIComponent(filename)}`;
+                console.log('[UnifiedUrlInput] Starting download:', downloadUrl);
+
+                // Create download link that will trigger proper download
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                a.style.display = 'none';
+                a.target = '_blank'; // Ensure it doesn't replace current page
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                console.log('[UnifiedUrlInput] Douyin download triggered');
+              } catch (downloadError) {
+                console.error('[UnifiedUrlInput] Error downloading file:', downloadError);
+                // Show user a message instead of navigating
+                alert(`Download completed! File saved as: ${progressData.filename || 'douyin_video.mp4'}`);
+              }
+            } else if (!progressData.isActive && !progressData.completed) {
+              // Download failed
+              clearInterval(pollProgress);
+              setIsDouyinDownloading(false);
+              throw new Error('Download failed');
+            }
+          }
+        } catch (error) {
+          console.error('[UnifiedUrlInput] Error polling progress:', error);
+          clearInterval(pollProgress);
+          setIsDouyinDownloading(false);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('[UnifiedUrlInput] Douyin download error:', error);
+      setIsDouyinDownloading(false);
+      setDouyinDownloadProgress(0);
+    }
   };
 
   // Get the appropriate icon based on URL type
@@ -402,11 +553,37 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
               <p className="video-id">{t('unifiedUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
               <button
                 className="download-only-btn"
-                onClick={() => setShowDownloadModal(true)}
+                onClick={handleDouyinDirectDownload}
+                disabled={isDouyinDownloading}
                 title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
               >
                 <FiDownload size={16} />
-                {t('unifiedUrlInput.downloadOnly', 'Download Only')}
+                {isDouyinDownloading
+                  ? `${t('unifiedUrlInput.downloading', 'Downloading...')} ${douyinDownloadProgress}%`
+                  : t('unifiedUrlInput.downloadOnly', 'Download Only')
+                }
+              </button>
+            </div>
+          </div>
+        );
+      case 'douyin-playwright':
+        return (
+          <div className="selected-video-preview">
+            <div className="video-info">
+              <h3 className="video-title">{videoTitle}</h3>
+              <p className="video-id">{t('unifiedUrlInput.videoId', 'Video ID:')} <span className="video-id-value">{selectedVideo.id}</span></p>
+              <p className="video-method">Using Playwright Method</p>
+              <button
+                className="download-only-btn"
+                onClick={handleDouyinDirectDownload}
+                disabled={isDouyinDownloading}
+                title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
+              >
+                <FiDownload size={16} />
+                {isDouyinDownloading
+                  ? `${t('unifiedUrlInput.downloading', 'Downloading...')} ${douyinDownloadProgress}%`
+                  : t('unifiedUrlInput.downloadOnly', 'Download Only')
+                }
               </button>
             </div>
           </div>

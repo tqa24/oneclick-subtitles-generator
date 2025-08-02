@@ -40,6 +40,9 @@ router.post('/download-only', async (req, res) => {
   try {
     console.log(`[DOWNLOAD-ONLY] Starting ${type} download:`, { url, type, quality, source });
 
+    // Note: Douyin downloads are now handled directly in the frontend
+    // This route is only used for non-Douyin URLs
+
     // Create a unique key for this download request
     const downloadKey = `${url}_${type}_${quality || 'default'}`;
 

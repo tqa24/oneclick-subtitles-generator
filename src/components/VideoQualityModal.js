@@ -66,7 +66,7 @@ const VideoQualityModal = ({
   // Scan qualities when redownload option is selected
   useEffect(() => {
     if (selectedOption === 'redownload' && videoInfo && videoInfo.url &&
-        ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source) &&
+        ['youtube', 'douyin', 'douyin-playwright', 'all-sites'].includes(videoInfo.source) &&
         availableQualities.length === 0 && !isScanning) {
       console.log('[VideoQualityModal] Redownload selected, starting quality scan for:', videoInfo.source);
       scanVideoQualities();
@@ -297,6 +297,8 @@ const VideoQualityModal = ({
         return t('videoQuality.youtubeVideo', 'YouTube Video');
       case 'douyin':
         return t('videoQuality.douyinVideo', 'Douyin Video');
+      case 'douyin-playwright':
+        return t('videoQuality.douyinPlaywrightVideo', 'Douyin Video (Playwright)');
       case 'all-sites':
         return t('videoQuality.webVideo', 'Web Video');
       case 'upload':
@@ -324,8 +326,8 @@ const VideoQualityModal = ({
   };
 
   const showRedownloadOption = videoInfo?.source &&
-    ['youtube', 'douyin', 'all-sites'].includes(videoInfo.source) &&
-    videoInfo.url; // Only show if we have a URL to redownload from
+    ['youtube', 'all-sites'].includes(videoInfo.source) &&
+    videoInfo.url; // Only show if we have a URL to redownload from (excluding Douyin)
 
   const showVersionOption = availableVersions.length > 0;
 
@@ -436,7 +438,7 @@ const VideoQualityModal = ({
                                 onChange={() => setSelectedQuality(quality)}
                               />
                               <label htmlFor={`quality-${index}`} className="quality-pill-label">
-                                {quality.description}
+                                {quality.label || quality.description || quality.quality}
                               </label>
                             </div>
                           ))}

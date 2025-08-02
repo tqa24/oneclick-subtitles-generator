@@ -311,7 +311,7 @@ const DownloadOnlyModal = ({
                           disabled={isDownloading}
                         />
                         <label htmlFor={`quality-${index}`} className="quality-pill-label">
-                          {quality.description}
+                          {quality.label || quality.description || quality.quality}
                         </label>
                       </div>
                     ))}
