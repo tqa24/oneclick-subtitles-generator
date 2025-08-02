@@ -111,7 +111,8 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
   }, {});
 
   const handleVoiceSelect = (voice) => {
-    onVoiceSelect(voice.name);
+    // Use short_name for edge-tts command compatibility
+    onVoiceSelect(voice.short_name);
     onClose();
   };
 
@@ -212,7 +213,7 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
                 {getFilteredRecommendedVoices().map(voice => (
                   <div
                     key={voice.name}
-                    className={`voice-card ${voice.name === selectedVoice ? 'selected' : ''}`}
+                    className={`voice-card ${voice.short_name === selectedVoice ? 'selected' : ''}`}
                     onClick={() => handleVoiceSelect(voice)}
                   >
                     <div className="voice-info">
@@ -236,7 +237,7 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
                 {voiceList.map(voice => (
                   <div
                     key={voice.name}
-                    className={`voice-card ${voice.name === selectedVoice ? 'selected' : ''}`}
+                    className={`voice-card ${voice.short_name === selectedVoice ? 'selected' : ''}`}
                     onClick={() => handleVoiceSelect(voice)}
                   >
                     <div className="voice-info">

@@ -56,7 +56,7 @@ const EdgeTTSControls = ({
 
         // Auto-select voice based on detected language
         if (!selectedVoice && data.voices && data.voices.length > 0) {
-          let voiceToSelect = data.voices[0].name; // Default fallback
+          let voiceToSelect = data.voices[0].short_name; // Default fallback - use short_name
 
           if (detectedLanguage?.languageCode) {
             // Try to find a voice that matches the detected language
@@ -66,7 +66,7 @@ const EdgeTTSControls = ({
             );
 
             if (matchingVoice) {
-              voiceToSelect = matchingVoice.name;
+              voiceToSelect = matchingVoice.short_name; // Use short_name for edge-tts compatibility
             }
           }
 
@@ -127,8 +127,8 @@ const EdgeTTSControls = ({
     setSelectedVoice(voiceName);
   };
 
-  // Get selected voice details
-  const selectedVoiceDetails = voices.find(voice => voice.name === selectedVoice);
+  // Get selected voice details (selectedVoice now contains short_name)
+  const selectedVoiceDetails = voices.find(voice => voice.short_name === selectedVoice);
 
   return (
     <div className="edge-tts-controls">
@@ -158,7 +158,7 @@ const EdgeTTSControls = ({
                 <span className="model-dropdown-selected">
                   <span className="model-name">
                     {selectedVoiceDetails ?
-                      `${selectedVoiceDetails.short_name} (${selectedVoiceDetails.gender})` :
+                      selectedVoiceDetails.display_name :
                       selectedVoice || t('narration.selectVoice', 'Select voice')
                     }
                   </span>

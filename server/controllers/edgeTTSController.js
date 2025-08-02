@@ -111,11 +111,19 @@ except Exception as e:
  */
 const generateNarration = async (req, res) => {
   try {
+    console.log(`[Edge TTS] Starting narration generation`);
+    console.log(`[Edge TTS] Python executable: ${pythonExecutable}`);
+    console.log(`[Edge TTS] Python executable exists: ${fs.existsSync(pythonExecutable)}`);
+    console.log(`[Edge TTS] Virtual environment path: ${venvPath}`);
+    console.log(`[Edge TTS] Virtual environment exists: ${fs.existsSync(venvPath)}`);
+
     const { subtitles, settings } = req.body;
 
     if (!subtitles || !Array.isArray(subtitles)) {
       return res.status(400).json({ error: 'Invalid subtitles data' });
     }
+
+    console.log(`[Edge TTS] Processing ${subtitles.length} subtitles`);
 
     const voice = settings?.voice || 'en-US-AriaNeural';
     const rate = settings?.rate || '+0%';
@@ -145,25 +153,39 @@ const generateNarration = async (req, res) => {
     // Process each subtitle
     for (let i = 0; i < subtitles.length; i++) {
       const subtitle = subtitles[i];
-      
+
+      console.log(`[Edge TTS] Processing subtitle ${i + 1}/${subtitles.length}:`);
+      console.log(`[Edge TTS] Text: "${subtitle.text}"`);
+      console.log(`[Edge TTS] ID: ${subtitle.id || i}`);
+      console.log(`[Edge TTS] Voice settings: ${voice}, Rate: ${rate}, Volume: ${volume}, Pitch: ${pitch}`);
+    console.log(`[Edge TTS] Voice type: ${typeof voice}, Voice length: ${voice.length}`);
+
       try {
         // Create temporary Python script for this subtitle
         const tempScript = path.join(os.tmpdir(), `edge_tts_generate_${uuidv4()}.py`);
+        console.log(`[Edge TTS] Created temp script: ${tempScript}`);
 
         // Create subtitle directory (same as F5-TTS/Chatterbox pattern)
         const subtitleDir = path.join(outputDir, `subtitle_${subtitle.id || i}`);
+        console.log(`[Edge TTS] Subtitle directory: ${subtitleDir}`);
         if (!fs.existsSync(subtitleDir)) {
           fs.mkdirSync(subtitleDir, { recursive: true });
+          console.log(`[Edge TTS] Created subtitle directory: ${subtitleDir}`);
+        } else {
+          console.log(`[Edge TTS] Subtitle directory already exists: ${subtitleDir}`);
         }
 
         // Always use 1.mp3 to override existing narrations for the same video/subtitle set
         // This ensures align-narration always finds the latest narration
         const filename = '1.mp3';
         const outputPath = path.join(subtitleDir, filename);
+        console.log(`[Edge TTS] Output path: ${outputPath}`);
 
         // If file exists, it will be overwritten (this is intentional)
         if (fs.existsSync(outputPath)) {
-          console.log(`Overriding existing narration: ${outputPath}`);
+          console.log(`[Edge TTS] Overriding existing narration: ${outputPath}`);
+        } else {
+          console.log(`[Edge TTS] Creating new narration file: ${outputPath}`);
         }
 
         // Full filename for response (includes subtitle directory)
@@ -203,12 +225,13 @@ try:
             ]
 
             # Add prosody parameters if they're not default values
+            # Use --option=value format for edge-tts command line
             if rate != "+0%":
-                cmd.extend(['--rate', rate])
+                cmd.append(f'--rate={rate}')
             if volume != "+0%":
-                cmd.extend(['--volume', volume])
+                cmd.append(f'--volume={volume}')
             if pitch != "+0Hz":
-                cmd.extend(['--pitch', pitch])
+                cmd.append(f'--pitch={pitch}')
 
             # Run the command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -234,12 +257,16 @@ except Exception as e:
 `;
 
         fs.writeFileSync(tempScript, scriptContent);
+        console.log(`[Edge TTS] Written Python script to: ${tempScript}`);
 
         // Execute the Python script
+        console.log(`[Edge TTS] Executing Python script with: ${pythonExecutable} ${tempScript}`);
+        console.log(`[Edge TTS] Expected edge-tts command: ${pythonExecutable} -m edge_tts --voice ${voice} --file <temp_file> --write-media ${outputPath}${rate !== '+0%' ? ` --rate=${rate}` : ''}${volume !== '+0%' ? ` --volume=${volume}` : ''}${pitch !== '+0Hz' ? ` --pitch=${pitch}` : ''}`);
         const result = await new Promise((resolve, reject) => {
           const pythonProcess = spawn(pythonExecutable, [tempScript], {
             stdio: ['pipe', 'pipe', 'pipe']
           });
+          console.log(`[Edge TTS] Python process spawned with PID: ${pythonProcess.pid}`);
 
           let stdout = '';
           let stderr = '';
@@ -261,15 +288,29 @@ except Exception as e:
             }
 
             if (code !== 0) {
-              reject(new Error(stderr || 'Python process failed'));
+              console.error(`[Edge TTS] Python process failed for subtitle ${i}:`);
+              console.error(`[Edge TTS] Exit code: ${code}`);
+              console.error(`[Edge TTS] Python executable: ${pythonExecutable}`);
+              console.error(`[Edge TTS] Script path: ${tempScript}`);
+              console.error(`[Edge TTS] Subtitle text: "${subtitle.text}"`);
+              console.error(`[Edge TTS] Voice: ${voice}, Rate: ${rate}, Volume: ${volume}, Pitch: ${pitch}`);
+              console.error(`[Edge TTS] Output path: ${outputPath}`);
+              console.error(`[Edge TTS] STDERR: ${stderr}`);
+              console.error(`[Edge TTS] STDOUT: ${stdout}`);
+              reject(new Error(`Python process failed with exit code ${code}. STDERR: ${stderr}. STDOUT: ${stdout}`));
               return;
             }
 
             try {
               const result = JSON.parse(stdout);
+              console.log(`[Edge TTS] Successfully parsed result for subtitle ${i}:`, result);
               resolve(result);
             } catch (parseError) {
-              reject(new Error('Failed to parse result'));
+              console.error(`[Edge TTS] Failed to parse result for subtitle ${i}:`);
+              console.error(`[Edge TTS] Parse error: ${parseError.message}`);
+              console.error(`[Edge TTS] Raw stdout: ${stdout}`);
+              console.error(`[Edge TTS] Raw stderr: ${stderr}`);
+              reject(new Error(`Failed to parse result: ${parseError.message}. Raw output: ${stdout}`));
             }
           });
         });
@@ -296,8 +337,11 @@ except Exception as e:
         })}\n\n`);
 
       } catch (error) {
-        console.error(`Error generating Edge TTS for subtitle ${i}:`, error);
-        
+        console.error(`[Edge TTS] Error generating Edge TTS for subtitle ${i}:`, error);
+        console.error(`[Edge TTS] Error stack:`, error.stack);
+        console.error(`[Edge TTS] Subtitle text: "${subtitle.text}"`);
+        console.error(`[Edge TTS] Voice settings: ${voice}, Rate: ${rate}, Volume: ${volume}, Pitch: ${pitch}`);
+
         const errorResult = {
           subtitle_id: subtitle.id || i,
           text: subtitle.text,
