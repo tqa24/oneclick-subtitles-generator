@@ -583,6 +583,100 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
 });
 
 /**
+ * POST /api/optimize-existing-file - Optimize a file that already exists on the server
+ */
+router.post('/optimize-existing-file', async (req, res) => {
+  try {
+    const { filename, resolution = '360p', fps = 1, useVideoAnalysis = true } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required' });
+    }
+
+    const filePath = path.join(VIDEOS_DIR, filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found on server' });
+    }
+
+    console.log(`[OPTIMIZE-EXISTING] Optimizing existing file: ${filename}`);
+
+    // Determine media type from file extension
+    const extension = path.extname(filename).toLowerCase();
+    const isAudio = ['.mp3', '.wav', '.aac', '.ogg', '.flac'].includes(extension);
+
+    // Generate timestamp for optimized files
+    const timestamp = Date.now();
+
+    // Always use mp4 for processed files
+    const optimizedFilename = `optimized_${timestamp}.mp4`;
+    const analysisFilename = `analysis_500frames_${timestamp}.mp4`;
+    const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
+    const analysisPath = path.join(VIDEOS_DIR, analysisFilename);
+
+    let videoPath = filePath;
+    let optimizedResult = null;
+    let analysisResult = null;
+
+    // If it's an audio file, convert it to video first
+    if (isAudio) {
+      const convertedFilename = `converted_${timestamp}.mp4`;
+      const convertedPath = path.join(VIDEOS_DIR, convertedFilename);
+
+      const conversionResult = await convertAudioToVideo(filePath, convertedPath);
+      if (conversionResult && fs.existsSync(convertedPath)) {
+        videoPath = convertedPath;
+      }
+    }
+
+    // Optimize the video
+    optimizedResult = await optimizeVideo(videoPath, optimizedPath, {
+      resolution: resolution,
+      fps: fps
+    });
+
+    if (!optimizedResult) {
+      throw new Error('Video optimization failed');
+    }
+
+    // Create analysis video if requested and optimization was successful
+    if (useVideoAnalysis && optimizedResult && fs.existsSync(optimizedPath)) {
+      try {
+        analysisResult = await createAnalysisVideo(optimizedPath, analysisPath);
+      } catch (error) {
+        console.warn(`[OPTIMIZE-EXISTING] Analysis video creation failed: ${error.message}`);
+        // Continue without analysis video
+      }
+    }
+
+    // Return the result
+    res.json({
+      success: true,
+      originalVideo: `/videos/${filename}`,
+      optimizedVideo: `/videos/${optimizedFilename}`,
+      resolution: optimizedResult.resolution,
+      fps: optimizedResult.fps,
+      width: optimizedResult.width,
+      height: optimizedResult.height,
+      wasOptimized: optimizedResult.optimized !== false,
+      analysis: analysisResult ? {
+        video: `/videos/${analysisFilename}`,
+        frameCount: analysisResult.frameCount,
+        duration: analysisResult.duration
+      } : null,
+      message: 'Video optimized successfully from existing file'
+    });
+  } catch (error) {
+    console.error('[OPTIMIZE-EXISTING] Error optimizing existing file:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to optimize existing file'
+    });
+  }
+});
+
+/**
  * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate
  * Also creates an analysis video with 500 frames for Gemini analysis
  * Automatically converts audio files to video at the start

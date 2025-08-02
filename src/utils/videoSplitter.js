@@ -23,9 +23,14 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
     const mediaType = isAudio ? 'audio' : 'video';
 
     // Check if this file has already been copied to the server
+    console.log(`[SPLIT-VIDEO-DEBUG] File: ${mediaFile.name}, isCopiedToServer: ${mediaFile.isCopiedToServer}, serverPath: ${mediaFile.serverPath}`);
+
     if (mediaFile.isCopiedToServer && mediaFile.serverPath) {
+      console.log(`[SPLIT-VIDEO-DEBUG] Using existing file on server: ${mediaFile.serverPath}`);
       // File is already on server, use the server-side splitting endpoint
       return await splitFileOnServer(mediaFile, segmentDuration, onProgress, fastSplit, options);
+    } else {
+      console.log(`[SPLIT-VIDEO-DEBUG] File not on server, uploading new file`);
     }
 
     // Use the translation key for the uploading message

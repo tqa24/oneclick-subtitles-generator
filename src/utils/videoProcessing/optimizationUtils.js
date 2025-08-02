@@ -18,6 +18,73 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   // Check if video analysis is enabled
   const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
 
+  // If the file is already on the server, use a different endpoint to avoid duplicate uploads
+  if (mediaFile.isCopiedToServer && mediaFile.serverPath) {
+    console.log('[OPTIMIZE-VIDEO] File already on server, using existing file for optimization');
+
+    // Extract filename from serverPath
+    const filename = mediaFile.serverPath.split('/').pop();
+
+    // Call the optimize-existing-file endpoint instead
+    const response = await fetch(`${SERVER_URL}/api/optimize-existing-file`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: filename,
+        resolution: optimizedResolution,
+        fps: 1,
+        useVideoAnalysis: useVideoAnalysis
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to optimize existing video: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    // Continue with the same logic as below...
+    const timestamp = Date.now();
+    localStorage.setItem('split_result', JSON.stringify({
+      originalMedia: result.originalVideo,
+      optimized: {
+        video: result.optimizedVideo,
+        resolution: result.resolution,
+        fps: result.fps,
+        width: result.width,
+        height: result.height,
+        wasOptimized: result.wasOptimized
+      },
+      analysis: result.analysis,
+      timestamp: timestamp
+    }));
+
+    localStorage.setItem('last_optimization_timestamp', timestamp.toString());
+
+    const optimizedVideoUrl = `${SERVER_URL}${result.optimizedVideo}`;
+    const useAnalysisVideo = result.analysis && result.analysis.video;
+    const videoToFetch = useAnalysisVideo ? `${SERVER_URL}${result.analysis.video}` : optimizedVideoUrl;
+
+    const videoResponse = await fetch(optimizedVideoUrl);
+    const videoBlob = await videoResponse.blob();
+    const optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
+
+    // Preserve server properties
+    optimizedFile.isCopiedToServer = mediaFile.isCopiedToServer;
+    optimizedFile.serverPath = mediaFile.serverPath;
+
+    let analysisFile = optimizedFile;
+    if (useAnalysisVideo) {
+      const analysisResponse = await fetch(videoToFetch);
+      const analysisBlob = await analysisResponse.blob();
+      analysisFile = new File([analysisBlob], `analysis_${mediaFile.name}`, { type: mediaFile.type });
+    }
+
+    return { optimizedFile, analysisFile };
+  }
+
   // Call the optimize-video endpoint with 1 FPS for Gemini optimization
   const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=1&useVideoAnalysis=${useVideoAnalysis}`, {
     method: 'POST',
@@ -75,6 +142,13 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
 
   // Create a File object from the blob
   const optimizedFile = new File([videoBlob], `optimized_${mediaFile.name}`, { type: mediaFile.type });
+
+  // Preserve server properties from the original file to prevent duplicate uploads
+  if (mediaFile.isCopiedToServer && mediaFile.serverPath) {
+    optimizedFile.isCopiedToServer = mediaFile.isCopiedToServer;
+    optimizedFile.serverPath = mediaFile.serverPath;
+    console.log('[OPTIMIZE-VIDEO] Preserved server properties:', optimizedFile.serverPath);
+  }
 
   // Fetch the analysis video if available
   let analysisFile = optimizedFile;
