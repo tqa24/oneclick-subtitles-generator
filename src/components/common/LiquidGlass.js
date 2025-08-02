@@ -164,8 +164,9 @@ const LiquidGlass = ({
     // Parse dimensions properly - use effective dimensions for auto width
     const parsedWidth = width === 'auto' ? actualDimensions.width : parseDimension(width, containerRef);
     const parsedHeight = parseDimension(height, containerRef);
-    const w = parsedWidth * canvasDPI;
-    const h = parsedHeight * canvasDPI;
+    // Round to integers to ensure ImageData compatibility
+    const w = Math.round(parsedWidth * canvasDPI);
+    const h = Math.round(parsedHeight * canvasDPI);
 
     // Validate dimensions before creating ImageData
     if (!w || !h || w <= 0 || h <= 0 || !Number.isFinite(w) || !Number.isFinite(h)) {
@@ -235,8 +236,9 @@ const LiquidGlass = ({
     const canvas = canvasRef.current;
     const parsedWidth = width === 'auto' ? actualDimensions.width : parseDimension(width, containerRef);
     const parsedHeight = parseDimension(height, containerRef);
-    canvas.width = parsedWidth * canvasDPI;
-    canvas.height = parsedHeight * canvasDPI;
+    // Round to integers to ensure ImageData compatibility
+    canvas.width = Math.round(parsedWidth * canvasDPI);
+    canvas.height = Math.round(parsedHeight * canvasDPI);
     canvas.style.display = 'none';
     contextRef.current = canvas.getContext('2d');
 
@@ -331,7 +333,11 @@ const LiquidGlass = ({
       const updateDimensions = () => {
         const rect = containerRef.current.getBoundingClientRect();
         if (rect.width > 0) {
-          setActualDimensions({ width: rect.width, height: rect.height });
+          // Round dimensions to avoid fractional pixel issues with ImageData
+          setActualDimensions({
+            width: Math.round(rect.width),
+            height: Math.round(rect.height)
+          });
         }
       };
 
