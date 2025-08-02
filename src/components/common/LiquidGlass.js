@@ -19,7 +19,7 @@ const LiquidGlass = ({
   // Visual styling
   borderRadius = '150px',
   boxShadow = '0 4px 8px rgba(0, 0, 0, 0.25), 0 -10px 25px inset rgba(0, 0, 0, 0.15)',
-  backdropFilter = 'blur(0.25px) contrast(1.2) brightness(1.05) saturate(1.1)',
+  backdropFilter = 'blur(0.75px) contrast(1.2) brightness(1.05) saturate(1.1)',
   border = '1px solid var(--md-outline-variant, #ccc)',
   background = 'transparent',
   
@@ -103,12 +103,12 @@ const LiquidGlass = ({
     const distanceToEdge = roundedRectSDF(
       ix,
       iy,
-      0.4,  // Fixed width for stronger edge effect
-      0.4,  // Fixed height for stronger edge effect
-      0.9   // Fixed radius for stronger edge effect
+      0.1,  // Fixed width for stronger edge effect
+      0.1,  // Fixed height for stronger edge effect
+      1.1   // Fixed radius for stronger edge effect
     );
-    const displacement = smoothStep(0.8, 0, distanceToEdge - 0.1); // Fixed offset for stronger edge effect
-    const scaled = smoothStep(0, 1.5, displacement); // Removed effectIntensity multiplier to reduce zoom
+    const displacement = smoothStep(0.9, 0, distanceToEdge - 0.1); // Fixed offset for stronger edge effect
+    const scaled = smoothStep(0, 0.9, displacement); // Removed effectIntensity multiplier to reduce zoom
     return texture(ix * scaled + 0.5, iy * scaled + 0.5);
   }, [roundedRectSDF, smoothStep, texture]);
 
