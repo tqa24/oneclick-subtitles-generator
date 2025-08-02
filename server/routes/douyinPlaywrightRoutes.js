@@ -44,17 +44,24 @@ router.post('/download-douyin-playwright', async (req, res) => {
     }
 
     // Check if file already exists and is not a force refresh
-    const expectedFilename = `${videoId}.mp4`;
-    const expectedPath = path.join(VIDEOS_DIR, expectedFilename);
-    
-    if (fs.existsSync(expectedPath) && !forceRefresh) {
-      console.log(`[DOUYIN-PLAYWRIGHT] File already exists: ${expectedFilename}`);
+    // Look for files that start with the videoId (since actual filename includes title)
+    let existingFile = null;
+    if (fs.existsSync(VIDEOS_DIR)) {
+      const files = fs.readdirSync(VIDEOS_DIR);
+      existingFile = files.find(file =>
+        file.startsWith(`${videoId}_`) && file.endsWith('.mp4')
+      );
+    }
+
+    if (existingFile && !forceRefresh) {
+      console.log(`[DOUYIN-PLAYWRIGHT] File already exists: ${existingFile}`);
+      const existingPath = path.join(VIDEOS_DIR, existingFile);
       return res.json({
         success: true,
         message: 'Video already downloaded',
         videoId,
-        filename: expectedFilename,
-        path: `/videos/${expectedFilename}`,
+        filename: existingFile,
+        path: `/videos/${existingFile}`,
         alreadyExists: true
       });
     }

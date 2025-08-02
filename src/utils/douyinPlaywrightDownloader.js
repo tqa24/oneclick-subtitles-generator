@@ -19,8 +19,13 @@ export const downloadDouyinVideoPlaywright = async (douyinUrl, progressCallback 
   try {
     console.log('[DouyinPlaywright] Starting download for:', douyinUrl);
 
-    // Generate a unique video ID
-    const videoId = `douyin_pw_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use consistent video ID for caching (same as other Douyin methods)
+    const { extractDouyinVideoId } = await import('./douyinDownloader');
+    const videoId = extractDouyinVideoId(douyinUrl);
+
+    if (!videoId) {
+      throw new Error('Could not extract video ID from Douyin URL');
+    }
 
     // Check if already downloading
     if (downloadQueue[videoId]) {
