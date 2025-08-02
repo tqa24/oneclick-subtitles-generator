@@ -191,6 +191,39 @@
   margin: 0;
   padding: 0;
   z-index: 15; /* Above all visual elements */
+  -webkit-appearance: none; /* Remove webkit styling to prevent ghost effects */
+  appearance: none; /* Remove native styling to prevent ghost effects */
+  background: transparent; /* Ensure no background shows through */
+}
+
+/* Remove webkit slider styling that can cause ghost effects */
+.standard-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.standard-slider-input::-webkit-slider-track {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  opacity: 0;
+}
+
+/* Remove Firefox range styling */
+.standard-slider-input::-moz-range-thumb {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  border: none;
+  background: transparent;
+}
+
+.standard-slider-input::-moz-range-track {
+  opacity: 0;
+  background: transparent;
 }
 
 /* Hover effects */

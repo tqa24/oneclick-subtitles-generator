@@ -1,0 +1,157 @@
+/* Fixes for slider ghost duplicate effect in chatterbox controls */
+
+/* Fix for disabled sliders in chatterbox control rows - target the specific slider containers */
+.chatterbox-exaggeration-slider.disabled,
+.chatterbox-exaggeration-slider.state-disabled,
+.chatterbox-exaggeration-slider.state-Disabled,
+.chatterbox-cfg-weight-slider.disabled,
+.chatterbox-cfg-weight-slider.state-disabled,
+.chatterbox-cfg-weight-slider.state-Disabled {
+  position: relative;
+  overflow: hidden;
+  background: none !important;
+}
+
+/* Add a semi-transparent overlay to prevent ghost effect */
+.chatterbox-exaggeration-slider.disabled::after,
+.chatterbox-exaggeration-slider.state-disabled::after,
+.chatterbox-exaggeration-slider.state-Disabled::after,
+.chatterbox-cfg-weight-slider.disabled::after,
+.chatterbox-cfg-weight-slider.state-disabled::after,
+.chatterbox-cfg-weight-slider.state-Disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Ensure the input is completely hidden in disabled state and remove webkit appearance */
+.chatterbox-exaggeration-slider.disabled .standard-slider-input,
+.chatterbox-exaggeration-slider.state-disabled .standard-slider-input,
+.chatterbox-exaggeration-slider.state-Disabled .standard-slider-input,
+.chatterbox-cfg-weight-slider.disabled .standard-slider-input,
+.chatterbox-cfg-weight-slider.state-disabled .standard-slider-input,
+.chatterbox-cfg-weight-slider.state-Disabled .standard-slider-input {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Remove webkit appearance from all chatterbox slider inputs to prevent ghost effect */
+.chatterbox-exaggeration-slider .standard-slider-input,
+.chatterbox-cfg-weight-slider .standard-slider-input {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+}
+
+/* Remove webkit slider thumb styling that might cause ghost effect */
+.chatterbox-exaggeration-slider .standard-slider-input::-webkit-slider-thumb,
+.chatterbox-cfg-weight-slider .standard-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Remove webkit slider track styling that might cause ghost effect */
+.chatterbox-exaggeration-slider .standard-slider-input::-webkit-slider-track,
+.chatterbox-cfg-weight-slider .standard-slider-input::-webkit-slider-track {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+/* Remove moz range styling */
+.chatterbox-exaggeration-slider .standard-slider-input::-moz-range-thumb,
+.chatterbox-cfg-weight-slider .standard-slider-input::-moz-range-thumb {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.chatterbox-exaggeration-slider .standard-slider-input::-moz-range-track,
+.chatterbox-cfg-weight-slider .standard-slider-input::-moz-range-track {
+  opacity: 0 !important;
+  background: transparent !important;
+}
+
+/* Ensure the handle doesn't create ghost effect */
+.chatterbox-exaggeration-slider.disabled .standard-slider-handle,
+.chatterbox-exaggeration-slider.state-disabled .standard-slider-handle,
+.chatterbox-exaggeration-slider.state-Disabled .standard-slider-handle,
+.chatterbox-cfg-weight-slider.disabled .standard-slider-handle,
+.chatterbox-cfg-weight-slider.state-disabled .standard-slider-handle,
+.chatterbox-cfg-weight-slider.state-Disabled .standard-slider-handle {
+  box-shadow: none !important;
+}
+
+/* Ensure the value badge doesn't create ghost effect */
+.chatterbox-exaggeration-slider.disabled .standard-slider-value-badge,
+.chatterbox-exaggeration-slider.state-disabled .standard-slider-value-badge,
+.chatterbox-exaggeration-slider.state-Disabled .standard-slider-value-badge,
+.chatterbox-cfg-weight-slider.disabled .standard-slider-value-badge,
+.chatterbox-cfg-weight-slider.state-disabled .standard-slider-value-badge,
+.chatterbox-cfg-weight-slider.state-Disabled .standard-slider-value-badge {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Ensure the tracks don't create ghost effect */
+.chatterbox-exaggeration-slider.disabled .standard-slider-active-track,
+.chatterbox-exaggeration-slider.state-disabled .standard-slider-active-track,
+.chatterbox-exaggeration-slider.state-Disabled .standard-slider-active-track,
+.chatterbox-cfg-weight-slider.disabled .standard-slider-active-track,
+.chatterbox-cfg-weight-slider.state-disabled .standard-slider-active-track,
+.chatterbox-cfg-weight-slider.state-Disabled .standard-slider-active-track {
+  opacity: 0.3 !important;
+}
+
+/* Additional fix for ghost duplicate effect - apply grayscale filter */
+.chatterbox-exaggeration-slider.disabled,
+.chatterbox-exaggeration-slider.state-disabled,
+.chatterbox-exaggeration-slider.state-Disabled,
+.chatterbox-cfg-weight-slider.disabled,
+.chatterbox-cfg-weight-slider.state-disabled,
+.chatterbox-cfg-weight-slider.state-Disabled {
+  filter: grayscale(50%) !important;
+}
+
+/* Ensure chatterbox sliders have proper z-index */
+.chatterbox-exaggeration-slider,
+.chatterbox-cfg-weight-slider {
+  z-index: 1;
+}
+
+/* Alternative approach - target by parent container */
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.disabled,
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.state-disabled,
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.state-Disabled {
+  position: relative;
+  overflow: hidden;
+  background: none !important;
+}
+
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.disabled::after,
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.state-disabled::after,
+.narration-row.chatterbox-control-row .slider-with-value .standard-slider-container.state-Disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none;
+}
