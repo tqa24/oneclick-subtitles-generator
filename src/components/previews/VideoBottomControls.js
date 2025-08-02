@@ -194,6 +194,7 @@ const VideoBottomControls = ({
                       alignItems: 'center',
                       justifyContent: 'center',
                       height: '100%',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)',
                       opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                       transition: 'opacity 0.6s ease-in-out',
                       pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none',
