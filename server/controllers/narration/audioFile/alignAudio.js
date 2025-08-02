@@ -347,7 +347,7 @@ const downloadAlignedAudio = async (req, res) => {
     }
 
     // Calculate duration information for notification check
-    const firstSubtitleStart = Math.min(...narrations.map(n => n.start || 0));
+    const firstSubtitleStart = 0; // Always start from 0 instead of first subtitle start
     const lastSubtitleEnd = Math.max(...narrations.map(n => n.end || 0));
     const expectedDuration = lastSubtitleEnd - firstSubtitleStart;
 
