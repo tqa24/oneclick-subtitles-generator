@@ -366,10 +366,11 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     setDouyinDownloadProgress(0);
 
     try {
-      // Generate videoId for download
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 9);
-      const videoId = `douyin_direct_${timestamp}_${randomId}`;
+      // Use consistent videoId for caching (same as other Douyin methods)
+      const videoId = extractDouyinVideoId(selectedVideo.url);
+      if (!videoId) {
+        throw new Error('Could not extract video ID from URL');
+      }
 
       // Start download
       const response = await fetch('http://localhost:3031/api/download-douyin-playwright', {

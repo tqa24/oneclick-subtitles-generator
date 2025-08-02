@@ -92,24 +92,25 @@ const cancelDownload = async (videoId) => {
  */
 const generateVideoId = (url) => {
   try {
-    // First, try to create a more reliable ID
+    // Create a consistent ID from URL
     const urlObj = new URL(url);
     const domain = urlObj.hostname.replace('www.', '');
     const path = urlObj.pathname.replace(/\//g, '_');
+    const query = urlObj.search.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // Create a base ID from domain and path
-    const baseId = `${domain}${path}`.replace(/[^a-zA-Z0-9]/g, '_');
+    // Create a base ID from domain, path, and query
+    const baseId = `${domain}${path}${query}`.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // Add a timestamp to ensure uniqueness
-    const timestamp = Date.now();
+    // Remove consecutive underscores and trim
+    const cleanId = baseId.replace(/_+/g, '_').replace(/^_|_$/g, '');
 
-    // Combine everything into a valid ID
-    return `site_${baseId}_${timestamp}`;
+    // Combine everything into a valid ID (no timestamp for caching)
+    return `site_${cleanId}`;
   } catch (error) {
     console.error('Error generating video ID:', error);
-    // Fallback to a simpler ID generation
-    const timestamp = Date.now();
-    return `site_${timestamp}`;
+    // Fallback to a hash-based ID for invalid URLs
+    const hash = url.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50);
+    return `site_${hash}`;
   }
 };
 

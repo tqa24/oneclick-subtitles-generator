@@ -327,24 +327,25 @@ const useNarrationCache = ({
     // Only check cache if we don't have any generation results yet
     if (generationResults && generationResults.length > 0) return;
 
-    try {
-      // Get current media ID
-      const getCurrentMediaId = () => {
-        const currentVideoUrl = localStorage.getItem('current_video_url');
-        const currentFileUrl = localStorage.getItem('current_file_url');
+    const checkCache = async () => {
+      try {
+        // Get current media ID using unified approach
+        const getCurrentMediaId = async () => {
+          const currentVideoUrl = localStorage.getItem('current_video_url');
+          const currentFileUrl = localStorage.getItem('current_file_url');
 
-        if (currentVideoUrl) {
-          // Extract video ID from YouTube URLs
-          const match = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-          return match ? match[1] : null;
-        } else if (currentFileUrl) {
-          return localStorage.getItem('current_file_cache_id');
-        }
-        return null;
-      };
+          if (currentVideoUrl) {
+            // Use unified URL-based caching for all video types
+            const { generateUrlBasedCacheId } = await import('../../../hooks/useSubtitles');
+            return await generateUrlBasedCacheId(currentVideoUrl);
+          } else if (currentFileUrl) {
+            return localStorage.getItem('current_file_cache_id');
+          }
+          return null;
+        };
 
-      const mediaId = getCurrentMediaId();
-      if (!mediaId) return;
+        const mediaId = await getCurrentMediaId();
+        if (!mediaId) return;
 
       // Check for cached Chatterbox narrations
       const cachedChatterboxData = localStorage.getItem('chatterbox_narrations_cache');
@@ -424,9 +425,13 @@ const useNarrationCache = ({
           }));
         }
       }
-    } catch (error) {
-      console.error('Error loading narrations from cache:', error);
-    }
+      } catch (error) {
+        console.error('Error loading narrations from cache:', error);
+      }
+    };
+
+    // Call the async function
+    checkCache();
   }, [generationResults]);
 };
 

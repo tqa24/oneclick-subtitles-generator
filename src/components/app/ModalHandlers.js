@@ -199,12 +199,15 @@ export const useModalHandlers = (appState) => {
   };
 
   /**
-   * Get cache ID for the current video source
+   * Get cache ID for the current video source using unified approach
    */
-  const getCacheIdForCurrentVideo = () => {
-    if (selectedVideo) {
-      // For YouTube videos, use the video ID
-      return extractYoutubeVideoId(selectedVideo.url);
+  const getCacheIdForCurrentVideo = async () => {
+    // Check for video URL first (from any source)
+    const currentVideoUrl = localStorage.getItem('current_video_url');
+    if (currentVideoUrl) {
+      // Use unified URL-based caching
+      const { generateUrlBasedCacheId } = await import('../../hooks/useSubtitles');
+      return await generateUrlBasedCacheId(currentVideoUrl);
     } else if (uploadedFile) {
       // For uploaded files, use the file name without extension
       const fileName = uploadedFile.name;

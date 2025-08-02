@@ -7,6 +7,41 @@ import { getVideoDuration, processLongVideo, retrySegmentProcessing } from '../u
 import { setCurrentCacheId as setRulesCacheId } from '../utils/transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../utils/userSubtitlesStore';
 
+/**
+ * Generate a consistent cache ID from any video URL
+ * @param {string} url - Video URL
+ * @returns {string|null} - Consistent cache ID
+ */
+const generateUrlBasedCacheId = async (url) => {
+    if (!url) return null;
+
+    try {
+        // YouTube URLs
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            return extractYoutubeVideoId(url);
+        }
+
+        // Douyin URLs
+        if (url.includes('douyin.com')) {
+            const { extractDouyinVideoId } = await import('../utils/douyinDownloader');
+            return extractDouyinVideoId(url);
+        }
+
+        // All other sites - generate consistent ID from URL structure
+        const urlObj = new URL(url);
+        const domain = urlObj.hostname.replace('www.', '');
+        const path = urlObj.pathname.replace(/\//g, '_');
+        const query = urlObj.search.replace(/[^a-zA-Z0-9]/g, '_');
+        const baseId = `${domain}${path}${query}`.replace(/[^a-zA-Z0-9]/g, '_');
+        const cleanId = baseId.replace(/_+/g, '_').replace(/^_|_$/g, '');
+        return `site_${cleanId}`;
+
+    } catch (error) {
+        console.error('Error generating URL-based cache ID:', error);
+        return null;
+    }
+};
+
 export const useSubtitles = (t) => {
     const [subtitlesData, setSubtitlesData] = useState(null);
     const [status, setStatus] = useState({ message: '', type: '' });
@@ -91,15 +126,25 @@ export const useSubtitles = (t) => {
         try {
             let cacheId = null;
 
-            if (inputType === 'youtube') {
-                cacheId = extractYoutubeVideoId(input);
-                preloadYouTubeVideo(input);
+            // Check if this is a URL-based input (either direct URL or downloaded video)
+            const currentVideoUrl = localStorage.getItem('current_video_url');
+
+            if (inputType === 'youtube' || currentVideoUrl) {
+                // Use unified URL-based caching for all video URLs
+                const urlToUse = inputType === 'youtube' ? input : currentVideoUrl;
+                cacheId = await generateUrlBasedCacheId(urlToUse);
+
+                // Preload YouTube videos
+                if (urlToUse && (urlToUse.includes('youtube.com') || urlToUse.includes('youtu.be'))) {
+                    preloadYouTubeVideo(urlToUse);
+                }
 
                 // Set cache ID for both stores
                 setRulesCacheId(cacheId);
                 setSubtitlesCacheId(cacheId);
 
             } else if (inputType === 'file-upload') {
+                // For actual file uploads (not downloaded videos), use file-based cache ID
                 cacheId = await generateFileCacheId(input);
 
                 // Store the cache ID in localStorage for later use (e.g., saving edited subtitles)
@@ -320,9 +365,15 @@ export const useSubtitles = (t) => {
 
             setSubtitlesData(subtitles);
 
-            // Cache the new results
-            if (inputType === 'youtube') {
-                const cacheId = extractYoutubeVideoId(input);
+            // Cache the new results using unified approach
+            const currentVideoUrl = localStorage.getItem('current_video_url');
+            let cacheId = null;
+
+            if (inputType === 'youtube' || currentVideoUrl) {
+                // Use unified URL-based caching
+                const urlToUse = inputType === 'youtube' ? input : currentVideoUrl;
+                cacheId = await generateUrlBasedCacheId(urlToUse);
+
                 if (cacheId && subtitles && subtitles.length > 0) {
                     await saveSubtitlesToCache(cacheId, subtitles);
                 }
@@ -332,8 +383,8 @@ export const useSubtitles = (t) => {
                 setSubtitlesCacheId(cacheId);
 
             } else if (inputType === 'file-upload') {
-                // For file uploads, generate and store the cache ID
-                const cacheId = await generateFileCacheId(input);
+                // For actual file uploads, use file-based cache ID
+                cacheId = await generateFileCacheId(input);
                 localStorage.setItem('current_file_cache_id', cacheId);
 
                 if (cacheId && subtitles && subtitles.length > 0) {
@@ -413,14 +464,14 @@ export const useSubtitles = (t) => {
         // This is important because the subtitles might have been saved just before this function is called
         let currentSubtitles;
 
-        // Try to get the current cache ID
+        // Try to get the current cache ID using unified approach
         const currentVideoUrl = localStorage.getItem('current_video_url');
         const currentFileUrl = localStorage.getItem('current_file_url');
         let cacheId = null;
 
         if (currentVideoUrl) {
-            // For YouTube videos
-            cacheId = extractYoutubeVideoId(currentVideoUrl);
+            // For any video URL, use unified URL-based caching
+            cacheId = await generateUrlBasedCacheId(currentVideoUrl);
         } else if (currentFileUrl) {
             // For uploaded files, the cacheId is already stored
             cacheId = localStorage.getItem('current_file_cache_id');
@@ -584,3 +635,6 @@ export const useSubtitles = (t) => {
         retryingSegments
     };
 };
+
+export default useSubtitles;
+export { generateUrlBasedCacheId };

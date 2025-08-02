@@ -9,6 +9,7 @@ import { VariableSizeList as List } from 'react-window';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
 import { downloadTXT, downloadSRT, downloadJSON } from '../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../services/geminiService';
+import { generateUrlBasedCacheId } from '../hooks/useSubtitles';
 import DownloadOptionsModal from './DownloadOptionsModal';
 
 // Helper function to download files
@@ -578,8 +579,8 @@ const LyricsDisplay = ({
       let cacheId = null;
 
       if (currentVideoUrl) {
-        // For YouTube videos
-        cacheId = extractYoutubeVideoId(currentVideoUrl);
+        // For any video URL, use unified URL-based caching
+        cacheId = await generateUrlBasedCacheId(currentVideoUrl);
       } else if (currentFileUrl) {
         // For uploaded files, the cacheId is already stored
         cacheId = localStorage.getItem('current_file_cache_id');
