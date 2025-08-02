@@ -160,8 +160,6 @@ export const downloadDouyinVideoPlaywright = async (douyinUrl, progressCallback 
  */
 export const scanDouyinQualitiesPlaywright = async (douyinUrl) => {
   try {
-    console.log('[DouyinPlaywright] Scanning qualities for:', douyinUrl);
-
     const useCookies = localStorage.getItem('use_cookies_for_download') === 'true';
 
     const response = await fetch(`${SERVER_URL}/api/scan-douyin-playwright-qualities`, {
@@ -181,8 +179,6 @@ export const scanDouyinQualitiesPlaywright = async (douyinUrl) => {
     }
 
     const result = await response.json();
-    console.log('[DouyinPlaywright] Quality scan result:', result);
-
     return result.qualities || [];
 
   } catch (error) {

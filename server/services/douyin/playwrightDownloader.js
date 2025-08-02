@@ -105,8 +105,6 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
     }
     
     // Wait for page content to load with multiple strategies
-    console.log('[PlaywrightDouyin] Waiting for video content...');
-
     let videoFound = false;
     const videoSelectors = [
       'video',
@@ -120,22 +118,17 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
     for (const selector of videoSelectors) {
       try {
         await page.waitForSelector(selector, { timeout: 8000 });
-        console.log(`[PlaywrightDouyin] Found video with selector: ${selector}`);
         videoFound = true;
         break;
       } catch (error) {
-        console.log(`[PlaywrightDouyin] Selector ${selector} failed, trying next...`);
+        // Continue to next selector
       }
     }
 
     if (!videoFound) {
-      console.log('[PlaywrightDouyin] No video found with standard selectors, checking page content...');
-
       // Check if page loaded at all
       const pageContent = await page.content();
-      if (pageContent.includes('video') || pageContent.includes('mp4')) {
-        console.log('[PlaywrightDouyin] Page contains video references, proceeding...');
-      } else {
+      if (!pageContent.includes('video') && !pageContent.includes('mp4')) {
         throw new Error('No video content found on page');
       }
     }
@@ -145,7 +138,7 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
       const video = document.querySelector('video');
       return video && (video.videoWidth > 0 || video.duration > 0 || video.src);
     }, { timeout: 8000 }).catch(() => {
-      console.log('[PlaywrightDouyin] Video metadata not fully loaded, proceeding with available data...');
+      // Proceed with available data
     });
 
     // Extract video information with fallbacks
@@ -158,13 +151,11 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
       }
 
       if (videos.length === 0) {
-        console.log('No video elements found, checking for video sources in page...');
         // Look for video URLs in the page
         const pageText = document.documentElement.innerHTML;
         const mp4Matches = pageText.match(/https?:\/\/[^"'\s]+\.mp4[^"'\s]*/g);
 
         if (mp4Matches && mp4Matches.length > 0) {
-          console.log('Found video URLs in page source');
           return {
             title: (document.title || 'Douyin Video').replace(/[^\w\s-]/g, '').trim(),
             videoId: window.location.pathname.split('/').pop() || Date.now().toString(),
@@ -366,12 +357,7 @@ async function getAvailableQualities(douyinUrl, useCookies = false) {
   try {
     const videoInfo = await extractVideoInfo(douyinUrl, useCookies);
 
-    console.log('[PlaywrightDouyin] Video info for quality analysis:', {
-      videoWidth: videoInfo.videoWidth,
-      videoHeight: videoInfo.videoHeight,
-      sourcesCount: videoInfo.sources?.length || 0,
-      currentSrc: videoInfo.currentSrc ? 'present' : 'missing'
-    });
+
 
     const qualities = [];
 
@@ -430,7 +416,7 @@ async function getAvailableQualities(douyinUrl, useCookies = false) {
       });
     }
 
-    console.log('[PlaywrightDouyin] Generated qualities:', qualities);
+
     return qualities;
 
   } catch (error) {

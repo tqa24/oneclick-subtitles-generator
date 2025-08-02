@@ -22,17 +22,11 @@ const isDouyinUrl = (url) => {
  */
 export const scanVideoQualities = async (videoUrl) => {
   try {
-    console.log('[qualityScanner] Starting quality scan for:', videoUrl);
-
     // Check if this is a Douyin URL and use Playwright scanner
     if (isDouyinUrl(videoUrl)) {
-      console.log('[qualityScanner] Detected Douyin URL, using Playwright scanner...');
       const { scanDouyinQualitiesPlaywright } = await import('./douyinPlaywrightDownloader');
       return await scanDouyinQualitiesPlaywright(videoUrl);
     }
-
-    // Step 1: Start the scan (returns immediately with scanId)
-    console.log('[qualityScanner] Starting background scan...');
     const startResponse = await fetch(`${SERVER_URL}/api/scan-video-qualities`, {
       method: 'POST',
       headers: {
