@@ -252,6 +252,9 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
 
 
 
+    // Debug: Log original subtitle timestamps before adjustment
+    console.log(`[SEGMENT-${segmentIndex}] Original subtitles from Gemini:`, segmentSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 30)}...`));
+
     // Adjust timestamps based on segment start time
     const adjustedSubtitles = segmentSubtitles.map(subtitle => {
         // Apply the offset based on actual segment start time
@@ -264,6 +267,9 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
             end: adjustedEnd
         };
     });
+
+    // Debug: Log adjusted subtitle timestamps
+    console.log(`[SEGMENT-${segmentIndex}] Adjusted subtitles (startTime offset: ${startTime}):`, adjustedSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 30)}...`));
 
 
 

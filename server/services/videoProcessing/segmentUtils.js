@@ -6,7 +6,169 @@ const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const { getMediaDuration } = require('./durationUtils');
-const { getFfmpegPath } = require('../shared/ffmpegUtils');
+const { getFfmpegPath, getFfprobePath } = require('../shared/ffmpegUtils');
+
+/**
+ * Detect the frame rate of a video file
+ * @param {string} videoPath - Path to the video file
+ * @returns {Promise<number>} - Frame rate in FPS
+ */
+async function detectVideoFrameRate(videoPath) {
+  return new Promise((resolve, reject) => {
+    const ffprobePath = getFfprobePath();
+    const ffprobeProcess = spawn(ffprobePath, [
+      '-v', 'quiet',
+      '-print_format', 'json',
+      '-show_streams',
+      '-select_streams', 'v:0',
+      videoPath
+    ]);
+
+    let stdout = '';
+    let stderr = '';
+
+    ffprobeProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    ffprobeProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    ffprobeProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`[DETECT-FPS] ffprobe failed with code ${code}: ${stderr}`);
+        // Return default frame rate if detection fails
+        return resolve(30);
+      }
+
+      try {
+        const data = JSON.parse(stdout);
+        const videoStream = data.streams && data.streams[0];
+
+        if (!videoStream || !videoStream.r_frame_rate) {
+          console.warn(`[DETECT-FPS] No frame rate found, using default 30 FPS`);
+          return resolve(30);
+        }
+
+        // Parse frame rate (can be in format like "30/1" or "29.97")
+        const frameRateStr = videoStream.r_frame_rate;
+        let frameRate;
+
+        if (frameRateStr.includes('/')) {
+          const [numerator, denominator] = frameRateStr.split('/').map(Number);
+          frameRate = numerator / denominator;
+        } else {
+          frameRate = parseFloat(frameRateStr);
+        }
+
+        console.log(`[DETECT-FPS] Detected frame rate: ${frameRate} FPS`);
+        resolve(frameRate);
+      } catch (error) {
+        console.error(`[DETECT-FPS] Failed to parse ffprobe output: ${error.message}`);
+        // Return default frame rate if parsing fails
+        resolve(30);
+      }
+    });
+
+    ffprobeProcess.on('error', (error) => {
+      console.error(`[DETECT-FPS] Failed to spawn ffprobe: ${error.message}`);
+      // Return default frame rate if spawn fails
+      resolve(30);
+    });
+  });
+}
+
+/**
+ * Split low FPS video using precise time-based cutting
+ * @param {string} videoPath - Path to the video file
+ * @param {number} segmentDuration - Duration of each segment in seconds
+ * @param {string} outputDir - Directory to save segments
+ * @param {string} batchId - Batch ID for naming
+ * @param {number} totalDuration - Total video duration
+ * @param {string} outputExtension - Output file extension
+ * @returns {Promise<Object>} - Result object with segments array
+ */
+async function splitLowFpsVideoByTime(videoPath, segmentDuration, outputDir, batchId, totalDuration, outputExtension) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const numSegments = Math.ceil(totalDuration / segmentDuration);
+      const segments = [];
+
+      console.log(`[SPLIT-LOW-FPS] Splitting ${totalDuration}s video into ${numSegments} segments of ${segmentDuration}s each`);
+
+      // Create segments using precise time-based cutting
+      for (let i = 0; i < numSegments; i++) {
+        const startTime = i * segmentDuration;
+        const duration = Math.min(segmentDuration, totalDuration - startTime);
+        const outputFile = `${batchId}_${String(i).padStart(3, '0')}.${outputExtension}`;
+        const outputPath = path.join(outputDir, outputFile);
+
+        console.log(`[SPLIT-LOW-FPS] Creating segment ${i + 1}/${numSegments}: ${startTime}s - ${startTime + duration}s`);
+
+        // Use ffmpeg to extract this specific time range
+        // Use -ss and -to (end time) instead of -ss and -t (duration) to avoid cumulative issues
+        const endTime = startTime + duration;
+        const ffmpegArgs = [
+          '-i', videoPath, // Input file
+          '-ss', startTime.toString(), // Start time (after input)
+          '-to', endTime.toString(), // End time (instead of duration)
+          '-c:v', 'libx264', // Re-encode video to ensure frames are included
+          '-preset', 'ultrafast', // Fast encoding
+          '-crf', '18', // High quality
+          '-c:a', 'copy', // Keep audio as-is
+          '-avoid_negative_ts', 'make_zero',
+          '-map_metadata', '-1', // Remove metadata to avoid duration confusion
+          '-y', // Overwrite output
+          outputPath
+        ];
+
+        const ffmpegPath = getFfmpegPath();
+
+        // Debug: Log the exact ffmpeg command being executed
+        console.log(`[SPLIT-LOW-FPS] Executing: ${ffmpegPath} ${ffmpegArgs.join(' ')}`);
+
+        await new Promise((segmentResolve, segmentReject) => {
+          const segmentCmd = spawn(ffmpegPath, ffmpegArgs);
+
+          segmentCmd.on('close', (code) => {
+            if (code !== 0) {
+              segmentReject(new Error(`Failed to create segment ${i + 1}`));
+            } else {
+              segmentResolve();
+            }
+          });
+
+          segmentCmd.on('error', (err) => {
+            segmentReject(err);
+          });
+        });
+
+        // Use the calculated duration instead of detecting it from the file
+        // This avoids issues with ffprobe returning incorrect durations for segments
+        console.log(`[SPLIT-LOW-FPS] Segment ${i + 1} created with calculated duration: ${duration}s`);
+
+        segments.push({
+          index: i,
+          path: outputPath,
+          url: `/videos/${outputFile}`,
+          startTime: startTime,
+          duration: duration, // Use calculated duration instead of detected duration
+          name: outputFile
+        });
+
+        console.log(`[SPLIT-LOW-FPS] Segment ${i + 1} final: startTime=${startTime}s, duration=${duration}s, endTime=${startTime + duration}s`);
+      }
+
+      console.log(`[SPLIT-LOW-FPS] Successfully created ${segments.length} segments`);
+      resolve({ segments, batchId });
+
+    } catch (error) {
+      console.error(`[SPLIT-LOW-FPS] Error: ${error.message}`);
+      reject(error);
+    }
+  });
+}
 
 /**
  * Split a media file (video or audio) into segments using ffmpeg
@@ -66,6 +228,34 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
       const absolutePath = path.resolve(mediaPath);
 
 
+      // Detect frame rate for video files to adapt segment_time_delta
+      let frameRate = 30; // Default frame rate
+      let adaptedSegmentTimeDelta = '1.0'; // Default segment time delta
+
+      if (!isAudio) {
+        try {
+          frameRate = await detectVideoFrameRate(absolutePath);
+
+          // Adapt segment_time_delta based on frame rate
+          // For very low frame rates (like 1 FPS from optimization), use much smaller delta
+          if (frameRate <= 1) {
+            adaptedSegmentTimeDelta = '0.01'; // Extremely small delta for 1 FPS
+          } else if (frameRate <= 2) {
+            adaptedSegmentTimeDelta = '0.05'; // Very small delta for 2 FPS
+          } else if (frameRate <= 5) {
+            adaptedSegmentTimeDelta = '0.2'; // Small delta for low FPS
+          } else if (frameRate <= 15) {
+            adaptedSegmentTimeDelta = '0.5'; // Medium delta for medium FPS
+          } else {
+            adaptedSegmentTimeDelta = '1.0'; // Default delta for normal FPS
+          }
+
+          console.log(`[SPLIT-MEDIA] Video FPS: ${frameRate}, using segment_time_delta: ${adaptedSegmentTimeDelta}`);
+        } catch (error) {
+          console.warn(`[SPLIT-MEDIA] Failed to detect frame rate, using defaults: ${error.message}`);
+        }
+      }
+
       // Construct ffmpeg command based on splitting mode
       const ffmpegArgs = [
         '-i', absolutePath, // Use absolute path to avoid any path resolution issues
@@ -76,12 +266,25 @@ async function splitMediaIntoSegments(mediaPath, segmentDuration, outputDir, fil
 
       // If fast split is enabled, use stream copy instead of re-encoding
       if (options.fastSplit) {
-        // When using stream copy, we need to be careful about keyframes
-        // Add segment_time_delta to allow some flexibility in segment boundaries
-        ffmpegArgs.push(
-          '-segment_time_delta', '1.0',  // Allow 1 second flexibility
-          '-c', 'copy'
-        );
+        // For very low frame rate videos, use a different approach entirely
+        if (!isAudio && frameRate <= 2) {
+          console.log(`[SPLIT-MEDIA] Very low FPS (${frameRate}), using precise time-based splitting`);
+          // Use precise time-based splitting instead of segment filter
+          try {
+            const result = await splitLowFpsVideoByTime(mediaPath, segmentDuration, outputDir, batchId, totalDuration, outputExtension);
+            resolve(result);
+            return;
+          } catch (error) {
+            reject(error);
+            return;
+          }
+        } else {
+          console.log(`[SPLIT-MEDIA] Using fast split with stream copy, segment_time_delta: ${adaptedSegmentTimeDelta}`);
+          ffmpegArgs.push(
+            '-segment_time_delta', adaptedSegmentTimeDelta,
+            '-c', 'copy'
+          );
+        }
 
       } else if (isAudio) {
         // For audio, use high-quality audio encoding

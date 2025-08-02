@@ -335,6 +335,9 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
       const endTime = startTime + segmentDuration;
       const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
 
+      // Debug: Log segment timing information
+      console.log(`[SEGMENT-${segmentIndex}] startTime: ${segment.startTime}, duration: ${segment.duration}, calculated timeRange: ${timeRange}`);
+
       // Log detailed information about this segment's timing
 
 
