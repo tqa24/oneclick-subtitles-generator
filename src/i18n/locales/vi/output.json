@@ -24,6 +24,8 @@
   "downloadTranslation": "Tải xuống bản dịch",
   "noTranslation": "Chưa có bản dịch được tạo.",
   "downloadingVideo": "Đang tải video...",
+  "downloadingVideoProgress": "Đang tải video: {{progress}}%",
+  "cancelDownload": "Hủy tải xuống",
   "audioStitchingWarning": "Đang tải video... Lưu ý: Đối với chất lượng khác 360p, cần ghép âm thanh, quá trình này có thể mất nhiều thời gian, đặc biệt là với video dài hơn 1 giờ.",
   "videoDownloadComplete": "Tải video hoàn tất! Đang xử lý...",
   "processingVideo": "Đang xử lý. Có thể mất vài phút...",

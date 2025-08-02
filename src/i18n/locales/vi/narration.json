@@ -209,5 +209,42 @@
   "chatterboxNoReferenceAudio": "Âm thanh tham chiếu là bắt buộc cho việc tạo TTS Chatterbox. Vui lòng tải lên tệp âm thanh tham chiếu.",
 
   "audioAlignmentWarning": "Dù đã áp dụng sắp xếp thuyết minh thông minh, nhưng audio kết quả dài hơn dự tính tận {{duration}} giây, vui lòng dùng thanh chỉnh tốc độ phía trên danh sách audio (chỉnh nhanh hơn) rồi tạo lại thuyết minh tổng bằng nút Làm mới thuyết minh trên trình phát hoặc nút Tải xuống sắp xếp",
-  "closeNotification": "Đóng thông báo"
+  "closeNotification": "Đóng thông báo",
+
+  "edgeTTSVoice": "Giọng Edge TTS",
+  "edgeTTSRate": "Tốc độ nói",
+  "edgeTTSVolume": "Âm lượng",
+  "edgeTTSPitch": "Cao độ",
+  "loadingVoices": "Đang tải giọng nói...",
+  "voiceLoadError": "Lỗi tải giọng nói: {{error}}",
+  "selectVoice": "Chọn giọng nói",
+  "voiceLabel": "Giọng nói",
+
+  "gttsLanguage": "Ngôn ngữ gTTS",
+  "gttsTld": "Giọng địa phương/Vùng miền",
+  "gttsSlow": "Nói chậm",
+  "gttsSlowDescription": "Nói chậm hơn để rõ ràng hơn",
+  "loadingLanguages": "Đang tải ngôn ngữ...",
+  "languageLoadError": "Lỗi tải ngôn ngữ: {{error}}",
+  "selectLanguage": "Chọn ngôn ngữ",
+
+  "tldCom": "Toàn cầu (.com)",
+  "tldAu": "Úc (.com.au)",
+  "tldUk": "Anh (.co.uk)",
+  "tldUs": "Mỹ (.us)",
+  "tldCa": "Canada (.ca)",
+  "tldIn": "Ấn Độ (.co.in)",
+  "tldIe": "Ireland (.ie)",
+  "tldZa": "Nam Phi (.co.za)",
+
+  "allLanguages": "Tất cả ngôn ngữ",
+  "allCategories": "Tất cả",
+  "searchVoices": "Tìm kiếm giọng nói...",
+  "searchLanguages": "Tìm kiếm ngôn ngữ...",
+  "voicesAvailable": "{{count}} giọng nói có sẵn",
+  "languagesAvailable": "{{count}} ngôn ngữ có sẵn",
+  "cancel": "Hủy",
+  "clear": "Xóa",
+  "recommendedVoices": "Được đề xuất cho {{language}}",
+  "recommendedLanguage": "Được đề xuất cho {{language}}"
 }

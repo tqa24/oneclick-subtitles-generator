@@ -184,5 +184,42 @@
   "chatterboxNoReferenceAudio": "Reference audio is required for Chatterbox TTS generation. Please upload a reference audio file.",
 
   "audioAlignmentWarning": "Despite applying smart narration alignment, the resulting audio is {{duration}} seconds longer than expected. Please use the speed slider above the audio list (set it faster) and regenerate the total narration using the Refresh Narration button on the player or the Download Aligned button",
-  "closeNotification": "Close notification"
+  "closeNotification": "Close notification",
+
+  "edgeTTSVoice": "Edge TTS Voice",
+  "edgeTTSRate": "Speech Rate",
+  "edgeTTSVolume": "Volume",
+  "edgeTTSPitch": "Pitch",
+  "loadingVoices": "Loading voices...",
+  "voiceLoadError": "Error loading voices: {{error}}",
+  "selectVoice": "Select voice",
+  "voiceLabel": "Voice",
+
+  "gttsLanguage": "gTTS Language",
+  "gttsTld": "Accent/Region",
+  "gttsSlow": "Slow Speech",
+  "gttsSlowDescription": "Speak more slowly for better clarity",
+  "loadingLanguages": "Loading languages...",
+  "languageLoadError": "Error loading languages: {{error}}",
+  "selectLanguage": "Select language",
+
+  "tldCom": "Global (.com)",
+  "tldAu": "Australian (.com.au)",
+  "tldUk": "British (.co.uk)",
+  "tldUs": "American (.us)",
+  "tldCa": "Canadian (.ca)",
+  "tldIn": "Indian (.co.in)",
+  "tldIe": "Irish (.ie)",
+  "tldZa": "South African (.co.za)",
+
+  "allLanguages": "All Languages",
+  "allCategories": "All",
+  "searchVoices": "Search voices...",
+  "searchLanguages": "Search languages...",
+  "voicesAvailable": "{{count}} voices available",
+  "languagesAvailable": "{{count}} languages available",
+  "cancel": "Cancel",
+  "clear": "Clear",
+  "recommendedVoices": "Recommended for {{language}}",
+  "recommendedLanguage": "Recommended for {{language}}"
 }

@@ -188,5 +188,42 @@
   "chatterboxNoReferenceAudio": "Chatterbox TTS 생성에는 참조 오디오가 필요합니다. 참조 오디오 파일을 업로드해주세요.",
 
   "audioAlignmentWarning": "스마트 나레이션 정렬을 적용했음에도 불구하고 결과 오디오가 예상보다 {{duration}}초 더 깁니다. 오디오 목록 위의 속도 슬라이더를 사용하여 (더 빠르게 설정) 플레이어의 나레이션 새로고침 버튼이나 정렬된 다운로드 버튼으로 전체 나레이션을 다시 생성해주세요",
-  "closeNotification": "알림 닫기"
+  "closeNotification": "알림 닫기",
+
+  "edgeTTSVoice": "Edge TTS 음성",
+  "edgeTTSRate": "말하기 속도",
+  "edgeTTSVolume": "음량",
+  "edgeTTSPitch": "음높이",
+  "loadingVoices": "음성 로딩 중...",
+  "voiceLoadError": "음성 로딩 오류: {{error}}",
+  "selectVoice": "음성 선택",
+  "voiceLabel": "음성",
+
+  "gttsLanguage": "gTTS 언어",
+  "gttsTld": "억양/지역",
+  "gttsSlow": "느린 말하기",
+  "gttsSlowDescription": "더 명확하게 하기 위해 천천히 말하기",
+  "loadingLanguages": "언어 로딩 중...",
+  "languageLoadError": "언어 로딩 오류: {{error}}",
+  "selectLanguage": "언어 선택",
+
+  "tldCom": "글로벌 (.com)",
+  "tldAu": "호주 (.com.au)",
+  "tldUk": "영국 (.co.uk)",
+  "tldUs": "미국 (.us)",
+  "tldCa": "캐나다 (.ca)",
+  "tldIn": "인도 (.co.in)",
+  "tldIe": "아일랜드 (.ie)",
+  "tldZa": "남아프리카 (.co.za)",
+
+  "allLanguages": "모든 언어",
+  "allCategories": "모두",
+  "searchVoices": "음성 검색...",
+  "searchLanguages": "언어 검색...",
+  "voicesAvailable": "{{count}}개 음성 사용 가능",
+  "languagesAvailable": "{{count}}개 언어 사용 가능",
+  "cancel": "취소",
+  "clear": "지우기",
+  "recommendedVoices": "{{language}}에 추천",
+  "recommendedLanguage": "{{language}}에 추천"
 }
