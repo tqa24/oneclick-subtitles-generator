@@ -34,6 +34,7 @@ import backgroundGenerator from './backgroundGenerator.json';
 import videoRendering from './videoRendering.json';
 import fontModal from './fontModal.json';
 import videoQuality from './videoQuality.json';
+import subtitleSplit from './subtitleSplit.json';
 
 // Combine all translations
 const enTranslations = {
@@ -70,7 +71,8 @@ const enTranslations = {
   backgroundGenerator,
   videoRendering,
   fontModal,
-  videoQuality
+  videoQuality,
+  subtitleSplit
 };
 
 export default enTranslations;

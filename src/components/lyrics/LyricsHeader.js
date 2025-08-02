@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import SubtitleSplitModal from './SubtitleSplitModal';
 
 const LyricsHeader = ({
   allowEditing,
@@ -14,9 +15,12 @@ const LyricsHeader = ({
   onReset,
   onSave,
   autoScrollEnabled,
-  setAutoScrollEnabled
+  setAutoScrollEnabled,
+  lyrics,
+  onSplitSubtitles
 }) => {
   const { t } = useTranslation();
+  const [showSplitModal, setShowSplitModal] = useState(false);
 
   return (
     <div className="combined-controls">
@@ -40,7 +44,7 @@ const LyricsHeader = ({
               <path d="M21 3H3v18h18V3z"/>
             </svg>
           )}
-          <span>{t('lyrics.autoScroll', 'Auto')}</span>
+          <span>{t('lyrics.autoScroll', 'Cuộn')}</span>
         </div>
 
         {allowEditing && (
@@ -60,7 +64,7 @@ const LyricsHeader = ({
                 <path d="M18 8a4 4 0 0 0 0 8 4 4 0 0 0 0-8"/>
               </svg>
             )}
-            <span>{t('lyrics.stickyTimingsToggle', 'Stick')}</span>
+            <span>{t('lyrics.stickyTimingsToggle', 'Dính')}</span>
           </div>
         )}
       </div>
@@ -69,6 +73,20 @@ const LyricsHeader = ({
       <div className="controls-middle-row">
         {allowEditing && (
           <div className="middle-row-buttons">
+            <button
+              className="split-sub-btn"
+              onClick={() => setShowSplitModal(true)}
+              title="Chia sub"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M3 12h18"/>
+                <path d="M3 6h18"/>
+                <path d="M3 18h18"/>
+                <path d="M8 9l4-4 4 4"/>
+                <path d="M8 15l4 4 4-4"/>
+              </svg>
+            </button>
+
             <button
               className="lyrics-save-btn"
               onClick={onSave}
@@ -124,6 +142,14 @@ const LyricsHeader = ({
           </div>
         )}
       </div>
+
+      {/* Subtitle Split Modal */}
+      <SubtitleSplitModal
+        isOpen={showSplitModal}
+        onClose={() => setShowSplitModal(false)}
+        lyrics={lyrics}
+        onSplitSubtitles={onSplitSubtitles}
+      />
     </div>
   );
 };

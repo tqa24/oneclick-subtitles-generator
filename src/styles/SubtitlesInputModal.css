@@ -505,10 +505,21 @@
 
 .keyboard-shortcuts {
   display: flex;
-  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 12px;
   font-size: 12px;
   color: var(--text-color-secondary);
+}
+
+.keyboard-shortcuts-left {
+  display: flex;
+  gap: 16px;
+}
+
+.keyboard-shortcuts-right {
+  font-weight: 500;
+  color: var(--md-primary);
 }
 
 .keyboard-shortcuts kbd {
@@ -617,6 +628,12 @@
   }
 
   .keyboard-shortcuts {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .keyboard-shortcuts-left {
     flex-direction: column;
     gap: 8px;
   }

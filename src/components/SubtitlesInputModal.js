@@ -150,9 +150,14 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
           />
 
           <div className="keyboard-shortcuts">
-            <span>{t('subtitlesInput.keyboardShortcuts', 'Keyboard shortcuts:')}</span>
-            <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> {t('subtitlesInput.toSave', 'to save')}</span>
-            <span><kbd>Esc</kbd> {t('subtitlesInput.toCancel', 'to cancel')}</span>
+            <div className="keyboard-shortcuts-left">
+              <span>{t('subtitlesInput.keyboardShortcuts', 'Keyboard shortcuts:')}</span>
+              <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> {t('subtitlesInput.toSave', 'to save')}</span>
+              <span><kbd>Esc</kbd> {t('subtitlesInput.toCancel', 'to cancel')}</span>
+            </div>
+            <div className="keyboard-shortcuts-right">
+              <span>{t('subtitlesInput.lineCount', 'Đã nhập ??? dòng phụ đề').replace('???', text.trim() ? text.trim().split('\n').length : 0)}</span>
+            </div>
           </div>
         </div>
 

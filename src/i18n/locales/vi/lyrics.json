@@ -1,10 +1,10 @@
 {
   "synchronizedLyrics": "Phụ đề đồng bộ hóa",
-  "stickyTimingsToggle": "Stick",
-  "autoScroll": "Tự động",
+  "stickyTimingsToggle": "Dính",
+  "autoScroll": "Cuộn",
   "autoScrollEnable": "Bật cuộn tự động",
   "autoScrollDisable": "Tắt cuộn tự động",
-  "timingInstructions": "Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Stick\" sẽ điều chỉnh tất cả phụ đề theo sau.",
+  "timingInstructions": "Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Dính\" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ \"Cuộn\" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại",
   "editTooltip": "Chỉnh sửa văn bản phụ đề",
   "deleteTooltip": "Xóa phụ đề",
   "insertTooltip": "Thêm dòng mới",

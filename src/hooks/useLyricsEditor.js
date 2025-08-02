@@ -505,6 +505,24 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     showTranslationWarning('You have merged subtitles. Translations may be outdated. Please translate again.');
   };
 
+  // Handle smart subtitle splitting
+  const handleSplitSubtitles = (newLyrics) => {
+    // Save current state to history for undo functionality
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+
+    // Clear redo stack since we're making a new change
+    setRedoStack([]);
+
+    // Update lyrics with the split subtitles
+    setLyrics(newLyrics);
+    if (onUpdateLyrics) {
+      onUpdateLyrics(newLyrics);
+    }
+
+    // Show warning about translations
+    showTranslationWarning('You have split subtitles. Translations may be outdated. Please translate again.');
+  };
+
   // Add event listener for redo action
   useEffect(() => {
     const handleRedoEvent = () => {
@@ -545,6 +563,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleTextEdit,
     handleInsertLyric,
     handleMergeLyrics,
+    handleSplitSubtitles,
     updateSavedLyrics
   };
 };

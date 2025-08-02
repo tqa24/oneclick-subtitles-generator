@@ -284,7 +284,8 @@ const LyricsDisplay = ({
     handleTextEdit,
     handleInsertLyric,
     handleMergeLyrics,
-    updateSavedLyrics
+    updateSavedLyrics,
+    handleSplitSubtitles
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -722,6 +723,8 @@ const LyricsDisplay = ({
           onSave={handleSave}
           autoScrollEnabled={autoScrollEnabled}
           setAutoScrollEnabled={setAutoScrollEnabled}
+          lyrics={lyrics}
+          onSplitSubtitles={handleSplitSubtitles}
         />
 
         <TimelineVisualization
@@ -783,7 +786,12 @@ const LyricsDisplay = ({
       <div className="help-text-container">
         {allowEditing && (
           <div className="help-text">
-            <p>{t('lyrics.timingInstructions')}</p>
+            <p dangerouslySetInnerHTML={{
+              __html: t('lyrics.timingInstructions', 'Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ "Dính" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ "Cuộn" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại')
+                .replace('??? dòng', `<strong>${lyrics.length} dòng</strong>`)
+                .replace('??? subtitle lines', `<strong>${lyrics.length} subtitle lines</strong>`)
+                .replace('???개의 자막 라인', `<strong>${lyrics.length}개의 자막 라인</strong>`)
+            }} />
           </div>
         )}
 

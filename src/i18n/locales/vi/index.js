@@ -33,6 +33,7 @@ import videoRendering from './videoRendering.json';
 import fontModal from './fontModal.json';
 import videoQuality from './videoQuality.json';
 import warnings from './warnings.json';
+import subtitleSplit from './subtitleSplit.json';
 
 const vi = {
   common,
@@ -69,7 +70,8 @@ const vi = {
   videoRendering,
   fontModal,
   videoQuality,
-  warnings
+  warnings,
+  subtitleSplit
 };
 
 export default vi;

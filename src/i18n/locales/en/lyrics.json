@@ -1,10 +1,10 @@
 {
   "synchronizedLyrics": "Synchronized Subtitles",
   "stickyTimingsToggle": "Stick",
-  "autoScroll": "Auto",
+  "autoScroll": "Scroll",
   "autoScrollEnable": "Enable auto-scroll",
   "autoScrollDisable": "Disable auto-scroll",
-  "timingInstructions": "Drag the timestamps to adjust the timing of each subtitle. Sticky mode will adjust all following subtitles.",
+  "timingInstructions": "Currently have ??? subtitle lines. Drag timestamps to adjust timing for each subtitle. \"Stick\" mode will adjust all following subtitles. \"Scroll\" mode will automatically move view to the current running subtitle. 5 remaining buttons: Split subtitles, Save, Reset, Undo, Redo",
   "editTooltip": "Edit lyric text",
   "deleteTooltip": "Delete lyric",
   "insertTooltip": "Add new line",
