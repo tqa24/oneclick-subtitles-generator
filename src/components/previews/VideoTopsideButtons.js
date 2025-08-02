@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LiquidGlass from '../common/LiquidGlass';
 import { extractAndDownloadAudio } from '../../utils/fileUtils';
+import { SERVER_URL } from '../../config';
 
 const VideoTopsideButtons = ({
   showCustomControls,
@@ -107,7 +108,7 @@ const VideoTopsideButtons = ({
               window.dispatchEvent(regenerateEvent);
 
               // Set up direct playback after regeneration
-              const setupDirectPlayback = () => {
+              const setupDirectPlayback = async () => {
                 console.log('Setting up direct playback for aligned narration');
 
                 // Create new audio element for aligned narration
@@ -118,10 +119,81 @@ const VideoTopsideButtons = ({
                 // Store globally for cleanup
                 window.alignedAudioElement = audio;
 
-                // Load the aligned narration audio
-                const alignedNarrationUrl = `http://localhost:3030/api/aligned-narration-audio`;
-                console.log('Loading aligned narration audio from:', alignedNarrationUrl);
-                audio.src = alignedNarrationUrl;
+                // Generate aligned narration audio file using the correct API endpoint
+                try {
+                  // Get narration data from window objects (same as download button)
+                  const originalNarrations = window.originalNarrations || [];
+                  const translatedNarrations = window.translatedNarrations || [];
+
+                  // Use the most recent narrations available
+                  let narrationData = [];
+                  if (translatedNarrations.length > 0) {
+                    narrationData = translatedNarrations;
+                  } else if (originalNarrations.length > 0) {
+                    narrationData = originalNarrations;
+                  }
+
+                  if (narrationData.length === 0) {
+                    console.warn('No narration data available for aligned audio playback');
+                    return;
+                  }
+
+                  // Format narration data for the API (same format as download button)
+                  const formattedNarrations = narrationData
+                    .filter(result => result.success && (result.audioData || result.filename))
+                    .map(result => ({
+                      filename: result.filename,
+                      subtitle_id: result.subtitle_id,
+                      start: result.start || 0,
+                      end: result.end || (result.start ? result.start + 5 : 5),
+                      text: result.text || ''
+                    }))
+                    .sort((a, b) => a.start - b.start);
+
+                  if (formattedNarrations.length === 0) {
+                    console.warn('No valid narration files found for aligned audio playback');
+                    return;
+                  }
+
+                  // Generate aligned audio file on server (same as download button)
+                  const response = await fetch(`${SERVER_URL}/api/narration/download-aligned`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'include',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'audio/wav'
+                    },
+                    body: JSON.stringify({ narrations: formattedNarrations })
+                  });
+
+                  if (!response.ok) {
+                    throw new Error(`Failed to generate aligned audio: ${response.statusText}`);
+                  }
+
+                  // Get the blob from the response (same as download button)
+                  const blob = await response.blob();
+
+                  // Create a URL for the blob for audio playback
+                  const alignedNarrationUrl = URL.createObjectURL(blob);
+                  console.log('Loading aligned narration audio from generated file blob');
+                  audio.src = alignedNarrationUrl;
+
+                  // Clean up blob URL when audio is no longer needed
+                  audio.addEventListener('loadeddata', () => {
+                    // Don't revoke immediately, keep it for playback
+                    console.log('Aligned narration audio loaded and ready for playback');
+                  });
+
+                  // Store cleanup function globally
+                  window.cleanupAlignedNarrationUrl = () => {
+                    URL.revokeObjectURL(alignedNarrationUrl);
+                  };
+
+                } catch (error) {
+                  console.error('Error setting up aligned narration playback:', error);
+                  return;
+                }
 
                 // Set up event handlers for video-audio synchronization
                 function handleVideoPlay() {
@@ -188,7 +260,7 @@ const VideoTopsideButtons = ({
               };
 
               // Set up direct playback
-              setupDirectPlayback();
+              await setupDirectPlayback();
 
             } catch (error) {
               console.error('Error during aligned narration regeneration:', error);
