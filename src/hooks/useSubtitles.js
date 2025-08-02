@@ -75,11 +75,24 @@ export const useSubtitles = (t) => {
         window.dispatchEvent(event);
     }, []);
 
-    const checkCachedSubtitles = async (cacheId) => {
+    const checkCachedSubtitles = async (cacheId, currentVideoUrl = null) => {
         try {
             const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheId}`);
             const data = await response.json();
-            return data.exists ? data.subtitles : null;
+
+            if (!data.exists) {
+                return null;
+            }
+
+            // If we have a current video URL, validate that the cache belongs to this URL
+            if (currentVideoUrl && data.metadata && data.metadata.sourceUrl) {
+                if (data.metadata.sourceUrl !== currentVideoUrl) {
+                    console.log(`[Cache] Cache ID collision detected. Cache for ${data.metadata.sourceUrl}, current: ${currentVideoUrl}`);
+                    return null; // Cache belongs to different video
+                }
+            }
+
+            return data.subtitles;
         } catch (error) {
             console.error('Error checking subtitle cache:', error);
             return null;
@@ -88,6 +101,10 @@ export const useSubtitles = (t) => {
 
     const saveSubtitlesToCache = async (cacheId, subtitles) => {
         try {
+            // Include source URL metadata for validation
+            const currentVideoUrl = localStorage.getItem('current_video_url');
+            const metadata = currentVideoUrl ? { sourceUrl: currentVideoUrl } : {};
+
             const response = await fetch('http://localhost:3031/api/save-subtitles', {
                 method: 'POST',
                 headers: {
@@ -95,7 +112,8 @@ export const useSubtitles = (t) => {
                 },
                 body: JSON.stringify({
                     cacheId,
-                    subtitles
+                    subtitles,
+                    metadata
                 })
             });
 
@@ -175,9 +193,9 @@ export const useSubtitles = (t) => {
                 }
             }
 
-            // Check cache
+            // Check cache with URL validation
             if (cacheId) {
-                const cachedSubtitles = await checkCachedSubtitles(cacheId);
+                const cachedSubtitles = await checkCachedSubtitles(cacheId, currentVideoUrl);
                 if (cachedSubtitles) {
                     setSubtitlesData(cachedSubtitles);
                     // Use the translation key directly to ensure it's properly translated
@@ -479,8 +497,9 @@ export const useSubtitles = (t) => {
 
         if (cacheId) {
             try {
-                // Try to get the latest subtitles from cache
-                const cachedSubtitles = await checkCachedSubtitles(cacheId);
+                // Try to get the latest subtitles from cache with URL validation
+                const currentVideoUrl = localStorage.getItem('current_video_url');
+                const cachedSubtitles = await checkCachedSubtitles(cacheId, currentVideoUrl);
                 if (cachedSubtitles) {
 
                     currentSubtitles = cachedSubtitles;

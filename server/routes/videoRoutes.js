@@ -265,8 +265,8 @@ router.post('/split-existing-file', async (req, res) => {
     let processPath = filePath;
     let optimizedResult = null;
 
-    // Always optimize videos (not audio files)
-    if (!isAudio) {
+    // Optimize videos only if requested (not audio files)
+    if (!isAudio && optimizeVideos) {
       try {
         const optimizedFilename = `optimized_${mediaId}.mp4`;
         const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
@@ -358,8 +358,8 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
     let processPath = mediaPath;
     let optimizedResult = null;
 
-    // Always optimize videos (not audio files)
-    if (!isAudio) {
+    // Optimize videos only if requested (not audio files)
+    if (!isAudio && optimizeVideos) {
       try {
 
         const optimizedFilename = `optimized_${timestamp}.mp4`;
@@ -468,8 +468,8 @@ router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (r
     let processPath = mediaPath;
     let optimizedResult = null;
 
-    // Always optimize videos (not audio files)
-    if (!isAudio) {
+    // Optimize videos only if requested (not audio files)
+    if (!isAudio && optimizeVideos) {
       try {
 
 

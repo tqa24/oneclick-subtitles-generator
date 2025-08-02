@@ -238,6 +238,17 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     setUrl(inputUrl);
     setError(''); // Clear any previous errors
 
+    // Clear previous video state when URL changes
+    const previousVideoUrl = localStorage.getItem('current_video_url');
+    if (previousVideoUrl && previousVideoUrl !== inputUrl) {
+      // Clear subtitle-related state when switching videos
+      localStorage.removeItem('latest_segment_subtitles');
+      // Dispatch event to clear subtitle state in other components
+      window.dispatchEvent(new CustomEvent('video-changed', {
+        detail: { previousUrl: previousVideoUrl, newUrl: inputUrl }
+      }));
+    }
+
     if (!inputUrl) {
       setSelectedVideo(null);
       setUrlType('');
