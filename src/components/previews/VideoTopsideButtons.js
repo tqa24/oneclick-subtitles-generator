@@ -167,6 +167,13 @@ const VideoTopsideButtons = ({
                     body: JSON.stringify({ narrations: formattedNarrations })
                   });
 
+                  // Check for audio alignment notification after successful response
+                  if (response.ok) {
+                    // Import and check for duration notification
+                    const { checkAudioAlignmentFromResponse } = await import('../../utils/audioAlignmentNotification.js');
+                    checkAudioAlignmentFromResponse(response);
+                  }
+
                   if (!response.ok) {
                     throw new Error(`Failed to generate aligned audio: ${response.statusText}`);
                   }

@@ -148,6 +148,13 @@ export const generateAlignedNarration = async (generationResults, onProgress = n
         body: JSON.stringify({ narrations: narrationData })
       });
 
+      // Check for audio alignment notification after successful response
+      if (response.ok) {
+        // Import and check for duration notification
+        const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
+        checkAudioAlignmentFromResponse(response);
+      }
+
       // Check if the response is successful
       if (!response.ok) {
         console.error(`Failed to download aligned audio: ${response.statusText}`);

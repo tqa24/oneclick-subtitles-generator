@@ -32,6 +32,18 @@ def add_cors_headers(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
+
+    # Preserve any existing exposed headers and add our custom headers
+    existing_exposed = response.headers.get('Access-Control-Expose-Headers', '')
+    custom_headers = 'Content-Disposition,X-Duration-Difference,X-Expected-Duration,X-Actual-Duration'
+
+    if existing_exposed:
+        # Combine existing and custom headers, avoiding duplicates
+        all_headers = set(existing_exposed.split(',') + custom_headers.split(','))
+        response.headers['Access-Control-Expose-Headers'] = ','.join(all_headers)
+    else:
+        response.headers['Access-Control-Expose-Headers'] = custom_headers
+
     return response
 
 # Register blueprints

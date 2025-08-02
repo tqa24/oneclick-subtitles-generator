@@ -13,17 +13,23 @@ import i18n from '../i18n/i18n.js';
  * @param {number} durationDifference - Difference in seconds between actual and expected duration
  */
 export const showAudioAlignmentWarning = (durationDifference) => {
+  console.log(`🚨 showAudioAlignmentWarning called with duration difference: ${durationDifference}s`);
+
   // Only show notification if difference is larger than 3 seconds
   if (durationDifference <= 3) {
+    console.log(`⏹️ Duration difference ${durationDifference}s <= 3s, not showing notification`);
     return;
   }
 
+  console.log(`🔄 Removing any existing notification...`);
   // Remove any existing notification
   const existingNotification = document.querySelector('.audio-alignment-warning-container');
   if (existingNotification) {
+    console.log(`🗑️ Found existing notification, removing it`);
     existingNotification.remove();
   }
 
+  console.log(`📦 Creating notification container...`);
   // Create container element
   const container = document.createElement('div');
   container.className = 'audio-alignment-warning-container';
@@ -36,11 +42,13 @@ export const showAudioAlignmentWarning = (durationDifference) => {
     pointer-events: auto;
   `;
 
+  console.log(`🌐 Getting translated messages...`);
   // Get translated message
   const message = i18n.t('narration.audioAlignmentWarning', {
     duration: durationDifference.toFixed(1)
   });
   const closeLabel = i18n.t('narration.closeNotification');
+  console.log(`📝 Message: "${message}", Close label: "${closeLabel}"`);
 
   // Create React component for the notification using LiquidGlass with added blur
   const NotificationComponent = () => (
@@ -74,8 +82,13 @@ export const showAudioAlignmentWarning = (durationDifference) => {
           width="24"
           height="24"
           viewBox="0 0 24 24"
-          style={{ flexShrink: 0 }}
-          fill="white"
+          style={{
+            flexShrink: 0,
+            fill: 'var(--md-on-surface, #000)',
+            filter: document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))'
+              : 'drop-shadow(1px 1px 2px rgba(255, 255, 255, 0.8))'
+          }}
         >
           <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
         </svg>
@@ -86,7 +99,11 @@ export const showAudioAlignmentWarning = (durationDifference) => {
           fontSize: '14px',
           fontWeight: '500',
           lineHeight: '1.4',
-          textAlign: 'left'
+          textAlign: 'left',
+          color: 'var(--md-on-surface, #000)',
+          textShadow: document.documentElement.getAttribute('data-theme') === 'dark'
+            ? '1px 1px 2px rgba(0, 0, 0, 0.8)'
+            : '1px 1px 2px rgba(255, 255, 255, 0.8)'
         }}>
           {message}
         </div>
@@ -97,7 +114,7 @@ export const showAudioAlignmentWarning = (durationDifference) => {
           style={{
             background: 'none',
             border: 'none',
-            color: 'white',
+            color: 'var(--md-on-surface, #000)',
             cursor: 'pointer',
             padding: '8px',
             borderRadius: '8px',
@@ -110,7 +127,8 @@ export const showAudioAlignmentWarning = (durationDifference) => {
             height: '32px'
           }}
           onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            e.target.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
           }}
           onMouseLeave={(e) => {
             e.target.style.backgroundColor = 'transparent';
@@ -118,7 +136,17 @@ export const showAudioAlignmentWarning = (durationDifference) => {
           aria-label={closeLabel}
           title={closeLabel}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            style={{
+              fill: 'var(--md-on-surface, #000)',
+              filter: document.documentElement.getAttribute('data-theme') === 'dark'
+                ? 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8))'
+                : 'drop-shadow(1px 1px 2px rgba(255, 255, 255, 0.8))'
+            }}
+          >
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
           </svg>
         </button>
@@ -126,21 +154,27 @@ export const showAudioAlignmentWarning = (durationDifference) => {
     </LiquidGlass>
   );
 
+  console.log(`🔗 Adding container to document body...`);
   // Add to document
   document.body.appendChild(container);
 
+  console.log(`⚛️ Creating React root and rendering notification...`);
   // Render React component
   const root = ReactDOM.createRoot(container);
   root.render(<NotificationComponent />);
 
+  console.log(`⏰ Setting up auto-remove timer (30 seconds)...`);
   // Auto-remove after 30 seconds as a fallback (in case user doesn't close it)
   setTimeout(() => {
     if (container.parentNode) {
+      console.log(`🗑️ Auto-removing notification after 30 seconds`);
       container.remove();
     }
   }, 30000);
 
-  console.log(`Audio alignment warning shown: ${durationDifference.toFixed(1)}s difference`);
+  console.log(`✅ Audio alignment warning shown: ${durationDifference.toFixed(1)}s difference`);
+  console.log(`📍 Container added to DOM with class: ${container.className}`);
+  console.log(`🎯 Container position: fixed, bottom: 20px, z-index: 9999`);
 };
 
 /**
@@ -149,17 +183,24 @@ export const showAudioAlignmentWarning = (durationDifference) => {
  */
 export const checkAudioAlignmentFromResponse = (response) => {
   try {
+    console.log('🔍 Checking audio alignment from response headers...');
+    console.log('📋 Available headers:', Array.from(response.headers.entries()));
+
     const durationDifference = parseFloat(response.headers.get('X-Duration-Difference'));
     const expectedDuration = parseFloat(response.headers.get('X-Expected-Duration'));
     const actualDuration = parseFloat(response.headers.get('X-Actual-Duration'));
-    
-    console.log(`Audio alignment check: Expected ${expectedDuration}s, Actual ${actualDuration}s, Difference ${durationDifference}s`);
-    
+
+    console.log(`📊 Audio alignment check: Expected ${expectedDuration}s, Actual ${actualDuration}s, Difference ${durationDifference}s`);
+    console.log(`🔢 Header values - Duration Diff: "${response.headers.get('X-Duration-Difference')}", Expected: "${response.headers.get('X-Expected-Duration')}", Actual: "${response.headers.get('X-Actual-Duration')}"`);
+
     if (!isNaN(durationDifference) && durationDifference > 3) {
+      console.log(`⚠️ Duration difference ${durationDifference}s > 3s, showing notification...`);
       showAudioAlignmentWarning(durationDifference);
+    } else {
+      console.log(`✅ Duration difference ${durationDifference}s <= 3s or invalid, no notification needed`);
     }
   } catch (error) {
-    console.error('Error checking audio alignment from response:', error);
+    console.error('❌ Error checking audio alignment from response:', error);
   }
 };
 
