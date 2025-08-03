@@ -175,8 +175,8 @@
 
         <div class="demo-grid">
             <div class="demo-card">
-                <h2>✅ Real Figma Shape Morphing</h2>
-                <p>Real-time shape morphing using actual Figma designs converted to RoundedPolygon class - Complex organic shapes from your Figma file!</p>
+                <h2>✅ Material 3 Expressive Loading Indicator</h2>
+                <p>Real-time Figma shape morphing with Material 3 Expressive effects: spinning, scaling, reflux movement, and pulsing animations in a circular container!</p>
                 
                 <div class="loading-animation" id="loadingAnimation">
                     <!-- SVG shapes will be loaded here -->
@@ -334,6 +334,16 @@
         let morphCanvas, morphCtx;
         let currentMorph = null;
         let morphProgress = 0;
+
+        // Material 3 Expressive effects
+        let rotationAngle = 0;
+        let scaleValue = 1;
+        let refluxOffset = 0;
+        let pulseValue = 1;
+        let animationTime = 0;
+        let discreteSpinSpeed = 0;
+        let currentMorphStartTime = 0;
+        let morphStartRotation = 0;
 
         async function loadSVGShapes() {
             const container = document.getElementById('loadingAnimation');
@@ -619,6 +629,158 @@
             return new RoundedPolygon(vertices, 0);
         }
 
+        function drawMaterial3Container() {
+            // Draw the circular container background like Material 3 Expressive
+            const centerX = morphCanvas.width / 2;
+            const centerY = morphCanvas.height / 2;
+            const radius = Math.min(morphCanvas.width, morphCanvas.height) * 0.45;
+
+            // Outer container with subtle animation
+            const containerPulse = 1 + Math.sin(animationTime * 1.5) * 0.02;
+
+            morphCtx.save();
+            morphCtx.translate(centerX, centerY);
+            morphCtx.scale(containerPulse, containerPulse);
+
+            // Draw container background
+            morphCtx.beginPath();
+            morphCtx.arc(0, 0, radius, 0, 2 * Math.PI);
+            morphCtx.fillStyle = 'rgba(103, 80, 164, 0.08)'; // Light purple background
+            morphCtx.fill();
+
+            // Draw container border
+            morphCtx.strokeStyle = 'rgba(103, 80, 164, 0.15)';
+            morphCtx.lineWidth = 1;
+            morphCtx.stroke();
+
+            morphCtx.restore();
+        }
+
+        function applyMaterial3ExpressiveEffects() {
+            // Update animation time
+            animationTime += 0.05;
+
+            // 1. Discrete spinning phases - the secret ingredient!
+
+            // Calculate discrete spin speed with smooth bounce
+            if (currentMorph && morphProgress < 1.0) {
+                // During morph: LONGER high speed, then SMOOTH SPIN BOUNCE
+                const morphPhase = morphProgress;
+
+                if (morphPhase < 0.8) {
+                    // High speed phase - EXTENDED to 80% for longer energy burst
+                    discreteSpinSpeed = 12.0; // Increased from 8.5 to 12.0 for more dramatic effect
+                } else {
+                    // SHORTER spin bounce phase - snappier settle
+                    const bouncePhase = (morphPhase - 0.8) / 0.2; // 0 to 1 over last 20% (shorter!)
+
+                    // Elastic bounce: overshoot then settle back
+                    // Using elastic easing for natural bounce feel
+                    const elasticBounce = easeOutElastic(bouncePhase);
+
+                    // Speed goes: high → overshoot (negative = reverse spin) → settle to 0
+                    const targetSpeed = 0; // Final target speed
+                    const overshootIntensity = -1.5; // Reduced overshoot intensity for smoother feel
+
+                    discreteSpinSpeed = 12.0 * (1 - bouncePhase) + overshootIntensity * Math.sin(bouncePhase * Math.PI * 2.5) * (1 - bouncePhase);
+
+                    console.log(`🌀 Bounce ${(bouncePhase * 100).toFixed(0)}%: spin speed ${discreteSpinSpeed.toFixed(1)}°/frame`);
+                }
+
+                if (morphPhase < 0.7) {
+                    console.log(`🌀 Morph ${(morphProgress * 100).toFixed(0)}%: spin speed ${discreteSpinSpeed.toFixed(1)}°/frame`);
+                }
+            } else {
+                // Static shape: minimal rotation
+                discreteSpinSpeed = 0.05; // Reduced static rotation for less drift
+            }
+
+            // Apply the discrete spinning with controlled total distance
+            rotationAngle += discreteSpinSpeed;
+
+            // Limit total rotation per transition to avoid excessive spinning
+            const maxRotationPerTransition = 90; // Reduced from ~360/7 ≈ 51.4 to 90 degrees max
+            const currentRotationInTransition = rotationAngle - morphStartRotation;
+
+            if (Math.abs(currentRotationInTransition) > maxRotationPerTransition) {
+                // Cap the rotation to prevent excessive spinning
+                rotationAngle = morphStartRotation + Math.sign(currentRotationInTransition) * maxRotationPerTransition;
+                discreteSpinSpeed = 0; // Stop spinning when limit reached
+            }
+
+            morphCtx.rotate((rotationAngle * Math.PI) / 180);
+
+            // 2. Scale effect - CONTINUOUS throughout entire animation
+            let syncedScale;
+            if (currentMorph && morphProgress < 1.0) {
+                const morphPhase = morphProgress;
+                const baseScale = 0.95;
+
+                // CONTINUOUS scale effect throughout entire animation
+                let scaleVariation;
+
+                if (morphPhase < 0.8) {
+                    // High speed phase - subtle scale variation with spinning energy
+                    scaleVariation = 0.015 + Math.sin(animationTime * 4) * 0.005; // Continuous subtle pulse
+                } else {
+                    // Bounce phase - scale pulse synchronized with spinning bounce
+                    const bouncePhase = (morphPhase - 0.8) / 0.2;
+                    scaleVariation = 0.015 + Math.sin(bouncePhase * Math.PI) * 0.025; // Larger pulse during bounce
+                }
+
+                syncedScale = baseScale + scaleVariation;
+                // Log scale throughout entire animation, not just bounce
+                console.log(`📏 Scale ${(morphPhase * 100).toFixed(0)}%: scale ${(syncedScale).toFixed(3)}`);
+            } else {
+                // Static shape: minimal breathing
+                const breathingScale = 0.96 + Math.sin(animationTime * 1.2) * 0.01; // Very gentle
+                syncedScale = breathingScale;
+            }
+            morphCtx.scale(syncedScale, syncedScale);
+
+            // 3. NO REFLUX - keep shape perfectly centered
+            // Removed the translate that was causing movement around the center
+
+            // 4. Pulse effect for color intensity - synced with morph
+            if (currentMorph && morphProgress < 1.0) {
+                pulseValue = 0.8 + morphProgress * 0.2; // Brighten during morph
+            } else {
+                pulseValue = 0.7 + Math.sin(animationTime * 3) * 0.2; // Gentle pulse
+            }
+        }
+
+        // Elastic easing function for bounce-back effect
+        function easeOutElastic(t) {
+            const c4 = (2 * Math.PI) / 3;
+            return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+        }
+
+        function drawPolygonWithEffects(polygon, color, lineWidth = 2) {
+            // Apply pulse effect to color
+            const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
+            const pulsedColor = color + alpha;
+
+            morphCtx.strokeStyle = pulsedColor;
+            morphCtx.lineWidth = lineWidth;
+            morphCtx.fillStyle = pulsedColor + '20';
+
+            // Draw with enhanced effects
+            drawPolygon(polygon, pulsedColor, lineWidth);
+        }
+
+        function drawCubicsWithEffects(cubics, color, lineWidth = 2) {
+            // Apply pulse effect to color
+            const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
+            const pulsedColor = color + alpha;
+
+            morphCtx.strokeStyle = pulsedColor;
+            morphCtx.lineWidth = lineWidth;
+            morphCtx.fillStyle = pulsedColor + '20';
+
+            // Draw with enhanced effects
+            drawCubics(cubics, pulsedColor, lineWidth);
+        }
+
         function getShapeName(index) {
             const shapeNames = [
                 'Figma Star Shape',
@@ -634,12 +796,21 @@
 
         function drawCurrentShape() {
             morphCtx.clearRect(0, 0, morphCanvas.width, morphCanvas.height);
+
+            // Draw Material 3 Expressive circular container
+            drawMaterial3Container();
+
             morphCtx.save();
+
+            // First translate to canvas center
             morphCtx.translate(morphCanvas.width / 2, morphCanvas.height / 2);
+
+            // Apply Material 3 Expressive effects (rotation and scale around center)
+            applyMaterial3ExpressiveEffects();
 
             const shape = morphShapes[currentStep - 1];
             // Always use the RoundedPolygon for proper morphing support
-            drawPolygon(shape, '#6750A4', 3);
+            drawPolygonWithEffects(shape, '#6750A4', 3);
 
             morphCtx.restore();
         }
@@ -647,12 +818,19 @@
         function drawMorphedShape() {
             // NO FALLBACKS - Let errors surface
             morphCtx.clearRect(0, 0, morphCanvas.width, morphCanvas.height);
+
+            // Draw Material 3 Expressive circular container
+            drawMaterial3Container();
+
             morphCtx.save();
             morphCtx.translate(morphCanvas.width / 2, morphCanvas.height / 2);
 
+            // Apply Material 3 Expressive effects
+            applyMaterial3ExpressiveEffects();
+
             // This will throw if currentMorph is null or asCubics fails
             const morphedCubics = currentMorph.asCubics(morphProgress);
-            drawCubics(morphedCubics, '#6750A4', 3);
+            drawCubicsWithEffects(morphedCubics, '#6750A4', 3);
 
             morphCtx.restore();
 
@@ -712,7 +890,29 @@
             console.log('✅ Morph created successfully!');
 
             animationInterval = setInterval(() => {
-                morphProgress += 0.04; // Much faster progress
+                // DISCRETE MORPHING PROGRESS - NOT just speed changes!
+                // Make morphProgress itself have discrete phases like spinning
+
+                let morphIncrement;
+
+                if (morphProgress < 0.8) {
+                    // High speed phase - BIG discrete jumps (like spinning's constant 12°)
+                    morphIncrement = 0.055; // Large constant increments
+                } else {
+                    // Bounce phase - use same bounce formula as spinning for morphProgress
+                    const bouncePhase = (morphProgress - 0.8) / 0.2; // 0 to 1 over last 20%
+
+                    // Apply same bounce formula to morphProgress increments
+                    const overshootIntensity = -0.01; // Morphing overshoot for progress
+                    const bounceIncrement = 0.055 * (1 - bouncePhase) + overshootIntensity * Math.sin(bouncePhase * Math.PI * 2.5) * (1 - bouncePhase);
+
+                    morphIncrement = Math.max(bounceIncrement, 0.002); // Minimum increment
+                    console.log(`🔄 Bounce ${(bouncePhase * 100).toFixed(0)}%: increment ${morphIncrement.toFixed(3)}`);
+                }
+
+                morphProgress += morphIncrement;
+
+                console.log(`🔄 Morph ${(morphProgress * 100).toFixed(0)}%: increment ${morphIncrement.toFixed(3)}`);
 
                 if (morphProgress >= 1.0) {
                     // Move to next shape pair
@@ -724,7 +924,10 @@
                     const endShape = morphShapes[currentStep % morphShapes.length];
                     currentMorph = new Morph(startShape, endShape);
 
-                    console.log(`🎬 New morph: ${getShapeName(currentStep - 1)} to ${getShapeName(currentStep % morphShapes.length)}`);
+                    // Reset discrete spinning for new morph - BURST OF ENERGY!
+                    currentMorphStartTime = animationTime;
+                    morphStartRotation = rotationAngle; // Track starting rotation for this transition
+                    console.log(`🎬 New morph: ${getShapeName(currentStep - 1)} to ${getShapeName(currentStep % morphShapes.length)} - SPIN BURST!`);
                 }
 
                 // This will throw if drawMorphedShape fails
