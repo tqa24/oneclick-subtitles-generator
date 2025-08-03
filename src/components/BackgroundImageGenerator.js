@@ -5,11 +5,50 @@ import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
 import LoadingIndicator from './common/LoadingIndicator';
 
+// Custom hook to detect current theme
+const useCurrentTheme = () => {
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          setTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Also listen for storage events (theme changes from other tabs)
+    const handleStorageChange = () => {
+      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(newTheme);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  return theme;
+};
+
 /**
  * Component for generating background images based on lyrics and album art
  */
 const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = false, onExpandChange }) => {
   const { t } = useTranslation();
+  const currentTheme = useCurrentTheme();
   const [customLyrics, setCustomLyrics] = useState(lyrics || '');
   const [customAlbumArt, setCustomAlbumArt] = useState(albumArt || '');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
@@ -571,7 +610,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                   disabled={isGeneratingPrompt || !customLyrics.trim()}
                 >
                   {isGeneratingPrompt ? (
-                    <span className="loading-spinner"></span>
+                    <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                   ) : (
                     <FiRefreshCw />
                   )}
@@ -695,7 +734,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     title={t('backgroundGenerator.generateImageTooltip', 'Generate images using the same prompt')}
                   >
                     {isGeneratingImage ? (
-                      <span className="loading-spinner"></span>
+                      <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                     ) : (
                       <FiRefreshCw />
                     )}
@@ -735,7 +774,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     title={t('backgroundGenerator.generateWithNewPromptTooltip', 'Generates a unique prompt for each image')}
                   >
                     {isGeneratingPrompt || isGeneratingImage ? (
-                      <span className="loading-spinner"></span>
+                      <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                     ) : (
                       <FiRefreshCw />
                     )}

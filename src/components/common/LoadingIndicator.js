@@ -28,12 +28,12 @@ const LoadingIndicator = ({
     // Container colors
     containerDark: '#2E4578',
     containerLight: '#ADC3FE',
-    
+
     // Shape colors
     shapeDarkWithContainer: '#D9E2FF',
-    shapeDarkNoContainer: '#485E92',
+    shapeDarkNoContainer: '#485E92', // Dark color for dark theme
     shapeLightWithContainer: '#324574',
-    shapeLightNoContainer: '#B0C6FF'
+    shapeLightNoContainer: '#B0C6FF' // Light color for light theme
   };
 
   // Animation state
@@ -67,8 +67,9 @@ const LoadingIndicator = ({
   const drawMaterial3Container = useCallback((ctx) => {
     if (!showContainer) return;
 
-    // Use dynamic canvas size based on component size
-    const canvasSize = size * 2;
+    // Use dynamic canvas size based on component size with larger scaling to prevent clipping
+    const scaleFactor = size <= 24 ? 3.0 : size <= 48 ? 2.5 : 2.2;
+    const canvasSize = Math.round(size * scaleFactor);
     const centerX = canvasSize / 2;
     const centerY = canvasSize / 2;
     const radius = Math.min(canvasSize, canvasSize) * 0.45; // Larger radius to better match SVG shapes
@@ -116,11 +117,13 @@ const LoadingIndicator = ({
     state.rotationAngle += state.discreteSpinSpeed;
     ctx.rotate((state.rotationAngle * Math.PI) / 180);
 
-    // Scaling effect - MUCH BIGGER SHAPES!
+    // DYNAMIC baseScale based on component size for better appearance in buttons
+    const baseScale = size <= 24 ? 1.5 : 2.5;
+
+    // Scaling effect
     let syncedScale;
     if (state.currentMorph && state.morphProgress < 1.0) {
       const morphPhase = state.morphProgress;
-      const baseScale = 2.5; // Much bigger base scale!
       let scaleVariation;
 
       if (morphPhase < 0.8) {
@@ -131,7 +134,7 @@ const LoadingIndicator = ({
       }
       syncedScale = baseScale + scaleVariation;
     } else {
-      syncedScale = 2.5 + Math.sin(state.animationTime * 1.2) * 0.05; // Much bigger!
+      syncedScale = baseScale + Math.sin(state.animationTime * 1.2) * 0.05;
     }
     ctx.scale(syncedScale, syncedScale);
 
@@ -141,7 +144,7 @@ const LoadingIndicator = ({
     } else {
       state.pulseValue = 0.7 + Math.sin(state.animationTime * 3) * 0.2;
     }
-  }, []);
+  }, [size]); // Add size to dependency array
 
   const drawPolygonWithEffects = useCallback((polygon, ctx) => {
     const color = getShapeColor();
@@ -156,10 +159,15 @@ const LoadingIndicator = ({
   const drawCurrentShape = useCallback((ctx) => {
     const state = animationState.current;
 
-    // Use dynamic canvas size based on component size
-    const canvasSize = size * 2;
+    // Use dynamic canvas size based on component size with larger scaling to prevent clipping
+    const scaleFactor = size <= 24 ? 3.0 : size <= 48 ? 2.5 : 2.2;
+    const canvasSize = Math.round(size * scaleFactor);
     ctx.clearRect(0, 0, canvasSize, canvasSize);
-    drawMaterial3Container(ctx);
+
+    // Only draw container if showContainer is true
+    if (showContainer) {
+      drawMaterial3Container(ctx);
+    }
 
     ctx.save();
     ctx.translate(canvasSize / 2, canvasSize / 2);
@@ -171,15 +179,20 @@ const LoadingIndicator = ({
     }
 
     ctx.restore();
-  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawPolygonWithEffects, size]);
+  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawPolygonWithEffects, size, showContainer]);
 
   const drawMorphedShape = useCallback((ctx) => {
     const state = animationState.current;
 
-    // Use dynamic canvas size based on component size
-    const canvasSize = size * 2;
+    // Use dynamic canvas size based on component size with larger scaling to prevent clipping
+    const scaleFactor = size <= 24 ? 3.0 : size <= 48 ? 2.5 : 2.2;
+    const canvasSize = Math.round(size * scaleFactor);
     ctx.clearRect(0, 0, canvasSize, canvasSize);
-    drawMaterial3Container(ctx);
+
+    // Only draw container if showContainer is true
+    if (showContainer) {
+      drawMaterial3Container(ctx);
+    }
 
     ctx.save();
     ctx.translate(canvasSize / 2, canvasSize / 2);
@@ -199,7 +212,7 @@ const LoadingIndicator = ({
     }
 
     ctx.restore();
-  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawCubicsWithEffects, drawPolygonWithEffects, size]);
+  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawCubicsWithEffects, drawPolygonWithEffects, size, showContainer]);
 
   const drawPolygon = useCallback((polygon, color, ctx) => {
     if (polygon && polygon.cubics) {
@@ -330,10 +343,10 @@ const LoadingIndicator = ({
         if (pathElement) {
           const pathData = pathElement.getAttribute('d');
           // Convert to RoundedPolygon for morphing with PROPER ROUNDING
-          // Scale proportionally to the component size (40 was for 48px default)
-          const shapeScale = (size / 48) * 40;
+          // Dynamic shape scale that coordinates with the animation scaling
+          const shapeScale = size <= 24 ? size * 0.4 : size * 0.6; // Larger scale for better visibility
           const vertices = await convertSVGPathToVertices(pathData, shapeScale);
-          const polygon = new RoundedPolygon(vertices, Math.max(2, size / 6)); // Scale rounding too
+          const polygon = new RoundedPolygon(vertices, Math.max(1, size / 8)); // Proportional rounding
           shapes.push(polygon);
         } else {
           throw new Error('No path element found in SVG');
@@ -552,7 +565,9 @@ const LoadingIndicator = ({
     const dpr = window.devicePixelRatio || 1;
 
     // Set canvas internal size based on the display size for proper scaling
-    const canvasSize = size * 2; // Use 2x for good quality without being too large
+    // Use larger scaling for small sizes to prevent clipping
+    const scaleFactor = size <= 24 ? 3.0 : size <= 48 ? 2.5 : 2.2;
+    const canvasSize = Math.round(size * scaleFactor);
     canvas.width = canvasSize * dpr;
     canvas.height = canvasSize * dpr;
     // Scale for device pixel ratio and fit to display size
