@@ -67,11 +67,11 @@ const LoadingIndicator = ({
   const drawMaterial3Container = useCallback((ctx) => {
     if (!showContainer) return;
 
-    // Use canvas size (300px) like original figma-showcase
-    const canvasSize = 300;
+    // Use dynamic canvas size based on component size
+    const canvasSize = size * 2;
     const centerX = canvasSize / 2;
     const centerY = canvasSize / 2;
-    const radius = Math.min(canvasSize, canvasSize) * 0.2; // Bigger radius like original
+    const radius = Math.min(canvasSize, canvasSize) * 0.45; // Larger radius to better match SVG shapes
 
     ctx.save();
     ctx.translate(centerX, centerY);
@@ -85,7 +85,7 @@ const LoadingIndicator = ({
     ctx.fill();
 
     ctx.restore();
-  }, [showContainer, theme, COLORS]);
+  }, [showContainer, theme, COLORS, size]);
 
 
 
@@ -156,8 +156,8 @@ const LoadingIndicator = ({
   const drawCurrentShape = useCallback((ctx) => {
     const state = animationState.current;
 
-    // Use canvas size (300px) like original figma-showcase
-    const canvasSize = 300;
+    // Use dynamic canvas size based on component size
+    const canvasSize = size * 2;
     ctx.clearRect(0, 0, canvasSize, canvasSize);
     drawMaterial3Container(ctx);
 
@@ -171,13 +171,13 @@ const LoadingIndicator = ({
     }
 
     ctx.restore();
-  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawPolygonWithEffects]);
+  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawPolygonWithEffects, size]);
 
   const drawMorphedShape = useCallback((ctx) => {
     const state = animationState.current;
 
-    // Use canvas size (300px) like original figma-showcase
-    const canvasSize = 300;
+    // Use dynamic canvas size based on component size
+    const canvasSize = size * 2;
     ctx.clearRect(0, 0, canvasSize, canvasSize);
     drawMaterial3Container(ctx);
 
@@ -199,7 +199,7 @@ const LoadingIndicator = ({
     }
 
     ctx.restore();
-  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawCubicsWithEffects, drawPolygonWithEffects]);
+  }, [drawMaterial3Container, applyMaterial3ExpressiveEffects, drawCubicsWithEffects, drawPolygonWithEffects, size]);
 
   const drawPolygon = useCallback((polygon, color, ctx) => {
     if (polygon && polygon.cubics) {
@@ -299,7 +299,7 @@ const LoadingIndicator = ({
       console.error('❌ Failed to load REAL animation modules:', error);
       setIsLoaded(false);
     }
-  }, [startAnimation]);
+  }, [startAnimation, size]);
 
   // REAL Figma shape creation function
   const createFigmaShapes = async (RoundedPolygon) => {
@@ -330,8 +330,10 @@ const LoadingIndicator = ({
         if (pathElement) {
           const pathData = pathElement.getAttribute('d');
           // Convert to RoundedPolygon for morphing with PROPER ROUNDING
-          const vertices = await convertSVGPathToVertices(pathData, 40);
-          const polygon = new RoundedPolygon(vertices, 8); // 8px rounding for smooth curves!
+          // Scale proportionally to the component size (40 was for 48px default)
+          const shapeScale = (size / 48) * 40;
+          const vertices = await convertSVGPathToVertices(pathData, shapeScale);
+          const polygon = new RoundedPolygon(vertices, Math.max(2, size / 6)); // Scale rounding too
           shapes.push(polygon);
         } else {
           throw new Error('No path element found in SVG');
@@ -549,11 +551,11 @@ const LoadingIndicator = ({
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
 
-    // Set canvas size like the original figma-showcase (300x300 base size)
-    const canvasSize = 300;
+    // Set canvas internal size based on the display size for proper scaling
+    const canvasSize = size * 2; // Use 2x for good quality without being too large
     canvas.width = canvasSize * dpr;
     canvas.height = canvasSize * dpr;
-    // Size is now controlled by inline styles in JSX
+    // Scale for device pixel ratio and fit to display size
     ctx.scale(dpr, dpr);
 
     // Initialize the REAL animation
@@ -597,7 +599,8 @@ const LoadingIndicator = ({
     <div
       className={`loading-indicator ${className}`}
       style={{
-        // Let the canvas determine the size naturally
+        width: `${size}px`,
+        height: `${size}px`,
         ...style
       }}
     >
@@ -605,8 +608,8 @@ const LoadingIndicator = ({
         ref={canvasRef}
         className="loading-indicator-canvas"
         style={{
-          width: `${size * 3}px`,  // Make it much bigger - 192px for size=64
-          height: `${size * 3}px`,
+          width: `${size}px`,  // Display at intended size
+          height: `${size}px`,
           borderRadius: '12px'
         }}
       />
