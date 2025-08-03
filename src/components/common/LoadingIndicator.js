@@ -335,9 +335,9 @@ const LoadingIndicator = ({
         import('./LoadingIndicator/morph-fixed.js')
       ]);
 
-      // Create refined collection of 63 diverse shapes!
+      // Create refined collection of 44 diverse shapes!
       const shapes = [];
-      for (let i = 0; i < 63; i++) {
+      for (let i = 0; i < 44; i++) {
         shapes.push(createFallbackShape(i, RoundedPolygon));
       }
       animationState.current.morphShapes = shapes;
@@ -357,329 +357,54 @@ const LoadingIndicator = ({
 
 
 
-  // New shape creation functions for the updated collection
-  const createSlantedShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([-size, -size * 0.7, size, -size, size, size * 0.7, -size, size]);
-    return new RoundedPolygon(vertices, 8);
-  };
-
-  const createArchShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size, size, -size, 0, -size * 0.7, -size * 0.7, 0, -size,
-      size * 0.7, -size * 0.7, size, 0, size, size
-    ]);
-    return new RoundedPolygon(vertices, 6);
-  };
-
-  const createSemicircleShape = (size, RoundedPolygon) => {
-    const sides = 12;
-    const vertices = new Float32Array((sides + 1) * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i <= sides; i++) {
-      const angle = (i / sides) * Math.PI;
-      vertices[vertexIndex++] = Math.cos(angle) * size;
-      vertices[vertexIndex++] = Math.sin(angle) * size;
-    }
-    return new RoundedPolygon(vertices, 4);
-  };
-
-  const createFanShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      0, 0, -size * 0.8, -size * 0.6, -size, 0, -size * 0.8, size * 0.6,
-      -size * 0.3, size * 0.9, size * 0.3, size * 0.9, size * 0.8, size * 0.6,
-      size, 0, size * 0.8, -size * 0.6
-    ]);
-    return new RoundedPolygon(vertices, 5);
-  };
-
-  const createClamshellShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 0.8, size * 0.3, -size * 0.9, 0, -size * 0.7, -size * 0.5,
-      -size * 0.3, -size * 0.8, 0, -size * 0.9, size * 0.3, -size * 0.8,
-      size * 0.7, -size * 0.5, size * 0.9, 0, size * 0.8, size * 0.3,
-      size * 0.5, size * 0.6, 0, size * 0.8, -size * 0.5, size * 0.6
-    ]);
-    return new RoundedPolygon(vertices, 6);
-  };
-
-  const createGemShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      0, -size, size * 0.6, -size * 0.4, size * 0.8, size * 0.2,
-      size * 0.4, size * 0.8, -size * 0.4, size * 0.8, -size * 0.8, size * 0.2,
-      -size * 0.6, -size * 0.4
-    ]);
-    return new RoundedPolygon(vertices, 4);
-  };
-
-  const createSunnyShape = (size, RoundedPolygon) => {
-    const points = 8;
-    const vertices = new Float32Array(points * 4);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < points; i++) {
-      const angle = (i / points) * 2 * Math.PI;
-      const innerRadius = size * 0.6;
-      const outerRadius = size * 0.9;
-
-      vertices[vertexIndex++] = Math.cos(angle) * innerRadius;
-      vertices[vertexIndex++] = Math.sin(angle) * innerRadius;
-      vertices[vertexIndex++] = Math.cos(angle + Math.PI / points) * outerRadius;
-      vertices[vertexIndex++] = Math.sin(angle + Math.PI / points) * outerRadius;
-    }
-    return new RoundedPolygon(vertices, 5);
-  };
-
-  const createVerySunnyShape = (size, RoundedPolygon) => {
-    const points = 12;
-    const vertices = new Float32Array(points * 4);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < points; i++) {
-      const angle = (i / points) * 2 * Math.PI;
-      const innerRadius = size * 0.5;
-      const outerRadius = size;
-
-      vertices[vertexIndex++] = Math.cos(angle) * innerRadius;
-      vertices[vertexIndex++] = Math.sin(angle) * innerRadius;
-      vertices[vertexIndex++] = Math.cos(angle + Math.PI / points) * outerRadius;
-      vertices[vertexIndex++] = Math.sin(angle + Math.PI / points) * outerRadius;
-    }
-    return new RoundedPolygon(vertices, 3);
-  };
-
-  const createCookieShape = (size, sides, RoundedPolygon) => {
-    const vertices = new Float32Array(sides * 4);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < sides; i++) {
-      const angle = (i / sides) * 2 * Math.PI;
-      const innerRadius = size * 0.7;
-      const outerRadius = size;
-
-      vertices[vertexIndex++] = Math.cos(angle) * outerRadius;
-      vertices[vertexIndex++] = Math.sin(angle) * outerRadius;
-      vertices[vertexIndex++] = Math.cos(angle + Math.PI / sides) * innerRadius;
-      vertices[vertexIndex++] = Math.sin(angle + Math.PI / sides) * innerRadius;
-    }
-    return new RoundedPolygon(vertices, 6);
-  };
-
-  const createCloverShape = (size, leaves, RoundedPolygon) => {
-    const vertices = new Float32Array(leaves * 6);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < leaves; i++) {
-      const angle = (i / leaves) * 2 * Math.PI;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-
-      vertices[vertexIndex++] = 0;
-      vertices[vertexIndex++] = 0;
-      vertices[vertexIndex++] = cos * size * 0.5;
-      vertices[vertexIndex++] = sin * size * 0.5;
-      vertices[vertexIndex++] = cos * size;
-      vertices[vertexIndex++] = sin * size;
-    }
-    return new RoundedPolygon(vertices, 8);
-  };
-
-  const createBurstShape = (size, RoundedPolygon) => {
-    const spikes = 8;
-    const vertices = new Float32Array(spikes * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < spikes; i++) {
-      const angle = (i / spikes) * 2 * Math.PI;
-      const radius = i % 2 === 0 ? size : size * 0.3;
-      vertices[vertexIndex++] = Math.cos(angle) * radius;
-      vertices[vertexIndex++] = Math.sin(angle) * radius;
-    }
-    return new RoundedPolygon(vertices, 2);
-  };
-
-  const createSoftBurstShape = (size, RoundedPolygon) => {
-    const spikes = 8;
-    const vertices = new Float32Array(spikes * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < spikes; i++) {
-      const angle = (i / spikes) * 2 * Math.PI;
-      const radius = i % 2 === 0 ? size : size * 0.6;
-      vertices[vertexIndex++] = Math.cos(angle) * radius;
-      vertices[vertexIndex++] = Math.sin(angle) * radius;
-    }
-    return new RoundedPolygon(vertices, 6);
-  };
-
-  const createBoomShape = (size, RoundedPolygon) => {
-    const rays = 16;
-    const vertices = new Float32Array(rays * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < rays; i++) {
-      const angle = (i / rays) * 2 * Math.PI;
-      const radius = i % 2 === 0 ? size : size * 0.2;
-      vertices[vertexIndex++] = Math.cos(angle) * radius;
-      vertices[vertexIndex++] = Math.sin(angle) * radius;
-    }
-    return new RoundedPolygon(vertices, 1);
-  };
-
-  const createSoftBoomShape = (size, RoundedPolygon) => {
-    const rays = 16;
-    const vertices = new Float32Array(rays * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < rays; i++) {
-      const angle = (i / rays) * 2 * Math.PI;
-      const radius = i % 2 === 0 ? size : size * 0.4;
-      vertices[vertexIndex++] = Math.cos(angle) * radius;
-      vertices[vertexIndex++] = Math.sin(angle) * radius;
-    }
-    return new RoundedPolygon(vertices, 4);
-  };
-
-  const createPuffyShape = (size, RoundedPolygon) => {
-    const bumps = 12;
-    const vertices = new Float32Array(bumps * 2);
-    let vertexIndex = 0;
-
-    for (let i = 0; i < bumps; i++) {
-      const angle = (i / bumps) * 2 * Math.PI;
-      const radius = size * (0.7 + 0.3 * Math.sin(i * 3));
-      vertices[vertexIndex++] = Math.cos(angle) * radius;
-      vertices[vertexIndex++] = Math.sin(angle) * radius;
-    }
-    return new RoundedPolygon(vertices, 8);
-  };
-
-  const createPuffyDiamondShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      0, -size * 1.1, size * 0.7, -size * 0.3, size * 1.1, 0,
-      size * 0.7, size * 0.3, 0, size * 1.1, -size * 0.7, size * 0.3,
-      -size * 1.1, 0, -size * 0.7, -size * 0.3
-    ]);
-    return new RoundedPolygon(vertices, 8);
-  };
-
-  const createGhostishShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 0.7, -size * 0.8, size * 0.7, -size * 0.8, size * 0.8, -size * 0.3,
-      size * 0.8, size * 0.5, size * 0.6, size * 0.8, size * 0.4, size * 0.6,
-      size * 0.2, size * 0.8, 0, size * 0.6, -size * 0.2, size * 0.8,
-      -size * 0.4, size * 0.6, -size * 0.6, size * 0.8, -size * 0.8, size * 0.5,
-      -size * 0.8, -size * 0.3
-    ]);
-    return new RoundedPolygon(vertices, 6);
-  };
-
-  const createPixelCircleShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 0.8, -size * 0.4, -size * 0.4, -size * 0.8, size * 0.4, -size * 0.8,
-      size * 0.8, -size * 0.4, size * 0.8, size * 0.4, size * 0.4, size * 0.8,
-      -size * 0.4, size * 0.8, -size * 0.8, size * 0.4
-    ]);
-    return new RoundedPolygon(vertices, 2);
-  };
-
-  const createPixelTriangleShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 0.2, -size * 0.8, size * 0.2, -size * 0.8, size * 0.6, -size * 0.4,
-      size * 0.8, 0, size * 0.6, size * 0.4, size * 0.2, size * 0.8,
-      -size * 0.2, size * 0.8, -size * 0.6, size * 0.4, -size * 0.8, 0,
-      -size * 0.6, -size * 0.4
-    ]);
-    return new RoundedPolygon(vertices, 2);
-  };
-
-  const createBunShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 0.8, size * 0.2, -size * 0.9, -size * 0.2, -size * 0.6, -size * 0.7,
-      -size * 0.2, -size * 0.8, size * 0.2, -size * 0.8, size * 0.6, -size * 0.7,
-      size * 0.9, -size * 0.2, size * 0.8, size * 0.2, size * 0.6, size * 0.6,
-      size * 0.2, size * 0.8, -size * 0.2, size * 0.8, -size * 0.6, size * 0.6
-    ]);
-    return new RoundedPolygon(vertices, 8);
-  };
-
-  const createHeartShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      0, size * 0.8, -size * 0.4, size * 0.4, -size * 0.7, 0,
-      -size * 0.8, -size * 0.3, -size * 0.6, -size * 0.6, -size * 0.3, -size * 0.7,
-      0, -size * 0.5, size * 0.3, -size * 0.7, size * 0.6, -size * 0.6,
-      size * 0.8, -size * 0.3, size * 0.7, 0, size * 0.4, size * 0.4
-    ]);
-    return new RoundedPolygon(vertices, 6);
-  };
-
   // Refined collection of creative shapes - WITH PROPER ROUNDING!
   const createFallbackShape = (index, RoundedPolygon) => {
     switch (index) {
-      case 0: return createCirclePolygon(15, 20, RoundedPolygon); // Circle
+      case 0: return new RoundedPolygon(new Float32Array([0, -20, 17, 10, -17, 10]), 6); // Triangle
       case 1: return new RoundedPolygon(new Float32Array([-15, -15, 15, -15, 15, 15, -15, 15]), 8); // Square
-      case 2: return createSlantedShape(16, RoundedPolygon); // Slanted
-      case 3: return createArchShape(16, RoundedPolygon); // Arch
-      case 4: return createSemicircleShape(16, RoundedPolygon); // Semicircle
-      case 5: return createOvalShape(18, 12, RoundedPolygon); // Oval
-      case 6: return createPillShape(18, RoundedPolygon); // Pill
-      case 7: return new RoundedPolygon(new Float32Array([0, -20, 17, 10, -17, 10]), 6); // Triangle
-      case 8: return createArrowShape(18, RoundedPolygon); // Arrow
-      case 9: return createFanShape(16, RoundedPolygon); // Fan
-      case 10: return createDiamondShape(18, RoundedPolygon); // Diamond
-      case 11: return createClamshellShape(16, RoundedPolygon); // Clamshell
-      case 12: return new RoundedPolygon(new Float32Array([0, -17, 16, -5, 10, 14, -10, 14, -16, -5]), 5); // Pentagon
-      case 13: return createGemShape(16, RoundedPolygon); // Gem
-      case 14: return createSunnyShape(16, RoundedPolygon); // Sunny
-      case 15: return createVerySunnyShape(16, RoundedPolygon); // Very sunny
-      case 16: return createCookieShape(16, 4, RoundedPolygon); // 4-sided cookie
-      case 17: return createCookieShape(16, 6, RoundedPolygon); // 6-sided cookie
-      case 18: return createCookieShape(16, 7, RoundedPolygon); // 7-sided cookie
-      case 19: return createCookieShape(16, 9, RoundedPolygon); // 9-sided cookie
-      case 20: return createCookieShape(16, 12, RoundedPolygon); // 12-sided cookie
-      case 21: return createCloverShape(16, 4, RoundedPolygon); // 4-leaf clover
-      case 22: return createCloverShape(16, 8, RoundedPolygon); // 8-leaf clover
-      case 23: return createBurstShape(16, RoundedPolygon); // Burst
-      case 24: return createSoftBurstShape(16, RoundedPolygon); // Soft burst
-      case 25: return createBoomShape(16, RoundedPolygon); // Boom
-      case 26: return createSoftBoomShape(16, RoundedPolygon); // Soft boom
-      case 27: return createFlowerShape(15, RoundedPolygon); // Flower
-      case 28: return createPuffyShape(16, RoundedPolygon); // Puffy
-      case 29: return createPuffyDiamondShape(16, RoundedPolygon); // Puffy diamond
-      case 30: return createGhostishShape(16, RoundedPolygon); // Ghost-ish
-      case 31: return createPixelCircleShape(16, RoundedPolygon); // Pixel circle
-      case 32: return createPixelTriangleShape(16, RoundedPolygon); // Pixel triangle
-      case 33: return createBunShape(16, RoundedPolygon); // Bun
-      case 34: return createHeartShape(16, RoundedPolygon); // Heart
-      case 35: return createMoonShape(16, RoundedPolygon); // Crescent Moon
-      case 36: return createSpadeShape(16, RoundedPolygon); // Spade
-      case 37: return createInfinityShape(18, RoundedPolygon); // Infinity
-      case 38: return createGearShape(16, RoundedPolygon); // Gear
-      case 39: return createSnowflakeShape(20, RoundedPolygon); // Snowflake
-      case 40: return createBoltShape(18, RoundedPolygon); // Bolt
-      case 41: return createWaveShape(20, RoundedPolygon); // Wave
-      case 42: return createBoneShape(18, RoundedPolygon); // Bone
-      case 43: return createMountainShape(18, RoundedPolygon); // Mountain
-      case 44: return createFishShape(18, RoundedPolygon); // Fish
-      case 45: return createTreeShape(17, RoundedPolygon); // Tree
-      case 46: return createCactusShape(15, RoundedPolygon); // Cactus
-      case 47: return createCupShape(15, RoundedPolygon); // Cup
-      case 48: return createBottleShape(14, RoundedPolygon); // Bottle
-      case 49: return createBookShape(16, RoundedPolygon); // Book
-      case 50: return createPhoneShape(14, RoundedPolygon); // Phone
-      case 51: return createLaptopShape(18, RoundedPolygon); // Laptop
-      case 52: return createCameraShape(16, RoundedPolygon); // Camera
-      case 53: return createPuzzlePieceShape(16, RoundedPolygon); // Puzzle Piece
-      case 54: return createAnchorShape(16, RoundedPolygon); // Anchor
-      case 55: return createCrownShape(17, RoundedPolygon); // Crown
-      case 56: return createHouseShape(16, RoundedPolygon); // House
-      case 57: return createCrossShape(16, RoundedPolygon); // Cross/Plus
-      case 58: return createStarPolygon(14, 4, RoundedPolygon); // 4-pointed Star
-      case 59: return createStarPolygon(15, 5, RoundedPolygon); // 5-pointed Star
-      case 60: return createStarPolygon(18, 6, RoundedPolygon); // 6-pointed Star
-      case 61: return new RoundedPolygon(new Float32Array([20, 0, 10, 17, -10, 17, -20, 0, -10, -17, 10, -17]), 4); // Hexagon
-      case 62: return createCirclePolygon(15, 8, RoundedPolygon); // Octagon
-      default: return createCirclePolygon(15, 20, RoundedPolygon);
+      case 2: return new RoundedPolygon(new Float32Array([0, -17, 16, -5, 10, 14, -10, 14, -16, -5]), 5); // Pentagon
+      case 3: return createStarPolygon(15, 5, RoundedPolygon); // 5-pointed Star
+      case 4: return new RoundedPolygon(new Float32Array([20, 0, 10, 17, -10, 17, -20, 0, -10, -17, 10, -17]), 4); // Hexagon
+      case 5: return createCirclePolygon(15, 8, RoundedPolygon); // Octagon
+      case 6: return createStarPolygon(18, 6, RoundedPolygon); // 6-pointed Star
+      case 7: return createDiamondShape(18, RoundedPolygon); // Diamond
+      case 8: return createCrossShape(16, RoundedPolygon); // Cross/Plus
+      case 9: return createArrowShape(18, RoundedPolygon); // Arrow
+      case 10: return createStarPolygon(14, 4, RoundedPolygon); // 4-pointed Star
+      case 11: return createOvalShape(18, 12, RoundedPolygon); // Oval (improved)
+      case 12: return createTearDropShape(16, RoundedPolygon); // Teardrop (improved)
+      case 13: return createMoonShape(16, RoundedPolygon); // Crescent Moon
+      case 14: return createFlowerShape(15, RoundedPolygon); // Flower
+      case 15: return createHouseShape(16, RoundedPolygon); // House
+      case 16: return createSpadeShape(16, RoundedPolygon); // Spade (improved)
+      case 17: return createInfinityShape(18, RoundedPolygon); // Infinity (improved)
+      case 18: return createGearShape(16, RoundedPolygon); // Gear/Cog
+      case 19: return createSunShape(17, RoundedPolygon); // Sun
+      case 20: return createSnowflakeShape(20, RoundedPolygon); // Snowflake (bigger)
+      case 21: return createBoltShape(18, RoundedPolygon); // Bolt/Screw
+      case 22: return createWaveShape(20, RoundedPolygon); // Wave
+      case 23: return createRingShape(16, RoundedPolygon); // Ring/Donut (fixed)
+      case 24: return createPillShape(18, RoundedPolygon); // Pill/Capsule
+      case 25: return createBoneShape(18, RoundedPolygon); // Bone
+      case 26: return createCloudShape(18, RoundedPolygon); // Cloud (deeper valleys)
+      case 27: return createMountainShape(18, RoundedPolygon); // Mountain
+      case 28: return createFishShape(18, RoundedPolygon); // Fish
+      case 29: return createTreeShape(17, RoundedPolygon); // Tree
+      case 30: return createCactusShape(15, RoundedPolygon); // Cactus
+      case 31: return createUmbrellaShape(17, RoundedPolygon); // Umbrella (fixed)
+      case 32: return createCupShape(15, RoundedPolygon); // Cup (wider bottom)
+      case 33: return createBottleShape(14, RoundedPolygon); // Bottle
+      case 34: return createBookShape(16, RoundedPolygon); // Book
+      case 35: return createPhoneShape(14, RoundedPolygon); // Phone
+      case 36: return createLaptopShape(18, RoundedPolygon); // Laptop (wider bottom)
+      case 37: return createCameraShape(16, RoundedPolygon); // Camera
+      case 38: return createMusicNoteShape(15, RoundedPolygon); // Music Note (fixed)
+      case 39: return createPuzzlePieceShape(16, RoundedPolygon); // Puzzle Piece (simplified)
+      case 40: return createMagnetShape(16, RoundedPolygon); // Magnet (U-shape)
+      case 41: return createAnchorShape(16, RoundedPolygon); // Anchor
+      case 42: return createCrownShape(17, RoundedPolygon); // Crown
+      case 43: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
+      default: return createCirclePolygon(15, 8, RoundedPolygon);
     }
   };
 
