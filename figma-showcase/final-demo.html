@@ -660,86 +660,59 @@
             // Update animation time
             animationTime += 0.05;
 
-            // 1. Discrete spinning phases - the secret ingredient!
-
-            // Calculate discrete spin speed with smooth bounce
+            // 1. Discrete spinning phases with smooth bounce - the secret ingredient!
             if (currentMorph && morphProgress < 1.0) {
-                // During morph: LONGER high speed, then SMOOTH SPIN BOUNCE
+                // During morph: High speed, then a smooth spin bounce to settle.
                 const morphPhase = morphProgress;
 
                 if (morphPhase < 0.8) {
-                    // High speed phase - EXTENDED to 80% for longer energy burst
-                    discreteSpinSpeed = 12.0; // Increased from 8.5 to 12.0 for more dramatic effect
+                    // High-speed phase: extended to 80% for a longer burst of energy.
+                    discreteSpinSpeed = 6.0;  // <<< MODIFIED: Reduced from 12.0
                 } else {
-                    // SHORTER spin bounce phase - snappier settle
-                    const bouncePhase = (morphPhase - 0.8) / 0.2; // 0 to 1 over last 20% (shorter!)
+                    // Bounce phase: a snappy, elastic settle over the last 20%.
+                    const bouncePhase = (morphPhase - 0.8) / 0.2; // From 0 to 1
 
-                    // Elastic bounce: overshoot then settle back
-                    // Using elastic easing for natural bounce feel
-                    const elasticBounce = easeOutElastic(bouncePhase);
-
-                    // Speed goes: high → overshoot (negative = reverse spin) → settle to 0
-                    const targetSpeed = 0; // Final target speed
-                    const overshootIntensity = -1.5; // Reduced overshoot intensity for smoother feel
-
-                    discreteSpinSpeed = 12.0 * (1 - bouncePhase) + overshootIntensity * Math.sin(bouncePhase * Math.PI * 2.5) * (1 - bouncePhase);
-
-                    console.log(`🌀 Bounce ${(bouncePhase * 100).toFixed(0)}%: spin speed ${discreteSpinSpeed.toFixed(1)}°/frame`);
-                }
-
-                if (morphPhase < 0.7) {
-                    console.log(`🌀 Morph ${(morphProgress * 100).toFixed(0)}%: spin speed ${discreteSpinSpeed.toFixed(1)}°/frame`);
+                    // The speed goes from high -> overshoots (negative speed) -> settles to 0.
+                    // This creates the bounce-back effect.
+                    const speedFactor = 1 - bouncePhase;
+                    const bounce = Math.sin(bouncePhase * Math.PI * 2.5); // A single bounce curve
+                    const overshootIntensity = -1.2; // <<< MODIFIED: Reduced from -1.5 for a softer bounce
+                    
+                    discreteSpinSpeed = 6.0 * speedFactor + overshootIntensity * bounce * speedFactor; // <<< MODIFIED: Reduced from 12.0
                 }
             } else {
-                // Static shape: minimal rotation
-                discreteSpinSpeed = 0.05; // Reduced static rotation for less drift
+                // Static shape: minimal, gentle rotation
+                discreteSpinSpeed = 0.05; 
             }
 
-            // Apply the discrete spinning with controlled total distance
             rotationAngle += discreteSpinSpeed;
-
-            // Limit total rotation per transition to avoid excessive spinning
-            const maxRotationPerTransition = 90; // Reduced from ~360/7 ≈ 51.4 to 90 degrees max
-            const currentRotationInTransition = rotationAngle - morphStartRotation;
-
-            if (Math.abs(currentRotationInTransition) > maxRotationPerTransition) {
-                // Cap the rotation to prevent excessive spinning
-                rotationAngle = morphStartRotation + Math.sign(currentRotationInTransition) * maxRotationPerTransition;
-                discreteSpinSpeed = 0; // Stop spinning when limit reached
-            }
-
             morphCtx.rotate((rotationAngle * Math.PI) / 180);
 
-            // 2. Scale effect - CONTINUOUS throughout entire animation
+            // 2. Continuous scaling effect, blended with the animation phase.
             let syncedScale;
             if (currentMorph && morphProgress < 1.0) {
                 const morphPhase = morphProgress;
                 const baseScale = 0.95;
-
-                // CONTINUOUS scale effect throughout entire animation
                 let scaleVariation;
 
                 if (morphPhase < 0.8) {
-                    // High speed phase - subtle scale variation with spinning energy
-                    scaleVariation = 0.015 + Math.sin(animationTime * 4) * 0.005; // Continuous subtle pulse
+                    // High-speed phase: A subtle, rapid pulse for an energetic feel.
+                    scaleVariation = 0.015 + Math.sin(animationTime * 4) * 0.005;
                 } else {
-                    // Bounce phase - scale pulse synchronized with spinning bounce
+                    // Bounce phase: A pronounced "pop" synchronized with the spin bounce.
                     const bouncePhase = (morphPhase - 0.8) / 0.2;
-                    scaleVariation = 0.015 + Math.sin(bouncePhase * Math.PI) * 0.025; // Larger pulse during bounce
+                    scaleVariation = 0.015 + Math.sin(bouncePhase * Math.PI) * 0.025; 
                 }
-
                 syncedScale = baseScale + scaleVariation;
-                // Log scale throughout entire animation, not just bounce
-                console.log(`📏 Scale ${(morphPhase * 100).toFixed(0)}%: scale ${(syncedScale).toFixed(3)}`);
             } else {
-                // Static shape: minimal breathing
-                const breathingScale = 0.96 + Math.sin(animationTime * 1.2) * 0.01; // Very gentle
-                syncedScale = breathingScale;
+                // Static shape: A very gentle, slow "breathing" effect.
+                syncedScale = 0.96 + Math.sin(animationTime * 1.2) * 0.01;
             }
             morphCtx.scale(syncedScale, syncedScale);
 
-            // 3. NO REFLUX - keep shape perfectly centered
-            // Removed the translate that was causing movement around the center
+
+            // 3. NO REFLUX - This is intentional. By keeping the shape perfectly centered,
+            // the rotation and scaling feel more stable and deliberate.
 
             // 4. Pulse effect for color intensity - synced with morph
             if (currentMorph && morphProgress < 1.0) {
@@ -747,12 +720,6 @@
             } else {
                 pulseValue = 0.7 + Math.sin(animationTime * 3) * 0.2; // Gentle pulse
             }
-        }
-
-        // Elastic easing function for bounce-back effect
-        function easeOutElastic(t) {
-            const c4 = (2 * Math.PI) / 3;
-            return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
         }
 
         function drawPolygonWithEffects(polygon, color, lineWidth = 2) {
@@ -873,66 +840,47 @@
         }
 
         window.startAnimation = function() {
-            // NO FALLBACKS - Let errors surface
+            if (isAnimating) return;
             isAnimating = true;
-            morphProgress = 0;
-
-            // Test with different shapes - triangle to square
-            const triangle = morphShapes[0]; // Triangle (3 sides)
-            const square = morphShapes[1];   // Square (4 sides)
-
-            console.log(`🎬 Testing REAL morph from Triangle to Square`);
-            console.log('Triangle:', triangle);
-            console.log('Square:', square);
-
-            // This will throw if Morph constructor fails
-            currentMorph = new Morph(triangle, square);
-            console.log('✅ Morph created successfully!');
+            
+            if (!currentMorph) {
+                const startShape = morphShapes[currentStep - 1];
+                const endShape = morphShapes[currentStep % morphShapes.length];
+                currentMorph = new Morph(startShape, endShape);
+                morphStartRotation = rotationAngle;
+            }
 
             animationInterval = setInterval(() => {
-                // DISCRETE MORPHING PROGRESS - NOT just speed changes!
-                // Make morphProgress itself have discrete phases like spinning
-
+                // The morph progress itself is non-linear, matching the expressive feel.
                 let morphIncrement;
-
                 if (morphProgress < 0.8) {
-                    // High speed phase - BIG discrete jumps (like spinning's constant 12°)
-                    morphIncrement = 0.055; // Large constant increments
+                    // High-speed phase: Fast, consistent progress.
+                    morphIncrement = 0.03; // <<< MODIFIED: Increased from 0.025 for shorter duration
                 } else {
-                    // Bounce phase - use same bounce formula as spinning for morphProgress
-                    const bouncePhase = (morphProgress - 0.8) / 0.2; // 0 to 1 over last 20%
-
-                    // Apply same bounce formula to morphProgress increments
-                    const overshootIntensity = -0.01; // Morphing overshoot for progress
-                    const bounceIncrement = 0.055 * (1 - bouncePhase) + overshootIntensity * Math.sin(bouncePhase * Math.PI * 2.5) * (1 - bouncePhase);
-
-                    morphIncrement = Math.max(bounceIncrement, 0.002); // Minimum increment
-                    console.log(`🔄 Bounce ${(bouncePhase * 100).toFixed(0)}%: increment ${morphIncrement.toFixed(3)}`);
+                    // Slowdown phase: The progress increment decreases, creating an ease-out.
+                    const easeOutFactor = 1 - (morphProgress - 0.8) / 0.2;
+                    morphIncrement = 0.03 * easeOutFactor; // <<< MODIFIED: Increased from 0.025
+                    morphIncrement = Math.max(morphIncrement, 0.001); // Ensure it doesn't stall
                 }
-
                 morphProgress += morphIncrement;
-
-                console.log(`🔄 Morph ${(morphProgress * 100).toFixed(0)}%: increment ${morphIncrement.toFixed(3)}`);
 
                 if (morphProgress >= 1.0) {
                     // Move to next shape pair
                     morphProgress = 0;
                     currentStep = currentStep >= morphShapes.length ? 1 : currentStep + 1;
 
-                    // Create new morph for next transition
+                    // Create new morph for the next transition
                     const startShape = morphShapes[currentStep - 1];
                     const endShape = morphShapes[currentStep % morphShapes.length];
                     currentMorph = new Morph(startShape, endShape);
 
-                    // Reset discrete spinning for new morph - BURST OF ENERGY!
-                    currentMorphStartTime = animationTime;
-                    morphStartRotation = rotationAngle; // Track starting rotation for this transition
+                    // Reset for the new morph, giving a fresh burst of energy
+                    morphStartRotation = rotationAngle; 
                     console.log(`🎬 New morph: ${getShapeName(currentStep - 1)} to ${getShapeName(currentStep % morphShapes.length)} - SPIN BURST!`);
                 }
 
-                // This will throw if drawMorphedShape fails
                 drawMorphedShape();
-            }, 30); // Faster animation timing
+            }, 16); // ~60 FPS
         };
 
         window.stopAnimation = function() {
@@ -946,16 +894,23 @@
         window.resetAnimation = function() {
             stopAnimation();
             currentStep = 1;
+            currentMorph = null;
+            morphProgress = 0;
+            rotationAngle = 0;
             setStep(1);
             document.getElementById('stepSlider').value = 1;
         };
 
         window.setStep = function(step) {
             if (!morphShapes.length) return;
+            if (isAnimating) stopAnimation();
 
             currentStep = parseInt(step);
             currentStep = Math.max(1, Math.min(currentStep, morphShapes.length));
-
+            
+            currentMorph = null;
+            morphProgress = 0;
+            
             drawCurrentShape();
 
             const shapeName = getShapeName(currentStep - 1);
