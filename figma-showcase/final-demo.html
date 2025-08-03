@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Final Working Material Design Shape Morphing Demo</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>">
+    <title>Loading Animation</title>
     <style>
         * {
             margin: 0;
@@ -13,48 +12,11 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000;
             min-height: 100vh;
-            color: white;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            font-weight: 300;
-            margin-bottom: 1rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .demo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .demo-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .demo-card h2 {
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .loading-animation {
@@ -65,208 +27,16 @@
             height: 300px;
             background: rgba(0,0,0,0.2);
             border-radius: 12px;
-            margin: 1rem auto;
             position: relative;
-        }
-
-        .loading-shape {
-            width: 60px;
-            height: 60px;
-            opacity: 0;
-            position: absolute;
-            transition: opacity 0.3s ease;
-        }
-
-        .loading-shape.active {
-            opacity: 1;
-        }
-
-        .controls {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin: 1rem 0;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .canvas-container {
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-            margin: 1rem 0;
-            padding: 1rem;
-        }
-
-        .demo-canvas {
-            width: 100%;
-            height: 300px;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .slider-container {
-            margin: 1rem 0;
-        }
-
-        .slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: white;
-            cursor: pointer;
-        }
-
-        .status {
-            text-align: center;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        .success {
-            color: #4ade80;
-            font-weight: bold;
-        }
-
-        .error {
-            color: #f87171;
-            font-weight: bold;
-        }
-
-        @media (max-width: 768px) {
-            .demo-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🎉 FINAL WORKING DEMO</h1>
-            <p>Real Material Design Shape Morphing using actual JavaScript modules</p>
-        </div>
-
-        <div class="demo-grid">
-            <div class="demo-card">
-                <h2>✅ Material 3 Expressive Loading Indicator</h2>
-                <p>Real-time Figma shape morphing with Material 3 Expressive effects: spinning, scaling, reflux movement, and pulsing animations in a circular container!</p>
-                
-                <div class="loading-animation" id="loadingAnimation">
-                    <!-- SVG shapes will be loaded here -->
-                </div>
-                
-                <div class="controls">
-                    <button class="btn" onclick="startAnimation()">Start Animation</button>
-                    <button class="btn" onclick="stopAnimation()">Stop</button>
-                    <button class="btn" onclick="resetAnimation()">Reset</button>
-                </div>
-                
-                <div class="slider-container">
-                    <input type="range" min="1" max="7" value="1" class="slider" id="stepSlider" oninput="setStep(this.value)">
-                </div>
-                
-                <div class="status success" id="animationStatus">Step 1 of 7 - WORKING!</div>
-            </div>
-
-            <div class="demo-card">
-                <h2>✅ Cubic Bézier Curves</h2>
-                <p>Real cubic Bézier curves using the actual Cubic class from the morphing engine</p>
-                
-                <div class="canvas-container">
-                    <canvas class="demo-canvas" id="cubicCanvas" width="400" height="300"></canvas>
-                </div>
-                
-                <div class="controls">
-                    <button class="btn" onclick="drawSimpleCurve()">Simple Curve</button>
-                    <button class="btn" onclick="drawComplexCurve()">Complex Curve</button>
-                    <button class="btn" onclick="animateCurve()">Animate</button>
-                </div>
-                
-                <div class="slider-container">
-                    <input type="range" min="0" max="1" step="0.01" value="0" class="slider" id="curveSlider" oninput="updateCurve(this.value)">
-                </div>
-                
-                <div class="status success" id="curveStatus">Real Cubic class - WORKING!</div>
-            </div>
-
-            <div class="demo-card">
-                <h2>⚠️ Shape Morphing Progress</h2>
-                <p>Working on fixing the RoundedPolygon CornerRounding issues</p>
-                
-                <div class="canvas-container">
-                    <canvas class="demo-canvas" id="morphCanvas" width="400" height="300"></canvas>
-                </div>
-                
-                <div class="controls">
-                    <button class="btn" onclick="testBasicShapes()">Test Basic Shapes</button>
-                    <button class="btn" onclick="debugPolygon()">Debug Polygon</button>
-                    <button class="btn" onclick="fixCornerRounding()">Fix CornerRounding</button>
-                </div>
-                
-                <div class="status" id="morphStatus">Ready to debug shape morphing</div>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <h2>🔧 Technical Status</h2>
-            <div id="technicalStatus">
-                <p class="success">✅ Real Shape Morphing: FULLY WORKING</p>
-                <p class="success">✅ Cubic Bézier Curves: FULLY WORKING</p>
-                <p class="success">✅ Point utilities: FULLY WORKING</p>
-                <p class="success">✅ Module imports: FULLY WORKING</p>
-                <p class="success">✅ RoundedPolygon: FULLY WORKING</p>
-                <p class="success">✅ Morph: FULLY WORKING</p>
-            </div>
-            
-            <h3>What's Actually Working:</h3>
-            <ul style="margin: 1rem 0; padding-left: 2rem; line-height: 1.6;">
-                <li>✅ Real Figma shape morphing using RoundedPolygon class (Complex organic shapes from your Figma design!)</li>
-                <li>✅ SVG path parsing and conversion to polygon vertices</li>
-                <li>✅ Real Cubic class with actual cubic Bézier mathematics</li>
-                <li>✅ Real Point class with distance calculations</li>
-                <li>✅ Dynamic ES6 module imports</li>
-                <li>✅ Interactive controls and sliders</li>
-                <li>✅ Canvas rendering with hardware acceleration</li>
-                <li>✅ Real-time polygon creation and rendering from Figma data</li>
-            </ul>
-            
-            <h3>Next Steps:</h3>
-            <ul style="margin: 1rem 0; padding-left: 2rem; line-height: 1.6;">
-                <li>✅ Real shape morphing - COMPLETED!</li>
-                <li>✅ Polygon creation with valid coordinates - COMPLETED!</li>
-                <li>🔧 Add smooth morphing transitions between shapes using Morph class</li>
-                <li>🔧 Add performance monitoring and optimization</li>
-                <li>🔧 Add more complex shapes and animations</li>
-            </ul>
-        </div>
+    <div class="loading-animation" id="loadingAnimation">
+        <!-- SVG shapes will be loaded here -->
     </div>
+
+
 
     <script type="module">
         // Import the working modules
@@ -275,54 +45,27 @@
 
         // Try to import the problematic modules
         let RoundedPolygon, Morph;
-        
+
         async function initializeModules() {
             try {
                 const roundedPolygonModule = await import('./roundedPolygon.js');
                 RoundedPolygon = roundedPolygonModule.RoundedPolygon;
                 console.log('✅ RoundedPolygon imported successfully');
-                updateStatus('roundedPolygon', true);
             } catch (error) {
                 console.error('❌ RoundedPolygon import failed:', error);
-                updateStatus('roundedPolygon', false, error.message);
             }
-            
+
             try {
                 const morphModule = await import('./morph-fixed.js');
                 Morph = morphModule.Morph;
                 console.log('✅ Morph imported successfully');
-                updateStatus('morph', true);
             } catch (error) {
                 console.error('❌ Morph import failed:', error);
-                updateStatus('morph', false, error.message);
             }
-            
-            // Initialize working demos
-            loadSVGShapes();
-            initCanvas();
-        }
 
-        function updateStatus(module, success, error = '') {
-            const statusDiv = document.getElementById('technicalStatus');
-            const moduleMap = {
-                'roundedPolygon': 'RoundedPolygon',
-                'morph': 'Morph'
-            };
-            
-            const moduleName = moduleMap[module];
-            const statusClass = success ? 'success' : 'error';
-            const statusIcon = success ? '✅' : '❌';
-            const statusText = success ? 'FULLY WORKING' : `ERROR: ${error}`;
-            
-            // Update the specific line
-            const lines = statusDiv.innerHTML.split('\n');
-            const updatedLines = lines.map(line => {
-                if (line.includes(moduleName)) {
-                    return `                <p class="${statusClass}">${statusIcon} ${moduleName}: ${statusText}</p>`;
-                }
-                return line;
-            });
-            statusDiv.innerHTML = updatedLines.join('\n');
+            // Initialize and auto-start animation
+            await loadSVGShapes();
+            startAnimation();
         }
 
         // Real Shape Morphing Animation (WORKING)
@@ -330,20 +73,15 @@
         let animationInterval = null;
         let isAnimating = false;
         let morphShapes = [];
-        let figmaSVGs = [];
         let morphCanvas, morphCtx;
         let currentMorph = null;
         let morphProgress = 0;
 
         // Material 3 Expressive effects
         let rotationAngle = 0;
-        let scaleValue = 1;
-        let refluxOffset = 0;
         let pulseValue = 1;
         let animationTime = 0;
         let discreteSpinSpeed = 0;
-        let currentMorphStartTime = 0;
-        let morphStartRotation = 0;
 
         async function loadSVGShapes() {
             const container = document.getElementById('loadingAnimation');
@@ -361,12 +99,9 @@
             // Load and create shapes from Figma SVG files
             const result = await createFigmaShapes();
             morphShapes = result.shapes;
-            figmaSVGs = result.svgs; // Store original SVGs for direct display
 
             console.log(`✅ Created ${morphShapes.length} real Figma shapes for morphing`);
             drawCurrentShape();
-            document.getElementById('animationStatus').textContent = `${morphShapes.length} Figma shapes loaded - MORPHING!`;
-            document.getElementById('animationStatus').className = 'status success';
         }
 
         async function createFigmaShapes() {
@@ -385,8 +120,6 @@
 
             for (let i = 0; i < figmaShapeFiles.length; i++) {
                 try {
-                    console.log(`🔧 Loading Figma shape ${i + 1}: ${figmaShapeFiles[i]}`);
-
                     // Load the SVG file and extract the path
                     const response = await fetch(figmaShapeFiles[i]);
                     const svgText = await response.text();
@@ -398,24 +131,20 @@
 
                     if (pathElement) {
                         const pathData = pathElement.getAttribute('d');
-                        console.log(`🔧 Extracted path data length: ${pathData.length} characters`);
-
-                        // Convert to RoundedPolygon for morphing - this is essential for morphing to work
+                        // Convert to RoundedPolygon for morphing
                         const vertices = await convertSVGPathToVertices(pathData, 40);
                         const polygon = new RoundedPolygon(vertices, 0);
                         shapes.push(polygon);
-                        console.log(`✅ Created Figma shape ${i + 1} with ${vertices.length/2} vertices`);
                     } else {
                         throw new Error('No path element found in SVG');
                     }
                 } catch (error) {
-                    console.error(`❌ Failed to load Figma shape ${i + 1} from ${figmaShapeFiles[i]}:`, error);
                     // Fallback to simple shapes if Figma shapes fail
                     shapes.push(createFallbackShape(i));
                 }
             }
 
-            return { shapes, svgs: [] }; // Return empty svgs array since we're focusing on polygon morphing
+            return { shapes };
         }
 
         async function convertSVGPathToVertices(pathData, scale = 1) {
@@ -444,9 +173,6 @@
                 // Use curvature-based adaptive sampling for better shape preservation
                 const vertices = await samplePathWithCurvatureDetection(path, pathLength, centerX, centerY, maxDimension, scale);
 
-                console.log(`🔧 Converting Figma shape: pathLength=${pathLength.toFixed(1)}, numPoints=${vertices.length/2}`);
-                console.log(`🔧 First 3 vertices: (${vertices[0].toFixed(1)}, ${vertices[1].toFixed(1)}), (${vertices[2].toFixed(1)}, ${vertices[3].toFixed(1)}), (${vertices[4].toFixed(1)}, ${vertices[5].toFixed(1)})`);
-
                 document.body.removeChild(svg);
                 return vertices;
             } catch (error) {
@@ -457,7 +183,6 @@
 
         async function samplePathWithCurvatureDetection(path, pathLength, centerX, centerY, maxDimension, scale) {
             // For star-like shapes, we need to detect peaks and valleys specifically
-            const samples = [];
             const highResSamples = 500; // Very high resolution for feature detection
 
             // First pass: high-resolution sampling to detect all features
@@ -505,8 +230,6 @@
                     }
                 }
             }
-
-            console.log(`🔧 Detected ${features.filter(f => f.type === 'peak').length} peaks and ${features.filter(f => f.type === 'valley').length} valleys`);
 
             // Third pass: ensure we capture all features plus dense curve sampling
             const finalSamples = [];
@@ -576,27 +299,17 @@
             return vertices;
         }
 
-
-
         function createFallbackShape(index) {
             // Fallback to simple geometric shapes if SVG parsing fails
             switch (index) {
-                case 0: // Triangle
-                    return new RoundedPolygon(new Float32Array([0, -40, 35, 20, -35, 20]), 0);
-                case 1: // Square
-                    return new RoundedPolygon(new Float32Array([-30, -30, 30, -30, 30, 30, -30, 30]), 0);
-                case 2: // Pentagon
-                    return new RoundedPolygon(new Float32Array([0, -35, 33, -11, 20, 28, -20, 28, -33, -11]), 0);
-                case 3: // Hexagon
-                    return new RoundedPolygon(new Float32Array([30, 0, 15, 26, -15, 26, -30, 0, -15, -26, 15, -26]), 0);
-                case 4: // Octagon
-                    return new RoundedPolygon(new Float32Array([25, -10, 25, 10, 10, 25, -10, 25, -25, 10, -25, -10, -10, -25, 10, -25]), 0);
-                case 5: // Circle
-                    return createCirclePolygon(35, 12);
-                case 6: // Star
-                    return createStarPolygon(30, 5);
-                default:
-                    return createCirclePolygon(30, 8);
+                case 0: return new RoundedPolygon(new Float32Array([0, -40, 35, 20, -35, 20]), 0);
+                case 1: return new RoundedPolygon(new Float32Array([-30, -30, 30, -30, 30, 30, -30, 30]), 0);
+                case 2: return new RoundedPolygon(new Float32Array([0, -35, 33, -11, 20, 28, -20, 28, -33, -11]), 0);
+                case 3: return new RoundedPolygon(new Float32Array([30, 0, 15, 26, -15, 26, -30, 0, -15, -26, 15, -26]), 0);
+                case 4: return new RoundedPolygon(new Float32Array([25, -10, 25, 10, 10, 25, -10, 25, -25, 10, -25, -10, -10, -25, 10, -25]), 0);
+                case 5: return createCirclePolygon(35, 12);
+                case 6: return createStarPolygon(30, 5);
+                default: return createCirclePolygon(30, 8);
             }
         }
 
@@ -611,17 +324,15 @@
         }
 
         function createStarPolygon(radius, points) {
-            const vertices = new Float32Array(points * 4); // outer and inner points
+            const vertices = new Float32Array(points * 4);
             const innerRadius = radius * 0.4;
             let vertexIndex = 0;
 
             for (let i = 0; i < points; i++) {
-                // Outer point
                 const outerAngle = (i / points) * 2 * Math.PI - Math.PI / 2;
                 vertices[vertexIndex++] = Math.cos(outerAngle) * radius;
                 vertices[vertexIndex++] = Math.sin(outerAngle) * radius;
 
-                // Inner point
                 const innerAngle = ((i + 0.5) / points) * 2 * Math.PI - Math.PI / 2;
                 vertices[vertexIndex++] = Math.cos(innerAngle) * innerRadius;
                 vertices[vertexIndex++] = Math.sin(innerAngle) * innerRadius;
@@ -630,25 +341,20 @@
         }
 
         function drawMaterial3Container() {
-            // Draw the circular container background like Material 3 Expressive
             const centerX = morphCanvas.width / 2;
             const centerY = morphCanvas.height / 2;
             const radius = Math.min(morphCanvas.width, morphCanvas.height) * 0.45;
-
-            // Outer container with subtle animation
             const containerPulse = 1 + Math.sin(animationTime * 1.5) * 0.02;
 
             morphCtx.save();
             morphCtx.translate(centerX, centerY);
             morphCtx.scale(containerPulse, containerPulse);
 
-            // Draw container background
             morphCtx.beginPath();
             morphCtx.arc(0, 0, radius, 0, 2 * Math.PI);
-            morphCtx.fillStyle = 'rgba(103, 80, 164, 0.08)'; // Light purple background
+            morphCtx.fillStyle = 'rgba(103, 80, 164, 0.08)';
             morphCtx.fill();
 
-            // Draw container border
             morphCtx.strokeStyle = 'rgba(103, 80, 164, 0.15)';
             morphCtx.lineWidth = 1;
             morphCtx.stroke();
@@ -657,38 +363,28 @@
         }
 
         function applyMaterial3ExpressiveEffects() {
-            // Update animation time
             animationTime += 0.05;
 
-            // 1. Discrete spinning phases with smooth bounce - the secret ingredient!
             if (currentMorph && morphProgress < 1.0) {
-                // During morph: High speed, then a smooth spin bounce to settle.
                 const morphPhase = morphProgress;
 
                 if (morphPhase < 0.8) {
-                    // High-speed phase: extended to 80% for a longer burst of energy.
-                    discreteSpinSpeed = 6.0;  // <<< MODIFIED: Reduced from 12.0
+                    discreteSpinSpeed = 6.0;
                 } else {
-                    // Bounce phase: a snappy, elastic settle over the last 20%.
-                    const bouncePhase = (morphPhase - 0.8) / 0.2; // From 0 to 1
-
-                    // The speed goes from high -> overshoots (negative speed) -> settles to 0.
-                    // This creates the bounce-back effect.
+                    const bouncePhase = (morphPhase - 0.8) / 0.2;
                     const speedFactor = 1 - bouncePhase;
-                    const bounce = Math.sin(bouncePhase * Math.PI * 2.5); // A single bounce curve
-                    const overshootIntensity = -1.2; // <<< MODIFIED: Reduced from -1.5 for a softer bounce
-                    
-                    discreteSpinSpeed = 6.0 * speedFactor + overshootIntensity * bounce * speedFactor; // <<< MODIFIED: Reduced from 12.0
+                    const bounce = Math.sin(bouncePhase * Math.PI * 2.5);
+                    const overshootIntensity = -1.2;
+
+                    discreteSpinSpeed = 6.0 * speedFactor + overshootIntensity * bounce * speedFactor;
                 }
             } else {
-                // Static shape: minimal, gentle rotation
-                discreteSpinSpeed = 0.05; 
+                discreteSpinSpeed = 0.05;
             }
 
             rotationAngle += discreteSpinSpeed;
             morphCtx.rotate((rotationAngle * Math.PI) / 180);
 
-            // 2. Continuous scaling effect, blended with the animation phase.
             let syncedScale;
             if (currentMorph && morphProgress < 1.0) {
                 const morphPhase = morphProgress;
@@ -696,136 +392,78 @@
                 let scaleVariation;
 
                 if (morphPhase < 0.8) {
-                    // High-speed phase: A subtle, rapid pulse for an energetic feel.
                     scaleVariation = 0.015 + Math.sin(animationTime * 4) * 0.005;
                 } else {
-                    // Bounce phase: A pronounced "pop" synchronized with the spin bounce.
                     const bouncePhase = (morphPhase - 0.8) / 0.2;
-                    scaleVariation = 0.015 + Math.sin(bouncePhase * Math.PI) * 0.025; 
+                    scaleVariation = 0.015 + Math.sin(bouncePhase * Math.PI) * 0.025;
                 }
                 syncedScale = baseScale + scaleVariation;
             } else {
-                // Static shape: A very gentle, slow "breathing" effect.
                 syncedScale = 0.96 + Math.sin(animationTime * 1.2) * 0.01;
             }
             morphCtx.scale(syncedScale, syncedScale);
 
-
-            // 3. NO REFLUX - This is intentional. By keeping the shape perfectly centered,
-            // the rotation and scaling feel more stable and deliberate.
-
-            // 4. Pulse effect for color intensity - synced with morph
             if (currentMorph && morphProgress < 1.0) {
-                pulseValue = 0.8 + morphProgress * 0.2; // Brighten during morph
+                pulseValue = 0.8 + morphProgress * 0.2;
             } else {
-                pulseValue = 0.7 + Math.sin(animationTime * 3) * 0.2; // Gentle pulse
+                pulseValue = 0.7 + Math.sin(animationTime * 3) * 0.2;
             }
         }
 
         function drawPolygonWithEffects(polygon, color, lineWidth = 2) {
-            // Apply pulse effect to color
             const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
             const pulsedColor = color + alpha;
-
-            morphCtx.strokeStyle = pulsedColor;
-            morphCtx.lineWidth = lineWidth;
-            morphCtx.fillStyle = pulsedColor + '20';
-
-            // Draw with enhanced effects
             drawPolygon(polygon, pulsedColor, lineWidth);
         }
 
         function drawCubicsWithEffects(cubics, color, lineWidth = 2) {
-            // Apply pulse effect to color
             const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
             const pulsedColor = color + alpha;
-
-            morphCtx.strokeStyle = pulsedColor;
-            morphCtx.lineWidth = lineWidth;
-            morphCtx.fillStyle = pulsedColor + '20';
-
-            // Draw with enhanced effects
             drawCubics(cubics, pulsedColor, lineWidth);
-        }
-
-        function getShapeName(index) {
-            const shapeNames = [
-                'Figma Star Shape',
-                'Figma Rounded Shape',
-                'Figma Hexagon Shape',
-                'Figma Rounded Square',
-                'Figma Complex Star',
-                'Figma Organic Shape',
-                'Figma Circular Shape'
-            ];
-            return shapeNames[index] || `Figma Shape ${index + 1}`;
         }
 
         function drawCurrentShape() {
             morphCtx.clearRect(0, 0, morphCanvas.width, morphCanvas.height);
-
-            // Draw Material 3 Expressive circular container
             drawMaterial3Container();
 
             morphCtx.save();
-
-            // First translate to canvas center
             morphCtx.translate(morphCanvas.width / 2, morphCanvas.height / 2);
-
-            // Apply Material 3 Expressive effects (rotation and scale around center)
             applyMaterial3ExpressiveEffects();
 
             const shape = morphShapes[currentStep - 1];
-            // Always use the RoundedPolygon for proper morphing support
             drawPolygonWithEffects(shape, '#6750A4', 3);
 
             morphCtx.restore();
         }
 
         function drawMorphedShape() {
-            // NO FALLBACKS - Let errors surface
             morphCtx.clearRect(0, 0, morphCanvas.width, morphCanvas.height);
-
-            // Draw Material 3 Expressive circular container
             drawMaterial3Container();
 
             morphCtx.save();
             morphCtx.translate(morphCanvas.width / 2, morphCanvas.height / 2);
-
-            // Apply Material 3 Expressive effects
             applyMaterial3ExpressiveEffects();
 
-            // This will throw if currentMorph is null or asCubics fails
             const morphedCubics = currentMorph.asCubics(morphProgress);
             drawCubicsWithEffects(morphedCubics, '#6750A4', 3);
 
             morphCtx.restore();
-
-            // Update status
-            const fromShape = getShapeName(currentStep - 1);
-            const toShape = getShapeName(currentStep % morphShapes.length);
-            document.getElementById('animationStatus').textContent =
-                `REAL MORPH: ${fromShape} → ${toShape} (${(morphProgress * 100).toFixed(1)}%)`;
         }
 
         function drawPolygon(polygon, color, lineWidth = 2) {
-            // NO FALLBACKS - Let errors surface
             drawCubics(polygon.cubics, color, lineWidth);
         }
 
         function drawCubics(cubics, color, lineWidth = 2) {
-            // NO FALLBACKS - Let errors surface
             morphCtx.strokeStyle = color;
             morphCtx.lineWidth = lineWidth;
             morphCtx.fillStyle = color + '20';
 
             morphCtx.beginPath();
 
-            // This will throw if cubics is null/undefined or empty
             const firstCubic = cubics[0];
             morphCtx.moveTo(firstCubic.anchor0X, firstCubic.anchor0Y);
 
-            // This will throw if any cubic has invalid coordinates
             for (const cubic of cubics) {
                 morphCtx.bezierCurveTo(
                     cubic.control0X, cubic.control0Y,
@@ -839,243 +477,39 @@
             morphCtx.stroke();
         }
 
-        window.startAnimation = function() {
+        function startAnimation() {
             if (isAnimating) return;
             isAnimating = true;
-            
+
             if (!currentMorph) {
                 const startShape = morphShapes[currentStep - 1];
                 const endShape = morphShapes[currentStep % morphShapes.length];
                 currentMorph = new Morph(startShape, endShape);
-                morphStartRotation = rotationAngle;
             }
 
             animationInterval = setInterval(() => {
-                // The morph progress itself is non-linear, matching the expressive feel.
                 let morphIncrement;
                 if (morphProgress < 0.8) {
-                    // High-speed phase: Fast, consistent progress.
-                    morphIncrement = 0.03; // <<< MODIFIED: Increased from 0.025 for shorter duration
+                    morphIncrement = 0.03;
                 } else {
-                    // Slowdown phase: The progress increment decreases, creating an ease-out.
                     const easeOutFactor = 1 - (morphProgress - 0.8) / 0.2;
-                    morphIncrement = 0.03 * easeOutFactor; // <<< MODIFIED: Increased from 0.025
-                    morphIncrement = Math.max(morphIncrement, 0.001); // Ensure it doesn't stall
+                    morphIncrement = 0.03 * easeOutFactor;
+                    morphIncrement = Math.max(morphIncrement, 0.001);
                 }
                 morphProgress += morphIncrement;
 
                 if (morphProgress >= 1.0) {
-                    // Move to next shape pair
                     morphProgress = 0;
                     currentStep = currentStep >= morphShapes.length ? 1 : currentStep + 1;
 
-                    // Create new morph for the next transition
                     const startShape = morphShapes[currentStep - 1];
                     const endShape = morphShapes[currentStep % morphShapes.length];
                     currentMorph = new Morph(startShape, endShape);
-
-                    // Reset for the new morph, giving a fresh burst of energy
-                    morphStartRotation = rotationAngle; 
-                    console.log(`🎬 New morph: ${getShapeName(currentStep - 1)} to ${getShapeName(currentStep % morphShapes.length)} - SPIN BURST!`);
                 }
 
                 drawMorphedShape();
-            }, 16); // ~60 FPS
-        };
-
-        window.stopAnimation = function() {
-            isAnimating = false;
-            if (animationInterval) {
-                clearInterval(animationInterval);
-                animationInterval = null;
-            }
-        };
-
-        window.resetAnimation = function() {
-            stopAnimation();
-            currentStep = 1;
-            currentMorph = null;
-            morphProgress = 0;
-            rotationAngle = 0;
-            setStep(1);
-            document.getElementById('stepSlider').value = 1;
-        };
-
-        window.setStep = function(step) {
-            if (!morphShapes.length) return;
-            if (isAnimating) stopAnimation();
-
-            currentStep = parseInt(step);
-            currentStep = Math.max(1, Math.min(currentStep, morphShapes.length));
-            
-            currentMorph = null;
-            morphProgress = 0;
-            
-            drawCurrentShape();
-
-            const shapeName = getShapeName(currentStep - 1);
-            document.getElementById('animationStatus').textContent = `${shapeName} (${currentStep}/${morphShapes.length}) - FIGMA MORPHING!`;
-        };
-
-        // Cubic Bézier Curves (WORKING)
-        let canvas, ctx;
-        let currentCubic = null;
-
-        function initCanvas() {
-            canvas = document.getElementById('cubicCanvas');
-            ctx = canvas.getContext('2d');
-            drawSimpleCurve();
+            }, 16);
         }
-
-        window.drawSimpleCurve = function() {
-            const points = new Float32Array([
-                50, 250,   // anchor0
-                50, 50,    // control0
-                350, 50,   // control1
-                350, 250   // anchor1
-            ]);
-            
-            currentCubic = new Cubic(points);
-            drawCubic(currentCubic, '#6750A4');
-            document.getElementById('curveStatus').textContent = 'Simple cubic Bézier - WORKING!';
-            document.getElementById('curveStatus').className = 'status success';
-        };
-
-        window.drawComplexCurve = function() {
-            const points = new Float32Array([
-                100, 200,  // anchor0
-                150, 50,   // control0
-                250, 250,  // control1
-                300, 100   // anchor1
-            ]);
-            
-            currentCubic = new Cubic(points);
-            drawCubic(currentCubic, '#03DAC6');
-            document.getElementById('curveStatus').textContent = 'Complex cubic Bézier - WORKING!';
-            document.getElementById('curveStatus').className = 'status success';
-        };
-
-        window.animateCurve = function() {
-            let progress = 0;
-            const animate = () => {
-                progress += 0.02;
-                if (progress <= 1) {
-                    updateCurve(progress);
-                    document.getElementById('curveSlider').value = progress;
-                    requestAnimationFrame(animate);
-                }
-            };
-            animate();
-        };
-
-        window.updateCurve = function(progress) {
-            if (!currentCubic) return;
-            
-            const startPoints = new Float32Array([50, 250, 50, 50, 350, 50, 350, 250]);
-            const endPoints = new Float32Array([100, 200, 150, 50, 250, 250, 300, 100]);
-            
-            const interpolatedPoints = new Float32Array(8);
-            for (let i = 0; i < 8; i++) {
-                interpolatedPoints[i] = startPoints[i] + (endPoints[i] - startPoints[i]) * progress;
-            }
-            
-            const interpolatedCubic = new Cubic(interpolatedPoints);
-            drawCubic(interpolatedCubic, `hsl(${260 + progress * 60}, 70%, 60%)`);
-            
-            document.getElementById('curveStatus').textContent = `Curve interpolation: ${(progress * 100).toFixed(1)}% - WORKING!`;
-            document.getElementById('curveStatus').className = 'status success';
-        };
-
-        function drawCubic(cubic, color) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw the curve
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(cubic.anchor0X, cubic.anchor0Y);
-            ctx.bezierCurveTo(
-                cubic.control0X, cubic.control0Y,
-                cubic.control1X, cubic.control1Y,
-                cubic.anchor1X, cubic.anchor1Y
-            );
-            ctx.stroke();
-            
-            // Draw control points
-            ctx.fillStyle = color;
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 1;
-            
-            // Control lines
-            ctx.beginPath();
-            ctx.moveTo(cubic.anchor0X, cubic.anchor0Y);
-            ctx.lineTo(cubic.control0X, cubic.control0Y);
-            ctx.moveTo(cubic.anchor1X, cubic.anchor1Y);
-            ctx.lineTo(cubic.control1X, cubic.control1Y);
-            ctx.stroke();
-            
-            // Points
-            [
-                [cubic.anchor0X, cubic.anchor0Y],
-                [cubic.control0X, cubic.control0Y],
-                [cubic.control1X, cubic.control1Y],
-                [cubic.anchor1X, cubic.anchor1Y]
-            ].forEach(([x, y]) => {
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Shape Morphing Debug Functions
-        window.testBasicShapes = function() {
-            document.getElementById('morphStatus').textContent = 'Testing basic shape creation...';
-            
-            if (!RoundedPolygon) {
-                document.getElementById('morphStatus').textContent = 'RoundedPolygon not available - import failed';
-                document.getElementById('morphStatus').className = 'status error';
-                return;
-            }
-            
-            try {
-                // Test with explicit vertices
-                const vertices = new Float32Array([0, -50, 43.3, 25, -43.3, 25]);
-                const polygon = new RoundedPolygon(vertices, 0);
-                document.getElementById('morphStatus').textContent = 'Basic triangle created successfully!';
-                document.getElementById('morphStatus').className = 'status success';
-                console.log('Triangle polygon:', polygon);
-            } catch (error) {
-                document.getElementById('morphStatus').textContent = `Error: ${error.message}`;
-                document.getElementById('morphStatus').className = 'status error';
-                console.error('Triangle creation error:', error);
-            }
-        };
-
-        window.debugPolygon = function() {
-            document.getElementById('morphStatus').textContent = 'Debugging polygon creation...';
-            console.log('Point class:', Point);
-            console.log('Cubic class:', Cubic);
-            console.log('RoundedPolygon class:', RoundedPolygon);
-            
-            // Test Point creation
-            const testPoint = new Point(10, 20);
-            console.log('Test point:', testPoint);
-            
-            // Test Cubic creation
-            const testCubic = new Cubic(new Float32Array([0, 0, 10, 10, 20, 20, 30, 30]));
-            console.log('Test cubic:', testCubic);
-            
-            document.getElementById('morphStatus').textContent = 'Debug info logged to console';
-            document.getElementById('morphStatus').className = 'status';
-        };
-
-        window.fixCornerRounding = function() {
-            document.getElementById('morphStatus').textContent = 'CornerRounding fix needed in roundedPolygon.js';
-            document.getElementById('morphStatus').className = 'status error';
-            
-            console.log('CornerRounding.Unrounded references need to be replaced with 0');
-            console.log('Check lines 128, 154, and 429 in roundedPolygon.js');
-        };
 
         // Initialize everything
         document.addEventListener('DOMContentLoaded', () => {
