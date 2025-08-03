@@ -46,7 +46,10 @@ const LoadingIndicator = ({
     pulseValue: 1,
     animationTime: 0,
     discreteSpinSpeed: 0,
-    isAnimating: false
+    isAnimating: false,
+    currentShapeIndex: 0,
+    nextShapeIndex: 1,
+    shapeOrder: []
   });
 
   // Get the appropriate shape color based on theme and container
@@ -59,10 +62,7 @@ const LoadingIndicator = ({
     }
   }, [theme, showContainer, COLORS]);
 
-  // Get the appropriate container color
-  const getContainerColor = useCallback(() => {
-    return theme === 'dark' ? COLORS.containerDark : COLORS.containerLight;
-  }, [theme, COLORS]);
+
 
   const drawMaterial3Container = useCallback((ctx) => {
     if (!showContainer) return;
@@ -173,7 +173,11 @@ const LoadingIndicator = ({
     ctx.translate(canvasSize / 2, canvasSize / 2);
     applyMaterial3ExpressiveEffects(ctx);
 
-    const shape = state.morphShapes[state.currentStep - 1];
+    // Use random shape order if available, otherwise fall back to sequential
+    const shapeIndex = state.shapeOrder.length > 0
+      ? state.shapeOrder[state.currentShapeIndex]
+      : state.currentStep - 1;
+    const shape = state.morphShapes[shapeIndex];
     if (shape) {
       drawPolygonWithEffects(shape, ctx);
     }
@@ -241,19 +245,39 @@ const LoadingIndicator = ({
     ctx.fill();
   }, []);
 
+  // Generate random shape order
+  const generateRandomShapeOrder = useCallback((shapeCount) => {
+    const indices = Array.from({ length: shapeCount }, (_, i) => i);
+    // Fisher-Yates shuffle algorithm
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    return indices;
+  }, []);
+
   const startAnimation = useCallback((ctx, Morph) => {
     const state = animationState.current;
     if (state.isAnimating) return;
-    
+
     state.isAnimating = true;
-    
+
+    // Initialize random shape order if not already set
+    if (state.shapeOrder.length === 0) {
+      state.shapeOrder = generateRandomShapeOrder(state.morphShapes.length);
+      state.currentShapeIndex = 0;
+      state.nextShapeIndex = 1;
+    }
+
     const animate = () => {
       if (!state.isAnimating) return;
 
       // Handle morphing
       if (!state.currentMorph && state.morphShapes.length > 0) {
-        const startShape = state.morphShapes[state.currentStep - 1];
-        const endShape = state.morphShapes[state.currentStep % state.morphShapes.length];
+        const currentIndex = state.shapeOrder[state.currentShapeIndex];
+        const nextIndex = state.shapeOrder[state.nextShapeIndex];
+        const startShape = state.morphShapes[currentIndex];
+        const endShape = state.morphShapes[nextIndex];
         state.currentMorph = new Morph(startShape, endShape);
       }
 
@@ -270,13 +294,23 @@ const LoadingIndicator = ({
         state.morphProgress += morphIncrement;
 
         if (state.morphProgress >= 1.0) {
-          // Move to next shape pair
+          // Move to next shape pair in random order
           state.morphProgress = 0;
-          state.currentStep = state.currentStep >= state.morphShapes.length ? 1 : state.currentStep + 1;
+          state.currentShapeIndex = state.nextShapeIndex;
+          state.nextShapeIndex = (state.nextShapeIndex + 1) % state.shapeOrder.length;
+
+          // If we've completed a full cycle, generate new random order
+          if (state.nextShapeIndex === 0) {
+            state.shapeOrder = generateRandomShapeOrder(state.morphShapes.length);
+            state.currentShapeIndex = 0;
+            state.nextShapeIndex = 1;
+          }
 
           // Create new morph for the next transition
-          const startShape = state.morphShapes[state.currentStep - 1];
-          const endShape = state.morphShapes[state.currentStep % state.morphShapes.length];
+          const currentIndex = state.shapeOrder[state.currentShapeIndex];
+          const nextIndex = state.shapeOrder[state.nextShapeIndex];
+          const startShape = state.morphShapes[currentIndex];
+          const endShape = state.morphShapes[nextIndex];
           state.currentMorph = new Morph(startShape, endShape);
         }
 
@@ -289,21 +323,21 @@ const LoadingIndicator = ({
     };
 
     animate();
-  }, [drawMorphedShape, drawCurrentShape]);
+  }, [drawMorphedShape, drawCurrentShape, generateRandomShapeOrder]);
 
   const initializeAnimation = useCallback(async (ctx) => {
     try {
       // Load the REAL modules dynamically
-      const [{ Point }, { Cubic }, { RoundedPolygon }, { Morph }] = await Promise.all([
+      const [, , { RoundedPolygon }, { Morph }] = await Promise.all([
         import('./LoadingIndicator/utils.js'),
         import('./LoadingIndicator/cubic.js'),
         import('./LoadingIndicator/roundedPolygon.js'),
         import('./LoadingIndicator/morph-fixed.js')
       ]);
 
-      // Create reliable fallback shapes (no need for complex Figma loading)
+      // Create reliable fallback shapes (refined collection!)
       const shapes = [];
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 17; i++) {
         shapes.push(createFallbackShape(i, RoundedPolygon));
       }
       animationState.current.morphShapes = shapes;
@@ -323,16 +357,28 @@ const LoadingIndicator = ({
 
 
 
-  // Fallback shapes if Figma shapes fail to load - WITH PROPER ROUNDING!
+  // Refined collection of creative shapes - WITH PROPER ROUNDING!
   const createFallbackShape = (index, RoundedPolygon) => {
     switch (index) {
-      case 0: return new RoundedPolygon(new Float32Array([0, -20, 17, 10, -17, 10]), 6); // Triangle with rounding
-      case 1: return new RoundedPolygon(new Float32Array([-15, -15, 15, -15, 15, 15, -15, 15]), 8); // Square with rounding
-      case 2: return new RoundedPolygon(new Float32Array([0, -17, 16, -5, 10, 14, -10, 14, -16, -5]), 5); // Pentagon with rounding
-      case 3: return createCirclePolygon(17, 12, RoundedPolygon); // Circle
-      case 4: return createStarPolygon(15, 5, RoundedPolygon); // Star
-      case 5: return new RoundedPolygon(new Float32Array([20, 0, 10, 17, -10, 17, -20, 0, -10, -17, 10, -17]), 4); // Hexagon with rounding
-      case 6: return createCirclePolygon(15, 8, RoundedPolygon); // Octagon
+      case 0: return new RoundedPolygon(new Float32Array([0, -20, 17, 10, -17, 10]), 6); // Triangle
+      case 1: return new RoundedPolygon(new Float32Array([-15, -15, 15, -15, 15, 15, -15, 15]), 8); // Square
+      case 2: return new RoundedPolygon(new Float32Array([0, -17, 16, -5, 10, 14, -10, 14, -16, -5]), 5); // Pentagon
+      case 3: return createStarPolygon(15, 5, RoundedPolygon); // 5-pointed Star
+      case 4: return new RoundedPolygon(new Float32Array([20, 0, 10, 17, -10, 17, -20, 0, -10, -17, 10, -17]), 4); // Hexagon
+      case 5: return createCirclePolygon(15, 8, RoundedPolygon); // Octagon
+      case 6: return createStarPolygon(18, 6, RoundedPolygon); // 6-pointed Star
+      case 7: return createDiamondShape(18, RoundedPolygon); // Diamond
+      case 8: return createCrossShape(16, RoundedPolygon); // Cross/Plus
+      case 9: return createArrowShape(18, RoundedPolygon); // Arrow
+      case 10: return createStarPolygon(14, 4, RoundedPolygon); // 4-pointed Star
+      case 11: return createOvalShape(18, 12, RoundedPolygon); // Oval (improved)
+      case 12: return createTearDropShape(16, RoundedPolygon); // Teardrop (improved)
+      case 13: return createMoonShape(16, RoundedPolygon); // Crescent Moon
+      case 14: return createFlowerShape(15, RoundedPolygon); // Flower
+      case 15: return createHouseShape(16, RoundedPolygon); // House
+      case 16: return createSpadeShape(16, RoundedPolygon); // Spade (improved)
+      case 17: return createInfinityShape(18, RoundedPolygon); // Infinity (improved)
+      case 18: return createGearShape(16, RoundedPolygon); // Gear/Cog
       default: return createCirclePolygon(15, 8, RoundedPolygon);
     }
   };
@@ -362,6 +408,174 @@ const LoadingIndicator = ({
       vertices[vertexIndex++] = Math.sin(innerAngle) * innerRadius;
     }
     return new RoundedPolygon(vertices, 2); // 2px rounding for smooth star points
+  };
+
+  const createDiamondShape = (size, RoundedPolygon) => {
+    const vertices = new Float32Array([0, -size, size, 0, 0, size, -size, 0]);
+    return new RoundedPolygon(vertices, 4);
+  };
+
+  const createCrossShape = (size, RoundedPolygon) => {
+    const thickness = size * 0.3;
+    const vertices = new Float32Array([
+      -thickness, -size, thickness, -size, thickness, -thickness,
+      size, -thickness, size, thickness, thickness, thickness,
+      thickness, size, -thickness, size, -thickness, thickness,
+      -size, thickness, -size, -thickness, -thickness, -thickness
+    ]);
+    return new RoundedPolygon(vertices, 3);
+  };
+
+  const createArrowShape = (size, RoundedPolygon) => {
+    const vertices = new Float32Array([
+      0, -size, size * 0.5, -size * 0.3, size * 0.2, -size * 0.3,
+      size * 0.2, size, -size * 0.2, size, -size * 0.2, -size * 0.3,
+      -size * 0.5, -size * 0.3
+    ]);
+    return new RoundedPolygon(vertices, 3);
+  };
+
+  const createOvalShape = (width, height, RoundedPolygon) => {
+    const sides = 24; // More sides for smoother oval
+    const vertices = new Float32Array(sides * 2);
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * 2 * Math.PI;
+      vertices[i * 2] = Math.cos(angle) * width;
+      vertices[i * 2 + 1] = Math.sin(angle) * height;
+    }
+    return new RoundedPolygon(vertices, 1); // Less rounding for smoother curves
+  };
+
+  const createTearDropShape = (size, RoundedPolygon) => {
+    // Realistic teardrop shape with smooth curves
+    const vertices = new Float32Array([
+      0, -size, // Sharp point at top
+      size * 0.5, -size * 0.6, // Right side curve
+      size * 0.8, -size * 0.1, // Right bulge
+      size * 0.9, size * 0.3, // Right bottom
+      size * 0.6, size * 0.7, // Right bottom curve
+      size * 0.2, size * 0.9, // Bottom right
+      0, size, // Bottom center
+      -size * 0.2, size * 0.9, // Bottom left
+      -size * 0.6, size * 0.7, // Left bottom curve
+      -size * 0.9, size * 0.3, // Left bottom
+      -size * 0.8, -size * 0.1, // Left bulge
+      -size * 0.5, -size * 0.6 // Left side curve
+    ]);
+    return new RoundedPolygon(vertices, 6); // Higher rounding for smooth teardrop
+  };
+
+  const createMoonShape = (size, RoundedPolygon) => {
+    // Crescent moon approximation
+    const vertices = new Float32Array([
+      size * 0.5, -size * 0.8, size * 0.8, -size * 0.3, size * 0.6, 0,
+      size * 0.8, size * 0.3, size * 0.5, size * 0.8, 0, size * 0.5,
+      -size * 0.3, size * 0.2, -size * 0.5, 0, -size * 0.3, -size * 0.2,
+      0, -size * 0.5
+    ]);
+    return new RoundedPolygon(vertices, 5);
+  };
+
+  const createFlowerShape = (size, RoundedPolygon) => {
+    // 8-petal flower
+    const petals = 8;
+    const vertices = new Float32Array(petals * 4);
+    let vertexIndex = 0;
+
+    for (let i = 0; i < petals; i++) {
+      const angle = (i / petals) * 2 * Math.PI;
+      const petalTipX = Math.cos(angle) * size;
+      const petalTipY = Math.sin(angle) * size;
+      const petalBaseX = Math.cos(angle) * size * 0.3;
+      const petalBaseY = Math.sin(angle) * size * 0.3;
+
+      vertices[vertexIndex++] = petalTipX;
+      vertices[vertexIndex++] = petalTipY;
+      vertices[vertexIndex++] = petalBaseX;
+      vertices[vertexIndex++] = petalBaseY;
+    }
+    return new RoundedPolygon(vertices, 6);
+  };
+
+  const createHouseShape = (size, RoundedPolygon) => {
+    // Simple house silhouette
+    const vertices = new Float32Array([
+      0, -size, size * 0.7, -size * 0.3, size * 0.7, size * 0.2,
+      size * 0.7, size * 0.8, -size * 0.7, size * 0.8, -size * 0.7, size * 0.2,
+      -size * 0.7, -size * 0.3
+    ]);
+    return new RoundedPolygon(vertices, 5);
+  };
+
+  const createSpadeShape = (size, RoundedPolygon) => {
+    // Smooth spade card suit
+    const vertices = new Float32Array([
+      0, -size, // Top point
+      size * 0.4, -size * 0.6, // Right top curve
+      size * 0.7, -size * 0.2, // Right side
+      size * 0.8, size * 0.1, // Right bulge
+      size * 0.6, size * 0.4, // Right bottom curve
+      size * 0.3, size * 0.5, // Right stem connection
+      size * 0.25, size * 0.7, // Right stem
+      size * 0.15, size * 0.9, // Right stem bottom
+      0, size, // Bottom center
+      -size * 0.15, size * 0.9, // Left stem bottom
+      -size * 0.25, size * 0.7, // Left stem
+      -size * 0.3, size * 0.5, // Left stem connection
+      -size * 0.6, size * 0.4, // Left bottom curve
+      -size * 0.8, size * 0.1, // Left bulge
+      -size * 0.7, -size * 0.2, // Left side
+      -size * 0.4, -size * 0.6 // Left top curve
+    ]);
+    return new RoundedPolygon(vertices, 5); // Higher rounding for smooth curves
+  };
+
+
+
+  const createInfinityShape = (size, RoundedPolygon) => {
+    // Smooth infinity symbol (figure-8) with more natural curves
+    const vertices = new Float32Array([
+      -size * 0.9, 0, // Left outer point
+      -size * 0.7, -size * 0.3, // Left top curve
+      -size * 0.4, -size * 0.4, // Left top inner
+      -size * 0.1, -size * 0.3, // Center top left
+      0, 0, // Center crossing
+      size * 0.1, -size * 0.3, // Center top right
+      size * 0.4, -size * 0.4, // Right top inner
+      size * 0.7, -size * 0.3, // Right top curve
+      size * 0.9, 0, // Right outer point
+      size * 0.7, size * 0.3, // Right bottom curve
+      size * 0.4, size * 0.4, // Right bottom inner
+      size * 0.1, size * 0.3, // Center bottom right
+      0, 0, // Center crossing (duplicate for smooth path)
+      -size * 0.1, size * 0.3, // Center bottom left
+      -size * 0.4, size * 0.4, // Left bottom inner
+      -size * 0.7, size * 0.3 // Left bottom curve
+    ]);
+    return new RoundedPolygon(vertices, 8); // High rounding for smooth infinity curves
+  };
+
+  const createGearShape = (size, RoundedPolygon) => {
+    // Gear with 8 teeth
+    const teeth = 8;
+    const innerRadius = size * 0.6;
+    const outerRadius = size;
+    const vertices = new Float32Array(teeth * 4);
+    let vertexIndex = 0;
+
+    for (let i = 0; i < teeth; i++) {
+      const baseAngle = (i / teeth) * 2 * Math.PI;
+      const toothAngle = ((i + 0.5) / teeth) * 2 * Math.PI;
+
+      // Inner point
+      vertices[vertexIndex++] = Math.cos(baseAngle) * innerRadius;
+      vertices[vertexIndex++] = Math.sin(baseAngle) * innerRadius;
+
+      // Outer tooth point
+      vertices[vertexIndex++] = Math.cos(toothAngle) * outerRadius;
+      vertices[vertexIndex++] = Math.sin(toothAngle) * outerRadius;
+    }
+    return new RoundedPolygon(vertices, 2);
   };
 
   useEffect(() => {
