@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChevronDown } from 'react-icons/fi';
 import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
+import LoadingIndicator from './common/LoadingIndicator';
 
 /**
  * Component for generating background images based on lyrics and album art
@@ -785,7 +786,12 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                           </>
                         ) : image.isLoading ? (
                           <div className="loading-placeholder">
-                            <span className="loading-spinner large"></span>
+                            <LoadingIndicator
+                              theme="dark"
+                              showContainer={true}
+                              size={64}
+                              className="background-generator-loading"
+                            />
                             <p>{t('backgroundGenerator.generatingImage', 'Generating...')}</p>
                           </div>
                         ) : image.error ? (

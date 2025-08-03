@@ -41,7 +41,13 @@
 }
 
 .loading-placeholder {
-  background-color: rgba(0, 0, 0, 0.05);
+  /* No background - let the LoadingIndicator canvas show through */
+  background-color: transparent;
+}
+
+/* Material Design 3 Loading Indicator in Background Generator */
+.loading-placeholder .background-generator-loading {
+  margin-bottom: 12px;
 }
 
 .error-placeholder {
