@@ -301,11 +301,14 @@ const LoadingIndicator = ({
         import('./LoadingIndicator/morph-fixed.js')
       ]);
 
-      // Load the REAL Figma shapes
-      const result = await createFigmaShapes(RoundedPolygon);
-      animationState.current.morphShapes = result.shapes;
+      // Create reliable fallback shapes (no need for complex Figma loading)
+      const shapes = [];
+      for (let i = 0; i < 7; i++) {
+        shapes.push(createFallbackShape(i, RoundedPolygon));
+      }
+      animationState.current.morphShapes = shapes;
 
-      console.log(`✅ Created ${result.shapes.length} REAL Figma shapes for morphing`);
+      console.log(`✅ Created ${shapes.length} reliable shapes for morphing`);
       setIsLoaded(true);
       startAnimation(ctx, Morph);
     } catch (error) {
@@ -314,207 +317,11 @@ const LoadingIndicator = ({
     }
   }, [startAnimation, size]);
 
-  // REAL Figma shape creation function
-  const createFigmaShapes = async (RoundedPolygon) => {
-    // Load the actual SVG files from your Figma design
-    const figmaShapeFiles = [
-      'shapes/shape-step1.svg',
-      'shapes/shape-step2.svg',
-      'shapes/shape-step3.svg',
-      'shapes/shape-step4.svg',
-      'shapes/shape-step5.svg',
-      'shapes/shape-step6.svg',
-      'shapes/shape-step7.svg'
-    ];
 
-    const shapes = [];
 
-    for (let i = 0; i < figmaShapeFiles.length; i++) {
-      try {
-        // Load the SVG file and extract the path
-        const response = await fetch(`/src/components/common/LoadingIndicator/${figmaShapeFiles[i]}`);
-        const svgText = await response.text();
 
-        // Parse the SVG to extract the path data
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
-        const pathElement = svgDoc.querySelector('path');
 
-        if (pathElement) {
-          const pathData = pathElement.getAttribute('d');
-          // Convert to RoundedPolygon for morphing with PROPER ROUNDING
-          // Dynamic shape scale that coordinates with the animation scaling
-          const shapeScale = size <= 24 ? size * 0.4 : size * 0.6; // Larger scale for better visibility
-          const vertices = await convertSVGPathToVertices(pathData, shapeScale);
-          const polygon = new RoundedPolygon(vertices, Math.max(1, size / 8)); // Proportional rounding
-          shapes.push(polygon);
-        } else {
-          throw new Error('No path element found in SVG');
-        }
-      } catch (error) {
-        console.error(`❌ Failed to load Figma shape ${i + 1}:`, error);
-        // Fallback to simple shapes if Figma shapes fail
-        shapes.push(createFallbackShape(i, RoundedPolygon));
-      }
-    }
 
-    return { shapes };
-  };
-
-  // SVG path to vertices conversion with curvature detection (REAL implementation from figma-showcase)
-  const convertSVGPathToVertices = async (pathData, scale = 1) => {
-    // Create a temporary SVG to parse the path
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', '100');
-    svg.setAttribute('height', '100');
-    svg.style.position = 'absolute';
-    svg.style.visibility = 'hidden';
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', pathData);
-    svg.appendChild(path);
-    document.body.appendChild(svg);
-
-    try {
-      // Get the bounding box to properly center the shape
-      const bbox = path.getBBox();
-      const centerX = bbox.x + bbox.width / 2;
-      const centerY = bbox.y + bbox.height / 2;
-      const maxDimension = Math.max(bbox.width, bbox.height);
-
-      // Get the path length and use curvature-based adaptive sampling
-      const pathLength = path.getTotalLength();
-
-      // Use curvature-based adaptive sampling for better shape preservation
-      const vertices = await samplePathWithCurvatureDetection(path, pathLength, centerX, centerY, maxDimension, scale);
-
-      document.body.removeChild(svg);
-      return vertices;
-    } catch (error) {
-      document.body.removeChild(svg);
-      throw error;
-    }
-  };
-
-  // Curvature detection sampling for smooth rounded shapes (from figma-showcase)
-  const samplePathWithCurvatureDetection = async (path, pathLength, centerX, centerY, maxDimension, scale) => {
-    // For star-like shapes, we need to detect peaks and valleys specifically
-    const highResSamples = 500; // Very high resolution for feature detection
-
-    // First pass: high-resolution sampling to detect all features
-    const points = [];
-    for (let i = 0; i <= highResSamples; i++) {
-      const t = i / highResSamples;
-      const distance = t * pathLength;
-      const point = path.getPointAtLength(distance);
-
-      // Calculate distance from center (for peak/valley detection)
-      const distFromCenter = Math.sqrt(
-        Math.pow(point.x - centerX, 2) + Math.pow(point.y - centerY, 2)
-      );
-
-      points.push({ t, point, distFromCenter, index: i });
-    }
-
-    // Second pass: detect peaks and valleys based on distance from center
-    const features = [];
-    const windowSize = 8; // Smaller window for more sensitive detection
-
-    for (let i = windowSize; i < points.length - windowSize; i++) {
-      const current = points[i];
-      const neighbors = points.slice(i - windowSize, i + windowSize + 1);
-
-      // Check if this is a local maximum (peak) or minimum (valley)
-      const isLocalMax = neighbors.every(n => n.distFromCenter <= current.distFromCenter);
-      const isLocalMin = neighbors.every(n => n.distFromCenter >= current.distFromCenter);
-
-      // Also check for near-peaks/valleys with small tolerance
-      const tolerance = 0.5; // Small tolerance for detecting subtle peaks
-      const isNearMax = neighbors.filter(n => n.distFromCenter > current.distFromCenter + tolerance).length === 0;
-      const isNearMin = neighbors.filter(n => n.distFromCenter < current.distFromCenter - tolerance).length === 0;
-
-      if (isLocalMax || isLocalMin || (isNearMax && !isNearMin) || (isNearMin && !isNearMax)) {
-        const type = (isLocalMax || isNearMax) ? 'peak' : 'valley';
-
-        // Avoid duplicate features too close together
-        const tooClose = features.some(f => Math.abs(f.index - current.index) < windowSize);
-        if (!tooClose) {
-          features.push({
-            ...current,
-            type: type
-          });
-        }
-      }
-    }
-
-    // Third pass: ensure we capture all features plus dense curve sampling
-    const finalSamples = [];
-
-    // Add all detected features
-    features.forEach(feature => finalSamples.push(feature));
-
-    // Add dense interpolation points between features for smooth curves
-    for (let i = 0; i < features.length; i++) {
-      const current = features[i];
-      const next = features[(i + 1) % features.length];
-
-      // Calculate the arc length between features
-      const startT = current.t;
-      const endT = next.t > current.t ? next.t : next.t + 1; // Handle wrap-around
-      const arcLength = (endT - startT) * pathLength;
-
-      // Use more interpolation points for longer arcs (curves need more detail)
-      const baseInterpCount = 6;
-      const extraForLength = Math.floor(arcLength / 10); // More points for longer curves
-      const interpCount = Math.min(12, baseInterpCount + extraForLength);
-
-      for (let j = 1; j <= interpCount; j++) {
-        let interpT = current.t + (next.t - current.t) * (j / (interpCount + 1));
-
-        // Handle wrap-around properly
-        if (interpT > 1) {
-          interpT = interpT - 1;
-        }
-        if (interpT < 0) {
-          interpT = interpT + 1;
-        }
-
-        const interpDistance = interpT * pathLength;
-        const interpPoint = path.getPointAtLength(interpDistance);
-        finalSamples.push({ t: interpT, point: interpPoint });
-      }
-    }
-
-    // Add additional high-density sampling for very smooth curves
-    const denseSamples = 50; // Extra samples for overall smoothness
-    for (let i = 0; i < denseSamples; i++) {
-      const t = i / denseSamples;
-      const distance = t * pathLength;
-      const point = path.getPointAtLength(distance);
-
-      // Only add if not too close to existing samples
-      const tooClose = finalSamples.some(s => Math.abs(s.t - t) < 0.01);
-      if (!tooClose) {
-        finalSamples.push({ t, point });
-      }
-    }
-
-    // Sort by parameter t to maintain proper order
-    finalSamples.sort((a, b) => a.t - b.t);
-
-    // Convert to vertices array with proper scaling
-    const vertices = new Float32Array(finalSamples.length * 2);
-    for (let i = 0; i < finalSamples.length; i++) {
-      const sample = finalSamples[i];
-      const scaledX = (sample.point.x - centerX) * scale / (maxDimension / 2);
-      const scaledY = (sample.point.y - centerY) * scale / (maxDimension / 2);
-
-      vertices[i * 2] = scaledX;
-      vertices[i * 2 + 1] = scaledY;
-    }
-
-    return vertices;
-  };
 
   // Fallback shapes if Figma shapes fail to load - WITH PROPER ROUNDING!
   const createFallbackShape = (index, RoundedPolygon) => {
