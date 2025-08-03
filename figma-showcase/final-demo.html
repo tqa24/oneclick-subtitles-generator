@@ -12,11 +12,76 @@
         }
 
         body {
-            background: #000;
+            background: var(--bg-color);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        body.light {
+            --bg-color: #FFFFFF;
+            --text-color: #000000;
+            --switch-bg: #E0E0E0;
+            --switch-active: #2196F3;
+        }
+
+        body.dark {
+            --bg-color: #000000;
+            --text-color: #FFFFFF;
+            --switch-bg: #333333;
+            --switch-active: #1976D2;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: var(--switch-bg);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .switch.active {
+            background: var(--switch-active);
+        }
+
+        .switch-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .switch.active .switch-thumb {
+            transform: translateX(26px);
         }
 
         .loading-animation {
@@ -25,13 +90,26 @@
             align-items: center;
             width: 300px;
             height: 300px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
             position: relative;
         }
     </style>
 </head>
-<body>
+<body class="dark">
+    <div class="controls">
+        <div class="switch-container">
+            <span>Light Mode</span>
+            <div class="switch" id="themeSwitch" onclick="toggleTheme()">
+                <div class="switch-thumb"></div>
+            </div>
+        </div>
+        <div class="switch-container">
+            <span>Container</span>
+            <div class="switch active" id="containerSwitch" onclick="toggleContainer()">
+                <div class="switch-thumb"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="loading-animation" id="loadingAnimation">
         <!-- SVG shapes will be loaded here -->
     </div>
@@ -45,6 +123,48 @@
 
         // Try to import the problematic modules
         let RoundedPolygon, Morph;
+
+        // Theme and container state
+        let isDarkMode = true;
+        let showContainer = true;
+
+        // Colors from Figma design - all 4 variants
+        const COLORS = {
+            // Container colors
+            containerDark: '#2E4578',
+            containerLight: '#ADC3FE',
+
+            // Shape colors
+            shapeDarkWithContainer: '#D9E2FF',
+            shapeDarkNoContainer: '#485E92',
+            shapeLightWithContainer: '#324574',
+            shapeLightNoContainer: '#B0C6FF'
+        };
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.body;
+            const themeSwitch = document.getElementById('themeSwitch');
+
+            if (isDarkMode) {
+                body.className = 'dark';
+                themeSwitch.classList.remove('active');
+            } else {
+                body.className = 'light';
+                themeSwitch.classList.add('active');
+            }
+        }
+
+        function toggleContainer() {
+            showContainer = !showContainer;
+            const containerSwitch = document.getElementById('containerSwitch');
+
+            if (showContainer) {
+                containerSwitch.classList.add('active');
+            } else {
+                containerSwitch.classList.remove('active');
+            }
+        }
 
         async function initializeModules() {
             try {
@@ -341,23 +461,22 @@
         }
 
         function drawMaterial3Container() {
+            if (!showContainer) return;
+
             const centerX = morphCanvas.width / 2;
             const centerY = morphCanvas.height / 2;
-            const radius = Math.min(morphCanvas.width, morphCanvas.height) * 0.45;
-            const containerPulse = 1 + Math.sin(animationTime * 1.5) * 0.02;
+            const radius = Math.min(morphCanvas.width, morphCanvas.height) * 0.2; // Bigger radius (was 0.15)
 
             morphCtx.save();
             morphCtx.translate(centerX, centerY);
-            morphCtx.scale(containerPulse, containerPulse);
 
             morphCtx.beginPath();
             morphCtx.arc(0, 0, radius, 0, 2 * Math.PI);
-            morphCtx.fillStyle = 'rgba(103, 80, 164, 0.08)';
-            morphCtx.fill();
 
-            morphCtx.strokeStyle = 'rgba(103, 80, 164, 0.15)';
-            morphCtx.lineWidth = 1;
-            morphCtx.stroke();
+            // Use correct container color based on theme
+            const containerColor = isDarkMode ? COLORS.containerDark : COLORS.containerLight;
+            morphCtx.fillStyle = containerColor;
+            morphCtx.fill();
 
             morphCtx.restore();
         }
@@ -410,16 +529,22 @@
             }
         }
 
-        function drawPolygonWithEffects(polygon, color, lineWidth = 2) {
-            const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
-            const pulsedColor = color + alpha;
-            drawPolygon(polygon, pulsedColor, lineWidth);
+        function getShapeColor() {
+            if (isDarkMode) {
+                return showContainer ? COLORS.shapeDarkWithContainer : COLORS.shapeDarkNoContainer;
+            } else {
+                return showContainer ? COLORS.shapeLightWithContainer : COLORS.shapeLightNoContainer;
+            }
         }
 
-        function drawCubicsWithEffects(cubics, color, lineWidth = 2) {
-            const alpha = Math.floor(pulseValue * 255).toString(16).padStart(2, '0');
-            const pulsedColor = color + alpha;
-            drawCubics(cubics, pulsedColor, lineWidth);
+        function drawPolygonWithEffects(polygon) {
+            const color = getShapeColor();
+            drawPolygon(polygon, color);
+        }
+
+        function drawCubicsWithEffects(cubics) {
+            const color = getShapeColor();
+            drawCubics(cubics, color);
         }
 
         function drawCurrentShape() {
@@ -431,7 +556,7 @@
             applyMaterial3ExpressiveEffects();
 
             const shape = morphShapes[currentStep - 1];
-            drawPolygonWithEffects(shape, '#6750A4', 3);
+            drawPolygonWithEffects(shape);
 
             morphCtx.restore();
         }
@@ -445,19 +570,17 @@
             applyMaterial3ExpressiveEffects();
 
             const morphedCubics = currentMorph.asCubics(morphProgress);
-            drawCubicsWithEffects(morphedCubics, '#6750A4', 3);
+            drawCubicsWithEffects(morphedCubics);
 
             morphCtx.restore();
         }
 
-        function drawPolygon(polygon, color, lineWidth = 2) {
-            drawCubics(polygon.cubics, color, lineWidth);
+        function drawPolygon(polygon, color) {
+            drawCubics(polygon.cubics, color);
         }
 
-        function drawCubics(cubics, color, lineWidth = 2) {
-            morphCtx.strokeStyle = color;
-            morphCtx.lineWidth = lineWidth;
-            morphCtx.fillStyle = color + '20';
+        function drawCubics(cubics, color) {
+            morphCtx.fillStyle = color;
 
             morphCtx.beginPath();
 
@@ -474,7 +597,7 @@
 
             morphCtx.closePath();
             morphCtx.fill();
-            morphCtx.stroke();
+            // Removed stroke for solid color only
         }
 
         function startAnimation() {
@@ -510,6 +633,10 @@
                 drawMorphedShape();
             }, 16);
         }
+
+        // Make functions globally available
+        window.toggleTheme = toggleTheme;
+        window.toggleContainer = toggleContainer;
 
         // Initialize everything
         document.addEventListener('DOMContentLoaded', () => {
