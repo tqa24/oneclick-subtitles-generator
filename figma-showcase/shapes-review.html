@@ -149,7 +149,7 @@
 <body>
     <div class="container">
         <h1>🎨 LoadingIndicator Shapes Review</h1>
-        <p class="subtitle">All 25 shapes from the enhanced loading indicator</p>
+        <p class="subtitle">All shapes from the enhanced loading indicator</p>
         
         <div class="instructions">
             <h3>📋 Review Instructions</h3>
@@ -199,29 +199,25 @@
             { name: "Infinity (Improved)", index: 17 },
             { name: "Gear", index: 18 },
             { name: "Sun", index: 19 },
-            { name: "Snowflake (Bigger)", index: 20 },
-            { name: "Bolt", index: 21 },
-            { name: "Wave", index: 22 },
-            { name: "Ring (Fixed)", index: 23 },
-            { name: "Pill", index: 24 },
-            { name: "Bone", index: 25 },
-            { name: "Cloud (Deep Valleys)", index: 26 },
-            { name: "Mountain", index: 27 },
-            { name: "Fish", index: 28 },
-            { name: "Tree", index: 29 },
-            { name: "Cactus", index: 30 },
-            { name: "Umbrella (Fixed)", index: 31 },
-            { name: "Cup (Wide Bottom)", index: 32 },
-            { name: "Bottle", index: 33 },
-            { name: "Book", index: 34 },
-            { name: "Phone", index: 35 },
-            { name: "Laptop (Wide Bottom)", index: 36 },
-            { name: "Camera", index: 37 },
-            { name: "Music Note (Fixed)", index: 38 },
-            { name: "Puzzle Piece (Simple)", index: 39 },
-            { name: "Magnet (U-Shape)", index: 40 },
-            { name: "Anchor", index: 41 },
-            { name: "Crown", index: 42 }
+            { name: "Bolt", index: 20 },
+            { name: "Wave", index: 21 },
+            { name: "Ring (Fixed)", index: 22 },
+            { name: "Pill", index: 23 },
+            { name: "Bone", index: 24 },
+            { name: "Mountain", index: 25 },
+            { name: "Fish", index: 26 },
+            { name: "Tree", index: 27 },
+            { name: "Cactus", index: 28 },
+            { name: "Cup (Wide Bottom)", index: 29 },
+            { name: "Bottle", index: 30 },
+            { name: "Book", index: 31 },
+            { name: "Phone", index: 32 },
+            { name: "Laptop (Wide Bottom)", index: 33 },
+            { name: "Camera", index: 34 },
+            { name: "Puzzle Piece (Simple)", index: 35 },
+            { name: "Anchor", index: 36 },
+            { name: "Crown", index: 37 },
+            { name: "8-pointed Star", index: 38 }
         ];
 
         let currentTheme = 'light';
@@ -452,30 +448,7 @@
             return new RoundedPolygon(vertices, 4);
         }
 
-        function createSnowflakeShape(size, RoundedPolygon) {
-            const arms = 6;
-            const vertices = new Float32Array(arms * 8);
-            let vertexIndex = 0;
 
-            for (let i = 0; i < arms; i++) {
-                const angle = (i / arms) * 2 * Math.PI;
-                const cos = Math.cos(angle);
-                const sin = Math.sin(angle);
-
-                // Main arm
-                vertices[vertexIndex++] = 0;
-                vertices[vertexIndex++] = 0;
-                vertices[vertexIndex++] = cos * size * 0.4;
-                vertices[vertexIndex++] = sin * size * 0.4;
-                vertices[vertexIndex++] = cos * size * 1.2; // Made bigger
-                vertices[vertexIndex++] = sin * size * 1.2; // Made bigger
-
-                // Side branches for more snowflake detail
-                vertices[vertexIndex++] = cos * size * 0.8 + Math.cos(angle + Math.PI/6) * size * 0.3;
-                vertices[vertexIndex++] = sin * size * 0.8 + Math.sin(angle + Math.PI/6) * size * 0.3;
-            }
-            return new RoundedPolygon(vertices, 2);
-        }
 
         function createBoltShape(size, RoundedPolygon) {
             const vertices = new Float32Array([
@@ -519,23 +492,7 @@
             const vertices = new Float32Array([-size * 0.8, -size * 0.3, -size * 0.6, -size * 0.6, -size * 0.3, -size * 0.4, -size * 0.1, -size * 0.2, size * 0.1, -size * 0.2, size * 0.3, -size * 0.4, size * 0.6, -size * 0.6, size * 0.8, -size * 0.3, size * 0.8, size * 0.3, size * 0.6, size * 0.6, size * 0.3, size * 0.4, size * 0.1, size * 0.2, -size * 0.1, size * 0.2, -size * 0.3, size * 0.4, -size * 0.6, size * 0.6, -size * 0.8, size * 0.3]);
             return new RoundedPolygon(vertices, 4);
         }
-        function createCloudShape(size, RoundedPolygon) {
-            const vertices = new Float32Array([
-                -size * 0.8, size * 0.3, // Left edge
-                -size * 0.9, -size * 0.1, // Left top
-                -size * 0.6, -size * 0.5, // Deep valley 1
-                -size * 0.2, -size * 0.7, // Peak 1
-                size * 0.1, -size * 0.8, // Deep valley 2
-                size * 0.4, -size * 0.6, // Peak 2
-                size * 0.7, -size * 0.5, // Deep valley 3
-                size * 0.9, -size * 0.1, // Right top
-                size * 0.8, size * 0.3, // Right edge
-                size * 0.4, size * 0.5, // Right bottom
-                0, size * 0.6, // Bottom center
-                -size * 0.4, size * 0.5 // Left bottom
-            ]);
-            return new RoundedPolygon(vertices, 6);
-        }
+
         function createMountainShape(size, RoundedPolygon) {
             const vertices = new Float32Array([-size, size, -size * 0.6, size * 0.2, -size * 0.3, -size * 0.8, 0, -size * 0.4, size * 0.3, -size, size * 0.6, size * 0.2, size, size]);
             return new RoundedPolygon(vertices, 3);
@@ -552,25 +509,7 @@
 
         // Add remaining simple shapes
         function createCactusShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.2, size, -size * 0.2, -size * 0.2, -size * 0.6, -size * 0.4, -size * 0.6, -size * 0.8, -size * 0.4, -size * 0.8, -size * 0.4, -size * 0.4, -size * 0.1, -size * 0.4, -size * 0.1, -size, size * 0.1, -size, size * 0.1, -size * 0.4, size * 0.4, -size * 0.4, size * 0.4, -size * 0.8, size * 0.6, -size * 0.8, size * 0.6, -size * 0.4, size * 0.2, -size * 0.2, size * 0.2, size]), 4); }
-        function createUmbrellaShape(size, RoundedPolygon) {
-            const vertices = new Float32Array([
-                -size * 0.8, 0, // Left edge
-                -size * 0.6, -size * 0.5, // Left curve
-                -size * 0.3, -size * 0.7, // Left peak
-                0, -size * 0.8, // Top center
-                size * 0.3, -size * 0.7, // Right peak
-                size * 0.6, -size * 0.5, // Right curve
-                size * 0.8, 0, // Right edge
-                0, 0, // Handle start
-                0, size * 0.7, // Handle shaft
-                size * 0.15, size * 0.8, // Handle curve
-                size * 0.2, size * 0.9, // Handle tip
-                size * 0.1, size * 0.95, // Handle end
-                0, size * 0.9, // Back to shaft
-                0, 0 // Back to center
-            ]);
-            return new RoundedPolygon(vertices, 5);
-        }
+
         function createCupShape(size, RoundedPolygon) {
             const vertices = new Float32Array([
                 -size * 0.4, -size, // Top left
@@ -593,35 +532,7 @@
             return new RoundedPolygon(vertices, 4);
         }
         function createCameraShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.8, -size * 0.2, size * 0.8, -size * 0.2, size * 0.8, size * 0.6, -size * 0.8, size * 0.6]), 3); }
-        function createMusicNoteShape(size, RoundedPolygon) {
-            const vertices = new Float32Array([
-                // Note head (oval)
-                -size * 0.3, size * 0.5, // Left of note head
-                -size * 0.4, size * 0.3, // Top left of note head
-                -size * 0.3, size * 0.1, // Top of note head
-                -size * 0.1, size * 0.1, // Top right of note head
-                0, size * 0.3, // Right of note head
-                -size * 0.1, size * 0.5, // Bottom right of note head
-                -size * 0.3, size * 0.5, // Back to left
 
-                // Stem
-                -size * 0.1, size * 0.2, // Stem start
-                -size * 0.1, -size * 0.8, // Stem top
-                0, -size * 0.8, // Stem top right
-                0, size * 0.2, // Stem bottom right
-
-                // Flag
-                0, -size * 0.8, // Flag start
-                size * 0.4, -size * 0.6, // Flag curve out
-                size * 0.3, -size * 0.4, // Flag curve back
-                0, -size * 0.5, // Flag attach point
-                0, -size * 0.6, // Flag second curve start
-                size * 0.3, -size * 0.4, // Flag second curve out
-                size * 0.2, -size * 0.2, // Flag second curve back
-                0, -size * 0.3 // Flag second attach
-            ]);
-            return new RoundedPolygon(vertices, 3);
-        }
         function createPuzzlePieceShape(size, RoundedPolygon) {
             const vertices = new Float32Array([
                 // Main square outline with one corner cut out
@@ -635,32 +546,7 @@
             ]);
             return new RoundedPolygon(vertices, 4);
         }
-        function createMagnetShape(size, RoundedPolygon) {
-            const vertices = new Float32Array([
-                // Left arm of U
-                -size * 0.8, -size, // Top left outer
-                -size * 0.4, -size, // Top left inner
-                -size * 0.4, size * 0.6, // Bottom left inner
-                -size * 0.8, size * 0.6, // Bottom left outer
-                -size * 0.8, size * 0.8, // Left bottom tip
 
-                // Bottom of U
-                -size * 0.6, size * 0.8, // Left bottom inner
-                -size * 0.2, size * 0.9, // Bottom curve left
-                size * 0.2, size * 0.9, // Bottom curve right
-                size * 0.6, size * 0.8, // Right bottom inner
-
-                // Right arm of U
-                size * 0.8, size * 0.8, // Right bottom tip
-                size * 0.8, size * 0.6, // Bottom right outer
-                size * 0.4, size * 0.6, // Bottom right inner
-                size * 0.4, -size, // Top right inner
-                size * 0.8, -size, // Top right outer
-                size * 0.8, -size * 0.4, // Top right connection
-                -size * 0.8, -size * 0.4 // Top left connection
-            ]);
-            return new RoundedPolygon(vertices, 4);
-        }
 
         function createAnchorShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([0, -size, size * 0.2, -size * 0.6, size * 0.2, 0, size * 0.6, size * 0.4, size * 0.8, size * 0.8, size * 0.4, size * 0.6, size * 0.2, size * 0.2, -size * 0.2, size * 0.2, -size * 0.4, size * 0.6, -size * 0.8, size * 0.8, -size * 0.6, size * 0.4, -size * 0.2, 0, -size * 0.2, -size * 0.6]), 3); }
         function createCrownShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.8, size * 0.2, -size * 0.6, -size * 0.4, -size * 0.3, size * 0.2, 0, -size * 0.8, size * 0.3, size * 0.2, size * 0.6, -size * 0.4, size * 0.8, size * 0.2, size * 0.8, size * 0.6, -size * 0.8, size * 0.6]), 4); }
@@ -687,29 +573,25 @@
                 case 17: return createInfinityShape(18, RoundedPolygon);
                 case 18: return createGearShape(16, RoundedPolygon);
                 case 19: return createSunShape(17, RoundedPolygon);
-                case 20: return createSnowflakeShape(18, RoundedPolygon); // Bigger snowflake
-                case 21: return createBoltShape(18, RoundedPolygon);
-                case 22: return createWaveShape(20, RoundedPolygon);
-                case 23: return createRingShape(16, RoundedPolygon); // Fixed ring
-                case 24: return createPillShape(18, RoundedPolygon);
-                case 25: return createBoneShape(18, RoundedPolygon);
-                case 26: return createCloudShape(18, RoundedPolygon); // Deep valleys cloud
-                case 27: return createMountainShape(18, RoundedPolygon);
-                case 28: return createFishShape(18, RoundedPolygon);
-                case 29: return createTreeShape(17, RoundedPolygon);
-                case 30: return createCactusShape(15, RoundedPolygon);
-                case 31: return createUmbrellaShape(17, RoundedPolygon); // Fixed umbrella
-                case 32: return createCupShape(15, RoundedPolygon); // Wide bottom cup
-                case 33: return createBottleShape(14, RoundedPolygon);
-                case 34: return createBookShape(16, RoundedPolygon);
-                case 35: return createPhoneShape(14, RoundedPolygon);
-                case 36: return createLaptopShape(18, RoundedPolygon); // Wide bottom laptop
-                case 37: return createCameraShape(16, RoundedPolygon);
-                case 38: return createMusicNoteShape(15, RoundedPolygon); // Fixed music note
-                case 39: return createPuzzlePieceShape(16, RoundedPolygon); // Simple puzzle piece
-                case 40: return createMagnetShape(16, RoundedPolygon); // U-shape magnet
-                case 41: return createAnchorShape(16, RoundedPolygon);
-                case 42: return createCrownShape(17, RoundedPolygon);
+                case 20: return createBoltShape(18, RoundedPolygon);
+                case 21: return createWaveShape(20, RoundedPolygon);
+                case 22: return createRingShape(16, RoundedPolygon); // Fixed ring
+                case 23: return createPillShape(18, RoundedPolygon);
+                case 24: return createBoneShape(18, RoundedPolygon);
+                case 25: return createMountainShape(18, RoundedPolygon);
+                case 26: return createFishShape(18, RoundedPolygon);
+                case 27: return createTreeShape(17, RoundedPolygon);
+                case 28: return createCactusShape(15, RoundedPolygon);
+                case 29: return createCupShape(15, RoundedPolygon); // Wide bottom cup
+                case 30: return createBottleShape(14, RoundedPolygon);
+                case 31: return createBookShape(16, RoundedPolygon);
+                case 32: return createPhoneShape(14, RoundedPolygon);
+                case 33: return createLaptopShape(18, RoundedPolygon); // Wide bottom laptop
+                case 34: return createCameraShape(16, RoundedPolygon);
+                case 35: return createPuzzlePieceShape(16, RoundedPolygon); // Simple puzzle piece
+                case 36: return createAnchorShape(16, RoundedPolygon);
+                case 37: return createCrownShape(17, RoundedPolygon);
+                case 38: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
                 default: return createCirclePolygon(15, 8, RoundedPolygon);
             }
         }
