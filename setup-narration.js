@@ -297,7 +297,7 @@ try {
      }
   }
 } catch (error) {
-  console.warn(`   Warning during initial Python ${PYTHON_VERSION_TARGET} check: ${error.message}. Will proceed to check uv install.`);
+  logger.warning(`Warning during initial Python ${PYTHON_VERSION_TARGET} check: ${error.message}. Will proceed to check uv install.`);
 }
 
 if (!pythonInterpreterIdentifier) {
@@ -645,16 +645,16 @@ if (process.platform === 'linux') {
         execSync('which gcc', { stdio: 'ignore' });
         logger.found('gcc');
     } catch (error) {
-        console.warn('⚠️ gcc not found. You may need to install build-essential:');
-        console.warn('   sudo apt update && sudo apt install build-essential python3-dev');
+        logger.warning('gcc not found. You may need to install build-essential:');
+        logger.info('   sudo apt update && sudo apt install build-essential python3-dev');
     }
 
     try {
         execSync('which python3-config', { stdio: 'ignore' });
         logger.found('python3-dev');
     } catch (error) {
-        console.warn('⚠️ python3-dev not found. You may need to install it:');
-        console.warn('   sudo apt install python3-dev');
+        logger.warning('python3-dev not found. You may need to install it:');
+        logger.info('   sudo apt install python3-dev');
     }
 }
 
@@ -951,7 +951,7 @@ try {
         packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
     } catch (readError) {
         if (readError.code === 'ENOENT') {
-            console.warn(`   ⚠️ package.json not found at ${packageJsonPath}. Skipping update.`);
+            logger.warning(`package.json not found at ${packageJsonPath}. Skipping update.`);
         } else {
             console.error(`❌ Error reading package.json at ${packageJsonPath}: ${readError.message}`);
             console.log('   Skipping package.json update.');
@@ -1189,7 +1189,7 @@ function verifyPluginInstallation(pluginDir) {
 
         for (const file of pluginFiles) {
             if (!fs.existsSync(file)) {
-                logger.warn(`Plugin file missing: ${file}`);
+                logger.warning(`Plugin file missing: ${file}`);
                 return false;
             } else {
                 logger.info(`✓ Found: ${file}`);
@@ -1222,7 +1222,7 @@ function verifyPluginInstallation(pluginDir) {
         logger.info('Plugin installation verified successfully');
         return true;
     } catch (error) {
-        logger.warn(`Plugin verification failed: ${error.message}`);
+        logger.warning(`Plugin verification failed: ${error.message}`);
         return false;
     }
 }
@@ -1326,7 +1326,7 @@ async function installYtDlpCookiePlugin() {
         }
 
     } catch (error) {
-        logger.warn(`⚠️  ChromeCookieUnlock plugin installation failed: ${error.message}`);
+        logger.warning(`⚠️  ChromeCookieUnlock plugin installation failed: ${error.message}`);
         logger.info('   Cookie authentication will fall back to no-cookie mode when Chrome is open');
         logger.info('   This is not critical - the application will still function normally');
 
