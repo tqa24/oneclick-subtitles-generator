@@ -178,9 +178,11 @@ function createAnalysisVideo(videoPath, outputPath) {
       const frameCount = await getVideoFrameCount(videoPath);
       const duration = await getMediaDuration(videoPath);
 
+      console.log(`[CREATE-ANALYSIS-VIDEO] Video has ${frameCount} frames, duration: ${duration}s`);
+
       // Only create analysis video if the frame count is greater than 500
       if (frameCount <= 500) {
-
+        console.log(`[CREATE-ANALYSIS-VIDEO] Video has ${frameCount} frames (≤500), using original video for analysis`);
 
         resolve({
           path: videoPath,
@@ -194,8 +196,8 @@ function createAnalysisVideo(videoPath, outputPath) {
       // Calculate the frame selection interval to get exactly 500 frames
       const frameInterval = frameCount / 500;
 
-
-
+      console.log(`[CREATE-ANALYSIS-VIDEO] Creating analysis video with ${frameCount} frames -> 500 frames (interval: ${frameInterval})`);
+      console.log(`[CREATE-ANALYSIS-VIDEO] Output path: ${outputPath}`);
 
       // Construct ffmpeg command to select frames and maintain audio
       const ffmpegArgs = [
@@ -236,6 +238,10 @@ function createAnalysisVideo(videoPath, outputPath) {
           // Get the duration of the analysis video
           const analysisDuration = await getMediaDuration(outputPath);
           const analysisFrameCount = await getVideoFrameCount(outputPath);
+
+          console.log(`[CREATE-ANALYSIS-VIDEO] Analysis video created successfully:`);
+          console.log(`[CREATE-ANALYSIS-VIDEO] - Original frames: ${frameCount}, Analysis frames: ${analysisFrameCount}`);
+          console.log(`[CREATE-ANALYSIS-VIDEO] - Duration: ${analysisDuration}s, Path: ${outputPath}`);
 
 
 

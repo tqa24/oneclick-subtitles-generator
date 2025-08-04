@@ -123,10 +123,22 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
   const optimizedVideoUrl = `${SERVER_URL}${result.optimizedVideo}`;
 
   // Check if we have an analysis video available
-  const useAnalysisVideo = result.analysis && result.analysis.video;
+  // If the analysis video is the same as the optimized video (≤500 frames), don't fetch it again
+  const hasAnalysisVideo = result.analysis && result.analysis.video;
+  const isAnalysisVideoSeparate = hasAnalysisVideo && result.analysis.video !== result.optimizedVideo;
+  const useAnalysisVideo = isAnalysisVideoSeparate;
   const videoToFetch = useAnalysisVideo ?
     `${SERVER_URL}${result.analysis.video}` :
     optimizedVideoUrl;
+
+  console.log('[OPTIMIZE-VIDEO] Analysis video info:', {
+    hasAnalysisVideo,
+    analysisVideoPath: result.analysis?.video,
+    optimizedVideoPath: result.optimizedVideo,
+    isAnalysisVideoSeparate,
+    useAnalysisVideo,
+    videoToFetch
+  });
 
   // Log which video we're using for analysis
   if (useAnalysisVideo) {

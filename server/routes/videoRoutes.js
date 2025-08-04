@@ -660,11 +660,20 @@ router.post('/optimize-existing-file', async (req, res) => {
       width: optimizedResult.width,
       height: optimizedResult.height,
       wasOptimized: optimizedResult.optimized !== false,
-      analysis: analysisResult ? {
+      analysis: analysisResult ? (analysisResult.isOriginal ? {
+        // If the video has fewer than 500 frames, we use the optimized video
+        video: `/videos/${optimizedFilename}`,
+        frameCount: analysisResult.frameCount,
+        duration: analysisResult.duration,
+        message: 'Using optimized video for analysis (fewer than 500 frames)'
+      } : {
         video: `/videos/${analysisFilename}`,
         frameCount: analysisResult.frameCount,
-        duration: analysisResult.duration
-      } : null,
+        duration: analysisResult.duration,
+        originalFrameCount: analysisResult.originalFrameCount,
+        frameInterval: analysisResult.frameInterval,
+        message: `Created 500-frame analysis video from ${analysisResult.originalFrameCount} original frames`
+      }) : null,
       message: 'Video optimized successfully from existing file'
     });
   } catch (error) {
