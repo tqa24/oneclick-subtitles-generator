@@ -2,6 +2,7 @@
  * Hook for handling aligned narration generation
  */
 import { useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   // isAlignedNarrationAvailable is imported but not used
   // isAlignedNarrationAvailable,
@@ -31,6 +32,7 @@ const useAlignedNarrationGeneration = ({
   useAlignedMode,
   state
 }) => {
+  const { t } = useTranslation();
   const {
     isGeneratingAligned,
     setIsGeneratingAligned,
@@ -58,17 +60,20 @@ const useAlignedNarrationGeneration = ({
     if (!generationResults || generationResults.length === 0) {
       console.error('Cannot generate aligned narration: no narration results available');
 
+      // Get localized error message
+      const localizedMessage = t('errors.noNarrationResults', 'No narration results to generate aligned audio');
+
       // Set the status to error
       setAlignedStatus({
         status: 'error',
-        message: 'No narration results available for alignment'
+        message: localizedMessage
       });
 
       // Dispatch events to clear the overlay
       window.dispatchEvent(new CustomEvent('aligned-narration-status', {
         detail: {
           status: 'error',
-          message: 'No narration results available for alignment',
+          message: localizedMessage,
           isStillGenerating: false
         }
       }));
@@ -175,7 +180,8 @@ const useAlignedNarrationGeneration = ({
     setIsAlignedAvailable,
     setAlignedStatus,
     videoRef,
-    playAlignedNarration
+    playAlignedNarration,
+    t
   ]);
 
   // Generate aligned narration when needed - DISABLED for automatic generation

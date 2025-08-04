@@ -18,6 +18,7 @@
   "invalidSrtFile": "Please select a valid SRT file",
   "invalidSubtitleFile": "Please select a valid SRT or JSON subtitle file",
   "invalidJsonFile": "JSON file must contain an array of subtitles",
+  "noNarrationResults": "No narration results to generate aligned audio",
   "invalidJsonFormat": "Invalid JSON format",
   "invalidJsonStructure": "JSON subtitles must have start, end, and text properties"
 }

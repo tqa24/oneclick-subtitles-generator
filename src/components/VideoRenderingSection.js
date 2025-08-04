@@ -725,7 +725,15 @@ const VideoRenderingSection = ({
 
     } catch (error) {
       console.error('Error during aligned narration regeneration:', error);
-      setError(error.message || 'Failed to refresh narration');
+
+      // Dispatch aligned-narration-status event for auto-dismissing toast
+      window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+        detail: {
+          status: 'error',
+          message: error.message || 'Failed to refresh narration',
+          isStillGenerating: false
+        }
+      }));
     } finally {
       setIsRefreshingNarration(false);
     }

@@ -712,7 +712,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                 <h3>{t('backgroundGenerator.generatedImage', 'Generated Image')}</h3>
                 <div className="image-header-buttons">
                   {generatedImages.length > 0 && (
-                    <button className="header-action-button" onClick={clearGeneratedImages} title={t('backgroundGenerator.clearImages', 'Clear All Images')}>
+                    <button className="header-action-button" onClick={clearGeneratedImages} title={t('backgroundGenerator.clearImagesTitle', 'Clear All Images')}>
                       <FiX size={16} />
                       <span>{t('backgroundGenerator.clearImages', 'Clear')}</span>
                     </button>

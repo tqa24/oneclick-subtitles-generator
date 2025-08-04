@@ -508,7 +508,7 @@ async function clearSpecificCacheType(directory, key, details, type) {
   }
 
   // Handle special cases for recursive directories
-  if (type === 'uploads' || type === 'videoRendererUploads') {
+  if (type === 'uploads' || type === 'videoRendererUploads' || type === 'narrationOutput') {
     const clearDirectory = async (dirPath, prefix = '') => {
       const items = fs.readdirSync(dirPath);
       for (const item of items) {

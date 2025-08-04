@@ -29,5 +29,7 @@
   "samePromptCountTooltip": "Number of images to generate using the same prompt",
   "expand": "Expand",
   "collapse": "Collapse",
+  "clearImages": "Clear",
+  "clearImagesTitle": "Clear All Images",
   "helperMessage": "You can use your custom lyrics and album art here or press \"Thêm phụ đề\" and fetch from Genius"
 }

@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import LiquidGlass from '../common/LiquidGlass';
 import LoadingIndicator from '../common/LoadingIndicator';
 import { extractAndDownloadAudio } from '../../utils/fileUtils';
-import { SERVER_URL } from '../../config';
 
 const VideoTopsideButtons = ({
   showCustomControls,
@@ -99,7 +98,7 @@ const VideoTopsideButtons = ({
               }
 
               if (generationResults.length === 0) {
-                throw new Error('No narration results to generate aligned audio');
+                throw new Error(t('errors.noNarrationResults', 'No narration results to generate aligned audio'));
               }
 
               // EXACT same subtitle timing lookup as VideoRenderingSection.js
@@ -406,7 +405,15 @@ const VideoTopsideButtons = ({
 
             } catch (error) {
               console.error('Error during aligned narration regeneration:', error);
-              setError(error.message || 'Failed to refresh narration');
+
+              // Dispatch aligned-narration-status event for auto-dismissing toast
+              window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+                detail: {
+                  status: 'error',
+                  message: error.message || 'Failed to refresh narration',
+                  isStillGenerating: false
+                }
+              }));
             } finally {
               // Clear refreshing state
               setIsRefreshingNarration(false);
@@ -631,7 +638,6 @@ const VideoTopsideButtons = ({
             const currentVideoUrl = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
 
             // Show loading state
-            setError('');
             setIsAudioDownloading(true);
 
             // Extract and download audio - our utility function now handles blob URLs properly
@@ -642,12 +648,14 @@ const VideoTopsideButtons = ({
 
             // Show error if failed
             if (!success) {
-              setError(t('preview.audioExtractionError', 'Failed to extract audio from video. Please try again.'));
-
-              // Clear error after 5 seconds
-              setTimeout(() => {
-                setError('');
-              }, 5000);
+              // Dispatch aligned-narration-status event for auto-dismissing toast
+              window.dispatchEvent(new CustomEvent('aligned-narration-status', {
+                detail: {
+                  status: 'error',
+                  message: t('preview.audioExtractionError', 'Failed to extract audio from video. Please try again.'),
+                  isStillGenerating: false
+                }
+              }));
             }
           }}
         >

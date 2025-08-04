@@ -144,12 +144,15 @@ const CacheTab = () => {
         });
 
         // Refresh cache info to update the display
+        console.log(`🔄 Refreshing cache info after successful clear`);
         await fetchCacheInfoQuietly();
+        console.log(`✅ Individual cache clear completed successfully`);
       } else {
+        console.error(`❌ Cache clear failed:`, data);
         throw new Error(data.error || `Failed to clear ${displayName}`);
       }
     } catch (error) {
-      console.error(`Error clearing ${cacheType} cache:`, error);
+      console.error(`❌ Error clearing ${cacheType} cache:`, error);
       setCacheStatus({
         message: t('settings.individualCacheClearError', 'Error clearing {{displayName}}: {{errorMessage}}', {
           displayName,
@@ -484,7 +487,10 @@ const CacheTab = () => {
                     <button
                       type="button"
                       className="remove-key"
-                      onClick={() => handleClearIndividualCache('narrationOutput', t('settings.narrationOutput', 'Narration Output Audio'))}
+                      onClick={() => {
+                        console.log('🖱️ Narration Output cache clear button clicked');
+                        handleClearIndividualCache('narrationOutput', t('settings.narrationOutput', 'Narration Output Audio'));
+                      }}
                       disabled={clearingCache}
                       title={t('settings.clearNarrationOutput', 'Clear Narration Output Audio')}
                     >

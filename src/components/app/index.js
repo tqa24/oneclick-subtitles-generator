@@ -6,6 +6,7 @@ import { useAppHandlers } from './AppHandlers';
 import { useModalHandlers } from './ModalHandlers';
 import { useAppEffects } from './AppEffects';
 import OnboardingBanner from '../OnboardingBanner';
+import AutoDismissErrorToast from '../common/AutoDismissErrorToast';
 import { initializeAudioAlignmentNotifications } from '../../utils/audioAlignmentNotification';
 
 // Import CSS files
@@ -18,6 +19,7 @@ import '../../styles/TranscriptionRulesEditor.css';
 import '../../styles/OnboardingBanner.css';
 // Removed spinner-fix.css - now using LoadingIndicator component
 import '../../styles/lyrics/save-message.css'; // Audio alignment notification styles
+import '../../styles/common/auto-dismiss-error-toast.css'; // Auto-dismiss error toast styles
 
 /**
  * Main App component
@@ -53,6 +55,9 @@ function App() {
     <>
       {/* Onboarding banner for first-time visitors - rendered at the top level */}
       <OnboardingBanner />
+
+      {/* Auto-dismiss error toast for global error notifications */}
+      <AutoDismissErrorToast />
 
       <AppLayout
         appState={appState}

@@ -2,6 +2,7 @@
  * Service for managing aligned narration audio
  */
 import { SERVER_URL } from '../config';
+import i18n from '../i18n/i18n';
 
 // Cache for the aligned narration audio
 let alignedNarrationCache = {
@@ -22,7 +23,8 @@ let alignedAudioElement = null;
  */
 export const generateAlignedNarration = async (generationResults, onProgress = null) => {
   if (!generationResults || generationResults.length === 0) {
-    console.error('No narration results to generate aligned audio');
+    const errorMessage = i18n.t('errors.noNarrationResults', 'No narration results to generate aligned audio');
+    console.error(errorMessage);
     return null;
   }
 

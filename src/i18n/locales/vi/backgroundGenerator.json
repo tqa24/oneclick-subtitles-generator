@@ -29,5 +29,7 @@
   "samePromptCountTooltip": "Số lượng hình ảnh cần tạo sử dụng cùng một điểm nhấn",
   "expand": "Mở rộng",
   "collapse": "Thu gọn",
+  "clearImages": "Xóa",
+  "clearImagesTitle": "Xóa tất cả hình ảnh",
   "helperMessage": "Bạn có thể sử dụng lời bài hát và ảnh bìa album tùy chỉnh ở đây hoặc nhấn \"Thêm phụ đề\" và lấy từ Genius"
 }
