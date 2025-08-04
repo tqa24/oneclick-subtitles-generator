@@ -335,9 +335,9 @@ const LoadingIndicator = ({
         import('./LoadingIndicator/morph-fixed.js')
       ]);
 
-      // Create refined collection of 39 diverse shapes!
+      // Create refined collection of 38 diverse shapes!
       const shapes = [];
-      for (let i = 0; i < 39; i++) {
+      for (let i = 0; i < 38; i++) {
         shapes.push(createFallbackShape(i, RoundedPolygon));
       }
       animationState.current.morphShapes = shapes;
@@ -385,7 +385,7 @@ const LoadingIndicator = ({
       case 22: return createRingShape(16, RoundedPolygon); // Ring/Donut (fixed)
       case 23: return createPillShape(18, RoundedPolygon); // Pill/Capsule
       case 24: return createBoneShape(18, RoundedPolygon); // Bone
-      case 25: return createMountainShape(18, RoundedPolygon); // Mountain
+      case 25: return createMountainShape(14, RoundedPolygon); // Mountain
       case 26: return createFishShape(18, RoundedPolygon); // Fish
       case 27: return createTreeShape(17, RoundedPolygon); // Tree
       case 28: return createCactusShape(15, RoundedPolygon); // Cactus
@@ -393,12 +393,11 @@ const LoadingIndicator = ({
       case 30: return createBottleShape(14, RoundedPolygon); // Bottle
       case 31: return createBookShape(16, RoundedPolygon); // Book
       case 32: return createPhoneShape(14, RoundedPolygon); // Phone
-      case 33: return createLaptopShape(18, RoundedPolygon); // Laptop (wider bottom)
-      case 34: return createCameraShape(16, RoundedPolygon); // Camera
-      case 35: return createPuzzlePieceShape(16, RoundedPolygon); // Puzzle Piece (simplified)
-      case 36: return createAnchorShape(16, RoundedPolygon); // Anchor
-      case 37: return createCrownShape(17, RoundedPolygon); // Crown
-      case 38: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
+      case 33: return createCameraShape(16, RoundedPolygon); // Camera
+      case 34: return createPuzzlePieceShape(16, RoundedPolygon); // Puzzle Piece (simplified)
+      case 35: return createAnchorShape(16, RoundedPolygon); // Anchor
+      case 36: return createCrownShape(17, RoundedPolygon); // Crown
+      case 37: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
       default: return createCirclePolygon(15, 8, RoundedPolygon);
     }
   };
@@ -922,17 +921,7 @@ const LoadingIndicator = ({
     return new RoundedPolygon(vertices, 8);
   };
 
-  const createLaptopShape = (size, RoundedPolygon) => {
-    const vertices = new Float32Array([
-      -size * 1.0, size * 0.3, // Base left (wider)
-      size * 1.0, size * 0.3, // Base right (wider)
-      size * 0.9, size * 0.1, // Base edge
-      size * 0.5, -size * 0.8, // Screen right (narrower)
-      -size * 0.5, -size * 0.8, // Screen left (narrower)
-      -size * 0.9, size * 0.1 // Base edge
-    ]);
-    return new RoundedPolygon(vertices, 5);
-  };
+
 
   const createCameraShape = (size, RoundedPolygon) => {
     const vertices = new Float32Array([
@@ -946,17 +935,16 @@ const LoadingIndicator = ({
 
   const createPuzzlePieceShape = (size, RoundedPolygon) => {
     const vertices = new Float32Array([
-      // 3/4 of a square with simple notch
+      // Main square outline with one corner cut out
       -size * 0.8, -size * 0.8, // Top left
       size * 0.8, -size * 0.8, // Top right
-      size * 0.8, size * 0.2, // Right middle
-      size * 0.4, size * 0.2, // Notch start
-      size * 0.4, size * 0.4, // Notch down
-      size * 0.6, size * 0.4, // Notch across
-      size * 0.6, size * 0.8, // Notch end
-      -size * 0.8, size * 0.8 // Bottom left
+      size * 0.8, 0, // Right middle
+      0, 0, // Center (cut corner start)
+      0, size * 0.8, // Bottom middle
+      -size * 0.8, size * 0.8, // Bottom left
+      -size * 0.8, -size * 0.8 // Back to start
     ]);
-    return new RoundedPolygon(vertices, 3);
+    return new RoundedPolygon(vertices, 4);
   };
 
 

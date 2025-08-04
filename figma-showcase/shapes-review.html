@@ -212,12 +212,11 @@
             { name: "Bottle", index: 30 },
             { name: "Book", index: 31 },
             { name: "Phone", index: 32 },
-            { name: "Laptop (Wide Bottom)", index: 33 },
-            { name: "Camera", index: 34 },
-            { name: "Puzzle Piece (Simple)", index: 35 },
-            { name: "Anchor", index: 36 },
-            { name: "Crown", index: 37 },
-            { name: "8-pointed Star", index: 38 }
+            { name: "Camera", index: 33 },
+            { name: "Puzzle Piece (Simple)", index: 34 },
+            { name: "Anchor", index: 35 },
+            { name: "Crown", index: 36 },
+            { name: "8-pointed Star", index: 37 }
         ];
 
         let currentTheme = 'light';
@@ -522,15 +521,7 @@
         function createBottleShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.2, -size, size * 0.2, -size, size * 0.2, -size * 0.7, size * 0.4, -size * 0.7, size * 0.4, size * 0.8, -size * 0.4, size * 0.8, -size * 0.4, -size * 0.7, -size * 0.2, -size * 0.7]), 4); }
         function createBookShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.8, -size * 0.6, size * 0.8, -size * 0.6, size * 0.8, size * 0.6, -size * 0.8, size * 0.6]), 3); }
         function createPhoneShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.4, -size, size * 0.4, -size, size * 0.4, size, -size * 0.4, size]), 8); }
-        function createLaptopShape(size, RoundedPolygon) {
-            const vertices = new Float32Array([
-                -size * 0.9, size * 0.2, // Bottom left (wider)
-                size * 0.9, size * 0.2, // Bottom right (wider)
-                size * 0.5, -size * 0.8, // Top right (screen)
-                -size * 0.5, -size * 0.8 // Top left (screen)
-            ]);
-            return new RoundedPolygon(vertices, 4);
-        }
+
         function createCameraShape(size, RoundedPolygon) { return new RoundedPolygon(new Float32Array([-size * 0.8, -size * 0.2, size * 0.8, -size * 0.2, size * 0.8, size * 0.6, -size * 0.8, size * 0.6]), 3); }
 
         function createPuzzlePieceShape(size, RoundedPolygon) {
@@ -578,7 +569,7 @@
                 case 22: return createRingShape(16, RoundedPolygon); // Fixed ring
                 case 23: return createPillShape(18, RoundedPolygon);
                 case 24: return createBoneShape(18, RoundedPolygon);
-                case 25: return createMountainShape(18, RoundedPolygon);
+                case 25: return createMountainShape(14, RoundedPolygon);
                 case 26: return createFishShape(18, RoundedPolygon);
                 case 27: return createTreeShape(17, RoundedPolygon);
                 case 28: return createCactusShape(15, RoundedPolygon);
@@ -586,12 +577,11 @@
                 case 30: return createBottleShape(14, RoundedPolygon);
                 case 31: return createBookShape(16, RoundedPolygon);
                 case 32: return createPhoneShape(14, RoundedPolygon);
-                case 33: return createLaptopShape(18, RoundedPolygon); // Wide bottom laptop
-                case 34: return createCameraShape(16, RoundedPolygon);
-                case 35: return createPuzzlePieceShape(16, RoundedPolygon); // Simple puzzle piece
-                case 36: return createAnchorShape(16, RoundedPolygon);
-                case 37: return createCrownShape(17, RoundedPolygon);
-                case 38: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
+                case 33: return createCameraShape(16, RoundedPolygon);
+                case 34: return createPuzzlePieceShape(16, RoundedPolygon); // Simple puzzle piece
+                case 35: return createAnchorShape(16, RoundedPolygon);
+                case 36: return createCrownShape(17, RoundedPolygon);
+                case 37: return createStarPolygon(12, 8, RoundedPolygon); // 8-pointed Star
                 default: return createCirclePolygon(15, 8, RoundedPolygon);
             }
         }
