@@ -161,18 +161,7 @@
   flex-shrink: 0;
 }
 
-/* Spinner animation for loading states */
-.spinner-circle {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(var(--md-primary-rgb), 0.3);
-  border-radius: 50%;
-  border-top-color: var(--md-primary);
-  animation: spin 1s linear infinite;
-  margin-right: 0.5rem;
-  flex-shrink: 0;
-}
+/* Old spinner-circle styles removed - now using LoadingIndicator component */
 
 @keyframes spin {
   to { transform: rotate(360deg); }

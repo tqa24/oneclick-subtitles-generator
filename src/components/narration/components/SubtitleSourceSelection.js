@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import CloseButton from '../../common/CloseButton';
+import LoadingIndicator from '../../common/LoadingIndicator';
 import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import {
@@ -451,7 +452,12 @@ const SubtitleSourceSelection = ({
                 <label htmlFor="source-original">
                   {isDetectingOriginal ? (
                     <span className="loading-animation">
-                      <span className="spinner-circle"></span>
+                      <LoadingIndicator
+                        theme="dark"
+                        showContainer={false}
+                        size={18}
+                        className="language-detection-loading"
+                      />
                       {t('narration.detectingLanguage', 'Detecting language...')}
                     </span>
                   ) : (
@@ -476,7 +482,12 @@ const SubtitleSourceSelection = ({
                 <label htmlFor="source-translated">
                   {isDetectingTranslated ? (
                     <span className="loading-animation">
-                      <span className="spinner-circle"></span>
+                      <LoadingIndicator
+                        theme="dark"
+                        showContainer={false}
+                        size={18}
+                        className="language-detection-loading"
+                      />
                       {t('narration.detectingLanguage', 'Detecting language...')}
                     </span>
                   ) : (
@@ -631,7 +642,12 @@ const SubtitleSourceSelection = ({
             <div className="modal-body">
               {isLoadingModels ? (
                 <div className="loading-animation modal-loading">
-                  <span className="spinner-circle"></span>
+                  <LoadingIndicator
+                    theme="dark"
+                    showContainer={false}
+                    size={24}
+                    className="model-loading-indicator"
+                  />
                   <span>{t('narration.loadingModels', 'Loading models...')}</span>
                 </div>
               ) : availableModels.length > 0 ? (

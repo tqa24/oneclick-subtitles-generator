@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LiquidGlass from '../common/LiquidGlass';
+import LoadingIndicator from '../common/LoadingIndicator';
 import { extractAndDownloadAudio } from '../../utils/fileUtils';
 import { SERVER_URL } from '../../config';
 
@@ -427,9 +428,13 @@ const VideoTopsideButtons = ({
             {isRefreshingNarration ? (
               // Show loading spinner when refreshing
               <>
-                <svg className="spinner" width="22" height="22" viewBox="0 0 24 24" style={{ color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))' }}>
-                  <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
-                </svg>
+                <LoadingIndicator
+                  theme="light"
+                  showContainer={false}
+                  size={22}
+                  className="narration-refresh-loading"
+                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))' }}
+                />
                 <span style={{ color: 'white', fontSize: '13px', fontWeight: '600', textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)' }}>
                   {t('preview.refreshingNarration', 'Refreshing...')}
                 </span>
@@ -662,9 +667,13 @@ const VideoTopsideButtons = ({
             {isAudioDownloading ? (
               // Material Design loading spinner
               <>
-                <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" style={{ color: 'white', filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))' }}>
-                  <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
-                </svg>
+                <LoadingIndicator
+                  theme="light"
+                  showContainer={false}
+                  size={20}
+                  className="audio-download-loading"
+                  style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8))' }}
+                />
                 <span style={{ color: 'white', fontSize: '13px', fontWeight: '600', textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)' }}>
                   {t('preview.downloadingAudio', 'Downloading...')}
                 </span>

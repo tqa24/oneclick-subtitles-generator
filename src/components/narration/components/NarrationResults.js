@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
+import LoadingIndicator from '../../common/LoadingIndicator';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
@@ -594,7 +595,12 @@ const NarrationResults = ({
           loadedFromCache ? (
             // Show loading indicator when loading from cache
             <div className="loading-from-cache-message">
-              <div className="loading-spinner-small"></div>
+              <LoadingIndicator
+                theme="dark"
+                showContainer={false}
+                size={24}
+                className="cache-loading-indicator"
+              />
               {t('narration.loadingFromCache', 'Loading narrations from previous session...')}
             </div>
           ) : (

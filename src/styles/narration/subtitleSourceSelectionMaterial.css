@@ -350,21 +350,7 @@
   gap: 8px;
 }
 
-.spinner-circle {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(var(--md-primary-rgb), 0.3);
-  border-top-color: var(--md-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* Old spinner-circle styles removed - now using LoadingIndicator component */
 
 /* Model checking styles */
 .model-checking {

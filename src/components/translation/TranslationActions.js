@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import BulkTranslationPool from './BulkTranslationPool';
+import LoadingIndicator from '../common/LoadingIndicator';
 import { parseSrtContent } from '../../utils/srtParser';
 
 /**
@@ -210,10 +211,12 @@ const TranslationActions = ({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                    <span
-                      className="loading-spinner translate-spinner"
-                      aria-hidden="true"
-                    ></span>
+                    <LoadingIndicator
+                      theme="light"
+                      showContainer={false}
+                      size={16}
+                      className="translation-loading-indicator"
+                    />
                   </div>
                   <span>{t('translation.translating', 'Translating...')}</span>
                 </div>

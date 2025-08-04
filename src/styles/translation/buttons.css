@@ -191,37 +191,7 @@
   box-shadow: var(--md-elevation-level1);
 }
 
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin: 0;
-  vertical-align: middle;
-  position: relative;
-  top: 0; /* Reset to 0 since we're handling alignment in the parent container */
-}
-
-/* Specific styling for the loading spinner in the translate button */
-.translate-spinner {
-  position: relative;
-  top: 0; /* Reset top position */
-  margin: 0; /* Reset margins */
-  width: 16px !important; /* Force the width to be 16px */
-  height: 16px !important; /* Force the height to be 16px */
-  border-width: 2px !important; /* Force the border width to be 2px */
-  vertical-align: middle !important; /* Ensure vertical alignment */
-  display: inline-block !important; /* Ensure proper display */
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* Old loading spinner styles removed - now using LoadingIndicator component */
 
 /* Style for the model dropdown in translation section */
 .translate-model-dropdown {

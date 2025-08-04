@@ -371,13 +371,4 @@ input, select, textarea {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Fix for loading spinners not rotating */
-.loading-spinner, .translate-spinner, .spinner-circle {
-  animation: spin 1s linear infinite !important;
-  transform-origin: center !important;
-  will-change: transform !important;
-}
+/* Old loading spinner styles removed - now using LoadingIndicator component */

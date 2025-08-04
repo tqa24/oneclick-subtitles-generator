@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next';
 import { convertAudioToVideo } from '../../utils/audioToVideoConverter';
 import { SERVER_URL } from '../../config';
+import LoadingIndicator from '../common/LoadingIndicator';
 import '../../styles/FileUploadInput.css';
 
 const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, className, isSrtOnlyMode, setIsSrtOnlyMode, setStatus, subtitlesData, setVideoSegments, setSegmentsStatus }) => {
@@ -348,18 +349,12 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
       {isLoading ? (
         <div className="upload-content loading">
-          <svg className="loading-icon" viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" strokeWidth="2" fill="none">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
-              <animateTransform
-                attributeName="transform"
-                type="rotate"
-                from="0 12 12"
-                to="360 12 12"
-                dur="1s"
-                repeatCount="indefinite"
-              />
-            </path>
-          </svg>
+          <LoadingIndicator
+            theme="dark"
+            showContainer={true}
+            size={48}
+            className="file-upload-loading"
+          />
           <h3>{t('fileUpload.processing', 'Processing media...')}</h3>
           <p>{t('fileUpload.pleaseWait', 'Please wait while we process your file')}</p>
         </div>
@@ -402,18 +397,13 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
             {fileInfo && (fileInfo.converting || fileInfo.copying) ? (
               <div className="converting-indicator">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" style={{ marginRight: '6px' }}>
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
-                    <animateTransform
-                      attributeName="transform"
-                      type="rotate"
-                      from="0 12 12"
-                      to="360 12 12"
-                      dur="1s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                </svg>
+                <LoadingIndicator
+                  theme="dark"
+                  showContainer={false}
+                  size={16}
+                  className="file-converting-loading"
+                  style={{ marginRight: '6px' }}
+                />
                 {fileInfo.converting
                   ? t('fileUpload.processing', 'Processing media...')
                   : fileInfo.copying
