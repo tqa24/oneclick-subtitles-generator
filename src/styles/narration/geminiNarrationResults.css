@@ -234,15 +234,7 @@
   box-shadow: var(--md-elevation-level1);
 }
 
-/* Spinner animation for retry button */
-.spinner {
-  animation: spin 1.5s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 /* Pill button styling for audio controls */
 .audio-controls .pill-button {

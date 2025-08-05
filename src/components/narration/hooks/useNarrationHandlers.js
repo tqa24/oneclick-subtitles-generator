@@ -1,3 +1,6 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import LoadingIndicator from '../../common/LoadingIndicator';
 import { transcribeAudio } from '../../../services/transcriptionService';
 import {
   uploadReferenceAudio,
@@ -8,6 +11,77 @@ import {
   cancelNarrationGeneration
 } from '../../../services/narrationService';
 import { isModelAvailable } from '../../../services/modelAvailabilityService';
+
+/**
+ * Create a React-based loading overlay with LoadingIndicator component
+ * @param {string} message - Initial loading message
+ * @returns {Object} - Object with container element, root, and update function
+ */
+const createLoadingOverlay = (message) => {
+  // Create container element
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '50%';
+  container.style.left = '50%';
+  container.style.transform = 'translate(-50%, -50%)';
+  container.style.padding = '24px';
+  container.style.background = 'rgba(0, 0, 0, 0.85)';
+  container.style.borderRadius = '16px';
+  container.style.zIndex = '9999';
+  container.style.textAlign = 'center';
+  container.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+  container.style.minWidth = '280px';
+  container.style.backdropFilter = 'blur(8px)';
+
+  // Create React root
+  const root = createRoot(container);
+
+  // Loading component
+  const LoadingOverlay = ({ message }) => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '16px',
+      color: 'white'
+    }}>
+      <LoadingIndicator
+        theme="light"
+        showContainer={false}
+        size={48}
+        className="download-loading-indicator"
+      />
+      <div style={{
+        fontSize: '16px',
+        fontWeight: '500',
+        textAlign: 'center',
+        lineHeight: '1.4'
+      }}>
+        {message}
+      </div>
+    </div>
+  );
+
+  // Render initial state
+  root.render(<LoadingOverlay message={message} />);
+
+  // Add to document
+  document.body.appendChild(container);
+
+  return {
+    container,
+    root,
+    updateMessage: (newMessage) => {
+      root.render(<LoadingOverlay message={newMessage} />);
+    },
+    destroy: () => {
+      root.unmount();
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+    }
+  };
+};
 
 /**
  * Custom hook for narration handlers
@@ -823,20 +897,8 @@ const useNarrationHandlers = ({
       return;
     }
 
-    // Create a loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'loading-indicator';
-    loadingIndicator.style.position = 'fixed';
-    loadingIndicator.style.top = '50%';
-    loadingIndicator.style.left = '50%';
-    loadingIndicator.style.transform = 'translate(-50%, -50%)';
-    loadingIndicator.style.padding = '20px';
-    loadingIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
-    loadingIndicator.style.color = 'white';
-    loadingIndicator.style.borderRadius = '5px';
-    loadingIndicator.style.zIndex = '9999';
-    loadingIndicator.textContent = t('narration.downloading', 'Downloading audio files...');
-    document.body.appendChild(loadingIndicator);
+    // Create a React-based loading overlay
+    const loadingOverlay = createLoadingOverlay(t('narration.downloading', 'Downloading audio files...'));
 
     try {
       // Get the server URL from the narration service
@@ -900,8 +962,8 @@ const useNarrationHandlers = ({
       console.error('Error downloading all audio:', error);
       alert(t('narration.downloadError', `Error downloading audio files: ${error.message}`));
     } finally {
-      // Remove loading indicator
-      document.body.removeChild(loadingIndicator);
+      // Remove loading overlay
+      loadingOverlay.destroy();
     }
   };
 
@@ -913,20 +975,8 @@ const useNarrationHandlers = ({
       return;
     }
 
-    // Create a loading indicator
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'loading-indicator';
-    loadingIndicator.style.position = 'fixed';
-    loadingIndicator.style.top = '50%';
-    loadingIndicator.style.left = '50%';
-    loadingIndicator.style.transform = 'translate(-50%, -50%)';
-    loadingIndicator.style.padding = '20px';
-    loadingIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
-    loadingIndicator.style.color = 'white';
-    loadingIndicator.style.borderRadius = '5px';
-    loadingIndicator.style.zIndex = '9999';
-    loadingIndicator.textContent = t('narration.downloading', 'Downloading audio file...');
-    document.body.appendChild(loadingIndicator);
+    // Create a React-based loading overlay
+    const loadingOverlay = createLoadingOverlay(t('narration.downloading', 'Downloading audio file...'));
 
     try {
       // Get the server URL from the narration service
@@ -1093,8 +1143,8 @@ const useNarrationHandlers = ({
       console.error('Error downloading aligned audio:', error);
       alert(t('narration.downloadError', `Error downloading aligned audio file: ${error.message}`));
     } finally {
-      // Remove loading indicator
-      document.body.removeChild(loadingIndicator);
+      // Remove loading overlay
+      loadingOverlay.destroy();
     }
   };
 

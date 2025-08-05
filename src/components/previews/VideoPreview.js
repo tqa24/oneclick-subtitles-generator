@@ -2,6 +2,7 @@
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../common/MaterialSwitch';
 import LiquidGlass from '../common/LiquidGlass';
+import LoadingIndicator from '../common/LoadingIndicator';
 import '../../styles/common/material-switch.css';
 import {
   startYoutubeVideoDownload,
@@ -2233,9 +2234,12 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                 {isRefreshingNarration && (
                   <div className="narration-refresh-overlay">
                     <div className="narration-refresh-content">
-                      <svg className="spinner-large" width="48" height="48" viewBox="0 0 24 24">
-                        <circle className="path" cx="12" cy="12" r="10" fill="none" strokeWidth="3"></circle>
-                      </svg>
+                      <LoadingIndicator
+                        theme="light"
+                        showContainer={false}
+                        size={48}
+                        className="narration-refresh-loading"
+                      />
                       <div className="narration-refresh-text">
                         {t('preview.refreshingNarration', 'Refreshing narration...')}
                       </div>

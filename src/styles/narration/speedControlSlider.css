@@ -102,19 +102,7 @@
   max-width: 100px;
 }
 
-.speed-control-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--md-surface);
-  border-top: 2px solid var(--md-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 @keyframes pulse {
   0% { opacity: 0.7; }

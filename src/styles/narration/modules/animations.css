@@ -53,10 +53,7 @@
   }
 }
 
-/* Spinner animation for retry button */
-.spinner {
-  animation: spin 1.5s linear infinite;
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 /* Narration method transition animations */
 .narration-content-container {

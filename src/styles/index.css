@@ -361,14 +361,6 @@ input, select, textarea {
   border-left: 4px solid var(--md-secondary);
 }
 
-.status-loading::before {
-  content: "";
-  width: 20px;
-  height: 20px;
-  border: 3px solid var(--info-color);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+/* Old loading spinner styles removed - now using LoadingIndicator component */
 
 /* Old loading spinner styles removed - now using LoadingIndicator component */

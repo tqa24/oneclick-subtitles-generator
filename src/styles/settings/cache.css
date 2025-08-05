@@ -83,20 +83,7 @@
   gap: 8px;
 }
 
-.cache-loading p::after {
-  content: '';
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--md-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 .cache-description {
   margin: 0.5rem 0 1rem;

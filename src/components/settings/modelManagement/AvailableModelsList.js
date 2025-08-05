@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
+import LoadingIndicator from '../../common/LoadingIndicator';
 import { addModelFromHuggingFace, cancelModelDownload } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
 import { AVAILABLE_MODELS, LANGUAGE_NAMES } from '../ModelList';
@@ -206,7 +207,12 @@ const AvailableModelsList = ({
                 </div>
                 <div className="model-card-actions">
                   <div className="download-percentage">
-                    <span className="spinner"></span>
+                    <LoadingIndicator
+                      theme="dark"
+                      showContainer={false}
+                      size={16}
+                      className="download-progress-indicator"
+                    />
                     <span>
                       {/* Always show percentage format only */}
                       {getDownloadProgress(model.id, downloads) ? `${getDownloadProgress(model.id, downloads)}%` : ''}

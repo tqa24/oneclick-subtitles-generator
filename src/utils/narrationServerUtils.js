@@ -3,6 +3,80 @@
  */
 
 import { SERVER_URL } from '../config';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import LoadingIndicator from '../components/common/LoadingIndicator';
+
+/**
+ * Create a React-based loading overlay with LoadingIndicator component
+ * @param {string} message - Initial loading message
+ * @returns {Object} - Object with container element, root, and update function
+ */
+const createLoadingOverlay = (message) => {
+  // Create container element
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '50%';
+  container.style.left = '50%';
+  container.style.transform = 'translate(-50%, -50%)';
+  container.style.padding = '24px';
+  container.style.background = 'rgba(0, 0, 0, 0.85)';
+  container.style.borderRadius = '16px';
+  container.style.zIndex = '9999';
+  container.style.textAlign = 'center';
+  container.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+  container.style.minWidth = '280px';
+  container.style.backdropFilter = 'blur(8px)';
+
+  // Create React root
+  const root = createRoot(container);
+
+  // Loading component
+  const LoadingOverlay = ({ message }) => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '16px',
+      color: 'white'
+    }}>
+      <LoadingIndicator
+        theme="light"
+        showContainer={false}
+        size={48}
+        className="download-loading-indicator"
+      />
+      <div style={{
+        fontSize: '16px',
+        fontWeight: '500',
+        textAlign: 'center',
+        lineHeight: '1.4'
+      }}>
+        {message}
+      </div>
+    </div>
+  );
+
+  // Render initial state
+  root.render(<LoadingOverlay message={message} />);
+
+  // Add to document
+  document.body.appendChild(container);
+
+  return {
+    container,
+    root,
+    updateMessage: (newMessage) => {
+      root.render(<LoadingOverlay message={newMessage} />);
+    },
+    destroy: () => {
+      root.unmount();
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+    }
+  };
+};
 import { base64ToArrayBuffer } from './audioConversionUtils';
 
 /**
@@ -104,50 +178,8 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     return;
   }
 
-  // Create a loading indicator with improved styling
-  const loadingIndicator = document.createElement('div');
-  loadingIndicator.className = 'loading-indicator';
-  loadingIndicator.style.position = 'fixed';
-  loadingIndicator.style.top = '50%';
-  loadingIndicator.style.left = '50%';
-  loadingIndicator.style.transform = 'translate(-50%, -50%)';
-  loadingIndicator.style.padding = '20px';
-  loadingIndicator.style.background = 'rgba(0, 0, 0, 0.8)';
-  loadingIndicator.style.color = 'white';
-  loadingIndicator.style.borderRadius = '8px';
-  loadingIndicator.style.zIndex = '9999';
-  loadingIndicator.style.textAlign = 'center';
-  loadingIndicator.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-  loadingIndicator.style.minWidth = '250px';
-
-  loadingIndicator.innerHTML = `
-    <div class="loading-spinner" style="
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top: 4px solid white;
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 15px auto;
-      animation: spin 1s linear infinite;
-    "></div>
-    <div class="loading-text" style="
-      font-size: 16px;
-      font-weight: bold;
-    ">${t('narration.preparingDownload', 'Preparing aligned narration file...')}</div>
-  `;
-
-  // Add the animation keyframes
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Add the loading indicator to the document
-  document.body.appendChild(loadingIndicator);
+  // Create a React-based loading overlay
+  const loadingOverlay = createLoadingOverlay(t('narration.preparingDownload', 'Preparing aligned narration file...'));
 
 
 
@@ -223,7 +255,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
 
 
     // Update loading indicator text
-    loadingIndicator.querySelector('.loading-text').textContent = t('narration.sendingRequest', 'Sending request to server...');
+    loadingOverlay.updateMessage(t('narration.sendingRequest', 'Sending request to server...'));
 
     let response;
     try {
@@ -265,7 +297,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     }
 
     // Update loading indicator text
-    loadingIndicator.querySelector('.loading-text').textContent = t('narration.processingResponse', 'Processing audio data...');
+    loadingOverlay.updateMessage(t('narration.processingResponse', 'Processing audio data...'));
 
     // Get the blob from the response
     let blob;
@@ -283,7 +315,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     }
 
     // Update loading indicator text
-    loadingIndicator.querySelector('.loading-text').textContent = t('narration.preparingDownload', 'Preparing download...');
+    loadingOverlay.updateMessage(t('narration.preparingDownload', 'Preparing download...'));
 
     // Create a URL for the blob
     let url;
@@ -303,7 +335,7 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     document.body.appendChild(a);
 
     // Update loading indicator text
-    loadingIndicator.querySelector('.loading-text').textContent = t('narration.startingDownload', 'Starting download...');
+    loadingOverlay.updateMessage(t('narration.startingDownload', 'Starting download...'));
 
     // Trigger the download
     try {
@@ -334,10 +366,9 @@ export const downloadAlignedAudio = async (generationResults, t) => {
 
     // Update loading indicator to show error
     try {
-      if (loadingIndicator && document.body.contains(loadingIndicator)) {
-        loadingIndicator.querySelector('.loading-text').textContent = t('narration.downloadError', 'Error downloading audio');
-        loadingIndicator.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
-      }
+      loadingOverlay.updateMessage(t('narration.downloadError', 'Error downloading audio'));
+      // Change overlay background to indicate error
+      loadingOverlay.container.style.background = 'rgba(220, 38, 38, 0.85)';
     } catch (uiError) {
       console.error('Error updating loading indicator:', uiError);
     }
@@ -348,19 +379,9 @@ export const downloadAlignedAudio = async (generationResults, t) => {
     // Short delay before removing the loading indicator to ensure the user sees the error
     await new Promise(resolve => setTimeout(resolve, 1500));
   } finally {
-    // Remove loading indicator and style element
+    // Remove loading overlay
     try {
-      // Remove the loading indicator
-      if (loadingIndicator && document.body.contains(loadingIndicator)) {
-        document.body.removeChild(loadingIndicator);
-
-      }
-
-      // Remove the style element (animation keyframes)
-      if (style && document.head.contains(style)) {
-        document.head.removeChild(style);
-
-      }
+      loadingOverlay.destroy();
     } catch (cleanupError) {
       console.error('Error during final cleanup:', cleanupError);
     }

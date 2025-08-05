@@ -51,19 +51,7 @@
   animation: pulse 2s infinite;
 }
 
-/* Status spinner */
-.status-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--md-tertiary);
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 @keyframes pulse {
   0% { opacity: 1; }

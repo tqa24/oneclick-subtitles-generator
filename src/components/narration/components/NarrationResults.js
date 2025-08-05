@@ -85,10 +85,12 @@ const ResultRow = ({ index, style, data }) => {
               >
                 {retryingSubtitleId === subtitle_id ? (
                   <>
-                    <svg className="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" />
-                    </svg>
+                    <LoadingIndicator
+                      theme="dark"
+                      showContainer={false}
+                      size={14}
+                      className="retry-loading-indicator"
+                    />
                     {t('narration.retrying', 'Retrying...')}
                   </>
                 ) : (
@@ -117,10 +119,12 @@ const ResultRow = ({ index, style, data }) => {
               >
                 {retryingSubtitleId === subtitle_id ? (
                   <>
-                    <svg className="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" />
-                    </svg>
+                    <LoadingIndicator
+                      theme="dark"
+                      showContainer={false}
+                      size={14}
+                      className="retry-loading-indicator"
+                    />
                     {t('narration.retrying', 'Retrying...')}
                   </>
                 ) : (

@@ -81,19 +81,7 @@
   font-weight: 500;
 }
 
-/* Large spinner for narration refresh overlay */
-.spinner-large {
-  animation: rotate 2s linear infinite;
-  width: 48px;
-  height: 48px;
-}
-
-.spinner-large .path {
-  stroke: var(--md-primary, #4a6cf7);
-  stroke-linecap: round;
-  animation: dash 1.5s ease-in-out infinite;
-  stroke-width: 3;
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 .video-container {
   position: relative;
@@ -285,37 +273,7 @@
   border-color: rgba(var(--md-secondary-rgb), 0.3);
 }
 
-/* Material Design spinner animation */
-.download-audio-button .spinner {
-  animation: rotate 1.5s linear infinite;
-}
-
-.download-audio-button .spinner .path {
-  stroke: var(--md-secondary);
-  stroke-linecap: round;
-  animation: dash 1.5s ease-in-out infinite;
-}
-
-@keyframes rotate {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes dash {
-  0% {
-    stroke-dasharray: 1, 150;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -35;
-  }
-  100% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -124;
-  }
-}
+/* Old spinner animations removed - now using LoadingIndicator component */
 
 .download-audio-button svg {
   margin-right: 8px;

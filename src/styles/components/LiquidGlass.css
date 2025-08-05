@@ -237,33 +237,7 @@
   }
 }
 
-/* Video Preview Button Styles */
-.liquid-glass .spinner {
-  animation: spin 1s linear infinite;
-}
-
-.liquid-glass .spinner .path {
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-dasharray: 90, 150;
-  stroke-dashoffset: 0;
-  animation: dash 1.5s ease-in-out infinite;
-}
-
-@keyframes dash {
-  0% {
-    stroke-dasharray: 1, 150;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -35;
-  }
-  100% {
-    stroke-dasharray: 90, 150;
-    stroke-dashoffset: -124;
-  }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 /* Video preview specific button positioning */
 .video-container .liquid-glass {

@@ -115,18 +115,7 @@
   border-radius: 10px;
 }
 
-.loading-circle {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+/* Old spinner styles removed - now using LoadingIndicator component */
 
 /* Dismissing animations */
 .onboarding-overlay.dismissing {
