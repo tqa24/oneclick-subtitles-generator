@@ -22,5 +22,7 @@
   "songPlaceholder": "노래 제목 입력",
   "fetch": "가져오기",
   "fetching": "가져오는 중...",
-  "cleaning": "가사 정리 중..."
+  "cleaning": "가사 정리 중...",
+  "processing": "처리 중...",
+  "clearSubtitles": "자막 지우기"
 }

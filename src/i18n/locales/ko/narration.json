@@ -225,5 +225,13 @@
   "cancel": "취소",
   "clear": "지우기",
   "recommendedVoices": "{{language}}에 추천",
-  "recommendedLanguage": "{{language}}에 추천"
+  "recommendedLanguage": "{{language}}에 추천",
+
+  "loadingFromCache": "이전 세션에서 나레이션 로딩 중...",
+  "edgeTTSStarting": "Edge TTS 생성 시작 중...",
+  "edgeTTSGeneratingProgress": "Edge TTS로 {{total}}개 중 {{current}}개 나레이션 생성 중...",
+  "edgeTTSRetryingFailed": "실패한 Edge TTS 나레이션 재시도 중...",
+  "edgeTTSRetryComplete": "Edge TTS 재시도 완료!",
+  "gttsStarting": "gTTS 생성 시작 중...",
+  "gttsGeneratingProgress": "gTTS로 {{total}}개 중 {{current}}개 나레이션 생성 중..."
 }

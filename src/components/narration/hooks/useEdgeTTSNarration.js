@@ -113,7 +113,7 @@ const useEdgeTTSNarration = ({
         settings: settings
       };
 
-      setGenerationStatus(t('narration.edgeTTSGeneratingProgress', 'Starting Edge TTS generation...'));
+      setGenerationStatus(t('narration.edgeTTSStarting', 'Starting Edge TTS generation...'));
 
       const response = await fetch(`${SERVER_URL}/api/narration/edge-tts/generate`, {
         method: 'POST',

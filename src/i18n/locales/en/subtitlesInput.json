@@ -22,5 +22,7 @@
   "songPlaceholder": "Enter song title",
   "fetch": "Fetch",
   "fetching": "Fetching...",
-  "cleaning": "Cleaning lyrics..."
+  "cleaning": "Cleaning lyrics...",
+  "processing": "Processing...",
+  "clearSubtitles": "Clear subtitles"
 }

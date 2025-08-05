@@ -246,5 +246,13 @@
   "cancel": "Hủy",
   "clear": "Xóa",
   "recommendedVoices": "Được đề xuất cho {{language}}",
-  "recommendedLanguage": "Được đề xuất cho {{language}}"
+  "recommendedLanguage": "Được đề xuất cho {{language}}",
+
+  "loadingFromCache": "Đang tải thuyết minh từ phiên trước...",
+  "edgeTTSStarting": "Bắt đầu tạo thuyết minh Edge TTS...",
+  "edgeTTSGeneratingProgress": "Đang tạo {{current}} trên {{total}} thuyết minh với Edge TTS...",
+  "edgeTTSRetryingFailed": "Đang thử lại các thuyết minh Edge TTS thất bại...",
+  "edgeTTSRetryComplete": "Thử lại Edge TTS hoàn tất!",
+  "gttsStarting": "Bắt đầu tạo thuyết minh gTTS...",
+  "gttsGeneratingProgress": "Đang tạo {{current}} trên {{total}} thuyết minh với gTTS..."
 }

@@ -250,7 +250,7 @@ const useChatterboxNarration = ({
 
       // Check if Chatterbox service is initialized, if not, show warming up message
       if (!isChatterboxServiceInitialized()) {
-        setGenerationStatus(t('narration.chatterboxWarmingUp', 'Đang đánh thức server thuyết minh cho lần đầu chạy...'));
+        setGenerationStatus(t('narration.chatterboxWarmingUp', 'Warming up narration server for first-time use...'));
 
         // Try to wake up and connect - the wake-up endpoint will handle model loading
         const availability = await checkChatterboxAvailability(3, 2000, true); // 3 attempts with 2 second timeout each, with wake-up

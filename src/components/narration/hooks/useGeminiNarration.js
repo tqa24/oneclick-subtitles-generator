@@ -203,7 +203,7 @@ const useGeminiNarration = ({
       }
 
       // Generate narration with Gemini
-
+      setGenerationStatus(t('narration.preparingGeneration', 'Preparing to generate narration...'));
 
       // Update the client pool size based on the concurrentClients setting
       localStorage.setItem('gemini_concurrent_clients', concurrentClients.toString());

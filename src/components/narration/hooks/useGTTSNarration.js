@@ -108,7 +108,7 @@ const useGTTSNarration = ({
         settings: settings
       };
 
-      setGenerationStatus(t('narration.gttsGeneratingProgress', 'Starting gTTS generation...'));
+      setGenerationStatus(t('narration.gttsStarting', 'Starting gTTS generation...'));
 
       const response = await fetch(`${SERVER_URL}/api/narration/gtts/generate`, {
         method: 'POST',

@@ -221,5 +221,13 @@
   "cancel": "Cancel",
   "clear": "Clear",
   "recommendedVoices": "Recommended for {{language}}",
-  "recommendedLanguage": "Recommended for {{language}}"
+  "recommendedLanguage": "Recommended for {{language}}",
+
+  "loadingFromCache": "Loading narrations from previous session...",
+  "edgeTTSStarting": "Starting Edge TTS generation...",
+  "edgeTTSGeneratingProgress": "Generating {{current}} of {{total}} narrations with Edge TTS...",
+  "edgeTTSRetryingFailed": "Retrying failed Edge TTS narrations...",
+  "edgeTTSRetryComplete": "Edge TTS retry completed!",
+  "gttsStarting": "Starting gTTS generation...",
+  "gttsGeneratingProgress": "Generating {{current}} of {{total}} narrations with gTTS..."
 }

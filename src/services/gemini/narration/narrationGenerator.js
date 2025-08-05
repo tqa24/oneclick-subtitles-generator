@@ -364,8 +364,8 @@ export const generateGeminiNarrations = async (
   isCancelled = false;
 
   try {
-    // Initial progress message
-    onProgress("Preparing to generate narration with Gemini...");
+    // Initial progress message - will be provided by the component with proper translation
+    onProgress("Preparing to generate narration...");
 
     // Get API key from localStorage
     const apiKey = localStorage.getItem('gemini_api_key');

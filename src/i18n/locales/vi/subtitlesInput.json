@@ -22,5 +22,7 @@
   "songPlaceholder": "Nhập tên bài hát",
   "fetch": "Lấy",
   "fetching": "Đang lấy...",
-  "cleaning": "Đang làm sạch lời bài hát..."
+  "cleaning": "Đang làm sạch lời bài hát...",
+  "processing": "Đang xử lý...",
+  "clearSubtitles": "Xóa phụ đề"
 }

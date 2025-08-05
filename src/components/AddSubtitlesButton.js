@@ -40,7 +40,7 @@ const AddSubtitlesButton = ({
     if (isProcessing) {
       const timer = setTimeout(() => {
         setIsProcessing(false);
-      }, 2000); // Reset after 2 seconds
+      }, 500); // Reset after 500ms
       return () => clearTimeout(timer);
     }
   }, [isProcessing]);
