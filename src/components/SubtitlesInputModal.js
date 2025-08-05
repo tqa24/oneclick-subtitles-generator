@@ -79,7 +79,14 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
     <div className={`subtitles-input-modal-overlay ${isClosing ? 'closing' : ''}`}>
       <div className={`subtitles-input-modal ${isClosing ? 'closing' : ''}`}>
         <div className="subtitles-input-modal-header">
-          <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
+          <div className="header-title-section">
+            <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
+            <div className="header-badge">
+              <span className="badge-text">
+                {t('subtitlesInput.gemini25Warning', 'Gemini 2.5 Pro, 2.5 Flash và 2.5 Flash Lite không cho kết quả tốt trong trường hợp này')}
+              </span>
+            </div>
+          </div>
           <CloseButton onClick={handleClose} variant="modal" size="medium" />
         </div>
 

@@ -86,11 +86,44 @@
   border-bottom: 1px solid var(--md-outline);
 }
 
+.subtitles-input-modal-header .header-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
 .subtitles-input-modal-header h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-color);
+}
+
+/* Header badge styles - imported from DownloadOnlyModal.css */
+.subtitles-input-modal-header .header-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: default;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+  max-width: fit-content;
+}
+
+.subtitles-input-modal-header .header-badge:hover {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.subtitles-input-modal-header .header-badge .badge-text {
+  font-size: 0.75rem;
 }
 
 /* Close button styles moved to src/components/common/CloseButton.css */

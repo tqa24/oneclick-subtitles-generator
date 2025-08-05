@@ -24,5 +24,6 @@
   "fetching": "가져오는 중...",
   "cleaning": "가사 정리 중...",
   "processing": "처리 중...",
-  "clearSubtitles": "자막 지우기"
+  "clearSubtitles": "자막 지우기",
+  "gemini25Warning": "(Gemini 2.5 Pro, 2.5 Flash, 2.5 Flash Lite) 이 사용 사례에 적합하지 않습니다"
 }
