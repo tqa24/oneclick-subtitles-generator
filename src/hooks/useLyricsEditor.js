@@ -308,7 +308,12 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   // Helper function to show translation warning
   const showTranslationWarning = (message) => {
     try {
-      const hasTranslation = localStorage.getItem('translation_target_language');
+      // Check if there are actual translations available
+      // Use the same logic as the subtitle language selector
+      const hasTranslation = window.translatedSubtitles &&
+                             Array.isArray(window.translatedSubtitles) &&
+                             window.translatedSubtitles.length > 0;
+
       if (hasTranslation) {
         // Show a warning toast that translations may be outdated
         const warningEvent = new CustomEvent('translation-warning', {
@@ -535,6 +540,23 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       window.removeEventListener('redo-action', handleRedoEvent);
     };
   }, [handleRedo]);
+
+  // Add event listener for translation reset to clear window.translatedSubtitles
+  useEffect(() => {
+    const handleTranslationReset = () => {
+      // Clear the window.translatedSubtitles when translations are reset
+      if (window.translatedSubtitles) {
+        window.translatedSubtitles = null;
+        console.log('Cleared window.translatedSubtitles due to translation reset');
+      }
+    };
+
+    window.addEventListener('translation-reset', handleTranslationReset);
+
+    return () => {
+      window.removeEventListener('translation-reset', handleTranslationReset);
+    };
+  }, []);
 
   // Function to update the saved lyrics state when the user saves the subtitles
   const updateSavedLyrics = () => {
