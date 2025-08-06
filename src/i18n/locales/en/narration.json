@@ -184,6 +184,8 @@
   "chatterboxNoReferenceAudio": "Reference audio is required for Chatterbox TTS generation. Please upload a reference audio file.",
 
   "audioAlignmentWarning": "Despite applying smart narration alignment, the resulting audio is {{duration}} seconds longer than expected. Please use the speed slider above the audio list (set it faster) and regenerate the total narration using the Refresh Narration button on the player or the Download Aligned button",
+  "audioAlignmentSegmentWarning": "The segment pushed the farthest is segment {{maxSegment}} (shifted {{maxAdjustment}} seconds), if this seems too far then you should set it faster using the speed slider above the audio list and regenerate the total narration, or adjust the narration timings as long sentences may have been placed in short time intervals",
+  "audioAlignmentWarningMerged": "Despite applying smart narration alignment, the resulting audio is {{duration}} seconds longer than expected. Please use the speed slider above the audio list (set it faster) and regenerate the total narration using the Refresh Narration button on the player or the Download Aligned button. The segment pushed the farthest is segment {{maxSegment}} (shifted {{maxAdjustment}} seconds), if this seems too far then you should also set it faster, or adjust the narration timings as long sentences may have been placed in short time intervals",
   "closeNotification": "Close notification",
 
   "edgeTTSVoice": "Edge TTS Voice",

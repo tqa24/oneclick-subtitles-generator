@@ -322,13 +322,31 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
     }
   }
 
-  // Log summary of adjustments
+  // Log summary of adjustments and calculate statistics
   const adjustedCount = adjustedSegments.filter(s => s.shiftAmount).length;
   const leftMoves = adjustedSegments.filter(s => s.shiftAmount && s.shiftAmount < 0).length;
   const rightMoves = adjustedSegments.filter(s => s.shiftAmount && s.shiftAmount > 0).length;
 
+  // Find the segment with the maximum adjustment (rightward push)
+  let maxAdjustmentSegment = null;
+  let maxAdjustmentAmount = 0;
+
+  adjustedSegments.forEach(segment => {
+    if (segment.shiftAmount && segment.shiftAmount > maxAdjustmentAmount) {
+      maxAdjustmentAmount = segment.shiftAmount;
+      maxAdjustmentSegment = {
+        segmentId: segment.subtitle_id,
+        adjustmentAmount: segment.shiftAmount,
+        strategy: segment.adjustmentStrategy
+      };
+    }
+  });
+
   if (adjustedCount > 0) {
     console.log(`Smart overlap resolution complete: Adjusted ${adjustedCount} of ${audioSegments.length} segments (${leftMoves} moved left, ${rightMoves} moved right) for optimized narration flow.`);
+    if (maxAdjustmentSegment) {
+      console.log(`Maximum adjustment: Segment ${maxAdjustmentSegment.segmentId} pushed ${maxAdjustmentSegment.adjustmentAmount.toFixed(2)}s right via ${maxAdjustmentSegment.strategy}`);
+    }
   } else {
     console.log(`No overlaps detected among ${audioSegments.length} segments. No adjustments needed.`);
   }
@@ -349,7 +367,16 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
 
   console.log(`Final timing adjustment applied: all segments moved 0.5s earlier (or to start at 0s minimum).`);
 
-  return finalAdjustedSegments;
+  // Return both adjusted segments and adjustment statistics
+  return {
+    adjustedSegments: finalAdjustedSegments,
+    adjustmentStats: {
+      adjustedCount,
+      leftMoves,
+      rightMoves,
+      maxAdjustment: maxAdjustmentSegment
+    }
+  };
 };
 
 /**
@@ -367,10 +394,13 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
 
   // Apply smart overlap resolution if enabled
   let segmentsToProcess = audioSegments;
+  let adjustmentStats = null;
   if (smartOverlapResolution && audioSegments.length > 1) {
     try {
       // Analyze and adjust segments to avoid overlaps
-      segmentsToProcess = await analyzeAndAdjustSegments(audioSegments);
+      const result = await analyzeAndAdjustSegments(audioSegments);
+      segmentsToProcess = result.adjustedSegments;
+      adjustmentStats = result.adjustmentStats;
     } catch (error) {
       console.error(`Error during smart overlap resolution: ${error.message}`);
       console.error('Falling back to original segments without overlap resolution');
@@ -529,7 +559,7 @@ const processBatch = async (audioSegments, outputPath, batchIndex, totalDuration
     });
   });
 
-  return outputPath;
+  return { outputPath, adjustmentStats };
 };
 
 /**

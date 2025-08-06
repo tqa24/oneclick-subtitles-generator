@@ -288,6 +288,14 @@ const downloadAlignedAudio = async (req, res) => {
 
 
 
+    // Track adjustment statistics across all batches
+    let globalAdjustmentStats = {
+      adjustedCount: 0,
+      leftMoves: 0,
+      rightMoves: 0,
+      maxAdjustment: null
+    };
+
     // Check if we need to use batch processing
     if (audioSegments.length > MAX_SEGMENTS_PER_BATCH) {
 
@@ -305,7 +313,22 @@ const downloadAlignedAudio = async (req, res) => {
         const batchOutputPath = path.join(tempDir, `batch_${i}_${timestamp}.wav`);
 
         // Process the batch
-        await processBatch(batches[i], batchOutputPath, i, totalDuration);
+        const batchResult = await processBatch(batches[i], batchOutputPath, i, totalDuration);
+
+        // Collect adjustment statistics from this batch
+        if (batchResult.adjustmentStats) {
+          const stats = batchResult.adjustmentStats;
+          globalAdjustmentStats.adjustedCount += stats.adjustedCount;
+          globalAdjustmentStats.leftMoves += stats.leftMoves;
+          globalAdjustmentStats.rightMoves += stats.rightMoves;
+
+          // Track the maximum adjustment across all batches
+          if (stats.maxAdjustment &&
+              (!globalAdjustmentStats.maxAdjustment ||
+               stats.maxAdjustment.adjustmentAmount > globalAdjustmentStats.maxAdjustment.adjustmentAmount)) {
+            globalAdjustmentStats.maxAdjustment = stats.maxAdjustment;
+          }
+        }
 
         // Add the batch output file to the list of files to concatenate
         batchFiles.push(batchOutputPath);
@@ -327,8 +350,12 @@ const downloadAlignedAudio = async (req, res) => {
       }
     } else {
       // For smaller numbers of segments, process them all at once
+      const result = await processBatch(audioSegments, outputPath, 0, totalDuration);
 
-      await processBatch(audioSegments, outputPath, 0, totalDuration);
+      // Collect adjustment statistics
+      if (result.adjustmentStats) {
+        globalAdjustmentStats = result.adjustmentStats;
+      }
     }
 
     // Check if the output file was created
@@ -388,8 +415,15 @@ const downloadAlignedAudio = async (req, res) => {
     res.setHeader('X-Expected-Duration', expectedDuration.toFixed(2));
     res.setHeader('X-Actual-Duration', actualDuration.toFixed(2));
 
+    // Add adjustment statistics to headers for enhanced warning message
+    if (globalAdjustmentStats.maxAdjustment) {
+      res.setHeader('X-Max-Adjustment-Segment', globalAdjustmentStats.maxAdjustment.segmentId);
+      res.setHeader('X-Max-Adjustment-Amount', globalAdjustmentStats.maxAdjustment.adjustmentAmount.toFixed(2));
+      res.setHeader('X-Max-Adjustment-Strategy', globalAdjustmentStats.maxAdjustment.strategy);
+    }
+
     // Expose custom headers to frontend
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Duration-Difference, X-Expected-Duration, X-Actual-Duration');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, X-Duration-Difference, X-Expected-Duration, X-Actual-Duration, X-Max-Adjustment-Segment, X-Max-Adjustment-Amount, X-Max-Adjustment-Strategy');
 
     // Send the file
     res.sendFile(outputPath, (err) => {

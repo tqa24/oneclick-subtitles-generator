@@ -209,6 +209,8 @@
   "chatterboxNoReferenceAudio": "Âm thanh tham chiếu là bắt buộc cho việc tạo TTS Chatterbox. Vui lòng tải lên tệp âm thanh tham chiếu.",
 
   "audioAlignmentWarning": "Dù đã áp dụng sắp xếp thuyết minh thông minh, nhưng audio kết quả dài hơn dự tính tận {{duration}} giây, vui lòng dùng thanh chỉnh tốc độ phía trên danh sách audio (chỉnh nhanh hơn) rồi tạo lại thuyết minh tổng bằng nút Làm mới thuyết minh trên trình phát hoặc nút Tải xuống sắp xếp",
+  "audioAlignmentSegmentWarning": "Đoạn sub bị đẩy đi xa nhất là đoạn số {{maxSegment}} (lệch {{maxAdjustment}} giây), nếu thấy như vậy là quá xa thì cũng cần chỉnh nhanh hơn bằng thanh chỉnh tốc độ phía trên danh sách audio rồi tạo lại thuyết minh tổng, hoặc căn chỉnh lại timings của thuyết minh vì có lẽ câu dài đã bị đặt trong khoảng thời gian ngắn",
+  "audioAlignmentWarningMerged": "Dù đã áp dụng sắp xếp thuyết minh thông minh, nhưng audio kết quả dài hơn dự tính tận {{duration}} giây, vui lòng dùng thanh chỉnh tốc độ phía trên danh sách audio (chỉnh nhanh hơn) rồi tạo lại thuyết minh tổng bằng nút Làm mới thuyết minh trên trình phát hoặc nút Tải xuống sắp xếp. Đoạn sub bị đẩy đi xa nhất là đoạn số {{maxSegment}} (lệch {{maxAdjustment}} giây), nếu thấy như vậy là quá xa thì cũng cần chỉnh nhanh hơn, hoặc căn chỉnh lại timings của thuyết minh vì có lẽ câu dài đã bị đặt trong khoảng thời gian ngắn",
   "closeNotification": "Đóng thông báo",
 
   "edgeTTSVoice": "Giọng Edge TTS",

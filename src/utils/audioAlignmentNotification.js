@@ -11,13 +11,20 @@ import i18n from '../i18n/i18n.js';
 /**
  * Show audio alignment warning notification using LiquidGlass styling
  * @param {number} durationDifference - Difference in seconds between actual and expected duration
+ * @param {Object|null} adjustmentInfo - Information about the maximum adjustment (segmentId, adjustmentAmount)
+ * @param {boolean} showDurationWarning - Whether to show duration warning
+ * @param {boolean} showSegmentWarning - Whether to show segment warning
  */
-export const showAudioAlignmentWarning = (durationDifference) => {
+export const showAudioAlignmentWarning = (durationDifference, adjustmentInfo = null, showDurationWarning = false, showSegmentWarning = false) => {
   console.log(`🚨 showAudioAlignmentWarning called with duration difference: ${durationDifference}s`);
+  console.log(`📊 Warning flags: Duration: ${showDurationWarning}, Segment: ${showSegmentWarning}`);
+  if (adjustmentInfo) {
+    console.log(`📈 Max adjustment info: Segment ${adjustmentInfo.segmentId} pushed ${adjustmentInfo.adjustmentAmount}s`);
+  }
 
-  // Only show notification if difference is larger than 3 seconds
-  if (durationDifference <= 3) {
-    console.log(`⏹️ Duration difference ${durationDifference}s <= 3s, not showing notification`);
+  // Must have at least one warning condition
+  if (!showDurationWarning && !showSegmentWarning) {
+    console.log(`⏹️ No warning conditions met, not showing notification`);
     return;
   }
 
@@ -43,10 +50,32 @@ export const showAudioAlignmentWarning = (durationDifference) => {
   `;
 
   console.log(`🌐 Getting translated messages...`);
-  // Get translated message
-  const message = i18n.t('narration.audioAlignmentWarning', {
-    duration: durationDifference.toFixed(1)
-  });
+
+  // Determine which notification type to show
+  let translationKey;
+  const messageParams = {};
+
+  if (showDurationWarning && showSegmentWarning) {
+    // Both conditions met - show merged notification
+    translationKey = 'narration.audioAlignmentWarningMerged';
+    messageParams.duration = durationDifference.toFixed(1);
+    messageParams.maxSegment = adjustmentInfo.segmentId;
+    messageParams.maxAdjustment = adjustmentInfo.adjustmentAmount.toFixed(2);
+    console.log(`📋 Using merged notification`);
+  } else if (showDurationWarning) {
+    // Only duration warning
+    translationKey = 'narration.audioAlignmentWarning';
+    messageParams.duration = durationDifference.toFixed(1);
+    console.log(`📋 Using duration-only notification`);
+  } else if (showSegmentWarning) {
+    // Only segment warning
+    translationKey = 'narration.audioAlignmentSegmentWarning';
+    messageParams.maxSegment = adjustmentInfo.segmentId;
+    messageParams.maxAdjustment = adjustmentInfo.adjustmentAmount.toFixed(2);
+    console.log(`📋 Using segment-only notification`);
+  }
+
+  const message = i18n.t(translationKey, messageParams);
   const closeLabel = i18n.t('narration.closeNotification');
   console.log(`📝 Message: "${message}", Close label: "${closeLabel}"`);
 
@@ -54,7 +83,7 @@ export const showAudioAlignmentWarning = (durationDifference) => {
   const NotificationComponent = () => (
     <LiquidGlass
       width={600}
-      height={120}
+      height={160}
       position="relative"
       borderRadius="32px"
       backdropFilter="blur(2px) contrast(1.2) brightness(1.05) saturate(1.1)"
@@ -190,14 +219,33 @@ export const checkAudioAlignmentFromResponse = (response) => {
     const expectedDuration = parseFloat(response.headers.get('X-Expected-Duration'));
     const actualDuration = parseFloat(response.headers.get('X-Actual-Duration'));
 
+    // Read adjustment statistics
+    const maxAdjustmentSegment = response.headers.get('X-Max-Adjustment-Segment');
+    const maxAdjustmentAmount = parseFloat(response.headers.get('X-Max-Adjustment-Amount'));
+    const maxAdjustmentStrategy = response.headers.get('X-Max-Adjustment-Strategy');
+
     console.log(`📊 Audio alignment check: Expected ${expectedDuration}s, Actual ${actualDuration}s, Difference ${durationDifference}s`);
     console.log(`🔢 Header values - Duration Diff: "${response.headers.get('X-Duration-Difference')}", Expected: "${response.headers.get('X-Expected-Duration')}", Actual: "${response.headers.get('X-Actual-Duration')}"`);
 
-    if (!isNaN(durationDifference) && durationDifference > 3) {
-      console.log(`⚠️ Duration difference ${durationDifference}s > 3s, showing notification...`);
-      showAudioAlignmentWarning(durationDifference);
+    if (maxAdjustmentSegment && !isNaN(maxAdjustmentAmount)) {
+      console.log(`📈 Max adjustment: Segment ${maxAdjustmentSegment} pushed ${maxAdjustmentAmount}s via ${maxAdjustmentStrategy}`);
+    }
+
+    // Check conditions for notifications
+    const showDurationWarning = !isNaN(durationDifference) && durationDifference > 3;
+    const showSegmentWarning = maxAdjustmentSegment && !isNaN(maxAdjustmentAmount) && maxAdjustmentAmount > 3;
+
+    console.log(`📊 Notification conditions: Duration warning: ${showDurationWarning}, Segment warning: ${showSegmentWarning}`);
+
+    if (showDurationWarning || showSegmentWarning) {
+      const adjustmentInfo = showSegmentWarning ? {
+        segmentId: maxAdjustmentSegment,
+        adjustmentAmount: maxAdjustmentAmount
+      } : null;
+
+      showAudioAlignmentWarning(durationDifference, adjustmentInfo, showDurationWarning, showSegmentWarning);
     } else {
-      console.log(`✅ Duration difference ${durationDifference}s <= 3s or invalid, no notification needed`);
+      console.log(`✅ No notification conditions met`);
     }
   } catch (error) {
     console.error('❌ Error checking audio alignment from response:', error);
