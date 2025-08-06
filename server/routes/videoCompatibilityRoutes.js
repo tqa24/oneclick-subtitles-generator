@@ -137,7 +137,8 @@ router.post('/check-codec', async (req, res) => {
           width: videoStream.width,
           height: videoStream.height,
           pix_fmt: videoStream.pix_fmt,
-          is_compatible: !['hevc', 'h265', 'av1', 'vp9'].includes(videoStream.codec_name.toLowerCase())
+          // VP9 is supported by Remotion (Chrome supports VP9), so only mark truly problematic codecs
+          is_compatible: !['hevc', 'h265', 'av1'].includes(videoStream.codec_name.toLowerCase())
         };
 
         res.json(codecInfo);

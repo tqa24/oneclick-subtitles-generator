@@ -338,7 +338,8 @@ async function ensureVideoCompatibility(videoPath) {
       console.log(`[VideoCompatibility] Detected video codec: ${codec}`);
 
       // Check if conversion is needed
-      const problematicCodecs = ['hevc', 'h265', 'av1', 'vp9'];
+      // VP9 is supported by Remotion (Chrome supports VP9), so only convert truly problematic codecs
+      const problematicCodecs = ['hevc', 'h265', 'av1'];
       if (problematicCodecs.includes(codec)) {
         console.log(`[VideoCompatibility] Converting ${codec} video to H.264 for better compatibility`);
 

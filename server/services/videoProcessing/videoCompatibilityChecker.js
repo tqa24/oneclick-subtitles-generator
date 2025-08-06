@@ -88,8 +88,8 @@ async function checkVideoCompatibility(videoPath) {
  * Check codec compatibility with Remotion
  */
 function checkCodecCompatibility(compatibility) {
-  // Problematic video codecs
-  const problematicVideoCodecs = ['hevc', 'av1', 'vp9'];
+  // Problematic video codecs - VP9 is supported by Remotion (Chrome supports VP9)
+  const problematicVideoCodecs = ['hevc', 'av1'];
   const problematicAudioCodecs = ['opus', 'vorbis'];
 
   if (problematicVideoCodecs.includes(compatibility.videoCodec)) {
