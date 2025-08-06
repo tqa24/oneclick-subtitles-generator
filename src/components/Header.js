@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/Header.css';
 import GeminiHeaderAnimation from './GeminiHeaderAnimation';
+import specialStarIcon from '../assets/specialStar.svg';
 
 const Header = ({ onSettingsClick }) => {
   const { t } = useTranslation();
@@ -191,9 +192,16 @@ const Header = ({ onSettingsClick }) => {
       {/* Gemini constellation animation */}
       <GeminiHeaderAnimation />
 
-      <h1 className="header-title">
-        {t('header.appTitle')}
-      </h1>
+      <div className="header-title-container">
+        <h1 className="header-title">
+          {t('header.appTitle')}
+        </h1>
+        <img
+          src={specialStarIcon}
+          alt="Special Star"
+          className="special-star-icon"
+        />
+      </div>
 
       <button
         className={`settings-button floating-settings ${showFloatingActions ? 'floating-visible' : 'floating-hidden'}`}
