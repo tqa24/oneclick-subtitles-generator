@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import '../styles/GeminiHeaderAnimation.css';
 
 /**
@@ -10,6 +10,31 @@ const GeminiHeaderAnimation = () => {
   const particlesRef = useRef([]);
   const connectionsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 100, isClicked: false });
+
+  // Get theme-aware star colors - stellar palette with proper light theme visibility
+  const getThemeColors = () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    return {
+      // Theme-appropriate star outline colors
+      strokeColor: isDark
+        ? 'rgba(255, 255, 255, 0.8)'  // White for dark theme
+        : 'rgba(60, 60, 80, 0.7)',    // Dark blue-gray for light theme
+      connectionColor: isDark
+        ? 'rgba(255, 255, 255, 0.2)'  // Subtle white for dark theme
+        : 'rgba(60, 60, 80, 0.25)',   // Visible dark lines for light theme
+      // Stellar gradient colors - enhanced for light theme visibility
+      gradientStart: isDark
+        ? 'rgba(145, 104, 192, 0.9)'  // Purple (dark theme)
+        : 'rgba(120, 80, 160, 0.8)',  // Deeper purple (light theme)
+      gradientMid: isDark
+        ? 'rgba(86, 132, 209, 0.8)'   // Blue (dark theme)
+        : 'rgba(70, 110, 180, 0.7)',  // Deeper blue (light theme)
+      gradientEnd: isDark
+        ? 'rgba(27, 161, 227, 0.7)'   // Light blue (dark theme)
+        : 'rgba(20, 130, 190, 0.6)'   // Deeper light blue (light theme)
+    };
+  };
 
   // Initialize the animation
   useEffect(() => {
@@ -71,34 +96,99 @@ const GeminiHeaderAnimation = () => {
           rotationSpeed,
           opacity,
           pulsePhase: Math.random() * Math.PI * 2, // Random starting phase for pulse
-          pulseSpeed: 0.03 + Math.random() * 0.02 // Random pulse speed
+          pulseSpeed: 0.008 + Math.random() * 0.006, // Balanced pulse speed
+          // Balanced movement properties - slow but visible
+          driftPhaseX: Math.random() * Math.PI * 2, // Random starting phase for X drift
+          driftPhaseY: Math.random() * Math.PI * 2, // Random starting phase for Y drift
+          driftSpeedX: 0.001 + Math.random() * 0.002, // Slow X drift speed (0.001-0.003)
+          driftSpeedY: 0.001 + Math.random() * 0.002, // Slow Y drift speed (0.001-0.003)
+          driftAmplitudeX: 3 + Math.random() * 6, // X drift amplitude (3-9 pixels)
+          driftAmplitudeY: 3 + Math.random() * 6, // Y drift amplitude (3-9 pixels)
+          // Orbital movement around anchor point
+          orbitPhase: Math.random() * Math.PI * 2, // Random starting orbital phase
+          orbitSpeed: 0.0006 + Math.random() * 0.0012, // Slow orbit (0.0006-0.0018)
+          orbitRadius: 2 + Math.random() * 5, // Small orbital radius (2-7 pixels)
+          // Breathing effect (size variation)
+          breathePhase: Math.random() * Math.PI * 2,
+          breatheSpeed: 0.002 + Math.random() * 0.002, // Slow breathing (0.002-0.004)
+          breatheAmplitude: 0.06 + Math.random() * 0.10, // Size variation (6-16%)
+          // Occasional twinkling rotation (only some stars)
+          isTwinkler: Math.random() < 0.22, // 22% chance to be a twinkling star
+          twinklePhase: Math.random() * Math.PI * 2,
+          twinkleSpeed: 0.003 + Math.random() * 0.005, // Slow twinkle speed
+          twinkleIntensity: 0.06 + Math.random() * 0.12 // Rotation intensity (0.06-0.18 radians)
         });
       }
 
       particlesRef.current = particles;
     };
 
-    // Update connections between particles
+    // Simple TSP solver using nearest neighbor heuristic
+    const solveTSP = (particles) => {
+      if (particles.length < 2) return [];
+
+      const visited = new Set();
+      const path = [];
+      let current = 0; // Start with first particle
+      visited.add(current);
+      path.push(current);
+
+      // Find nearest unvisited neighbor for each step
+      while (visited.size < particles.length) {
+        let nearestIndex = -1;
+        let nearestDistance = Infinity;
+
+        for (let i = 0; i < particles.length; i++) {
+          if (visited.has(i)) continue;
+
+          const dx = particles[current].anchorX - particles[i].anchorX;
+          const dy = particles[current].anchorY - particles[i].anchorY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = i;
+          }
+        }
+
+        if (nearestIndex !== -1) {
+          visited.add(nearestIndex);
+          path.push(nearestIndex);
+          current = nearestIndex;
+        } else {
+          break;
+        }
+      }
+
+      return path;
+    };
+
+    // Update connections using TSP path
     const updateConnections = () => {
       connections = [];
 
-      // Create connections between nearby anchor points
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          // Calculate distance between anchor points (not current positions)
-          const dx = particles[i].anchorX - particles[j].anchorX;
-          const dy = particles[i].anchorY - particles[j].anchorY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+      if (particles.length < 2) return;
 
-          // Connect particles whose anchors are close enough
-          if (distance < 150) {
-            const opacity = 1 - (distance / 150); // Fade with distance
-            connections.push({
-              from: i,
-              to: j,
-              opacity: opacity * 0.2 // Max opacity 0.2
-            });
-          }
+      // Get optimal path through all stars
+      const tspPath = solveTSP(particles);
+
+      // Create connections along the TSP path
+      for (let i = 0; i < tspPath.length - 1; i++) {
+        const fromIndex = tspPath[i];
+        const toIndex = tspPath[i + 1];
+
+        const dx = particles[fromIndex].anchorX - particles[toIndex].anchorX;
+        const dy = particles[fromIndex].anchorY - particles[toIndex].anchorY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Only connect if distance is reasonable (avoid very long lines)
+        if (distance < 200) {
+          const opacity = Math.max(0.1, 1 - (distance / 200)); // Fade with distance
+          connections.push({
+            from: fromIndex,
+            to: toIndex,
+            opacity: opacity * 0.25 // Slightly higher opacity for cleaner look
+          });
         }
       }
 
@@ -137,19 +227,22 @@ const GeminiHeaderAnimation = () => {
       ctx.closePath();
 
       // Fill or stroke based on the type
+      const colors = getThemeColors();
+
       if (isFilled) {
         const gradient = ctx.createLinearGradient(-14, -14, 14, 14);
-        gradient.addColorStop(0, `rgba(145, 104, 192, ${opacity})`);
-        gradient.addColorStop(0.5, `rgba(86, 132, 209, ${opacity})`);
-        gradient.addColorStop(1, `rgba(27, 161, 227, ${opacity})`);
+        // Apply opacity to gradient colors
+        gradient.addColorStop(0, colors.gradientStart.replace(/[\d.]+\)$/, `${opacity * 0.8})`));
+        gradient.addColorStop(0.5, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.7})`));
+        gradient.addColorStop(1, colors.gradientEnd.replace(/[\d.]+\)$/, `${opacity * 0.6})`));
 
         ctx.fillStyle = gradient;
         ctx.fill();
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.7})`;
+        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 0.7})`);
         ctx.lineWidth = 0.5;
         ctx.stroke();
       } else {
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity})`);
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -174,18 +267,43 @@ const GeminiHeaderAnimation = () => {
         // We translate to (x, y), then offset by (-14, -14) to center the 28x28 SVG path
         // This means the visual center of the star is exactly at (p.x, p.y)
 
-        // Calculate connection points - use current particle positions (not anchor points)
-        // This ensures lines connect to where the stars actually are, including during mouse interactions
+        // Calculate connection points with gaps so lines don't touch stars
         const x1 = p1.x;
         const y1 = p1.y;
         const x2 = p2.x;
         const y2 = p2.y;
 
-        // Draw the connection line
+        // Calculate direction vector
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 1) return; // Skip if particles are too close
+
+        // Normalize direction vector
+        const unitX = dx / distance;
+        const unitY = dy / distance;
+
+        // Create gaps around stars (use average star size for gap calculation)
+        const avgSize = (p1.size + p2.size) / 2;
+        const gap = avgSize * 0.7; // Gap is 70% of average star size
+
+        // Calculate start and end points with gaps
+        const startX = x1 + unitX * gap;
+        const startY = y1 + unitY * gap;
+        const endX = x2 - unitX * gap;
+        const endY = y2 - unitY * gap;
+
+        // Only draw if there's enough distance for a visible line
+        const lineDistance = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+        if (lineDistance < gap) return; // Skip if line would be too short
+
+        // Draw the connection line with gaps
+        const colors = getThemeColors();
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${connection.opacity})`;
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = colors.connectionColor.replace(/[\d.]+\)$/, `${connection.opacity})`);
         ctx.lineWidth = 0.5;
         ctx.stroke();
       });
@@ -197,9 +315,22 @@ const GeminiHeaderAnimation = () => {
 
       // Update all particles
       particles.forEach(particle => {
-        // Default position is at anchor point
-        particle.x = particle.anchorX;
-        particle.y = particle.anchorY;
+        // Start with anchor point as base position
+        let baseX = particle.anchorX;
+        let baseY = particle.anchorY;
+
+        // Apply slow organic movements
+        // 1. Gentle drift movement (like floating in space)
+        const driftX = Math.sin(particle.driftPhaseX) * particle.driftAmplitudeX;
+        const driftY = Math.sin(particle.driftPhaseY) * particle.driftAmplitudeY;
+
+        // 2. Small orbital movement around anchor point
+        const orbitX = Math.cos(particle.orbitPhase) * particle.orbitRadius;
+        const orbitY = Math.sin(particle.orbitPhase) * particle.orbitRadius;
+
+        // Combine movements for natural motion
+        particle.x = baseX + driftX + orbitX;
+        particle.y = baseY + driftY + orbitY;
 
         // Mouse interaction - move stars when mouse is nearby
         if (mouseRef.current.x !== null && mouseRef.current.y !== null) {
@@ -230,7 +361,17 @@ const GeminiHeaderAnimation = () => {
           }
         }
 
-        // No rotation updates needed
+        // Update movement phases for next frame
+        particle.driftPhaseX += particle.driftSpeedX;
+        particle.driftPhaseY += particle.driftSpeedY;
+        particle.orbitPhase += particle.orbitSpeed;
+        particle.breathePhase += particle.breatheSpeed;
+
+        // Update twinkling rotation for special stars
+        if (particle.isTwinkler) {
+          particle.twinklePhase += particle.twinkleSpeed;
+          particle.rotation = Math.sin(particle.twinklePhase) * particle.twinkleIntensity;
+        }
 
         // Update pulse effect
         particle.pulsePhase += particle.pulseSpeed;
@@ -244,10 +385,14 @@ const GeminiHeaderAnimation = () => {
       particles.forEach(particle => {
         const pulseOpacity = particle.opacity * (0.7 + 0.3 * Math.sin(particle.pulsePhase));
 
+        // Apply breathing effect to size
+        const breatheMultiplier = 1 + Math.sin(particle.breathePhase) * particle.breatheAmplitude;
+        const breathingSize = particle.size * breatheMultiplier;
+
         drawGeminiIcon(
           particle.x,
           particle.y,
-          particle.size,
+          breathingSize,
           particle.rotation,
           particle.isFilled,
           pulseOpacity
@@ -285,8 +430,14 @@ const GeminiHeaderAnimation = () => {
     resizeCanvas(); // This now calls createParticles() and updateConnections() if canvas is valid
     animate();
 
+    // Theme change listener
+    const handleThemeChange = () => {
+      // Colors will be updated automatically on next frame since getThemeColors() is called in draw functions
+    };
+
     // Add event listeners
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('storage', handleThemeChange); // Listen for theme changes
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseleave', handleMouseLeave);
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -302,6 +453,7 @@ const GeminiHeaderAnimation = () => {
     // Cleanup
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('storage', handleThemeChange);
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       canvas.removeEventListener('mousedown', handleMouseDown);
