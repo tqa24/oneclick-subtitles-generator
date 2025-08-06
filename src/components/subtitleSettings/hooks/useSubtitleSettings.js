@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { defaultSettings } from '../constants';
 
 /**
@@ -33,7 +33,7 @@ const useSubtitleSettings = (initialSettings, onSettingsChange) => {
     }
   }, []);
 
-  const handleSettingChange = (setting, value) => {
+  const handleSettingChange = useCallback((setting, value) => {
     const updatedSettings = {
       ...initialSettings,
       [setting]: value
@@ -44,9 +44,9 @@ const useSubtitleSettings = (initialSettings, onSettingsChange) => {
 
     // Update state via parent component
     onSettingsChange(updatedSettings);
-  };
+  }, [initialSettings, onSettingsChange]);
 
-  const handleSubtitleLanguageChange = (e) => {
+  const handleSubtitleLanguageChange = useCallback((e) => {
     const value = e.target.value;
     setSubtitleLanguage(value);
 
@@ -59,7 +59,7 @@ const useSubtitleSettings = (initialSettings, onSettingsChange) => {
 
     // Log the change for debugging
 
-  };
+  }, [handleSettingChange]);
 
   const resetToDefaults = () => {
     // Save default settings to localStorage
