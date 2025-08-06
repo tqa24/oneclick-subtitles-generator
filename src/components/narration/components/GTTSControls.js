@@ -239,53 +239,6 @@ const GTTSControls = ({
         </div>
       </div>
 
-
-
-      {/* Language-specific TLD recommendations */}
-      {selectedLanguage === 'en' && (
-        <div className="narration-row gtts-tip-row">
-          <div className="row-content">
-            <div className="tip-message">
-              <span className="tip-icon">💡</span>
-              {t('narration.gttsEnglishTip', 'For English: Use .com.au for Australian, .co.uk for British, .us for American accent.')}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedLanguage === 'es' && (
-        <div className="narration-row gtts-tip-row">
-          <div className="row-content">
-            <div className="tip-message">
-              <span className="tip-icon">💡</span>
-              {t('narration.gttsSpanishTip', 'For Spanish: Use .es for Spain, .com.mx for Mexican accent.')}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedLanguage === 'pt' && (
-        <div className="narration-row gtts-tip-row">
-          <div className="row-content">
-            <div className="tip-message">
-              <span className="tip-icon">💡</span>
-              {t('narration.gttsPortugueseTip', 'For Portuguese: Use .com.br for Brazilian, .pt for European accent.')}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {selectedLanguage === 'fr' && (
-        <div className="narration-row gtts-tip-row">
-          <div className="row-content">
-            <div className="tip-message">
-              <span className="tip-icon">💡</span>
-              {t('narration.gttsFrenchTip', 'For French: Use .fr for France, .ca for Canadian accent.')}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Language Selection Modal */}
       {isLanguageModalOpen && (
         <LanguageSelectionModal
