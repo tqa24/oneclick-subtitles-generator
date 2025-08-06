@@ -156,6 +156,70 @@
   white-space: pre-wrap;
 }
 
+/* Bulk preview file selector */
+.bulk-preview-selector {
+  margin-bottom: 1rem;
+}
+
+.bulk-preview-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bulk-preview-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--md-surface-2);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.bulk-preview-pill:hover {
+  background-color: var(--md-surface-3);
+  border-color: var(--md-outline);
+  transform: translateY(-1px);
+}
+
+.bulk-preview-pill.active {
+  background-color: var(--md-primary-container);
+  border-color: var(--md-primary);
+  color: var(--md-on-primary-container);
+}
+
+.bulk-preview-pill svg {
+  flex-shrink: 0;
+  stroke: var(--md-primary);
+}
+
+.bulk-preview-pill.active svg {
+  stroke: var(--md-on-primary-container);
+}
+
+.pill-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.pill-count {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
 /* Legacy styles for backward compatibility */
 .translation-preview-content {
   display: flex;

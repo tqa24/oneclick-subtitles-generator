@@ -15,6 +15,7 @@ import TranslationActions from './TranslationActions';
 import TranslationStatus from './TranslationStatus';
 import TranslationError from './TranslationError';
 import TranslationPreview from './TranslationPreview';
+import BulkTranslationPreview from './BulkTranslationPreview';
 import TranslationComplete from './TranslationComplete';
 // Narration section moved to OutputContainer
 import '../../styles/translation/index.css';
@@ -595,13 +596,31 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         {/* Error message */}
         <TranslationError error={error} />
 
-        {/* Translation preview - only show for main translation without bulk files */}
-        {translatedSubtitles && bulkTranslations.length === 0 && (
-          <TranslationPreview
-            translatedSubtitles={translatedSubtitles}
-            targetLanguages={targetLanguages}
-            loadedFromCache={loadedFromCache}
-          />
+        {/* Translation preview - only show in results state (when TranslationComplete is shown) */}
+        {translatedSubtitles && (
+          <>
+            {/* Translation preview - show for main translation without bulk files */}
+            {bulkTranslations.length === 0 && (
+              <TranslationPreview
+                translatedSubtitles={translatedSubtitles}
+                targetLanguages={targetLanguages}
+                loadedFromCache={loadedFromCache}
+              />
+            )}
+
+            {/* Bulk translation preview - show when there are bulk translation results */}
+            {bulkTranslations.length > 0 && bulkTranslations.some(bt => bt.success) && (
+              <BulkTranslationPreview
+                bulkTranslations={bulkTranslations}
+                targetLanguages={targetLanguages}
+                mainTranslation={{
+                  name: getNamingInfo().sourceSubtitleName || getNamingInfo().videoName || 'Main Translation',
+                  subtitles: translatedSubtitles,
+                  loadedFromCache: loadedFromCache
+                }}
+              />
+            )}
+          </>
         )}
 
         {/* Narration Section moved to OutputContainer */}
