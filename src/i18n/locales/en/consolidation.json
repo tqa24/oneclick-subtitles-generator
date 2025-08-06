@@ -1,0 +1,10 @@
+{
+  "splitDuration": "Split Duration",
+  "splitDurationTooltip": "Split text into chunks for processing to avoid token limits",
+  "splitDurationHelp": "Splitting text into smaller chunks helps prevent processing from being cut off due to token limits. For longer texts, use smaller chunks.",
+  "noSplit": "No Split",
+  "minutes": "min",
+  "splittingText": "Splitting text into chunks of {{duration}} minutes",
+  "splitComplete": "Split text into {{chunks}} chunks",
+  "processingComplete": "Processing completed for all {{count}} chunks"
+}

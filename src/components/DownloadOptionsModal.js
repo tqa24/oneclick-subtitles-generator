@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import ModelDropdown from './ModelDropdown';
 import PromptEditor from './PromptEditor';
 import CloseButton from './common/CloseButton';
+import StandardSlider from './common/StandardSlider';
 // Import default prompts from geminiService if needed in the future
 // import { getDefaultConsolidatePrompt, getDefaultSummarizePrompt } from '../services/geminiService';
 import '../styles/DownloadOptionsModal.css';
@@ -297,21 +298,32 @@ const DownloadOptionsModal = ({
               {processType === 'consolidate' && (
                 <div className="option-group">
                   <h4>{t('consolidation.splitDuration', 'Split Duration')}:</h4>
-                  <select
-                    value={splitDuration}
-                    onChange={(e) => setSplitDuration(parseInt(e.target.value))}
-                    className="split-duration-select"
-                    title={t('consolidation.splitDurationTooltip', 'Split text into chunks for processing to avoid token limits')}
-                  >
-                    <option value="0">{t('consolidation.noSplit', 'No Split')}</option>
-                    <option value="1">1 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="3">3 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="5">5 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="7">7 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="10">10 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="15">15 {t('consolidation.minutes', 'minutes')}</option>
-                    <option value="20">20 {t('consolidation.minutes', 'minutes')}</option>
-                  </select>
+                  <div className="split-duration-slider-container">
+                    <div className="slider-with-value">
+                      <StandardSlider
+                        value={splitDuration}
+                        onChange={(value) => setSplitDuration(parseInt(value))}
+                        min={0}
+                        max={20}
+                        step={1}
+                        orientation="Horizontal"
+                        size="XSmall"
+                        state="Enabled"
+                        showValueIndicator={false} // Using custom value display
+                        showIcon={false}
+                        showStops={false}
+                        className="split-duration-slider"
+                        id="consolidation-split-duration-slider"
+                        ariaLabel={t('consolidation.splitDuration', 'Split Duration')}
+                        title={t('consolidation.splitDurationTooltip', 'Split text into chunks for processing to avoid token limits')}
+                      />
+                      <div className="slider-value-display">
+                        {splitDuration === 0
+                          ? t('consolidation.noSplit', 'No Split')
+                          : `${splitDuration} ${t('consolidation.minutes', 'min')}`}
+                      </div>
+                    </div>
+                  </div>
                   <div className="setting-description">
                     {t('consolidation.splitDurationHelp', 'Splitting text into smaller chunks helps prevent processing from being cut off due to token limits. For longer texts, use smaller chunks.')}
                   </div>

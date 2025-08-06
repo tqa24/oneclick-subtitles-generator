@@ -35,6 +35,7 @@ import videoRendering from './videoRendering.json';
 import fontModal from './fontModal.json';
 import videoQuality from './videoQuality.json';
 import subtitleSplit from './subtitleSplit.json';
+import consolidation from './consolidation.json';
 
 // Combine all translations
 const enTranslations = {
@@ -72,7 +73,8 @@ const enTranslations = {
   videoRendering,
   fontModal,
   videoQuality,
-  subtitleSplit
+  subtitleSplit,
+  consolidation
 };
 
 export default enTranslations;

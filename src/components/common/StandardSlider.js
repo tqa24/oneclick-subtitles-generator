@@ -148,8 +148,6 @@ const StandardSlider = ({
     // Use a small epsilon for floating point comparison
     const epsilon = step < 1 ? 0.001 : 0.1;
     if (Math.abs(currentStepValue - (lastStepValue || resolvedProps.value)) > epsilon && onChange) {
-      // Debug logging (remove in production)
-      console.log(`StandardSlider: onChange triggered - from ${lastStepValue || resolvedProps.value} to ${currentStepValue}`);
       setLastStepValue(currentStepValue);
       onChange(currentStepValue);
     }

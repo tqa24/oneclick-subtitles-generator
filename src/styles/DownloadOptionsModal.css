@@ -299,32 +299,37 @@
 
 /* Option group */
 .option-group {
-  margin-bottom: 24px;
+  padding-bottom: 24px;
 }
 
-/* Split duration select */
-.split-duration-select {
+/* Split duration slider container */
+.split-duration-slider-container {
   width: 100%;
-  padding: 8px 12px;
-  border-radius: var(--md-shape-small);
-  border: 1px solid var(--md-outline);
-  background-color: var(--md-surface-1);
-  color: var(--md-on-surface);
-  font-size: var(--md-body-medium-size);
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-top: 8px;
   margin-bottom: 8px;
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.split-duration-select:hover {
-  border-color: var(--md-primary);
+.split-duration-slider-container .slider-with-value {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px; /* Slightly larger gap for modal layout */
+  height: 44px; /* Match StandardSlider height */
 }
 
-.split-duration-select:focus {
-  outline: none;
-  border-color: var(--md-primary);
-  box-shadow: 0 0 0 2px var(--md-primary-container);
+.split-duration-slider-container .slider-value-display {
+  min-width: 80px; /* Adequate space for "No Split" text */
+  font-size: var(--md-body-medium-size);
+  color: var(--md-primary);
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0; /* Don't allow shrinking */
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 /* Setting description */

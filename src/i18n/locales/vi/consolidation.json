@@ -1,0 +1,10 @@
+{
+  "splitDuration": "Thời gian phân chia",
+  "splitDurationTooltip": "Chia văn bản thành các phần để tránh giới hạn token",
+  "splitDurationHelp": "Chia văn bản thành các phần nhỏ hơn giúp ngăn việc xử lý bị cắt ngắn do giới hạn token. Đối với văn bản dài, hãy sử dụng các phần nhỏ hơn.",
+  "noSplit": "Không chia",
+  "minutes": "phút",
+  "splittingText": "Đang chia văn bản thành các phần {{duration}} phút",
+  "splitComplete": "Đã chia văn bản thành {{chunks}} phần",
+  "processingComplete": "Hoàn thành xử lý tất cả {{count}} phần"
+}
