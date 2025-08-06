@@ -50,6 +50,8 @@
   flex: 1;
   height: 44px; /* Full height to accommodate handle */
   gap: 2px; /* Small gap between active track, handle, and inactive track */
+  cursor: pointer; /* Make entire track clickable */
+  user-select: none; /* Prevent text selection during drag */
 }
 
 /* Active track - left portion with Material 3 primary color */
@@ -61,6 +63,7 @@
   height: 16px; /* Proper Material 3 track height */
   min-width: 0; /* Allow flex shrinking */
   margin-right: 1px; /* Small gap before handle */
+  transition: flex-grow 0.2s cubic-bezier(0.2, 0, 0, 1); /* Smooth snapping animation */
 }
 
 .standard-slider-active-track .track {
@@ -80,6 +83,7 @@
   height: 16px; /* Proper Material 3 track height */
   min-width: 0; /* Allow flex shrinking */
   margin-left: 1px; /* Small gap after handle */
+  transition: flex-grow 0.2s cubic-bezier(0.2, 0, 0, 1); /* Smooth snapping animation */
 }
 
 .standard-slider-inactive-track .track {
@@ -179,7 +183,7 @@
   opacity: 0;
 }
 
-/* Hidden input for accessibility and interaction */
+/* Hidden input for accessibility only - not used for interaction */
 .standard-slider-input {
   position: absolute;
   top: 0;
@@ -187,10 +191,10 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  cursor: pointer;
+  pointer-events: none; /* Disable all pointer events */
   margin: 0;
   padding: 0;
-  z-index: 15; /* Above all visual elements */
+  z-index: -1; /* Behind visual elements */
   -webkit-appearance: none; /* Remove webkit styling to prevent ghost effects */
   appearance: none; /* Remove native styling to prevent ghost effects */
   background: transparent; /* Ensure no background shows through */
@@ -235,6 +239,31 @@
 /* Disable transitions during dragging for instant response */
 .standard-slider-container.dragging .standard-slider-handle {
   transition: none !important;
+}
+
+.standard-slider-container.dragging .standard-slider-active-track {
+  transition: none !important;
+}
+
+.standard-slider-container.dragging .standard-slider-inactive-track {
+  transition: none !important;
+}
+
+.standard-slider-container.dragging .standard-slider-track-container {
+  cursor: grabbing !important;
+}
+
+/* Enable smooth transitions during snapping animation */
+.standard-slider-container.snapping .standard-slider-active-track {
+  transition: flex-grow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.standard-slider-container.snapping .standard-slider-inactive-track {
+  transition: flex-grow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.standard-slider-container.snapping .standard-slider-handle {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .standard-slider-container.dragging .standard-slider-active-track {

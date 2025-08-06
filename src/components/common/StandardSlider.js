@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -79,7 +79,11 @@ const StandardSlider = ({
 }) => {
   const { t } = useTranslation();
   const containerRef = useRef(null);
+  const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragValue, setDragValue] = useState(null); // Smooth drag value (can be between steps)
+  const [isAnimatingSnap, setIsAnimatingSnap] = useState(false);
+  const [lastStepValue, setLastStepValue] = useState(null); // Track last step value that was triggered
 
   // Apply Figma component properties if provided
   const resolvedProps = {
@@ -101,8 +105,9 @@ const StandardSlider = ({
       : value
   };
 
-  // Calculate percentage from resolved value
-  const percentage = ((resolvedProps.value - min) / (max - min)) * 100;
+  // Calculate percentage from resolved value or drag value for smooth movement
+  const currentValue = isDragging && dragValue !== null ? dragValue : resolvedProps.value;
+  const percentage = ((currentValue - min) / (max - min)) * 100;
 
   // Calculate active track flex-grow for Material 3 layout with gaps
   // The handle sits between tracks, so we need to account for spacing
@@ -112,7 +117,45 @@ const StandardSlider = ({
   // Hide end stop when handle is close to the end (Material Design 3 behavior)
   const shouldHideEndStop = percentage > 85; // Hide when >85% to avoid visual clutter
 
-  // Handle value change
+  // Snap value to nearest step
+  const snapToStep = useCallback((value) => {
+    const snappedValue = Math.round((value - min) / step) * step + min;
+    return Math.max(min, Math.min(max, snappedValue));
+  }, [min, max, step]);
+
+  // Convert pixel position to value
+  const pixelToValue = useCallback((clientX) => {
+    const container = containerRef.current;
+    if (!container) return resolvedProps.value;
+
+    const trackContainer = container.querySelector('.standard-slider-track-container');
+    if (!trackContainer) return resolvedProps.value;
+
+    const rect = trackContainer.getBoundingClientRect();
+    const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return min + percentage * (max - min);
+  }, [min, max, resolvedProps.value]);
+
+  // Handle smooth drag movement
+  const handleSmoothDrag = useCallback((clientX) => {
+    const newValue = pixelToValue(clientX);
+    setDragValue(newValue);
+
+    // Calculate the current step value that the drag position represents
+    const currentStepValue = snapToStep(newValue);
+
+    // Only trigger onChange if we've moved to a different step value
+    // Use a small epsilon for floating point comparison
+    const epsilon = step < 1 ? 0.001 : 0.1;
+    if (Math.abs(currentStepValue - (lastStepValue || resolvedProps.value)) > epsilon && onChange) {
+      // Debug logging (remove in production)
+      console.log(`StandardSlider: onChange triggered - from ${lastStepValue || resolvedProps.value} to ${currentStepValue}`);
+      setLastStepValue(currentStepValue);
+      onChange(currentStepValue);
+    }
+  }, [pixelToValue, snapToStep, lastStepValue, onChange, step, resolvedProps.value]);
+
+  // Handle value change (for native input fallback)
   const handleChange = (e) => {
     const newValue = parseFloat(e.target.value);
     if (onChange) {
@@ -131,54 +174,118 @@ const StandardSlider = ({
   };
 
   // Handle drag start
-  const handleDragStart = () => {
+  const handleDragStart = useCallback((e) => {
     setIsDragging(true);
+    setIsAnimatingSnap(false);
+
+    // Set initial drag value to current position
+    const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+    const initialValue = pixelToValue(clientX);
+    setDragValue(initialValue);
+
+    // Initialize lastStepValue to current resolved value
+    setLastStepValue(resolvedProps.value);
+
     if (onDragStart) {
       onDragStart();
     }
-  };
+  }, [pixelToValue, onDragStart, resolvedProps.value]);
 
-  // Handle drag end
-  const handleDragEnd = () => {
-    setIsDragging(false);
+  // Handle drag end with smooth snapping
+  const handleDragEnd = useCallback(() => {
+    if (dragValue !== null) {
+      const snappedValue = snapToStep(dragValue);
+
+      // Animate to snapped position
+      setIsAnimatingSnap(true);
+
+      // Ensure final value is set (in case we didn't trigger it during drag)
+      if (onChange && snappedValue !== lastStepValue) {
+        onChange(snappedValue);
+      }
+
+      // Clear drag state after a short delay to allow snap animation
+      setTimeout(() => {
+        setDragValue(null);
+        setIsAnimatingSnap(false);
+        setIsDragging(false);
+        setLastStepValue(null); // Reset step tracking
+      }, 200); // Match CSS transition duration
+    } else {
+      setIsDragging(false);
+      setLastStepValue(null); // Reset step tracking
+    }
+
     if (onDragEnd) {
       onDragEnd();
     }
-  };
+  }, [dragValue, snapToStep, onChange, onDragEnd, lastStepValue]);
 
-  // Add drag event listeners
+  // Add smooth drag event listeners
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const input = container.querySelector('.standard-slider-input');
-    if (!input) return;
+    const trackContainer = container.querySelector('.standard-slider-track-container');
+    if (!trackContainer) return;
 
-    // Mouse events
-    input.addEventListener('mousedown', handleDragStart);
-    input.addEventListener('change', handleDragEnd);
-
-    // Touch events for mobile
-    input.addEventListener('touchstart', handleDragStart);
-    input.addEventListener('touchend', handleDragEnd);
-
-    // Global mouse/touch end events
-    const handleGlobalEnd = () => {
-      handleDragEnd();
+    // Mouse drag handlers
+    const handleMouseDown = (e) => {
+      e.preventDefault();
+      handleDragStart(e);
     };
 
-    document.addEventListener('mouseup', handleGlobalEnd);
-    document.addEventListener('touchend', handleGlobalEnd);
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        e.preventDefault();
+        handleSmoothDrag(e.clientX);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        handleDragEnd();
+      }
+    };
+
+    // Touch drag handlers
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+      handleDragStart(e);
+    };
+
+    const handleTouchMove = (e) => {
+      if (isDragging && e.touches.length > 0) {
+        e.preventDefault();
+        handleSmoothDrag(e.touches[0].clientX);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (isDragging) {
+        handleDragEnd();
+      }
+    };
+
+    // Add event listeners
+    trackContainer.addEventListener('mousedown', handleMouseDown);
+    trackContainer.addEventListener('touchstart', handleTouchStart);
+
+    // Global move and end events
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
 
     return () => {
-      input.removeEventListener('mousedown', handleDragStart);
-      input.removeEventListener('change', handleDragEnd);
-      input.removeEventListener('touchstart', handleDragStart);
-      input.removeEventListener('touchend', handleDragEnd);
-      document.removeEventListener('mouseup', handleGlobalEnd);
-      document.removeEventListener('touchend', handleGlobalEnd);
+      trackContainer.removeEventListener('mousedown', handleMouseDown);
+      trackContainer.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [isDragging, handleDragStart, handleDragEnd, handleSmoothDrag]);
 
   // Build CSS classes using resolved props (support both lowercase and Figma capitalized)
   const containerClasses = [
@@ -191,6 +298,7 @@ const StandardSlider = ({
     resolvedProps.state.toLowerCase() === 'hover' ? 'hover' : '',
     resolvedProps.state.toLowerCase() === 'focus' ? 'focus' : '',
     isDragging ? 'dragging' : '',
+    isAnimatingSnap ? 'snapping' : '',
     className
   ].filter(Boolean).join(' ');
 
@@ -201,7 +309,7 @@ const StandardSlider = ({
       {...props}
     >
       {/* Track container with active track, handle, and inactive track */}
-      <div className="standard-slider-track-container">
+      <div ref={trackRef} className="standard-slider-track-container">
         {/* Active track (left portion) - uses flex-grow based on value */}
         <div
           className="standard-slider-active-track"
@@ -218,7 +326,7 @@ const StandardSlider = ({
         <div className="standard-slider-handle">
           {/* Value badge that appears when dragging */}
           <div className="standard-slider-value-badge">
-            {step < 1 ? parseFloat(resolvedProps.value).toFixed(2) : Math.round(resolvedProps.value)}
+            {step < 1 ? parseFloat(currentValue).toFixed(2) : Math.round(currentValue)}
           </div>
         </div>
 
@@ -251,7 +359,7 @@ const StandardSlider = ({
           ></div>
         </div>
 
-        {/* Hidden input for interaction - covers entire track container */}
+        {/* Hidden input for accessibility - not used for interaction */}
         <input
           type="range"
           min={min}
@@ -264,13 +372,15 @@ const StandardSlider = ({
           aria-label={ariaLabel || t('common.slider', 'Slider')}
           disabled={resolvedProps.state === 'disabled'}
           data-figma-component={getFigmaComponentName()}
+          tabIndex={-1}
+          style={{ pointerEvents: 'none' }}
         />
       </div>
 
       {/* Value indicator if enabled */}
       {resolvedProps.showValueIndicator && (
         <div className="standard-slider-value-indicator">
-          {step < 1 ? parseFloat(resolvedProps.value).toFixed(2) : Math.round(resolvedProps.value)}{max <= 1 ? '' : '%'}
+          {step < 1 ? parseFloat(currentValue).toFixed(2) : Math.round(currentValue)}{max <= 1 ? '' : '%'}
         </div>
       )}
 
