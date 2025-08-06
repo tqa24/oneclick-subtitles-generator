@@ -84,7 +84,8 @@ const LyricItem = ({
   onTextEdit,
   onInsert,
   onMerge,
-  hasNextLyric
+  hasNextLyric,
+  timeFormat = 'hms_ms'
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -403,7 +404,7 @@ const LyricItem = ({
                 className={`time-control start-time ${isDragging(index, 'start') ? 'dragging' : ''}`}
                 onMouseDown={(e) => onMouseDown(e, index, 'start')}
               >
-                {formatTime(lyric.start, 'hms_ms')}
+                {formatTime(lyric.start, timeFormat === 'seconds' ? 'seconds' : 'hms_ms')}
               </span>
 
               <span className="time-separator">-</span>
@@ -412,7 +413,7 @@ const LyricItem = ({
                 className={`time-control end-time ${isDragging(index, 'end') ? 'dragging' : ''}`}
                 onMouseDown={(e) => onMouseDown(e, index, 'end')}
               >
-                {formatTime(lyric.end, 'hms_ms')}
+                {formatTime(lyric.end, timeFormat === 'seconds' ? 'seconds' : 'hms_ms')}
               </span>
             </div>
           )}
