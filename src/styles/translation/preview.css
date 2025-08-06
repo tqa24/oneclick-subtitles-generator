@@ -8,12 +8,27 @@
   border: 1px solid var(--border-color);
 }
 
+/* Remove border for translation-row preview-row */
+.translation-row.preview-row .translation-preview {
+  border: none;
+}
+
+/* Header container with title and stats */
+.translation-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
 .translation-preview h4 {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1rem;
   color: var(--text-primary);
   display: flex;
   align-items: center;
+  flex: 1;
 }
 
 /* Cache indicator styling */
@@ -28,26 +43,124 @@
   stroke: var(--md-primary);
 }
 
-.translation-preview-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* Stats section - right aligned in header */
+.translation-preview-stats {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.preview-subtitle {
+/* Virtualized container */
+.translation-preview-virtualized {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background-color: var(--md-surface-1);
+}
+
+/* Virtualized list */
+.translation-preview-list {
+  background-color: var(--md-surface-1);
+  overflow-x: hidden !important; /* Prevent horizontal scrollbar */
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.translation-preview-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.translation-preview-list::-webkit-scrollbar:horizontal {
+  display: none; /* Hide horizontal scrollbar */
+}
+
+.translation-preview-list::-webkit-scrollbar-track {
+  background: var(--md-surface-1);
+  border-radius: 4px;
+}
+
+.translation-preview-list::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 4px;
+}
+
+.translation-preview-list::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}
+
+/* Individual subtitle row in virtualized list */
+.preview-subtitle-row {
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.preview-subtitle-row:hover {
+  background-color: var(--md-surface-2);
+}
+
+.preview-subtitle-row:last-child {
+  border-bottom: none;
+}
+
+/* Sticky numbering within each row */
+.preview-number-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex-shrink: 0;
+  width: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 600;
+  background-color: var(--md-surface-3);
+  border-right: 1px solid var(--border-color);
+  min-height: 100%;
+}
+
+/* Content area (time + text) */
+.preview-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  min-width: 0; /* Allow text to wrap properly */
 }
 
 .preview-time {
   font-size: 0.85rem;
   color: var(--text-secondary);
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
 }
 
 .preview-text {
   color: var(--text-primary);
   line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Legacy styles for backward compatibility */
+.translation-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .preview-more {

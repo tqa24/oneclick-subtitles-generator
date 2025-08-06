@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
+  const { t } = useTranslation();
   const [lyrics, setLyrics] = useState([]);
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
@@ -335,7 +337,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
 
     // Show warning about translations
-    showTranslationWarning('You have deleted a subtitle. Translations may be outdated. Please translate again.');
+    showTranslationWarning(t('translation.warningDeleted', 'You have deleted a subtitle. Translations may be outdated. Please translate again.'));
   };
 
   const handleTextEdit = (index, newText) => {
@@ -349,7 +351,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
 
     // Show warning about translations
-    showTranslationWarning('You have edited the text of original subtitles. Translations may be outdated. Please translate again.');
+    showTranslationWarning(t('translation.warningEdited', 'You have edited the text of original subtitles. Translations may be outdated. Please translate again.'));
   };
 
   const handleInsertLyric = (index) => {
@@ -376,7 +378,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       }
 
       // Show warning about translations
-      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
       return;
     }
 
@@ -403,7 +405,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       }
 
       // Show warning about translations
-      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
       return;
     }
 
@@ -449,7 +451,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       }
 
       // Show warning about translations
-      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
     } else {
       // If gap is large enough, insert in the middle
       const midPoint = prevLyric.end + gap / 2;
@@ -471,7 +473,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
       }
 
       // Show warning about translations
-      showTranslationWarning('You have inserted a new subtitle. Translations may be outdated. Please translate again.');
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
     }
   };
 
@@ -507,7 +509,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
 
     // Show warning about translations
-    showTranslationWarning('You have merged subtitles. Translations may be outdated. Please translate again.');
+    showTranslationWarning(t('translation.warningMerged', 'You have merged subtitles. Translations may be outdated. Please translate again.'));
   };
 
   // Handle smart subtitle splitting
@@ -525,7 +527,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     }
 
     // Show warning about translations
-    showTranslationWarning('You have split subtitles. Translations may be outdated. Please translate again.');
+    showTranslationWarning(t('translation.warningSplit', 'You have split subtitles. Translations may be outdated. Please translate again.'));
   };
 
   // Add event listener for redo action

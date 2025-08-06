@@ -13,6 +13,7 @@
   "newTranslation": "Bản dịch mới",
   "preview": "Xem trước bản dịch",
   "moreSubtitles": "... và {{count}} phụ đề khác",
+  "totalSubtitles": "Tổng cộng: {{count}} phụ đề",
   "targetLanguage": "Ngôn ngữ đích",
   "modelSelection": "Mô hình",
   "promptSettings": "Lệnh",
@@ -100,5 +101,10 @@
     "error": "Lỗi trong quá trình dịch hàng loạt: {{message}}",
     "downloadAll": "Tải xuống tất cả",
     "downloadZip": "Tải xuống ZIP"
-  }
+  },
+  "warningDeleted": "Bạn đã xóa một phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
+  "warningEdited": "Bạn đã chỉnh sửa văn bản của phụ đề gốc. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
+  "warningInserted": "Bạn đã chèn một phụ đề mới. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
+  "warningMerged": "Bạn đã gộp các phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
+  "warningSplit": "Bạn đã tách phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại."
 }

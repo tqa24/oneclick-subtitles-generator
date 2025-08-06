@@ -36,20 +36,15 @@ const generateSubtitleHash = (subtitles) => {
 const getCurrentMediaId = () => {
   // Check for YouTube URL first
   const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
-  console.log('getCurrentMediaId - YouTube URL:', youtubeUrl);
 
   if (youtubeUrl) {
     // Extract video ID from URL
     const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
-    const videoId = match ? match[1] : null;
-    console.log('getCurrentMediaId - Extracted video ID:', videoId);
-    return videoId;
+    return match ? match[1] : null;
   }
 
   // Check for file cache ID
-  const fileId = localStorage.getItem(CURRENT_FILE_ID_KEY);
-  console.log('getCurrentMediaId - File cache ID:', fileId);
-  return fileId;
+  return localStorage.getItem(CURRENT_FILE_ID_KEY);
 };
 
 /**
@@ -131,47 +126,37 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     try {
       // Get current media ID
       const mediaId = getCurrentMediaId();
-      console.log('Translation cache loading - Media ID:', mediaId);
 
       if (!mediaId) {
-        console.log('Translation cache loading - No media ID found');
         return;
       }
 
       // Generate a hash of the subtitles
       const subtitleHash = generateSubtitleHash(subtitles);
-      console.log('Translation cache loading - Subtitle hash:', subtitleHash);
 
       // Get cache entry
       const cacheEntryJson = localStorage.getItem(TRANSLATION_CACHE_KEY);
       if (!cacheEntryJson) {
-        console.log('Translation cache loading - No cache entry found');
         return;
       }
 
       const cacheEntry = JSON.parse(cacheEntryJson);
-      console.log('Translation cache loading - Cache entry:', {
-        cachedMediaId: cacheEntry.mediaId,
-        cachedSubtitleHash: cacheEntry.subtitleHash,
-        currentMediaId: mediaId,
-        currentSubtitleHash: subtitleHash,
-        mediaIdMatch: cacheEntry.mediaId === mediaId,
-        subtitleHashMatch: cacheEntry.subtitleHash === subtitleHash
-      });
 
-      // Check if cache entry is for the current media and subtitles
-      if (cacheEntry.mediaId !== mediaId || cacheEntry.subtitleHash !== subtitleHash) {
-        console.log('Translation cache loading - Cache mismatch, not loading');
+      // More lenient cache matching - prioritize media ID over subtitle hash
+      // This allows translations to persist even with minor subtitle edits
+      if (cacheEntry.mediaId !== mediaId) {
         return;
+      }
+
+      // If subtitle hash doesn't match, still load but log it for debugging
+      if (cacheEntry.subtitleHash !== subtitleHash) {
+        console.log('Translation cache: Loading despite subtitle changes (less strict mode)');
       }
 
       // Check if we have translations
       if (!cacheEntry.translations || !cacheEntry.translations.length) {
-        console.log('Translation cache loading - No translations in cache');
         return;
       }
-
-      console.log('Translation cache loading - Loading translations from cache');
 
       // Set loading state first
       setLoadedFromCache(true);
