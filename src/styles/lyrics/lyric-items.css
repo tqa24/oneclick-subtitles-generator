@@ -71,6 +71,26 @@
   flex-wrap: wrap; /* Allow wrapping for very long content */
 }
 
+/* Lyric numbering */
+.lyric-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 32px;
+  font-size: var(--md-body-small-size);
+  font-weight: 400;
+  color: var(--md-on-surface-variant);
+  flex-shrink: 0;
+  transition: color var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+/* Current lyric numbering styling */
+.lyric-item.current .lyric-number {
+  color: var(--md-primary);
+  font-weight: 500;
+}
+
 /* Allow lyric text to wrap to multiple lines - improved for very long text */
 .lyric-text {
   flex: 1;

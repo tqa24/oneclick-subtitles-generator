@@ -240,6 +240,11 @@ const LyricItem = ({
         }}
       >
         <div className="lyric-content">
+          {/* Lyric numbering */}
+          <div className="lyric-number">
+            {index + 1}
+          </div>
+
           {/* Controls moved to the left */}
           {allowEditing && (
             <div className="lyric-controls">
