@@ -11,28 +11,28 @@ const GeminiHeaderAnimation = () => {
   const connectionsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 100, isClicked: false });
 
-  // Get theme-aware star colors - stellar palette with proper light theme visibility
+  // Get theme-aware star colors - natural, subtle stellar palette
   const getThemeColors = () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
     return {
-      // Theme-appropriate star outline colors
+      // Natural star outline colors - more muted
       strokeColor: isDark
-        ? 'rgba(255, 255, 255, 0.8)'  // White for dark theme
-        : 'rgba(60, 60, 80, 0.7)',    // Dark blue-gray for light theme
+        ? 'rgba(240, 240, 250, 0.7)'  // Soft white for dark theme
+        : 'rgba(80, 80, 100, 0.6)',   // Muted dark for light theme
       connectionColor: isDark
-        ? 'rgba(255, 255, 255, 0.2)'  // Subtle white for dark theme
-        : 'rgba(60, 60, 80, 0.25)',   // Visible dark lines for light theme
-      // Stellar gradient colors - enhanced for light theme visibility
+        ? 'rgba(200, 200, 220, 0.15)' // Very subtle light lines for dark theme
+        : 'rgba(100, 100, 120, 0.2)',  // Subtle dark lines for light theme
+      // More natural, desaturated stellar colors
       gradientStart: isDark
-        ? 'rgba(145, 104, 192, 0.9)'  // Purple (dark theme)
-        : 'rgba(120, 80, 160, 0.8)',  // Deeper purple (light theme)
+        ? 'rgba(180, 160, 200, 0.8)'  // Muted purple (dark theme)
+        : 'rgba(140, 120, 160, 0.7)',  // Deeper muted purple (light theme)
       gradientMid: isDark
-        ? 'rgba(86, 132, 209, 0.8)'   // Blue (dark theme)
-        : 'rgba(70, 110, 180, 0.7)',  // Deeper blue (light theme)
+        ? 'rgba(160, 180, 210, 0.7)'  // Muted blue (dark theme)
+        : 'rgba(120, 140, 180, 0.6)',  // Deeper muted blue (light theme)
       gradientEnd: isDark
-        ? 'rgba(27, 161, 227, 0.7)'   // Light blue (dark theme)
-        : 'rgba(20, 130, 190, 0.6)'   // Deeper light blue (light theme)
+        ? 'rgba(180, 200, 220, 0.6)'  // Soft light blue (dark theme)
+        : 'rgba(140, 160, 190, 0.5)'  // Deeper soft blue (light theme)
     };
   };
 
@@ -113,10 +113,10 @@ const GeminiHeaderAnimation = () => {
           breatheSpeed: 0.002 + Math.random() * 0.002, // Slow breathing (0.002-0.004)
           breatheAmplitude: 0.06 + Math.random() * 0.10, // Size variation (6-16%)
           // Occasional twinkling rotation (only some stars)
-          isTwinkler: Math.random() < 0.22, // 22% chance to be a twinkling star
+          isTwinkler: Math.random() < 0.15, // 15% chance to be a twinkling star (reduced for subtlety)
           twinklePhase: Math.random() * Math.PI * 2,
-          twinkleSpeed: 0.003 + Math.random() * 0.005, // Slow twinkle speed
-          twinkleIntensity: 0.06 + Math.random() * 0.12 // Rotation intensity (0.06-0.18 radians)
+          twinkleSpeed: 0.002 + Math.random() * 0.003, // Even slower, more natural twinkle
+          twinkleIntensity: 0.03 + Math.random() * 0.06 // Very subtle rotation (0.03-0.09 radians)
         });
       }
 
@@ -195,13 +195,30 @@ const GeminiHeaderAnimation = () => {
       connectionsRef.current = connections;
     };
 
-    // Draw a single Gemini icon
-    const drawGeminiIcon = (x, y, size, rotation, isFilled, opacity) => {
+    // Draw a single Gemini icon with subtle, natural star effects
+    const drawGeminiIcon = (x, y, size, rotation, isFilled, opacity, particle) => {
       ctx.save();
       // Translate to the center point and then offset by half the SVG size to center it properly
       ctx.translate(x, y);
       ctx.rotate(rotation);
-      // The Gemini icon is drawn in a 28x28 viewBox, so we need to offset by -14,-14 to center it
+
+      const colors = getThemeColors();
+
+      // Only add a very subtle glow for filled stars, and only if they're bright enough
+      if (isFilled && opacity > 0.5) {
+        // Very subtle, tight glow - just a hint of luminosity
+        const subtleGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.2);
+        subtleGlow.addColorStop(0, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.1})`));
+        subtleGlow.addColorStop(0.7, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.05})`));
+        subtleGlow.addColorStop(1, colors.gradientMid.replace(/[\d.]+\)$/, `0)`));
+
+        ctx.fillStyle = subtleGlow;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw the actual Gemini star shape
       ctx.scale(size / 28, size / 28); // Scale to desired size
       ctx.translate(-14, -14); // Center the SVG path around the translated point
 
@@ -226,24 +243,25 @@ const GeminiHeaderAnimation = () => {
       ctx.bezierCurveTo(14.3617, 24.2433, 14, 26.0633, 14, 28);
       ctx.closePath();
 
-      // Fill or stroke based on the type
-      const colors = getThemeColors();
-
+      // Fill or stroke the star shape based on the type
       if (isFilled) {
         const gradient = ctx.createLinearGradient(-14, -14, 14, 14);
-        // Apply opacity to gradient colors
-        gradient.addColorStop(0, colors.gradientStart.replace(/[\d.]+\)$/, `${opacity * 0.8})`));
-        gradient.addColorStop(0.5, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.7})`));
-        gradient.addColorStop(1, colors.gradientEnd.replace(/[\d.]+\)$/, `${opacity * 0.6})`));
+        // Brighter colors for the actual star shape
+        gradient.addColorStop(0, colors.gradientStart.replace(/[\d.]+\)$/, `${opacity * 1.0})`));
+        gradient.addColorStop(0.5, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.9})`));
+        gradient.addColorStop(1, colors.gradientEnd.replace(/[\d.]+\)$/, `${opacity * 0.8})`));
 
         ctx.fillStyle = gradient;
         ctx.fill();
-        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 0.7})`);
+
+        // Add a bright outline
+        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 0.8})`);
         ctx.lineWidth = 0.5;
         ctx.stroke();
       } else {
-        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity})`);
-        ctx.lineWidth = 1;
+        // For outline stars, make them brighter
+        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 1.2})`);
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
@@ -395,7 +413,8 @@ const GeminiHeaderAnimation = () => {
           breathingSize,
           particle.rotation,
           particle.isFilled,
-          pulseOpacity
+          pulseOpacity,
+          particle
         );
       });
 
