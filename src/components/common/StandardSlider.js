@@ -191,6 +191,10 @@ const StandardSlider = ({
 
   // Handle drag end with smooth snapping
   const handleDragEnd = useCallback(() => {
+    // Stop dragging immediately to prevent further mouse movements from affecting the slider
+    setIsDragging(false);
+    setLastStepValue(null); // Reset step tracking
+
     if (dragValue !== null) {
       const snappedValue = snapToStep(dragValue);
 
@@ -202,16 +206,11 @@ const StandardSlider = ({
         onChange(snappedValue);
       }
 
-      // Clear drag state after a short delay to allow snap animation
+      // Clear remaining drag state after animation completes
       setTimeout(() => {
         setDragValue(null);
         setIsAnimatingSnap(false);
-        setIsDragging(false);
-        setLastStepValue(null); // Reset step tracking
       }, 200); // Match CSS transition duration
-    } else {
-      setIsDragging(false);
-      setLastStepValue(null); // Reset step tracking
     }
 
     if (onDragEnd) {
