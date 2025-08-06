@@ -25,21 +25,32 @@ const GeminiHeaderAnimation = () => {
       canvas.width = header.offsetWidth;
       canvas.height = header.offsetHeight;
 
-      // If particles exist, recalculate connections
-      if (particles.length > 0) {
+      // Recreate particles when canvas is resized to ensure valid positions
+      // This prevents particles from having coordinates outside the new canvas bounds
+      if (canvas.width > 0 && canvas.height > 0) {
+        createParticles();
         updateConnections();
       }
     };
 
     // Create particles
     const createParticles = () => {
+      // Ensure canvas has valid dimensions before creating particles
+      if (canvas.width <= 0 || canvas.height <= 0) {
+        return;
+      }
+
       const particleCount = Math.max(5, Math.floor(canvas.width / 100)); // Responsive particle count
       particles = [];
 
       for (let i = 0; i < particleCount; i++) {
         const size = 8 + Math.random() * 8; // 8-16px
-        const anchorX = Math.random() * canvas.width;
-        const anchorY = Math.random() * canvas.height;
+
+        // Ensure particles are positioned within canvas bounds with some margin
+        const margin = size; // Use particle size as margin
+        const anchorX = margin + Math.random() * (canvas.width - 2 * margin);
+        const anchorY = margin + Math.random() * (canvas.height - 2 * margin);
+
         // Position is always at the anchor point
         const x = anchorX;
         const y = anchorY;
@@ -97,11 +108,12 @@ const GeminiHeaderAnimation = () => {
     // Draw a single Gemini icon
     const drawGeminiIcon = (x, y, size, rotation, isFilled, opacity) => {
       ctx.save();
-      // Translate to the center point
+      // Translate to the center point and then offset by half the SVG size to center it properly
       ctx.translate(x, y);
       ctx.rotate(rotation);
-      // The Gemini icon is drawn in a 28x28 viewBox with center at (14,14)
+      // The Gemini icon is drawn in a 28x28 viewBox, so we need to offset by -14,-14 to center it
       ctx.scale(size / 28, size / 28); // Scale to desired size
+      ctx.translate(-14, -14); // Center the SVG path around the translated point
 
       // Draw the Gemini icon path
       ctx.beginPath();
@@ -151,14 +163,28 @@ const GeminiHeaderAnimation = () => {
         const p1 = particles[connection.from];
         const p2 = particles[connection.to];
 
-        // Calculate the exact center of each star
-        // The Gemini icon's center is at (14, 14) in a 28x28 viewBox
-        // But since we're drawing at the center already, we don't need to adjust
+        // Ensure particles exist and have valid positions
+        if (!p1 || !p2 ||
+            typeof p1.x !== 'number' || typeof p1.y !== 'number' ||
+            typeof p2.x !== 'number' || typeof p2.y !== 'number') {
+          return; // Skip invalid connections
+        }
+
+        // The Gemini star is now properly centered at the particle position
+        // We translate to (x, y), then offset by (-14, -14) to center the 28x28 SVG path
+        // This means the visual center of the star is exactly at (p.x, p.y)
+
+        // Calculate connection points - use current particle positions (not anchor points)
+        // This ensures lines connect to where the stars actually are, including during mouse interactions
+        const x1 = p1.x;
+        const y1 = p1.y;
+        const x2 = p2.x;
+        const y2 = p2.y;
 
         // Draw the connection line
         ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
         ctx.strokeStyle = `rgba(255, 255, 255, ${connection.opacity})`;
         ctx.lineWidth = 0.5;
         ctx.stroke();
@@ -256,10 +282,7 @@ const GeminiHeaderAnimation = () => {
     };
 
     // Initialize
-    resizeCanvas();
-    createParticles();
-    // Calculate connections once since they're based on fixed anchor points
-    updateConnections();
+    resizeCanvas(); // This now calls createParticles() and updateConnections() if canvas is valid
     animate();
 
     // Add event listeners
