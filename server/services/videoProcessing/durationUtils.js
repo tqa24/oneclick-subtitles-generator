@@ -9,7 +9,7 @@ const path = require('path');
 const { getFfmpegPath, getFfprobePath } = require('../shared/ffmpegUtils');
 
 /**
- * Get the duration of a media file using ffprobe
+ * Get the duration of a media file using ffprobe (optimized version)
  * @param {string} mediaPath - Path to the media file
  * @returns {Promise<number>} - Duration in seconds
  */
@@ -20,7 +20,6 @@ function getMediaDuration(mediaPath) {
       console.error(`[GET-DURATION] Media file does not exist: ${mediaPath}`);
       // For cached files, use a fallback duration instead of failing
       if (mediaPath.includes('cache') || mediaPath.includes('videos')) {
-
         return resolve(600);
       }
       return reject(new Error(`Media file does not exist: ${mediaPath}`));
@@ -29,16 +28,24 @@ function getMediaDuration(mediaPath) {
     // Check file size
     const fileSize = fs.statSync(mediaPath).size;
 
-
-
     // If file is too small, it might be corrupted
     if (fileSize < 1000) { // Less than 1KB
       console.warn(`[GET-DURATION] File is very small (${fileSize} bytes), might be corrupted`);
-
       return resolve(600);
     }
 
-    // Try to get duration using format information first
+    // Use the optimized getVideoInfo function for video files
+    if (mediaPath.match(/\.(mp4|avi|mov|mkv|webm|flv|wmv)$/i)) {
+      getVideoInfo(mediaPath)
+        .then(info => resolve(info.duration))
+        .catch(error => {
+          console.warn(`[GET-DURATION] getVideoInfo failed, using fallback: ${error.message}`);
+          resolve(600);
+        });
+      return;
+    }
+
+    // For audio files, use a simplified approach
     const ffprobePath = getFfprobePath();
     const durationProbe = spawn(ffprobePath, [
       '-v', 'error',
@@ -56,127 +63,24 @@ function getMediaDuration(mediaPath) {
 
     durationProbe.stderr.on('data', (data) => {
       errorOutput += data.toString();
-      console.error(`[GET-DURATION] ffprobe stderr: ${data}`);
     });
 
-    // Set a timeout to prevent hanging
+    // Reduced timeout for faster failure detection
     const timeout = setTimeout(() => {
       console.error(`[GET-DURATION] Timeout while getting duration. Using fallback.`);
       durationProbe.kill();
       resolve(600); // Use fallback duration
-    }, 10000); // 10 second timeout
+    }, 5000); // Reduced from 10s to 5s
 
     durationProbe.on('close', (code) => {
-      clearTimeout(timeout); // Clear the timeout
+      clearTimeout(timeout);
 
       if (code !== 0 || !durationOutput.trim()) {
-        console.error(`[GET-DURATION] Failed to get duration from format. Error code: ${code}`);
-        console.error(`[GET-DURATION] Error output: ${errorOutput}`);
-
-
-        // Try alternative method using stream information
-        const streamProbe = spawn(ffprobePath, [
-          '-v', 'error',
-          '-select_streams', 'v:0',
-          '-show_entries', 'stream=duration',
-          '-of', 'default=noprint_wrappers=1:nokey=1',
-          mediaPath
-        ]);
-
-        let streamDurationOutput = '';
-        let streamErrorOutput = '';
-
-        streamProbe.stdout.on('data', (data) => {
-          streamDurationOutput += data.toString();
-        });
-
-        streamProbe.stderr.on('data', (data) => {
-          streamErrorOutput += data.toString();
-          console.error(`[GET-DURATION] Alternative ffprobe stderr: ${data}`);
-        });
-
-        // Set a timeout for the alternative method
-        const streamTimeout = setTimeout(() => {
-          console.error(`[GET-DURATION] Timeout in alternative method. Using fallback.`);
-          streamProbe.kill();
-          resolve(600); // Use fallback duration
-        }, 10000); // 10 second timeout
-
-        streamProbe.on('close', (streamCode) => {
-          clearTimeout(streamTimeout); // Clear the timeout
-
-          if (streamCode !== 0 || !streamDurationOutput.trim()) {
-            console.error(`[GET-DURATION] Both methods failed. Using fallback duration of 600 seconds.`);
-            console.error(`[GET-DURATION] Alternative method error code: ${streamCode}`);
-            console.error(`[GET-DURATION] Alternative method error output: ${streamErrorOutput}`);
-
-            // Try one more method - using ffmpeg to analyze frames
-            const ffmpegPath = getFfmpegPath();
-            const frameProbe = spawn(ffmpegPath, [
-              '-i', mediaPath,
-              '-f', 'null',
-              '-hide_banner',
-              '-loglevel', 'info',
-              '-'  // Output to null
-            ]);
-
-            let frameOutput = '';
-
-            frameProbe.stderr.on('data', (data) => {
-              frameOutput += data.toString();
-            });
-
-            // Set a timeout for the final method
-            const frameTimeout = setTimeout(() => {
-              console.error(`[GET-DURATION] Timeout in final method. Using fallback.`);
-              frameProbe.kill();
-              resolve(600); // Use fallback duration
-            }, 15000); // 15 second timeout
-
-            frameProbe.on('close', (frameCode) => {
-              clearTimeout(frameTimeout); // Clear the timeout
-
-              // Try to extract duration from ffmpeg output
-              const durationMatch = frameOutput.match(/Duration: (\d+):(\d+):(\d+\.\d+)/i);
-              if (frameCode === 0 && durationMatch) {
-                const hours = parseInt(durationMatch[1]);
-                const minutes = parseInt(durationMatch[2]);
-                const seconds = parseFloat(durationMatch[3]);
-                const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-
-                resolve(totalSeconds);
-              } else {
-                console.error(`[GET-DURATION] All methods failed. Using fallback duration of 600 seconds.`);
-                // Use a fallback duration of 10 minutes (600 seconds)
-                // This allows processing to continue even if we can't determine the exact duration
-                resolve(600);
-              }
-            });
-
-            frameProbe.on('error', (err) => {
-              clearTimeout(frameTimeout);
-              console.error(`[GET-DURATION] Final method error: ${err.message}`);
-              // Use fallback duration
-              resolve(600);
-            });
-          } else {
-            const duration = parseFloat(streamDurationOutput.trim());
-
-            resolve(duration);
-          }
-        });
-
-        streamProbe.on('error', (err) => {
-          clearTimeout(streamTimeout);
-          console.error(`[GET-DURATION] Alternative method error: ${err.message}`);
-          // Use fallback duration
-          resolve(600);
-        });
-
+        console.error(`[GET-DURATION] Failed to get duration. Using fallback duration of 600 seconds.`);
+        resolve(600);
       } else {
         const duration = parseFloat(durationOutput.trim());
-
-        resolve(duration);
+        resolve(isNaN(duration) ? 600 : duration);
       }
     });
 
@@ -186,7 +90,6 @@ function getMediaDuration(mediaPath) {
 
       // For cached files, use a fallback duration instead of failing
       if (mediaPath.includes('cache') || mediaPath.includes('videos')) {
-
         resolve(600);
       } else {
         reject(err);
@@ -196,15 +99,15 @@ function getMediaDuration(mediaPath) {
 }
 
 /**
- * Get video dimensions using ffprobe
+ * Get comprehensive video information (dimensions, duration, codec) in a single ffprobe call
  * @param {string} mediaPath - Path to the video file
- * @returns {Promise<Object>} - Object with width, height, and quality string
+ * @returns {Promise<Object>} - Object with width, height, duration, codec, and quality info
  */
-function getVideoDimensions(mediaPath) {
+function getVideoInfo(mediaPath) {
   return new Promise((resolve, reject) => {
     // Check if the file exists first
     if (!fs.existsSync(mediaPath)) {
-      console.error(`[GET-DIMENSIONS] Video file does not exist: ${mediaPath}`);
+      console.error(`[GET-VIDEO-INFO] Video file does not exist: ${mediaPath}`);
       return reject(new Error(`Video file does not exist: ${mediaPath}`));
     }
 
@@ -213,6 +116,7 @@ function getVideoDimensions(mediaPath) {
       '-v', 'quiet',
       '-print_format', 'json',
       '-show_streams',
+      '-show_format',
       '-select_streams', 'v:0',
       mediaPath
     ]);
@@ -228,18 +132,18 @@ function getVideoDimensions(mediaPath) {
       stderr += data.toString();
     });
 
-    // Set a timeout to prevent hanging
+    // Reduced timeout for faster failure detection
     const timeout = setTimeout(() => {
-      console.error(`[GET-DIMENSIONS] Timeout while getting dimensions`);
+      console.error(`[GET-VIDEO-INFO] Timeout while getting video info`);
       ffprobeProcess.kill();
-      reject(new Error('Timeout while getting video dimensions'));
-    }, 10000); // 10 second timeout
+      reject(new Error('Timeout while getting video information'));
+    }, 5000); // Reduced from 10s to 5s
 
     ffprobeProcess.on('close', (code) => {
       clearTimeout(timeout);
 
       if (code !== 0) {
-        console.error(`[GET-DIMENSIONS] ffprobe failed: ${stderr}`);
+        console.error(`[GET-VIDEO-INFO] ffprobe failed: ${stderr}`);
         reject(new Error(`ffprobe failed: ${stderr}`));
         return;
       }
@@ -247,12 +151,14 @@ function getVideoDimensions(mediaPath) {
       try {
         const data = JSON.parse(stdout);
         const videoStream = data.streams && data.streams[0];
+        const format = data.format;
 
         if (!videoStream) {
           reject(new Error('No video stream found'));
           return;
         }
 
+        // Extract dimensions
         const width = parseInt(videoStream.width);
         const height = parseInt(videoStream.height);
 
@@ -261,106 +167,94 @@ function getVideoDimensions(mediaPath) {
           return;
         }
 
+        // Extract duration (try stream first, then format)
+        let duration = parseFloat(videoStream.duration) || parseFloat(format?.duration) || 600;
+
+        // Extract codec
+        const codec = videoStream.codec_name || 'unknown';
+
         // Convert height to quality string
         let quality = `${height}p`;
-
-        // Handle common aspect ratios and special cases
-        if (width > height) {
-          // Landscape video
-          quality = `${height}p`;
-        } else {
-          // Portrait video (common for TikTok, Instagram Stories) - show actual dimensions
+        if (width <= height) {
+          // Portrait video - show actual dimensions
           quality = `${height}p (${width}×${height})`;
         }
 
-        console.log(`[GET-DIMENSIONS] Video dimensions: ${width}×${height} (${quality})`);
+        console.log(`[GET-VIDEO-INFO] Video info: ${width}×${height}, ${duration}s, codec: ${codec}`);
 
         resolve({
           width,
           height,
+          duration,
+          codec,
           quality,
           resolution: `${width}×${height}`
         });
       } catch (error) {
-        console.error(`[GET-DIMENSIONS] Failed to parse ffprobe output: ${error.message}`);
+        console.error(`[GET-VIDEO-INFO] Failed to parse ffprobe output: ${error.message}`);
         reject(new Error(`Failed to parse ffprobe output: ${error.message}`));
       }
     });
 
     ffprobeProcess.on('error', (error) => {
       clearTimeout(timeout);
-      console.error(`[GET-DIMENSIONS] Failed to spawn ffprobe: ${error.message}`);
+      console.error(`[GET-VIDEO-INFO] Failed to spawn ffprobe: ${error.message}`);
       reject(new Error(`Failed to spawn ffprobe: ${error.message}`));
     });
   });
+}
+
+/**
+ * Get video dimensions using ffprobe (legacy function - now uses getVideoInfo)
+ * @param {string} mediaPath - Path to the video file
+ * @returns {Promise<Object>} - Object with width, height, and quality string
+ */
+function getVideoDimensions(mediaPath) {
+  return getVideoInfo(mediaPath).then(info => ({
+    width: info.width,
+    height: info.height,
+    quality: info.quality,
+    resolution: info.resolution
+  }));
 }
 
 // For backward compatibility
 const getVideoDuration = getMediaDuration;
 
 /**
- * Check if a video uses HEVC codec and convert it to H.264 if needed
+ * Check if a video uses HEVC codec and convert it to H.264 if needed (optimized version)
  * @param {string} videoPath - Path to the video file
  * @returns {Promise<string>} - Path to the compatible video (original or converted)
  */
 async function ensureVideoCompatibility(videoPath) {
-  return new Promise((resolve, reject) => {
-    // First, check the video codec
-    const ffprobeArgs = [
-      '-v', 'quiet',
-      '-select_streams', 'v:0',
-      '-show_entries', 'stream=codec_name',
-      '-of', 'csv=p=0',
-      videoPath
-    ];
+  try {
+    // Use the optimized getVideoInfo function to get codec info
+    const videoInfo = await getVideoInfo(videoPath);
+    const codec = videoInfo.codec.toLowerCase();
 
-    const ffprobePath = getFfprobePath();
-    const ffprobe = spawn(ffprobePath, ffprobeArgs);
-    let stdout = '';
-    let stderr = '';
+    console.log(`[VideoCompatibility] Detected video codec: ${codec}`);
 
-    ffprobe.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
+    // Check if conversion is needed
+    // VP9 is supported by Remotion (Chrome supports VP9), so only convert truly problematic codecs
+    const problematicCodecs = ['hevc', 'h265', 'av1'];
+    if (problematicCodecs.includes(codec)) {
+      console.log(`[VideoCompatibility] Converting ${codec} video to H.264 for better compatibility`);
 
-    ffprobe.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    ffprobe.on('close', async (code) => {
-      if (code !== 0) {
-        console.error(`[VideoCompatibility] FFprobe failed: ${stderr}`);
-        resolve(videoPath); // Return original path if we can't check
-        return;
+      try {
+        const convertedPath = await convertToH264(videoPath);
+        return convertedPath;
+      } catch (error) {
+        console.error(`[VideoCompatibility] Conversion failed: ${error.message}`);
+        return videoPath; // Return original if conversion fails
       }
-
-      const codec = stdout.trim().toLowerCase();
-      console.log(`[VideoCompatibility] Detected video codec: ${codec}`);
-
-      // Check if conversion is needed
-      // VP9 is supported by Remotion (Chrome supports VP9), so only convert truly problematic codecs
-      const problematicCodecs = ['hevc', 'h265', 'av1'];
-      if (problematicCodecs.includes(codec)) {
-        console.log(`[VideoCompatibility] Converting ${codec} video to H.264 for better compatibility`);
-
-        try {
-          const convertedPath = await convertToH264(videoPath);
-          resolve(convertedPath);
-        } catch (error) {
-          console.error(`[VideoCompatibility] Conversion failed: ${error.message}`);
-          resolve(videoPath); // Return original if conversion fails
-        }
-      } else {
-        console.log(`[VideoCompatibility] Video codec ${codec} is compatible, no conversion needed`);
-        resolve(videoPath);
-      }
-    });
-
-    ffprobe.on('error', (error) => {
-      console.error(`[VideoCompatibility] FFprobe error: ${error.message}`);
-      resolve(videoPath); // Return original path if we can't check
-    });
-  });
+    } else {
+      console.log(`[VideoCompatibility] Video codec ${codec} is compatible, no conversion needed`);
+      return videoPath;
+    }
+  } catch (error) {
+    console.error(`[VideoCompatibility] Error checking compatibility: ${error.message}`);
+    return videoPath; // Return original path if we can't check
+  }
 }
 
 /**
@@ -435,5 +329,6 @@ module.exports = {
   getMediaDuration,
   getVideoDuration,
   getVideoDimensions,
+  getVideoInfo,
   ensureVideoCompatibility
 };
