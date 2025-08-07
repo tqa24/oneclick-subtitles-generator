@@ -1,19 +1,13 @@
-import React, { useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame, Audio, Video, useVideoConfig } from 'remotion';
+import React, { useMemo, memo } from 'react';
+import { AbsoluteFill, useCurrentFrame, Audio, Video, OffthreadVideo, useVideoConfig } from 'remotion';
 import { LyricEntry, VideoMetadata } from '../types';
 import { ThemeProvider } from 'styled-components';
 import { defaultCustomization } from './SubtitleCustomization';
 
-// Font styles
+// Optimized font loading - only load essential fonts to reduce component loading time
 const fontStyles = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200;300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 `;
 
 
@@ -50,19 +44,24 @@ export const SubtitledVideoContent: React.FC<Props> = ({
     return Math.round(value * scale);
   };
 
-  // Get consistent relative position as percentage (based on 1080p reference)
-  const getConsistentRelativePosition = (pixelValue: number, dimension: 'width' | 'height'): string => {
-    // Always calculate percentage based on 1080p reference dimensions
-    const referenceDimension = dimension === 'width' ? 1920 : 1080;
-    const percentage = (pixelValue / referenceDimension) * 100;
-    return `${percentage.toFixed(2)}%`;
-  };
+  // Memoize expensive calculations to improve performance
+  const getConsistentRelativePosition = useMemo(() =>
+    (pixelValue: number, dimension: 'width' | 'height'): string => {
+      // Always calculate percentage based on 1080p reference dimensions
+      const referenceDimension = dimension === 'width' ? 1920 : 1080;
+      const percentage = (pixelValue / referenceDimension) * 100;
+      return `${percentage.toFixed(2)}%`;
+    }, []
+  );
 
   // Determine if we should show video or just audio with background
   const showVideo = isVideoFile;
 
-  // Get customization settings
-  const customization = metadata.subtitleCustomization || defaultCustomization;
+  // Memoize customization settings
+  const customization = useMemo(() =>
+    metadata.subtitleCustomization || defaultCustomization,
+    [metadata.subtitleCustomization]
+  );
 
   // Process subtitles based on line threshold
   const processedSubtitles = useMemo(() => {
@@ -255,9 +254,11 @@ export const SubtitledVideoContent: React.FC<Props> = ({
       >
         {/* Video background if uploaded file is a video */}
         {showVideo ? (
-          <Video
+          <OffthreadVideo
             src={audioUrl}
             volume={(metadata.originalAudioVolume ?? 100) / 100}
+            transparent={false} // Use faster BMP extraction instead of PNG
+            toneMapped={false} // Disable tone mapping for faster rendering
             style={{
               width: '100%',
               height: '100%',
@@ -427,4 +428,5 @@ export const SubtitledVideoContent: React.FC<Props> = ({
   );
 };
 
-export default SubtitledVideoContent;
+// Memoize the component to prevent unnecessary re-renders and improve performance
+export default memo(SubtitledVideoContent);
