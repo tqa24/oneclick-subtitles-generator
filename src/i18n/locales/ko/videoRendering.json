@@ -228,5 +228,8 @@
   "bounceEasing": "틀어오기",
   "flip": "뒤집기",
   "noNarration": "내레이션 사용 안 함",
-  "noNarrationGenerated": "내레이션이 아직 생성되지 않음"
+  "noNarrationGenerated": "내레이션이 아직 생성되지 않음",
+  "renderCancelled": "렌더링이 취소되었습니다",
+  "renderFailedBrowserClosed": "브라우저가 닫힌 동안 렌더링이 실패했습니다",
+  "frames": "프레임"
 }

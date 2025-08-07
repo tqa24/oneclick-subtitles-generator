@@ -354,7 +354,6 @@
   gap: 0.5rem;
 }
 
-.retry-btn,
 .remove-btn,
 .cancel-btn {
   display: flex;
@@ -367,17 +366,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.retry-btn {
-  background: var(--md-warning);
-  color: var(--md-on-warning);
-}
-
-.retry-btn:hover {
-  background: var(--md-warning-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .remove-btn {
@@ -479,7 +467,6 @@
 }
 
 /* Focus styles for accessibility */
-.retry-btn:focus,
 .remove-btn:focus,
 .cancel-btn:focus,
 .clear-queue-btn:focus,
@@ -515,7 +502,6 @@
     animation: none;
   }
 
-  .retry-btn:hover,
   .remove-btn:hover,
   .cancel-btn:hover,
   .clear-queue-btn:hover,

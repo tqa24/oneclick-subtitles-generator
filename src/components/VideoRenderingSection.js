@@ -270,7 +270,7 @@ const VideoRenderingSection = ({
           console.log('Render failed or cancelled while away:', renderId);
           setRenderQueue(prev => prev.map(item =>
             item.id === queueItem.id
-              ? { ...item, status: 'failed', error: data.error || 'Render failed while browser was closed' }
+              ? { ...item, status: 'failed', error: data.error || t('videoRendering.renderFailedBrowserClosed', 'Render failed while browser was closed') }
               : item
           ));
           setCurrentQueueItem(null);
@@ -440,7 +440,7 @@ const VideoRenderingSection = ({
 
         setRenderQueue(prev => prev.map(item =>
           item.id === queueItem.id
-            ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+            ? { ...item, status: 'failed', progress: 0, error: t('videoRendering.renderCancelled', 'Render was cancelled') }
             : item
         ));
       } else {
@@ -1158,7 +1158,7 @@ const VideoRenderingSection = ({
         if (targetQueueItem) {
           setRenderQueue(prev => prev.map(item =>
             item.id === targetQueueItem.id
-              ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
+              ? { ...item, status: 'failed', progress: 0, error: t('videoRendering.renderCancelled', 'Render was cancelled') }
               : item
           ));
         }
@@ -1248,16 +1248,7 @@ const VideoRenderingSection = ({
     setRenderQueue(prev => prev.filter(item => item.status === 'processing'));
   };
 
-  const retryQueueItem = (id) => {
-    // Mark as pending and start next render if not currently rendering
-    setRenderQueue(prev => prev.map(item =>
-      item.id === id ? { ...item, status: 'pending', progress: 0, error: null } : item
-    ));
 
-    if (!isRendering) {
-      setTimeout(() => startNextPendingRender(), 100);
-    }
-  };
 
   // No automatic queue processing - simple render history display
 
@@ -1670,7 +1661,6 @@ const VideoRenderingSection = ({
               currentQueueItem={currentQueueItem}
               onRemoveItem={removeFromQueue}
               onClearQueue={clearQueue}
-              onRetryItem={retryQueueItem}
               onCancelItem={handleCancelRender}
               isExpanded={true}
               onToggle={() => {}}

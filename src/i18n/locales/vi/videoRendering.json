@@ -228,5 +228,8 @@
   "bounceEasing": "Nẩy",
   "flip": "Lật",
   "noNarration": "Không dùng thuyết minh",
-  "noNarrationGenerated": "Thuyết minh chưa được tạo"
+  "noNarrationGenerated": "Thuyết minh chưa được tạo",
+  "renderCancelled": "Render đã bị hủy",
+  "renderFailedBrowserClosed": "Render thất bại khi trình duyệt đã đóng",
+  "frames": "khung hình"
 }

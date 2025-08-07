@@ -7,7 +7,6 @@ const QueueManagerPanel = ({
   currentQueueItem,
   onRemoveItem,
   onClearQueue,
-  onRetryItem,
   onCancelItem,
   gridLayout = false
 }) => {
@@ -222,7 +221,7 @@ const QueueManagerPanel = ({
                           <div className="progress-frames-container">
                             {item.renderedFrames && item.durationInFrames ? (
                               <div className="progress-frames">
-                                {`${item.renderedFrames}/${item.durationInFrames} frames`}
+                                {`${item.renderedFrames}/${item.durationInFrames} ${t('videoRendering.frames', 'frames')}`}
                               </div>
                             ) : item.phaseDescription ? (
                               <div className="progress-frames">
@@ -283,20 +282,6 @@ const QueueManagerPanel = ({
 
                 {/* Item Actions */}
                 <div className="item-actions">
-                  {item.status === 'failed' && (
-                    <button
-                      className="retry-btn"
-                      onClick={() => onRetryItem(item.id)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="23 4 23 10 17 10"></polyline>
-                        <polyline points="1 20 1 14 7 14"></polyline>
-                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                      </svg>
-                      {t('videoRendering.retry', 'Retry')}
-                    </button>
-                  )}
-
                   {item.status === 'processing' && onCancelItem && (
                     <button
                       className="cancel-btn"

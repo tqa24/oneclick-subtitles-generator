@@ -150,5 +150,8 @@
   "black": "Black",
   "smooth": "Smooth",
   "bounceEasing": "Bounce",
-  "flip": "Flip"
+  "flip": "Flip",
+  "renderCancelled": "Render was cancelled",
+  "renderFailedBrowserClosed": "Render failed while browser was closed",
+  "frames": "frames"
 }
