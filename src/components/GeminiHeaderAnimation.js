@@ -11,6 +11,36 @@ const GeminiHeaderAnimation = () => {
   const connectionsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 100, isClicked: false });
 
+  // Generate realistic star colors based on temperature (like real stars)
+  const getStarColor = (temperature, intensity, isDark) => {
+    // Temperature ranges: 0 = hot blue stars, 1 = cooler white/blue stars
+    let r, g, b;
+
+    if (temperature < 0.3) {
+      // Hot blue stars (like Rigel, Spica) - Deep vibrant blues
+      r = isDark ? 100 + temperature * 60 : 80 + temperature * 40;
+      g = isDark ? 150 + temperature * 70 : 120 + temperature * 50;
+      b = isDark ? 255 : 240;
+    } else if (temperature < 0.7) {
+      // Blue-white stars (like Vega, Sirius) - Bright blues
+      r = isDark ? 160 + temperature * 50 : 130 + temperature * 40;
+      g = isDark ? 190 + temperature * 40 : 160 + temperature * 30;
+      b = isDark ? 255 : 250;
+    } else {
+      // White-blue stars (like Altair) - Light blues
+      r = isDark ? 200 + temperature * 30 : 170 + temperature * 25;
+      g = isDark ? 220 + temperature * 25 : 190 + temperature * 20;
+      b = isDark ? 255 : 255;
+    }
+
+    return {
+      r: Math.min(255, Math.round(r)),
+      g: Math.min(255, Math.round(g)),
+      b: Math.min(255, Math.round(b)),
+      intensity
+    };
+  };
+
   // Get theme-aware star colors - natural, subtle stellar palette
   const getThemeColors = () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -23,16 +53,16 @@ const GeminiHeaderAnimation = () => {
       connectionColor: isDark
         ? 'rgba(200, 200, 220, 0.15)' // Very subtle light lines for dark theme
         : 'rgba(100, 100, 120, 0.2)',  // Subtle dark lines for light theme
-      // More natural, desaturated stellar colors
+      // Natural stellar colors - subtle and gentle
       gradientStart: isDark
-        ? 'rgba(180, 160, 200, 0.8)'  // Muted purple (dark theme)
-        : 'rgba(140, 120, 160, 0.7)',  // Deeper muted purple (light theme)
+        ? 'rgba(190, 170, 210, 0.7)'  // Gentle purple (dark theme)
+        : 'rgba(150, 130, 170, 0.6)',  // Muted purple (light theme)
       gradientMid: isDark
-        ? 'rgba(160, 180, 210, 0.7)'  // Muted blue (dark theme)
-        : 'rgba(120, 140, 180, 0.6)',  // Deeper muted blue (light theme)
+        ? 'rgba(170, 190, 220, 0.6)'  // Gentle blue (dark theme)
+        : 'rgba(130, 150, 190, 0.5)',  // Muted blue (light theme)
       gradientEnd: isDark
-        ? 'rgba(180, 200, 220, 0.6)'  // Soft light blue (dark theme)
-        : 'rgba(140, 160, 190, 0.5)'  // Deeper soft blue (light theme)
+        ? 'rgba(190, 210, 230, 0.5)'  // Soft light blue (dark theme)
+        : 'rgba(150, 170, 200, 0.4)'  // Muted light blue (light theme)
     };
   };
 
@@ -116,7 +146,10 @@ const GeminiHeaderAnimation = () => {
           isTwinkler: Math.random() < 0.15, // 15% chance to be a twinkling star (reduced for subtlety)
           twinklePhase: Math.random() * Math.PI * 2,
           twinkleSpeed: 0.002 + Math.random() * 0.003, // Even slower, more natural twinkle
-          twinkleIntensity: 0.03 + Math.random() * 0.06 // Very subtle rotation (0.03-0.09 radians)
+          twinkleIntensity: 0.03 + Math.random() * 0.06, // Very subtle rotation (0.03-0.09 radians)
+          // Random star color temperature (blue shades like real stars)
+          starTemp: Math.random(), // 0-1 value for color temperature
+          colorIntensity: 0.8 + Math.random() * 0.2 // Higher color saturation (0.8-1.0)
         });
       }
 
@@ -204,17 +237,23 @@ const GeminiHeaderAnimation = () => {
 
       const colors = getThemeColors();
 
-      // Only add a very subtle glow for filled stars, and only if they're bright enough
-      if (isFilled && opacity > 0.5) {
-        // Very subtle, tight glow - just a hint of luminosity
-        const subtleGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.2);
-        subtleGlow.addColorStop(0, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.1})`));
-        subtleGlow.addColorStop(0.7, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.05})`));
-        subtleGlow.addColorStop(1, colors.gradientMid.replace(/[\d.]+\)$/, `0)`));
+      // Add subtle glow with gentle animated fading using star color
+      if (isFilled && opacity > 0.4) {
+        // Calculate animated glow intensity using particle's pulse phase
+        const glowPulse = 0.7 + 0.3 * Math.sin(particle.pulsePhase * 0.8); // Slower pulse for glow
+        const starColor = getStarColor(particle.starTemp, particle.colorIntensity, colors.isDark);
+
+        // More vibrant glow with animated fading using realistic star color
+        const subtleGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
+        subtleGlow.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.18 * glowPulse})`);
+        subtleGlow.addColorStop(0.4, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.12 * glowPulse})`);
+        subtleGlow.addColorStop(0.7, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.06 * glowPulse})`);
+        subtleGlow.addColorStop(0.9, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.03 * glowPulse})`);
+        subtleGlow.addColorStop(1, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, 0)`);
 
         ctx.fillStyle = subtleGlow;
         ctx.beginPath();
-        ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2);
+        ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -244,24 +283,27 @@ const GeminiHeaderAnimation = () => {
       ctx.closePath();
 
       // Fill or stroke the star shape based on the type
+      const starColor = getStarColor(particle.starTemp, particle.colorIntensity, colors.isDark);
+
       if (isFilled) {
         const gradient = ctx.createLinearGradient(-14, -14, 14, 14);
-        // Brighter colors for the actual star shape
-        gradient.addColorStop(0, colors.gradientStart.replace(/[\d.]+\)$/, `${opacity * 1.0})`));
-        gradient.addColorStop(0.5, colors.gradientMid.replace(/[\d.]+\)$/, `${opacity * 0.9})`));
-        gradient.addColorStop(1, colors.gradientEnd.replace(/[\d.]+\)$/, `${opacity * 0.8})`));
+        // Use realistic star colors based on temperature - more vibrant
+        const baseOpacity = opacity * starColor.intensity;
+        gradient.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${baseOpacity * 1.2})`);
+        gradient.addColorStop(0.5, `rgba(${Math.max(0, starColor.r - 15)}, ${Math.max(0, starColor.g - 10)}, ${starColor.b}, ${baseOpacity * 1.0})`);
+        gradient.addColorStop(1, `rgba(${Math.max(0, starColor.r - 30)}, ${Math.max(0, starColor.g - 20)}, ${Math.max(0, starColor.b - 5)}, ${baseOpacity * 0.8})`);
 
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Add a bright outline
-        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 0.8})`);
+        // Add a subtle outline with star color
+        ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.6})`;
         ctx.lineWidth = 0.5;
         ctx.stroke();
       } else {
-        // For outline stars, make them brighter
-        ctx.strokeStyle = colors.strokeColor.replace(/[\d.]+\)$/, `${opacity * 1.2})`);
-        ctx.lineWidth = 1.5;
+        // For outline stars, use star color
+        ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * starColor.intensity})`;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
