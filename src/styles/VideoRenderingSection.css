@@ -190,6 +190,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-width: 0; /* Allow grid items to shrink below their content size */
+  overflow: hidden; /* Prevent content from expanding the container */
 }
 
 .video-input-compact h4,
@@ -368,12 +370,21 @@
 
 .selected-video-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Align items to top for multi-line content */
   gap: 12px;
-  padding: 12px 16px;
+  padding: 16px; /* Increased padding for better spacing with multi-line content */
   background: var(--md-surface-1);
   border-radius: 12px;
   border: 1px solid var(--md-outline-variant);
+  min-width: 0; /* Allow flex container to shrink */
+  width: 100%; /* Take full width of parent container */
+}
+
+.video-file-icon {
+  color: var(--md-primary);
+  flex-shrink: 0; /* Prevent icon from shrinking */
+  align-self: flex-start; /* Align icon to top when text is multi-line */
+  margin-top: 2px; /* Small adjustment to align with first line of text */
 }
 
 .video-name {
@@ -381,9 +392,10 @@
   color: var(--text-primary);
   flex: 1;
   min-width: 0; /* Allow flex item to shrink below its content size */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.4;
+  /* Remove single-line constraints to allow multi-line display */
 }
 
 .video-source-indicator {
@@ -468,6 +480,12 @@
   background-color: var(--md-surface-variant);
   transform: translateY(-1px);
   box-shadow: var(--md-elevation-level2);
+}
+
+/* Ensure buttons in selected-video-info stay aligned to top when video name is multi-line */
+.selected-video-info .pill-button {
+  flex-shrink: 0; /* Prevent button from shrinking */
+  align-self: flex-start; /* Align button to top of container */
 }
 
 .pill-button.cancel {
