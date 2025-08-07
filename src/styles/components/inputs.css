@@ -9,6 +9,8 @@
   transition: background-color var(--transition-speed), box-shadow var(--transition-speed), height var(--md-duration-medium3) var(--md-easing-emphasized);
   animation: slide-in-from-top 0.4s ease-out;
   overflow: hidden; /* Ensure content doesn't overflow during height transition */
+  position: relative; /* Create stacking context */
+  z-index: 3; /* Above header canvas and content */
 }
 
 .input-title {

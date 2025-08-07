@@ -74,15 +74,26 @@ const GeminiHeaderAnimation = () => {
     let particles = [];
     let connections = [];
 
-    // Set canvas dimensions
+    // Set canvas dimensions with proper pixel density
     const resizeCanvas = () => {
       const header = canvas.parentElement;
-      canvas.width = header.offsetWidth;
-      canvas.height = header.offsetHeight;
+      const rect = header.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+
+      // Set actual canvas size in memory (scaled for high DPI)
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      // Scale the canvas back down using CSS
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+
+      // Scale the drawing context so everything draws at the correct size
+      ctx.scale(dpr, dpr);
 
       // Recreate particles when canvas is resized to ensure valid positions
       // This prevents particles from having coordinates outside the new canvas bounds
-      if (canvas.width > 0 && canvas.height > 0) {
+      if (rect.width > 0 && rect.height > 0) {
         createParticles();
         updateConnections();
       }
@@ -90,21 +101,26 @@ const GeminiHeaderAnimation = () => {
 
     // Create particles
     const createParticles = () => {
+      // Get CSS dimensions (not canvas buffer dimensions)
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = rect.width;
+      const cssHeight = rect.height;
+
       // Ensure canvas has valid dimensions before creating particles
-      if (canvas.width <= 0 || canvas.height <= 0) {
+      if (cssWidth <= 0 || cssHeight <= 0) {
         return;
       }
 
-      const particleCount = Math.max(5, Math.floor(canvas.width / 100)); // Responsive particle count
+      const particleCount = Math.max(5, Math.floor(cssWidth / 100)); // Responsive particle count
       particles = [];
 
       for (let i = 0; i < particleCount; i++) {
         const size = 8 + Math.random() * 8; // 8-16px
 
-        // Ensure particles are positioned within canvas bounds with some margin
+        // Ensure particles are positioned within CSS bounds with some margin
         const margin = size; // Use particle size as margin
-        const anchorX = margin + Math.random() * (canvas.width - 2 * margin);
-        const anchorY = margin + Math.random() * (canvas.height - 2 * margin);
+        const anchorX = margin + Math.random() * (cssWidth - 2 * margin);
+        const anchorY = margin + Math.random() * (cssHeight - 2 * margin);
 
         // Position is always at the anchor point
         const x = anchorX;
