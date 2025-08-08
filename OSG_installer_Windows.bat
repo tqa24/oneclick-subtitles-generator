@@ -1,4 +1,5 @@
 @ECHO OFF
+SETLOCAL EnableDelayedExpansion
 CLS
 
 :: --- Configuration ---
@@ -7,6 +8,7 @@ SET "GIT_REPO_URL=https://github.com/nganlinh4/oneclick-subtitles-generator.git"
 SET "SCRIPT_DIR=%~dp0"
 SET "PROJECT_PATH=%SCRIPT_DIR%%PROJECT_FOLDER_NAME%"
 IF "%PROJECT_PATH:~-1%"=="\" SET "PROJECT_PATH=%PROJECT_PATH:~0,-1%"
+SET "LAST_CHOICE_FILE=%SCRIPT_DIR%last_choice.tmp"
 
 :: --- Fixed Settings (Vietnamese Menu) ---
 SET "MENU_LABEL=MainMenuVI"
@@ -18,6 +20,26 @@ TITLE %TITLE_TEXT%
 :: --- Check for Administrator Privileges ---
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow; if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) { Write-Host ''; Write-Host '======================================================'; Write-Host '[ERROR] Administrator privileges required.' -ForegroundColor Red; Write-Host '[INFO] Requesting administrator privileges...' -ForegroundColor Blue; Write-Host '======================================================'; Start-Process '%~f0' -Verb RunAs; exit 1 } else { Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green; Write-Host '' }"
 IF %ERRORLEVEL% NEQ 0 EXIT /B
+
+:: Check if we have a saved choice from previous error
+IF EXIST "%LAST_CHOICE_FILE%" (
+    SET "CHOICE="
+    SET /P SAVED_CHOICE=<"%LAST_CHOICE_FILE%"
+    DEL "%LAST_CHOICE_FILE%" >nul 2>&1
+    :: Validate the saved choice
+    IF "!SAVED_CHOICE!"=="1" SET "CHOICE=1"
+    IF "!SAVED_CHOICE!"=="2" SET "CHOICE=2"
+    IF "!SAVED_CHOICE!"=="3" SET "CHOICE=3"
+    IF "!SAVED_CHOICE!"=="4" SET "CHOICE=4"
+    IF "!SAVED_CHOICE!"=="5" SET "CHOICE=5"
+    IF DEFINED CHOICE (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[AUTO-RESTART] Using previous choice: !CHOICE!' -ForegroundColor Magenta"
+        ECHO.
+        GOTO ProcessChoice
+    ) ELSE (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Invalid saved choice detected. Showing menu...' -ForegroundColor Yellow"
+    )
+)
 
 GOTO %MENU_LABEL%
 
@@ -43,8 +65,17 @@ ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%PROMPT_CHOICE%' -ForegroundColor Yellow -NoNewline"
 SET /P "CHOICE="
 
+:ProcessChoice
 :: Validate input
 IF NOT "%CHOICE%"=="" SET CHOICE=%CHOICE:~0,1%
+
+:: Save choice before processing (for auto-restart on error)
+IF "%CHOICE%"=="1" (ECHO 1) >"%LAST_CHOICE_FILE%"
+IF "%CHOICE%"=="2" (ECHO 2) >"%LAST_CHOICE_FILE%"
+IF "%CHOICE%"=="3" (ECHO 3) >"%LAST_CHOICE_FILE%"
+IF "%CHOICE%"=="4" (ECHO 4) >"%LAST_CHOICE_FILE%"
+IF "%CHOICE%"=="5" (ECHO 5) >"%LAST_CHOICE_FILE%"
+
 IF "%CHOICE%"=="1" GOTO InstallNarration
 IF "%CHOICE%"=="2" GOTO InstallNoNarration
 IF "%CHOICE%"=="3" GOTO UpdateApp
@@ -55,6 +86,8 @@ IF "%CHOICE%"=="7" GOTO ExitScript
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Lua chon khong hop le. Vui long thu lai.' -ForegroundColor Red"
 TIMEOUT /T 2 /NOBREAK > NUL
+:: Clear saved choice for invalid input
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -109,6 +142,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press
 ECHO.
 CALL npm run dev:cuda
 POPD
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -163,6 +198,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press
 ECHO.
 CALL npm run dev
 POPD
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -210,10 +247,11 @@ IF /I "%INSTALL_DEPS%"=="c" (
     ) ELSE (
         ECHO 'npm install' completed.
     )
-	PAUSE
     POPD
 )
 
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -242,6 +280,8 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 POPD
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -271,6 +311,8 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 POPD
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -298,6 +340,8 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Go cai dat hoan tat. Thu muc du an da duoc xoa.
+:: Clear saved choice on successful completion
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -330,6 +374,7 @@ IF %ERRORLEVEL% NEQ 0 (
        EXIT /B 1
    )
    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Chocolatey installed successfully.' -ForegroundColor Green"
+   powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Environment will be refreshed on next restart.' -ForegroundColor Blue"
 ) ELSE (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Chocolatey already installed.' -ForegroundColor Green"
 )
@@ -340,15 +385,11 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Git version control...
     winget install --id Git.Git -e --source winget >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [INFO] Trying alternative installation method...
-        choco install git -y >nul 2>&1
-        IF %ERRORLEVEL% NEQ 0 (
-            ECHO [ERROR] Failed to install Git.
-            EXIT /B 1
-        )
+        ECHO [ERROR] Failed to install Git.
+        EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed successfully.' -ForegroundColor Green"
-    REFRESHENV
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Environment will be refreshed on next restart.' -ForegroundColor Blue"
 ) ELSE (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git already installed.' -ForegroundColor Green"
 )
@@ -358,16 +399,12 @@ WHERE node >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Node.js runtime...
     winget install --id OpenJS.NodeJS.LTS --exact --accept-package-agreements --accept-source-agreements -s winget >nul 2>&1
-     IF %ERRORLEVEL% NEQ 0 (
-      ECHO [INFO] Trying alternative installation method...
-      choco install nodejs-lts -y >nul 2>&1
-      IF %ERRORLEVEL% NEQ 0 (
-          ECHO [ERROR] Failed to install Node.js.
-          EXIT /B 1
-      )
+    IF %ERRORLEVEL% NEQ 0 (
+        ECHO [ERROR] Failed to install Node.js.
+        EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Node.js installed successfully.' -ForegroundColor Green"
-    REFRESHENV
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Environment will be refreshed on next restart.' -ForegroundColor Blue"
 ) ELSE (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Node.js already installed.' -ForegroundColor Green"
 )
@@ -378,11 +415,11 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing FFmpeg media processor...
     choco install ffmpeg -y >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-      ECHO [WARN] Failed to install FFmpeg. Some features may not work.
-    ) ELSE (
-      powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg installed successfully.' -ForegroundColor Green"
+        ECHO [ERROR] Failed to install FFmpeg.
+        EXIT /B 1
     )
-    REFRESHENV
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg installed successfully.' -ForegroundColor Green"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Environment will be refreshed on next restart.' -ForegroundColor Blue"
 ) ELSE (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg already installed.' -ForegroundColor Green"
 )
@@ -394,11 +431,10 @@ IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
         ECHO [ERROR] Failed to install uv package manager.
-        ECHO [INFO] You may need to install it manually from https://astral.sh/uv
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] uv installed successfully.' -ForegroundColor Green"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You may need to restart this script if uv is not found.' -ForegroundColor Blue"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Environment will be refreshed on next restart.' -ForegroundColor Blue"
 ) ELSE (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] uv already installed.' -ForegroundColor Green"
 )
@@ -452,8 +488,12 @@ ECHO.
 ECHO [INFO] System PATH may need to be refreshed for new tools.
 ECHO ======================================================
 ECHO.
-PAUSE
-GOTO %MENU_LABEL%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Preparing clean restart...' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[AUTO-RESTART] Restarting installer in 3 seconds with your last choice...' -ForegroundColor Magenta"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] The installer will automatically use your previous selection.' -ForegroundColor Blue"
+TIMEOUT /T 3 /NOBREAK > NUL
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WindowStyle Normal; exit"
+EXIT
 
 REM ==============================================================================
 :: Subroutine: Enable Windows GPU Scheduling for optimal video rendering performance
@@ -489,6 +529,8 @@ EXIT /B 0
 
 REM ==============================================================================
 :ExitScript
+:: Clear saved choice on exit
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 EXIT /B 0
 
 
