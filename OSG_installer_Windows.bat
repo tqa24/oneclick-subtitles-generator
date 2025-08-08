@@ -84,7 +84,7 @@ IF "%CHOICE%"=="5" GOTO RunAppCUDA
 IF "%CHOICE%"=="6" GOTO UninstallApp
 IF "%CHOICE%"=="7" GOTO ExitScript
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Lua chon khong hop le. Vui long thu lai.' -ForegroundColor Red"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Lua chon khong hop le. Vui long thu lai.' -ForegroundColor Yellow"
 TIMEOUT /T 2 /NOBREAK > NUL
 :: Clear saved choice for invalid input
 IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
@@ -101,13 +101,16 @@ ECHO.
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
+:: Clear saved choice after successful prerequisite installation
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
+
 CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application...' -ForegroundColor Cyan"
 git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to download application.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     GOTO ErrorOccurred
 )
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Application downloaded successfully.' -ForegroundColor Green"
@@ -115,15 +118,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Applica
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Changing to project directory...' -ForegroundColor Cyan"
 PUSHD "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to access project folder.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     POPD
     GOTO ErrorOccurred
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing all dependencies (this may take several minutes)...' -ForegroundColor Cyan"
-CALL npm run install:all
+CALL npm run install:all >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to install dependencies. Check messages above.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     POPD
     GOTO ErrorOccurred
 )
@@ -142,8 +145,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press
 ECHO.
 CALL npm run dev:cuda
 POPD
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -157,13 +158,16 @@ ECHO.
 CALL :InstallPrerequisites
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
+:: Clear saved choice after successful prerequisite installation
+IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
+
 CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application...' -ForegroundColor Cyan"
 git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to download application.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     GOTO ErrorOccurred
 )
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Application downloaded successfully.' -ForegroundColor Green"
@@ -171,15 +175,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Applica
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Changing to project directory...' -ForegroundColor Cyan"
 PUSHD "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to access project folder.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     POPD
     GOTO ErrorOccurred
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies...' -ForegroundColor Cyan"
-CALL npm install
+CALL npm install >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to install dependencies. Check messages above.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     POPD
     GOTO ErrorOccurred
 )
@@ -198,8 +202,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press
 ECHO.
 CALL npm run dev
 POPD
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -250,8 +252,6 @@ IF /I "%INSTALL_DEPS%"=="c" (
     POPD
 )
 
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -280,8 +280,6 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 POPD
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -311,8 +309,6 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 POPD
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -340,8 +336,6 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 ECHO Go cai dat hoan tat. Thu muc du an da duoc xoa.
-:: Clear saved choice on successful completion
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
@@ -353,7 +347,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '--- Checking
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Configuring PowerShell security settings...' -ForegroundColor Cyan"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;" > nul
 IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to configure PowerShell security.' -ForegroundColor Red"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
     EXIT /B 1
 )
 
@@ -363,14 +357,14 @@ IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing Chocolatey package manager...' -ForegroundColor Cyan"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to install Chocolatey.' -ForegroundColor Red"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Waiting for Chocolatey to initialize...' -ForegroundColor Blue"
     timeout /t 5 /nobreak > nul
     WHERE choco >nul 2>nul
     IF %ERRORLEVEL% NEQ 0 (
-       powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Chocolatey installation failed.' -ForegroundColor Red"
+       powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
        EXIT /B 1
    )
    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Chocolatey installed successfully.' -ForegroundColor Green"
@@ -385,7 +379,7 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Git version control...
     winget install --id Git.Git -e --source winget >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Failed to install Git.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed successfully.' -ForegroundColor Green"
@@ -400,7 +394,7 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing Node.js runtime...
     winget install --id OpenJS.NodeJS.LTS --exact --accept-package-agreements --accept-source-agreements -s winget >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Failed to install Node.js.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Node.js installed successfully.' -ForegroundColor Green"
@@ -415,7 +409,7 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing FFmpeg media processor...
     choco install ffmpeg -y >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Failed to install FFmpeg.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg installed successfully.' -ForegroundColor Green"
@@ -430,7 +424,7 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO [SETUP] Installing uv Python package manager...
     powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        ECHO [ERROR] Failed to install uv package manager.
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] uv installed successfully.' -ForegroundColor Green"
@@ -462,8 +456,7 @@ IF EXIST "%FOLDER_TO_CLEAN%" (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Removing existing project folder...' -ForegroundColor Cyan"
     RMDIR /S /Q "%FOLDER_TO_CLEAN%" >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Cannot remove existing folder \"%FOLDER_TO_CLEAN%\".' -ForegroundColor Red"
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Please close any programs using this folder and try again.' -ForegroundColor Blue"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
         EXIT /B 1
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Existing installation removed successfully.' -ForegroundColor Green"
@@ -475,23 +468,6 @@ EXIT /B 0
 
 REM ==============================================================================
 :ErrorOccurred
-ECHO.
-ECHO ======================================================
-ECHO [ERROR] Installation failed!
-ECHO ======================================================
-ECHO [INFO] Common solutions:
-ECHO   - Close this window and run the installer again
-ECHO   - Restart your computer and try again
-ECHO   - Check your internet connection
-ECHO   - Run as administrator
-ECHO.
-ECHO [INFO] System PATH may need to be refreshed for new tools.
-ECHO ======================================================
-ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Preparing clean restart...' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[AUTO-RESTART] Restarting installer in 3 seconds with your last choice...' -ForegroundColor Magenta"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] The installer will automatically use your previous selection.' -ForegroundColor Blue"
-TIMEOUT /T 3 /NOBREAK > NUL
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WindowStyle Normal; exit"
 EXIT
 
