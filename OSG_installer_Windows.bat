@@ -93,9 +93,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Option 1: Full Installation with Voice Cloning' -ForegroundColor White -BackgroundColor DarkGreen"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 1: Full Installation                       ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                        with Voice Cloning                                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -123,7 +121,7 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing all dependencies (this may take several minutes)...' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time)' -ForegroundColor Cyan"
 CALL npm run install:all >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
@@ -150,9 +148,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNoNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Option 2: Standard Installation' -ForegroundColor White -BackgroundColor DarkBlue"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '======================================================' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 2: Standard Installation                  ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -180,7 +176,7 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies...' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time)' -ForegroundColor Cyan"
 CALL npm install >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
