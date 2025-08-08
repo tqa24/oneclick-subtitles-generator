@@ -276,7 +276,7 @@ const YoutubeSearchInput = ({ apiKeysSet = { youtube: false }, selectedVideo, se
       </div>
 
       <div className="search-results">
-        {error && <p className="error">{error}</p>}
+        {error && <p className="error-message">{error}</p>}
 
         {isSearching && (
           <div className="searching-indicator">
