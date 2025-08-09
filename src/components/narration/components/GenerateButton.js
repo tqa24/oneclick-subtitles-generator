@@ -26,7 +26,8 @@ const GenerateButton = ({
   cancelGeneration,
   subtitleSource,
   isServiceAvailable = true,
-  serviceUnavailableMessage = ''
+  serviceUnavailableMessage = '',
+  narrationMethod = null
 }) => {
   const { t } = useTranslation();
 
@@ -39,12 +40,22 @@ const GenerateButton = ({
             <button
               className="pill-button danger cancel-btn"
               onClick={cancelGeneration}
+              disabled={narrationMethod === 'f5tts'}
+              style={narrationMethod === 'f5tts' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              title={narrationMethod === 'f5tts' ? t('narration.f5ttsCancelNotSupported', 'F5-TTS library doesn\'t support cancellation during audio generation') : ''}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
               {t('narration.cancel', 'Cancel Generation')}
+              {narrationMethod === 'f5tts' && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px', opacity: 0.7 }}>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 16v-4"></path>
+                  <path d="M12 8h.01"></path>
+                </svg>
+              )}
             </button>
           ) : (
             <button

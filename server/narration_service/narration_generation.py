@@ -103,7 +103,7 @@ def generate_narration():
                     subtitle_text = text[:50] + "..." if len(text) > 50 else text
                     progress_data = {
                         'type': 'progress',
-                        'message': f'Processing subtitle {processed_count}/{total_subtitles} (ID: {subtitle_id})',
+                        'message_key': 'processingSubtitle',  # Let frontend handle translation
                         'current': processed_count,
                         'total': total_subtitles,
                         'subtitle_id': subtitle_id,

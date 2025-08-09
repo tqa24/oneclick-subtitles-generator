@@ -717,14 +717,46 @@ const useNarrationHandlers = ({
       const tempResults = [];
 
       // Define callbacks for the streaming response
-      const handleProgress = (message, current, total, subtitle_id, subtitle_text) => {
-        // Log the progress message for debugging
+      const handleProgress = (progressData) => {
+        // Handle both old format (string) and new format (object)
+        let statusMessage;
 
+        if (typeof progressData === 'string') {
+          // Old format - direct string message
+          statusMessage = progressData;
+        } else if (typeof progressData === 'object') {
+          // New format - object with messageKey or message
+          if (progressData.messageKey) {
+            // Handle localized message keys
+            switch (progressData.messageKey) {
+              case 'initializingService':
+                statusMessage = t('narration.initializingService', 'Waking up the narration server for the first run...');
+                break;
+              case 'preparingNarration':
+                statusMessage = t('narration.preparingNarration', 'Preparing to generate narration...');
+                break;
+              case 'processingSubtitle':
+                statusMessage = t('narration.processingSubtitle', 'Processing subtitle {{current}}/{{total}} (ID: {{id}}) - "{{text}}"', {
+                  current: progressData.current,
+                  total: progressData.total,
+                  id: progressData.subtitle_id,
+                  text: progressData.subtitle_text
+                });
+                break;
+              default:
+                statusMessage = progressData.message || 'Processing...';
+            }
+          } else {
+            // Fallback to message field
+            statusMessage = progressData.message || 'Processing...';
 
-        // Create a more detailed status message if we have subtitle text
-        let statusMessage = message;
-        if (subtitle_text) {
-          statusMessage = `${message} - "${subtitle_text}"`;
+            // Add subtitle text if available (for backward compatibility)
+            if (progressData.subtitle_text) {
+              statusMessage = `${statusMessage} - "${progressData.subtitle_text}"`;
+            }
+          }
+        } else {
+          statusMessage = 'Processing...';
         }
 
         // Update the status with the progress message
@@ -1237,7 +1269,27 @@ const useNarrationHandlers = ({
       const { generateNarration } = await import('../../../services/narrationService');
 
       // Define callbacks for the streaming response
-      const handleProgress = (message) => {
+      const handleProgress = (progressData) => {
+        let message;
+        if (typeof progressData === 'string') {
+          message = progressData;
+        } else if (progressData?.messageKey) {
+          // Handle localized message keys
+          switch (progressData.messageKey) {
+            case 'processingSubtitle':
+              message = t('narration.processingSubtitle', 'Processing subtitle {{current}}/{{total}} (ID: {{id}}) - "{{text}}"', {
+                current: progressData.current,
+                total: progressData.total,
+                id: progressData.subtitle_id,
+                text: progressData.subtitle_text
+              });
+              break;
+            default:
+              message = progressData.message || 'Processing...';
+          }
+        } else {
+          message = progressData?.message || 'Processing...';
+        }
         setGenerationStatus(`${message} (ID: ${subtitleId})`);
       };
 
@@ -1453,7 +1505,29 @@ const useNarrationHandlers = ({
           referenceAudio.text || referenceText,
           [subtitleWithId], // Pass as an array with a single subtitle
           apiSettings,
-          (message) => setGenerationStatus(`${message} (ID: ${subtitleId})`),
+          (progressData) => {
+            let message;
+            if (typeof progressData === 'string') {
+              message = progressData;
+            } else if (progressData?.messageKey) {
+              // Handle localized message keys
+              switch (progressData.messageKey) {
+                case 'processingSubtitle':
+                  message = t('narration.processingSubtitle', 'Processing subtitle {{current}}/{{total}} (ID: {{id}}) - "{{text}}"', {
+                    current: progressData.current,
+                    total: progressData.total,
+                    id: progressData.subtitle_id,
+                    text: progressData.subtitle_text
+                  });
+                  break;
+                default:
+                  message = progressData.message || 'Processing...';
+              }
+            } else {
+              message = progressData?.message || 'Processing...';
+            }
+            setGenerationStatus(`${message} (ID: ${subtitleId})`);
+          },
           (result) => {
             // Add flags and timestamp
             result.forceRegenerate = true;

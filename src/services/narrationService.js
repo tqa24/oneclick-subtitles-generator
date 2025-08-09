@@ -420,12 +420,11 @@ export const generateNarration = async (
     }
 
     // Initial progress message for waking up the server - only on first run
-    // Using hardcoded Vietnamese messages here because i18n context is not available in this service
-    // These messages match the translation keys 'initializingService' and 'preparingNarration'
+    // Send message keys instead of hardcoded text for proper localization
     if (!narrationServiceInitialized) {
-      onProgress("Đang đánh thức server thuyết minh cho lần đầu chạy...");
+      onProgress({ messageKey: 'initializingService' });
     } else {
-      onProgress("Đang chuẩn bị tạo thuyết minh...");
+      onProgress({ messageKey: 'preparingNarration' });
     }
     // Create a new AbortController for this request
     narrationAbortController = new AbortController();
@@ -500,15 +499,17 @@ export const generateNarration = async (
               try {
                 switch (data.type) {
                   case 'progress':
-                    if (data.message) {
-                      // Pass all available progress information to the callback
-                      onProgress(
-                        data.message,
-                        data.current || 0,
-                        data.total || 0,
-                        data.subtitle_id,
-                        data.subtitle_text
-                      );
+                    if (data.message || data.message_key) {
+                      // Handle both message strings and message keys for localization
+                      const progressData = {
+                        message: data.message,
+                        messageKey: data.message_key,
+                        current: data.current || 0,
+                        total: data.total || 0,
+                        subtitle_id: data.subtitle_id,
+                        subtitle_text: data.subtitle_text
+                      };
+                      onProgress(progressData);
                     }
                     break;
 

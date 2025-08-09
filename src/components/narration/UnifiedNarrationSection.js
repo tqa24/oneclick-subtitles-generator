@@ -612,6 +612,7 @@ const UnifiedNarrationSection = ({
             subtitleSource={subtitleSource}
             isServiceAvailable={isAvailable}
             serviceUnavailableMessage={t('narration.serviceUnavailableMessage', 'Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.')}
+            narrationMethod="f5tts"
           />
 
           {/* Generation Status */}
