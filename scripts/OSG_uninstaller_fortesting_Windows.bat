@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT U
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT TOAN BO:' -ForegroundColor DarkRed -BackgroundColor Black; Write-Host '  2. Go cai dat Tat ca (Uninstall Everything)' -ForegroundColor White; Write-Host '     (Xoa ung dung + Git + Node.js + FFmpeg + uv + Chocolatey)' -ForegroundColor Yellow; Write-Host '  3. Go cai dat chi cac Cong cu (Uninstall Tools Only)' -ForegroundColor White; Write-Host '     (Chi xoa Git + Node.js + FFmpeg + uv + Chocolatey, giu lai ung dung)' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT RIENG LE:' -ForegroundColor Magenta -BackgroundColor Black; Write-Host '  4. Go cai dat Git' -ForegroundColor White; Write-Host '  5. Go cai dat Node.js' -ForegroundColor White; Write-Host '  6. Go cai dat FFmpeg' -ForegroundColor White; Write-Host '  7. Go cai dat uv Python Package Manager' -ForegroundColor White; Write-Host '  8. Go cai dat Chocolatey' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT RIENG LE:' -ForegroundColor Magenta -BackgroundColor Black; Write-Host '  4. Go cai dat Git' -ForegroundColor White; Write-Host '  5. Go cai dat Node.js' -ForegroundColor White; Write-Host '  6. Go cai dat FFmpeg' -ForegroundColor White; Write-Host '  7. Go cai dat uv Python Package Manager' -ForegroundColor White; Write-Host '  8. Go cai dat Chocolatey (Optional - no longer used)' -ForegroundColor Gray"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  9. Thoat (Exit)' -ForegroundColor Gray; Write-Host '======================================================' -ForegroundColor Red"
 ECHO.
@@ -271,9 +271,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking
 WHERE ffmpeg >nul 2>nul
 IF %ERRORLEVEL% EQU 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Uninstalling FFmpeg...' -ForegroundColor Cyan"
-    choco uninstall ffmpeg -y >nul 2>&1
+
+    :: Try uninstalling FFmpeg using package name (most reliable method)
+    winget uninstall "FFmpeg" --silent >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Could not automatically uninstall FFmpeg. Please remove manually.' -ForegroundColor Yellow"
+        :: Try with package ID as fallback
+        winget uninstall --id Gyan.FFmpeg --silent >nul 2>&1
+        IF %ERRORLEVEL% NEQ 0 (
+            :: Fallback to chocolatey for older installations
+            choco uninstall ffmpeg -y >nul 2>&1
+            IF %ERRORLEVEL% NEQ 0 (
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Could not automatically uninstall FFmpeg.' -ForegroundColor Yellow"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Please remove manually from Control Panel.' -ForegroundColor Blue"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Or try: winget uninstall FFmpeg' -ForegroundColor Blue"
+            ) ELSE (
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg uninstalled successfully via Chocolatey.' -ForegroundColor Green"
+            )
+        ) ELSE (
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg uninstalled successfully.' -ForegroundColor Green"
+        )
     ) ELSE (
         powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg uninstalled successfully.' -ForegroundColor Green"
     )
