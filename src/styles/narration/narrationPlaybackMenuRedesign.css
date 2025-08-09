@@ -60,6 +60,18 @@
   line-height: 1.4;
 }
 
+/* Hide global status dot in narration panel and enlarge warning icon */
+.subtitle-settings-panel.narration-panel .status-message::before {
+  content: none;
+  display: none;
+}
+
+.subtitle-settings-panel.narration-panel .status-message.warning svg {
+  width: 20px;
+  height: 20px;
+}
+
+
 /* Radio pill group */
 .radio-pill-group {
   display: flex;
