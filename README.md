@@ -4,403 +4,276 @@ Xem bản tiếng Việt [tại đây](README.vi.md).
 
 ## Screenshots
 
-Here are some screenshots showcasing the application:
+Here are some screenshots showcasing the application's current features:
 
 <div align="center">
   <table>
     <tr>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20195440.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20195622.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20195917.png" width="100%"></td>
+      <td><img src="readme_assets/main-interface.png" width="100%"></td>
+      <td><img src="readme_assets/video-upload.png" width="100%"></td>
+      <td><img src="readme_assets/ai-processing.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Light/dark theme with EN, VI, KO interface</strong></td>
-      <td align="center"><strong>Upload long video, audio, or YouTube source</strong></td>
-      <td align="center"><strong>Parallel processing with model selection for retries</strong></td>
+      <td align="center"><strong>Modern interface with dark/light themes and multi-language support (EN, VI, KO)</strong></td>
+      <td align="center"><strong>Multi-source video input: file upload, YouTube, Douyin/TikTok with quality scanning</strong></td>
+      <td align="center"><strong>AI-powered subtitle generation with Gemini 2.5 models and parallel processing</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200056.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200132.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200147.png" width="100%"></td>
+      <td><img src="readme_assets/subtitle-editor.png" width="100%"></td>
+      <td><img src="readme_assets/video-renderer.png" width="100%"></td>
+      <td><img src="readme_assets/narration-studio.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Editing interface with timing controls, text editing, and visualization</strong></td>
-      <td align="center"><strong>Customize subtitle style and render video with subtitles</strong></td>
-      <td align="center"><strong>Subtitle settings with transparency mode and fullscreen support</strong></td>
+      <td align="center"><strong>Advanced subtitle editor with visual timeline, waveform, and real-time preview</strong></td>
+      <td align="center"><strong>Professional video renderer with GPU acceleration and custom subtitle styling</strong></td>
+      <td align="center"><strong>AI narration studio with F5-TTS voice cloning and multi-audio track support</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200309.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200333.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200340.png" width="100%"></td>
+      <td><img src="readme_assets/translation-hub.png" width="100%"></td>
+      <td><img src="readme_assets/background-generator.png" width="100%"></td>
+      <td><img src="readme_assets/settings-panel.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Translate subtitles to any language while preserving timings</strong></td>
-      <td align="center"><strong>API setup, OAuth integration, update app, and factory reset</strong></td>
-      <td align="center"><strong>Configure segment duration, model selection, and time format</strong></td>
+      <td align="center"><strong>Multi-language translation with context awareness and custom formatting</strong></td>
+      <td align="center"><strong>AI background image generator with album art integration and batch creation</strong></td>
+      <td align="center"><strong>Comprehensive settings: API keys, model selection, video processing, and cache management</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200351.png" width="100%"></td>
-      <td><img src="readme_assets/Screenshot%202025-04-08%20200358.png" width="100%"></td>
-      <td></td>
+      <td><img src="readme_assets/render-queue.png" width="100%"></td>
+      <td><img src="readme_assets/quality-scanner.png" width="100%"></td>
+      <td><img src="readme_assets/workspace-tabs.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Prompt presets and customization options</strong></td>
-      <td align="center"><strong>Cache management and storage information</strong></td>
-      <td></td>
+      <td align="center"><strong>Render queue management with progress tracking and batch processing</strong></td>
+      <td align="center"><strong>Video quality scanner with cookie authentication for premium content</strong></td>
+      <td align="center"><strong>Tab-based workspace for managing multiple projects simultaneously</strong></td>
     </tr>
   </table>
 </div>
 
-A web application for generating timed subtitles for videos using Google's Gemini AI technology.
+A comprehensive web application for auto-subtitling videos and audio, translating SRT files, generating AI narration with voice cloning, creating background images, and rendering professional subtitled videos. Designed for content creators, educators, and general users who need high-quality subtitle generation and video production capabilities.
+
+## Quick Installation Guide
+
+### Installation on Windows
+
+- Go to [Releases](https://github.com/nganlinh4/oneclick-subtitles-generator/releases) and download the latest OSG_installer_Windows.bat.
+
+- Open the downloaded .bat file and follow the instructions (app size will be large if installing with voice cloning feature)
+
+
+### Installation on macOS and Ubuntu
+
+- Clone this repo and run the OSG_installer.sh file:
+  ```bash
+  git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
+  cd oneclick-subtitles-generator
+  chmod +x OSG_installer.sh
+  ./OSG_installer.sh
+  ```
+
+- Follow the on-screen instructions (app size will be large if installing with voice cloning feature)
+
+### Update or Run Application
+
+#### Windows
+- Open OSG_installer_Windows.bat and follow the instructions.
+
+#### macOS and Ubuntu
+- Open Terminal and run the OSG_installer.sh file again:
+  ```bash
+  ./OSG_installer.sh
+  ```
+
+- Browser will automatically open at http://localhost:3030
 
 ## Features
 
-- Upload video files or provide YouTube URLs
-- Generate accurate, timed subtitles using Gemini AI
-- Edit subtitle timings with an intuitive visual interface
-- Timeline visualization for precise timing adjustments
-- Download subtitles in SRT or JSON format
-- Real-time preview of subtitles on video
-- Multi-language support (English, Korean, Vietnamese)
-- Sticky timing adjustments for batch modifications
-- Undo/Reset functionality for editing
-- Parallel processing for long videos
-- Merge adjacent subtitle lines with a single click
-- Customizable time display format (seconds or HH:MM:SS)
-- Optimized performance for long videos with many subtitles
-- Smooth, continuous progress indicator for current subtitle
-- Dark mode by default with support for light mode and system preference
-- Generate narration audio from subtitles using F5-TTS voice cloning technology
+### 🎬 Video & Audio Processing
+- **Multi-source support**: Upload video/audio files, YouTube URLs, Douyin/TikTok links, or search YouTube by title
+- **Format compatibility**: Supports MP4, AVI, MOV, WebM, WMV, MP3, WAV, AAC, FLAC, and more
+- **Quality scanning**: Intelligent video quality detection with cookie-based authentication for premium content
+- **Video compatibility checking**: Automatic format conversion for Remotion compatibility
 
-## Prerequisites
+### 🤖 AI-Powered Subtitle Generation
+- **Google Gemini AI**: Uses latest Gemini 2.5 models (Flash, Pro) for accurate transcription
+- **Multi-language support**: Generate subtitles in multiple languages with high accuracy
+- **Parallel processing**: Handles long videos (15+ minutes) with intelligent segmentation
+- **Custom prompts**: Configurable transcription prompts for specialized content
+- **Retry mechanisms**: Smart retry with different models for failed segments
 
-- [Node.js](https://nodejs.org/) (v14 or higher)
-- [FFmpeg](https://ffmpeg.org/) (required for video processing)
-- Google Gemini API key
-- Google YouTube API key (optional, for YouTube search functionality)
-- [Python](https://www.python.org/) (v3.10 or higher, required for F5-TTS narration feature)
-- [uv](https://github.com/astral-sh/uv) (required for F5-TTS installation)
+### ✏️ Advanced Subtitle Editing
+- **Visual timeline editor**: Drag-and-drop timing adjustments with waveform visualization
+- **Real-time preview**: Live subtitle synchronization with video playback
+- **Sticky timing**: Batch adjust multiple subtitles simultaneously
+- **Text editing**: Direct text modification with undo/redo functionality
+- **Merge & split**: Combine adjacent subtitles or split long ones
+- **Format support**: Export to SRT, JSON, or custom formats
 
-### Cross-Platform Installation
+### 🗣️ AI Voice Narration
+- **F5-TTS integration**: State-of-the-art voice cloning technology
+- **Chatterbox TTS**: High-quality text-to-speech with voice conversion
+- **Edge TTS & Google TTS**: Multiple TTS engine options
+- **Reference audio**: Upload, record, or extract voice samples from videos
+- **Multi-audio tracks**: Combine original audio with AI-generated narration
+- **Volume controls**: Independent audio level management
 
-#### Option 1: Using the All-in-One Script (Recommended)
+### 🌍 Translation & Localization
+- **Multi-language translation**: Translate subtitles to any language while preserving timing
+- **Custom formatting**: Configurable output formats with brackets, delimiters, and chains
+- **Batch processing**: Translate multiple subtitle sets simultaneously
+- **Context awareness**: AI-powered translation with video context understanding
 
-##### Windows:
-1. Install Node.js LTS, FFmpeg, Git, and uv:
-   ```
-   winget install --id OpenJS.NodeJS.LTS
-   winget install --id Gyan.FFmpeg
-   winget install --id Git.Git
-   irm https://astral.sh/uv/install.ps1 | iex
-   ```
+### 🎨 Background Image Generation
+- **AI-powered creation**: Generate custom backgrounds using Gemini's image generation
+- **Album art integration**: Use existing artwork as reference for style consistency
+- **Batch generation**: Create multiple variations with unique prompts
+- **Smart prompting**: Automatic prompt generation based on lyrics and content
 
-2. Clone and set up the repository:
-   ```
-   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
-   cd oneclick-subtitles-generator
-   npm install
-   npm run install:yt-dlp
-   ```
-
-3. Optional: Install F5-TTS for narration features:
-   ```
-   npm run install:all
-   ```
-
-4. Run the application:
-   ```
-   npm run dev
-   ```
-   or with narration (requires GPU):
-   ```
-   npm run dev:cuda
-   ```
-
-##### macOS and Ubuntu:
-1. Download the `OSG_installer.sh` file from the Releases page
-2. Open Terminal and navigate to the download location
-3. Make the script executable and run it:
-   ```bash
-   chmod +x OSG_installer.sh
-   ./OSG_installer.sh
-   ```
-4. Follow the on-screen menu options
-
-#### Option 2: Manual Installation
-
-##### Windows Installation (using winget)
-
-###### Install FFmpeg:
-```powershell
-winget install --id Gyan.FFmpeg -e --source winget --accept-package-agreements --accept-source-agreements
-```
-
-Verify installation: Open a NEW PowerShell or Command Prompt window and run:
-```powershell
-ffmpeg -version
-```
-
-###### Install Node.js:
-```powershell
-winget install --id OpenJS.NodeJS -e --source winget --accept-package-agreements --accept-source-agreements
-```
-
-IMPORTANT: Close the current PowerShell window.
-Open a NEW PowerShell or Command Prompt window and verify installation:
-```powershell
-node -v
-npm -v
-```
-
-##### macOS Installation (using Homebrew)
-
-Homebrew is a package manager for macOS that makes it easy to install software.
-
-###### Install Homebrew (if not already installed):
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-###### Install Node.js and FFmpeg:
-```bash
-brew install node ffmpeg
-```
-
-Verify installation:
-```bash
-node -v
-npm -v
-ffmpeg -version
-```
-
-##### Ubuntu Installation (using apt)
-
-###### Install Node.js:
-```bash
-# Add NodeSource repository
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-
-# Install Node.js
-sudo apt install -y nodejs
-```
-
-Verify installation:
-```bash
-node -v
-npm -v
-```
-
-###### Install FFmpeg:
-```bash
-sudo apt install -y ffmpeg
-```
-
-Verify installation:
-```bash
-ffmpeg -version
-```
-
-###### Install uv:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Verify installation:
-```bash
-uv --version
-```
-
-## Installation
-
-1. Clone this repository or download the source code
-2. Navigate to the project directory:
-
-```bash
-cd subtitles-generator
-```
-
-3. Install Node.js dependencies:
-```bash
-npm install
-```
-
-4. (Optional) Install F5-TTS for narration feature:
-
-   **Using the setup scripts (recommended):**
-   - On Windows: Run `setup-and-run.bat`
-   - On macOS/Linux: Run `./setup-and-run.sh`
-
-   **Or using npm scripts:**
-   ```bash
-   npm run setup:f5tts
-   ```
-   Or install all dependencies at once:
-   ```bash
-   npm run install:all
-   ```
-
-   **Troubleshooting:**
-   ```bash
-   # Check if uv is installed correctly
-   npm run check:uv
-
-   # Test if uv can run Python scripts
-   npm run test:python
-   ```
-
-For more details on the F5-TTS integration, see [F5-TTS-README.md](F5-TTS-README.md)
-
-## Running the Application
-
-### Option 1: Manual Start
-
-#### Windows:
-- Navigate to the project directory
-- Update and run:
-  ```
-  git pull
-  npm install
-  npm run dev
-  ```
-  or with narration: `npm run dev:cuda`
-
-#### macOS and Ubuntu:
-- Run the `OSG_installer.sh` file and select option 4 or 5 from the menu
-
-### Option 2: Using the setup-and-run script
-
-#### Windows:
-- Run `setup-and-run.bat`
-
-#### macOS and Ubuntu:
-- Make the script executable and run it:
-  ```bash
-  chmod +x setup-and-run.sh
-  ./setup-and-run.sh
-  ```
-
-### Option 3: Manual Start
-
-To start the frontend + server concurrently:
-
-```bash
-npm run dev
-```
-
-To start with narration service (requires GPU):
-
-```bash
-npm run dev:cuda
-```
-
-This will launch the application in your default web browser.
-
-### Troubleshooting
-
-#### Common Issues on macOS
-
-- **Permission Issues**: If you encounter permission errors with node_modules, run:
-  ```bash
-  chmod -R 755 ./node_modules
-  ```
-
-- **Node.js Errors**: If you get errors related to Node.js versions, try using nvm (Node Version Manager) to install and use the correct version:
-  ```bash
-  nvm install 14
-  nvm use 14
-  ```
-
-- **FFmpeg Not Found**: Ensure FFmpeg is properly installed and in your PATH:
-  ```bash
-  which ffmpeg
-  ```
-  If not found, reinstall using Homebrew: `brew reinstall ffmpeg`
-
-#### Common Issues on Ubuntu
-
-- **Permission Issues**: If you encounter permission errors, run:
-  ```bash
-  sudo chown -R $(whoami) ./node_modules
-  chmod -R 755 ./node_modules
-  ```
-
-- **GPU Detection**: If your GPU is not being detected, ensure you have the appropriate drivers installed:
-  - For NVIDIA: `sudo apt install nvidia-driver-XXX` (replace XXX with the appropriate version)
-  - For AMD: Install ROCm following the [official instructions](https://rocm.docs.amd.com/en/latest/deploy/linux/quick_start.html)
-
-- **Python Version**: Ensure you have Python 3.10 or higher installed:
-  ```bash
-  python3 --version
-  ```
-  If not, install it: `sudo apt install python3.10`
-
+### 🎥 Professional Video Rendering
+- **Remotion integration**: GPU-accelerated video rendering with hardware optimization
+- **Multi-resolution support**: 360p to 8K output with automatic aspect ratio detection
+- **Subtitle customization**: Extensive styling options including fonts, colors, effects, and animations
+- **Multi-audio support**: Combine original video audio with AI narration tracks
+- **Background integration**: Use generated images or video backgrounds
+- **Render queue**: Batch processing with progress tracking
 
 ## How to Use
 
-1. **Select a Video Source**:
-   - Upload a video file directly
-   - Provide a YouTube URL
-   - Search for a YouTube video by title
+### 1. **Select Your Content Source**
+   - **File Upload**: Drag & drop or browse for video/audio files
+   - **YouTube**: Paste URL or search by title with thumbnail preview
+   - **Douyin/TikTok**: Paste URL for automatic extraction
+   - **Other platforms**: Use any supported video URL
 
-2. **Generate Subtitles**:
-   - Click the "Generate timed subtitles" button
-   - Wait for Gemini AI to process the video/audio
-   - Review the generated subtitles
+### 2. **Generate AI Subtitles**
+   - Choose your preferred Gemini model (2.5 Flash/Pro recommended)
+   - Configure custom prompts for specialized content
+   - Click "Generate timed subtitles" and monitor progress
+   - Long videos are automatically processed in parallel segments
 
-3. **Edit Timings and Text** (if needed):
-   - Use the timeline visualization for precise adjustments
-   - Drag subtitle timing handles to adjust start/end times
-   - Enable "Sticky Timings" to adjust all following subtitles
-   - Use "Undo" to revert changes or "Reset" to start over
-   - Click on any subtitle text to jump to that timestamp in the video
-   - Edit subtitle text directly with the edit button
-   - Delete unwanted subtitles or add new empty ones
-   - Merge adjacent subtitle lines with the merge button
+### 3. **Edit & Refine Subtitles**
+   - **Visual timeline**: Drag timing handles with waveform visualization
+   - **Real-time preview**: See changes instantly synchronized with video
+   - **Text editing**: Click to edit subtitle content directly
+   - **Batch operations**: Use sticky timing for multiple subtitle adjustments
+   - **Advanced tools**: Merge, split, insert, or delete subtitle segments
 
-4. **Download Subtitles**:
-   - Click "Download SRT" for standard subtitle format
-   - Click "Download JSON" for raw data format
+### 4. **Translate Content** (Optional)
+   - Select target languages for translation
+   - Configure output formatting (brackets, delimiters, chains)
+   - Use context-aware AI translation with video understanding
+   - Preserve original timing while adapting text
 
-5. **Generate Narration** (if F5-TTS is installed):
-   - Set up reference audio in the narration settings above the video player
-   - Upload, record, or extract reference audio from the video
-   - Translate your subtitles
-   - Click "Generate Narration" in the narration section below the translation results
-   - Play or download the generated narration audio
+### 5. **Generate AI Narration** (Optional)
+   - **Set up reference audio**: Upload, record, or extract from video
+   - **Choose TTS engine**: F5-TTS (voice cloning), Chatterbox, Edge TTS, or Google TTS
+   - **Configure voice settings**: Adjust speed, pitch, and style parameters
+   - **Generate narration**: Create AI voice for original or translated subtitles
+
+### 6. **Create Background Images** (Optional)
+   - Upload album art or reference images
+   - Generate AI-powered backgrounds based on content
+   - Create multiple variations with unique prompts
+   - Use generated images in video rendering
+
+### 7. **Render Professional Videos**
+   - **Open video renderer**: Access the integrated Remotion-based renderer
+   - **Customize subtitles**: Extensive styling options (fonts, colors, effects, animations)
+   - **Configure audio**: Balance original video audio with AI narration
+   - **Set output quality**: Choose resolution from 360p to 8K
+   - **Render with GPU acceleration**: Hardware-optimized processing for fast output
+
+### 8. **Export & Download**
+   - **Subtitle files**: SRT, JSON, or custom formats
+   - **Audio files**: Generated narration in various formats
+   - **Background images**: AI-generated artwork
+   - **Rendered videos**: Professional subtitled videos with custom styling
+
+
 
 ## Configuration
 
-Adjust settings via the gear icon in the top-right corner:
-- Change interface language (Vietnamese is the default, also supports English and Korean)
-- Manage API settings (Gemini and YouTube)
-- Select Gemini model (Gemini 2.5 Pro is the default for best accuracy)
-- Configure segment duration for long videos (20 minutes by default)
-- Choose time display format (HH:MM:SS by default, or seconds)
-- Clear caches and manage storage
+Access settings via the gear icon in the top-right corner:
+- **API Keys**: Gemini (required), YouTube (optional for search)
+- **AI Models**: Choose between Gemini 2.5 Flash, Pro, or experimental models
+- **Languages**: English, Vietnamese, Korean interface support
+- **Video Processing**: Segment duration, quality preferences, cookie management
+- **TTS Engines**: F5-TTS, Chatterbox, Edge TTS, or Google TTS selection
+- **Interface**: Dark/light themes, time format, waveform visualization
+- **Cache Management**: Clear caches and monitor storage usage
 
-## Technical Details
+## Technical Stack
 
-- Built with React for the frontend
-- Uses Google's Gemini AI for subtitle generation
-- Timeline visualization with HTML5 Canvas
-- Efficient caching system for generated subtitles
-- Real-time subtitle synchronization with video playback
-- Virtualized rendering for optimal performance with long videos
-- Parallel processing for handling videos longer than 15 minutes
-- Responsive design that works on various screen sizes
-- Hardware-accelerated animations for smooth user experience
-- F5-TTS integration for voice cloning and narration generation
-- Python Flask backend for F5-TTS processing
+- **Frontend**: React 18, Material-UI, Styled Components, i18next
+- **Video Rendering**: Remotion 4 with GPU acceleration (Vulkan/OpenGL)
+- **Backend**: Node.js/Express, Python Flask, FastAPI
+- **AI Integration**: Google Gemini API, F5-TTS, Chatterbox TTS
+- **Audio/Video**: FFmpeg, Web Audio API, yt-dlp, Playwright
+- **Performance**: React Window virtualization, multi-level caching, hardware acceleration
 
-## Performance Optimizations
+## Performance Features
 
-- **Virtualized Rendering**: Only renders visible subtitle items, greatly improving performance for long videos
-- **Limited Timeline Segments**: Intelligently limits the number of segments rendered in the timeline visualization
-- **Throttled Drag Operations**: Reduces lag when adjusting subtitle timings through efficient event handling
-- **Hardware Acceleration**: Uses GPU acceleration for smooth animations and transitions
-- **Adaptive Time Markers**: Dynamically adjusts the number of time markers based on zoom level
-- **Efficient DOM Updates**: Minimizes unnecessary re-renders through React memo and careful state management
-- **Continuous Animation**: Uses requestAnimationFrame for smooth progress indicator animation
+- **GPU Acceleration**: Hardware-accelerated video rendering with Vulkan/OpenGL
+- **Virtualized UI**: Only renders visible elements for optimal performance with long videos
+- **Parallel Processing**: Multi-core subtitle generation and video processing
+- **Smart Caching**: Multi-layer cache system for subtitles, videos, and generated content
+- **Optimized Timeline**: Hardware-accelerated canvas visualization with adaptive rendering
+- **Efficient Memory**: Automatic cleanup and smart resource management
+
+## Acknowledgements
+
+### 🎯 Core Technologies
+- **[React](https://reactjs.org/)** - Modern UI framework with hooks and context
+- **[Material-UI](https://mui.com/)** - Professional design system and components
+- **[Remotion](https://remotion.dev/)** - Programmatic video creation and rendering
+- **[Node.js](https://nodejs.org/)** - JavaScript runtime for backend services
+- **[Express](https://expressjs.com/)** - Web application framework for Node.js
+
+### 🤖 AI & Machine Learning
+- **[Google Gemini AI](https://deepmind.google/technologies/gemini/)** - Advanced language models for transcription and image generation
+- **[F5-TTS](https://github.com/SWivid/F5-TTS)** - State-of-the-art voice cloning technology
+- **[Chatterbox](https://github.com/resemble-ai/chatterbox)** - High-quality TTS and voice conversion
+- **[Microsoft Edge TTS](https://azure.microsoft.com/en-us/services/cognitive-services/text-to-speech/)** - Neural text-to-speech service
+- **[Google Text-to-Speech](https://cloud.google.com/text-to-speech)** - Cloud-based speech synthesis
+
+### 🎬 Video & Audio Processing
+- **[FFmpeg](https://ffmpeg.org/)** - Comprehensive multimedia framework
+- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** - Universal video downloader for 1000+ platforms
+- **[Playwright](https://playwright.dev/)** - Browser automation for complex site interactions
+- **[Puppeteer](https://pptr.dev/)** - Headless Chrome control for web scraping
+
+### 🎨 UI & Visualization
+- **[Styled Components](https://styled-components.com/)** - CSS-in-JS styling solution
+- **[React Router](https://reactrouter.com/)** - Declarative routing for React
+- **[React Window](https://github.com/bvaughn/react-window)** - Efficient virtualization for large lists
+- **[React Icons](https://react-icons.github.io/react-icons/)** - Popular icon libraries for React
+- **HTML5 Canvas** - Hardware-accelerated timeline visualization
+
+### 🌐 Internationalization & Accessibility
+- **[i18next](https://www.i18next.com/)** - Internationalization framework
+- **[React i18next](https://react.i18next.com/)** - React integration for i18next
+- **Material Design 3** - Modern design principles and accessibility standards
+
+### 🔧 Development & Build Tools
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript development
+- **[Create React App](https://create-react-app.dev/)** - React application scaffolding
+- **[Concurrently](https://github.com/open-cli-tools/concurrently)** - Multi-service development environment
+- **[Cross-env](https://github.com/kentcdodds/cross-env)** - Cross-platform environment variables
+
+### 📦 Package Management & Deployment
+- **[npm](https://www.npmjs.com/)** - Package manager for JavaScript
+- **[uv](https://github.com/astral-sh/uv)** - Fast Python package installer and resolver
+- **[Python](https://www.python.org/)** - Backend services for AI processing
+
+### 🙏 Special Thanks
+- **Open source community** for maintaining these incredible tools
+- **Google DeepMind** for advancing AI accessibility
+- **Remotion team** for revolutionizing programmatic video creation
+- **F5-TTS contributors** for open-source voice cloning technology
+- **All beta testers and contributors** who helped improve this application
+
+
 
 ## License
 
@@ -425,16 +298,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Acknowledgements
-
-- Built with [React](https://reactjs.org/)
-- Powered by [Google Gemini AI](https://deepmind.google/technologies/gemini/)
-- Internationalization with [i18next](https://www.i18next.com/)
-- Video processing with [FFmpeg](https://ffmpeg.org/)
-- Timeline visualization using HTML5 Canvas
-- YouTube video downloading with [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- SRT subtitle format parsing and generation
-- Icons from [Heroicons](https://heroicons.com/)
-- Virtualization with [react-window](https://github.com/bvaughn/react-window)
-- Optimized animations with requestAnimationFrame

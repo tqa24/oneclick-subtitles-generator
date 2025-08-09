@@ -10,14 +10,13 @@ Phần mềm web giúp auto-sub cho video, audio, dịch SRT, thuyết minh, t�
 
 - Mở file .bat vừa tải và làm theo hướng dẫn (kích thước app sẽ lớn nếu cài với tính năng clone giọng)
 
-- LƯU Ý: ĐỐI VỚI MÁY CHƯA TỪNG CÀI GIT, NODE, ... THÌ PHẢI MỞ ĐI MỞ LẠI FILE BAT CÀI NHIỀU LẦN THÌ SẼ THÀNH CÔNG
-
 ### Cài Đặt Trên macOS và Ubuntu
 
 - Clone repo này về máy + chạy file OSG_installer.sh:
   ```bash
   git clone https://github.com/nganlinh4/oneclick-subtitles-generator.git
   cd oneclick-subtitles-generator
+  chmod +x OSG_installer.sh
   ./OSG_installer.sh
   ```
 
