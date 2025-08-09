@@ -56,8 +56,15 @@ const NarrationMethodSelection = ({
               <label htmlFor="method-f5tts" className={!isF5Available ? 'unavailable' : ''}>
                 {t('narration.f5ttsMethod', 'F5-TTS')}
                 {!isF5Available && (
-                  <span className="method-description">
-                    {t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  <span
+                    className="method-help-icon"
+                    title={t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                   </span>
                 )}
               </label>
@@ -75,8 +82,15 @@ const NarrationMethodSelection = ({
               <label htmlFor="method-chatterbox" className={!isChatterboxAvailable ? 'unavailable' : ''}>
                 {t('narration.chatterboxMethod', 'Chatterbox')}
                 {!isChatterboxAvailable && (
-                  <span className="method-description">
-                    {t('narration.chatterboxUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  <span
+                    className="method-help-icon"
+                    title={t('narration.chatterboxUnavailable', '(Unavailable - Run with npm run dev:cuda)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                   </span>
                 )}
               </label>
@@ -94,8 +108,15 @@ const NarrationMethodSelection = ({
               <label htmlFor="method-gemini" className={!isGeminiAvailable ? 'unavailable' : ''}>
                 {t('narration.geminiMethod', 'Gemini')}
                 {!isGeminiAvailable && (
-                  <span className="method-description">
-                    {t('narration.geminiUnavailable', '(Unavailable - Check API key in settings)')}
+                  <span
+                    className="method-help-icon"
+                    title={t('narration.geminiUnavailable', '(Unavailable - Check API key in settings)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                   </span>
                 )}
               </label>
@@ -113,8 +134,15 @@ const NarrationMethodSelection = ({
               <label htmlFor="method-edge-tts" className={!isEdgeTTSAvailable ? 'unavailable' : ''}>
                 {t('narration.edgeTTSMethod', 'Edge TTS')}
                 {!isEdgeTTSAvailable && (
-                  <span className="method-description">
-                    {t('narration.edgeTTSUnavailable', '(Unavailable)')}
+                  <span
+                    className="method-help-icon"
+                    title={t('narration.edgeTTSUnavailable', '(Unavailable)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                   </span>
                 )}
               </label>
@@ -132,8 +160,15 @@ const NarrationMethodSelection = ({
               <label htmlFor="method-gtts" className={!isGTTSAvailable ? 'unavailable' : ''}>
                 {t('narration.gttsMethod', 'gTTS')}
                 {!isGTTSAvailable && (
-                  <span className="method-description">
-                    {t('narration.gttsUnavailable', '(Unavailable)')}
+                  <span
+                    className="method-help-icon"
+                    title={t('narration.gttsUnavailable', '(Unavailable)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                   </span>
                 )}
               </label>

@@ -453,8 +453,15 @@ const UnifiedNarrationSection = ({
     groupedSubtitles
   });
 
-  // Only show the unavailable message if both F5-TTS and Gemini are unavailable
-  if (!isAvailable && !isGeminiAvailable) {
+  // Check if all narration services are unavailable
+  // Edge TTS and gTTS are always available, so only show unavailable message if all 5 methods are unavailable
+  const isEdgeTTSAvailable = true; // Edge TTS is always available
+  const isGTTSAvailable = true; // gTTS is always available
+  const allServicesUnavailable = !isAvailable && !isGeminiAvailable && !isChatterboxAvailable && !isEdgeTTSAvailable && !isGTTSAvailable;
+
+  // Since Edge TTS and gTTS are always available, we should never show the unavailable section
+  // This logic is kept for potential future cases where these services might become unavailable
+  if (allServicesUnavailable) {
     return (
       <div className="narration-section unavailable" ref={sectionRef}>
         <div className="narration-header">
@@ -474,7 +481,7 @@ const UnifiedNarrationSection = ({
             </svg>
           </div>
           <div className="message">
-            {t('narration.allServicesUnavailableMessage', "Both F5-TTS and Gemini narration services are unavailable. For F5-TTS, please run with npm run dev:cuda. For Gemini, please check your API key in settings.")}
+            {t('narration.allServicesUnavailableMessage', "All narration services are unavailable. For F5-TTS and Chatterbox, please run with npm run dev:cuda. For Gemini, please check your API key in settings.")}
           </div>
         </div>
       </div>

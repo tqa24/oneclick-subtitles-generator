@@ -69,6 +69,26 @@
   opacity: 0.9;
 }
 
+/* Help icon for unavailable methods */
+.narration-method-selection .method-help-icon {
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.6;
+  color: #666;
+  cursor: help;
+  transition: opacity 0.2s ease;
+}
+
+.narration-method-selection .method-help-icon:hover {
+  opacity: 0.8;
+}
+
+.narration-method-selection .method-help-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .narration-method-selection .radio-pill-group {
