@@ -54,7 +54,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ('     ' + [c
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                     %TITLE_TEXT%                      ') -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x2551 + ' Vi tri (Location): %SCRIPT_DIR%                                             ') -ForegroundColor Gray; Write-Host ([char]0x2551 + ' Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%                       ') -ForegroundColor Gray; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Install OSG (Full version with Voice Cloning)' -ForegroundColor White; Write-Host '     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow; Write-Host '  2. Install OSG Lite (Standard version)' -ForegroundColor White; Write-Host '     (Gemini AI + Video Rendering, no Voice Cloning)' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Install OSG (Full version with Voice Cloning)' -ForegroundColor White; Write-Host '     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon)' -ForegroundColor Yellow; Write-Host '  2. Install OSG Lite (Standard version)' -ForegroundColor White; Write-Host '     (Gemini AI + Video Rendering, no Voice Cloning)' -ForegroundColor Cyan"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  4. Run OSG Lite (Standard mode)' -ForegroundColor White; Write-Host '  5. Run OSG (Full mode with Voice Cloning)' -ForegroundColor White"
 ECHO.
@@ -295,8 +295,8 @@ IF %ERRORLEVEL% NEQ 0 (
     GOTO ErrorOccurred
 )
 
-ECHO Dang khoi chay ung dung voi CUDA (using npm run dev:cuda)...
-ECHO Luu y: Yeu cau GPU NVIDIA tuong thich va CUDA Toolkit da duoc cai dat.
+ECHO Dang khoi chay ung dung voi Voice Cloning (using npm run dev:cuda)...
+ECHO Luu y: GPU se duoc su dung neu co san, neu khong se chay tren CPU.
 ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
 CALL npm run dev:cuda
 IF %ERRORLEVEL% NEQ 0 (

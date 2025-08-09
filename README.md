@@ -153,7 +153,7 @@ Choose the right version for your needs:
 | **Basic TTS** | ✅ Edge TTS, Google TTS | ✅ Edge TTS, Google TTS |
 | **Voice Cloning** | ❌ Not included | ✅ F5-TTS, Chatterbox |
 | **Project Folder Size** | ~2-3 GB | ~8-12 GB |
-| **GPU Requirements** | Any GPU for video rendering | NVIDIA/Intel GPU recommended for voice cloning |
+| **GPU Requirements** | Any GPU for video rendering | GPU accelerated voice cloning (CPU fallback available) |
 
 ### 💡 **Recommendation:**
 - **Choose OSG Lite** if you need fast subtitle generation and video rendering without voice cloning

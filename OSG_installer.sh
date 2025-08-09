@@ -325,7 +325,7 @@ show_menu() {
     echo -e "\033[92m\033[40mCAI DAT / THIET LAP:\033[0m"
     echo -e "\033[97m  1. Install OSG (Full version with Voice Cloning)\033[0m"
     echo -e "\033[96m     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)\033[0m"
-    echo -e "\033[93m     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)\033[0m"
+    echo -e "\033[93m     (Luu y: Se ton nhieu dung luong luu tru hon)\033[0m"
     echo -e "\033[97m  2. Install OSG Lite (Standard version)\033[0m"
     echo -e "\033[96m     (Gemini AI + Video Rendering, no Voice Cloning)\033[0m"
     echo
@@ -425,13 +425,13 @@ install_with_narration() {
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "[INFO] NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
-        echo "Apple Silicon/Intel GPU detected, using Metal acceleration."
+        echo "[INFO] Apple Silicon/Intel GPU detected, using Metal acceleration."
     elif [[ "$GPU_TYPE" == "amd" ]]; then
-        echo "AMD GPU detected, using ROCm acceleration."
+        echo "[INFO] AMD GPU detected, using ROCm acceleration."
     elif [[ "$GPU_TYPE" == "intel" ]]; then
-        echo "Intel GPU detected, using XPU acceleration."
+        echo "[INFO] Intel GPU detected, using XPU acceleration."
     else
-        echo "WARNING: No supported GPU detected. TTS generation will be slow."
+        echo "[INFO] No GPU detected, using CPU processing (slower but functional)."
     fi
 
     echo "Press Ctrl+C in this window to stop the application later."
@@ -609,17 +609,17 @@ run_app_cuda() {
     # Detect GPU type
     detect_gpu_type
 
-    echo "Starting application with GPU acceleration (using npm run dev:cuda)..."
+    echo "Starting application with voice cloning (using npm run dev:cuda)..."
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
-        echo "NVIDIA GPU detected, using CUDA acceleration."
+        echo "[INFO] NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
-        echo "Apple Silicon/Intel GPU detected, using Metal acceleration."
+        echo "[INFO] Apple Silicon/Intel GPU detected, using Metal acceleration."
     elif [[ "$GPU_TYPE" == "amd" ]]; then
-        echo "AMD GPU detected, using ROCm acceleration."
+        echo "[INFO] AMD GPU detected, using ROCm acceleration."
     elif [[ "$GPU_TYPE" == "intel" ]]; then
-        echo "Intel GPU detected, using XPU acceleration."
+        echo "[INFO] Intel GPU detected, using XPU acceleration."
     else
-        echo "WARNING: No supported GPU detected. TTS generation will be slow."
+        echo "[INFO] No GPU detected, using CPU processing (slower but functional)."
     fi
 
     echo "Press Ctrl+C in this window to stop the application later."
