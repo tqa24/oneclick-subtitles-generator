@@ -86,11 +86,6 @@ if __name__ == '__main__':
     try:
         logger.info(f"Starting F5-TTS Narration Service on port {port}")
 
-        # Write the port to a file so the main server can find it
-        port_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'narration_port.txt')
-        with open(port_file, 'w') as f:
-            f.write(str(port))
-
         # Start the server on the specified port
         app.run(host='0.0.0.0', port=port, debug=True)
 
