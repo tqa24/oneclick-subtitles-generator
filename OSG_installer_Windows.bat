@@ -54,9 +54,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ('     ' + [c
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                     %TITLE_TEXT%                      ') -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x2551 + ' Vi tri (Location): %SCRIPT_DIR%                                             ') -ForegroundColor Gray; Write-Host ([char]0x2551 + ' Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%                       ') -ForegroundColor Gray; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)' -ForegroundColor White; Write-Host '     (Install with Gemini + F5-TTS + Chatterbox Narration)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow; Write-Host '  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Install OSG (Full version with Voice Cloning)' -ForegroundColor White; Write-Host '     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow; Write-Host '  2. Install OSG Lite (Standard version)' -ForegroundColor White; Write-Host '     (Gemini AI + Video Rendering, no Voice Cloning)' -ForegroundColor Cyan"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  4. Chay Ung dung (Run App)' -ForegroundColor White; Write-Host '  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  4. Run OSG Lite (Standard mode)' -ForegroundColor White; Write-Host '  5. Run OSG (Full mode with Voice Cloning)' -ForegroundColor White"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black; Write-Host '  6. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
 ECHO.
@@ -93,7 +93,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 1: Full Installation                       ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                        with Voice Cloning                                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Install OSG (Full Version)                       ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                        with Voice Cloning                                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -148,7 +148,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNoNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 2: Standard Installation                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Install OSG Lite (Standard)                     ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites

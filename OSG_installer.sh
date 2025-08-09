@@ -323,15 +323,16 @@ show_menu() {
     echo -e "\033[93mVui long chon mot tuy chon:\033[0m"
     echo
     echo -e "\033[92m\033[40mCAI DAT / THIET LAP:\033[0m"
-    echo -e "\033[97m  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)\033[0m"
-    echo -e "\033[96m     (Install with Gemini + F5-TTS + Chatterbox Narration)\033[0m"
+    echo -e "\033[97m  1. Install OSG (Full version with Voice Cloning)\033[0m"
+    echo -e "\033[96m     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)\033[0m"
     echo -e "\033[93m     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)\033[0m"
-    echo -e "\033[97m  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)\033[0m"
+    echo -e "\033[97m  2. Install OSG Lite (Standard version)\033[0m"
+    echo -e "\033[96m     (Gemini AI + Video Rendering, no Voice Cloning)\033[0m"
     echo
     echo -e "\033[94m\033[40mBAO TRI / SU DUNG:\033[0m"
     echo -e "\033[97m  3. Cap nhat Ung dung (Update)\033[0m"
-    echo -e "\033[97m  4. Chay Ung dung (Run App)\033[0m"
-    echo -e "\033[97m  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)\033[0m"
+    echo -e "\033[97m  4. Run OSG Lite (Standard mode)\033[0m"
+    echo -e "\033[97m  5. Run OSG (Full mode with Voice Cloning)\033[0m"
     echo
     echo -e "\033[91m\033[40mGO CAI DAT:\033[0m"
     echo -e "\033[97m  6. Go cai dat Ung dung (Uninstall)\033[0m"
@@ -362,7 +363,7 @@ show_menu() {
 install_with_narration() {
     echo
     echo "======================================================"
-    colored_echo "[SETUP] Option 1: Full Installation with Voice Cloning"
+    colored_echo "[SETUP] Install OSG (Full Version with Voice Cloning)"
     echo "======================================================"
     echo
 
@@ -442,7 +443,7 @@ install_with_narration() {
 install_without_narration() {
     echo
     echo "======================================================"
-    colored_echo "[SETUP] Option 2: Standard Installation"
+    colored_echo "[SETUP] Install OSG Lite (Standard Version)"
     echo "======================================================"
     echo
 

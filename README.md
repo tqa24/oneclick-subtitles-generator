@@ -138,6 +138,27 @@ A comprehensive web application for auto-subtitling videos and audio, translatin
 - **Background integration**: Use generated images or video backgrounds
 - **Render queue**: Batch processing with progress tracking
 
+## Installation Options Comparison
+
+Choose the right version for your needs:
+
+| Feature | OSG Lite | OSG (Full) |
+|---------|----------|------------|
+| **AI Subtitle Generation** | ✅ Advanced AI transcription | ✅ Advanced AI transcription |
+| **Video Sources** | ✅ YouTube, Douyin/TikTok, 1000+ platforms | ✅ YouTube, Douyin/TikTok, 1000+ platforms |
+| **Subtitle Editor** | ✅ Visual timeline, waveform, real-time preview | ✅ Visual timeline, waveform, real-time preview |
+| **Translation** | ✅ Multi-language with context awareness | ✅ Multi-language with context awareness |
+| **Video Rendering** | ✅ GPU-accelerated with Remotion | ✅ GPU-accelerated with Remotion |
+| **Background Generation** | ✅ AI-powered image creation | ✅ AI-powered image creation |
+| **Basic TTS** | ✅ Edge TTS, Google TTS | ✅ Edge TTS, Google TTS |
+| **Voice Cloning** | ❌ Not included | ✅ F5-TTS, Chatterbox |
+| **Project Folder Size** | ~2-3 GB | ~8-12 GB |
+| **GPU Requirements** | Any GPU for video rendering | NVIDIA/Intel GPU recommended for voice cloning |
+
+### 💡 **Recommendation:**
+- **Choose OSG Lite** if you need fast subtitle generation and video rendering without voice cloning
+- **Choose OSG (Full)** if you need advanced voice cloning and narration capabilities
+
 ## How to Use
 
 ### 1. **Select Your Content Source**
