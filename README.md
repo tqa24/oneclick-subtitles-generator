@@ -41,12 +41,10 @@ Here are some screenshots showcasing the application's current features:
     <tr>
       <td><img src="readme_assets/render-queue.png" width="100%"></td>
       <td><img src="readme_assets/quality-scanner.png" width="100%"></td>
-      <td><img src="readme_assets/workspace-tabs.png" width="100%"></td>
     </tr>
     <tr>
       <td align="center"><strong>Render queue management with progress tracking and batch processing</strong></td>
       <td align="center"><strong>Video quality scanner with cookie authentication for premium content</strong></td>
-      <td align="center"><strong>Tab-based workspace for managing multiple projects simultaneously</strong></td>
     </tr>
   </table>
 </div>
