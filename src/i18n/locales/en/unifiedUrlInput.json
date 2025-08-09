@@ -8,5 +8,7 @@
   "ytDlpNote": "Powered by yt-dlp which supports 1000+ sites",
   "url": "URL:",
   "videoId": "Video ID:",
-  "downloadOnly": "Download Only"
+  "downloadOnly": "Download Only",
+  "hundredsMoreWebsites": "...and hundreds more websites!",
+  "viewAllSupportedSites": "Click to view all supported sites"
 }

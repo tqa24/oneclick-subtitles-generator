@@ -22,5 +22,13 @@
   "exampleTerminology": "Sử dụng thuật ngữ hoặc từ vựng cụ thể",
   "exampleJapanese": "Không được dùng những từ ngữ như ...",
   "examplePreserveDetails": "Giữ lại các chi tiết quan trọng",
-  "templateNote": "Lưu ý: Hệ thống sẽ tự động xử lý định dạng và cấu trúc của đầu ra. Bạn chỉ cần thêm hướng dẫn tùy chỉnh của mình."
+  "templateNote": "Lưu ý: Hệ thống sẽ tự động xử lý định dạng và cấu trúc của đầu ra. Bạn chỉ cần thêm hướng dẫn tùy chỉnh của mình.",
+  "editBackgroundPrompts": "Chỉnh sửa lệnh tạo nền",
+  "promptOne": "Lệnh tạo mô tả hình ảnh",
+  "promptOneDescription": "Lệnh này được sử dụng để tạo mô tả từ lời bài hát.",
+  "promptTwo": "Lệnh tạo hình nền",
+  "promptTwoDescription": "Lệnh này được sử dụng để tạo hình nền bằng cách sử dụng ảnh bìa album và mô tả đã tạo.",
+  "lyricsVarDesc": "Lời bài hát (bắt buộc, không thể xóa)",
+  "songNameVarDesc": "Tên bài hát (bắt buộc, không thể xóa)",
+  "promptVarDesc": "Mô tả đã tạo (bắt buộc, không thể xóa)"
 }

@@ -96,6 +96,7 @@
 
   "audioProcessing": "Audio Processing",
   "removeSilence": "Remove Silences",
+  "removeSilenceDesc": "Remove silence",
 
   "outputFormat": "Output Format",
   "format": "Format",

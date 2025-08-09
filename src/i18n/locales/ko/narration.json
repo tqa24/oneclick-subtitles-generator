@@ -94,6 +94,7 @@
     "balanced": "균형 (32)",
     "highQuality": "고품질 (64)"
   },
+  "nfeStepDesc": "높은 값은 품질을 향상시키지만 시간이 더 오래 걸립니다",
   "swayCoef": "스웨이 샘플링",
   "swayCoefDesc": "낮은 값이 품질을 향상시킵니다",
   "cfgStrength": "음성 유사도",
@@ -105,6 +106,7 @@
 
   "audioProcessing": "오디오 처리",
   "removeSilence": "무음 제거",
+  "removeSilenceDesc": "무음 제거",
 
   "outputFormat": "출력 형식",
   "format": "형식",
@@ -116,6 +118,7 @@
 
   "batchProcessing": "일괄 처리",
   "batchSize": "배치 크기",
+  "batchSizeDesc": "GPU가 처리할 수 없는 경우 더 작게 설정하세요",
   "all": "모두",
   "mergeOutput": "모든 오디오 파일 병합",
 
@@ -140,7 +143,7 @@
   "geminiGeneratingProgress": "Gemini로 {{total}}개 중 {{progress}}개 나레이션 생성됨...",
   "geminiGenerationComplete": "Gemini 나레이션 생성 완료",
   "geminiGenerationError": "Gemini로 나레이션 생성 오류",
-  "geminiMethod": "Gemini",
+  "geminiMethod": "Gemini Live API",
   "narrationMethod": "나레이션 방식",
   "geminiUnavailable": "(사용 불가 - 설정에서 API 키 확인)",
   "downloadAligned": "타임라인에 정렬된 상태로 다운로드",
@@ -252,5 +255,11 @@
   "gttsGeneratingProgress": "gTTS로 {{total}}개 중 {{current}}개 나레이션 생성 중...",
 
   "concurrentClients": "초고속 모드",
-  "concurrentClientsHelp": "Gemini와 여러 대화를 동시에 병렬로 열기, 경고: 할당량을 빠르게 소진할 수 있음"
+  "concurrentClientsHelp": "Gemini와 여러 대화를 동시에 병렬로 열기, 경고: 할당량을 빠르게 소진할 수 있음",
+
+  "autoRecognize": "음성 자동 인식",
+  "autoRecognizeDescription": "녹음 또는 업로드 후 자동으로 오디오를 전사합니다",
+
+  "settingsTooltip": "나레이션 설정",
+  "toggleSettings": "나레이션 설정"
 }

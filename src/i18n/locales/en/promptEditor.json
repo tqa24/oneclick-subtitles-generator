@@ -22,5 +22,13 @@
   "exampleTerminology": "Use specific terminology or vocabulary",
   "exampleJapanese": "Add Japanese translations next to your translated text, wrapped in parentheses",
   "examplePreserveDetails": "Preserve important details",
-  "templateNote": "Note: The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions."
+  "templateNote": "Note: The system will automatically handle the formatting and structure of the output. You only need to add your custom instructions.",
+  "editBackgroundPrompts": "Edit Background Generation Prompts",
+  "promptOne": "Prompt for Generating Image Description",
+  "promptOneDescription": "This prompt is used to generate a description from the lyrics.",
+  "promptTwo": "Prompt for Generating Background Image",
+  "promptTwoDescription": "This prompt is used to generate the background image using the album art and the generated description.",
+  "lyricsVarDesc": "The song lyrics (required, cannot be removed)",
+  "songNameVarDesc": "The song name (required, cannot be removed)",
+  "promptVarDesc": "The generated description (required, cannot be removed)"
 }

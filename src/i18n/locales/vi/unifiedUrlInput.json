@@ -8,5 +8,7 @@
   "ytDlpNote": "Được hỗ trợ bởi yt-dlp với hơn 1000+ trang web",
   "url": "URL:",
   "videoId": "ID Video:",
-  "downloadOnly": "Chỉ tải xuống"
+  "downloadOnly": "Chỉ tải xuống",
+  "hundredsMoreWebsites": "...và hàng trăm trang web khác!",
+  "viewAllSupportedSites": "Nhấp để xem tất cả các trang được hỗ trợ"
 }
