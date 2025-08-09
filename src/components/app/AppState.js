@@ -222,8 +222,10 @@ export const useAppState = () => {
       const isApiKeyRequiredMessage =
         status.message.includes('Please set your API key') ||
         status.message.includes('Vui lòng cài đặt khóa API') ||
+        status.message.includes('먼저 설정에서 API 키를 설정하세요') ||
         status.message.includes('API key') ||
-        status.message.includes('khóa API');
+        status.message.includes('khóa API') ||
+        status.message.includes('API 키');
 
       if (isApiKeyRequiredMessage) {
         setStatus({});
