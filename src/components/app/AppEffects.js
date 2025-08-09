@@ -3,6 +3,7 @@ import { hasValidTokens } from '../../services/youtubeApiService';
 import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiButtonEffects';
 import { syncLocalStorageToServer } from '../../services/localStorageService';
 import initTabPillAnimation from '../../utils/tabPillAnimation';
+import { getThemeWithFallback } from '../../utils/systemDetection';
 
 /**
  * Hook for managing application side effects
@@ -162,7 +163,7 @@ export const useAppEffects = (props) => {
   useEffect(() => {
     const handleStorageChange = (event) => {
       if (event.key === 'theme' || !event.key) {
-        const newTheme = localStorage.getItem('theme') || 'dark';
+        const newTheme = getThemeWithFallback();
         setTheme(newTheme);
       }
 

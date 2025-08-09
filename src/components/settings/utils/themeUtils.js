@@ -1,5 +1,6 @@
 import React from 'react';
 import { SunIcon, MoonIcon } from '../icons/TabIcons';
+import { getThemeWithFallback, setupSystemThemeListener } from '../../../utils/systemDetection';
 
 // Function to toggle between light and dark themes
 export const toggleTheme = (theme, setTheme) => {
@@ -32,23 +33,18 @@ export const getThemeLabel = (theme, t) => {
   return theme === 'dark' ? t('theme.light') : t('theme.dark');
 };
 
-// Initialize theme from localStorage or default to dark
+// Initialize theme from localStorage or detect system preference
 export const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  return savedTheme;
+  const theme = getThemeWithFallback();
+  document.documentElement.setAttribute('data-theme', theme);
+
+  // Save to localStorage if not already saved
+  if (!localStorage.getItem('theme')) {
+    localStorage.setItem('theme', theme);
+  }
+
+  return theme;
 };
 
-// Set up system theme change listener
-export const setupSystemThemeListener = (setTheme) => {
-  const handleSystemThemeChange = (e) => {
-    if (localStorage.getItem('theme') === 'system') {
-      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-    }
-  };
-
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-  return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
-};
+// Set up system theme change listener (re-exported from systemDetection utility)
+export { setupSystemThemeListener };

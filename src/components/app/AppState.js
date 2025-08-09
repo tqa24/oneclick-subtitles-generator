@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getThemeWithFallback } from '../../utils/systemDetection';
 import { useSubtitles } from '../../hooks/useSubtitles';
 import { getUserProvidedSubtitlesSync } from '../../utils/userSubtitlesStore';
 import { getTranscriptionRulesSync } from '../../utils/transcriptionRulesStore';
@@ -23,7 +24,7 @@ export const useAppState = () => {
   // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState(localStorage.getItem('userPreferredTab') || 'unified-url');
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(() => getThemeWithFallback());
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
   const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
 

@@ -355,15 +355,36 @@ export const translations: Translations = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+/**
+ * Detect system language and return appropriate language code
+ * Supports English, Vietnamese, and Korean - defaults to English if no match
+ */
+const detectSystemLanguage = (): Language => {
+  try {
+    // Get system language from browser
+    const systemLanguage = navigator.language || (navigator as any).userLanguage || 'en';
+    const languageCode = systemLanguage.toLowerCase().split('-')[0]; // Extract language part (e.g., 'en' from 'en-US')
+
+    // Supported languages in the app
+    const supportedLanguages: Language[] = ['en', 'vi', 'ko'];
+
+    // Return the language if supported, otherwise default to English
+    return supportedLanguages.includes(languageCode as Language) ? (languageCode as Language) : 'en';
+  } catch (error) {
+    console.warn('Error detecting system language:', error);
+    return 'en'; // Fallback to English
+  }
+};
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize language from localStorage or default to 'en'
+  // Initialize language from localStorage or detect system language
   const [language, setLanguage] = useState<Language>(() => {
     const savedLanguage = localStorage.getItem('language');
-    // Ensure saved language is one of the valid types, otherwise default to 'en'
+    // Ensure saved language is one of the valid types, otherwise detect system language
     if (savedLanguage && ['en', 'ko', 'vi'].includes(savedLanguage)) {
        return savedLanguage as Language;
     }
-    return 'en';
+    return detectSystemLanguage();
   });
 
   // Update localStorage when language changes

@@ -114,11 +114,16 @@ export const generateCSSVariables = (theme: ThemeMode) => {
 };
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize theme from localStorage or default to 'light'
+  // Initialize theme from localStorage or detect system preference
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const savedTheme = localStorage.getItem('theme');
-    return (savedTheme as ThemeMode) || 
-      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+      return savedTheme as ThemeMode;
+    }
+
+    // Detect system preference if no saved theme
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
   });
 
   // Toggle theme function

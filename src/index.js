@@ -6,33 +6,29 @@ import './styles/video-player-dark-theme.css';
 import App from './App';
 import './i18n/i18n';
 import './utils/sliderDragHandler';
+import { getThemeWithFallback, setupSystemThemeListener } from './utils/systemDetection';
 
 // Theme initialization
 const initializeTheme = () => {
-  const storedTheme = localStorage.getItem('theme');
+  const theme = getThemeWithFallback();
+  document.documentElement.setAttribute('data-theme', theme);
 
-  if (storedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else if (storedTheme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-  } else if (storedTheme === 'system' || !storedTheme) {
-    // Check system preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-
-    // If no theme is set, default to dark
-    if (!storedTheme) {
-      localStorage.setItem('theme', 'dark');
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-
-    // Add listener for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      if (localStorage.getItem('theme') === 'system') {
-        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-      }
-    });
+  // Save to localStorage if not already saved
+  if (!localStorage.getItem('theme')) {
+    localStorage.setItem('theme', theme);
   }
+
+  // Set up system theme change listener
+  setupSystemThemeListener((newTheme) => {
+    const currentStoredTheme = localStorage.getItem('theme');
+    // Only update if user hasn't manually set a preference
+    if (!currentStoredTheme || currentStoredTheme === 'system') {
+      document.documentElement.setAttribute('data-theme', newTheme);
+      if (!currentStoredTheme) {
+        localStorage.setItem('theme', newTheme);
+      }
+    }
+  });
 };
 
 // Initialize theme

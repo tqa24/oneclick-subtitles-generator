@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { getLanguageWithFallback } from '../utils/systemDetection';
 
 // Import translations
 import enTranslation from './locales/en/index';
@@ -21,7 +22,7 @@ i18n
         translation: viTranslation
       }
     },
-    lng: localStorage.getItem('preferred_language') || 'vi', // use stored preference or default to Vietnamese
+    lng: getLanguageWithFallback('preferred_language'), // use stored preference or detect system language
     fallbackLng: 'en', // fallback language
     interpolation: {
       escapeValue: false // react already safes from xss
