@@ -11,6 +11,7 @@ const Header = ({ onSettingsClick }) => {
   const initialShowTimeoutRef = useRef(null);
   const [isInitialShow, setIsInitialShow] = useState(true); // Track if we're in initial show period
   const [hasOpenedSettings, setHasOpenedSettings] = useState(false); // Track if user has ever opened settings
+  const [isFullVersion, setIsFullVersion] = useState(false); // Track if running in full mode
 
   // Define the position update function outside useEffect so it can be reused
   const updateFloatingActionsPosition = () => {
@@ -175,6 +176,32 @@ const Header = ({ onSettingsClick }) => {
     };
   }, [showFloatingActions, isInitialShow, hasOpenedSettings]);
 
+  // Detect startup mode (lite vs full version)
+  useEffect(() => {
+    const detectStartupMode = async () => {
+      try {
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
+        const response = await fetch(`${API_BASE_URL}/api/startup-mode`, {
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const startupData = await response.json();
+          setIsFullVersion(startupData.isDevCuda);
+        }
+      } catch (error) {
+        // If we can't detect, assume lite version
+        setIsFullVersion(false);
+      }
+    };
+
+    detectStartupMode();
+  }, []);
+
   // Handle settings click - mark as opened and call original handler
   const handleSettingsClick = () => {
     // Mark that user has opened settings
@@ -194,7 +221,10 @@ const Header = ({ onSettingsClick }) => {
 
       <div className="header-title-container">
         <h1 className="header-title">
-          {t('header.appTitle')}
+          <span className="osg-main">OSG</span>
+          <span className="osg-version">
+            {isFullVersion ? ` (${t('header.versionFull')})` : ` (${t('header.versionLite')})`}
+          </span>
         </h1>
       </div>
 

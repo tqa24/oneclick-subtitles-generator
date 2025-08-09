@@ -29,6 +29,26 @@ export const translations: Translations = {
     ko: '자막 비디오 메이커',
     vi: 'Trình tạo Video Phụ đề'
   },
+  appTitleFull: {
+    en: 'OSG (Full version)',
+    ko: 'OSG (풀 버전)',
+    vi: 'OSG (bản Full)'
+  },
+  appTitleLite: {
+    en: 'OSG (Lite version)',
+    ko: 'OSG (라이트 버전)',
+    vi: 'OSG (bản Lite)'
+  },
+  versionFull: {
+    en: 'Full version',
+    ko: '풀 버전',
+    vi: 'bản Full'
+  },
+  versionLite: {
+    en: 'Lite version',
+    ko: '라이트 버전',
+    vi: 'bản Lite'
+  },
   theme: {
     en: 'Theme',
     ko: '테마',

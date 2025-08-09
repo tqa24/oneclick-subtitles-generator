@@ -1,5 +1,9 @@
 {
   "appTitle": "One-click Subtitles Generator",
+  "appTitleFull": "OSG (Full version)",
+  "appTitleLite": "OSG (Lite version)",
+  "versionFull": "Full version",
+  "versionLite": "Lite version",
   "appLogoAlt": "One-click Subtitles Generator Logo",
   "settings": "Settings",
   "settingsAria": "Open Settings",

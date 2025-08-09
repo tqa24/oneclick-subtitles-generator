@@ -19,6 +19,33 @@ const SERVER_URL = process.env.REACT_APP_API_URL || 'http://localhost:3033';
 // Create our Header component
 const Header: React.FC = () => {
   const { t } = useLanguage();
+  const [isFullVersion, setIsFullVersion] = useState(false);
+
+  // Detect startup mode (lite vs full version)
+  useEffect(() => {
+    const detectStartupMode = async () => {
+      try {
+        // Use the backend server URL for startup mode detection
+        const response = await fetch('http://localhost:3031/api/startup-mode', {
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const startupData = await response.json();
+          setIsFullVersion(startupData.isDevCuda);
+        }
+      } catch (error) {
+        // If we can't detect, assume lite version
+        setIsFullVersion(false);
+      }
+    };
+
+    detectStartupMode();
+  }, []);
   
   const handleClearCache = async () => {
     try {
@@ -41,7 +68,20 @@ const Header: React.FC = () => {
     <HeaderContainer>
       <Logo>
         <MusicIcon />
-        <h1>{t('appTitle')}</h1>
+        <h1>
+          <span style={{ fontSize: '1.4em', fontWeight: 800 }}>OSG</span>
+          <span style={{
+            fontSize: '0.7em',
+            fontWeight: 500,
+            opacity: 0.8,
+            background: 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            {isFullVersion ? ` (${t('versionFull')})` : ` (${t('versionLite')})`}
+          </span>
+        </h1>
       </Logo>
       <Controls>
         <ControlButton onClick={handleClearCache} title="Clear uploaded files cache">

@@ -1,5 +1,9 @@
 {
   "appTitle": "Trình Tạo Phụ Đề One-Click",
+  "appTitleFull": "OSG (bản Full)",
+  "appTitleLite": "OSG (bản Lite)",
+  "versionFull": "bản Full",
+  "versionLite": "bản Lite",
   "appLogoAlt": "Logo Trình Tạo Phụ Đề One-Click",
   "settings": "Cài đặt",
   "settingsAria": "Mở cài đặt",

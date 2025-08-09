@@ -96,6 +96,22 @@
   filter: brightness(1.1); /* Add brightness instead of scaling */
 }
 
+/* OSG title styling */
+.osg-main {
+  font-size: 1.4em; /* Make OSG bigger */
+  font-weight: 800;
+}
+
+.osg-version {
+  font-size: 0.7em; /* Make version text smaller */
+  font-weight: 500;
+  opacity: 0.8;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Floating settings button styles */
 .floating-settings {
   position: absolute;
@@ -328,6 +344,14 @@
     font-size: 1.3rem;
   }
 
+  .osg-main {
+    font-size: 1.2em;
+  }
+
+  .osg-version {
+    font-size: 0.65em;
+  }
+
   .floating-settings {
     /* top and right will be set dynamically by JavaScript */
     /* Responsive adjustments handled by the base button styles */
@@ -360,6 +384,14 @@
     max-width: 70%;
   }
 
+  .osg-main {
+    font-size: 1.1em;
+  }
+
+  .osg-version {
+    font-size: 0.6em;
+  }
+
   .app-header {
     padding: 0.75rem 1rem;
   }
@@ -368,6 +400,14 @@
 @media (max-width: 400px) {
   .header-title {
     font-size: 1rem;
+  }
+
+  .osg-main {
+    font-size: 1em;
+  }
+
+  .osg-version {
+    font-size: 0.55em;
   }
 
   .app-header {
