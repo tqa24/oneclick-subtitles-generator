@@ -163,7 +163,15 @@ const SubtitleSourceSelection = ({
   // State for language detection
   const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
   const [isDetectingTranslated, setIsDetectingTranslated] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(() => {
+    // Load last used narration model from localStorage
+    try {
+      return localStorage.getItem('last_used_narration_model') || null;
+    } catch (error) {
+      console.error('Error loading last used narration model:', error);
+      return null;
+    }
+  });
   const [modelError, setModelError] = useState(null);
   const [isCheckingModel, setIsCheckingModel] = useState(false);
   const [availableModels, setAvailableModels] = useState([]);
@@ -311,6 +319,13 @@ const SubtitleSourceSelection = ({
 
     // Set the selected model
     setSelectedModel(modelId);
+
+    // Save the selected model to localStorage for future sessions
+    try {
+      localStorage.setItem('last_used_narration_model', modelId);
+    } catch (error) {
+      console.error('Error saving last used narration model:', error);
+    }
 
     // Mark that user has manually selected a model
     setUserHasManuallySelectedModel(true);

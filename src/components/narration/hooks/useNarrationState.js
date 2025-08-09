@@ -115,7 +115,15 @@ const useNarrationState = (initialReferenceAudio) => {
   });
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState(null);
-  const [selectedNarrationModel, setSelectedNarrationModel] = useState(null);
+  const [selectedNarrationModel, setSelectedNarrationModel] = useState(() => {
+    // Load last used narration model from localStorage
+    try {
+      return localStorage.getItem('last_used_narration_model') || null;
+    } catch (error) {
+      console.error('Error loading last used narration model:', error);
+      return null;
+    }
+  });
   const [modelAvailabilityError, setModelAvailabilityError] = useState(null);
   const [originalLanguage, setOriginalLanguage] = useState(null);
   const [translatedLanguage, setTranslatedLanguage] = useState(null);

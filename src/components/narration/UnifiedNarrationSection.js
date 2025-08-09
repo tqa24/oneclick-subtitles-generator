@@ -570,6 +570,13 @@ const UnifiedNarrationSection = ({
               // Update the selected narration model
               if (modelId) {
                 setSelectedNarrationModel(modelId);
+
+                // Save the automatically selected model to localStorage for future sessions
+                try {
+                  localStorage.setItem('last_used_narration_model', modelId);
+                } catch (error) {
+                  console.error('Error saving automatically selected narration model:', error);
+                }
               }
 
               // Update the appropriate language state
