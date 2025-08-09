@@ -47,6 +47,7 @@
   "failed": "Tạo thất bại",
   "cancel": "Hủy",
   "f5ttsCancelNotSupported": "Thư viện F5-TTS không hỗ trợ hủy trong quá trình tạo âm thanh",
+  "chatterboxCancelNotSupported": "Thư viện Chatterbox không hỗ trợ hủy trong quá trình tạo âm thanh",
   "noReferenceError": "Vui lòng thiết lập âm thanh tham chiếu bằng một trong các tùy chọn trên",
   "noSubtitlesError": "Không có phụ đề để tạo thuyết minh",
   "noTranslatedSubtitlesError": "Không có phụ đề đã dịch. Vui lòng dịch phụ đề trước hoặc chọn phụ đề gốc.",

@@ -37,6 +37,7 @@
   "noResults": "No narration results to download",
   "cancel": "Cancel",
   "f5ttsCancelNotSupported": "F5-TTS library doesn't support cancellation during audio generation",
+  "chatterboxCancelNotSupported": "Chatterbox library doesn't support cancellation during audio generation",
   "generationCancelled": "Narration generation cancelled by user",
   "failed": "Generation failed",
   "noReferenceError": "Please set up reference audio using one of the options above",
