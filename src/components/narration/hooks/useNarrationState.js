@@ -169,10 +169,21 @@ const useNarrationState = (initialReferenceAudio) => {
       audioFormat: 'wav',
 
       // Batch Processing Options
-      batchSize: '10',
+      batchSize: '8',
       mergeOutput: false
     };
   });
+
+  // Save advanced settings to localStorage when they change
+  useEffect(() => {
+    if (advancedSettings) {
+      try {
+        localStorage.setItem('narration_advanced_settings', JSON.stringify(advancedSettings));
+      } catch (error) {
+        console.error('Error saving advanced settings to localStorage:', error);
+      }
+    }
+  }, [advancedSettings]);
 
   // Save grouping intensity to localStorage when it changes
   useEffect(() => {

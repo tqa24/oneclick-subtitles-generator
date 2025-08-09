@@ -710,9 +710,6 @@ const useNarrationHandlers = ({
         apiSettings.seed = advancedSettings.seed;
       }
 
-      // Save settings to localStorage
-      localStorage.setItem('narration_advanced_settings', JSON.stringify(advancedSettings));
-
       // Generate narration with streaming response
       const tempResults = [];
 
