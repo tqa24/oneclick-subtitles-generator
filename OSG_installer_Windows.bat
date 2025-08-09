@@ -18,7 +18,7 @@ SET "TITLE_TEXT=Quan Ly Trinh Tao Phu De OneClick"
 TITLE %TITLE_TEXT%
 
 :: --- Check for Administrator Privileges ---
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow; if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) { Write-Host ''; Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                    [ERROR] Administrator privileges required.                ' + [char]0x2551) -ForegroundColor Red; Write-Host ([char]0x2551 + '                   [INFO] Requesting administrator privileges...             ' + [char]0x2551) -ForegroundColor Blue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan; Start-Process '%~f0' -Verb RunAs; exit 1 } else { Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green; Write-Host '' }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges...' -ForegroundColor Yellow; if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) { Write-Host ''; Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                    [ERROR] Administrator privileges required.               ' + [char]0x2551) -ForegroundColor Red; Write-Host ([char]0x2551 + '                   [INFO] Requesting administrator privileges...             ' + [char]0x2551) -ForegroundColor Blue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan; Start-Process '%~f0' -Verb RunAs; exit 1 } else { Write-Host '[OK] Administrator privileges confirmed.' -ForegroundColor Green; Write-Host '' }"
 IF %ERRORLEVEL% NEQ 0 EXIT /B
 
 :: Check if we have a saved choice from previous error
@@ -148,7 +148,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNoNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 2: Standard Installation                  ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 2: Standard Installation                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
