@@ -256,5 +256,8 @@
   "edgeTTSRetryingFailed": "Đang thử lại các thuyết minh Edge TTS thất bại...",
   "edgeTTSRetryComplete": "Thử lại Edge TTS hoàn tất!",
   "gttsStarting": "Bắt đầu tạo thuyết minh gTTS...",
-  "gttsGeneratingProgress": "Đang tạo {{current}} trên {{total}} thuyết minh với gTTS..."
+  "gttsGeneratingProgress": "Đang tạo {{current}} trên {{total}} thuyết minh với gTTS...",
+
+  "concurrentClients": "Chế độ cực nhanh",
+  "concurrentClientsHelp": "Mở nhiều hội thoại song song với Gemini cùng lúc, CHÚ Ý: có thể gây cạn kiệt quota nhanh chóng"
 }

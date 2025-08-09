@@ -231,5 +231,8 @@
   "edgeTTSRetryingFailed": "Retrying failed Edge TTS narrations...",
   "edgeTTSRetryComplete": "Edge TTS retry completed!",
   "gttsStarting": "Starting gTTS generation...",
-  "gttsGeneratingProgress": "Generating {{current}} of {{total}} narrations with gTTS..."
+  "gttsGeneratingProgress": "Generating {{current}} of {{total}} narrations with gTTS...",
+
+  "concurrentClients": "Ultra Fast Mode",
+  "concurrentClientsHelp": "Open multiple parallel conversations with Gemini simultaneously, WARNING: may quickly exhaust quota"
 }

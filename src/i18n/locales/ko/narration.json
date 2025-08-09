@@ -235,5 +235,8 @@
   "edgeTTSRetryingFailed": "실패한 Edge TTS 나레이션 재시도 중...",
   "edgeTTSRetryComplete": "Edge TTS 재시도 완료!",
   "gttsStarting": "gTTS 생성 시작 중...",
-  "gttsGeneratingProgress": "gTTS로 {{total}}개 중 {{current}}개 나레이션 생성 중..."
+  "gttsGeneratingProgress": "gTTS로 {{total}}개 중 {{current}}개 나레이션 생성 중...",
+
+  "concurrentClients": "초고속 모드",
+  "concurrentClientsHelp": "Gemini와 여러 대화를 동시에 병렬로 열기, 경고: 할당량을 빠르게 소진할 수 있음"
 }
