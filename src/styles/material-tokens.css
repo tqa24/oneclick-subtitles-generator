@@ -3,8 +3,8 @@
 :root {
   /* Color tokens - Light theme - more vibrant colors */
   --md-primary: #5D5FEF; /* More vibrant purple */
-  --md-on-primary: #FFFFFF;
-  --md-primary-container: #E4E3FF;
+  --md-on-primary: #FEFEFE; /* Very slightly softer white */
+  --md-primary-container: #E8E7FF; /* Very slightly softer purple container */
   --md-on-primary-container: #0A00A5;
 
   --md-secondary: #2979FF; /* Vibrant blue */
@@ -151,8 +151,8 @@
 [data-theme="dark"] {
   --md-primary: #B4B5FF; /* More vibrant purple for dark theme */
   --md-on-primary: #0A00A5;
-  --md-primary-container: #4243D4;
-  --md-on-primary-container: #E4E3FF;
+  --md-primary-container: #4547D8; /* Very slightly softer purple container */
+  --md-on-primary-container: #E8E7FF;
 
   --md-secondary: #82B1FF; /* Vibrant blue for dark theme */
   --md-on-secondary: #004BA0;
