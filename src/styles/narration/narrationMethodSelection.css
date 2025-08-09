@@ -89,6 +89,74 @@
   height: 14px;
 }
 
+/* Method icons */
+.narration-method-selection .method-icon {
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.narration-method-selection .method-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Distinct colors for each method */
+.narration-method-selection .method-f5tts {
+  --method-color: #4285f4; /* Blue */
+  --method-bg: rgba(66, 133, 244, 0.1);
+  --method-border: rgba(66, 133, 244, 0.3);
+}
+
+.narration-method-selection .method-chatterbox {
+  --method-color: #34a853; /* Green */
+  --method-bg: rgba(52, 168, 83, 0.1);
+  --method-border: rgba(52, 168, 83, 0.3);
+}
+
+.narration-method-selection .method-gemini {
+  --method-color: #ea4335; /* Red */
+  --method-bg: rgba(234, 67, 53, 0.1);
+  --method-border: rgba(234, 67, 53, 0.3);
+}
+
+.narration-method-selection .method-edge-tts {
+  --method-color: #ff9800; /* Orange */
+  --method-bg: rgba(255, 152, 0, 0.1);
+  --method-border: rgba(255, 152, 0, 0.3);
+}
+
+.narration-method-selection .method-gtts {
+  --method-color: #9c27b0; /* Purple */
+  --method-bg: rgba(156, 39, 176, 0.1);
+  --method-border: rgba(156, 39, 176, 0.3);
+}
+
+/* Apply method colors to pills */
+.narration-method-selection .radio-pill label[class*="method-"] {
+  background-color: var(--method-bg);
+  border-color: var(--method-border);
+  color: var(--method-color);
+}
+
+.narration-method-selection .radio-pill label[class*="method-"]:hover {
+  background-color: var(--method-bg);
+  border-color: var(--method-color);
+  transform: translateY(-1px);
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:checked + label[class*="method-"] {
+  background-color: var(--method-color);
+  border-color: var(--method-color);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.narration-method-selection .radio-pill input[type="radio"]:checked + label[class*="method-"] .method-icon svg {
+  color: white;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .narration-method-selection .radio-pill-group {

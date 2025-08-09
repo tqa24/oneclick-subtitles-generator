@@ -120,7 +120,7 @@
 
   "narrationMethod": "Narration Method",
   "f5ttsMethod": "F5-TTS",
-  "geminiMethod": "Gemini",
+  "geminiMethod": "Gemini Live API",
 
   "alignedMode": "Use Aligned Narration",
   "enabled": "Enabled",
@@ -168,8 +168,8 @@
   "speedModifyError": "Error changing narration speed: {{error}}",
 
   "chatterboxMethod": "Chatterbox",
-  "f5ttsUnavailable": "(Unavailable - Run with npm run dev:cuda)",
-  "chatterboxUnavailable": "(Unavailable - Run with npm run dev:cuda)",
+  "f5ttsUnavailable": "(Unavailable - Please install and run OSG Full)",
+  "chatterboxUnavailable": "(Unavailable - Please install and run OSG Full)",
   "geminiUnavailable": "(Unavailable - Check API key in settings)",
   "edgeTTSUnavailable": "(Unavailable)",
   "gttsUnavailable": "(Unavailable)",
