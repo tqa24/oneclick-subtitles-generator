@@ -53,7 +53,7 @@
   "timeRangeError": "Please specify both start and end times",
   "serviceUnavailable": "Narration service is not available",
   "serviceUnavailableIndicator": "(Service Unavailable)",
-  "serviceUnavailableMessage": "Please run the application with npm run dev:cuda to use the Narration feature",
+  "serviceUnavailableMessage": "Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.",
   "allServicesUnavailableMessage": "All narration services are unavailable. For F5-TTS and Chatterbox, please run with npm run dev:cuda. For Gemini, please check your API key in settings.",
   "initializingService": "Waking up the narration server for the first run...",
   "preparingNarration": "Preparing to generate narration...",

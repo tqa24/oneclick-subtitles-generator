@@ -51,6 +51,7 @@
   "timeRangeError": "시작 및 종료 시간을 모두 지정하세요",
   "serviceUnavailable": "나레이션 서비스를 사용할 수 없습니다",
   "serviceUnavailableIndicator": "(서비스 사용 불가)",
+  "serviceUnavailableMessage": "음성 복제 기능을 사용하려면 npm run dev:cuda (OSG Full)로 애플리케이션을 실행하세요. 이미 npm run dev:cuda (OSG Full)로 실행 중이라면 약 1분 정도 기다려 주세요.",
   "referenceAudioReady": "레퍼런스 오디오가 준비되었습니다",
   "downloadNotImplemented": "모두 다운로드 기능은 아직 구현되지 않았습니다",
   "subtitleSource": "자막 소스",

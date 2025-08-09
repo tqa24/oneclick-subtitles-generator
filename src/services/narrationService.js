@@ -96,14 +96,14 @@ export const checkNarrationStatusWithRetry = async () => {
         return {
           available: false,
           error: "Express server is not available",
-          message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+          message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
         };
       }
     } catch (error) {
       return {
         available: false,
         error: "Express server is not available",
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
       };
     }
 
@@ -120,20 +120,20 @@ export const checkNarrationStatusWithRetry = async () => {
       return {
         available: false,
         error: `Server returned ${response.status}`,
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
       };
     }
 
     const data = await response.json();
     if (!data.available) {
-      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
+      data.message = "SERVICE_UNAVAILABLE"; // Will be translated by frontend
     }
     return data;
   } catch (error) {
     return {
       available: false,
       error: error.message,
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
     };
   }
 };
@@ -157,7 +157,7 @@ export const checkNarrationStatus = async () => {
       return {
         available: false,
         error: "Express server is not available",
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
       };
     }
   } catch (error) {
@@ -165,7 +165,7 @@ export const checkNarrationStatus = async () => {
     return {
       available: false,
       error: "Express server is not available",
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
     };
   }
 
@@ -180,29 +180,23 @@ export const checkNarrationStatus = async () => {
     });
 
     if (!response.ok) {
-      // Using hardcoded Vietnamese message here because i18n context is not available in this service
-      // This message matches the translation key 'serviceUnavailableMessage'
       return {
         available: false,
         error: `Server returned ${response.status}`,
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
       };
     }
 
     const data = await response.json();
     if (!data.available) {
-      // Using hardcoded Vietnamese message here because i18n context is not available in this service
-      // This message matches the translation key 'serviceUnavailableMessage'
-      data.message = "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.";
+      data.message = "SERVICE_UNAVAILABLE"; // Will be translated by frontend
     }
     return data;
   } catch (error) {
-    // Using hardcoded Vietnamese message here because i18n context is not available in this service
-    // This message matches the translation key 'serviceUnavailableMessage'
     return {
       available: false,
       error: error.message,
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."
+      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
     };
   }
 };

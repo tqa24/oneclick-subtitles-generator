@@ -61,7 +61,7 @@
   "timeRangeError": "Vui lòng chỉ định cả thời gian bắt đầu và kết thúc",
   "serviceUnavailable": "Dịch vụ thuyết minh không khả dụng",
   "serviceUnavailableIndicator": "(Dịch vụ không khả dụng)",
-  "serviceUnavailableMessage": "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.",
+  "serviceUnavailableMessage": "Vui lòng chạy ứng dụng bằng npm run dev:cuda (OSG Full) để dùng chức năng Clone giọng. Nếu đã chạy bằng npm run dev:cuda (OSG Full), vui lòng đợi khoảng 1 phút sẽ dùng được.",
   "allServicesUnavailableMessage": "Tất cả dịch vụ thuyết minh đều không khả dụng. Đối với F5-TTS và Chatterbox, vui lòng chạy với npm run dev:cuda. Đối với Gemini, vui lòng kiểm tra API key trong cài đặt.",
   "initializingService": "Đang đánh thức server thuyết minh cho lần đầu chạy...",
   "preparingNarration": "Đang chuẩn bị tạo thuyết minh...",

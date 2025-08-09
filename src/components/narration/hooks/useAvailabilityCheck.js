@@ -35,14 +35,14 @@ const checkChatterboxAvailability = async () => {
     } else {
       return {
         available: false,
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
       };
     }
 
   } catch (error) {
     return {
       available: false,
-      message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
     };
   }
 };
@@ -90,13 +90,25 @@ const useAvailabilityCheck = ({
 
         // Set error message based on current method
         if (!geminiStatus.available && narrationMethod === 'gemini' && geminiStatus.message) {
-          setError(geminiStatus.message);
+          // Translate service unavailable message if needed
+          const errorMessage = geminiStatus.message === 'SERVICE_UNAVAILABLE'
+            ? t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.')
+            : geminiStatus.message;
+          setError(errorMessage);
         }
         else if (!f5Status.available && narrationMethod === 'f5tts' && f5Status.message) {
-          setError(f5Status.message);
+          // Translate service unavailable message if needed
+          const errorMessage = f5Status.message === 'SERVICE_UNAVAILABLE'
+            ? t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.')
+            : f5Status.message;
+          setError(errorMessage);
         }
         else if (!chatterboxStatus.available && narrationMethod === 'chatterbox' && chatterboxStatus.message) {
-          setError(chatterboxStatus.message);
+          // Translate service unavailable message if needed
+          const errorMessage = chatterboxStatus.message === 'SERVICE_UNAVAILABLE'
+            ? t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.')
+            : chatterboxStatus.message;
+          setError(errorMessage);
         }
         else {
           // Clear any previous errors
@@ -108,12 +120,12 @@ const useAvailabilityCheck = ({
         // Set error based on current method
         if (narrationMethod === 'f5tts') {
           setIsAvailable(false);
-          setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
+          setError(t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.'));
         }
         else if (narrationMethod === 'chatterbox') {
           // Set Chatterbox as unavailable when not running with dev:cuda
           setIsChatterboxAvailable(false);
-          setError(t('narration.serviceUnavailableMessage', "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được."));
+          setError(t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.'));
         }
         else {
           setIsGeminiAvailable(false);
