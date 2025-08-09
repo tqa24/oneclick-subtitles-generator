@@ -342,5 +342,33 @@
   "concurrentClients": "동시 클라이언트",
   "concurrentClientsDescription": "병렬로 처리할 동시 API 요청 수입니다. 값이 높을수록 속도가 증가하지만 속도 제한에 도달할 수 있습니다.",
   "resolution240p": "240p (가장 빠름, 가장 작은 파일)",
-  "resolution360p": "360p (Gemini에 권장)"
+  "resolution360p": "360p (Gemini에 권장)",
+  "customGeminiModels": {
+    "title": "커스텀 Gemini 모델",
+    "description": "애플리케이션 전체의 드롭다운에서 사용할 커스텀 Gemini 모델 ID를 추가하세요. 이러한 모델은 모든 모델 선택 메뉴에 나타납니다.",
+    "modelId": "모델 ID",
+    "modelName": "표시 이름",
+    "modelIdPlaceholder": "예: gemini-1.5-pro",
+    "modelNamePlaceholder": "예: Gemini 1.5 Pro",
+    "add": "모델 추가",
+    "update": "모델 업데이트",
+    "addNew": "커스텀 모델 추가",
+    "edit": "모델 편집",
+    "delete": "모델 삭제",
+    "confirmDelete": "이 커스텀 모델을 삭제하시겠습니까?",
+    "modelExists": "이 ID를 가진 모델이 이미 존재합니다"
+  },
+  "customModels": {
+    "modelId": "모델 ID",
+    "modelName": "표시 이름",
+    "modelIdPlaceholder": "예: gemini-1.5-pro",
+    "modelNamePlaceholder": "예: Gemini 1.5 Pro",
+    "add": "모델 추가",
+    "update": "모델 업데이트",
+    "addNew": "커스텀 모델 추가",
+    "edit": "모델 편집",
+    "delete": "모델 삭제",
+    "confirmDelete": "이 커스텀 모델을 삭제하시겠습니까?",
+    "modelExists": "이 ID를 가진 모델이 이미 존재합니다"
+  }
 }

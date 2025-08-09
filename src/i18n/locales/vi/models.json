@@ -8,5 +8,6 @@
   "smarterFaster": "Độ chính xác thứ hai",
   "fastestAdvanced": "Mô hình 2.5 nhanh nhất",
   "balancedModel": "Cân bằng, dễ bị sub dài",
-  "fastestModel": "Nhanh nhất, dễ bị sub dài"
+  "fastestModel": "Nhanh nhất, dễ bị sub dài",
+  "customModel": "Mô hình tùy chỉnh"
 }

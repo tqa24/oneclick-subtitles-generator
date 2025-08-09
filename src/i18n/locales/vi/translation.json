@@ -30,6 +30,7 @@
   "modelGemini25FlashLite": "độ dài output 65536 tokens (thường không cần chia)",
   "modelGemini20Flash": "độ dài ouput 8192 tokens (nên chia khi dịch)",
   "modelGemini20FlashLite": "độ dài ouput 8192 tokens (nên chia khi dịch)",
+  "customModel": "Mô hình tùy chỉnh - giới hạn token có thể khác nhau",
   "splitDuration": "Thời gian chia",
   "splitDurationTooltip": "Chia phụ đề thành các phần để tránh giới hạn token",
   "splitDurationHelp": "Chia phụ đề thành các phần nhỏ hơn giúp ngăn chặn việc dịch bị cắt ngắn do giới hạn token. Đối với video dài hơn, hãy sử dụng các phần nhỏ hơn.",

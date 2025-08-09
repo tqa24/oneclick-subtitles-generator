@@ -332,5 +332,33 @@
   "concurrentClients": "Concurrent Clients",
   "concurrentClientsDescription": "Number of simultaneous API requests to process in parallel. Higher values increase speed but may hit rate limits.",
   "resolution240p": "240p (Fastest, smallest files)",
-  "resolution360p": "360p (Recommended for Gemini)"
+  "resolution360p": "360p (Recommended for Gemini)",
+  "customGeminiModels": {
+    "title": "Custom Gemini Models",
+    "description": "Add custom Gemini model IDs to use in dropdowns throughout the application. These models will appear in all model selection menus.",
+    "modelId": "Model ID",
+    "modelName": "Display Name",
+    "modelIdPlaceholder": "e.g., gemini-1.5-pro",
+    "modelNamePlaceholder": "e.g., Gemini 1.5 Pro",
+    "add": "Add Model",
+    "update": "Update Model",
+    "addNew": "Add Custom Model",
+    "edit": "Edit model",
+    "delete": "Delete model",
+    "confirmDelete": "Are you sure you want to delete this custom model?",
+    "modelExists": "A model with this ID already exists"
+  },
+  "customModels": {
+    "modelId": "Model ID",
+    "modelName": "Display Name",
+    "modelIdPlaceholder": "e.g., gemini-1.5-pro",
+    "modelNamePlaceholder": "e.g., Gemini 1.5 Pro",
+    "add": "Add Model",
+    "update": "Update Model",
+    "addNew": "Add Custom Model",
+    "edit": "Edit model",
+    "delete": "Delete model",
+    "confirmDelete": "Are you sure you want to delete this custom model?",
+    "modelExists": "A model with this ID already exists"
+  }
 }

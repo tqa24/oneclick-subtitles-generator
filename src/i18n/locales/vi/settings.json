@@ -342,5 +342,33 @@
   "concurrentClients": "Khách hàng Đồng thời",
   "concurrentClientsDescription": "Số lượng yêu cầu API đồng thời để xử lý song song. Giá trị cao hơn tăng tốc độ nhưng có thể đạt giới hạn tốc độ.",
   "resolution240p": "240p (Nhanh nhất, tệp nhỏ nhất)",
-  "resolution360p": "360p (Khuyến nghị cho Gemini)"
+  "resolution360p": "360p (Khuyến nghị cho Gemini)",
+  "customGeminiModels": {
+    "title": "Mô hình Gemini Tùy chỉnh",
+    "description": "Thêm ID mô hình Gemini tùy chỉnh để sử dụng trong các menu thả xuống trong toàn bộ ứng dụng. Những mô hình này sẽ xuất hiện trong tất cả các menu chọn mô hình.",
+    "modelId": "ID Mô hình",
+    "modelName": "Tên Hiển thị",
+    "modelIdPlaceholder": "ví dụ: gemini-1.5-pro",
+    "modelNamePlaceholder": "ví dụ: Gemini 1.5 Pro",
+    "add": "Thêm Mô hình",
+    "update": "Cập nhật Mô hình",
+    "addNew": "Thêm Mô hình Tùy chỉnh",
+    "edit": "Chỉnh sửa mô hình",
+    "delete": "Xóa mô hình",
+    "confirmDelete": "Bạn có chắc chắn muốn xóa mô hình tùy chỉnh này không?",
+    "modelExists": "Một mô hình với ID này đã tồn tại"
+  },
+  "customModels": {
+    "modelId": "ID Mô hình",
+    "modelName": "Tên Hiển thị",
+    "modelIdPlaceholder": "ví dụ: gemini-1.5-pro",
+    "modelNamePlaceholder": "ví dụ: Gemini 1.5 Pro",
+    "add": "Thêm Mô hình",
+    "update": "Cập nhật Mô hình",
+    "addNew": "Thêm Mô hình Tùy chỉnh",
+    "edit": "Chỉnh sửa mô hình",
+    "delete": "Xóa mô hình",
+    "confirmDelete": "Bạn có chắc chắn muốn xóa mô hình tùy chỉnh này không?",
+    "modelExists": "Một mô hình với ID này đã tồn tại"
+  }
 }

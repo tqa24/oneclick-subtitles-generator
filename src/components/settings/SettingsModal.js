@@ -148,6 +148,16 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
 
+  // Custom Gemini models state
+  const [customGeminiModels, setCustomGeminiModels] = useState(() => {
+    try {
+      const saved = localStorage.getItem('custom_gemini_models');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Save active tab to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('settings_last_active_tab', activeTab);
@@ -207,7 +217,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       'gemini-2.5-flash': -1,
       'gemini-2.5-flash-lite': 0
     },
-    useCookiesForDownload: false
+    useCookiesForDownload: false,
+    customGeminiModels: []
   });
 
   // Listen for system theme changes and apply initial theme
@@ -257,7 +268,18 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOptimizeVideos = true; // Video optimization is now always enabled
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
-      const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true'; // Default to false if not set
+      const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
+
+      // Load custom Gemini models
+      const savedCustomGeminiModels = (() => {
+        try {
+          const stored = localStorage.getItem('custom_gemini_models');
+          return stored ? JSON.parse(stored) : [];
+        } catch (error) {
+          console.error('Error parsing custom Gemini models from localStorage:', error);
+          return [];
+        }
+      })(); // Default to false if not set
 
       // Load thinking budgets from localStorage
       const savedThinkingBudgets = (() => {
@@ -304,6 +326,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setUseOptimizedPreview(savedUseOptimizedPreview);
       setUseCookiesForDownload(savedUseCookiesForDownload);
       setThinkingBudgets(savedThinkingBudgets);
+      setCustomGeminiModels(savedCustomGeminiModels);
       setHasChanges(false); // Reset changes flag when loading settings
 
       // Set original settings to match loaded settings
@@ -328,7 +351,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview,
         useCookiesForDownload: savedUseCookiesForDownload,
-        thinkingBudgets: savedThinkingBudgets
+        thinkingBudgets: savedThinkingBudgets,
+        customGeminiModels: savedCustomGeminiModels
       });
 
       // Mark settings as loaded
@@ -431,13 +455,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview ||
       useCookiesForDownload !== originalSettings.useCookiesForDownload ||
-      JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets);
+      JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets) ||
+      JSON.stringify(customGeminiModels) !== JSON.stringify(originalSettings.customGeminiModels);
 
     setHasChanges(settingsChanged);
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, originalSettings]);
+      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, customGeminiModels, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -460,6 +485,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
     localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());
     localStorage.setItem('thinking_budgets', JSON.stringify(thinkingBudgets));
+    localStorage.setItem('custom_gemini_models', JSON.stringify(customGeminiModels));
     // Save the Gemini API key to the key manager
     // The key manager will handle updating the legacy key for backward compatibility
     const allKeys = getAllKeys();
@@ -713,6 +739,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setUseCookiesForDownload={setUseCookiesForDownload}
               thinkingBudgets={thinkingBudgets}
               setThinkingBudgets={setThinkingBudgets}
+              customGeminiModels={customGeminiModels}
+              setCustomGeminiModels={setCustomGeminiModels}
             />
           </div>
 

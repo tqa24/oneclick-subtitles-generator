@@ -29,59 +29,89 @@ const ModelDropdown = ({
   const buttonRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Model options with their icons and colors
-  const modelOptions = [
-    {
-      id: 'gemini-2.5-pro',
-      name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
-      description: isTranslationSection
-        ? t('translation.modelGemini25Pro', 'output length 65536 tokens (usually no splitting needed)')
-        : t('models.bestAccuracy', 'Best accuracy'),
-      icon: <FiStar className="model-icon star-icon" />,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.5-flash',
-      name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
-      description: isTranslationSection
-        ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
-        : t('models.smarterFaster', 'Smarter & faster'),
-      icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.5-flash-lite',
-      name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
-      description: isTranslationSection
-        ? t('translation.modelGemini25FlashLite', 'output length 65536 tokens (usually no splitting needed)')
-        : t('models.fastestAdvanced', 'Fastest 2.5 model'),
-      icon: <FiTrendingUp className="model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }} />,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.0-flash',
-      name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
-      description: isTranslationSection
-        ? t('translation.modelGemini20Flash', 'output length 8192 tokens (splitting recommended)')
-        : t('models.balancedModel', 'Balanced'),
-      icon: <FiActivity className="model-icon activity-icon" />,
-      color: 'var(--md-primary)',
-      bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.0-flash-lite',
-      name: t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite'),
-      description: isTranslationSection
-        ? t('translation.modelGemini20FlashLite', 'output length 8192 tokens (splitting recommended)')
-        : t('models.fastestModel', 'Fastest'),
-      icon: <FiCpu className="model-icon cpu-icon" />,
-      color: 'var(--success-color)',
-      bgColor: 'rgba(var(--success-color-rgb), 0.1)'
+  // Get custom models from localStorage
+  const getCustomModels = () => {
+    try {
+      const stored = localStorage.getItem('custom_gemini_models');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
     }
-  ];
+  };
+
+  // Model options with their icons and colors
+  const getModelOptions = () => {
+    const builtInModels = [
+      {
+        id: 'gemini-2.5-pro',
+        name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
+        description: isTranslationSection
+          ? t('translation.modelGemini25Pro', 'output length 65536 tokens (usually no splitting needed)')
+          : t('models.bestAccuracy', 'Best accuracy'),
+        icon: <FiStar className="model-icon star-icon" />,
+        color: 'var(--md-tertiary)',
+        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+        },
+      {
+        id: 'gemini-2.5-flash',
+        name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
+        description: isTranslationSection
+          ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
+          : t('models.smarterFaster', 'Smarter & faster'),
+        icon: <FiZap className="model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }} />,
+        color: 'var(--md-tertiary)',
+        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+      },
+      {
+        id: 'gemini-2.5-flash-lite',
+        name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
+        description: isTranslationSection
+          ? t('translation.modelGemini25FlashLite', 'output length 65536 tokens (usually no splitting needed)')
+          : t('models.fastestAdvanced', 'Fastest 2.5 model'),
+        icon: <FiTrendingUp className="model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }} />,
+        color: 'var(--md-tertiary)',
+        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
+      },
+      {
+        id: 'gemini-2.0-flash',
+        name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
+        description: isTranslationSection
+          ? t('translation.modelGemini20Flash', 'output length 8192 tokens (splitting recommended)')
+          : t('models.balancedModel', 'Balanced'),
+        icon: <FiActivity className="model-icon activity-icon" />,
+        color: 'var(--md-primary)',
+        bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
+      },
+      {
+        id: 'gemini-2.0-flash-lite',
+        name: t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite'),
+        description: isTranslationSection
+          ? t('translation.modelGemini20FlashLite', 'output length 8192 tokens (splitting recommended)')
+          : t('models.fastestModel', 'Fastest'),
+        icon: <FiCpu className="model-icon cpu-icon" />,
+        color: 'var(--success-color)',
+        bgColor: 'rgba(var(--success-color-rgb), 0.1)'
+      }
+    ];
+
+    // Add custom models
+    const customModels = getCustomModels();
+    const customModelOptions = customModels.map(model => ({
+      id: model.id,
+      name: `${model.name} (Custom)`,
+      description: isTranslationSection
+        ? t('translation.customModel', 'Custom model - token limits may vary')
+        : t('models.customModel', 'Custom model'),
+      icon: <FiCpu className="model-icon cpu-icon" />,
+      color: 'var(--md-secondary)',
+      bgColor: 'rgba(var(--md-secondary-rgb), 0.1)',
+      isCustom: true
+    }));
+
+    return [...builtInModels, ...customModelOptions];
+  };
+
+  const modelOptions = getModelOptions();
 
   // Get the currently selected model
   const currentModel = modelOptions.find(model => model.id === selectedModel) || modelOptions[2]; // Default to Flash

@@ -8,5 +8,6 @@
   "smarterFaster": "Smarter & faster",
   "fastestAdvanced": "Fastest 2.5 model",
   "balancedModel": "Balanced",
-  "fastestModel": "Fastest"
+  "fastestModel": "Fastest",
+  "customModel": "Custom model"
 }

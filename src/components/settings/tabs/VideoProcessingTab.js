@@ -4,7 +4,9 @@ import StandardSlider from '../../common/StandardSlider';
 import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
 import { FiCpu } from 'react-icons/fi';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
 import '../../../styles/common/material-switch.css';
+import '../../../styles/settings/customGeminiModels.css';
 
 const VideoProcessingTab = ({
   segmentDuration,
@@ -32,9 +34,47 @@ const VideoProcessingTab = ({
   thinkingBudgets,
   setThinkingBudgets,
   useCookiesForDownload,
-  setUseCookiesForDownload
+  setUseCookiesForDownload,
+  customGeminiModels,
+  setCustomGeminiModels
 }) => {
   const { t } = useTranslation();
+
+  // Helper function to get all available models (built-in + custom)
+  const getAllAvailableModels = () => {
+    const builtInModels = [
+      { id: 'gemini-2.5-pro', name: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Paid) - Best accuracy, slowest, easily overloaded') },
+      { id: 'gemini-2.5-flash', name: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)') },
+      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fastest 2.5 model, good accuracy)') },
+      { id: 'gemini-2.0-flash', name: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)') },
+      { id: 'gemini-2.0-flash-lite', name: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - testing only)') }
+    ];
+
+    const customModels = customGeminiModels.map(model => ({
+      id: model.id,
+      name: `${model.name} (Custom)`,
+      isCustom: true
+    }));
+
+    return [...builtInModels, ...customModels];
+  };
+
+  // Helper function to get analysis models (subset of all models)
+  const getAnalysisModels = () => {
+    const builtInAnalysisModels = [
+      { id: 'gemini-2.5-flash', name: t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)') },
+      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)') },
+      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)') }
+    ];
+
+    const customModels = customGeminiModels.map(model => ({
+      id: model.id,
+      name: `${model.name} (Custom)`,
+      isCustom: true
+    }));
+
+    return [...builtInAnalysisModels, ...customModels];
+  };
 
   // Helper function to get the dropdown mode for a thinking budget value
   const getThinkingMode = (budget) => {
@@ -165,21 +205,11 @@ const VideoProcessingTab = ({
                 onChange={(e) => setGeminiModel(e.target.value)}
                 className="enhanced-select"
               >
-                <option value="gemini-2.5-pro">
-                  {t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Paid) - Best accuracy, slowest, easily overloaded')}
-                </option>
-                <option value="gemini-2.5-flash">
-                  {t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)')}
-                </option>
-                <option value="gemini-2.5-flash-lite">
-                  {t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fastest 2.5 model, good accuracy)')}
-                </option>
-                <option value="gemini-2.0-flash">
-                  {t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)')}
-                </option>
-                <option value="gemini-2.0-flash-lite">
-                  {t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - testing only)')}
-                </option>
+                {getAllAvailableModels().map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -229,9 +259,11 @@ const VideoProcessingTab = ({
                 className="enhanced-select"
                 disabled={!useVideoAnalysis}
               >
-                <option value="gemini-2.5-flash">{t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)')}</option>
-                <option value="gemini-2.5-flash-lite">{t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)')}</option>
-                <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
+                {getAnalysisModels().map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -581,6 +613,12 @@ const VideoProcessingTab = ({
             </div>
           </div>
         </div>
+
+        {/* Custom Gemini Models Card */}
+        <CustomGeminiModelsCard
+          customGeminiModels={customGeminiModels}
+          setCustomGeminiModels={setCustomGeminiModels}
+        />
       </div>
     </div>
   );
