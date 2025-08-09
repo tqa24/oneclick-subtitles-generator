@@ -55,7 +55,7 @@ const SegmentRetryModal = ({
       bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
     },
     {
-      id: 'gemini-2.5-flash-lite-preview-06-17',
+      id: 'gemini-2.5-flash-lite',
       name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
       description: t('models.fastestAdvanced', 'Fastest 2.5 model'),
       icon: <FiTrendingUp className="model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }} />,

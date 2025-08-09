@@ -143,7 +143,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [thinkingBudgets, setThinkingBudgets] = useState({
     'gemini-2.5-pro': -1, // Dynamic thinking (model decides when and how much to think)
     'gemini-2.5-flash': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash-lite-preview-06-17': 0 // Model does not think by default
+    'gemini-2.5-flash-lite': 0 // Model does not think by default
   });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
@@ -205,7 +205,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     thinkingBudgets: {
       'gemini-2.5-pro': -1,
       'gemini-2.5-flash': -1,
-      'gemini-2.5-flash-lite-preview-06-17': 0
+      'gemini-2.5-flash-lite': 0
     },
     useCookiesForDownload: false
   });
@@ -233,7 +233,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         const currentVideoAnalysisModel = localStorage.getItem('video_analysis_model');
         // If user has the old default, update it to the new default
         if (currentVideoAnalysisModel === 'gemini-2.0-flash') {
-          localStorage.setItem('video_analysis_model', 'gemini-2.5-flash-lite-preview-06-17');
+          localStorage.setItem('video_analysis_model', 'gemini-2.5-flash-lite');
         }
         // Update settings version
         localStorage.setItem('settings_version', '1.1');
@@ -266,14 +266,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           return stored ? JSON.parse(stored) : {
             'gemini-2.5-pro': -1,
             'gemini-2.5-flash': -1,
-            'gemini-2.5-flash-lite-preview-06-17': 0
+            'gemini-2.5-flash-lite': 0
           };
         } catch (error) {
           console.error('Error parsing thinking budgets from localStorage:', error);
           return {
             'gemini-2.5-pro': -1,
             'gemini-2.5-flash': -1,
-            'gemini-2.5-flash-lite-preview-06-17': 0
+            'gemini-2.5-flash-lite': 0
           };
         }
       })();

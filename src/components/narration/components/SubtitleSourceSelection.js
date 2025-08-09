@@ -109,7 +109,7 @@ const SubtitleSourceSelection = ({
         const result = await groupSubtitlesForNarration(
           subtitlesToGroup,
           languageCode,
-          'gemini-2.5-flash-lite-preview-06-17',
+          'gemini-2.5-flash-lite',
           groupingIntensity
         );
 

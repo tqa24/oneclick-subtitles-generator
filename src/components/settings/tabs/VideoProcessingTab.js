@@ -171,7 +171,7 @@ const VideoProcessingTab = ({
                 <option value="gemini-2.5-flash">
                   {t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)')}
                 </option>
-                <option value="gemini-2.5-flash-lite-preview-06-17">
+                <option value="gemini-2.5-flash-lite">
                   {t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fastest 2.5 model, good accuracy)')}
                 </option>
                 <option value="gemini-2.0-flash">
@@ -230,7 +230,7 @@ const VideoProcessingTab = ({
                 disabled={!useVideoAnalysis}
               >
                 <option value="gemini-2.5-flash">{t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)')}</option>
-                <option value="gemini-2.5-flash-lite-preview-06-17">{t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)')}</option>
+                <option value="gemini-2.5-flash-lite">{t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)')}</option>
                 <option value="gemini-2.0-flash">{t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)')}</option>
               </select>
             </div>
@@ -541,8 +541,8 @@ const VideoProcessingTab = ({
               </p>
               <select
                 id="thinking-mode-25-flash-lite"
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'] || 0)}
-                onChange={(e) => handleModeChange('gemini-2.5-flash-lite-preview-06-17', e.target.value)}
+                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0)}
+                onChange={(e) => handleModeChange('gemini-2.5-flash-lite', e.target.value)}
                 className="enhanced-select"
               >
                 <option value="disabled">{t('settings.thinkingDisabled', 'Disabled')} ({t('settings.default', 'Default')})</option>
@@ -550,12 +550,12 @@ const VideoProcessingTab = ({
                 <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
               </select>
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'] || 0) === 'custom' && (
+              {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
                     <StandardSlider
-                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite-preview-06-17'], 'gemini-2.5-flash-lite-preview-06-17')}
-                      onChange={(value) => handleSliderChange('gemini-2.5-flash-lite-preview-06-17', parseInt(value))}
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite'], 'gemini-2.5-flash-lite')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-flash-lite', parseInt(value))}
                       min={0}
                       max={100}
                       step={1}
@@ -570,7 +570,7 @@ const VideoProcessingTab = ({
                       ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
                     />
                     <div className="slider-value-display">
-                      {thinkingBudgets['gemini-2.5-flash-lite-preview-06-17']} {t('settings.tokens', 'tokens')}
+                      {thinkingBudgets['gemini-2.5-flash-lite']} {t('settings.tokens', 'tokens')}
                     </div>
                   </div>
                   <div className="slider-range-info">

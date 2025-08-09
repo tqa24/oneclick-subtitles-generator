@@ -45,7 +45,7 @@ export const isThinkingSupported = (modelId) => {
   const supportedModels = [
     'gemini-2.5-pro',
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite-preview-06-17'
+    'gemini-2.5-flash-lite'
   ];
   
   return supportedModels.includes(modelId);
@@ -60,7 +60,7 @@ export const getDefaultThinkingBudget = (modelId) => {
   const defaults = {
     'gemini-2.5-pro': -1, // Dynamic thinking (model decides when and how much to think)
     'gemini-2.5-flash': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash-lite-preview-06-17': 0 // Model does not think by default
+    'gemini-2.5-flash-lite': 0 // Model does not think by default
   };
 
   return defaults[modelId] || null;
@@ -122,7 +122,7 @@ export const validateThinkingBudget = (modelId, budget) => {
   const ranges = {
     'gemini-2.5-pro': { min: 128, max: 32768, allowDisable: false },
     'gemini-2.5-flash': { min: 0, max: 24576, allowDisable: true },
-    'gemini-2.5-flash-lite-preview-06-17': { min: 512, max: 24576, allowDisable: true }
+    'gemini-2.5-flash-lite': { min: 512, max: 24576, allowDisable: true }
   };
   
   const range = ranges[modelId];

@@ -21,7 +21,7 @@ describe('VideoProcessingTab Component', () => {
     showWaveform: true,
     setShowWaveform: jest.fn(),
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.5-flash-lite-preview-06-17',
+    videoAnalysisModel: 'gemini-2.5-flash-lite',
     setVideoAnalysisModel: jest.fn(),
     videoAnalysisTimeout: '20',
     setVideoAnalysisTimeout: jest.fn(),
@@ -35,7 +35,7 @@ describe('VideoProcessingTab Component', () => {
     thinkingBudgets: {
       'gemini-2.5-pro': -1,
       'gemini-2.5-flash': -1,
-      'gemini-2.5-flash-lite-preview-06-17': 0
+      'gemini-2.5-flash-lite': 0
     },
     setThinkingBudgets: jest.fn(),
   };
