@@ -4,50 +4,147 @@ Xem bản tiếng Việt [tại đây](README.vi.md).
 
 ## Screenshots
 
+<details>
+<summary>Click to view screenshots</summary>
+
 Here are some screenshots showcasing the application's current features:
 
 <div align="center">
   <table>
     <tr>
-      <td><img src="readme_assets/main-interface.png" width="100%"></td>
-      <td><img src="readme_assets/video-upload.png" width="100%"></td>
-      <td><img src="readme_assets/ai-processing.png" width="100%"></td>
+      <td><img src="readme_assets/0.png" width="100%"></td>
+      <td><img src="readme_assets/1.png" width="100%"></td>
+      <td><img src="readme_assets/2.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Modern interface with dark/light themes and multi-language support (EN, VI, KO)</strong></td>
-      <td align="center"><strong>Multi-source video input: file upload, YouTube, Douyin/TikTok with quality scanning</strong></td>
-      <td align="center"><strong>AI-powered subtitle generation with Gemini 2.5 models and parallel processing</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/subtitle-editor.png" width="100%"></td>
-      <td><img src="readme_assets/video-renderer.png" width="100%"></td>
-      <td><img src="readme_assets/narration-studio.png" width="100%"></td>
+      <td><img src="readme_assets/3.png" width="100%"></td>
+      <td><img src="readme_assets/4.png" width="100%"></td>
+      <td><img src="readme_assets/5.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Advanced subtitle editor with visual timeline, waveform, and real-time preview</strong></td>
-      <td align="center"><strong>Professional video renderer with GPU acceleration and custom subtitle styling</strong></td>
-      <td align="center"><strong>AI narration studio with F5-TTS voice cloning and multi-audio track support</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/translation-hub.png" width="100%"></td>
-      <td><img src="readme_assets/background-generator.png" width="100%"></td>
-      <td><img src="readme_assets/settings-panel.png" width="100%"></td>
+      <td><img src="readme_assets/6.png" width="100%"></td>
+      <td><img src="readme_assets/7.png" width="100%"></td>
+      <td><img src="readme_assets/8.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Multi-language translation with context awareness and custom formatting</strong></td>
-      <td align="center"><strong>AI background image generator with album art integration and batch creation</strong></td>
-      <td align="center"><strong>Comprehensive settings: API keys, model selection, video processing, and cache management</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
     </tr>
     <tr>
-      <td><img src="readme_assets/render-queue.png" width="100%"></td>
-      <td><img src="readme_assets/quality-scanner.png" width="100%"></td>
+      <td><img src="readme_assets/9.png" width="100%"></td>
+      <td><img src="readme_assets/10.png" width="100%"></td>
+      <td><img src="readme_assets/11.png" width="100%"></td>
     </tr>
     <tr>
-      <td align="center"><strong>Render queue management with progress tracking and batch processing</strong></td>
-      <td align="center"><strong>Video quality scanner with cookie authentication for premium content</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/12.png" width="100%"></td>
+      <td><img src="readme_assets/13.png" width="100%"></td>
+      <td><img src="readme_assets/14.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/15.png" width="100%"></td>
+      <td><img src="readme_assets/16.png" width="100%"></td>
+      <td><img src="readme_assets/17.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/18.png" width="100%"></td>
+      <td><img src="readme_assets/19.png" width="100%"></td>
+      <td><img src="readme_assets/20.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/21.png" width="100%"></td>
+      <td><img src="readme_assets/23.png" width="100%"></td>
+      <td><img src="readme_assets/24.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/25.png" width="100%"></td>
+      <td><img src="readme_assets/26.png" width="100%"></td>
+      <td><img src="readme_assets/27.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/28.png" width="100%"></td>
+      <td><img src="readme_assets/29.png" width="100%"></td>
+      <td><img src="readme_assets/30.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/31.png" width="100%"></td>
+      <td><img src="readme_assets/32.png" width="100%"></td>
+      <td><img src="readme_assets/33.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/34.png" width="100%"></td>
+      <td><img src="readme_assets/35.png" width="100%"></td>
+      <td><img src="readme_assets/36.png" width="100%"></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+    </tr>
+    <tr>
+      <td><img src="readme_assets/37.png" width="100%"></td>
+      <td><img src="readme_assets/38.png" width="100%"></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td align="center"><strong>Caption later</strong></td>
+      <td align="center"><strong>Caption later</strong></td>
+      <td></td>
     </tr>
   </table>
 </div>
+
+</details>
 
 A comprehensive web application for auto-subtitling videos and audio, translating SRT files, generating AI narration with voice cloning, creating background images, and rendering professional subtitled videos. Designed for content creators, educators, and general users who need high-quality subtitle generation and video production capabilities.
 
