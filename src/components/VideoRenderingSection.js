@@ -76,9 +76,21 @@ const VideoRenderingSection = ({
     const containerRect = containerRef.current.getBoundingClientRect();
     const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
 
-    // Constrain between 30% and 80%
-    const constrainedWidth = Math.min(Math.max(newLeftWidth, 30), 75);
-    setLeftPanelWidth(constrainedWidth);
+    // Calculate right panel width in pixels
+    const rightWidthPx = containerRect.width * (100 - newLeftWidth) / 100;
+
+    // Constrain right panel between 260px and 700px
+    const constrainedRightWidthPx = Math.min(Math.max(rightWidthPx, 260), 700);
+
+    // Convert back to left panel percentage
+    let constrainedLeftWidth = 100 - (constrainedRightWidthPx / containerRect.width * 100);
+
+    // Ensure left panel never goes below 300px
+    const minLeftWidthPx = 300;
+    const minLeftWidthPercent = (minLeftWidthPx / containerRect.width) * 100;
+    constrainedLeftWidth = Math.max(constrainedLeftWidth, minLeftWidthPercent);
+
+    setLeftPanelWidth(constrainedLeftWidth);
   };
 
   const handleMouseUp = () => {

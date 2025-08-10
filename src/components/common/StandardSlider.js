@@ -149,7 +149,9 @@ const StandardSlider = ({
     const epsilon = step < 1 ? 0.001 : 0.1;
     if (Math.abs(currentStepValue - (lastStepValue || resolvedProps.value)) > epsilon && onChange) {
       setLastStepValue(currentStepValue);
-      onChange(currentStepValue);
+      // Clean up floating point precision issues before calling onChange
+      const cleanValue = step < 1 ? parseFloat(currentStepValue.toFixed(2)) : Math.round(currentStepValue);
+      onChange(cleanValue);
     }
   }, [pixelToValue, snapToStep, lastStepValue, onChange, step, resolvedProps.value]);
 
@@ -157,7 +159,9 @@ const StandardSlider = ({
   const handleChange = (e) => {
     const newValue = parseFloat(e.target.value);
     if (onChange) {
-      onChange(newValue);
+      // Clean up floating point precision issues
+      const cleanValue = step < 1 ? parseFloat(newValue.toFixed(2)) : Math.round(newValue);
+      onChange(cleanValue);
     }
   };
 
@@ -323,7 +327,7 @@ const StandardSlider = ({
         <div className="standard-slider-handle">
           {/* Value badge that appears when dragging */}
           <div className="standard-slider-value-badge">
-            {step < 1 ? parseFloat(currentValue).toFixed(2) : Math.round(currentValue)}
+            {step < 1 ? parseFloat(parseFloat(currentValue).toFixed(2)) : Math.round(currentValue)}
           </div>
         </div>
 
@@ -377,7 +381,7 @@ const StandardSlider = ({
       {/* Value indicator if enabled */}
       {resolvedProps.showValueIndicator && (
         <div className="standard-slider-value-indicator">
-          {step < 1 ? parseFloat(currentValue).toFixed(2) : Math.round(currentValue)}{max <= 1 ? '' : '%'}
+          {step < 1 ? parseFloat(parseFloat(currentValue).toFixed(2)) : Math.round(currentValue)}{max <= 1 ? '' : '%'}
         </div>
       )}
 

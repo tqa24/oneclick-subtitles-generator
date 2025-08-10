@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
+import { formatDecimal } from '../../../utils/formatUtils';
 
 /**
  * Font Settings component
@@ -93,7 +94,7 @@ const FontSettings = ({ settings, handleSettingChange, fontGroups, fontWeightOpt
             id="line-spacing"
             ariaLabel={t('subtitleSettings.lineSpacing', 'Line Spacing')}
           />
-          <div className="slider-value-display">{settings.lineSpacing || '1.4'}</div>
+          <div className="slider-value-display">{formatDecimal(parseFloat(settings.lineSpacing || '1.4'), 1)}</div>
         </div>
       </div>
 
@@ -116,7 +117,7 @@ const FontSettings = ({ settings, handleSettingChange, fontGroups, fontWeightOpt
             id="letter-spacing"
             ariaLabel={t('subtitleSettings.letterSpacing', 'Letter Spacing')}
           />
-          <div className="slider-value-display">{settings.letterSpacing || '0'}px</div>
+          <div className="slider-value-display">{formatDecimal(parseFloat(settings.letterSpacing || '0'), 1)}px</div>
         </div>
       </div>
     </>

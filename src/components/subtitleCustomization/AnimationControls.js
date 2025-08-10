@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
+import { formatDecimal } from '../../utils/formatUtils';
 import { getAnimationTypes, getAnimationEasing } from './fontOptions';
 
 const AnimationControls = ({ customization, onChange }) => {
@@ -63,10 +64,10 @@ const AnimationControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="slider-control">
-            <span className="slider-value">{customization.fadeInDuration}s</span>
+            <span className="slider-value">{formatDecimal(customization.fadeInDuration, 1)}s</span>
             <StandardSlider
               value={customization.fadeInDuration}
-              onChange={(value) => updateCustomization({ fadeInDuration: parseFloat(value) })}
+              onChange={(value) => updateCustomization({ fadeInDuration: formatDecimal(value, 1) })}
               min={0}
               max={2.0}
               step={0.1}
@@ -91,10 +92,10 @@ const AnimationControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="slider-control">
-            <span className="slider-value">{customization.fadeOutDuration}s</span>
+            <span className="slider-value">{formatDecimal(customization.fadeOutDuration, 1)}s</span>
             <StandardSlider
               value={customization.fadeOutDuration}
-              onChange={(value) => updateCustomization({ fadeOutDuration: parseFloat(value) })}
+              onChange={(value) => updateCustomization({ fadeOutDuration: formatDecimal(value, 1) })}
               min={0}
               max={2.0}
               step={0.1}

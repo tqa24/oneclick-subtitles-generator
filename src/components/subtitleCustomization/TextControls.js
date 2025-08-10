@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
 import { groupFontsByCategory, getFontSupportFlags } from './fontOptions';
 import FontSelectionModal from './FontSelectionModal';
+import { formatDecimal } from '../../utils/formatUtils';
 
 const TextControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -154,10 +155,10 @@ const TextControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="slider-control">
-            <span className="slider-value">{customization.lineHeight}</span>
+            <span className="slider-value">{formatDecimal(customization.lineHeight, 1)}</span>
             <StandardSlider
               value={customization.lineHeight}
-              onChange={(value) => updateCustomization({ lineHeight: parseFloat(value) })}
+              onChange={(value) => updateCustomization({ lineHeight: formatDecimal(value, 1) })}
               min={0.5}
               max={3.0}
               step={0.1}
@@ -182,10 +183,10 @@ const TextControls = ({ customization, onChange }) => {
         </div>
         <div className="row-content">
           <div className="slider-control">
-            <span className="slider-value">{customization.letterSpacing}px</span>
+            <span className="slider-value">{formatDecimal(customization.letterSpacing, 1)}px</span>
             <StandardSlider
               value={customization.letterSpacing}
-              onChange={(value) => updateCustomization({ letterSpacing: parseFloat(value) })}
+              onChange={(value) => updateCustomization({ letterSpacing: formatDecimal(value, 1) })}
               min={-10}
               max={10}
               step={0.5}
