@@ -54,6 +54,7 @@ const NarrationMethodSelection = ({
                 disabled={isGenerating || !isF5Available}
               />
               <label htmlFor="method-f5tts" className={`method-f5tts ${!isF5Available ? 'unavailable' : ''}`}>
+                <span className="voice-clone-badge">Voice Clone</span>
                 <span className="method-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 0 24 24" width="16px" fill="currentColor">
                     <path d="M0 0h24v24H0V0z" fill="none"/>
@@ -86,6 +87,7 @@ const NarrationMethodSelection = ({
                 disabled={isGenerating || !isChatterboxAvailable}
               />
               <label htmlFor="method-chatterbox" className={`method-chatterbox ${!isChatterboxAvailable ? 'unavailable' : ''}`}>
+                <span className="voice-clone-badge">Voice Clone</span>
                 <span className="method-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 97 113">
                     <path d="M97 49c14-20 2-47-22-49-14 0-36 0-42 2C16 8 0 26 0 49v62c0 2 2 2 3 2l15-9 4-1h53c7-1 14-4 19-9 4-3 7-8 8-13 3-11 0-21-7-29l2-3ZM52 62h19s14-1 14 11c0 13-14 11-14 11H52a33 33 0 0 1 0-66h19s14 0 14 12-14 11-14 11H52a10 10 0 0 0 0 21Z"/>
