@@ -561,6 +561,10 @@
   font-size: 0.9rem;
   width: 100%;
   justify-content: flex-start;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subtitle-selection-compact .radio-option label:hover,
@@ -677,6 +681,9 @@
   box-sizing: border-box;
   flex: 1;
   justify-content: flex-start;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .narration-selection-compact .narration-status.disabled {
