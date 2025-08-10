@@ -195,7 +195,8 @@ const useNarrationHandlers = ({
       result = await uploadReferenceAudio(file, referenceText);
 
       // If auto-recognize is enabled and upload was successful, transcribe the audio
-      if (autoRecognize && result && result.success) {
+      // Only do voice recognition for F5-TTS (which needs reference text)
+      if (autoRecognize && result && result.success && narrationMethod === 'f5tts') {
         setIsRecognizing(true);
 
         try {
@@ -257,9 +258,13 @@ const useNarrationHandlers = ({
         setReferenceAudio(newReferenceAudio);
 
         // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
-        const finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
-        if (autoRecognize || (!referenceText && result.reference_text)) {
-          setReferenceText(finalReferenceText);
+        // Only update reference text for F5-TTS (which needs reference text)
+        let finalReferenceText = referenceText;
+        if (narrationMethod === 'f5tts') {
+          finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
+          if (autoRecognize || (!referenceText && result.reference_text)) {
+            setReferenceText(finalReferenceText);
+          }
         }
 
         // Cache reference audio immediately after upload
@@ -368,7 +373,8 @@ const useNarrationHandlers = ({
           let result;
 
           // Set recognizing state if auto-recognize is enabled
-          if (autoRecognize) {
+          // Only do voice recognition for F5-TTS (which needs reference text)
+          if (autoRecognize && narrationMethod === 'f5tts') {
             setIsRecognizing(true);
 
             // Set a timeout to prevent waiting too long (10 seconds)
@@ -414,7 +420,7 @@ const useNarrationHandlers = ({
               throw error; // Re-throw to be caught by the outer catch block
             }
           } else {
-            // If auto-recognize is disabled, just save with the existing text
+            // If auto-recognize is disabled or not F5-TTS, just save with the existing text
             result = await saveRecordedAudio(audioBlob, referenceText);
           }
 
@@ -429,9 +435,13 @@ const useNarrationHandlers = ({
             setReferenceAudio(newReferenceAudio);
 
             // Update reference text if auto-recognize is enabled or it was empty and we got it from transcription
-            const finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
-            if (autoRecognize || (!referenceText && result.reference_text)) {
-              setReferenceText(finalReferenceText);
+            // Only update reference text for F5-TTS (which needs reference text)
+            let finalReferenceText = referenceText;
+            if (narrationMethod === 'f5tts') {
+              finalReferenceText = (autoRecognize || (!referenceText && result.reference_text)) ? result.reference_text : referenceText;
+              if (autoRecognize || (!referenceText && result.reference_text)) {
+                setReferenceText(finalReferenceText);
+              }
             }
 
             // Cache reference audio immediately after recording
@@ -534,7 +544,8 @@ const useNarrationHandlers = ({
       result = await extractAudioSegment(videoPath, segmentStartTime, segmentEndTime);
 
       // If auto-recognize is enabled, transcribe the extracted segment
-      if (autoRecognize && result && result.success) {
+      // Only do voice recognition for F5-TTS (which needs reference text)
+      if (autoRecognize && result && result.success && narrationMethod === 'f5tts') {
         setIsRecognizing(true);
 
         // Create a blob from the extracted audio URL
@@ -592,9 +603,13 @@ const useNarrationHandlers = ({
         setReferenceAudio(newReferenceAudio);
 
         // Update reference text if auto-recognize is enabled or we got it from transcription
-        const finalReferenceText = (autoRecognize || result.reference_text) ? result.reference_text : referenceText;
-        if (autoRecognize || result.reference_text) {
-          setReferenceText(finalReferenceText);
+        // Only update reference text for F5-TTS (which needs reference text)
+        let finalReferenceText = referenceText;
+        if (narrationMethod === 'f5tts') {
+          finalReferenceText = (autoRecognize || result.reference_text) ? result.reference_text : referenceText;
+          if (autoRecognize || result.reference_text) {
+            setReferenceText(finalReferenceText);
+          }
         }
 
         // Cache reference audio immediately after extraction

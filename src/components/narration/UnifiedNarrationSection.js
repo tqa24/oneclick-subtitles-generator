@@ -528,6 +528,7 @@ const UnifiedNarrationSection = ({
             referenceAudio={referenceAudio}
             clearReferenceAudio={clearReferenceAudio}
             onExampleSelect={handleExampleSelect}
+            narrationMethod={narrationMethod}
           />
 
           {/* Reference Audio Section */}
@@ -666,6 +667,7 @@ const UnifiedNarrationSection = ({
             referenceAudio={referenceAudio}
             clearReferenceAudio={clearReferenceAudio}
             onExampleSelect={handleExampleSelect}
+            narrationMethod={narrationMethod}
           />
 
           {/* Subtitle Source Selection - reuse from F5-TTS */}
