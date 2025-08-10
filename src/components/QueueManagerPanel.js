@@ -80,7 +80,70 @@ const QueueManagerPanel = ({
     return isNaN(date.getTime()) ? '' : date.toLocaleTimeString();
   };
 
-  const handleDownloadVideo = async (outputPath, itemId) => {
+  // Generate persistent video number based on timestamp
+  const getVideoNumber = (item) => {
+    // Get or extract timestamp for this item
+    let timestamp = item.timestamp;
+
+    // If no timestamp property, try to extract from ID (format: render_TIMESTAMP_randomstring)
+    if (!timestamp && item.id) {
+      const idParts = item.id.split('_');
+      if (idParts.length >= 2 && idParts[0] === 'render') {
+        timestamp = parseInt(idParts[1]);
+      }
+    }
+
+    // Fallback to current time if no timestamp found
+    if (!timestamp) {
+      timestamp = Date.now();
+    }
+
+    // Use localStorage to maintain a persistent counter across sessions
+    const STORAGE_KEY = 'videoRenderCounter';
+    const TIMESTAMP_MAP_KEY = 'videoTimestampMap';
+
+    // Get existing timestamp-to-number mapping
+    let timestampMap = {};
+    try {
+      const stored = localStorage.getItem(TIMESTAMP_MAP_KEY);
+      if (stored) {
+        timestampMap = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Failed to parse timestamp map from localStorage');
+    }
+
+    // If this timestamp already has a number assigned, return it
+    if (timestampMap[timestamp]) {
+      return timestampMap[timestamp];
+    }
+
+    // Get current counter value
+    let counter = 1;
+    try {
+      const storedCounter = localStorage.getItem(STORAGE_KEY);
+      if (storedCounter) {
+        counter = parseInt(storedCounter) + 1;
+      }
+    } catch (e) {
+      console.warn('Failed to parse counter from localStorage');
+    }
+
+    // Assign this timestamp the next available number
+    timestampMap[timestamp] = counter;
+
+    // Save updated counter and mapping
+    try {
+      localStorage.setItem(STORAGE_KEY, counter.toString());
+      localStorage.setItem(TIMESTAMP_MAP_KEY, JSON.stringify(timestampMap));
+    } catch (e) {
+      console.warn('Failed to save to localStorage');
+    }
+
+    return counter;
+  };
+
+  const handleDownloadVideo = async (outputPath, item) => {
     try {
       // Fetch the video as a blob
       const response = await fetch(outputPath);
@@ -94,7 +157,7 @@ const QueueManagerPanel = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `subtitled-video-${itemId}.mp4`;
+      a.download = `subtitled-video-${getVideoNumber(item)}.mp4`;
       document.body.appendChild(a);
       a.click();
 
@@ -108,7 +171,7 @@ const QueueManagerPanel = ({
       // Fallback to direct link if fetch fails
       const a = document.createElement('a');
       a.href = outputPath;
-      a.download = `subtitled-video-${itemId}.mp4`;
+      a.download = `subtitled-video-${getVideoNumber(item)}.mp4`;
       a.target = '_blank';
       document.body.appendChild(a);
       a.click();
@@ -175,7 +238,7 @@ const QueueManagerPanel = ({
                     <span className="status-icon">{getStatusIcon(item.status)}</span>
                     <div className="item-details">
                       <div className="item-title">
-                        {t('videoRendering.subtitledVideo', 'Subtitled Video')} #{index + 1}
+                        {t('videoRendering.subtitledVideo', 'Subtitled Video')} #{getVideoNumber(item)}
                       </div>
                       <div className="item-meta">
                         {item.settings.resolution} • {item.settings.frameRate}fps
@@ -272,7 +335,7 @@ const QueueManagerPanel = ({
                       <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
                     </div>
                     <button
-                      onClick={() => handleDownloadVideo(item.outputPath, item.id)}
+                      onClick={() => handleDownloadVideo(item.outputPath, item)}
                       className="btn-base btn-success btn-compact download-btn-success"
                     >
                       {t('videoRendering.download', 'Download')}
