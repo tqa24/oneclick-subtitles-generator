@@ -55,6 +55,7 @@
   justify-content: space-between;
   padding: 1.25rem 1.75rem;
   background-color: var(--md-surface-1);
+  gap: 1rem;
 }
 
 .font-modal-header h2 {
@@ -63,6 +64,16 @@
   font-size: 1.25rem;
   font-weight: 600;
   font-family: var(--md-sys-typescale-headline-small-font);
+  flex-shrink: 0;
+}
+
+.font-modal-header .font-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  flex: 1;
+  text-align: right;
+  margin-right: 1rem;
 }
 
 /* Close button styles moved to src/components/common/CloseButton.css */
@@ -439,9 +450,7 @@
 
   .font-modal-footer {
     padding: 1rem 1.25rem;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: stretch;
+    /* Keep horizontal layout - count text and cancel button fit fine on mobile */
   }
 
   .modal-actions {

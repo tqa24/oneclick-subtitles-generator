@@ -89,6 +89,9 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
         {/* Modal Header */}
         <div className="font-modal-header">
           <h2>{t('fontModal.selectFont', 'Select Font')}</h2>
+          <div className="font-count">
+            {t('fontModal.fontsAvailable', '{{count}} fonts available', { count: Object.values(filteredGroups).flat().length })}
+          </div>
           <CloseButton onClick={onClose} variant="modal" size="large" />
         </div>
 
@@ -171,17 +174,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="font-modal-footer">
-          <div className="font-count">
-            {t('fontModal.fontsAvailable', '{{count}} fonts available', { count: Object.values(filteredGroups).flat().length })}
-          </div>
-          <div className="modal-actions">
-            <button className="btn-secondary" onClick={onClose}>
-              {t('fontModal.cancel', 'Cancel')}
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );

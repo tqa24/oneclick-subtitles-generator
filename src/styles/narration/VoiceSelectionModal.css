@@ -57,6 +57,7 @@
   justify-content: space-between;
   padding: 1.25rem 1.75rem;
   background-color: var(--md-surface-1);
+  gap: 1rem;
 }
 
 .voice-modal-header h2 {
@@ -65,6 +66,16 @@
   font-size: 1.25rem;
   font-weight: 600;
   font-family: var(--md-sys-typescale-headline-small-font);
+  flex-shrink: 0;
+}
+
+.voice-modal-header .voice-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  flex: 1;
+  text-align: right;
+  margin-right: 1rem;
 }
 
 /* Close button styles moved to src/components/common/CloseButton.css */
@@ -123,12 +134,12 @@
 }
 
 .voice-category-filter {
-  min-width: 160px;
+  min-width: 200px; /* Increased for longer text like "Tất cả ngôn ngữ" */
 }
 
 .voice-category-select {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 2.5rem 0.75rem 1rem; /* More right padding for chevron */
   border: 1px solid var(--md-outline-variant);
   border-radius: 24px;
   background-color: var(--md-surface-2);
@@ -136,6 +147,13 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s var(--md-easing-standard);
+  appearance: none; /* Remove default dropdown styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center; /* Position chevron with proper spacing */
+  background-size: 16px;
 }
 
 .voice-category-select:focus {
@@ -417,9 +435,7 @@
 
   .voice-modal-footer {
     padding: 1rem 1.25rem;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: stretch;
+    /* Keep horizontal layout - count text and cancel button fit fine on mobile */
   }
 }
 

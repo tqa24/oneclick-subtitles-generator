@@ -35,7 +35,6 @@ const AudioControls = ({
     <div className="narration-row audio-controls-row">
       <div className="row-label">
         <label>{t('narration.audioControls', 'Âm thanh tham chiếu')}:</label>
-        <span className="required-indicator">*</span>
       </div>
       <div className="row-content">
         <div className="audio-controls-container">

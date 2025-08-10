@@ -15,7 +15,7 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
     }
   }, [isOpen]);
 
-  // Handle click outside modal
+  // Handle click outside modal and ESC key
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -23,13 +23,21 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
       }
     };
 
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
@@ -156,6 +164,11 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
         {/* Modal Header */}
         <div className="voice-modal-header">
           <h2>{t('narration.selectVoice', 'Select Voice')}</h2>
+          <div className="voice-count">
+            {t('narration.voicesAvailable', '{{count}} voices available', {
+              count: getFilteredRecommendedVoices().length + Object.values(filteredGroups).flat().length
+            })}
+          </div>
           <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
@@ -266,19 +279,7 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="voice-modal-footer">
-          <div className="voice-count">
-            {t('narration.voicesAvailable', '{{count}} voices available', {
-              count: getFilteredRecommendedVoices().length + Object.values(filteredGroups).flat().length
-            })}
-          </div>
-          <div className="modal-actions">
-            <button className="btn-secondary" onClick={onClose}>
-              {t('narration.cancel', 'Cancel')}
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );
