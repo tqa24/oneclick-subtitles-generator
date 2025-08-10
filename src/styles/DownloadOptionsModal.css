@@ -60,7 +60,7 @@
 /* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Modal content */
-.modal-content {
+.download-options-modal .modal-content {
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -97,7 +97,7 @@
 }
 
 /* Content area height constraints to prevent tab switching layout shifts */
-.modal-content {
+.download-options-modal .modal-content {
   min-height: 400px; /* Ensure minimum content height */
 }
 

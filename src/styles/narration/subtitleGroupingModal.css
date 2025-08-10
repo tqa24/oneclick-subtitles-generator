@@ -85,7 +85,7 @@
 /* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Modal content */
-.modal-content {
+.subtitle-grouping-modal .modal-content {
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
@@ -93,22 +93,22 @@
   scrollbar-color: rgba(var(--md-primary-rgb), 0.4) rgba(var(--md-outline-variant-rgb), 0.2);
 }
 
-.modal-content::-webkit-scrollbar {
+.subtitle-grouping-modal .modal-content::-webkit-scrollbar {
   width: 8px;
 }
 
-.modal-content::-webkit-scrollbar-track {
+.subtitle-grouping-modal .modal-content::-webkit-scrollbar-track {
   background: rgba(var(--md-outline-variant-rgb), 0.2);
   border-radius: 10px;
 }
 
-.modal-content::-webkit-scrollbar-thumb {
+.subtitle-grouping-modal .modal-content::-webkit-scrollbar-thumb {
   background: rgba(var(--md-primary-rgb), 0.4);
   border-radius: 10px;
   transition: background 0.2s ease;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+.subtitle-grouping-modal .modal-content::-webkit-scrollbar-thumb:hover {
   background: rgba(var(--md-primary-rgb), 0.6);
 }
 
@@ -240,7 +240,7 @@
     font-size: 1.1rem;
   }
 
-  .modal-content {
+  .subtitle-grouping-modal .modal-content {
     padding: 1rem;
   }
 

@@ -113,7 +113,7 @@
 /* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Content - flat design with clean spacing */
-.modal-content {
+.video-quality-modal .modal-content {
   padding: 24px;
   flex: 1;
   overflow-y: auto;
@@ -516,27 +516,27 @@
 }
 
 /* Scrollbar styling for modal content */
-.modal-content {
+.video-quality-modal .modal-content {
   scrollbar-width: thin;
   overflow: auto;
 }
 
-.modal-content::-webkit-scrollbar {
+.video-quality-modal .modal-content::-webkit-scrollbar {
   width: 8px;
 }
 
-.modal-content::-webkit-scrollbar-track {
+.video-quality-modal .modal-content::-webkit-scrollbar-track {
   background: transparent;
   margin: 4px;
   border-radius: 8px;
 }
 
-.modal-content::-webkit-scrollbar-thumb {
+.video-quality-modal .modal-content::-webkit-scrollbar-thumb {
   background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.3);
   border-radius: 8px;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+.video-quality-modal .modal-content::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.5);
 }
 
@@ -559,7 +559,7 @@
     padding: 16px 20px;
   }
 
-  .modal-content {
+  .video-quality-modal .modal-content {
     padding: 16px 20px;
   }
 

@@ -117,7 +117,7 @@
 /* Close button styles moved to src/components/common/CloseButton.css */
 
 /* Content - flat design with clean spacing */
-.modal-content {
+.download-only-modal .modal-content {
   padding: 24px;
   flex: 1;
   overflow-y: auto;
@@ -471,7 +471,7 @@
     padding: 16px 20px;
   }
 
-  .modal-content {
+  .download-only-modal .modal-content {
     padding: 16px 20px;
   }
 

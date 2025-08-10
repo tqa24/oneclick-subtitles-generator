@@ -5,7 +5,7 @@
   --md-primary: #5D5FEF; /* More vibrant purple */
   --md-on-primary: #FEFEFE; /* Very slightly softer white */
   --md-primary-container: #E8E7FF; /* Very slightly softer purple container */
-  --md-on-primary-container: #0A00A5;
+  --md-on-primary-container: #322e6e;
 
   --md-secondary: #2979FF; /* Vibrant blue */
   --md-on-secondary: #FFFFFF;
@@ -150,8 +150,8 @@
 /* Dark theme tokens - more vibrant colors */
 [data-theme="dark"] {
   --md-primary: #B4B5FF; /* More vibrant purple for dark theme */
-  --md-on-primary: #0A00A5;
-  --md-primary-container: #4547D8; /* Very slightly softer purple container */
+  --md-on-primary: #302b7f;
+  --md-primary-container: #2d2e6d; /* Very slightly softer purple container */
   --md-on-primary-container: #E8E7FF;
 
   --md-secondary: #82B1FF; /* Vibrant blue for dark theme */
