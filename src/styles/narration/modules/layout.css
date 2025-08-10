@@ -1,7 +1,7 @@
 /* Row layout for consistent alignment - matching translation section */
 .narration-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start to handle wrapping content */
   gap: 1rem;
   min-height: 42px; /* Match the height of input elements */
   margin-bottom: 1.25rem;
@@ -29,7 +29,7 @@
   flex: 1;
   min-width: 0; /* Prevent flex items from overflowing */
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start to handle wrapping content */
 }
 
 /* Action content alignment */

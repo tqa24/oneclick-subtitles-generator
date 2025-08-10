@@ -1,4 +1,27 @@
 /* Responsive styles */
+
+/* Intermediate screen sizes - handle tight layouts before mobile breakpoint */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .audio-controls-container {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .audio-controls {
+    flex-wrap: wrap;
+    min-height: 36px;
+  }
+
+  .audio-controls-row {
+    align-items: flex-start;
+  }
+
+  .audio-controls-row .row-content {
+    align-items: flex-start;
+  }
+}
+
 @media (max-width: 768px) {
   /* Stack the buttons vertically on small screens */
   .generate-button-container {
@@ -51,7 +74,7 @@
     align-items: center;
     width: 100%;
     flex-wrap: wrap;
-    height: auto;
+    min-height: auto; /* Override min-height for mobile */
     margin-bottom: 0.5rem;
   }
 

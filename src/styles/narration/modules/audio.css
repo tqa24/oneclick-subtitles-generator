@@ -45,20 +45,30 @@ audio.audio-player {
 .audio-controls-container {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start to handle wrapping */
   width: 100%;
   gap: 1rem;
-  flex-wrap: nowrap; /* Prevent wrapping to keep items in a row */
+  flex-wrap: wrap; /* Allow wrapping when space is tight */
+  min-height: 36px; /* Minimum height, can expand */
 }
 
 /* Audio controls */
 .audio-controls {
   display: flex;
-  flex-wrap: nowrap; /* Keep buttons in a row */
+  flex-wrap: wrap; /* Allow buttons to wrap when needed */
   gap: 0.75rem;
   align-items: center;
-  height: 36px; /* Match height with the buttons inside */
+  min-height: 36px; /* Minimum height, can expand with wrapping */
   /* Font family inherited from global styles */
+}
+
+/* Specific styling for audio controls row to handle wrapping */
+.audio-controls-row {
+  align-items: flex-start; /* Ensure proper alignment when content wraps */
+}
+
+.audio-controls-row .row-content {
+  align-items: flex-start; /* Allow content to expand vertically */
 }
 
 /* Audio preview */
