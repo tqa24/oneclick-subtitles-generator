@@ -252,7 +252,6 @@
 /* StandardSlider in volume controls should match subtitle-selection-compact layout */
 .compact-volume-control .standard-slider-container {
   width: 100% !important; /* Match subtitle-selection-compact full width */
-  min-width: 280px !important; /* Minimum width for proper layout */
   max-width: 350px !important; /* Maximum width to match compact sections */
   flex: none;
 }
@@ -370,14 +369,29 @@
 
 .selected-video-info {
   display: flex;
-  align-items: flex-start; /* Align items to top for multi-line content */
+  flex-direction: column;
   gap: 12px;
-  padding: 16px; /* Increased padding for better spacing with multi-line content */
+  padding: 16px;
   background: var(--md-surface-1);
-  border-radius: 12px;
+  border-radius: 24px;
   border: 1px solid var(--md-outline-variant);
   min-width: 0; /* Allow flex container to shrink */
   width: 100%; /* Take full width of parent container */
+}
+
+.selected-video-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.selected-video-info-row.top-row {
+  flex: 1; /* Allow top row to take available space */
+}
+
+.selected-video-info-row.bottom-row {
+  justify-content: space-between; /* Space out source indicator and button */
 }
 
 .video-file-icon {
@@ -395,7 +409,7 @@
   word-wrap: break-word;
   word-break: break-word;
   line-height: 1.4;
-  /* Remove single-line constraints to allow multi-line display */
+  /* Allow multi-line display with proper spacing */
 }
 
 .video-source-indicator {
@@ -482,10 +496,9 @@
   box-shadow: var(--md-elevation-level2);
 }
 
-/* Ensure buttons in selected-video-info stay aligned to top when video name is multi-line */
+/* Button styling in the new two-row layout */
 .selected-video-info .pill-button {
   flex-shrink: 0; /* Prevent button from shrinking */
-  align-self: flex-start; /* Align button to top of container */
 }
 
 .pill-button.cancel {
@@ -1130,8 +1143,12 @@
   }
 
   .selected-video-info {
+    gap: 8px; /* Reduce gap on mobile */
+  }
+
+  .selected-video-info-row.bottom-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
   }
 
