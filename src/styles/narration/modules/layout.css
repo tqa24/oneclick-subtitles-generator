@@ -1,7 +1,7 @@
 /* Row layout for consistent alignment - matching translation section */
 .narration-row {
   display: flex;
-  align-items: flex-start; /* Changed from center to flex-start to handle wrapping content */
+  align-items: center; /* Center align all row items by default */
   gap: 1rem;
   min-height: 42px; /* Match the height of input elements */
   margin-bottom: 1.25rem;
@@ -12,9 +12,9 @@
   flex: 0 0 120px; /* Slightly wider than translation section */
   text-align: right;
   display: flex;
-  align-items: center;
+  align-items: center; /* Center align the label content */
   justify-content: flex-end;
-  height: 100%;
+  align-self: center; /* Center the entire label container within the row */
   min-width: 150px;
 }
 
@@ -29,7 +29,7 @@
   flex: 1;
   min-width: 0; /* Prevent flex items from overflowing */
   display: flex;
-  align-items: flex-start; /* Changed from center to flex-start to handle wrapping content */
+  align-items: center; /* Center align content by default */
 }
 
 /* Action content alignment */

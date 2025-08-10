@@ -64,7 +64,11 @@ audio.audio-player {
 
 /* Specific styling for audio controls row to handle wrapping */
 .audio-controls-row {
-  align-items: flex-start; /* Ensure proper alignment when content wraps */
+  align-items: flex-start; /* Allow content to wrap when needed */
+}
+
+.audio-controls-row .row-label {
+  align-self: center; /* Keep label centered even when content wraps */
 }
 
 .audio-controls-row .row-content {
