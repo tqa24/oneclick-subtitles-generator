@@ -34,7 +34,20 @@ const AudioControls = ({
   return (
     <div className="narration-row audio-controls-row">
       <div className="row-label">
-        <label>{t('narration.audioControls', 'Âm thanh tham chiếu')}:</label>
+        <label>
+          <div
+            className="help-icon-container"
+            title={t('narration.audioControlsHelp', 'Use reference audio <12s and leave proper silence space (e.g. 1s) at the end. Otherwise there is a risk of truncating in the middle of word')}
+            style={{ display: 'inline-flex', marginRight: '8px', verticalAlign: 'middle' }}
+          >
+            <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+          {t('narration.audioControls', 'Âm thanh tham chiếu')}:
+        </label>
       </div>
       <div className="row-content">
         <div className="audio-controls-container">

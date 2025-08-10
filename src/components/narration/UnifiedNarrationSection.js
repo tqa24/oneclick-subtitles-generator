@@ -450,7 +450,8 @@ const UnifiedNarrationSection = ({
     setRetryingSubtitleId,
     useGroupedSubtitles,
     setUseGroupedSubtitles,
-    groupedSubtitles
+    groupedSubtitles,
+    narrationMethod
   });
 
   // Check if all narration services are unavailable

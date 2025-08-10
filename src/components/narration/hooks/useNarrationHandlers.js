@@ -127,13 +127,65 @@ const useNarrationHandlers = ({
   setRetryingSubtitleId,
   useGroupedSubtitles,
   setUseGroupedSubtitles,
-  groupedSubtitles
+  groupedSubtitles,
+  narrationMethod
 }) => {
+  // Recording time tracking
+  const recordingStartTimeRef = React.useRef(null);
+
+  // Helper function to check audio duration
+  const checkAudioDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const audio = new Audio();
+      const url = URL.createObjectURL(file);
+
+      audio.addEventListener('loadedmetadata', () => {
+        URL.revokeObjectURL(url);
+        resolve(audio.duration);
+      });
+
+      audio.addEventListener('error', () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load audio file'));
+      });
+
+      audio.src = url;
+    });
+  };
+
+  // Helper function to trigger auto-dismiss error toast
+  const triggerErrorToast = (message) => {
+    const event = new CustomEvent('aligned-narration-status', {
+      detail: {
+        status: 'error',
+        message: message
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
   // Handle file upload
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) {
       return;
+    }
+
+    // Check audio duration for F5TTS
+    if (narrationMethod === 'f5tts') {
+      try {
+        const duration = await checkAudioDuration(file);
+        if (duration > 12) {
+          const errorMessage = t('narration.f5ttsAudioTooLongError', 'Reference audio for F5TTS cannot be longer than 12s');
+          triggerErrorToast(errorMessage);
+          // Clear the file input
+          event.target.value = '';
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking audio duration:', error);
+        // Continue with upload if duration check fails
+      }
     }
 
     try {
@@ -288,6 +340,24 @@ const useNarrationHandlers = ({
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioUrl = URL.createObjectURL(audioBlob);
 
+        // Check recording duration for F5TTS using recording time tracking
+        if (narrationMethod === 'f5tts' && recordingStartTimeRef.current) {
+          const recordingDuration = (Date.now() - recordingStartTimeRef.current) / 1000; // Convert to seconds
+          console.log(`[F5TTS Duration Check] Recording duration: ${recordingDuration.toFixed(2)}s, narrationMethod: ${narrationMethod}`);
+          if (recordingDuration > 12) {
+            console.log(`[F5TTS Duration Check] Recording too long (${recordingDuration.toFixed(2)}s), rejecting`);
+            const errorMessage = t('narration.f5ttsAudioTooLongError', 'Reference audio for F5TTS cannot be longer than 12s');
+            triggerErrorToast(errorMessage);
+            URL.revokeObjectURL(audioUrl);
+            recordingStartTimeRef.current = null; // Reset the timer
+            return;
+          } else {
+            console.log(`[F5TTS Duration Check] Recording duration OK (${recordingDuration.toFixed(2)}s), proceeding`);
+          }
+        } else {
+          console.log(`[F5TTS Duration Check] Skipping check - narrationMethod: ${narrationMethod}, hasStartTime: ${!!recordingStartTimeRef.current}`);
+        }
+
         setRecordedAudio({
           blob: audioBlob,
           url: audioUrl
@@ -414,9 +484,13 @@ const useNarrationHandlers = ({
         } catch (error) {
           setError(error.message || t('narration.recordingError', 'Error saving recorded audio'));
         }
+
+        // Reset recording timer after processing
+        recordingStartTimeRef.current = null;
       };
 
       mediaRecorderRef.current.start();
+      recordingStartTimeRef.current = Date.now(); // Track recording start time
       setIsRecording(true);
     } catch (error) {
       setError(error.message || t('narration.microphoneError', 'Error accessing microphone'));
@@ -433,6 +507,8 @@ const useNarrationHandlers = ({
       if (mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
+
+      // Note: Don't reset recordingStartTimeRef here as we need it in onstop handler
     }
   };
 
