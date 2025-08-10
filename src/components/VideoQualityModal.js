@@ -503,21 +503,6 @@ const VideoQualityModal = ({
               </label>
             )}
           </div>
-
-          {/* Progress bar for redownloading */}
-          {isRedownloading && (
-            <div className="download-progress-container">
-              <div className="download-progress-bar">
-                <div
-                  className="download-progress-fill"
-                  style={{ width: `${downloadProgress}%` }}
-                ></div>
-              </div>
-              <div className="download-progress-text">
-                {downloadProgress}% - {t('videoQuality.downloadingQuality', 'Downloading {{quality}}', { quality: selectedQuality?.quality })}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="modal-actions">

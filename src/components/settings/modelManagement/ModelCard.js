@@ -85,7 +85,6 @@ const ModelCard = ({
             title={t('settings.modelManagement.deleteModel', 'Delete model')}
           >
             <DeleteIcon fontSize="small" />
-            {t('settings.modelManagement.delete', 'Delete')}
           </button>
         )}
       </div>
