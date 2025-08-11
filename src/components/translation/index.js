@@ -120,7 +120,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     }, 50); // Small delay to ensure content is rendered
 
     return () => clearTimeout(animationTimeout);
-  }, [translatedSubtitles, isTranslating, error, bulkFiles, bulkTranslations]); // Re-run when these state values change
+  }, [translatedSubtitles, isTranslating, error, bulkFiles, bulkTranslations, splitDuration, subtitles]); // Re-run when these state values change
 
   // Wrapper for handleTranslate to pass the current languages and delimiter settings
   const handleTranslate = () => {

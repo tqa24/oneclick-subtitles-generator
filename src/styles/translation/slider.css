@@ -4,12 +4,47 @@
   position: relative;
 }
 
-.split-duration-slider-container {
-  width: 100%;
-  max-width: 400px;
+/* New layout for split duration row content */
+.split-duration-row .row-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  width: 100%;
+  align-items: flex-start; /* Override base center alignment */
+}
+
+/* Slider control row with help icon inline */
+.split-duration-row .slider-control-row {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Help icon positioned next to slider value (restored original behavior) */
+.split-duration-row .help-icon-container {
+  margin-left: 8px; /* Restore original margin for positioning next to slider value */
+}
+
+/* Segment preview - full width, allows overflow */
+.split-duration-row .segment-preview-compact {
+  width: 100%;
+}
+
+/* Rest time row uses same layout as split duration row */
+.rest-time-row .row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  align-items: flex-start; /* Override base center alignment */
+}
+
+.rest-time-row .slider-control-row {
+  width: 100%;
+  max-width: 400px;
+}
+
+.rest-time-row .help-icon-container {
+  margin-left: 8px; /* Same as split-duration-row */
 }
 
 .slider-control-row {
@@ -46,11 +81,11 @@
 .segment-preview-compact {
   font-size: 0.85rem;
   color: var(--md-on-surface-variant);
-  margin-top: 4px;
+  margin-top: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-height: 24px;
-  max-height: 48px; /* Allow two rows at most */
+  /* Remove max-height to allow free overflow */
 }
 
 .single-segment {
@@ -61,16 +96,8 @@
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  overflow-y: auto;
-  max-height: 48px;
-  padding-bottom: 2px;
-  /* Hide scrollbar for Chrome, Safari and Opera */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-.segment-pills::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  align-items: flex-start;
+  /* Allow free overflow - no max-height or scrolling restrictions */
 }
 
 .segment-pill {
@@ -86,4 +113,17 @@
   min-width: 20px;
   height: 20px;
   margin-bottom: 2px;
+}
+
+/* Responsive styles for split duration layout */
+@media (max-width: 768px) {
+  /* Layout remains the same on mobile since we're using flexbox column */
+  .split-duration-row .slider-control-row {
+    max-width: 100%;
+  }
+
+  /* Rest time row responsive layout */
+  .rest-time-row .slider-control-row {
+    max-width: 100%;
+  }
 }

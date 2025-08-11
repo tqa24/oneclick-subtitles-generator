@@ -55,63 +55,62 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
         <label>{t('translation.splitDuration', 'Split Duration')}:</label>
       </div>
       <div className="row-content">
-        <div className="split-duration-slider-container">
-          <div className="slider-control-row">
-            <div className="slider-with-value">
-              <StandardSlider
-                value={splitDuration}
-                onChange={(value) => onSplitDurationChange(parseInt(value))}
-                min={0}
-                max={20}
-                step={1}
-                orientation="Horizontal"
-                size="XSmall"
-                state={disabled ? "Disabled" : "Enabled"}
-                showValueIndicator={false} // We'll use custom value display
-                showIcon={false}
-                showStops={false}
-                className="split-duration-slider"
-                id="split-duration-slider"
-                ariaLabel={t('translation.splitDuration', 'Split Duration')}
-              />
-              <div className="slider-value-display">
-                {splitDuration === 0
-                  ? t('translation.noSplit', 'No Split')
-                  : `${splitDuration} ${t('translation.minutes', 'min')}`}
-              </div>
+        {/* Slider control row with help icon */}
+        <div className="slider-control-row">
+          <div className="slider-with-value">
+            <StandardSlider
+              value={splitDuration}
+              onChange={(value) => onSplitDurationChange(parseInt(value))}
+              min={0}
+              max={20}
+              step={1}
+              orientation="Horizontal"
+              size="XSmall"
+              state={disabled ? "Disabled" : "Enabled"}
+              showValueIndicator={false} // We'll use custom value display
+              showIcon={false}
+              showStops={false}
+              className="split-duration-slider"
+              id="split-duration-slider"
+              ariaLabel={t('translation.splitDuration', 'Split Duration')}
+            />
+            <div className="slider-value-display">
+              {splitDuration === 0
+                ? t('translation.noSplit', 'No Split')
+                : `${splitDuration} ${t('translation.minutes', 'min')}`}
+            </div>
+            {/* Help icon next to slider value */}
+            <div
+              className="help-icon-container"
+              title={t('translation.splitDurationHelp', 'Splitting subtitles into smaller chunks helps prevent translations from being cut off due to token limits. For longer videos, use smaller chunks.')}
+            >
+              <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
             </div>
           </div>
-
-          {/* Compact segment distribution preview */}
-          {subtitles && subtitles.length > 0 && (
-            <div className="segment-preview-compact">
-              {splitDuration === 0 ? (
-                <span className="single-segment">
-                  {t('translation.allSubtitles', 'All {{count}} subtitles', {count: subtitles.length})}
-                </span>
-              ) : (
-                <div className="segment-pills">
-                  {segmentDistribution.map((count, index) => (
-                    <span key={index} className="segment-pill">
-                      {count}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        <div
-          className="help-icon-container"
-          title={t('translation.splitDurationHelp', 'Splitting subtitles into smaller chunks helps prevent translations from being cut off due to token limits. For longer videos, use smaller chunks.')}
-        >
-          <svg className="help-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-        </div>
+        {/* Compact segment distribution preview - bottom full width */}
+        {subtitles && subtitles.length > 0 && (
+          <div className="segment-preview-compact">
+            {splitDuration === 0 ? (
+              <span className="single-segment">
+                {t('translation.allSubtitles', 'All {{count}} subtitles', {count: subtitles.length})}
+              </span>
+            ) : (
+              <div className="segment-pills">
+                {segmentDistribution.map((count, index) => (
+                  <span key={index} className="segment-pill">
+                    {count}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
