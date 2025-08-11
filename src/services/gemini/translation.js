@@ -567,10 +567,34 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             console.warn(`Translation count mismatch: got ${translatedTexts.length}, expected ${subtitles.length}. Retrying (${retryCount + 1}/${maxRetries})...`);
             retryCount++;
 
-            // No adjustments to the translations - we'll rely solely on the retry mechanism
             try {
-                // Simplified retry prompt that focuses on the correct number of subtitles
-                const retryPrompt = `Here is my request: ${translationPrompt} with ${subtitles.length} subtitle lines, but your last answer was incomplete which had ${translatedTexts.length}, please make it ${subtitles.length}`;
+                // Create a more specific retry prompt that includes the original subtitle text
+                // This ensures proper mapping between input and output
+                const subtitleTextWithNumbers = subtitles.map((sub, index) => `${index + 1}. ${sub.text}`).join('\n');
+
+                let retryPrompt;
+                if (isMultiLanguage && Array.isArray(targetLanguage)) {
+                    const languageList = targetLanguage.join(', ');
+                    retryPrompt = `RETRY REQUEST: Translate the following ${subtitles.length} numbered subtitle texts to these languages: ${languageList}.
+
+CRITICAL: You must return exactly ${subtitles.length} translations for each language, maintaining the exact same order as the numbered list below.
+
+Previous attempt returned ${translatedTexts.length} translations but we need exactly ${subtitles.length}.
+
+${subtitleTextWithNumbers}
+
+Return your response in the same JSON format as requested originally, with exactly ${subtitles.length} entries for each language.`;
+                } else {
+                    retryPrompt = `RETRY REQUEST: Translate the following ${subtitles.length} numbered subtitle texts to ${targetLanguage}.
+
+CRITICAL: You must return exactly ${subtitles.length} translations, maintaining the exact same order as the numbered list below.
+
+Previous attempt returned ${translatedTexts.length} translations but we need exactly ${subtitles.length}.
+
+${subtitleTextWithNumbers}
+
+Return your response in the same JSON format as requested originally, with exactly ${subtitles.length} entries.`;
+                }
 
                 // Use the same request structure as the original request
                 const retryRequestData = {
@@ -628,8 +652,13 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.0
             // Check if we have a translation map (from chain-based formatting) or just a string
             const isTranslationMap = translationData && typeof translationData === 'object' && !Array.isArray(translationData);
 
-            // Default to original text if no translation is available
+            // Default to original text if no translation is available, with a warning
             let finalText = isTranslationMap ? '' : (translationData || originalSub.text);
+
+            // Log warning if we're falling back to original text (indicates alignment issue)
+            if (!translationData) {
+                console.warn(`Translation missing for subtitle ${index + 1}: "${originalSub.text}" - using original text`);
+            }
 
             // Apply language chain formatting if chain items are provided
             if (chainItems && chainItems.length > 0) {
@@ -891,17 +920,39 @@ const translateSubtitlesByChunks = async (subtitles, targetLanguage, model, cust
                 throw new Error('Translation request was aborted');
             }
 
-            // If this is a count mismatch error, try one more time with a simplified prompt
+            // If this is a count mismatch error, try one more time with a more specific prompt
             if (error.message && error.message.includes('received') && error.message.includes('expected')) {
                 try {
 
-                    // Create a simplified retry prompt for this chunk
-                    const originalPrompt = customPrompt || getDefaultTranslationPrompt(chunk.map(sub => sub.text).join('\n'), targetLanguage, Array.isArray(targetLanguage) && targetLanguage.length > 0);
-                    const simplifiedPrompt = `Here is my request: ${originalPrompt} with ${chunk.length} subtitle lines, but your last answer was incomplete, please make it ${chunk.length}`;
+                    // Create a more specific retry prompt that includes the original subtitle text with numbers
+                    // This ensures proper mapping between input and output for chunks
+                    const subtitleTextWithNumbers = chunk.map((sub, index) => `${index + 1}. ${sub.text}`).join('\n');
 
-                    // Call translateSubtitles with the simplified prompt
+                    let chunkRetryPrompt;
+                    const isMultiLang = Array.isArray(targetLanguage) && targetLanguage.length > 0;
+
+                    if (isMultiLang) {
+                        const languageList = targetLanguage.join(', ');
+                        chunkRetryPrompt = `CHUNK RETRY: Translate the following ${chunk.length} numbered subtitle texts to these languages: ${languageList}.
+
+CRITICAL: You must return exactly ${chunk.length} translations for each language, maintaining the exact same order as the numbered list below.
+
+${subtitleTextWithNumbers}
+
+Return your response in JSON format with exactly ${chunk.length} entries for each language.`;
+                    } else {
+                        chunkRetryPrompt = `CHUNK RETRY: Translate the following ${chunk.length} numbered subtitle texts to ${targetLanguage}.
+
+CRITICAL: You must return exactly ${chunk.length} translations, maintaining the exact same order as the numbered list below.
+
+${subtitleTextWithNumbers}
+
+Return your response in JSON format with exactly ${chunk.length} entries.`;
+                    }
+
+                    // Call translateSubtitles with the improved retry prompt
                     // Pass along all parameters to maintain consistency across chunks
-                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, simplifiedPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle);
+                    const translatedChunk = await translateSubtitles(chunk, targetLanguage, model, chunkRetryPrompt, 0, includeRules, delimiter, useParentheses, bracketStyle);
                     translatedChunks.push(translatedChunk);
                     continue;
                 } catch (retryError) {

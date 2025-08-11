@@ -214,7 +214,7 @@ const TranslationActions = ({
                     <LoadingIndicator
                       theme="light"
                       showContainer={false}
-                      size={16}
+                      size={20}
                       className="translation-loading-indicator"
                     />
                   </div>
