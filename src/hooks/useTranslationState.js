@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProcessingForceStopped, getProcessingForceStopped } from '../services/geminiService';
 
@@ -651,6 +651,11 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
 
 
 
+  // Function to update translated subtitles (for segment retry)
+  const updateTranslatedSubtitles = useCallback((newTranslatedSubtitles) => {
+    setTranslatedSubtitles(newTranslatedSubtitles);
+  }, []);
+
   return {
     isTranslating,
     translatedSubtitles,
@@ -673,6 +678,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     handleSplitDurationChange,
     handleRestTimeChange,
     handleIncludeRulesChange,
+    updateTranslatedSubtitles,
     // Bulk translation
     bulkFiles,
     setBulkFiles,

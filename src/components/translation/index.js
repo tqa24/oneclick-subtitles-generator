@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { downloadSRT, downloadJSON, downloadTXT } from '../../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../../services/geminiService';
@@ -84,6 +84,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleSplitDurationChange,
     handleRestTimeChange,
     handleIncludeRulesChange,
+    updateTranslatedSubtitles,
     // Bulk translation
     bulkFiles,
     setBulkFiles,
@@ -93,6 +94,80 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleBulkFileRemoval,
     handleBulkFilesRemovalAll
   } = useTranslationState(subtitles, onTranslationComplete);
+
+  /**
+   * Handle retry for a specific segment
+   * @param {Object} segment - Segment info object
+   */
+  const handleRetrySegment = useCallback(async (segment) => {
+    if (!translatedSubtitles || !subtitles) return;
+
+    try {
+      // Extract the subtitles for this segment from the original subtitles
+      const segmentSubtitles = subtitles.slice(segment.startIndex, segment.endIndex + 1);
+
+      // Show status
+      const statusMessage = t('translation.retryingSegment', 'Retrying segment {{segment}}...', {
+        segment: segment.segmentNumber
+      });
+
+      // Dispatch status event
+      window.dispatchEvent(new CustomEvent('translation-status', {
+        detail: { message: statusMessage }
+      }));
+
+      // Get the target languages
+      const languages = getLanguageValues();
+      if (languages.length === 0) return;
+
+      // Import the translation function
+      const { translateSubtitles } = await import('../../services/gemini/translation');
+
+      // Translate just this segment
+      const result = await translateSubtitles(
+        segmentSubtitles,
+        languages.length === 1 ? languages[0] : languages,
+        selectedModel,
+        customTranslationPrompt,
+        0, // No split duration for segment retry
+        includeRules,
+        ' ', // Default delimiter
+        false, // No parentheses
+        null, // No bracket style
+        chainItems, // Pass chain items
+        `segment-${segment.segmentNumber}` // File context
+      );
+
+      if (result && result.length > 0) {
+        // Replace the segment in the translated subtitles
+        const newTranslatedSubtitles = [...translatedSubtitles];
+        for (let i = 0; i < result.length; i++) {
+          const targetIndex = segment.startIndex + i;
+          if (targetIndex < newTranslatedSubtitles.length) {
+            newTranslatedSubtitles[targetIndex] = result[i];
+          }
+        }
+
+        // Update the translated subtitles state
+        updateTranslatedSubtitles(newTranslatedSubtitles);
+
+        // Dispatch success event
+        window.dispatchEvent(new CustomEvent('translation-status', {
+          detail: {
+            message: t('translation.translationComplete', 'Translation complete')
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Segment retry failed:', error);
+      window.dispatchEvent(new CustomEvent('translation-status', {
+        detail: {
+          message: `Segment ${segment.segmentNumber} retry failed: ${error.message}`,
+          isError: true
+        }
+      }));
+    }
+  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles]);
 
   // Initialize container height on component mount
   useEffect(() => {
@@ -605,6 +680,8 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 translatedSubtitles={translatedSubtitles}
                 targetLanguages={targetLanguages}
                 loadedFromCache={loadedFromCache}
+                splitDuration={splitDuration}
+                onRetrySegment={handleRetrySegment}
               />
             )}
 
