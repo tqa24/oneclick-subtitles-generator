@@ -52,6 +52,7 @@
   "noRulesAvailable": "사용 가능한 전사 규칙이 없습니다. 이 옵션은 Gemini로 비디오를 분석해야 합니다.",
   "customSubtitlesNoRules": "사용자 지정 자막을 제공했기 때문에 이 옵션이 비활성화되었습니다. 사용자 지정 자막 모드는 비디오 분석과 규칙 생성을 건너뜁니다.",
   "allSubtitles": "모든 {{count}}개의 자막",
+  "segment": "세그먼트",
   "addLanguage": "언어 추가",
   "removeLanguage": "제거",
   "multiLanguageDescription": "여러 언어로 한 번에 번역",

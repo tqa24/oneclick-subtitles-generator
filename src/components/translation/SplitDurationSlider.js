@@ -14,10 +14,14 @@ import StandardSlider from '../common/StandardSlider';
 const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, disabled = false }) => {
   const { t } = useTranslation();
 
-  // Calculate segment distribution based on split duration
+  // Calculate segment distribution with time ranges based on split duration
   const segmentDistribution = useMemo(() => {
     if (!subtitles || subtitles.length === 0 || splitDuration === 0) {
-      return [subtitles?.length || 0]; // No split, all subtitles in one segment
+      // No split, all subtitles in one segment
+      const totalCount = subtitles?.length || 0;
+      const startTime = subtitles?.[0]?.start || 0;
+      const endTime = subtitles?.[subtitles.length - 1]?.end || 0;
+      return [{ count: totalCount, startTime, endTime }];
     }
 
     // Convert splitDuration from minutes to seconds
@@ -32,7 +36,11 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
       // If this subtitle would exceed the chunk duration, start a new chunk
       if (subtitle.start - chunkStartTime > splitDurationSeconds) {
         if (currentChunk.length > 0) {
-          chunks.push(currentChunk.length);
+          chunks.push({
+            count: currentChunk.length,
+            startTime: currentChunk[0].start,
+            endTime: currentChunk[currentChunk.length - 1].end
+          });
           currentChunk = [];
           chunkStartTime = subtitle.start;
         }
@@ -43,11 +51,27 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
 
     // Add the last chunk if it's not empty
     if (currentChunk.length > 0) {
-      chunks.push(currentChunk.length);
+      chunks.push({
+        count: currentChunk.length,
+        startTime: currentChunk[0].start,
+        endTime: currentChunk[currentChunk.length - 1].end
+      });
     }
 
-    return chunks.length > 0 ? chunks : [subtitles.length];
+    return chunks.length > 0 ? chunks : [{ count: subtitles.length, startTime: subtitles[0]?.start || 0, endTime: subtitles[subtitles.length - 1]?.end || 0 }];
   }, [subtitles, splitDuration]);
+
+  // Helper function to format time for display
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="translation-row split-duration-row">
@@ -102,9 +126,13 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
               </span>
             ) : (
               <div className="segment-pills">
-                {segmentDistribution.map((count, index) => (
-                  <span key={index} className="segment-pill">
-                    {count}
+                {segmentDistribution.map((segment, index) => (
+                  <span
+                    key={index}
+                    className="segment-pill"
+                    title={`${t('translation.segment', 'Segment')} ${index + 1}: ${formatTime(segment.startTime)} - ${formatTime(segment.endTime)}`}
+                  >
+                    {segment.count}
                   </span>
                 ))}
               </div>
