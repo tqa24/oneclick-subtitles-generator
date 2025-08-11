@@ -683,6 +683,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     bulkFiles,
     setBulkFiles,
     bulkTranslations,
+    setBulkTranslations,
     isBulkTranslating,
     currentBulkFileIndex,
     handleBulkTranslate,

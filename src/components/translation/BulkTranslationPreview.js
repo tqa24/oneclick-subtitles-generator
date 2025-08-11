@@ -1,49 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { VariableSizeList as List } from 'react-window';
-import formatTimeString from './utils/formatTimeString';
+import SubtitlePreviewList from './SubtitlePreviewList';
 
-/**
- * Individual subtitle row component for virtualized list
- */
-const SubtitleRow = ({ index, style, data }) => {
-  const { translatedSubtitles } = data;
-  const subtitle = translatedSubtitles[index];
 
-  // Determine the time display format
-  let startTimeDisplay = subtitle.startTime;
-  let endTimeDisplay = subtitle.endTime;
-
-  // If we have start/end in seconds but no formatted time strings
-  if (!startTimeDisplay && subtitle.start !== undefined) {
-    startTimeDisplay = formatTimeString(subtitle.start);
-  }
-
-  if (!endTimeDisplay && subtitle.end !== undefined) {
-    endTimeDisplay = formatTimeString(subtitle.end);
-  }
-
-  return (
-    <div style={style} className="preview-subtitle-row">
-      <div className="preview-number-sticky">
-        {index + 1}
-      </div>
-      <div className="preview-content">
-        <span className="preview-time">
-          {startTimeDisplay || '00:00:00.000'} → {endTimeDisplay || '00:00:05.000'}
-        </span>
-        <span className="preview-text">
-          {subtitle.text.split('\n').map((line, lineIndex) => (
-            <React.Fragment key={lineIndex}>
-              {lineIndex > 0 && <br />}
-              {line}
-            </React.Fragment>
-          ))}
-        </span>
-      </div>
-    </div>
-  );
-};
 
 /**
  * Bulk translation preview component with file selection pills
@@ -51,11 +10,19 @@ const SubtitleRow = ({ index, style, data }) => {
  * @param {Array} props.bulkTranslations - Array of bulk translation results
  * @param {Array} props.targetLanguages - Target languages
  * @param {Object} props.mainTranslation - Main translation (if any)
+ * @param {number} props.splitDuration - Split duration for segment calculation
+ * @param {Function} props.onRetrySegment - Callback function to retry a specific segment
  * @returns {JSX.Element|null} - Rendered component or null if no translations
  */
-const BulkTranslationPreview = ({ bulkTranslations, targetLanguages, mainTranslation }) => {
+const BulkTranslationPreview = ({
+  bulkTranslations,
+  targetLanguages,
+  mainTranslation,
+  splitDuration = 0,
+  onRetrySegment
+}) => {
   const { t } = useTranslation();
-  const listRef = useRef(null);
+  const [retryingSegments, setRetryingSegments] = React.useState(new Set());
 
   // Get successful translations and include main translation if available
   const availableTranslations = useMemo(() => {
@@ -98,31 +65,67 @@ const BulkTranslationPreview = ({ bulkTranslations, targetLanguages, mainTransla
     return availableTranslations.find(t => t.id === selectedTranslationId) || availableTranslations[0];
   }, [availableTranslations, selectedTranslationId]);
 
-  // Memoize the item data to prevent unnecessary re-renders
-  const itemData = useMemo(() => ({
-    translatedSubtitles: selectedTranslation?.subtitles || []
-  }), [selectedTranslation]);
+  // Enhanced retry handler with loading state for bulk translations
+  const handleRetrySegment = React.useCallback(async (segment) => {
+    if (!onRetrySegment || !selectedTranslation) return;
 
-  // Calculate dynamic row height based on content
-  const getRowHeight = (index) => {
-    const subtitle = selectedTranslation?.subtitles[index];
-    if (!subtitle) return 80; // Default height
+    // For bulk translations, we need to create a segment that references the correct file
+    // and adjust indices to match the original subtitles from that specific file
+    const bulkSegment = {
+      ...segment,
+      fileId: selectedTranslation.id,
+      fileName: selectedTranslation.name,
+      isFromBulk: true
+    };
 
-    // Base height for time and padding
-    let height = 60;
-    
-    // Add height for each line break in the text
-    const lineBreaks = (subtitle.text.match(/\n/g) || []).length;
-    height += lineBreaks * 20; // 20px per additional line
-    
-    // Add extra height for longer text (rough estimation)
-    const textLength = subtitle.text.length;
-    if (textLength > 100) {
-      height += Math.floor(textLength / 100) * 10;
+    // Add segment to retrying set with file-specific identifier
+    const segmentId = `${selectedTranslation.id}-${segment.segmentNumber}`;
+    setRetryingSegments(prev => new Set(prev).add(segmentId));
+
+    try {
+      // Call the original retry handler with bulk-specific segment info
+      await onRetrySegment(bulkSegment);
+    } finally {
+      // Remove segment from retrying set
+      setRetryingSegments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(segmentId);
+        return newSet;
+      });
     }
-    
-    return Math.max(height, 60); // Minimum height of 60px
-  };
+  }, [onRetrySegment, selectedTranslation]);
+
+  // Handler for individual subtitle retry in bulk context
+  const handleRetrySubtitle = React.useCallback(async (subtitleIndex) => {
+    if (!selectedTranslation) return;
+
+    // Create a single-subtitle segment for retry with file context
+    const singleSubtitleSegment = {
+      segmentNumber: `subtitle-${subtitleIndex + 1}`,
+      startIndex: subtitleIndex,
+      endIndex: subtitleIndex,
+      subtitleCount: 1,
+      fileId: selectedTranslation.id,
+      fileName: selectedTranslation.name,
+      isFromBulk: true
+    };
+
+    // Add subtitle to retrying set with file-specific identifier
+    const subtitleRetryId = `${selectedTranslation.id}-subtitle-${subtitleIndex + 1}`;
+    setRetryingSegments(prev => new Set(prev).add(subtitleRetryId));
+
+    try {
+      // Call the segment retry handler (which handles both segments and individual subtitles)
+      await onRetrySegment(singleSubtitleSegment);
+    } finally {
+      // Remove subtitle from retrying set
+      setRetryingSegments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subtitleRetryId);
+        return newSet;
+      });
+    }
+  }, [onRetrySegment, selectedTranslation]);
 
   if (availableTranslations.length === 0) return null;
 
@@ -174,22 +177,16 @@ const BulkTranslationPreview = ({ bulkTranslations, targetLanguages, mainTransla
           </div>
         </div>
 
-        {/* Virtualized list */}
+        {/* Subtitle preview list */}
         {selectedTranslation && (
-          <div className="translation-preview-virtualized">
-            <List
-              ref={listRef}
-              className="translation-preview-list"
-              height={400} // Fixed height for the virtualized container
-              width="100%"
-              itemCount={selectedTranslation.subtitles.length}
-              itemSize={getRowHeight}
-              itemData={itemData}
-              overscanCount={5} // Number of items to render outside visible area
-            >
-              {SubtitleRow}
-            </List>
-          </div>
+          <SubtitlePreviewList
+            translatedSubtitles={selectedTranslation.subtitles}
+            splitDuration={splitDuration}
+            onRetrySegment={handleRetrySegment}
+            onRetrySubtitle={handleRetrySubtitle}
+            retryingSegments={retryingSegments}
+            fileId={selectedTranslation.id}
+          />
         )}
       </div>
     </div>

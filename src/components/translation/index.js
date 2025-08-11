@@ -89,6 +89,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     bulkFiles,
     setBulkFiles,
     bulkTranslations,
+    setBulkTranslations,
     isBulkTranslating,
     currentBulkFileIndex,
     handleBulkFileRemoval,
@@ -103,8 +104,33 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     if (!translatedSubtitles || !subtitles) return;
 
     try {
-      // Extract the subtitles for this segment from the original subtitles
-      const segmentSubtitles = subtitles.slice(segment.startIndex, segment.endIndex + 1);
+      // For bulk translations, we need to get the correct subtitle array
+      let sourceSubtitles = subtitles;
+
+      if (segment.isFromBulk && segment.fileId && segment.fileId !== 'main') {
+        // Find the bulk translation result to get the original file reference
+        const bulkTranslationIndex = parseInt(segment.fileId.replace('bulk-', ''));
+        const bulkTranslation = bulkTranslations[bulkTranslationIndex];
+
+        if (bulkTranslation && bulkTranslation.originalFile) {
+          // Find the corresponding bulk file with original subtitles
+          const bulkFile = bulkFiles.find(bf => bf.id === bulkTranslation.originalFile.id);
+
+          if (bulkFile && bulkFile.subtitles) {
+            sourceSubtitles = bulkFile.subtitles;
+          } else {
+            console.error('Could not find original subtitles for bulk file:', segment.fileId);
+            return;
+          }
+        } else {
+          console.error('Could not find bulk translation for fileId:', segment.fileId);
+          return;
+        }
+      }
+      // For main translation (fileId === 'main' or no fileId), use the original subtitles array
+
+      // Extract the subtitles for this segment from the correct source
+      const segmentSubtitles = sourceSubtitles.slice(segment.startIndex, segment.endIndex + 1);
 
       // Show status
       const statusMessage = t('translation.retryingSegment', 'Retrying segment {{segment}}...', {
@@ -139,17 +165,44 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       );
 
       if (result && result.length > 0) {
-        // Replace the segment in the translated subtitles
-        const newTranslatedSubtitles = [...translatedSubtitles];
-        for (let i = 0; i < result.length; i++) {
-          const targetIndex = segment.startIndex + i;
-          if (targetIndex < newTranslatedSubtitles.length) {
-            newTranslatedSubtitles[targetIndex] = result[i];
-          }
-        }
+        if (segment.isFromBulk && segment.fileId && segment.fileId !== 'main') {
+          // For bulk translations, update the specific bulk translation result
+          const bulkTranslationIndex = parseInt(segment.fileId.replace('bulk-', ''));
+          const updatedBulkTranslations = [...bulkTranslations];
 
-        // Update the translated subtitles state
-        updateTranslatedSubtitles(newTranslatedSubtitles);
+          if (updatedBulkTranslations[bulkTranslationIndex]) {
+            const newTranslatedSubtitles = [...updatedBulkTranslations[bulkTranslationIndex].translatedSubtitles];
+
+            // Replace the segment in the bulk translation
+            for (let i = 0; i < result.length; i++) {
+              const targetIndex = segment.startIndex + i;
+              if (targetIndex < newTranslatedSubtitles.length) {
+                newTranslatedSubtitles[targetIndex] = result[i];
+              }
+            }
+
+            // Update the bulk translation result
+            updatedBulkTranslations[bulkTranslationIndex] = {
+              ...updatedBulkTranslations[bulkTranslationIndex],
+              translatedSubtitles: newTranslatedSubtitles
+            };
+
+            // Update the bulk translations state
+            setBulkTranslations(updatedBulkTranslations);
+          }
+        } else {
+          // For main translation (fileId === 'main' or no fileId), update the main translated subtitles
+          const newTranslatedSubtitles = [...translatedSubtitles];
+          for (let i = 0; i < result.length; i++) {
+            const targetIndex = segment.startIndex + i;
+            if (targetIndex < newTranslatedSubtitles.length) {
+              newTranslatedSubtitles[targetIndex] = result[i];
+            }
+          }
+
+          // Update the translated subtitles state
+          updateTranslatedSubtitles(newTranslatedSubtitles);
+        }
 
         // Dispatch success event
         window.dispatchEvent(new CustomEvent('translation-status', {
@@ -167,7 +220,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         }
       }));
     }
-  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles]);
+  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles, bulkFiles, bulkTranslations]);
 
   // Initialize container height on component mount
   useEffect(() => {
@@ -695,6 +748,8 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                   subtitles: translatedSubtitles,
                   loadedFromCache: loadedFromCache
                 }}
+                splitDuration={splitDuration}
+                onRetrySegment={handleRetrySegment}
               />
             )}
           </>
