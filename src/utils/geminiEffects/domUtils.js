@@ -29,14 +29,15 @@ export const setupButtonObserver = (initCallback, observerInitialized) => {
                 node.classList.contains('force-stop-btn') ||
                 node.classList.contains('cancel-download-btn') ||
                 node.classList.contains('add-subtitles-button') ||
-                node.classList.contains('srt-upload-button')) &&
+                node.classList.contains('srt-upload-button') ||
+                node.classList.contains('lets-go-btn')) &&
                !(node.classList.contains('translate-button') || node.classList.contains('download-btn')))
             ) {
               shouldReinitialize = true;
             }
 
             // Check if the node contains buttons with the relevant classes (excluding translate and download buttons)
-            const buttons = node.querySelectorAll('.generate-btn:not(.translate-button):not(.download-btn), .retry-gemini-btn, .force-stop-btn, .cancel-download-btn, .add-subtitles-button, .srt-upload-button');
+            const buttons = node.querySelectorAll('.generate-btn:not(.translate-button):not(.download-btn), .retry-gemini-btn, .force-stop-btn, .cancel-download-btn, .add-subtitles-button, .srt-upload-button, .lets-go-btn');
             if (buttons.length > 0) {
               shouldReinitialize = true;
             }

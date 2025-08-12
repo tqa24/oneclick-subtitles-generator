@@ -6,6 +6,7 @@ import { useAppHandlers } from './AppHandlers';
 import { useModalHandlers } from './ModalHandlers';
 import { useAppEffects } from './AppEffects';
 import OnboardingBanner from '../OnboardingBanner';
+import OnboardingFooterReveal from '../OnboardingFooterReveal';
 import AutoDismissErrorToast from '../common/AutoDismissErrorToast';
 import { initializeAudioAlignmentNotifications } from '../../utils/audioAlignmentNotification';
 
@@ -20,6 +21,8 @@ import '../../styles/OnboardingBanner.css';
 // Removed spinner-fix.css - now using LoadingIndicator component
 import '../../styles/lyrics/save-message.css'; // Audio alignment notification styles
 import '../../styles/common/auto-dismiss-error-toast.css'; // Auto-dismiss error toast styles
+import '../../styles/OnboardingFooterReveal.css';
+
 
 /**
  * Main App component
@@ -58,6 +61,9 @@ function App() {
 
       {/* Auto-dismiss error toast for global error notifications */}
       <AutoDismissErrorToast />
+
+      {/* This is rendered on top of the app, behind the onboarding overlay */}
+      <OnboardingFooterReveal />
 
       <AppLayout
         appState={appState}

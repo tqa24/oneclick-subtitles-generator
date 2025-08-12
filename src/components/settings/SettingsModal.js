@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../../styles/SettingsModal.css';
 import '../../styles/settings/checkbox-fix.css';
@@ -6,7 +6,7 @@ import '../../styles/components/tab-content-animations.css';
 import { DEFAULT_TRANSCRIPTION_PROMPT } from '../../services/geminiService';
 import { getClientCredentials, hasValidTokens } from '../../services/youtubeApiService';
 import { getAllKeys, saveAllKeys, getCurrentKey } from '../../services/gemini/keyManager';
-import LanguageSelector from '../LanguageSelector';
+import SettingsFooterControls from './SettingsFooterControls';
 import CloseButton from '../common/CloseButton';
 import { API_BASE_URL } from '../../config';
 
@@ -21,8 +21,6 @@ import ModelManagementTab from './ModelManagementTab';
 // Import icons
 import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
 
-// Import theme utilities
-import { toggleTheme as toggleThemeUtil, getThemeIcon, getThemeLabel, initializeTheme, setupSystemThemeListener } from './utils/themeUtils';
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
 import initSettingsTabsDrag from '../../utils/settingsTabsDrag';
 
@@ -45,8 +43,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [previousTab, setPreviousTab] = useState(null);
   const [animationDirection, setAnimationDirection] = useState('center');
 
-  // Theme state
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
 
   // State for tracking which About background to show
   const [backgroundType, setBackgroundType] = useState(() => {
@@ -221,17 +217,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     customGeminiModels: []
   });
 
-  // Listen for system theme changes and apply initial theme
-  useEffect(() => {
-    // Set up system theme change listener
-    const cleanup = setupSystemThemeListener(setTheme);
-
-    // Handle initial theme setup
-    const savedTheme = initializeTheme();
-    setTheme(savedTheme);
-
-    return cleanup;
-  }, []);
 
   // Load saved settings on component mount
   useEffect(() => {
@@ -385,11 +370,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Function to toggle theme
-  const handleToggleTheme = () => {
-    const newTheme = toggleThemeUtil(theme, setTheme);
-    setTheme(newTheme);
-  };
+
 
   // Handle factory reset
   const handleFactoryReset = async () => {
@@ -414,10 +395,6 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         databases.forEach(db => {
           window.indexedDB.deleteDatabase(db.name);
         });
-
-        // 4. Show success message
-        alert(t('settings.factoryResetSuccess', 'Factory reset completed successfully. The application will now reload.'));
-
         // 5. Reload the page to apply changes
         window.location.reload();
       } catch (error) {
@@ -771,17 +748,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         <div className="settings-footer">
           <div className="settings-footer-left">
             {/* Theme toggle and language selector */}
-            <div className="settings-footer-controls">
-              <button
-                className="theme-toggle"
-                onClick={handleToggleTheme}
-                aria-label={getThemeLabel(theme, t)}
-                title={getThemeLabel(theme, t)}
-              >
-                {getThemeIcon(theme)}
-              </button>
-              <LanguageSelector isDropup={true} />
-            </div>
+            <SettingsFooterControls isDropup={true} />
 
             {/* Factory reset button */}
             <button

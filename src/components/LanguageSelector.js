@@ -366,7 +366,7 @@ const LanguageSelector = ({ isDropup = false }) => {
             role="menu"
             style={{
               position: isInFloatingModal && modalContainer ? 'absolute' : 'fixed',
-              zIndex: 10000,
+              zIndex: 1000001, // Match the CSS z-index to ensure it's above onboarding overlay
               visibility: hasValidPosition ? 'visible' : 'hidden',
               ...(isDropup
                 ? {

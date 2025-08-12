@@ -376,32 +376,4 @@
   opacity: 0.8;
 }
 
-.buttons-container .cancel-download-btn .gemini-mini-icon.random-1 {
-  top: 10%;
-  left: 15%;
-  transform: rotate(15deg);
-}
-
-.buttons-container .cancel-download-btn:hover .gemini-mini-icon.random-1 {
-  transform: rotate(15deg) translateY(-2px);
-}
-
-.buttons-container .cancel-download-btn .gemini-mini-icon.random-3 {
-  bottom: 10%;
-  right: 15%;
-  transform: rotate(-15deg);
-}
-
-.buttons-container .cancel-download-btn:hover .gemini-mini-icon.random-3 {
-  transform: rotate(-15deg) translateY(2px);
-}
-
-.buttons-container .cancel-download-btn .gemini-mini-icon.size-sm {
-  width: 14px;
-  height: 14px;
-}
-
-.buttons-container .cancel-download-btn .gemini-mini-icon.size-md {
-  width: 18px;
-  height: 18px;
-}
+/* Cancel download button Gemini effects now handled by dynamic particle system */

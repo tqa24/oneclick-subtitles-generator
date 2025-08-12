@@ -282,29 +282,7 @@
   transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
 }
 
-/* Allow SVG filters for star-like glow effects */
-.add-subtitles-button .gemini-mini-icon svg,
-.add-subtitles-button .gemini-mini-icon svg path {
-  /* Allow SVG filters but prevent CSS filters */
-  box-shadow: none !important;
-  -webkit-filter: none !important;
-  /* Add a subtle animation */
-  animation: add-btn-star-twinkle 3s infinite alternate ease-in-out;
-}
-
-/* Change icon color on hover to match text */
-.add-subtitles-button:hover .gemini-mini-icon {
-  stroke: var(--md-tertiary);
-}
-
-.add-subtitles-button.has-subtitles:hover .gemini-mini-icon {
-  stroke: var(--md-primary);
-}
-
-@keyframes add-btn-star-twinkle {
-  0% { opacity: 0.9; }
-  100% { opacity: 1; }
-}
+/* Gemini effects now handled by dynamic particle system */
 
 .add-subtitles-button.has-subtitles .gemini-mini-icon {
   stroke: #FFFFFF; /* Explicit white color for better visibility */

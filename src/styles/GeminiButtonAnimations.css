@@ -5,7 +5,8 @@
 .retry-gemini-btn .gemini-icon-container,
 .force-stop-btn .gemini-icon-container,
 .srt-upload-button .gemini-icon-container,
-.add-subtitles-button .gemini-icon-container {
+.add-subtitles-button .gemini-icon-container,
+.lets-go-btn .gemini-icon-container {
   position: absolute;
   top: 0;
   left: 0;
@@ -31,15 +32,10 @@
   transition: transform 0.3s var(--md-easing-standard), opacity 0.3s var(--md-easing-standard);
 }
 
-/* Static icons should be visible by default */
-.gemini-mini-icon:not(.dynamic) {
-  opacity: 0.7;
-}
-
-/* Dynamic icons should only be visible when active */
+/* All icons are now dynamic - managed by particle system */
 .gemini-mini-icon.dynamic {
   opacity: 0;
-  z-index: 2; /* Ensure dynamic icons appear above static ones but below other UI elements */
+  z-index: 2;
 }
 
 /* Special styling for different particle types */
@@ -103,23 +99,9 @@
 .gemini-mini-icon.size-md { width: 16px; height: 16px; }
 .gemini-mini-icon.size-lg { width: 20px; height: 20px; }
 
-/* Positioning classes */
-.gemini-mini-icon.top-left { top: 8px; left: 8px; }
-.gemini-mini-icon.top-right { top: 8px; right: 8px; }
-.gemini-mini-icon.bottom-left { bottom: 8px; left: 8px; }
-.gemini-mini-icon.bottom-right { bottom: 8px; right: 8px; }
-.gemini-mini-icon.center-left { top: 50%; left: 8px; transform: translateY(-50%); }
-.gemini-mini-icon.center-right { top: 50%; right: 8px; transform: translateY(-50%); }
-.gemini-mini-icon.center-top { top: 8px; left: 50%; transform: translateX(-50%); }
-.gemini-mini-icon.center-bottom { bottom: 8px; left: 50%; transform: translateX(-50%); }
+/* All positioning now handled dynamically by particle system */
 
-/* Random positions for more organic feel */
-.gemini-mini-icon.random-1 { top: 15%; left: 12%; }
-.gemini-mini-icon.random-2 { top: 25%; right: 18%; }
-.gemini-mini-icon.random-3 { bottom: 20%; left: 22%; }
-.gemini-mini-icon.random-4 { bottom: 30%; right: 15%; }
-.gemini-mini-icon.random-5 { top: 40%; left: 30%; }
-.gemini-mini-icon.random-6 { top: 60%; right: 25%; }
+/* Random positions - now handled dynamically by particle system */
 
 /* Animation keyframes for the mini icons - expanded with more variations */
 @keyframes float-up {
@@ -217,66 +199,7 @@
   80% { transform: translateY(-8px) scale(1.08); opacity: 0.5; }
 }
 
-/* Idle state animations - subtle and occasional */
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon {
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
-.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-1 {
-  /* Removed pulse animation */
-  opacity: 0.3;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-2 {
-  animation-name: float-up;
-  animation-duration: 5s;
-  animation-delay: 2s;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
-.srt-upload-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-3 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-4 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-5 {
-  /* Removed pulse animation */
-  opacity: 0.3;
-}
-
-.generate-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
-.retry-gemini-btn:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6,
-.add-subtitles-button:not(:disabled):not(.processing) .gemini-icon-container .gemini-mini-icon.random-6 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-/* Processing state animations - more active and continuous */
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon {
-  animation-iteration-count: infinite;
-  opacity: 0.9; /* Make icons more visible during processing */
-}
+/* All animations now handled by dynamic particle system */
 
 /* Special processing state - show all particles */
 .generate-btn.processing .gemini-mini-icon,
@@ -321,57 +244,14 @@
   100% { opacity: 0; transform: scale(0.8); }
 }
 
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-1,
-.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-1,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-1 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-2,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-2 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-3,
-.srt-upload-button.processing .gemini-icon-container .gemini-mini-icon.random-3,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-3 {
-  /* Removed animation */
-  opacity: 0.3;
-}
-
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-4,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-4 {
-  /* Removed pulse animation */
-  opacity: 0.3;
-}
-
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-5,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-5,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-5 {
-  animation-name: float-up;
-  animation-duration: 1.7s;
-  animation-delay: 0.4s;
-}
-
-.generate-btn.processing .gemini-icon-container .gemini-mini-icon.random-6,
-.retry-gemini-btn.processing .gemini-icon-container .gemini-mini-icon.random-6,
-.add-subtitles-button.processing .gemini-icon-container .gemini-mini-icon.random-6 {
-  animation-name: rotate-fade;
-  animation-duration: 1.4s;
-  animation-delay: 0.6s;
-}
+/* All processing animations now handled by dynamic particle system */
 
 /* Hover state enhancements */
 .generate-btn:hover .gemini-icon-container,
 .retry-gemini-btn:hover .gemini-icon-container,
 .srt-upload-button:hover .gemini-icon-container,
-.add-subtitles-button:hover .gemini-icon-container {
+.add-subtitles-button:hover .gemini-icon-container,
+.lets-go-btn:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
   background: transparent !important; /* Ensure transparent background to expose stars */
@@ -381,7 +261,8 @@
 .generate-btn:hover .gemini-mini-icon svg,
 .retry-gemini-btn:hover .gemini-mini-icon svg,
 .srt-upload-button:hover .gemini-mini-icon svg,
-.add-subtitles-button:hover .gemini-mini-icon svg {
+.add-subtitles-button:hover .gemini-mini-icon svg,
+.lets-go-btn:hover .gemini-mini-icon svg {
   transform: scale(1.2);
   transition: transform 0.3s ease-out;
   animation: hover-star-twinkle 1.5s infinite alternate ease-in-out !important;
@@ -414,6 +295,10 @@
 
 .add-subtitles-button .gemini-mini-icon {
   stroke: var(--md-on-tertiary);
+}
+
+.lets-go-btn .gemini-mini-icon {
+  stroke: var(--md-on-primary);
 }
 
 /* Translate and Download button icons styling removed to reduce lag */

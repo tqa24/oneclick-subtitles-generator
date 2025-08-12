@@ -1,5 +1,5 @@
 import { parseSrtContent } from '../../utils/srtParser';
-import { resetGeminiButtonState } from '../../utils/geminiButtonEffects';
+import { resetGeminiButtonState } from '../../utils/geminiEffects';
 import { cancelYoutubeVideoDownload, extractYoutubeVideoId } from '../../utils/videoDownloader';
 import { cancelDouyinVideoDownload, extractDouyinVideoId } from '../../utils/douyinDownloader';
 import { cancelGenericVideoDownload } from '../../utils/allSitesDownloader';

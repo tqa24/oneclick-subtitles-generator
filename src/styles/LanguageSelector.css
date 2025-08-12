@@ -129,7 +129,7 @@
   border-radius: var(--md-shape-medium);
   box-shadow: var(--md-elevation-level3);
   overflow: hidden;
-  z-index: 10000; /* Extremely high z-index to ensure it's above everything */
+  z-index: 1000001; /* Above all app overlays, including onboarding */
   animation: language-menu-appear var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
   transform-origin: top left;
   backdrop-filter: blur(10px);

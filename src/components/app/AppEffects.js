@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { hasValidTokens } from '../../services/youtubeApiService';
-import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiButtonEffects';
+import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiEffects';
 import { syncLocalStorageToServer } from '../../services/localStorageService';
 import initTabPillAnimation from '../../utils/tabPillAnimation';
 import { getThemeWithFallback } from '../../utils/systemDetection';
