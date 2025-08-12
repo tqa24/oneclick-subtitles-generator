@@ -6,7 +6,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none; /* allow underlying interactions when card hidden */
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  animation: onboarding-fade-in 0.4s var(--md-easing-emphasized) forwards;
+}
+
+/* Dismissal animation for overlay */
+.onboarding-reveal-overlay.dismissing {
+  animation: onboarding-fade-out 0.5s var(--md-easing-emphasized) forwards;
 }
 
 /* Glassy card container - fullscreen */
@@ -15,7 +23,6 @@
   height: 100%;
   margin: 0;
   border-radius: 0;
-  background: rgba(240, 240, 240, 0.18);
   backdrop-filter: blur(18px) saturate(120%);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
   box-shadow: none;
@@ -25,6 +32,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  animation: onboarding-card-slide-in 0.5s var(--md-easing-emphasized) forwards;
+}
+
+/* Dismissal animation for card */
+.onboarding-reveal-card.dismissing {
+  animation: onboarding-card-slide-out 0.5s var(--md-easing-emphasized) forwards;
 }
 .onboarding-reveal-header {
   /* Remove header since we're centering everything */
@@ -86,6 +99,21 @@
   overflow: hidden;
 }
 
+/* Arrow icon styling */
+.onboarding-controls-row .lets-go-btn .lets-go-arrow {
+  width: 20px;
+  height: 20px;
+  margin-left: 4px;
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  flex-shrink: 0;
+}
+
+/* Text styling */
+.onboarding-controls-row .lets-go-btn .lets-go-text {
+  z-index: 2;
+  position: relative;
+}
+
 /* Make controls big and comfortable */
 .settings-footer-controls.controls-large.split-layout {
   display: flex;
@@ -116,6 +144,11 @@
   text-shadow: none;
 }
 
+/* Arrow animation on hover */
+.onboarding-controls-row .lets-go-btn:hover .lets-go-arrow {
+  transform: translateX(4px);
+}
+
 .onboarding-controls-row .lets-go-btn:active {
   transform: translateY(0);
   box-shadow: var(--md-elevation-level1);
@@ -126,6 +159,55 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Keyframe animations for smooth entrance and dismissal */
+@keyframes onboarding-fade-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes onboarding-fade-out {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+}
+
+@keyframes onboarding-card-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+    backdrop-filter: blur(0px) saturate(100%);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    backdrop-filter: blur(18px) saturate(120%);
+  }
+}
+
+@keyframes onboarding-card-slide-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    backdrop-filter: blur(18px) saturate(120%);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-30px);
+    backdrop-filter: blur(0px) saturate(100%);
+  }
 }
 
 @media (max-width: 600px) {
