@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { downloadSRT, downloadJSON, downloadTXT } from '../../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../../services/geminiService';
-import useTranslationState from '../../hooks/useTranslationState';
+import useTranslationState, { getCurrentMediaId, generateSubtitleHash } from '../../hooks/useTranslationState';
 import useLanguageChain from '../../hooks/useLanguageChain';
 import TranslationHeader from './TranslationHeader';
 import LanguageChain from './LanguageChain';
@@ -202,6 +202,40 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 
           // Update the translated subtitles state
           updateTranslatedSubtitles(newTranslatedSubtitles);
+
+          // CRITICAL: Update the parent component's state via onTranslationComplete
+          if (onTranslationComplete) {
+            onTranslationComplete(newTranslatedSubtitles);
+          }
+
+          // Update the global window.translatedSubtitles for consistency
+          window.translatedSubtitles = newTranslatedSubtitles;
+
+          // Dispatch event to notify other components of the update
+          window.dispatchEvent(new CustomEvent('translation-updated', {
+            detail: {
+              translatedSubtitles: newTranslatedSubtitles,
+              source: 'retry'
+            }
+          }));
+
+          // Update the cache with the new translations
+          try {
+            const mediaId = getCurrentMediaId();
+            if (mediaId) {
+              const subtitleHash = generateSubtitleHash(subtitles);
+              const cacheEntry = {
+                mediaId,
+                subtitleHash,
+                timestamp: Date.now(),
+                translations: newTranslatedSubtitles
+              };
+              localStorage.setItem('translated_subtitles_cache', JSON.stringify(cacheEntry));
+              console.log('Updated translation cache after retry');
+            }
+          } catch (error) {
+            console.error('Error updating translation cache after retry:', error);
+          }
         }
 
         // Dispatch success event
@@ -220,7 +254,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
         }
       }));
     }
-  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles, bulkFiles, bulkTranslations]);
+  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles, bulkFiles, bulkTranslations, onTranslationComplete]);
 
   // Initialize container height on component mount
   useEffect(() => {

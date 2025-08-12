@@ -263,10 +263,30 @@ const useWindowStateManager = ({
       }
     };
 
+    const handleTranslationUpdated = (event) => {
+      console.log('Translation updated detected, clearing grouped subtitles cache for retry');
+
+      // Clear the grouped subtitles cache since translations have changed
+      try {
+        localStorage.removeItem(GROUPED_SUBTITLES_CACHE_KEY);
+      } catch (error) {
+        console.error('Error clearing grouped subtitles cache after translation update:', error);
+      }
+
+      // Clear the grouped subtitles state if we're using translated subtitles
+      if (subtitleSource === 'translated') {
+        setGroupedSubtitles(null);
+        // Don't disable grouping, just clear the current grouped subtitles
+        // so they can be regenerated with the updated translations
+      }
+    };
+
     window.addEventListener('translation-reset', handleTranslationReset);
+    window.addEventListener('translation-updated', handleTranslationUpdated);
 
     return () => {
       window.removeEventListener('translation-reset', handleTranslationReset);
+      window.removeEventListener('translation-updated', handleTranslationUpdated);
     };
   }, [subtitleSource, setGroupedSubtitles, setUseGroupedSubtitles]);
 

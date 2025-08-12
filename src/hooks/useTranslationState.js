@@ -12,7 +12,7 @@ const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
  * @param {Array} subtitles - Array of subtitle objects
  * @returns {string} - Hash string
  */
-const generateSubtitleHash = (subtitles) => {
+export const generateSubtitleHash = (subtitles) => {
   if (!subtitles || !subtitles.length) return '';
 
   // Create a string representation of the subtitles (just IDs and text)
@@ -33,7 +33,7 @@ const generateSubtitleHash = (subtitles) => {
  * Helper function to get the current video/file identifier
  * @returns {string|null} - Current video/file ID or null if not found
  */
-const getCurrentMediaId = () => {
+export const getCurrentMediaId = () => {
   // Check for YouTube URL first
   const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
 
