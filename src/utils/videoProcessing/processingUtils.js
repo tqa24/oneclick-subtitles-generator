@@ -359,9 +359,14 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
     const splitResult = await splitVideoOnServer(
       processedFile, // Use the processed file (optimized if optimization was enabled)
       getMaxSegmentDurationSeconds(),
-      (progress, message) => {
+      (progress, messageKey, defaultMessage) => {
+        // Handle translation keys properly
+        const translatedMessage = messageKey && messageKey.startsWith('output.')
+          ? t(messageKey, defaultMessage)
+          : (defaultMessage || messageKey);
+
         onStatusUpdate({
-          message: `${message} (${progress}%)`,
+          message: `${translatedMessage} (${progress}%)`,
           type: 'loading'
         });
       },
