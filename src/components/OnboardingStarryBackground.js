@@ -9,6 +9,7 @@ const OnboardingStarryBackground = () => {
   const animationRef = useRef(null);
   const particlesRef = useRef([]);
   const connectionsRef = useRef([]);
+  const cometsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 120, isClicked: false });
 
   // Generate vibrant star colors - blue for dark, yellow/orange for light
@@ -75,6 +76,259 @@ const OnboardingStarryBackground = () => {
     let particles = [];
     let animationFrameId;
 
+    // Create a new comet
+    const createComet = (cssWidth, cssHeight) => {
+      const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+      let startX, startY, endX, endY;
+
+      // Start from random edge, go to opposite area
+      switch (side) {
+        case 0: // From top
+          startX = Math.random() * cssWidth;
+          startY = -50;
+          endX = Math.random() * cssWidth;
+          endY = cssHeight + 50;
+          break;
+        case 1: // From right
+          startX = cssWidth + 50;
+          startY = Math.random() * cssHeight;
+          endX = -50;
+          endY = Math.random() * cssHeight;
+          break;
+        case 2: // From bottom
+          startX = Math.random() * cssWidth;
+          startY = cssHeight + 50;
+          endX = Math.random() * cssWidth;
+          endY = -50;
+          break;
+        case 3: // From left
+          startX = -50;
+          startY = Math.random() * cssHeight;
+          endX = cssWidth + 50;
+          endY = Math.random() * cssHeight;
+          break;
+      }
+
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const speed = 1.5 + Math.random() * 2.5; // Slightly slower for more majestic feel
+
+      return {
+        x: startX,
+        y: startY,
+        velocityX: (dx / distance) * speed,
+        velocityY: (dy / distance) * speed,
+        size: 8 + Math.random() * 4, // Larger for visible star shape
+        opacity: 0.95 + Math.random() * 0.05,
+        gravityRadius: 120 + Math.random() * 60, // Larger gravity field
+        gravityStrength: 15 + Math.random() * 10,
+        life: 0,
+        maxLife: distance / speed,
+        brightness: 0.9 + Math.random() * 0.3,
+        // Star-specific properties
+        rotation: Math.random() * Math.PI * 2, // Initial rotation
+        rotationSpeed: 0.05 + Math.random() * 0.1, // Spinning speed
+        glowIntensity: 0.8 + Math.random() * 0.4, // Individual glow strength
+        sparkles: [], // Particle sparkles around comet
+        maxSparkles: 8 + Math.floor(Math.random() * 12)
+      };
+    };
+
+    // Manage comets - spawn occasionally
+    const manageComets = (cssWidth, cssHeight) => {
+      const comets = cometsRef.current;
+
+      // Spawn new comet occasionally (every 8-15 seconds on average)
+      if (Math.random() < 0.001) { // ~0.1% chance per frame at 60fps - more rare and special
+        comets.push(createComet(cssWidth, cssHeight));
+      }
+
+      // Update existing comets
+      for (let i = comets.length - 1; i >= 0; i--) {
+        const comet = comets[i];
+
+        // Update position
+        comet.x += comet.velocityX;
+        comet.y += comet.velocityY;
+        comet.life++;
+
+        // No trail storage needed anymore
+
+        // Manage sparkles around comet
+        if (comet.sparkles.length < comet.maxSparkles && Math.random() < 0.3) {
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 5 + Math.random() * 15;
+          comet.sparkles.push({
+            x: comet.x + Math.cos(angle) * distance,
+            y: comet.y + Math.sin(angle) * distance,
+            velocityX: (Math.random() - 0.5) * 2,
+            velocityY: (Math.random() - 0.5) * 2,
+            size: 0.5 + Math.random() * 1,
+            opacity: 0.6 + Math.random() * 0.4,
+            life: 0,
+            maxLife: 20 + Math.random() * 30
+          });
+        }
+
+        // Update sparkles
+        for (let j = comet.sparkles.length - 1; j >= 0; j--) {
+          const sparkle = comet.sparkles[j];
+          sparkle.x += sparkle.velocityX;
+          sparkle.y += sparkle.velocityY;
+          sparkle.velocityX *= 0.98; // Drag
+          sparkle.velocityY *= 0.98;
+          sparkle.life++;
+          sparkle.opacity *= 0.96; // Fade out
+
+          if (sparkle.life > sparkle.maxLife || sparkle.opacity < 0.01) {
+            comet.sparkles.splice(j, 1);
+          }
+        }
+
+        // Remove comet if it's lived its full life
+        if (comet.life > comet.maxLife) {
+          comets.splice(i, 1);
+        }
+      }
+    };
+
+    // Draw a 5-point star
+    const draw5PointStar = (x, y, size, rotation, opacity, brightness) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+
+      const outerRadius = size;
+      const innerRadius = size * 0.4;
+
+      // Create star path
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const angle = (i * Math.PI) / 5;
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const pointX = Math.cos(angle) * radius;
+        const pointY = Math.sin(angle) * radius;
+
+        if (i === 0) {
+          ctx.moveTo(pointX, pointY);
+        } else {
+          ctx.lineTo(pointX, pointY);
+        }
+      }
+      ctx.closePath();
+
+      // Gold gradient fill
+      const starGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, outerRadius);
+      starGradient.addColorStop(0, `rgba(255, 255, 200, ${opacity * brightness})`);
+      starGradient.addColorStop(0.3, `rgba(255, 215, 100, ${opacity * brightness * 0.9})`);
+      starGradient.addColorStop(0.7, `rgba(255, 180, 50, ${opacity * brightness * 0.8})`);
+      starGradient.addColorStop(1, `rgba(200, 140, 30, ${opacity * brightness * 0.6})`);
+
+      ctx.fillStyle = starGradient;
+      ctx.fill();
+
+      // Gold outline
+      ctx.strokeStyle = `rgba(255, 215, 100, ${opacity * brightness})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
+    };
+
+    // Draw comets with professional sparkle effects
+    const drawComets = () => {
+      const comets = cometsRef.current;
+      const colors = getThemeColors();
+
+      if (!colors.isDark) return; // Only show comets in dark mode
+
+      comets.forEach(comet => {
+        // Update rotation for spinning effect
+        comet.rotation += comet.rotationSpeed;
+
+        // Draw multiple glow layers behind the star
+        const glowLayers = [
+          { radius: comet.size * 4, opacity: 0.15, color: [255, 215, 100] },
+          { radius: comet.size * 2.5, opacity: 0.25, color: [255, 235, 150] },
+          { radius: comet.size * 1.5, opacity: 0.4, color: [255, 245, 200] }
+        ];
+
+        glowLayers.forEach(layer => {
+          const glowGradient = ctx.createRadialGradient(
+            comet.x, comet.y, 0,
+            comet.x, comet.y, layer.radius
+          );
+          glowGradient.addColorStop(0, `rgba(${layer.color.join(',')}, ${layer.opacity * comet.opacity * comet.glowIntensity})`);
+          glowGradient.addColorStop(0.6, `rgba(${layer.color.join(',')}, ${layer.opacity * comet.opacity * comet.glowIntensity * 0.3})`);
+          glowGradient.addColorStop(1, `rgba(${layer.color.join(',')}, 0)`);
+
+          ctx.fillStyle = glowGradient;
+          ctx.beginPath();
+          ctx.arc(comet.x, comet.y, layer.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Draw the spinning gold 5-point star
+        draw5PointStar(comet.x, comet.y, comet.size, comet.rotation, comet.opacity, comet.brightness);
+
+        // Draw sparkles around comet
+        comet.sparkles.forEach(sparkle => {
+          ctx.save();
+
+          // Sparkle glow
+          const sparkleGlow = ctx.createRadialGradient(
+            sparkle.x, sparkle.y, 0,
+            sparkle.x, sparkle.y, sparkle.size * 3
+          );
+          sparkleGlow.addColorStop(0, `rgba(255, 255, 255, ${sparkle.opacity * 0.8})`);
+          sparkleGlow.addColorStop(0.5, `rgba(200, 240, 255, ${sparkle.opacity * 0.4})`);
+          sparkleGlow.addColorStop(1, `rgba(120, 200, 255, 0)`);
+
+          ctx.fillStyle = sparkleGlow;
+          ctx.beginPath();
+          ctx.arc(sparkle.x, sparkle.y, sparkle.size * 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Sparkle core
+          ctx.fillStyle = `rgba(255, 255, 255, ${sparkle.opacity})`;
+          ctx.beginPath();
+          ctx.arc(sparkle.x, sparkle.y, sparkle.size, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        });
+      });
+    };
+
+    // Apply gravity effects from comets to stars
+    const applyCometGravity = (particles) => {
+      const comets = cometsRef.current;
+
+      comets.forEach(comet => {
+        particles.forEach(particle => {
+          const dx = comet.x - particle.x;
+          const dy = comet.y - particle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < comet.gravityRadius && distance > 0) {
+            const force = (comet.gravityRadius - distance) / comet.gravityRadius;
+            const pullStrength = force * comet.gravityStrength * 0.02;
+
+            // Add velocity toward comet (realistic physics)
+            particle.velocityX += (dx / distance) * pullStrength;
+            particle.velocityY += (dy / distance) * pullStrength;
+
+            // Add some orbital velocity for swirl effect
+            const perpX = -dy / distance;
+            const perpY = dx / distance;
+            particle.velocityX += perpX * pullStrength * 0.5;
+            particle.velocityY += perpY * pullStrength * 0.5;
+          }
+        });
+      });
+    };
+
     // Set canvas dimensions with proper pixel density
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect();
@@ -116,8 +370,8 @@ const OnboardingStarryBackground = () => {
         for (let i = 0; i < particles.length; i++) {
           if (visited.has(i)) continue;
 
-          const dx = particles[current].anchorX - particles[i].anchorX;
-          const dy = particles[current].anchorY - particles[i].anchorY;
+          const dx = particles[current].x - particles[i].x;
+          const dy = particles[current].y - particles[i].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < nearestDistance) {
@@ -152,8 +406,8 @@ const OnboardingStarryBackground = () => {
         const fromIndex = tspPath[i];
         const toIndex = tspPath[i + 1];
 
-        const dx = particles[fromIndex].anchorX - particles[toIndex].anchorX;
-        const dy = particles[fromIndex].anchorY - particles[toIndex].anchorY;
+        const dx = particles[fromIndex].x - particles[toIndex].x;
+        const dy = particles[fromIndex].y - particles[toIndex].y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Only connect if distance is reasonable (avoid very long lines)
@@ -265,35 +519,44 @@ const OnboardingStarryBackground = () => {
         const rotation = 0;
         const opacity = 0.5 + Math.random() * 0.4; // 0.5-0.9 opacity - more vibrant
 
+        // Galaxy flow properties
+        const centerX = cssWidth / 2;
+        const centerY = cssHeight / 2;
+        const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+        const angleFromCenter = Math.atan2(y - centerY, x - centerX);
+
         particles.push({
           x,
           y,
-          anchorX,
-          anchorY,
           size,
           isFilled,
           rotation,
           opacity,
           pulsePhase: Math.random() * Math.PI * 2,
-          pulseSpeed: 0.015 + Math.random() * 0.012, // Faster pulsing
-          driftPhaseX: Math.random() * Math.PI * 2,
-          driftPhaseY: Math.random() * Math.PI * 2,
-          driftSpeedX: 0.003 + Math.random() * 0.005, // Much faster drift
-          driftSpeedY: 0.003 + Math.random() * 0.005, // Much faster drift
-          driftAmplitudeX: 8 + Math.random() * 15, // Larger movement range
-          driftAmplitudeY: 8 + Math.random() * 15, // Larger movement range
-          orbitPhase: Math.random() * Math.PI * 2,
-          orbitSpeed: 0.002 + Math.random() * 0.004, // Faster orbital movement
-          orbitRadius: 5 + Math.random() * 12, // Larger orbital radius
+          pulseSpeed: 0.015 + Math.random() * 0.012,
           breathePhase: Math.random() * Math.PI * 2,
-          breatheSpeed: 0.006 + Math.random() * 0.008, // Faster breathing
-          breatheAmplitude: 0.12 + Math.random() * 0.20, // More dramatic size changes
-          isTwinkler: Math.random() < 0.25, // More twinkling stars
+          breatheSpeed: 0.006 + Math.random() * 0.008,
+          breatheAmplitude: 0.12 + Math.random() * 0.20,
+          isTwinkler: Math.random() < 0.25,
           twinklePhase: Math.random() * Math.PI * 2,
-          twinkleSpeed: 0.005 + Math.random() * 0.008, // Faster twinkling
-          twinkleIntensity: 0.08 + Math.random() * 0.15, // More dramatic rotation
+          twinkleSpeed: 0.005 + Math.random() * 0.008,
+          twinkleIntensity: 0.08 + Math.random() * 0.15,
           starTemp: Math.random(),
-          colorIntensity: 1.0 + Math.random() * 0.5 // Higher intensity for visibility
+          colorIntensity: 1.0 + Math.random() * 0.5,
+          // Galaxy flow properties
+          galaxyAngle: angleFromCenter,
+          galaxyRadius: distanceFromCenter,
+          galaxySpeed: 0.001 + Math.random() * 0.002, // Base rotation speed
+          spiralSpeed: 0.0005 + Math.random() * 0.001, // Spiral inward/outward speed
+          spiralDirection: Math.random() > 0.5 ? 1 : -1, // Some spiral in, some out
+          // Realistic physics properties
+          velocityX: 0, // Current velocity from external forces
+          velocityY: 0,
+          dragCoefficient: 0.98, // Slight drag to prevent infinite acceleration
+          // Add some randomness to make it more organic
+          turbulence: Math.random() * 0.5 + 0.2,
+          turbulencePhase: Math.random() * Math.PI * 2,
+          turbulenceSpeed: 0.002 + Math.random() * 0.003
         });
       }
 
@@ -372,55 +635,99 @@ const OnboardingStarryBackground = () => {
         return;
       }
 
+      const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
+      const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
+
+      // Get canvas dimensions for comet management
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = rect.width;
+      const cssHeight = rect.height;
+
+      // Manage comets
+      manageComets(cssWidth, cssHeight);
+
       particles.forEach(particle => {
-        // Update all animation phases
+        // Update animation phases
         particle.pulsePhase += particle.pulseSpeed;
-        particle.driftPhaseX += particle.driftSpeedX;
-        particle.driftPhaseY += particle.driftSpeedY;
-        particle.orbitPhase += particle.orbitSpeed;
         particle.breathePhase += particle.breatheSpeed;
+        particle.turbulencePhase += particle.turbulenceSpeed;
 
         if (particle.isTwinkler) {
           particle.twinklePhase += particle.twinkleSpeed;
           particle.rotation = Math.sin(particle.twinklePhase) * particle.twinkleIntensity;
         }
 
-        // Calculate base position with drift and orbit
-        const driftX = Math.sin(particle.driftPhaseX) * particle.driftAmplitudeX;
-        const driftY = Math.sin(particle.driftPhaseY) * particle.driftAmplitudeY;
-        const orbitX = Math.cos(particle.orbitPhase) * particle.orbitRadius;
-        const orbitY = Math.sin(particle.orbitPhase) * particle.orbitRadius;
+        // Apply drag to velocity for realistic physics
+        particle.velocityX *= particle.dragCoefficient;
+        particle.velocityY *= particle.dragCoefficient;
 
-        let targetX = particle.anchorX + driftX + orbitX;
-        let targetY = particle.anchorY + driftY + orbitY;
+        // Galaxy flow movement - much gentler pull toward ideal position
+        particle.galaxyAngle += particle.galaxySpeed;
+        particle.galaxyRadius += particle.spiralSpeed * particle.spiralDirection;
 
-        // Cursor interaction - push particles away
+        // Add turbulence for organic movement
+        const turbulenceX = Math.sin(particle.turbulencePhase) * particle.turbulence;
+        const turbulenceY = Math.cos(particle.turbulencePhase * 1.3) * particle.turbulence;
+
+        // Calculate ideal galaxy position
+        const idealX = centerX + Math.cos(particle.galaxyAngle) * particle.galaxyRadius;
+        const idealY = centerY + Math.sin(particle.galaxyAngle) * particle.galaxyRadius;
+
+        // Very gentle pull toward ideal position (much weaker than before)
+        const pullToIdealX = (idealX + turbulenceX - particle.x) * 0.005; // Much weaker pull
+        const pullToIdealY = (idealY + turbulenceY - particle.y) * 0.005;
+
+        particle.velocityX += pullToIdealX;
+        particle.velocityY += pullToIdealY;
+
+        // Keep stars within reasonable bounds but allow smooth flow
+        const rect = canvas.getBoundingClientRect();
+        const cssWidth = rect.width;
+        const cssHeight = rect.height;
+        const maxRadius = Math.max(cssWidth, cssHeight) * 0.8;
+
+        // If star gets too far from center, gently guide it back
+        if (particle.galaxyRadius > maxRadius) {
+          particle.spiralDirection = -1; // Force inward spiral
+          particle.spiralSpeed = Math.abs(particle.spiralSpeed) * 1.5; // Speed up return
+        } else if (particle.galaxyRadius < 50) {
+          particle.spiralDirection = 1; // Force outward spiral
+          particle.spiralSpeed = Math.abs(particle.spiralSpeed) * 1.5; // Speed up expansion
+        }
+
+        // Cursor interaction - add velocity away from cursor
         if (mouse.x !== null && mouse.y !== null) {
-          const dx = targetX - mouse.x;
-          const dy = targetY - mouse.y;
+          const dx = particle.x - mouse.x;
+          const dy = particle.y - mouse.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < mouse.radius) {
+          if (distance < mouse.radius && distance > 0) {
             const force = (mouse.radius - distance) / mouse.radius;
-            const pushStrength = mouse.isClicked ? 25 : 15;
+            const pushStrength = mouse.isClicked ? 0.8 : 0.4;
             const pushX = (dx / distance) * force * pushStrength;
             const pushY = (dy / distance) * force * pushStrength;
 
-            targetX += pushX;
-            targetY += pushY;
+            particle.velocityX += pushX;
+            particle.velocityY += pushY;
           }
         }
 
-        // Smooth movement towards target
-        particle.x += (targetX - particle.x) * 0.1;
-        particle.y += (targetY - particle.y) * 0.1;
-
-        // Update pulse effect
-        particle.pulsePhase += particle.pulseSpeed;
+        // Apply velocity to position (realistic physics)
+        particle.x += particle.velocityX;
+        particle.y += particle.velocityY;
       });
+
+      // Apply comet gravity effects to stars
+      applyCometGravity(particles);
+
+      // Update connections dynamically based on current positions
+      updateConnections();
 
       // Draw connections first (behind particles)
       drawConnections();
+
+      // Draw comets with sparkle effects (above connections, below stars)
+      drawComets();
 
       // Draw all particles
       particles.forEach(particle => {

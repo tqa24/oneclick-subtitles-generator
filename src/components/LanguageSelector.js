@@ -27,6 +27,25 @@ const LanguageSelector = ({ isDropup = false }) => {
   // Find the currently selected language
   const currentLanguage = languages.find(lang => lang.code === selectedLanguage) || languages[0];
 
+  // Globe icon variants for different languages
+  const getGlobeIcon = (languageCode) => {
+    if (languageCode === 'en') {
+      // English globe icon
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+          <path d="M480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-40-82v-78q-33 0-56.5-23.5T360-320v-40L168-552q-3 18-5.5 36t-2.5 36q0 121 79.5 212T440-162Zm276-102q41-45 62.5-100.5T800-480q0-98-54.5-179T600-776v16q0 33-23.5 56.5T520-680h-80v80q0 17-11.5 28.5T400-560h-80v80h240q17 0 28.5 11.5T600-440v120h40q26 0 47 15.5t29 40.5Z"/>
+        </svg>
+      );
+    } else {
+      // Vietnamese and Korean globe icon (default)
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+          <path d="M472-159q-33 0-56.5-24T392-240q0-33 23.5-56.5T472-320l24-23q8-8 18.5-12.5T536-360q23 0 39.5 17t16.5 40v17q0 20 13 33t33 13q15 0 27-9t17-23l12-33q9-24 29-39.5t46-15.5q11-28 17.5-58t6.5-62q0-89-44.5-162.5T632-758v38q0 33-23.5 56.5T552-640h-40v80q0 17-11.5 28.5T472-520h-40v68q0 22-15 37t-37 15q-14 0-25.5-6T336-423l-64-97h-40v40q0 31-21 53t-50 26q26 104 112.5 173T472-159Zm80-241q-17 0-28.5-11.5T512-440q0-17 11.5-28.5T552-480h40q17 0 28.5 11.5T632-440q0 17-11.5 28.5T592-400h-40Zm93-120q-20 0-31.5-15.5T608-570l15-44q4-12 14-19t22-7q20 0 31.5 15.5T696-590l-15 44q-4 12-14 19t-22 7ZM472-80q-83 0-156-31.5T189-197q-54-54-85.5-127T72-480q0-83 31.5-156T189-763q54-54 127-85.5T472-880q83 0 156 31.5T755-763q54 54 85.5 127T872-480q0 83-31.5 156T755-197q-54 54-127 85.5T472-80Z"/>
+        </svg>
+      );
+    }
+  };
+
   // Function to change the language
   const changeLanguage = (code) => {
     i18n.changeLanguage(code);
@@ -340,7 +359,9 @@ const LanguageSelector = ({ isDropup = false }) => {
         aria-label={t('language.languageSelector')}
       >
         <div className="language-globe">
-          <span className="language-globe-icon">🌐</span>
+          <span className="language-globe-icon">
+            {getGlobeIcon(currentLanguage.code)}
+          </span>
           <span className="language-current-flag">{currentLanguage.flag}</span>
         </div>
         <span className="language-current-name">{currentLanguage.name}</span>
