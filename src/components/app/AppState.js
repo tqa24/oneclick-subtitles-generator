@@ -31,11 +31,11 @@ export const useAppState = () => {
   // Video processing state
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
-  // Video optimization is now always enabled - force to true and ensure localStorage is set
+  // Video optimization setting - default to false (no optimization)
   const [optimizeVideos, setOptimizeVideos] = useState(() => {
-    // Always set to true and ensure localStorage reflects this
-    localStorage.setItem('optimize_videos', 'true');
-    return true;
+    const saved = localStorage.getItem('optimize_videos');
+    // Default to false if not set (no optimization by default)
+    return saved === 'true';
   });
   const [optimizedResolution, setOptimizedResolution] = useState(localStorage.getItem('optimized_resolution') || '360p');
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') === 'true');

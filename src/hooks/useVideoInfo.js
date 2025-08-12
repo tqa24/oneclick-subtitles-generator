@@ -29,14 +29,16 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       // Priority 1: Check if we have a selectedVideo (downloaded video) - this is the original source
       if (selectedVideo) {
+        // Check if optimization is enabled
+        const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
         // Use actual dimensions if available, otherwise fall back to localStorage
         const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
         info = {
           source: selectedVideo.source, // This preserves the original source (youtube, douyin, all-sites)
           title: selectedVideo.title,
-          quality: currentQuality,
-          isOptimized: true, // Downloaded videos use optimized quality by default
+          quality: optimizeVideos ? currentQuality : 'Original',
+          isOptimized: optimizeVideos, // Only optimized if optimization is enabled
           url: selectedVideo.url, // Original URL for redownloading
           id: selectedVideo.id
         };
@@ -116,14 +118,16 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             }
           }
 
+          // Check if optimization is enabled
+          const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
           // Use actual dimensions if available, otherwise fall back to localStorage
           const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
           info = {
             source,
             title,
-            quality: currentQuality,
-            isOptimized: true, // Downloaded videos are optimized by default
+            quality: optimizeVideos ? currentQuality : 'Original',
+            isOptimized: optimizeVideos, // Only optimized if optimization is enabled
             url: storedVideoUrl || null // Original URL for redownloading (may be null)
           };
 
@@ -209,14 +213,16 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             }
           }
 
+          // Check if optimization is enabled
+          const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
           // Use actual dimensions if available, otherwise fall back to localStorage
           const currentQuality = actualDimensions?.quality || localStorage.getItem('optimized_resolution') || '360p';
 
           info = {
             source,
             title,
-            quality: currentQuality,
-            isOptimized: true, // Downloaded videos are optimized by default
+            quality: optimizeVideos ? currentQuality : 'Original',
+            isOptimized: optimizeVideos, // Only optimized if optimization is enabled
             url: storedVideoUrl // Original URL for redownloading
           };
 

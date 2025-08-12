@@ -134,7 +134,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Gemini 2.0 Flash
   const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
   const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
-  const [optimizeVideos, setOptimizeVideos] = useState(true); // Default to optimizing videos
+  const [optimizeVideos, setOptimizeVideos] = useState(false); // Default to no optimization
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
@@ -209,7 +209,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     videoAnalysisModel: 'gemini-2.0-flash',
     videoAnalysisTimeout: '20',
     autoSelectDefaultPreset: false,
-    optimizeVideos: true,
+    optimizeVideos: false,
     optimizedResolution: '360p',
     useOptimizedPreview: false,
     thinkingBudgets: {
@@ -265,7 +265,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
-      const savedOptimizeVideos = true; // Video optimization is now always enabled
+      const savedOptimizeVideos = localStorage.getItem('optimize_videos') === 'true'; // Default to false if not set
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
@@ -479,8 +479,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
     localStorage.setItem('auto_select_default_preset', autoSelectDefaultPreset.toString());
-    // Video optimization is now always enabled - no need to save this setting
-    localStorage.setItem('optimize_videos', 'true');
+    // Save the user's video optimization preference
+    localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
     localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());

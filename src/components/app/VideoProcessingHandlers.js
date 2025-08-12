@@ -63,6 +63,7 @@ export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegm
     }
 
     // Get video optimization settings from localStorage
+    const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
     const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
     // Set status to loading

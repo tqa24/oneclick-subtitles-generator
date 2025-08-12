@@ -41,11 +41,15 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
   const { userProvidedSubtitles } = options;
   const isAudio = mediaFile.type.startsWith('audio/');
 
-  // Video optimization is now always enabled
+  // Check if video optimization is enabled
+  const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
   const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
-  // Always optimize videos and convert audio files to video first
-  if (isAudio || !isAudio) {
+  let processedFile = mediaFile;
+  let analysisFile = mediaFile;
+
+  // Optimize videos and convert audio files to video if optimization is enabled
+  if (optimizeVideos || isAudio) {
     onStatusUpdate({
       message: isAudio
         ? t('output.processingAudio', 'Processing audio file...')
@@ -54,8 +58,10 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
     });
 
     try {
-      // Optimize the video
-      const { optimizedFile, analysisFile } = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
+      // Optimize the video (or convert audio to video)
+      const optimizationResult = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
+      processedFile = optimizationResult.optimizedFile;
+      analysisFile = optimizationResult.analysisFile;
 
       // Check if we should skip analysis
       // Skip analysis if user-provided subtitles are present OR if video analysis is disabled
@@ -78,21 +84,22 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
           });
         }
 
-        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
+        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
       }
 
       try {
         // Analyze the video and wait for user choice
         await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
 
-        // Use the optimized file for processing
+        // Use the processed file for processing
         onStatusUpdate({
-          message: t('output.processingOptimizedVideo', 'Processing optimized video...'),
+          message: optimizeVideos
+            ? t('output.processingOptimizedVideo', 'Processing optimized video...')
+            : t('output.processingVideo', 'Processing video...'),
           type: 'loading'
         });
 
-
-        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
+        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
       } catch (analysisError) {
         console.error('Error analyzing video:', analysisError);
         // Apply default settings when video analysis fails
@@ -103,10 +110,10 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
         });
 
         // Continue with processing without analysis
-        return await callGeminiApi(optimizedFile, 'file-upload', { userProvidedSubtitles });
+        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
       }
     } catch (error) {
-      console.error('Error optimizing video:', error);
+      console.error('Error processing video:', error);
 
       // Check if this is a Gemini API error - if so, re-throw it instead of treating it as optimization error
       if (error.message && (
@@ -124,19 +131,74 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
         throw error;
       }
 
-      // This is actually a video optimization error
+      // This is actually a video processing error
       onStatusUpdate({
-        message: t('output.optimizationFailed', 'Video optimization failed, using original video.'),
+        message: optimizeVideos
+          ? t('output.optimizationFailed', 'Video optimization failed, using original video.')
+          : t('output.processingFailed', 'Video processing failed, using original video.'),
         type: 'warning'
       });
       // Fall back to using the original file
-
-      return await callGeminiApi(mediaFile, 'file-upload', { userProvidedSubtitles });
+      processedFile = mediaFile;
+      analysisFile = mediaFile;
     }
   } else {
-    // For audio or when optimization is disabled, process directly
+    // No optimization requested for video files
+    onStatusUpdate({
+      message: t('output.processingVideo', 'Processing video...'),
+      type: 'loading'
+    });
+  }
 
-    return await callGeminiApi(mediaFile, 'file-upload', { userProvidedSubtitles });
+  // Check if we should skip analysis for non-optimized videos
+  const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+  const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
+
+  if (skipAnalysis) {
+    // Update status message based on why we're skipping analysis
+    if (userProvidedSubtitles) {
+      onStatusUpdate({
+        message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
+        type: 'loading'
+      });
+    } else {
+      // Apply default settings when video analysis is disabled
+      applyDefaultSettings();
+      onStatusUpdate({
+        message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
+        type: 'loading'
+      });
+    }
+
+    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
+  }
+
+  try {
+    // Analyze the video and wait for user choice (only if optimization was done or it's an audio file)
+    if (optimizeVideos || isAudio) {
+      await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
+    }
+
+    // Use the processed file for processing
+    onStatusUpdate({
+      message: optimizeVideos
+        ? t('output.processingOptimizedVideo', 'Processing optimized video...')
+        : t('output.processingVideo', 'Processing video...'),
+      type: 'loading'
+    });
+
+    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
+  } catch (analysisError) {
+    console.error('Error analyzing video:', analysisError);
+    // Apply default settings when video analysis fails
+    applyDefaultSettings();
+    onStatusUpdate({
+      message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
+      type: 'warning'
+    });
+
+    // Continue with processing without analysis
+    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
   }
 };
 
@@ -218,14 +280,16 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
       type: 'loading'
     });
 
-    // Video optimization is now always enabled
+    // Check if video optimization is enabled
+    const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
     const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
 
-    // For videos and audio files, optimize and analyze before splitting
-    let optimizedFile = mediaFile;
+    // For videos and audio files, optimize and analyze before splitting if optimization is enabled
+    let processedFile = mediaFile;
+    let analysisFile = mediaFile;
 
-    // Always process audio files and videos through the optimize-video endpoint
-    if (isAudio || !isAudio) {
+    // Process audio files and videos through the optimize-video endpoint if optimization is enabled
+    if (optimizeVideos || isAudio) {
       try {
         // First optimize the video or process audio
         onStatusUpdate({
@@ -237,8 +301,8 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
 
         // Optimize the video
         const optimizationResult = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
-        optimizedFile = optimizationResult.optimizedFile;
-        const analysisFile = optimizationResult.analysisFile;
+        processedFile = optimizationResult.optimizedFile;
+        analysisFile = optimizationResult.analysisFile;
 
         // Check if video analysis is enabled in settings
         // For audio files, we always want to analyze the converted video
@@ -272,21 +336,28 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
           }
         }
       } catch (error) {
-        console.error('Error optimizing or analyzing video:', error);
+        console.error('Error processing or analyzing video:', error);
         // Apply default settings when video analysis fails
         applyDefaultSettings();
         onStatusUpdate({
           message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
           type: 'warning'
         });
-        // Continue with the original file if optimization fails
-        optimizedFile = mediaFile;
+        // Continue with the original file if processing fails
+        processedFile = mediaFile;
+        analysisFile = mediaFile;
       }
+    } else {
+      // No optimization requested for video files
+      onStatusUpdate({
+        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+        type: 'loading'
+      });
     }
 
     // Upload the media to the server and split it into segments
     const splitResult = await splitVideoOnServer(
-      optimizedFile, // Use the optimized file if available
+      processedFile, // Use the processed file (optimized if optimization was enabled)
       getMaxSegmentDurationSeconds(),
       (progress, message) => {
         onStatusUpdate({

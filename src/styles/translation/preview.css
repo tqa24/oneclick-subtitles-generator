@@ -193,7 +193,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 0 !important; /* Override any external margin */
+}
+
+/* Override margin only in translation preview context */
+.translation-preview .segment-indicator {
+  margin-right: 0 !important;
 }
 
 .segment-line {

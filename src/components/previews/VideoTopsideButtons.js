@@ -461,8 +461,8 @@ const VideoTopsideButtons = ({
             </LiquidGlass>
           )}
 
-          {/* Gemini FPS Info button - only show when custom controls are available */}
-          {showCustomControls && (
+          {/* Gemini FPS Info button - only show when custom controls are available and optimization is enabled */}
+          {showCustomControls && localStorage.getItem('optimize_videos') === 'true' && (
             <LiquidGlass
               width="auto"
               height={50}

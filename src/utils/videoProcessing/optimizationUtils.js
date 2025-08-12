@@ -15,6 +15,19 @@ import { SERVER_URL } from '../../config';
 export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpdate, t) => {
   if (!mediaFile) throw new Error('No media file provided');
 
+  // Check if video optimization is enabled and if this is a video file
+  const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
+  const isAudio = mediaFile.type.startsWith('audio/');
+
+  // If optimization is disabled and this is a video file (not audio), return the original file
+  if (!optimizeVideos && !isAudio) {
+    console.log('[OPTIMIZE-VIDEO] Video optimization disabled, returning original file');
+    return {
+      optimizedFile: mediaFile,
+      analysisFile: mediaFile
+    };
+  }
+
   // Check if video analysis is enabled
   const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
 

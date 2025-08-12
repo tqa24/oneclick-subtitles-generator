@@ -178,9 +178,9 @@ export const useAppEffects = (props) => {
       }
 
       if (event.key === 'optimize_videos' || !event.key) {
-        // Video optimization is now always enabled - force to true
-        localStorage.setItem('optimize_videos', 'true');
-        setOptimizeVideos(true);
+        // Read the user's optimization setting from localStorage
+        const newOptimizeVideos = localStorage.getItem('optimize_videos') === 'true';
+        setOptimizeVideos(newOptimizeVideos);
       }
 
       if (event.key === 'optimized_resolution' || !event.key) {
