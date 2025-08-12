@@ -10,6 +10,7 @@ const OnboardingStarryBackground = () => {
   const particlesRef = useRef([]);
   const connectionsRef = useRef([]);
   const cometsRef = useRef([]);
+  const windCurrentsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 120, isClicked: false });
 
   // Generate vibrant star colors - blue for dark, yellow/orange for light
@@ -191,6 +192,139 @@ const OnboardingStarryBackground = () => {
           comets.splice(i, 1);
         }
       }
+    };
+
+    // Create a wind current for light mode
+    const createWindCurrent = (cssWidth, cssHeight) => {
+      const side = Math.floor(Math.random() * 2); // 0=left, 1=right (horizontal winds)
+      let startX, startY, endX, endY;
+
+      if (side === 0) {
+        // Wind from left
+        startX = -100;
+        startY = Math.random() * cssHeight;
+        endX = cssWidth + 100;
+        endY = startY + (Math.random() - 0.5) * cssHeight * 0.3; // Slight curve
+      } else {
+        // Wind from right
+        startX = cssWidth + 100;
+        startY = Math.random() * cssHeight;
+        endX = -100;
+        endY = startY + (Math.random() - 0.5) * cssHeight * 0.3; // Slight curve
+      }
+
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const speed = 1 + Math.random() * 2; // Gentle wind speed
+
+      return {
+        x: startX,
+        y: startY,
+        velocityX: (dx / distance) * speed,
+        velocityY: (dy / distance) * speed,
+        width: 150 + Math.random() * 200, // 150-350px width - reasonable wind current size
+        height: 80 + Math.random() * 120, // 80-200px height - moderate area
+        opacity: 0.1 + Math.random() * 0.15, // Subtle visibility
+        strength: 5 + Math.random() * 10, // Wind force strength
+        life: 0,
+        maxLife: distance / speed,
+        swayPhase: Math.random() * Math.PI * 2,
+        swaySpeed: 0.02 + Math.random() * 0.03
+      };
+    };
+
+    // Manage wind currents for light mode
+    const manageWindCurrents = (cssWidth, cssHeight) => {
+      const winds = windCurrentsRef.current;
+
+      // Spawn new wind current occasionally (every 4-10 seconds)
+      if (Math.random() < 0.0015) { // Slightly more frequent than comets
+        winds.push(createWindCurrent(cssWidth, cssHeight));
+      }
+
+      // Update existing wind currents
+      for (let i = winds.length - 1; i >= 0; i--) {
+        const wind = winds[i];
+
+        // Update position
+        wind.x += wind.velocityX;
+        wind.y += wind.velocityY;
+        wind.life++;
+        wind.swayPhase += wind.swaySpeed;
+
+        // Remove wind if it's lived its full life
+        if (wind.life > wind.maxLife) {
+          winds.splice(i, 1);
+        }
+      }
+    };
+
+    // Draw wind currents as subtle flowing effects
+    const drawWindCurrents = () => {
+      const winds = windCurrentsRef.current;
+      const colors = getThemeColors();
+
+      if (colors.isDark) return; // Only show wind in light mode
+
+      winds.forEach(wind => {
+        ctx.save();
+
+        // Create flowing wind visualization with wavy lines
+        const waveCount = 3; // Appropriate for moderate size
+        for (let i = 0; i < waveCount; i++) {
+          const offsetY = (i - 1) * wind.height / 4; // Spread across height
+          const waveOpacity = wind.opacity * (0.4 + i * 0.2); // Gradual intensity
+
+          ctx.strokeStyle = `rgba(200, 220, 180, ${waveOpacity})`;
+          ctx.lineWidth = 0.8 + i * 0.3;
+          ctx.setLineDash([6, 12]); // Moderate dashes
+
+          ctx.beginPath();
+          ctx.moveTo(wind.x - wind.width/2, wind.y + offsetY);
+
+          // Create wavy line
+          for (let x = -wind.width/2; x <= wind.width/2; x += 6) {
+            const waveY = Math.sin((x / 25) + wind.swayPhase + i * 0.3) * 8;
+            ctx.lineTo(wind.x + x, wind.y + offsetY + waveY);
+          }
+
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+    };
+
+    // Apply wind effects to dandelion seeds
+    const applyWindEffects = (particles) => {
+      const winds = windCurrentsRef.current;
+
+      winds.forEach(wind => {
+        particles.forEach(particle => {
+          const dx = particle.x - wind.x;
+          const dy = particle.y - wind.y;
+
+          // Check if particle is within wind current area
+          if (Math.abs(dx) < wind.width/2 && Math.abs(dy) < wind.height/2) {
+            const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = Math.sqrt((wind.width/2) ** 2 + (wind.height/2) ** 2);
+
+            if (distanceFromCenter < maxDistance) {
+              const force = (maxDistance - distanceFromCenter) / maxDistance;
+              const windStrength = force * wind.strength * 0.05;
+
+              // Apply wind velocity to particle
+              particle.velocityX += wind.velocityX * windStrength;
+              particle.velocityY += wind.velocityY * windStrength;
+
+              // Add some turbulence
+              particle.velocityX += (Math.random() - 0.5) * windStrength * 0.5;
+              particle.velocityY += (Math.random() - 0.5) * windStrength * 0.5;
+            }
+          }
+        });
+      });
     };
 
     // Draw a 5-point star
@@ -424,14 +558,11 @@ const OnboardingStarryBackground = () => {
       connectionsRef.current = connections;
     };
 
-    // Draw connections between stars (only in dark mode)
+    // Draw connections between particles (stars in dark mode, network nodes in light mode)
     const drawConnections = () => {
       const connections = connectionsRef.current;
       const particles = particlesRef.current;
       const colors = getThemeColors();
-
-      // Only draw connections in dark mode
-      if (!colors.isDark) return;
 
       connections.forEach(connection => {
         const p1 = particles[connection.from];
@@ -465,17 +596,19 @@ const OnboardingStarryBackground = () => {
         const lineDistance = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
         if (lineDistance < gap) return;
 
-        // Draw connection line with theme-appropriate colors
+        // Draw connection line with theme-appropriate colors and styles
         ctx.save();
         if (colors.isDark) {
-          // Dark theme: Bright blue connections
+          // Dark theme: Bright blue dashed connections (starry sky)
           ctx.strokeStyle = `rgba(100, 150, 255, ${connection.opacity})`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 6]); // Dashed for mystical starry effect
         } else {
-          // Light theme: Warm orange/yellow connections
-          ctx.strokeStyle = `rgba(255, 140, 60, ${connection.opacity})`;
+          // Light theme: Delicate silk thread connections between dandelion seeds
+          ctx.strokeStyle = `rgba(180, 200, 160, ${connection.opacity * 0.4})`;
+          ctx.lineWidth = 0.8;
+          ctx.setLineDash([]); // Solid but very thin silk threads
         }
-        ctx.lineWidth = 1.5; // Thicker lines for better visibility
-        ctx.setLineDash([3, 6]); // More visible dashed pattern
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
@@ -494,13 +627,8 @@ const OnboardingStarryBackground = () => {
         return;
       }
 
-      // Check theme - only show stars in dark mode
+      // Create particles for both themes
       const colors = getThemeColors();
-      if (!colors.isDark) {
-        particles = [];
-        particlesRef.current = particles;
-        return; // No stars in light mode
-      }
 
       // Fewer groups of stars
       const particleCount = Math.max(6, Math.floor((cssWidth * cssHeight) / 25000));
@@ -517,7 +645,7 @@ const OnboardingStarryBackground = () => {
         const y = anchorY;
         const isFilled = Math.random() > 0.15; // 85% chance of filled icons - fewer blanks
         const rotation = 0;
-        const opacity = 0.5 + Math.random() * 0.4; // 0.5-0.9 opacity - more vibrant
+        const opacity = 0.3 + Math.random() * 0.7; // 0.3-1.0 opacity - full variety including 100%
 
         // Galaxy flow properties
         const centerX = cssWidth / 2;
@@ -563,59 +691,119 @@ const OnboardingStarryBackground = () => {
       particlesRef.current = particles;
     };
 
-    // Draw a single Gemini icon
-    const drawGeminiIcon = (x, y, size, rotation, isFilled, opacity, particle) => {
+    // Draw particle based on theme (star in dark mode, network node in light mode)
+    const drawParticle = (x, y, size, rotation, isFilled, opacity, particle) => {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(rotation);
 
       const colors = getThemeColors();
-      const starColor = getStarColor(particle.starTemp, particle.colorIntensity, colors.isDark);
 
-      // Add subtle glow for filled stars (only in dark mode)
-      if (isFilled && opacity > 0.4 && colors.isDark) {
-        const glowPulse = 0.6 + 0.2 * Math.sin(particle.pulsePhase * 0.6);
-        const subtleGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
-        subtleGlow.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.2 * glowPulse})`);
-        subtleGlow.addColorStop(0.4, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.12 * glowPulse})`);
-        subtleGlow.addColorStop(0.7, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.08 * glowPulse})`);
-        subtleGlow.addColorStop(1, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, 0)`);
+      if (colors.isDark) {
+        // Dark mode: Draw Gemini star
+        const starColor = getStarColor(particle.starTemp, particle.colorIntensity, colors.isDark);
 
-        ctx.fillStyle = subtleGlow;
+        // Add subtle glow for filled stars
+        if (isFilled && opacity > 0.4) {
+          const glowPulse = 0.6 + 0.2 * Math.sin(particle.pulsePhase * 0.6);
+          const subtleGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
+          subtleGlow.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.2 * glowPulse})`);
+          subtleGlow.addColorStop(0.4, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.12 * glowPulse})`);
+          subtleGlow.addColorStop(0.7, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.08 * glowPulse})`);
+          subtleGlow.addColorStop(1, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, 0)`);
+
+          ctx.fillStyle = subtleGlow;
+          ctx.beginPath();
+          ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Draw the star shape
         ctx.beginPath();
-        ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
+        const path = "M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z";
 
-      // Draw the star shape
-      ctx.beginPath();
-      const path = "M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z";
-      
-      // Scale and center the path
-      const scale = size / 28;
-      ctx.scale(scale, scale);
-      ctx.translate(-14, -14);
-      
-      const path2D = new Path2D(path);
-      
-      if (isFilled) {
-        const gradient = ctx.createLinearGradient(-14, -14, 14, 14);
-        const baseOpacity = opacity * starColor.intensity;
-        gradient.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${baseOpacity * 1.3})`);
-        gradient.addColorStop(0.5, `rgba(${Math.max(0, starColor.r - 5)}, ${Math.max(0, starColor.g - 5)}, ${starColor.b}, ${baseOpacity * 1.1})`);
-        gradient.addColorStop(1, `rgba(${Math.max(0, starColor.r - 15)}, ${Math.max(0, starColor.g - 10)}, ${Math.max(0, starColor.b - 5)}, ${baseOpacity * 0.9})`);
+        // Scale and center the path
+        const scale = size / 28;
+        ctx.scale(scale, scale);
+        ctx.translate(-14, -14);
 
-        ctx.fillStyle = gradient;
-        ctx.fill(path2D);
+        const path2D = new Path2D(path);
 
-        // Add bright outline for more visibility
-        ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.8})`;
-        ctx.lineWidth = 1.2;
-        ctx.stroke(path2D);
+        if (isFilled) {
+          const gradient = ctx.createLinearGradient(-14, -14, 14, 14);
+          const baseOpacity = opacity * starColor.intensity;
+          gradient.addColorStop(0, `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${baseOpacity * 1.3})`);
+          gradient.addColorStop(0.5, `rgba(${Math.max(0, starColor.r - 5)}, ${Math.max(0, starColor.g - 5)}, ${starColor.b}, ${baseOpacity * 1.1})`);
+          gradient.addColorStop(1, `rgba(${Math.max(0, starColor.r - 15)}, ${Math.max(0, starColor.g - 10)}, ${Math.max(0, starColor.b - 5)}, ${baseOpacity * 0.9})`);
+
+          ctx.fillStyle = gradient;
+          ctx.fill(path2D);
+
+          // Add bright outline for more visibility
+          ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * 0.8})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke(path2D);
+        } else {
+          ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * starColor.intensity})`;
+          ctx.lineWidth = 1.5; // Thicker outline stars
+          ctx.stroke(path2D);
+        }
       } else {
-        ctx.strokeStyle = `rgba(${starColor.r}, ${starColor.g}, ${starColor.b}, ${opacity * starColor.intensity})`;
-        ctx.lineWidth = 1.5; // Thicker outline stars
-        ctx.stroke(path2D);
+        // Light mode: Draw bright, visible dandelion seeds
+        const seedOpacity = Math.min(1.0, opacity * 1.1); // Use full opacity range, some at 100%
+
+        // Draw delicate seed with wispy fibers
+        ctx.save();
+
+        // Seed center (small bright yellow dot - authentic dandelion color)
+        ctx.fillStyle = `rgba(255, 220, 80, ${seedOpacity})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wispy white fibers radiating from center
+        const fiberCount = 8 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < fiberCount; i++) {
+          const angle = (i / fiberCount) * Math.PI * 2 + rotation;
+          const fiberLength = size * (0.7 + Math.random() * 0.3);
+          const fiberOpacity = seedOpacity * (0.7 + Math.random() * 0.3); // Much more visible
+
+          // Bright white fibers
+          ctx.strokeStyle = `rgba(255, 255, 255, ${fiberOpacity})`;
+          ctx.lineWidth = 1; // Thicker for visibility
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(
+            Math.cos(angle) * fiberLength,
+            Math.sin(angle) * fiberLength
+          );
+          ctx.stroke();
+
+          // Bright white fiber tips
+          ctx.fillStyle = `rgba(255, 255, 255, ${fiberOpacity})`;
+          ctx.beginPath();
+          ctx.arc(
+            Math.cos(angle) * fiberLength,
+            Math.sin(angle) * fiberLength,
+            1, // Larger tips
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+
+        // Add subtle glow around the whole seed
+        const seedGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.2);
+        seedGlow.addColorStop(0, `rgba(255, 255, 255, ${seedOpacity * 0.1})`);
+        seedGlow.addColorStop(0.7, `rgba(250, 250, 250, ${seedOpacity * 0.05})`);
+        seedGlow.addColorStop(1, 'rgba(250, 250, 250, 0)');
+
+        ctx.fillStyle = seedGlow;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       }
 
       ctx.restore();
@@ -629,11 +817,7 @@ const OnboardingStarryBackground = () => {
       const mouse = mouseRef.current;
       const colors = getThemeColors();
 
-      // Only animate in dark mode
-      if (!colors.isDark) {
-        animationFrameId = requestAnimationFrame(animate);
-        return;
-      }
+      // Animate in both themes but with different behaviors
 
       const centerX = canvas.width / (window.devicePixelRatio || 1) / 2;
       const centerY = canvas.height / (window.devicePixelRatio || 1) / 2;
@@ -643,8 +827,12 @@ const OnboardingStarryBackground = () => {
       const cssWidth = rect.width;
       const cssHeight = rect.height;
 
-      // Manage comets
-      manageComets(cssWidth, cssHeight);
+      // Manage environmental effects based on theme
+      if (colors.isDark) {
+        manageComets(cssWidth, cssHeight);
+      } else {
+        manageWindCurrents(cssWidth, cssHeight);
+      }
 
       particles.forEach(particle => {
         // Update animation phases
@@ -673,12 +861,31 @@ const OnboardingStarryBackground = () => {
         const idealX = centerX + Math.cos(particle.galaxyAngle) * particle.galaxyRadius;
         const idealY = centerY + Math.sin(particle.galaxyAngle) * particle.galaxyRadius;
 
-        // Very gentle pull toward ideal position (much weaker than before)
-        const pullToIdealX = (idealX + turbulenceX - particle.x) * 0.005; // Much weaker pull
-        const pullToIdealY = (idealY + turbulenceY - particle.y) * 0.005;
+        // Theme-specific movement behavior
+        if (colors.isDark) {
+          // Dark mode: Galaxy flow with gentle pull toward ideal position
+          const pullToIdealX = (idealX + turbulenceX - particle.x) * 0.005;
+          const pullToIdealY = (idealY + turbulenceY - particle.y) * 0.005;
 
-        particle.velocityX += pullToIdealX;
-        particle.velocityY += pullToIdealY;
+          particle.velocityX += pullToIdealX;
+          particle.velocityY += pullToIdealY;
+        } else {
+          // Light mode: Gentle breeze effect - mostly upward drift with side-to-side sway
+          const breezeStrength = 0.02;
+          const swayStrength = 0.01;
+
+          // Gentle upward breeze
+          particle.velocityY -= breezeStrength * (0.8 + Math.sin(particle.turbulencePhase) * 0.4);
+
+          // Side-to-side sway
+          particle.velocityX += Math.sin(particle.turbulencePhase * 0.7) * swayStrength;
+
+          // Very gentle pull toward center to prevent seeds from drifting too far
+          const centerPullX = (idealX - particle.x) * 0.001;
+          const centerPullY = (idealY - particle.y) * 0.001;
+          particle.velocityX += centerPullX;
+          particle.velocityY += centerPullY;
+        }
 
         // Keep stars within reasonable bounds but allow smooth flow
         const rect = canvas.getBoundingClientRect();
@@ -717,8 +924,12 @@ const OnboardingStarryBackground = () => {
         particle.y += particle.velocityY;
       });
 
-      // Apply comet gravity effects to stars
-      applyCometGravity(particles);
+      // Apply environmental effects based on theme
+      if (colors.isDark) {
+        applyCometGravity(particles);
+      } else {
+        applyWindEffects(particles);
+      }
 
       // Update connections dynamically based on current positions
       updateConnections();
@@ -726,8 +937,12 @@ const OnboardingStarryBackground = () => {
       // Draw connections first (behind particles)
       drawConnections();
 
-      // Draw comets with sparkle effects (above connections, below stars)
-      drawComets();
+      // Draw environmental effects based on theme
+      if (colors.isDark) {
+        drawComets(); // Comets with sparkle effects
+      } else {
+        drawWindCurrents(); // Wind currents for dandelion seeds
+      }
 
       // Draw all particles
       particles.forEach(particle => {
@@ -735,7 +950,7 @@ const OnboardingStarryBackground = () => {
         const breatheMultiplier = 1 + Math.sin(particle.breathePhase) * particle.breatheAmplitude;
         const breathingSize = particle.size * breatheMultiplier;
 
-        drawGeminiIcon(
+        drawParticle(
           particle.x,
           particle.y,
           breathingSize,
