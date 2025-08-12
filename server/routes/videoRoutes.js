@@ -37,7 +37,29 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 * 1024 // 2GB limit
+    fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit
+  }
+});
+
+// Create a separate multer instance for streaming uploads (no file size limit for streaming)
+const streamingStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, VIDEOS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const originalName = file.originalname || 'uploaded-file';
+    const extension = path.extname(originalName);
+    const baseName = path.basename(originalName, extension);
+    const filename = `streaming_upload_${timestamp}_${baseName}${extension}`;
+    cb(null, filename);
+  }
+});
+
+const streamingUpload = multer({
+  storage: streamingStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit
   }
 });
 
@@ -357,23 +379,22 @@ router.post('/split-existing-file', async (req, res) => {
 });
 
 /**
- * POST /api/upload-and-split-video - Upload and split a media file (video or audio)
+ * POST /api/upload-and-split-video - Upload and split a media file (video or audio) using streaming
  */
-router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }), async (req, res) => {
+router.post('/upload-and-split-video', streamingUpload.single('file'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // File is already saved to disk by multer streaming
+    const mediaPath = req.file.path;
+    const filename = req.file.filename;
+
     // Determine if this is a video or audio file based on MIME type
-    const contentType = req.headers['content-type'] || '';
+    const contentType = req.file.mimetype || '';
     const isAudio = contentType.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';
-
-    // Generate a unique filename
-    const timestamp = Date.now();
-    const fileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
-    const filename = `upload_${timestamp}.${fileExtension}`;
-    const mediaPath = path.join(VIDEOS_DIR, filename);
-
-    // Save the uploaded media file
-    fs.writeFileSync(mediaPath, req.body);
 
 
     // Get segment duration from query params or use default (10 minutes)
@@ -447,39 +468,37 @@ router.post('/upload-and-split-video', express.raw({ limit: '2gb', type: '*/*' }
 });
 
 /**
- * POST /api/split-video - Split a media file (video or audio) into segments
+ * POST /api/split-video - Split a media file (video or audio) into segments using streaming
  */
-router.post('/split-video', express.raw({ limit: '2gb', type: '*/*' }), async (req, res) => {
+router.post('/split-video', streamingUpload.single('file'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // File is already saved to disk by multer streaming
+    const mediaPath = req.file.path;
+    const filename = req.file.filename;
+
     // Determine if this is a video or audio file based on MIME type
-    const contentType = req.headers['content-type'] || '';
+    const contentType = req.file.mimetype || '';
     const isAudio = contentType.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';
 
-    // Generate a unique filename for the original media file
+    // Generate a unique mediaId for processing
     let mediaId = req.query.mediaId || req.query.videoId || `${mediaType}_${Date.now()}`;
 
     // Remove any file extension from mediaId to prevent double extensions
     mediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
 
-    // Log the cleaned mediaId
-
-
-    const fileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
-    const filename = `${mediaId}.${fileExtension}`;
-    const mediaPath = path.join(VIDEOS_DIR, filename);
-
     // Check if the file size is reasonable
-    if (req.body.length < 100 * 1024) { // Less than 100KB
-      console.error(`[SPLIT-VIDEO] File is too small (${req.body.length} bytes), likely not a valid ${mediaType}`);
+    if (req.file.size < 100 * 1024) { // Less than 100KB
+      console.error(`[SPLIT-VIDEO] File is too small (${req.file.size} bytes), likely not a valid ${mediaType}`);
       return res.status(400).json({
         success: false,
-        error: `File is too small (${req.body.length} bytes), likely not a valid ${mediaType}`
+        error: `File is too small (${req.file.size} bytes), likely not a valid ${mediaType}`
       });
     }
-
-    // Save the uploaded media file
-    fs.writeFileSync(mediaPath, req.body);
 
 
 
@@ -686,27 +705,29 @@ router.post('/optimize-existing-file', async (req, res) => {
 });
 
 /**
- * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate
+ * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate using streaming
  * Also creates an analysis video with 500 frames for Gemini analysis
  * Automatically converts audio files to video at the start
  */
-router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async (req, res) => {
+router.post('/optimize-video', streamingUpload.single('file'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
     // Get optimization options from query params
     const resolution = req.query.resolution || '360p';
     const fps = parseInt(req.query.fps || '1'); // Default to 1 FPS for Gemini optimization
     const useVideoAnalysis = req.query.useVideoAnalysis !== 'false'; // Default to true if not specified
 
-    // Determine if this is a video or audio file based on MIME type
-    const contentType = req.headers['content-type'] || 'video/mp4';
+    // File is already saved to disk by multer streaming
+    const originalPath = req.file.path;
+    const contentType = req.file.mimetype || 'video/mp4';
     const isAudio = contentType.startsWith('audio/');
     const mediaType = isAudio ? 'audio' : 'video';
 
-    // Generate a unique filename for the original file
+    // Generate a unique timestamp for processed files
     const timestamp = Date.now();
-    const originalFileExtension = contentType.split('/')[1] || (isAudio ? 'mp3' : 'mp4');
-    const originalFilename = `original_${timestamp}.${originalFileExtension}`;
-    const originalPath = path.join(VIDEOS_DIR, originalFilename);
 
     // Always use mp4 for processed files
     const optimizedFilename = `optimized_${timestamp}.mp4`;
@@ -714,8 +735,7 @@ router.post('/optimize-video', express.raw({ limit: '2gb', type: '*/*' }), async
     const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
     const analysisPath = path.join(VIDEOS_DIR, analysisFilename);
 
-    // Save the uploaded file
-    fs.writeFileSync(originalPath, req.body);
+    // File is already saved to disk by multer streaming
 
 
 
@@ -930,25 +950,25 @@ router.post('/extract-audio', async (req, res) => {
 });
 
 /**
- * POST /api/extract-audio-from-blob - Extract audio from a video blob
- * This endpoint accepts the actual video data as a binary file
+ * POST /api/extract-audio-from-blob - Extract audio from a video file using streaming
+ * This endpoint accepts the actual video data as a file upload
  */
-router.post('/extract-audio-from-blob', express.raw({ limit: '500mb', type: '*/*' }), async (req, res) => {
+router.post('/extract-audio-from-blob', streamingUpload.single('file'), async (req, res) => {
   try {
-
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
     // Get filename from query parameter
     const filename = req.query.filename || 'audio';
 
-    // Generate unique filenames for the temporary video and the output audio
-    const timestamp = Date.now();
-    const videoFilename = `temp_video_${timestamp}.mp4`;
-    const audioFilename = `audio_${timestamp}.mp3`;
-    const videoPath = path.join(VIDEOS_DIR, videoFilename);
-    const audioPath = path.join(VIDEOS_DIR, audioFilename);
+    // File is already saved to disk by multer streaming
+    const videoPath = req.file.path;
 
-    // Save the uploaded video data to a temporary file
-    fs.writeFileSync(videoPath, req.body);
+    // Generate unique filename for the output audio
+    const timestamp = Date.now();
+    const audioFilename = `audio_${timestamp}.mp3`;
+    const audioPath = path.join(VIDEOS_DIR, audioFilename);
 
 
     // Use ffmpeg to extract audio
@@ -1080,20 +1100,26 @@ router.get('/converted-audio-exists/:audioHash', (req, res) => {
 });
 
 /**
- * POST /api/convert-audio-to-video - Convert an audio file to a video file
+ * POST /api/convert-audio-to-video - Convert an audio file to a video file using streaming
  */
-router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/*' }), async (req, res) => {
+router.post('/convert-audio-to-video', streamingUpload.single('file'), async (req, res) => {
   try {
-    // Get the content type to determine the audio format
-    const contentType = req.headers['content-type'] || 'audio/mp3';
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-    // Generate a unique filename for the audio file
+    // File is already saved to disk by multer streaming
+    const audioPath = req.file.path;
+    const contentType = req.file.mimetype || 'audio/mp3';
+
+    // Generate a unique filename for the video file
     const timestamp = Date.now();
     const fileExtension = contentType.split('/')[1] || 'mp3';
 
-    // Generate a hash of the audio content for caching purposes
+    // Generate a hash of the audio file for caching purposes
     const crypto = require('crypto');
-    const audioHash = crypto.createHash('md5').update(req.body).digest('hex').substring(0, 10);
+    const audioBuffer = fs.readFileSync(audioPath);
+    const audioHash = crypto.createHash('md5').update(audioBuffer).digest('hex').substring(0, 10);
 
     // Check if we already have a converted file for this audio
     const files = fs.readdirSync(VIDEOS_DIR);
@@ -1126,13 +1152,10 @@ router.post('/convert-audio-to-video', express.raw({ limit: '2gb', type: 'audio/
       }
     }
 
-    const audioFilename = `audio_${timestamp}.${fileExtension}`;
     const videoFilename = `converted_${audioHash}_${timestamp}.mp4`;
-    const audioPath = path.join(VIDEOS_DIR, audioFilename);
     const videoPath = path.join(VIDEOS_DIR, videoFilename);
 
-    // Save the uploaded audio file
-    fs.writeFileSync(audioPath, req.body);
+    // Audio file is already saved to disk by multer streaming at audioPath
 
 
 

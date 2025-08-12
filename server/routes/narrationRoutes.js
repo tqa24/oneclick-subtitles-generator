@@ -19,7 +19,12 @@ const { NARRATION_DIR } = require('../config');
 
 // Set up multer for file uploads
 const REFERENCE_AUDIO_DIR = path.join(NARRATION_DIR, 'reference');
-const upload = multer({ dest: REFERENCE_AUDIO_DIR });
+const upload = multer({
+  dest: REFERENCE_AUDIO_DIR,
+  limits: {
+    fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit
+  }
+});
 
 // Serve narration audio files - use * to capture all path segments
 router.get('/audio/*', (req, res) => {

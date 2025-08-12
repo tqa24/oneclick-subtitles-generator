@@ -13,8 +13,8 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Maximum file size in MB (2GB = 2048MB)
-  const MAX_FILE_SIZE_MB = 2048;
+  // Maximum file size in MB (5GB = 5120MB)
+  const MAX_FILE_SIZE_MB = 5120;
 
   // Supported file formats - wrapped in useMemo to avoid dependency issues
   const SUPPORTED_VIDEO_FORMATS = useMemo(() => [

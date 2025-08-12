@@ -63,7 +63,8 @@ app.use('/api/health', (req, res, next) => {
 });
 
 // Configure JSON body parser with increased limit for base64 encoded files
-app.use(express.json({ limit: '500mb' }));
+// Note: Keep JSON limit lower than file upload limits to prevent memory issues with JSON payloads
+app.use(express.json({ limit: '1gb' }));
 
 // Global download tracking middleware - logs ALL download requests
 app.use((req, res, next) => {
