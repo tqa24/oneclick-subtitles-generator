@@ -10,6 +10,23 @@
   background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   animation: onboarding-fade-in 0.4s var(--md-easing-emphasized) forwards;
+  user-select: none; /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Starry background canvas */
+.onboarding-starry-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Disable pointer events - we'll handle this in JS */
+  z-index: 1; /* Behind the card content */
+  opacity: 1; /* Full opacity for maximum visibility */
+  transition: opacity 0.3s ease;
 }
 
 /* Dismissal animation for overlay */
@@ -33,6 +50,8 @@
   align-items: center;
   justify-content: center;
   animation: onboarding-card-slide-in 0.5s var(--md-easing-emphasized) forwards;
+  position: relative;
+  z-index: 2; /* Above the starry background */
 }
 
 /* Dismissal animation for card */
@@ -58,6 +77,9 @@
   justify-content: center;
   gap: 48px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2; /* Above the starry canvas to ensure buttons are clickable */
+  pointer-events: auto; /* Ensure buttons receive click events */
 }
 
 /* Adjust sizes to align heights */

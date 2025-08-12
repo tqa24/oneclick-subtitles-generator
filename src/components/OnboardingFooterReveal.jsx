@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import SettingsFooterControls from './settings/SettingsFooterControls';
+import OnboardingStarryBackground from './OnboardingStarryBackground';
 import initGeminiButtonEffects from '../utils/geminiEffects';
 import '../styles/OnboardingFooterReveal.css';
 
@@ -50,6 +51,7 @@ const OnboardingFooterReveal = () => {
 
   return (
     <div className={`onboarding-reveal-overlay ${dismissing ? 'dismissing' : ''}`} aria-hidden={false}>
+      <OnboardingStarryBackground />
       <div className={`onboarding-reveal-card ${dismissing ? 'dismissing' : ''}`}>
         <div className="onboarding-reveal-header">{/* empty header keeps layout clean */}</div>
         <div className="onboarding-reveal-body">
