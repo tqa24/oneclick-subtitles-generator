@@ -89,13 +89,13 @@ export const splitVideoOnServer = async (mediaFile, segmentDuration = 600, onPro
 
 
 
-    // Upload the media file
+    // Upload the media file using FormData for streaming
+    const formData = new FormData();
+    formData.append('file', mediaFile);
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': mediaFile.type,
-      },
-      body: mediaFile, // Send the raw file
+      body: formData
     });
 
     if (!response.ok) {

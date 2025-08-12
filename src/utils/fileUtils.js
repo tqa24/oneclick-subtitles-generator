@@ -297,12 +297,12 @@ export const extractAndDownloadAudio = async (videoPath, filename = 'audio') => 
 
         // Create a form for the file upload
         const formData = new FormData();
-        formData.append('video', videoBlob, 'video.mp4');
+        formData.append('file', videoBlob, 'video.mp4');
 
-        // Use fetch with blob to download directly
+        // Use fetch with FormData for streaming upload
         const response = await fetch(`${SERVER_URL}/api/extract-audio-from-blob`, {
           method: 'POST',
-          body: videoBlob,
+          body: formData,
         });
 
         if (!response.ok) {

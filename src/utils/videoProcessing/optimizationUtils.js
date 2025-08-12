@@ -98,13 +98,13 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
     return { optimizedFile, analysisFile };
   }
 
-  // Call the optimize-video endpoint with 1 FPS for Gemini optimization
+  // Call the optimize-video endpoint with 1 FPS for Gemini optimization using FormData for streaming
+  const formData = new FormData();
+  formData.append('file', mediaFile);
+
   const response = await fetch(`${SERVER_URL}/api/optimize-video?resolution=${optimizedResolution}&fps=1&useVideoAnalysis=${useVideoAnalysis}`, {
     method: 'POST',
-    body: mediaFile,
-    headers: {
-      'Content-Type': mediaFile.type
-    }
+    body: formData
   });
 
   if (!response.ok) {

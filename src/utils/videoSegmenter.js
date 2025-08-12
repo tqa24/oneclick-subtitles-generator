@@ -21,13 +21,13 @@ export const uploadAndSplitVideo = async (videoFile, segmentDuration = 600, onPr
     // Create URL with query parameter for segment duration
     const url = `${SERVER_URL}/api/upload-and-split-video?segmentDuration=${segmentDuration}`;
 
-    // Upload the video file
+    // Upload the video file using FormData for streaming
+    const formData = new FormData();
+    formData.append('file', videoFile);
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': videoFile.type,
-      },
-      body: videoFile, // Send the raw file
+      body: formData,
       // Add timeout settings to handle large files
       timeout: 300000, // 5 minutes timeout
     });
