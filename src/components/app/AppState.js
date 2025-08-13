@@ -56,6 +56,12 @@ export const useAppState = () => {
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [videoSegments, setVideoSegments] = useState([]);
 
+  // Video processing workflow state
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState(null);
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const [uploadedFileData, setUploadedFileData] = useState(null);
+
   // Rules editor state
   const [showRulesEditor, setShowRulesEditor] = useState(false);
 
@@ -282,6 +288,12 @@ export const useAppState = () => {
     generateSubtitles,
     retryGeneration,
     retrySegment,
-    retryingSegments
+    retryingSegments,
+
+    // Video processing workflow
+    isUploading, setIsUploading,
+    selectedSegment, setSelectedSegment,
+    showProcessingModal, setShowProcessingModal,
+    uploadedFileData, setUploadedFileData
   };
 };

@@ -12,6 +12,7 @@ import VideoRenderingSection from '../VideoRenderingSection';
 import VideoQualityModal from '../VideoQualityModal';
 import FloatingScrollbar from '../FloatingScrollbar';
 import OnboardingBanner from '../OnboardingBanner';
+import VideoProcessingOptionsModal from '../VideoProcessingOptionsModal';
 import { useVideoInfo } from '../../hooks/useVideoInfo';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
@@ -98,7 +99,12 @@ const AppLayout = ({
     optimizeVideos,
     optimizedResolution,
     retryingSegments,
-    retrySegment
+    retrySegment,
+    // Video processing workflow
+    isUploading,
+    selectedSegment, setSelectedSegment,
+    showProcessingModal, setShowProcessingModal,
+    uploadedFileData
   } = appState;
 
   const {
@@ -108,7 +114,10 @@ const AppLayout = ({
     handleRetryGeneration,
     handleCancelDownload,
     handleTabChange,
-    saveApiKeys
+    saveApiKeys,
+    // New workflow handlers
+    handleSegmentSelect,
+    handleProcessWithOptions
   } = appHandlers;
 
   const {
@@ -341,6 +350,9 @@ const AppLayout = ({
               onGenerateBackground={handleGenerateBackground}
               onRenderVideo={handleRenderVideo}
               onActualVideoUrlChange={setActualVideoUrl}
+              onSegmentSelect={handleSegmentSelect}
+              selectedSegment={selectedSegment}
+              isUploading={isUploading}
             />
           </div>
 
@@ -441,6 +453,21 @@ const AppLayout = ({
           onConfirm={handleVideoQualityConfirm}
           videoInfo={getVideoInfoForModal()?.videoInfo || videoInfo}
           availableVersions={availableVersions}
+        />
+      )}
+
+      {/* Video Processing Options Modal */}
+      {showProcessingModal && (
+        <VideoProcessingOptionsModal
+          isOpen={showProcessingModal}
+          onClose={() => {
+            setShowProcessingModal(false);
+            setSelectedSegment(null);
+          }}
+          onProcess={handleProcessWithOptions}
+          selectedSegment={selectedSegment}
+          videoDuration={uploadedFile?.duration || selectedVideo?.duration || 0}
+          isUploading={isUploading}
         />
       )}
 

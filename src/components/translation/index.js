@@ -262,8 +262,10 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       // Small delay to ensure the DOM is fully rendered
       setTimeout(() => {
         // Set initial height with extra 100px to ensure enough space
-        const contentHeight = contentRef.current.offsetHeight;
-        containerRef.current.style.height = `${contentHeight + 150}px`;
+        if (contentRef.current) {
+          const contentHeight = contentRef.current.offsetHeight;
+          containerRef.current.style.height = `${contentHeight + 150}px`;
+        }
       }, 50);
     }
   }, []);

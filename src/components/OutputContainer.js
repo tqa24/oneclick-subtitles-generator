@@ -34,7 +34,10 @@ const OutputContainer = ({
   onUserSubtitlesAdd,
   onGenerateBackground,
   onRenderVideo,
-  onActualVideoUrlChange
+  onActualVideoUrlChange,
+  onSegmentSelect = null, // Callback for segment selection
+  selectedSegment = null, // Currently selected segment
+  isUploading = false // Whether video is currently uploading
 }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
@@ -226,7 +229,7 @@ const OutputContainer = ({
         )
       )}
 
-      {subtitlesData && (
+      {(subtitlesData || uploadedFile || isUploading || status?.message?.includes('select a segment')) && (
         <>
           <div className="preview-section">
             {/* Check if we should hide sections for URL + SRT without downloaded video */}
@@ -277,9 +280,10 @@ const OutputContainer = ({
               seekTime={seekTime}
               timeFormat={timeFormat}
               videoSource={isSrtOnlyMode ? null : actualVideoUrl}
-              showWaveform={showWaveform}
               translatedSubtitles={translatedSubtitles}
               videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
+              onSegmentSelect={onSegmentSelect}
+              selectedSegment={selectedSegment}
             />
 
             {/* Download buttons moved to LyricsDisplay component */}

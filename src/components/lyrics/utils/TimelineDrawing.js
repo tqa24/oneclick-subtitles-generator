@@ -18,6 +18,7 @@ import { formatTime } from '../../../utils/timeFormatter';
  * @param {number} panOffset - Current pan offset
  * @param {boolean} isActivePanning - Whether the user is actively panning
  * @param {string} timeFormat - Time format to use
+ * @param {Object} segmentData - Segment selection data
  */
 export const drawTimeline = (
   canvas,
@@ -27,9 +28,13 @@ export const drawTimeline = (
   visibleTimeRange,
   panOffset,
   isActivePanning,
-  timeFormat
+  timeFormat,
+  segmentData = null
 ) => {
-  if (!canvas || !duration) return;
+  if (!canvas) return;
+
+  // Use a default duration if none is provided
+  const effectiveDuration = duration || 60;
 
   const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for non-transparent canvas
   const displayWidth = canvas.clientWidth;
@@ -100,6 +105,67 @@ export const drawTimeline = (
     displayHeight,
     primaryColor
   );
+
+  // Draw segment selection overlay
+  if (segmentData) {
+    const { selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime } = segmentData;
+
+    // Draw selected segment
+    if (selectedSegment && !isDraggingSegment) {
+      const startX = timeToX(selectedSegment.start, visibleStart, visibleDuration, displayWidth);
+      const endX = timeToX(selectedSegment.end, visibleStart, visibleDuration, displayWidth);
+
+      if (startX < displayWidth && endX > 0) {
+        // Draw segment background
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // Blue with transparency
+        ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
+
+        // Draw segment borders
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (startX >= 0 && startX <= displayWidth) {
+          ctx.moveTo(startX, 0);
+          ctx.lineTo(startX, displayHeight);
+        }
+        if (endX >= 0 && endX <= displayWidth) {
+          ctx.moveTo(endX, 0);
+          ctx.lineTo(endX, displayHeight);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Draw drag preview
+    if (isDraggingSegment && dragStartTime !== null && dragCurrentTime !== null) {
+      const start = Math.min(dragStartTime, dragCurrentTime);
+      const end = Math.max(dragStartTime, dragCurrentTime);
+      const startX = timeToX(start, visibleStart, visibleDuration, displayWidth);
+      const endX = timeToX(end, visibleStart, visibleDuration, displayWidth);
+
+      if (startX < displayWidth && endX > 0) {
+        // Draw drag preview background
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+        ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
+
+        // Draw drag preview borders
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        if (startX >= 0 && startX <= displayWidth) {
+          ctx.moveTo(startX, 0);
+          ctx.lineTo(startX, displayHeight);
+        }
+        if (endX >= 0 && endX <= displayWidth) {
+          ctx.moveTo(endX, 0);
+          ctx.lineTo(endX, displayHeight);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+      }
+    }
+  }
 };
 
 /**

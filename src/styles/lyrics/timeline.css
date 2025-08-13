@@ -14,6 +14,8 @@
   min-width: 0; /* Allow container to shrink below content size */
   display: flex;
   flex-direction: column;
+  padding: 0; /* Ensure no padding affects child width */
+  box-sizing: border-box; /* Consistent box model */
 }
 
 /* Floating zoom controls in top right corner */
@@ -73,6 +75,8 @@
   cursor: pointer; /* Changed from grab to pointer */
   user-select: none;
   /* Removed transition to prevent shaking */
+  display: block; /* Ensure block display like volume visualizer canvas */
+  box-sizing: border-box; /* Ensure consistent box model */
 }
 
 .subtitle-timeline:active {

@@ -60,3 +60,63 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
  * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead
  */
 export const processLongMedia = processLongVideo;
+
+/**
+ * Map UI media resolution values to Gemini API enum values
+ */
+const mapMediaResolution = (resolution) => {
+  const resolutionMap = {
+    'low': 'MEDIA_RESOLUTION_LOW',
+    'medium': 'MEDIA_RESOLUTION_MEDIUM',
+    'high': 'MEDIA_RESOLUTION_HIGH'
+  };
+  return resolutionMap[resolution] || 'MEDIA_RESOLUTION_MEDIUM';
+};
+
+/**
+ * Process a specific segment of video using Files API with custom options
+ * This is the new segment-based processing function for the improved workflow
+ */
+export const processSegmentWithFilesApi = async (file, segment, options, setStatus, t) => {
+  try {
+    const { fps, mediaResolution, model, userProvidedSubtitles } = options;
+
+    setStatus({
+      message: t('processing.processingSegment', 'Processing selected segment...'),
+      type: 'loading'
+    });
+
+    // Prepare video metadata for segment processing according to Gemini API docs
+    // Format: start_offset: "60s", end_offset: "120s", fps: 5
+    const videoMetadata = {
+      start_offset: `${Math.floor(segment.start)}s`,
+      end_offset: `${Math.floor(segment.end)}s`,
+      fps: fps
+    };
+
+    // Map media resolution to API enum value
+    const mappedMediaResolution = mapMediaResolution(mediaResolution);
+
+    // Prepare options for the Files API call
+    const apiOptions = {
+      userProvidedSubtitles,
+      modelId: model,
+      videoMetadata,
+      mediaResolution: mappedMediaResolution,
+      segmentInfo: {
+        start: segment.start,
+        end: segment.end,
+        duration: segment.end - segment.start
+      }
+    };
+
+    // Call the Gemini API with Files API
+    const { callGeminiApiWithFilesApi } = await import('../../services/gemini');
+    const result = await callGeminiApiWithFilesApi(file, apiOptions);
+
+    return result;
+  } catch (error) {
+    console.error('Error processing segment with Files API:', error);
+    throw error;
+  }
+};

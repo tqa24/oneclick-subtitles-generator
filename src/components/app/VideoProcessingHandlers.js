@@ -120,7 +120,6 @@ export const downloadAndPrepareYouTubeVideo = async (
   handleTabChange,
   setUploadedFile,
   setIsSrtOnlyMode,
-  prepareVideoForSegments,
   t = (key, defaultValue) => defaultValue
 ) => {
   if (!selectedVideo) {

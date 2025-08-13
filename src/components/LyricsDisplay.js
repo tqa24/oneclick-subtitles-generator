@@ -82,7 +82,9 @@ const LyricsDisplay = ({
   onSaveSubtitles = null, // New callback for when subtitles are saved
   videoSource = null, // Video source URL for audio analysis
   translatedSubtitles = null, // Translated subtitles
-  videoTitle = 'subtitles' // Video title for download filenames
+  videoTitle = 'subtitles', // Video title for download filenames
+  onSegmentSelect = null, // Callback for segment selection
+  selectedSegment = null // Currently selected segment
 }) => {
   const { t } = useTranslation();
   // Initialize zoom with a function that calculates the minimum zoom based on duration
@@ -740,6 +742,8 @@ const LyricsDisplay = ({
           timeFormat={timeFormat}
           videoSource={videoSource}
           showWaveform={showWaveform}
+          onSegmentSelect={onSegmentSelect}
+          selectedSegment={selectedSegment}
         />
       </div>
 

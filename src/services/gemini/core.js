@@ -26,7 +26,7 @@ import { uploadFileToGemini, shouldUseFilesApi } from './filesApi';
  * @returns {Promise<Array>} - Array of subtitles
  */
 export const callGeminiApiWithFilesApi = async (file, options = {}) => {
-    const { userProvidedSubtitles, modelId, videoMetadata } = options;
+    const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
     const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
 
     console.log(`[GeminiAPI] Using Files API with model: ${MODEL}`);
@@ -78,6 +78,14 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
         // Add thinking configuration if supported by the model
         requestData = addThinkingConfig(requestData, MODEL);
+
+        // Add generation config with media resolution if provided
+        if (mediaResolution) {
+            if (!requestData.generationConfig) {
+                requestData.generationConfig = {};
+            }
+            requestData.generationConfig.mediaResolution = mediaResolution;
+        }
 
         // Store user-provided subtitles if needed
         if (isUserProvided) {

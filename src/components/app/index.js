@@ -43,7 +43,6 @@ function App() {
   useAppEffects({
     ...appState,
     handleDownloadAndPrepareYouTubeVideo: appHandlers.handleDownloadAndPrepareYouTubeVideo,
-    prepareVideoForSegments: appHandlers.prepareVideoForSegments,
     t
   });
 

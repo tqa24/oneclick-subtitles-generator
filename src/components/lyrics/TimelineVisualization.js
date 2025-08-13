@@ -27,11 +27,21 @@ const TimelineVisualization = ({
   centerOnTime, // Prop to center the view on a specific time
   timeFormat = 'seconds', // Prop to control time display format
   videoSource, // Video source URL for audio analysis
-  showWaveform = true // Whether to show the waveform visualization
+  showWaveform = true, // Whether to show the waveform visualization
+  onSegmentSelect, // Callback for when a segment is selected via drag
+  selectedSegment = null // Currently selected segment { start, end }
 }) => {
   const { t } = useTranslation();
   const [showWaveformDisabledNotice, setShowWaveformDisabledNotice] = useState(false);
   const durationRef = useRef(0);
+
+  // Segment selection state
+  const [isDraggingSegment, setIsDraggingSegment] = useState(false);
+  const [dragStartTime, setDragStartTime] = useState(null);
+  const [dragCurrentTime, setDragCurrentTime] = useState(null);
+  const dragStartRef = useRef(null);
+  const dragCurrentRef = useRef(null);
+  const isDraggingRef = useRef(false);
 
   // Calculate minimum zoom level based on duration to limit view to 300 seconds
   const calculateMinZoom = (duration) => {
@@ -204,7 +214,10 @@ const TimelineVisualization = ({
   // Draw the timeline visualization with optimizations
   const renderTimeline = useCallback((tempPanOffset = null) => {
     const canvas = timelineRef.current;
-    if (!canvas || !duration) return;
+    if (!canvas) return;
+
+    // Use a default duration if none is provided (for debugging)
+    const effectiveDuration = duration || 60; // Default to 60 seconds for testing
 
     canvasWidthRef.current = canvas.clientWidth;
 
@@ -216,18 +229,27 @@ const TimelineVisualization = ({
       ? getVisibleRangeWithTempOffset(effectivePanOffset)
       : getTimeRange();
 
+    // Prepare segment data for drawing
+    const segmentData = {
+      selectedSegment,
+      isDraggingSegment,
+      dragStartTime,
+      dragCurrentTime
+    };
+
     // Draw the timeline
     drawTimeline(
       canvas,
-      duration,
+      effectiveDuration,
       lyrics,
       currentTime,
       visibleTimeRange,
       effectivePanOffset,
       tempPanOffset !== null, // isActivePanning
-      timeFormat
+      timeFormat,
+      segmentData
     );
-  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat]);
+  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime]);
 
   // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {
@@ -272,18 +294,42 @@ const TimelineVisualization = ({
       const container = canvas.parentElement;
 
       const resizeCanvas = () => {
-        const rect = container.getBoundingClientRect();
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = '50px';
-        drawTimeline();
+        if (!container) return;
+
+        // Use requestAnimationFrame to ensure layout is complete
+        requestAnimationFrame(() => {
+          const rect = container.getBoundingClientRect();
+
+          // Set CSS style dimensions to match container
+          canvas.style.width = `${rect.width}px`;
+          canvas.style.height = '50px';
+
+          // The actual canvas dimensions will be set by TimelineDrawing.js
+          // based on clientWidth/clientHeight and DPR
+          renderTimeline();
+        });
       };
 
+      // Use ResizeObserver for more accurate container size changes
+      const resizeObserver = new ResizeObserver(() => {
+        resizeCanvas();
+      });
+
+      // Observe the container for size changes
+      resizeObserver.observe(container);
+
+      // Also listen to window resize as fallback
       window.addEventListener('resize', resizeCanvas);
+
+      // Initial resize
       resizeCanvas();
 
-      return () => window.removeEventListener('resize', resizeCanvas);
+      return () => {
+        resizeObserver.disconnect();
+        window.removeEventListener('resize', resizeCanvas);
+      };
     }
-  }, []);
+  }, [renderTimeline]);
 
   // Add keyboard shortcut to toggle auto-scrolling
   useEffect(() => {
@@ -312,7 +358,7 @@ const TimelineVisualization = ({
           // Restore state after a delay
           setTimeout(() => {
             ctx.restore();
-            drawTimeline();
+            renderTimeline();
           }, 1500);
         }
       }
@@ -326,7 +372,7 @@ const TimelineVisualization = ({
 
   // Handle timeline updates
   useEffect(() => {
-    if (timelineRef.current && lyrics.length > 0) {
+    if (timelineRef.current && (lyrics.length > 0 || onSegmentSelect)) {
       lastTimeRef.current = currentTime;
       renderTimeline();
 
@@ -336,7 +382,21 @@ const TimelineVisualization = ({
         clearUnusedChunks(videoSource, currentTime, duration);
       }
     }
-  }, [lyrics, currentTime, duration, zoom, panOffset, renderTimeline, videoSource]);
+  }, [lyrics, currentTime, duration, zoom, panOffset, renderTimeline, videoSource, onSegmentSelect]);
+
+  // Initial render when component mounts or when segment selection is enabled
+  useEffect(() => {
+    if (timelineRef.current && onSegmentSelect) {
+      renderTimeline();
+    }
+  }, [onSegmentSelect, renderTimeline]);
+
+  // Re-render when drag state changes to show visual feedback
+  useEffect(() => {
+    if (timelineRef.current && (isDraggingSegment || dragStartTime !== null || dragCurrentTime !== null)) {
+      renderTimeline();
+    }
+  }, [isDraggingSegment, dragStartTime, dragCurrentTime, renderTimeline]);
 
 
 
@@ -407,8 +467,81 @@ const TimelineVisualization = ({
     };
   }, [currentTime, duration, getTimeRange, panOffset, setPanOffset]);
 
+  // Convert pixel position to time
+  const pixelToTime = (pixelX) => {
+    const canvas = timelineRef.current;
+    const effectiveDuration = duration || 60;
+    if (!canvas) return 0;
+
+    const rect = canvas.getBoundingClientRect();
+    const relativeX = pixelX - rect.left;
+    const timeRange = getTimeRange();
+    const timePerPixel = (timeRange.end - timeRange.start) / canvas.clientWidth;
+
+    return Math.max(0, Math.min(effectiveDuration, timeRange.start + (relativeX * timePerPixel)));
+  };
+
+  // Handle segment selection drag
+  const handleSegmentMouseDown = (e) => {
+    if (!onSegmentSelect) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startTime = pixelToTime(e.clientX);
+    setIsDraggingSegment(true);
+    setDragStartTime(startTime);
+    setDragCurrentTime(startTime);
+    dragStartRef.current = startTime;
+    dragCurrentRef.current = startTime;
+    isDraggingRef.current = true;
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isDraggingRef.current) return;
+
+      const currentTime = pixelToTime(moveEvent.clientX);
+
+      // Only update if the time has changed significantly (avoid excessive updates)
+      if (Math.abs(currentTime - (dragCurrentRef.current || 0)) > 0.1) {
+        setDragCurrentTime(currentTime);
+        dragCurrentRef.current = currentTime;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current && dragStartRef.current !== null && dragCurrentRef.current !== null) {
+        const start = Math.min(dragStartRef.current, dragCurrentRef.current);
+        const end = Math.max(dragStartRef.current, dragCurrentRef.current);
+
+        // Only create segment if there's a meaningful duration (at least 1 second)
+        if (end - start >= 1) {
+          onSegmentSelect({ start, end });
+        }
+      }
+
+      // Clean up
+      setIsDraggingSegment(false);
+      setDragStartTime(null);
+      setDragCurrentTime(null);
+      dragStartRef.current = null;
+      dragCurrentRef.current = null;
+      isDraggingRef.current = false;
+
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   // Handle timeline click with zoom consideration
   const handleTimelineClick = (e) => {
+    // Don't handle click if we're in segment selection mode or if we just finished dragging
+    if (onSegmentSelect || isDraggingSegment) {
+      return;
+    }
+
     handleClick(
       e,
       timelineRef.current,
@@ -424,8 +557,9 @@ const TimelineVisualization = ({
       <canvas
         ref={timelineRef}
         onClick={handleTimelineClick}
+        onMouseDown={onSegmentSelect ? handleSegmentMouseDown : undefined}
         className="subtitle-timeline"
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: isDraggingSegment ? 'ew-resize' : 'pointer' }}
       />
 
       {/* Liquid Glass zoom controls in top right corner */}

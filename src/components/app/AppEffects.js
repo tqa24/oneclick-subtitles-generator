@@ -25,7 +25,6 @@ export const useAppEffects = (props) => {
     subtitlesData,
     status,
     handleDownloadAndPrepareYouTubeVideo,
-    prepareVideoForSegments,
     uploadedFile,
     t
   } = props;
@@ -327,27 +326,17 @@ export const useAppEffects = (props) => {
         status.message.includes('캐시')));
 
     if (isCacheLoadMessage && subtitlesData) {
-      // For file upload tab
+      // For file upload tab - cached subtitles are ready to use
       if (uploadedFile) {
-
-
-        // Prepare the video for segments
-        prepareVideoForSegments(uploadedFile).catch(error => {
-          console.error('Error preparing video for segments after cache load:', error);
-          // Show a warning but keep the subtitles
-          setStatus({
-            message: t('warnings.segmentsPreparationFailed', 'Subtitles loaded, but video segment preparation failed: {{message}}', { message: error.message }),
-            type: 'warning'
-          });
-        });
+        // No need to prepare video segments when using cached subtitles
+        // The new simplified processing workflow doesn't require video splitting
+        console.log('Cached subtitles loaded successfully for uploaded file');
       }
       // For YouTube tab, we need to download the video first
       else if (handleDownloadAndPrepareYouTubeVideo) {
-
-
         // We'll handle YouTube videos in a separate function to avoid making this effect too complex
         handleDownloadAndPrepareYouTubeVideo();
       }
     }
-  }, [status, subtitlesData, uploadedFile, t, prepareVideoForSegments, handleDownloadAndPrepareYouTubeVideo, setStatus]);
+  }, [status, subtitlesData, uploadedFile, t, handleDownloadAndPrepareYouTubeVideo, setStatus]);
 };
