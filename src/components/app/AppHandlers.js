@@ -273,6 +273,14 @@ export const useAppHandlers = (appState) => {
       // Store the processed file for later use
       setUploadedFileData(processedFile);
 
+        // Clear any cached file URIs for the previous file to ensure fresh uploads
+        try {
+          const { clearAllCachedFileUris } = await import('../../services/gemini/core');
+          clearAllCachedFileUris();
+        } catch (error) {
+          console.warn('Could not clear cached file URIs:', error);
+        }
+
       // Update status to indicate upload is complete and waiting for segment selection
       setIsUploading(false);
       setIsDownloading(false);

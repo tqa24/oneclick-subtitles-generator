@@ -20,6 +20,26 @@ import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { uploadFileToGemini, shouldUseFilesApi } from './filesApi';
 
 /**
+ * Clear cached file URI for a specific file
+ * @param {File} file - The file to clear cache for
+ */
+export const clearCachedFileUri = (file) => {
+    const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
+    localStorage.removeItem(fileKey);
+    console.log('[GeminiAPI] Cleared cached file URI for:', file.name);
+};
+
+/**
+ * Clear all cached file URIs
+ */
+export const clearAllCachedFileUris = () => {
+    const keys = Object.keys(localStorage);
+    const fileKeys = keys.filter(key => key.startsWith('gemini_file_'));
+    fileKeys.forEach(key => localStorage.removeItem(key));
+    console.log('[GeminiAPI] Cleared all cached file URIs:', fileKeys.length);
+};
+
+/**
  * Call the Gemini API using Files API for better performance and caching
  * @param {File} file - Input file
  * @param {Object} options - Additional options
@@ -32,10 +52,35 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
     console.log(`[GeminiAPI] Using Files API with model: ${MODEL}`);
 
     try {
-        // Upload file to Gemini Files API
-        console.log('Uploading file to Gemini Files API...');
-        const uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
-        console.log('File uploaded successfully:', uploadedFile.uri);
+        // Check if we already have an uploaded file URI for this file
+        const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
+        let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
+
+        if (uploadedFile && uploadedFile.uri) {
+            console.log('Reusing existing uploaded file URI:', uploadedFile.uri);
+            // Dispatch event to update status if needed
+            window.dispatchEvent(new CustomEvent('gemini-file-reused', {
+                detail: { fileName: file.name, uri: uploadedFile.uri }
+            }));
+        } else {
+            // Upload file to Gemini Files API
+            console.log('Uploading file to Gemini Files API...');
+            // Dispatch event to update status if needed
+            window.dispatchEvent(new CustomEvent('gemini-file-uploading', {
+                detail: { fileName: file.name }
+            }));
+
+            uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
+            console.log('File uploaded successfully:', uploadedFile.uri);
+
+            // Cache the uploaded file info for reuse
+            localStorage.setItem(fileKey, JSON.stringify(uploadedFile));
+
+            // Dispatch event to update status
+            window.dispatchEvent(new CustomEvent('gemini-file-uploaded', {
+                detail: { fileName: file.name, uri: uploadedFile.uri }
+            }));
+        }
 
         // Determine content type
         const isAudio = file.type.startsWith('audio/');

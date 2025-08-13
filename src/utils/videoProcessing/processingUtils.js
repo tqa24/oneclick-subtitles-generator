@@ -82,7 +82,7 @@ export const processSegmentWithFilesApi = async (file, segment, options, setStat
     const { fps, mediaResolution, model, userProvidedSubtitles } = options;
 
     setStatus({
-      message: t('processing.processingSegment', 'Processing selected segment...'),
+      message: t('processing.processingSegment', 'Processing selected segment (reusing uploaded file)...'),
       type: 'loading'
     });
 

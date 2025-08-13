@@ -140,7 +140,12 @@ export const useSubtitles = (t) => {
 
         setIsGenerating(true);
         setStatus({ message: t('output.processingVideo'), type: 'loading' });
-        setSubtitlesData(null);
+
+        // Only clear existing subtitles if this is NOT segment processing
+        // For segment processing, we want to keep existing subtitles to merge with
+        if (!segment) {
+            setSubtitlesData(null);
+        }
 
         try {
             let cacheId = null;
@@ -219,16 +224,39 @@ export const useSubtitles = (t) => {
             if (segment) {
                 console.log('[Subtitle Generation] Processing specific segment:', segment);
 
-                // Import the segment processing function
+                // Import the segment processing function and subtitle merger
                 const { processSegmentWithFilesApi } = await import('../utils/videoProcessing/processingUtils');
+                const { mergeSegmentSubtitles } = await import('../utils/subtitle/subtitleMerger');
 
                 // Process the specific segment
-                subtitles = await processSegmentWithFilesApi(input, segment, {
+                const segmentSubtitles = await processSegmentWithFilesApi(input, segment, {
                     fps,
                     mediaResolution,
                     model,
                     userProvidedSubtitles
                 }, setStatus, t);
+
+                // Get current subtitles state using functional update to avoid stale closure
+                let currentSubtitles = [];
+                setSubtitlesData(current => {
+                    currentSubtitles = current || [];
+                    return current; // Don't change the state, just capture current value
+                });
+
+                console.log('[Subtitle Generation] Before merge:', {
+                    existingCount: currentSubtitles.length,
+                    newSegmentCount: segmentSubtitles.length,
+                    segmentRange: `${segment.start}s - ${segment.end}s`,
+                    existingSubtitles: currentSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                });
+
+                // Merge with existing subtitles (replace overlapping parts)
+                subtitles = mergeSegmentSubtitles(currentSubtitles, segmentSubtitles, segment);
+
+                console.log('[Subtitle Generation] After merge:', {
+                    totalCount: subtitles.length,
+                    mergedSubtitles: subtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                });
             }
             // Check if this is a long media file (video or audio) that needs special processing
             else if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
