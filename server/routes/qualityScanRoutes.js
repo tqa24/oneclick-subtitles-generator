@@ -182,7 +182,7 @@ router.post('/download-video-quality', async (req, res) => {
 
     // Try to get video metadata to verify it's a valid video file
     try {
-      const { getMediaDuration } = require('../services/videoProcessing/durationUtils');
+      const { getMediaDuration } = require('../controllers/narration/audioFile/batchProcessor');
       const duration = await getMediaDuration(outputPath);
       console.log(`[QUALITY-DOWNLOAD] Video metadata: duration=${duration}s`);
     } catch (metadataError) {

@@ -13,8 +13,8 @@ const { OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../directoryManager');
 // Import batch processing functions
 const { processBatch, concatenateAudioFiles } = require('./batchProcessor');
 
-// Import duration utility
-const { getMediaDuration } = require('../../../services/videoProcessing/durationUtils');
+// Import duration utility from batchProcessor (which now has the implementation)
+const { getMediaDuration } = require('./batchProcessor');
 
 // Maximum number of segments to process in a single batch
 const MAX_SEGMENTS_PER_BATCH = 200;

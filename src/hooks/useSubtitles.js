@@ -3,7 +3,7 @@ import { callGeminiApi, setProcessingForceStopped } from '../services/geminiServ
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
-import { getVideoDuration, processLongVideo, retrySegmentProcessing } from '../utils/videoProcessor';
+import { getVideoDuration, processMediaFile } from '../utils/videoProcessor';
 import { setCurrentCacheId as setRulesCacheId } from '../utils/transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../utils/userSubtitlesStore';
 
@@ -227,9 +227,8 @@ export const useSubtitles = (t) => {
                     // Debug log to see the media duration
 
 
-                    // Always use segmentation for media files
-                    // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
+                    // Use the new smart processing function that chooses between simplified and legacy
+                    subtitles = await processMediaFile(input, setStatus, t, { userProvidedSubtitles });
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
@@ -368,9 +367,8 @@ export const useSubtitles = (t) => {
                     // Debug log to see the media duration
 
 
-                    // Always use segmentation for media files to match generateSubtitles behavior
-                    // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
+                    // Use the new smart processing function that chooses between simplified and legacy
+                    subtitles = await processMediaFile(input, setStatus, t, { userProvidedSubtitles });
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
@@ -544,20 +542,17 @@ export const useSubtitles = (t) => {
         // No need to save/restore model since we're not changing it
 
         try {
-            // Retry processing the specific segment
-            const updatedSubtitles = await retrySegmentProcessing(
-                segmentIndex,
-                segments,
-                currentSubtitles,
-                (status) => {
-                    // Only update the overall status if it's a success message
-                    if (status.type === 'success') {
-                        setStatus(status);
-                    }
-                },
+            // Segment retry is deprecated - reprocess the entire file for better results
+            setStatus({
+                message: t('output.retryingWithSimplified', 'Segment retry is deprecated. Reprocessing entire file with simplified processing for better results...'),
+                type: 'warning'
+            });
+
+            const updatedSubtitles = await processMediaFile(
+                input,
+                setStatus,
                 t,
-                mediaType,
-                { userProvidedSubtitles, modelId }
+                { userProvidedSubtitles }
             );
 
             // Update the subtitles data with the new results

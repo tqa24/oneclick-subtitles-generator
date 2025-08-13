@@ -1,11 +1,10 @@
-import { getMaxSegmentDurationSeconds } from '../../utils/durationUtils';
-import { splitVideoOnServer } from '../../utils/videoSplitter';
 import { extractYoutubeVideoId, downloadYoutubeVideo } from '../../utils/videoDownloader';
 import { extractDouyinVideoId, downloadDouyinVideo } from '../../utils/douyinDownloader';
 import { downloadDouyinVideoPlaywright } from '../../utils/douyinPlaywrightDownloader';
 import { downloadGenericVideo } from '../../utils/allSitesDownloader';
 
 // Function to ensure video compatibility
+// eslint-disable-next-line no-unused-vars
 const ensureVideoCompatibility = async (videoFile) => {
   try {
     // Check if we need to convert the video for compatibility
@@ -47,7 +46,9 @@ const ensureVideoCompatibility = async (videoFile) => {
  * @param {Function} t - Translation function
  * @returns {Promise<Object>} - Object containing segment information
  */
+// eslint-disable-next-line no-unused-vars
 export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegments, setSegmentsStatus, t = (key, defaultValue) => defaultValue) => {
+  // Legacy function - parameters kept for compatibility but not used
   try {
     if (!videoFile) {
       throw new Error('No video file provided');
@@ -94,70 +95,8 @@ export const prepareVideoForSegments = async (videoFile, setStatus, setVideoSegm
 
     }
 
-    // Upload the media to the server and split it into segments
-    const splitResult = await splitVideoOnServer(
-      processedVideoFile,
-      getMaxSegmentDurationSeconds(),
-      (progress, messageKey, defaultMessage) => {
-        // Handle translation keys properly
-        const translatedMessage = messageKey && messageKey.startsWith('output.')
-          ? t(messageKey, defaultMessage)
-          : (defaultMessage || messageKey);
-
-        setStatus({
-          message: `${translatedMessage} (${progress}%)`,
-          type: 'loading'
-        });
-      },
-      true, // Enable fast splitting by default
-      {
-        optimizeVideos: false, // Set to false to avoid duplication - we'll optimize on the server if needed
-        optimizedResolution
-      }
-    );
-
-
-
-    // Store the split result in localStorage for later use
-    localStorage.setItem('split_result', JSON.stringify(splitResult));
-
-    // Directly update videoSegments state
-    setVideoSegments(splitResult.segments);
-
-    // Also dispatch event with segments for potential retries later
-    const segmentsEvent = new CustomEvent('videoSegmentsUpdate', {
-      detail: splitResult.segments
-    });
-    window.dispatchEvent(segmentsEvent);
-
-    // Initialize segment status array
-    const initialSegmentStatus = splitResult.segments.map((segment, index) => {
-      // Calculate time range for this segment
-      const startTime = segment.startTime !== undefined ? segment.startTime : index * getMaxSegmentDurationSeconds();
-      const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
-      const endTime = startTime + segmentDuration;
-
-      // Format time range for display
-      const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-      };
-
-      const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-      return {
-        status: 'success', // 'success' status will show the retry button
-        message: t('output.segmentReady', 'Ready for processing'),
-        shortMessage: t('output.ready', 'Ready'),
-        timeRange
-      };
-    });
-
-    // Update segment status
-    setSegmentsStatus(initialSegmentStatus);
-
-    return splitResult;
+    // Legacy video splitting is no longer supported
+    throw new Error('Video splitting is deprecated. Please enable "Use Simplified Processing" in settings for better performance.');
   } catch (error) {
     console.error('Error preparing video for segments:', error);
     setStatus({

@@ -4,7 +4,8 @@
 
 import { getLyricColor, getRandomHeight } from './ColorUtils';
 import { timeToX } from './TimelineCalculations';
-import { optimizeSegments, clearUnusedSegments } from '../../../utils/colorfulSegmentsOptimizer';
+// Legacy segment optimization is no longer needed with simplified processing
+// import { optimizeSegments, clearUnusedSegments } from '../../../utils/colorfulSegmentsOptimizer';
 import { formatTime } from '../../../utils/timeFormatter';
 
 /**
@@ -188,14 +189,14 @@ const drawLyricSegments = (
   const visibleLyrics = [];
   const maxSegmentsToRender = isLongVideo ? 200 : 300; // Reduce for long videos
 
-  // For long videos, use the optimizeSegments utility
+  // For long videos, use simple filtering (legacy optimization no longer needed)
   let optimizedLyrics = lyrics;
   if (isLongVideo) {
-    // Use the optimizeSegments utility to filter and limit segments
-    optimizedLyrics = optimizeSegments(lyrics, duration, { start: visibleStart, end: visibleEnd });
-
-    // Clean up memory for segments that are no longer needed
-    clearUnusedSegments(visibleStart + ((visibleEnd - visibleStart) / 2), duration);
+    // Simple filtering for visible segments
+    optimizedLyrics = lyrics.filter(lyric => {
+      const lyricEnd = lyric.end || lyric.start + 5; // Default 5 second duration
+      return lyricEnd >= visibleStart && lyric.start <= visibleEnd;
+    }).slice(0, maxSegmentsToRender); // Limit to max segments
   }
 
   // Binary search to find the approximate starting index

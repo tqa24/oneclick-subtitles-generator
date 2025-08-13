@@ -4,7 +4,16 @@
  */
 
 // Export core API functionality
-import { callGeminiApi } from './core';
+import { callGeminiApi, callGeminiApiWithFilesApi } from './core';
+
+// Export Files API functionality
+import {
+    uploadFileToGemini,
+    shouldUseFilesApi,
+    getFileInfo,
+    deleteFile,
+    listFiles
+} from './filesApi';
 
 // Export request management functionality
 import {
@@ -53,6 +62,14 @@ const transcribeYouTubeVideo = callGeminiApi;
 export {
     // Core API
     callGeminiApi,
+    callGeminiApiWithFilesApi,
+
+    // Files API
+    uploadFileToGemini,
+    shouldUseFilesApi,
+    getFileInfo,
+    deleteFile,
+    listFiles,
 
     // Request management
     abortAllRequests,

@@ -10,14 +10,9 @@ const multer = require('multer');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
-const { getVideoDimensions } = require('../services/videoProcessing/durationUtils');
-const {
-  splitVideoIntoSegments,
-  splitMediaIntoSegments,
-  optimizeVideo,
-  createAnalysisVideo,
-  convertAudioToVideo
-} = require('../services/videoProcessingService');
+// Legacy video processing is deprecated
+// const { getVideoDimensions } = require('../services/videoProcessing/durationUtils');
+// const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo, convertAudioToVideo } = require('../services/videoProcessingService');
 
 // Configure multer for large file uploads
 const storage = multer.diskStorage({
@@ -287,124 +282,27 @@ router.get('/video-dimensions/:videoId', async (req, res) => {
 
 /**
  * POST /api/split-existing-file - Split a file that already exists on the server
+ * @deprecated This endpoint is deprecated. Use simplified processing instead.
  */
 router.post('/split-existing-file', async (req, res) => {
-  try {
-    const { filename, segmentDuration = 600, fastSplit = false, optimizeVideos = false, optimizedResolution = '360p' } = req.body;
-
-    if (!filename) {
-      return res.status(400).json({ error: 'Filename is required' });
-    }
-
-    const filePath = path.join(VIDEOS_DIR, filename);
-
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found on server' });
-    }
-
-    // Determine media type from file extension
-    const extension = path.extname(filename).toLowerCase();
-    const isAudio = ['.mp3', '.wav', '.aac', '.ogg', '.flac'].includes(extension);
-    const mediaType = isAudio ? 'audio' : 'video';
-
-    // Extract media ID from filename
-    const mediaId = filename.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv|mp3|wav|aac|ogg|flac)$/i, '');
-
-    let processPath = filePath;
-    let optimizedResult = null;
-
-    // Optimize videos only if requested (not audio files)
-    if (!isAudio && optimizeVideos) {
-      try {
-        const optimizedFilename = `optimized_${mediaId}.mp4`;
-        const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
-
-        optimizedResult = await optimizeVideo(processPath, optimizedPath, {
-          resolution: optimizedResolution,
-          fps: 1 // Gemini only processes 1 FPS
-        });
-
-        if (fs.existsSync(optimizedPath)) {
-          processPath = optimizedPath;
-        }
-      } catch (error) {
-        console.error('Error optimizing video:', error);
-      }
-    }
-
-    // Split the media file into segments
-    const result = await splitMediaIntoSegments(
-      processPath,
-      segmentDuration,
-      VIDEOS_DIR,
-      `${mediaId}_part`,
-      {
-        fastSplit,
-        mediaType
-      }
-    );
-
-    res.json({
-      success: true,
-      originalMedia: `/videos/${filename}`,
-      mediaId: mediaId,
-      mediaType: mediaType,
-      segments: result.segments.map(segment => ({
-        path: `/videos/${path.basename(segment.path)}`,
-        url: `${SERVER_URL}/videos/${path.basename(segment.path)}?startTime=${segment.startTime}&duration=${segment.duration}`,
-        name: path.basename(segment.path),
-        startTime: segment.startTime,
-        duration: segment.duration,
-        theoreticalStartTime: segment.theoreticalStartTime,
-        theoreticalDuration: segment.theoreticalDuration
-      })),
-      message: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} split successfully`,
-      optimized: optimizedResult ? {
-        video: `/videos/${path.basename(optimizedResult.path)}`,
-        resolution: optimizedResult.resolution,
-        fps: optimizedResult.fps,
-        width: optimizedResult.width,
-        height: optimizedResult.height,
-        wasOptimized: optimizedResult.optimized !== false
-      } : null
-    });
-  } catch (error) {
-    console.error('Error splitting existing file:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to split existing file'
-    });
-  }
+  res.status(410).json({
+    error: 'Video splitting is deprecated. Please enable "Use Simplified Processing" in settings for better performance.',
+    deprecated: true
+  });
 });
 
 /**
  * POST /api/upload-and-split-video - Upload and split a media file (video or audio) using streaming
+ * @deprecated This endpoint is deprecated. Use simplified processing instead.
  */
 router.post('/upload-and-split-video', streamingUpload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+  res.status(410).json({
+    error: 'Video splitting is deprecated. Please enable "Use Simplified Processing" in settings for better performance.',
+    deprecated: true
+  });
+});
 
-    // File is already saved to disk by multer streaming
-    const mediaPath = req.file.path;
-    const filename = req.file.filename;
-
-    // Determine if this is a video or audio file based on MIME type
-    const contentType = req.file.mimetype || '';
-    const isAudio = contentType.startsWith('audio/');
-    const mediaType = isAudio ? 'audio' : 'video';
-
-
-    // Get segment duration from query params or use default (10 minutes)
-    const segmentDuration = parseInt(req.query.segmentDuration || '600');
-    const fastSplit = req.query.fastSplit === 'true';
-    const optimizeVideos = req.query.optimizeVideos === 'true';
-    const optimizedResolution = req.query.optimizedResolution || '360p';
-
-    let processPath = mediaPath;
-    let optimizedResult = null;
+/**
 
     // Optimize videos only if requested (not audio files)
     if (!isAudio && optimizeVideos) {
@@ -469,36 +367,16 @@ router.post('/upload-and-split-video', streamingUpload.single('file'), async (re
 
 /**
  * POST /api/split-video - Split a media file (video or audio) into segments using streaming
+ * @deprecated This endpoint is deprecated. Use simplified processing instead.
  */
 router.post('/split-video', streamingUpload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+  res.status(410).json({
+    error: 'Video splitting is deprecated. Please enable "Use Simplified Processing" in settings for better performance.',
+    deprecated: true
+  });
+});
 
-    // File is already saved to disk by multer streaming
-    const mediaPath = req.file.path;
-    const filename = req.file.filename;
-
-    // Determine if this is a video or audio file based on MIME type
-    const contentType = req.file.mimetype || '';
-    const isAudio = contentType.startsWith('audio/');
-    const mediaType = isAudio ? 'audio' : 'video';
-
-    // Generate a unique mediaId for processing
-    let mediaId = req.query.mediaId || req.query.videoId || `${mediaType}_${Date.now()}`;
-
-    // Remove any file extension from mediaId to prevent double extensions
-    mediaId = mediaId.replace(/\.(mp[34]|webm|mov|avi|wmv|flv|mkv)$/i, '');
-
-    // Check if the file size is reasonable
-    if (req.file.size < 100 * 1024) { // Less than 100KB
-      console.error(`[SPLIT-VIDEO] File is too small (${req.file.size} bytes), likely not a valid ${mediaType}`);
-      return res.status(400).json({
-        success: false,
-        error: `File is too small (${req.file.size} bytes), likely not a valid ${mediaType}`
-      });
-    }
+/**
 
 
 
@@ -706,30 +584,16 @@ router.post('/optimize-existing-file', async (req, res) => {
 
 /**
  * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate using streaming
- * Also creates an analysis video with 500 frames for Gemini analysis
- * Automatically converts audio files to video at the start
+ * @deprecated This endpoint is deprecated. Use simplified processing instead.
  */
 router.post('/optimize-video', streamingUpload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+  res.status(410).json({
+    error: 'Video optimization is deprecated. Please enable "Use Simplified Processing" in settings for better performance.',
+    deprecated: true
+  });
+});
 
-    // Get optimization options from query params
-    const resolution = req.query.resolution || '360p';
-    const fps = parseInt(req.query.fps || '1'); // Default to 1 FPS for Gemini optimization
-    const useVideoAnalysis = req.query.useVideoAnalysis !== 'false'; // Default to true if not specified
-
-    // File is already saved to disk by multer streaming
-    const originalPath = req.file.path;
-    const contentType = req.file.mimetype || 'video/mp4';
-    const isAudio = contentType.startsWith('audio/');
-    const mediaType = isAudio ? 'audio' : 'video';
-
-    // Generate a unique timestamp for processed files
-    const timestamp = Date.now();
-
-    // Always use mp4 for processed files
+/**
     const optimizedFilename = `optimized_${timestamp}.mp4`;
     const analysisFilename = `analysis_500frames_${timestamp}.mp4`;
     const optimizedPath = path.join(VIDEOS_DIR, optimizedFilename);
@@ -1062,8 +926,8 @@ router.get('/converted-audio-exists/:audioHash', (req, res) => {
     const videoPath = path.join(VIDEOS_DIR, convertedFile);
     const stats = fs.statSync(videoPath);
 
-    // Get video metadata using ffprobe
-    const { getMediaDuration } = require('../services/videoProcessing/durationUtils');
+    // Get video metadata using ffprobe (using implementation from narration controller)
+    const { getMediaDuration } = require('../controllers/narration/audioFile/batchProcessor');
 
     // Get the duration asynchronously and then respond
     getMediaDuration(videoPath)
@@ -1130,8 +994,8 @@ router.post('/convert-audio-to-video', streamingUpload.single('file'), async (re
       const videoPath = path.join(VIDEOS_DIR, existingConvertedFile);
 
       try {
-        // Get video metadata
-        const { getMediaDuration } = require('../services/videoProcessing/durationUtils');
+        // Get video metadata (using implementation from narration controller)
+        const { getMediaDuration } = require('../controllers/narration/audioFile/batchProcessor');
         const duration = await getMediaDuration(videoPath);
 
         // Return the existing converted file

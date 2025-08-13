@@ -17,6 +17,111 @@ import {
 import i18n from '../../i18n/i18n';
 import { getNextAvailableKey, blacklistKey } from './keyManager';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
+import { uploadFileToGemini, shouldUseFilesApi } from './filesApi';
+
+/**
+ * Call the Gemini API using Files API for better performance and caching
+ * @param {File} file - Input file
+ * @param {Object} options - Additional options
+ * @returns {Promise<Array>} - Array of subtitles
+ */
+export const callGeminiApiWithFilesApi = async (file, options = {}) => {
+    const { userProvidedSubtitles, modelId, videoMetadata } = options;
+    const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
+
+    console.log(`[GeminiAPI] Using Files API with model: ${MODEL}`);
+
+    try {
+        // Upload file to Gemini Files API
+        console.log('Uploading file to Gemini Files API...');
+        const uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
+        console.log('File uploaded successfully:', uploadedFile.uri);
+
+        // Determine content type
+        const isAudio = file.type.startsWith('audio/');
+        const contentType = isAudio ? 'audio' : 'video';
+
+        // Check if we have user-provided subtitles
+        const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
+
+        // Get the transcription prompt
+        const segmentInfo = options?.segmentInfo || {};
+        const promptText = getTranscriptionPrompt(contentType, userProvidedSubtitles, { segmentInfo });
+
+        // Create request data
+        let requestData = {
+            model: MODEL,
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: promptText },
+                        {
+                            file_data: {
+                                file_uri: uploadedFile.uri,
+                                mime_type: uploadedFile.mimeType
+                            }
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // Add video metadata if provided
+        if (videoMetadata && !isAudio) {
+            // Add video metadata to the file_data part
+            requestData.contents[0].parts[1].video_metadata = videoMetadata;
+        }
+
+        // Add response schema
+        requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
+
+        // Add thinking configuration if supported by the model
+        requestData = addThinkingConfig(requestData, MODEL);
+
+        // Store user-provided subtitles if needed
+        if (isUserProvided) {
+            localStorage.setItem('user_provided_subtitles', userProvidedSubtitles);
+        }
+
+        // Create request controller
+        const { requestId, signal } = createRequestController();
+
+        try {
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${uploadedFile.apiKey || localStorage.getItem('gemini_api_key')}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                    signal: signal
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            removeRequestController(requestId);
+            return parseGeminiResponse(data);
+
+        } catch (error) {
+            removeRequestController(requestId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request was aborted');
+            }
+            throw error;
+        }
+
+    } catch (error) {
+        console.error('Error with Files API:', error);
+        throw error;
+    }
+};
 
 /**
  * Call the Gemini API with various input types
@@ -69,6 +174,14 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             }
         ];
     } else if (inputType === 'video' || inputType === 'audio' || inputType === 'file-upload') {
+        // Check if we should use Files API for better performance and caching
+        if (shouldUseFilesApi(input)) {
+            console.log('[GeminiAPI] Using Files API for large file or better caching');
+            return await callGeminiApiWithFilesApi(input, options);
+        }
+
+        console.log('[GeminiAPI] Using inline data for small file');
+
         // Determine if this is a video or audio file
         const isAudio = input.type.startsWith('audio/');
         const contentType = isAudio ? 'audio' : 'video';
@@ -76,10 +189,6 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         // For audio files, convert to a format supported by Gemini
         let processedInput = input;
         if (isAudio) {
-
-
-
-
             // Check if the audio format is supported by Gemini
             if (!isAudioFormatSupportedByGemini(input)) {
                 console.warn('Audio format not directly supported by Gemini API, attempting conversion');
@@ -87,7 +196,6 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
 
             // Convert the audio file to a supported format
             processedInput = await convertAudioForGemini(input);
-
         }
 
         const base64Data = await fileToBase64(processedInput);

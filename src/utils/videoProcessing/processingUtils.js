@@ -1,36 +1,17 @@
 /**
- * Core processing utilities for video/audio processing
+ * Legacy processing utilities for video/audio processing
+ * @deprecated These functions are deprecated. Use simplifiedProcessing.js instead.
+ * 
+ * This file provides backward compatibility for legacy code that still uses
+ * the old segment-based processing approach. All functions now redirect to
+ * the new simplified processing system for better performance.
  */
 
-import { callGeminiApi } from '../../services/geminiService';
-import { splitVideoOnServer } from '../videoSplitter';
-import { getVideoDuration, getMaxSegmentDurationSeconds } from '../durationUtils';
-import { processSegment } from '../../services/segmentProcessingService';
-import { getCacheIdForMedia } from './cacheUtils';
-import { createSegmentStatusUpdater, formatTime } from './segmentUtils';
-import { optimizeVideo } from './optimizationUtils';
-import { analyzeVideoAndWaitForUserChoice } from './analysisUtils';
-import { setCurrentCacheId as setRulesCacheId, setTranscriptionRules } from '../transcriptionRulesStore';
-import { setCurrentCacheId as setSubtitlesCacheId } from '../userSubtitlesStore';
-import { API_BASE_URL } from '../../config';
-
-/**
- * Apply default settings when video analysis is disabled or fails
- * This ensures the system uses the user's default preset and settings
- */
-const applyDefaultSettings = () => {
-  // Clear any session-specific settings to ensure we use user's defaults
-  sessionStorage.removeItem('current_session_prompt');
-  sessionStorage.removeItem('current_session_preset_id');
-
-  // Clear any existing transcription rules to use defaults
-  setTranscriptionRules(null);
-
-  console.log('Applied default settings - using user\'s default preset and transcription settings');
-};
+console.warn('[LEGACY] processingUtils.js is deprecated. Please enable "Use Simplified Processing" in settings for better performance.');
 
 /**
  * Process a short video/audio file (shorter than max segment duration)
+ * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead
  * @param {File} mediaFile - The media file
  * @param {Function} onStatusUpdate - Callback for status updates
  * @param {Function} t - Translation function
@@ -38,172 +19,22 @@ const applyDefaultSettings = () => {
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = {}) => {
-  const { userProvidedSubtitles } = options;
-  const isAudio = mediaFile.type.startsWith('audio/');
-
-  // Check if video optimization is enabled
-  const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
-  const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
-
-  let processedFile = mediaFile;
-  let analysisFile = mediaFile;
-
-  // Optimize videos and convert audio files to video if optimization is enabled
-  if (optimizeVideos || isAudio) {
-    onStatusUpdate({
-      message: isAudio
-        ? t('output.processingAudio', 'Processing audio file...')
-        : t('output.optimizingVideo', 'Optimizing video for processing...'),
-      type: 'loading'
-    });
-
-    try {
-      // Optimize the video (or convert audio to video)
-      const optimizationResult = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
-      processedFile = optimizationResult.optimizedFile;
-      analysisFile = optimizationResult.analysisFile;
-
-      // Check if we should skip analysis
-      // Skip analysis if user-provided subtitles are present OR if video analysis is disabled
-      const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-      const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
-
-      if (skipAnalysis) {
-        // Update status message based on why we're skipping analysis
-        if (userProvidedSubtitles) {
-          onStatusUpdate({
-            message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
-            type: 'loading'
-          });
-        } else {
-          // Apply default settings when video analysis is disabled
-          applyDefaultSettings();
-          onStatusUpdate({
-            message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
-            type: 'loading'
-          });
-        }
-
-        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-      }
-
-      try {
-        // Analyze the video and wait for user choice
-        await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
-
-        // Use the processed file for processing
-        onStatusUpdate({
-          message: optimizeVideos
-            ? t('output.processingOptimizedVideo', 'Processing optimized video...')
-            : t('output.processingVideo', 'Processing video...'),
-          type: 'loading'
-        });
-
-        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-      } catch (analysisError) {
-        console.error('Error analyzing video:', analysisError);
-        // Apply default settings when video analysis fails
-        applyDefaultSettings();
-        onStatusUpdate({
-          message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
-          type: 'warning'
-        });
-
-        // Continue with processing without analysis
-        return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-      }
-    } catch (error) {
-      console.error('Error processing video:', error);
-
-      // Check if this is a Gemini API error - if so, re-throw it instead of treating it as optimization error
-      if (error.message && (
-        error.message.includes('API error:') ||
-        error.message.includes('Gemini') ||
-        error.message.includes('503') ||
-        error.message.includes('Service Unavailable') ||
-        error.message.includes('overloaded') ||
-        error.message.includes('UNAVAILABLE') ||
-        error.message.includes('quota') ||
-        error.message.includes('RESOURCE_EXHAUSTED') ||
-        error.isOverloaded
-      )) {
-        // This is a Gemini API error, not a video optimization error - re-throw it
-        throw error;
-      }
-
-      // This is actually a video processing error
-      onStatusUpdate({
-        message: optimizeVideos
-          ? t('output.optimizationFailed', 'Video optimization failed, using original video.')
-          : t('output.processingFailed', 'Video processing failed, using original video.'),
-        type: 'warning'
-      });
-      // Fall back to using the original file
-      processedFile = mediaFile;
-      analysisFile = mediaFile;
-    }
-  } else {
-    // No optimization requested for video files
-    onStatusUpdate({
-      message: t('output.processingVideo', 'Processing video...'),
-      type: 'loading'
-    });
-  }
-
-  // Check if we should skip analysis for non-optimized videos
-  const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-  const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
-
-  if (skipAnalysis) {
-    // Update status message based on why we're skipping analysis
-    if (userProvidedSubtitles) {
-      onStatusUpdate({
-        message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
-        type: 'loading'
-      });
-    } else {
-      // Apply default settings when video analysis is disabled
-      applyDefaultSettings();
-      onStatusUpdate({
-        message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
-        type: 'loading'
-      });
-    }
-
-    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-  }
-
-  try {
-    // Analyze the video and wait for user choice (only if optimization was done or it's an audio file)
-    if (optimizeVideos || isAudio) {
-      await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
-    }
-
-    // Use the processed file for processing
-    onStatusUpdate({
-      message: optimizeVideos
-        ? t('output.processingOptimizedVideo', 'Processing optimized video...')
-        : t('output.processingVideo', 'Processing video...'),
-      type: 'loading'
-    });
-
-    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-  } catch (analysisError) {
-    console.error('Error analyzing video:', analysisError);
-    // Apply default settings when video analysis fails
-    applyDefaultSettings();
-    onStatusUpdate({
-      message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
-      type: 'warning'
-    });
-
-    // Continue with processing without analysis
-    return await callGeminiApi(processedFile, 'file-upload', { userProvidedSubtitles });
-  }
+  console.warn('[LEGACY] processShortMedia is deprecated. Redirecting to simplified processing.');
+  
+  // Show a helpful message to the user
+  onStatusUpdate({
+    message: t('output.usingLegacyFallback', 'Using legacy processing. Enable "Simplified Processing" in settings for better performance.'),
+    type: 'warning'
+  });
+  
+  // Redirect to simplified processing
+  const { processVideoWithFilesApi } = await import('./simplifiedProcessing');
+  return await processVideoWithFilesApi(mediaFile, onStatusUpdate, t, options);
 };
 
 /**
  * Process a long video/audio file by splitting it into segments
+ * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead
  * @param {File} mediaFile - The media file
  * @param {Function} onStatusUpdate - Callback for status updates
  * @param {Function} t - Translation function
@@ -211,362 +42,21 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {}) => {
-  // Extract options
-  const { userProvidedSubtitles } = options;
-
-  // Set cache ID for the current video
-  const cacheId = getCacheIdForMedia(mediaFile);
-  if (cacheId) {
-    // Set cache ID for both stores
-    setRulesCacheId(cacheId);
-    setSubtitlesCacheId(cacheId);
-
-  }
-
-  // Set processing flag to indicate we're working on a video
-  localStorage.setItem('video_processing_in_progress', 'true');
-
-
-  // Determine if this is a video or audio file based on MIME type
-  const isAudio = mediaFile.type.startsWith('audio/');
-  const mediaType = isAudio ? 'audio' : 'video';
-
-  // Get the current model (for logging purposes)
-  // const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-
-
-  // Create an array to track segment status
-  const segmentStatusArray = [];
-  const updateSegmentStatus = createSegmentStatusUpdater(segmentStatusArray, t);
-
-  try {
-    // Get media duration
-    const duration = await getVideoDuration(mediaFile);
-
-
-    // If media is shorter than the maximum segment duration, process it directly
-    if (duration <= getMaxSegmentDurationSeconds()) {
-      return await processShortMedia(mediaFile, onStatusUpdate, t, options);
-    }
-
-    // Calculate number of segments
-    const numSegments = Math.ceil(duration / getMaxSegmentDurationSeconds());
-
-
-    // Initialize segment status array with pending status
-    for (let i = 0; i < numSegments; i++) {
-      // Calculate theoretical time range for initial display
-      const startTime = i * getMaxSegmentDurationSeconds();
-      const endTime = Math.min((i + 1) * getMaxSegmentDurationSeconds(), duration);
-      const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-      updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
-    }
-
-    // Notify user about long media processing
-    onStatusUpdate({
-      message: isAudio
-        ? t('output.longAudioProcessing', 'Processing audio longer than 30 minutes. This may take a while...')
-        : t('output.longVideoProcessing', 'Processing video longer than 30 minutes. This may take a while...'),
-      type: 'loading'
-    });
-
-    // Use server-side splitting to physically split the media into segments
-
-    onStatusUpdate({
-      message: isAudio
-        ? t('output.serverSplittingAudio', 'Uploading and splitting audio on server...')
-        : t('output.serverSplitting', 'Uploading and splitting video on server...'),
-      type: 'loading'
-    });
-
-    // Check if video optimization is enabled
-    const optimizeVideos = localStorage.getItem('optimize_videos') === 'true';
-    const optimizedResolution = localStorage.getItem('optimized_resolution') || '360p'; // Default to 360p
-
-    // For videos and audio files, optimize and analyze before splitting if optimization is enabled
-    let processedFile = mediaFile;
-    let analysisFile = mediaFile;
-
-    // Process audio files and videos through the optimize-video endpoint if optimization is enabled
-    if (optimizeVideos || isAudio) {
-      try {
-        // First optimize the video or process audio
-        onStatusUpdate({
-          message: isAudio
-            ? t('output.processingAudio', 'Processing audio file...')
-            : t('output.optimizingVideo', 'Optimizing video for processing...'),
-          type: 'loading'
-        });
-
-        // Optimize the video
-        const optimizationResult = await optimizeVideo(mediaFile, optimizedResolution, onStatusUpdate, t);
-        processedFile = optimizationResult.optimizedFile;
-        analysisFile = optimizationResult.analysisFile;
-
-        // Check if video analysis is enabled in settings
-        // For audio files, we always want to analyze the converted video
-        // Skip analysis if user-provided subtitles are present
-        const useVideoAnalysis = !userProvidedSubtitles && (isAudio || localStorage.getItem('use_video_analysis') !== 'false'); // Default to true if not set
-
-        if (useVideoAnalysis) {
-          // Analyze the video and wait for user choice
-          await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
-          // Store analysis results (not used currently, but keeping for future use)
-
-          // Update status message to indicate we're moving to the next step
-          onStatusUpdate({
-            message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
-            type: 'loading'
-          });
-        } else {
-          // Video analysis is disabled, proceed with default settings
-          if (userProvidedSubtitles) {
-            onStatusUpdate({
-              message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
-              type: 'loading'
-            });
-          } else {
-            // Apply default settings when video analysis is disabled
-            applyDefaultSettings();
-            onStatusUpdate({
-              message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
-              type: 'loading'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error processing or analyzing video:', error);
-        // Apply default settings when video analysis fails
-        applyDefaultSettings();
-        onStatusUpdate({
-          message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
-          type: 'warning'
-        });
-        // Continue with the original file if processing fails
-        processedFile = mediaFile;
-        analysisFile = mediaFile;
-      }
-    } else {
-      // No optimization requested for video files
-      onStatusUpdate({
-        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
-        type: 'loading'
-      });
-    }
-
-    // Upload the media to the server and split it into segments
-    const splitResult = await splitVideoOnServer(
-      processedFile, // Use the processed file (optimized if optimization was enabled)
-      getMaxSegmentDurationSeconds(),
-      (progress, messageKey, defaultMessage) => {
-        // Handle translation keys properly
-        const translatedMessage = messageKey && messageKey.startsWith('output.')
-          ? t(messageKey, defaultMessage)
-          : (defaultMessage || messageKey);
-
-        onStatusUpdate({
-          message: `${translatedMessage} (${progress}%)`,
-          type: 'loading'
-        });
-      },
-      true, // Enable fast splitting by default
-      {
-        optimizeVideos: false, // IMPORTANT: We've already optimized the video in the optimize-video endpoint
-        optimizedResolution
-      }
-    );
-
-    // Clear the processing flag now that splitting is complete
-    localStorage.removeItem('video_processing_in_progress');
-
-
-
-    // Store the split result in localStorage for later use
-    localStorage.setItem('split_result', JSON.stringify(splitResult));
-
-    // Process all segments in parallel
-    const segments = splitResult.segments;
-
-    // Dispatch event with segments for potential retries later
-    const segmentsEvent = new CustomEvent('videoSegmentsUpdate', {
-      detail: segments
-    });
-    window.dispatchEvent(segmentsEvent);
-
-    // Process all segments in parallel
-    onStatusUpdate({
-      message: t('output.processingInParallel', 'Processing in parallel...'),
-      type: 'loading'
-    });
-
-    // Create an array to hold the processing promises for each segment
-    const segmentPromises = segments.map(async (segment, i) => {
-      const segmentIndex = i;
-
-      // ALWAYS use the actual start time from the segment if available
-      // This is critical for correct subtitle stitching with stream-copy segments
-      const startTime = segment.startTime !== undefined ? segment.startTime : segmentIndex * getMaxSegmentDurationSeconds();
-      const segmentDuration = segment.duration !== undefined ? segment.duration : getMaxSegmentDurationSeconds();
-      const endTime = startTime + segmentDuration;
-      const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-      // Debug: Log segment timing information
-      console.log(`[SEGMENT-${segmentIndex}] startTime: ${segment.startTime}, duration: ${segment.duration}, calculated timeRange: ${timeRange}`);
-
-      // Log detailed information about this segment's timing
-
-
-
-      // Log if we're using user-provided subtitles
-      if (userProvidedSubtitles) {
-
-      }
-
-      // Compare actual start time with theoretical start time if needed
-      // if (segment.startTime !== undefined) {
-      //   const theoreticalStart = segmentIndex * getMaxSegmentDurationSeconds();
-      // }
-
-      // Update the segment status with time range
-      updateSegmentStatus(i, 'pending', t('output.pendingProcessing', 'Waiting to be processed...'), timeRange);
-
-      // Generate cache ID for this segment
-      const segmentCacheId = `segment_${segment.name}`;
-
-      try {
-        // First check if we have this segment cached
-        updateSegmentStatus(i, 'loading', t('output.checkingCache', 'Checking cache...'));
-        const response = await fetch(`${API_BASE_URL}/subtitle-exists/${segmentCacheId}`);
-        const data = await response.json();
-
-        if (data.exists && !userProvidedSubtitles) {
-          // Only use cache if we don't have user-provided subtitles
-
-
-          // Make sure to pass the translation function properly
-          // This is the key fix for the internationalization issue
-          updateSegmentStatus(i, 'cached', t('output.loadedFromCache', 'Loaded from cache'), timeRange);
-
-          // Return the cached subtitles with adjusted timestamps
-          return data.subtitles.map(subtitle => ({
-            ...subtitle,
-            start: subtitle.start + startTime,
-            end: subtitle.end + startTime
-          }));
-        } else if (userProvidedSubtitles && data.exists) {
-
-        }
-
-        // If not cached, process the segment
-        updateSegmentStatus(i, 'loading', t('output.processing', 'Processing...'), timeRange);
-
-        // Determine if this is a video or audio file
-        const isAudio = mediaFile.type.startsWith('audio/');
-        const mediaType = isAudio ? 'audio' : 'video';
-
-        // Pass userProvidedSubtitles to processSegment if available
-        if (userProvidedSubtitles) {
-
-        }
-
-        // Get the total duration of the video
-        const totalDuration = await getVideoDuration(mediaFile);
-
-
-        // Pass userProvidedSubtitles and totalDuration to processSegment
-        const result = await processSegment(segment, segmentIndex, startTime, segmentCacheId, onStatusUpdate, t, mediaType, {
-          userProvidedSubtitles,
-          totalDuration
-        });
-        updateSegmentStatus(i, 'success', t('output.processingComplete', 'Processing complete'), timeRange);
-        return result;
-      } catch (error) {
-        console.error(`Error processing segment ${i+1}:`, error);
-        // Check if this is an overload error
-        if (error.isOverloaded || (error.message && (
-            error.message.includes('503') ||
-            error.message.includes('Service Unavailable') ||
-            error.message.includes('overloaded') ||
-            error.message.includes('UNAVAILABLE') ||
-            error.message.includes('Status code: 503')
-        ))) {
-            // Check if this is specifically a 503 error for more specific messaging
-            const is503Error = error.message && (
-                error.message.includes('503') ||
-                error.message.includes('Status code: 503')
-            );
-
-            const errorMessage = is503Error
-                ? t('errors.geminiServiceUnavailable', 'Gemini is currently overloaded, please wait and try again later (error code 503)')
-                : t('errors.geminiOverloaded', 'Mô hình đang quá tải. Vui lòng thử lại sau.');
-
-            // Make sure to pass the timeRange parameter
-            updateSegmentStatus(i, 'overloaded', errorMessage, t, timeRange);
-        } else {
-            updateSegmentStatus(i, 'error', error.message || t('output.processingFailed', 'Processing failed'), t, timeRange);
-        }
-        throw error; // Re-throw to be caught by Promise.allSettled
-      }
-    });
-
-    // Wait for all segment processing to complete (even if some fail)
-    const results = await Promise.allSettled(segmentPromises);
-
-    // Collect all successful results
-    const allSubtitles = [];
-    let hasFailures = false;
-
-    results.forEach((result, i) => {
-      if (result.status === 'fulfilled') {
-        // Add successful subtitles to the combined results
-        allSubtitles.push(...result.value);
-      } else {
-        // Log the error for failed segments
-        console.error(`Segment ${i+1} failed:`, result.reason);
-        hasFailures = true;
-      }
-    });
-
-    // Warn the user if some segments failed
-    if (hasFailures) {
-      onStatusUpdate({
-        message: t('output.someSegmentsFailed', 'Some segments failed to process. The subtitles may be incomplete.'),
-        type: 'warning'
-      });
-    }
-
-    // Sort subtitles by start time
-    allSubtitles.sort((a, b) => a.start - b.start);
-
-    // Renumber IDs
-    allSubtitles.forEach((subtitle, index) => {
-      subtitle.id = index + 1;
-    });
-
-    return allSubtitles;
-  } catch (error) {
-    console.error(`Error processing long ${mediaType}:`, error);
-
-    // Clear the processing flag on error
-    localStorage.removeItem('video_processing_in_progress');
-
-    // Provide more helpful error messages for common issues
-    if (error.message && error.message.includes('timeout')) {
-      throw new Error(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} upload timed out. This may be due to the large file size. Please try a smaller or lower quality ${mediaType}.`);
-    } else if (error.message && error.message.includes('ffmpeg')) {
-      throw new Error(`Error splitting ${mediaType}: ` + error.message);
-    } else {
-      throw error;
-    }
-  }
+  console.warn('[LEGACY] processLongVideo is deprecated. Redirecting to simplified processing.');
+  
+  // Show a helpful message to the user
+  onStatusUpdate({
+    message: t('output.usingLegacyFallback', 'Using legacy processing. Enable "Simplified Processing" in settings for better performance.'),
+    type: 'warning'
+  });
+  
+  // Redirect to simplified processing
+  const { processVideoWithFilesApi } = await import('./simplifiedProcessing');
+  return await processVideoWithFilesApi(mediaFile, onStatusUpdate, t, options);
 };
 
 /**
  * Alias for processLongVideo to maintain backward compatibility
- * @param {File} mediaFile - The media file (video or audio)
- * @param {Function} onStatusUpdate - Callback for status updates
- * @param {Function} t - Translation function
- * @returns {Promise<Array>} - Array of subtitle objects
+ * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead
  */
 export const processLongMedia = processLongVideo;

@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
+import MaterialSwitch from '../../common/MaterialSwitch';
 import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
 import { FiCpu } from 'react-icons/fi';
-import MaterialSwitch from '../../common/MaterialSwitch';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
 import '../../../styles/common/material-switch.css';
 import '../../../styles/settings/customGeminiModels.css';
@@ -187,6 +187,31 @@ const VideoProcessingTab = ({
                   <div className="slider-value-display">
                     {segmentDuration} {t('settings.minutes', 'minutes')}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Simplified Processing Setting */}
+            <div className="compact-setting">
+              <div className="setting-row">
+                <div className="setting-info">
+                  <label htmlFor="use-simplified-processing">
+                    {t('settings.useSimplifiedProcessing', 'Use Simplified Processing (Beta)')}
+                  </label>
+                  <p className="setting-description">
+                    {t('settings.useSimplifiedProcessingDescription', 'Enable the new Files API-based processing that handles entire videos without splitting. Faster and more efficient, but currently in beta.')}
+                  </p>
+                </div>
+                <div className="setting-control">
+                  <MaterialSwitch
+                    checked={localStorage.getItem('use_simplified_processing') === 'true'}
+                    onChange={(e) => {
+                      localStorage.setItem('use_simplified_processing', e.target.checked.toString());
+                    }}
+                    id="use-simplified-processing"
+                    ariaLabel={t('settings.useSimplifiedProcessing', 'Use Simplified Processing')}
+                    icons={true}
+                  />
                 </div>
               </div>
             </div>

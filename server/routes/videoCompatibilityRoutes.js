@@ -5,7 +5,8 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
-const { ensureVideoCompatibility } = require('../services/videoProcessing/durationUtils');
+// Legacy video compatibility checking is deprecated
+// const { ensureVideoCompatibility } = require('../services/videoProcessing/durationUtils');
 
 const router = express.Router();
 
@@ -13,53 +14,14 @@ const router = express.Router();
  * Check and convert video for compatibility if needed
  */
 router.post('/ensure-compatibility', async (req, res) => {
-  try {
-    const { videoPath } = req.body;
-    
-    if (!videoPath) {
-      return res.status(400).json({ error: 'Video path is required' });
-    }
+  res.status(410).json({
+    success: false,
+    error: 'Video compatibility checking is deprecated. Please enable "Use Simplified Processing" in settings for better performance.',
+    deprecated: true
+  });
+});
 
-    // Construct full path to video file
-    const fullVideoPath = path.join(__dirname, '../../videos/uploads', path.basename(videoPath));
-    
-    // Check if file exists
-    try {
-      await fs.access(fullVideoPath);
-    } catch (error) {
-      return res.status(404).json({ error: 'Video file not found' });
-    }
-
-    console.log(`[VideoCompatibility] Checking compatibility for: ${path.basename(fullVideoPath)}`);
-
-    // Ensure video compatibility (this will convert if needed)
-    const compatibleVideoPath = await ensureVideoCompatibility(fullVideoPath);
-    
-    // Check if conversion happened
-    const wasConverted = compatibleVideoPath !== fullVideoPath;
-    
-    if (wasConverted) {
-      console.log(`[VideoCompatibility] Video was converted: ${path.basename(compatibleVideoPath)}`);
-      
-      // Return the path to the converted video
-      const relativePath = path.relative(path.join(__dirname, '../../'), compatibleVideoPath);
-      const webPath = '/' + relativePath.replace(/\\/g, '/');
-      
-      res.json({
-        converted: true,
-        path: webPath,
-        filename: path.basename(compatibleVideoPath),
-        originalPath: videoPath
-      });
-    } else {
-      console.log(`[VideoCompatibility] Video is already compatible: ${path.basename(fullVideoPath)}`);
-      
-      res.json({
-        converted: false,
-        path: videoPath,
-        filename: path.basename(fullVideoPath)
-      });
-    }
+/**
 
   } catch (error) {
     console.error('[VideoCompatibility] Error ensuring video compatibility:', error);

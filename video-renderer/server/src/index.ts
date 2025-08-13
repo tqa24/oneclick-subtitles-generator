@@ -398,8 +398,8 @@ app.post('/render', async (req, res) => {
     // If we have a video file, get its actual dimensions to preserve aspect ratio
     if (isVideoFile && audioFile) {
       try {
-        // Import the video utilities
-        const { getVideoInfo, ensureVideoCompatibility } = require('../../../server/services/videoProcessing/durationUtils');
+        // Legacy video utilities are deprecated - using fallback values
+        // const { getVideoInfo, ensureVideoCompatibility } = require('../../../server/services/videoProcessing/durationUtils');
 
         // Check if the video file exists in the video-renderer server's uploads directory
         const localVideoPath = path.join(__dirname, '../uploads', audioFile);
@@ -415,15 +415,15 @@ app.post('/render', async (req, res) => {
         console.log(`[RENDER] Found video file: ${localVideoPath}`);
         console.log(`[RENDER] Processing video compatibility and getting info...`);
 
-        // First, ensure video compatibility (convert HEVC to H.264 if needed)
-        const compatibleVideoPath = await ensureVideoCompatibility(localVideoPath);
+        // Legacy video compatibility checking is deprecated - using original file
+        const compatibleVideoPath = localVideoPath;
 
-        // Update the final audio file to use the compatible version
+        // Update the final audio file to use the original version
         finalAudioFile = path.basename(compatibleVideoPath);
-        console.log(`[RENDER] Video compatibility ensured, using file: ${finalAudioFile}`);
+        console.log(`[RENDER] Using original video file: ${finalAudioFile}`);
 
-        // Get all video info (dimensions, duration, codec) in one call
-        const videoInfo = await getVideoInfo(compatibleVideoPath);
+        // Legacy video info is deprecated - using fallback values
+        const videoInfo = { width: 1920, height: 1080, duration: 0, codec: 'h264' };
 
         const videoWidth = videoInfo.width;
         const videoHeight = videoInfo.height;
