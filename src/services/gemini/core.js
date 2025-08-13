@@ -18,6 +18,7 @@ import i18n from '../../i18n/i18n';
 import { getNextAvailableKey, blacklistKey } from './keyManager';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { uploadFileToGemini, shouldUseFilesApi } from './filesApi';
+import { streamGeminiContent, isStreamingSupported } from './streamingService';
 
 /**
  * Clear cached file URI for a specific file
@@ -45,6 +46,86 @@ export const clearAllCachedFileUris = () => {
  * @param {Object} options - Additional options
  * @returns {Promise<Array>} - Array of subtitles
  */
+/**
+ * Stream content generation using Files API
+ * @param {File} file - The media file
+ * @param {Object} options - Generation options
+ * @param {Function} onChunk - Callback for streaming chunks
+ * @param {Function} onComplete - Callback when complete
+ * @param {Function} onError - Callback for errors
+ * @returns {Promise<void>}
+ */
+export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, onComplete, onError) => {
+    const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
+    const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
+
+    console.log(`[GeminiAPI] Using streaming Files API with model: ${MODEL}`);
+
+    // Check if streaming is supported
+    if (!isStreamingSupported(MODEL)) {
+        console.warn('[GeminiAPI] Streaming not supported for model:', MODEL, '- falling back to regular API');
+        try {
+            const result = await callGeminiApiWithFilesApi(file, options);
+            onComplete(result);
+        } catch (error) {
+            onError(error);
+        }
+        return;
+    }
+
+    try {
+        // Check if we already have an uploaded file URI for this file
+        const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
+        let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
+
+        if (uploadedFile && uploadedFile.uri) {
+            console.log('Reusing existing uploaded file URI:', uploadedFile.uri);
+            // Dispatch event to update status if needed
+            window.dispatchEvent(new CustomEvent('gemini-file-reused', {
+                detail: { fileName: file.name, uri: uploadedFile.uri }
+            }));
+        } else {
+            // Upload file to Gemini Files API
+            console.log('Uploading file to Gemini Files API...');
+            // Dispatch event to update status if needed
+            window.dispatchEvent(new CustomEvent('gemini-file-uploading', {
+                detail: { fileName: file.name }
+            }));
+
+            uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
+            console.log('File uploaded successfully:', uploadedFile.uri);
+
+            // Cache the uploaded file info for reuse
+            localStorage.setItem(fileKey, JSON.stringify(uploadedFile));
+
+            // Dispatch event to update status
+            window.dispatchEvent(new CustomEvent('gemini-file-uploaded', {
+                detail: { fileName: file.name, uri: uploadedFile.uri }
+            }));
+        }
+
+        // Start streaming
+        await streamGeminiContent(
+            file,
+            uploadedFile.uri,
+            {
+                userProvidedSubtitles,
+                modelId,
+                videoMetadata,
+                mediaResolution,
+                segmentInfo: options.segmentInfo
+            },
+            onChunk,
+            onComplete,
+            onError
+        );
+
+    } catch (error) {
+        console.error('Error in streaming Files API:', error);
+        onError(error);
+    }
+};
+
 export const callGeminiApiWithFilesApi = async (file, options = {}) => {
     const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
     const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";

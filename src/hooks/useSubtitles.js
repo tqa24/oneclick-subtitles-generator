@@ -222,19 +222,11 @@ export const useSubtitles = (t) => {
 
             // Check if this is segment processing
             if (segment) {
-                console.log('[Subtitle Generation] Processing specific segment:', segment);
+                console.log('[Subtitle Generation] Processing specific segment with streaming:', segment);
 
-                // Import the segment processing function and subtitle merger
-                const { processSegmentWithFilesApi } = await import('../utils/videoProcessing/processingUtils');
+                // Import the streaming segment processing function and subtitle merger
+                const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
                 const { mergeSegmentSubtitles } = await import('../utils/subtitle/subtitleMerger');
-
-                // Process the specific segment
-                const segmentSubtitles = await processSegmentWithFilesApi(input, segment, {
-                    fps,
-                    mediaResolution,
-                    model,
-                    userProvidedSubtitles
-                }, setStatus, t);
 
                 // Get current subtitles state using functional update to avoid stale closure
                 let currentSubtitles = [];
@@ -243,17 +235,55 @@ export const useSubtitles = (t) => {
                     return current; // Don't change the state, just capture current value
                 });
 
-                console.log('[Subtitle Generation] Before merge:', {
+                console.log('[Subtitle Generation] Before streaming:', {
                     existingCount: currentSubtitles.length,
-                    newSegmentCount: segmentSubtitles.length,
                     segmentRange: `${segment.start}s - ${segment.end}s`,
                     existingSubtitles: currentSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
                 });
 
-                // Merge with existing subtitles (replace overlapping parts)
+                // Process the specific segment with streaming
+                const segmentSubtitles = await processSegmentWithStreaming(
+                    input,
+                    segment,
+                    {
+                        fps,
+                        mediaResolution,
+                        model,
+                        userProvidedSubtitles
+                    },
+                    setStatus,
+                    (streamingSubtitles, isStreaming) => {
+                        // Real-time subtitle updates during streaming
+                        if (streamingSubtitles && streamingSubtitles.length > 0) {
+                            console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+
+                            // Merge streaming subtitles with existing ones
+                            const mergedStreamingSubtitles = mergeSegmentSubtitles(currentSubtitles, streamingSubtitles, segment);
+
+                            // Update the UI with streaming results
+                            setSubtitlesData(mergedStreamingSubtitles);
+
+                            // Update status to show streaming progress
+                            if (isStreaming) {
+                                setStatus({
+                                    message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
+                                    type: 'loading'
+                                });
+                            }
+                        }
+                    },
+                    t
+                );
+
+                console.log('[Subtitle Generation] Streaming complete:', {
+                    newSegmentCount: segmentSubtitles.length,
+                    segmentRange: `${segment.start}s - ${segment.end}s`
+                });
+
+                // Final merge with existing subtitles
                 subtitles = mergeSegmentSubtitles(currentSubtitles, segmentSubtitles, segment);
 
-                console.log('[Subtitle Generation] After merge:', {
+                console.log('[Subtitle Generation] Final merge:', {
                     totalCount: subtitles.length,
                     mergedSubtitles: subtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
                 });

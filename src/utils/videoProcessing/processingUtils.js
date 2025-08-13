@@ -120,3 +120,75 @@ export const processSegmentWithFilesApi = async (file, segment, options, setStat
     throw error;
   }
 };
+
+/**
+ * Process a specific segment with streaming support
+ * @param {File} file - The media file
+ * @param {Object} segment - Segment with start/end times
+ * @param {Object} options - Processing options
+ * @param {Function} setStatus - Status update callback
+ * @param {Function} onSubtitleUpdate - Real-time subtitle update callback
+ * @param {Function} t - Translation function
+ * @returns {Promise<Array>} - Final subtitle array
+ */
+export const processSegmentWithStreaming = async (file, segment, options, setStatus, onSubtitleUpdate, t) => {
+  return new Promise((resolve, reject) => {
+    const { fps, mediaResolution, model, userProvidedSubtitles } = options;
+
+    // Import streaming processor
+    import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
+      // Create realtime processor
+      const processor = createRealtimeProcessor({
+        onSubtitleUpdate: (data) => {
+          console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
+          if (onSubtitleUpdate) {
+            onSubtitleUpdate(data.subtitles, data.isStreaming);
+          }
+        },
+        onStatusUpdate: setStatus,
+        onComplete: (finalSubtitles) => {
+          console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
+          resolve(finalSubtitles);
+        },
+        onError: (error) => {
+          console.error('[ProcessingUtils] Streaming error:', error);
+          reject(error);
+        }
+      });
+
+      // Prepare video metadata for segment processing
+      const videoMetadata = {
+        start_offset: `${Math.floor(segment.start)}s`,
+        end_offset: `${Math.floor(segment.end)}s`,
+        fps: fps
+      };
+
+      // Map media resolution to API enum value
+      const mappedMediaResolution = mapMediaResolution(mediaResolution);
+
+      // Prepare options for streaming API call
+      const apiOptions = {
+        userProvidedSubtitles,
+        modelId: model,
+        videoMetadata,
+        mediaResolution: mappedMediaResolution,
+        segmentInfo: {
+          start: segment.start,
+          end: segment.end,
+          duration: segment.end - segment.start
+        }
+      };
+
+      // Start streaming
+      import('../../services/gemini').then(({ streamGeminiApiWithFilesApi }) => {
+        streamGeminiApiWithFilesApi(
+          file,
+          apiOptions,
+          (chunk) => processor.processChunk(chunk),
+          (finalText) => processor.complete(finalText),
+          (error) => processor.error(error)
+        );
+      }).catch(reject);
+    }).catch(reject);
+  });
+};
