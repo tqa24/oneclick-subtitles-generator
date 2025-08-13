@@ -481,51 +481,90 @@ const TimelineVisualization = ({
     return Math.max(0, Math.min(effectiveDuration, timeRange.start + (relativeX * timePerPixel)));
   };
 
-  // Handle segment selection drag
-  const handleSegmentMouseDown = (e) => {
-    if (!onSegmentSelect) return;
-
+  // Handle mouse down - supports both click and drag
+  const handleMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
     const startTime = pixelToTime(e.clientX);
-    setIsDraggingSegment(true);
-    setDragStartTime(startTime);
-    setDragCurrentTime(startTime);
-    dragStartRef.current = startTime;
-    dragCurrentRef.current = startTime;
-    isDraggingRef.current = true;
+    const startX = e.clientX;
+    let hasMoved = false;
+    let dragThreshold = 5; // pixels - minimum movement to consider it a drag
+
+    console.log('[Timeline] Mouse down at time:', startTime.toFixed(2), 's');
+
+    // Initialize drag state for segment selection (if enabled)
+    if (onSegmentSelect) {
+      setDragStartTime(startTime);
+      setDragCurrentTime(startTime);
+      dragStartRef.current = startTime;
+      dragCurrentRef.current = startTime;
+    }
 
     const handleMouseMove = (moveEvent) => {
-      if (!isDraggingRef.current) return;
+      const deltaX = Math.abs(moveEvent.clientX - startX);
 
-      const currentTime = pixelToTime(moveEvent.clientX);
+      // Check if we've moved enough to consider this a drag
+      if (deltaX > dragThreshold) {
+        hasMoved = true;
 
-      // Only update if the time has changed significantly (avoid excessive updates)
-      if (Math.abs(currentTime - (dragCurrentRef.current || 0)) > 0.1) {
-        setDragCurrentTime(currentTime);
-        dragCurrentRef.current = currentTime;
+        // Only handle drag if segment selection is enabled
+        if (onSegmentSelect) {
+          if (!isDraggingRef.current) {
+            setIsDraggingSegment(true);
+            isDraggingRef.current = true;
+          }
+
+          const currentTime = pixelToTime(moveEvent.clientX);
+
+          // Only update if the time has changed significantly (avoid excessive updates)
+          if (Math.abs(currentTime - (dragCurrentRef.current || 0)) > 0.1) {
+            setDragCurrentTime(currentTime);
+            dragCurrentRef.current = currentTime;
+          }
+        }
       }
     };
 
-    const handleMouseUp = () => {
-      if (isDraggingRef.current && dragStartRef.current !== null && dragCurrentRef.current !== null) {
-        const start = Math.min(dragStartRef.current, dragCurrentRef.current);
-        const end = Math.max(dragStartRef.current, dragCurrentRef.current);
+    const handleMouseUp = (upEvent) => {
+      if (hasMoved && onSegmentSelect && isDraggingRef.current) {
+        // This was a drag - handle segment selection
+        console.log('[Timeline] Drag detected - creating segment');
+        if (dragStartRef.current !== null && dragCurrentRef.current !== null) {
+          const start = Math.min(dragStartRef.current, dragCurrentRef.current);
+          const end = Math.max(dragStartRef.current, dragCurrentRef.current);
 
-        // Only create segment if there's a meaningful duration (at least 1 second)
-        if (end - start >= 1) {
-          onSegmentSelect({ start, end });
+          // Only create segment if there's a meaningful duration (at least 1 second)
+          if (end - start >= 1) {
+            console.log('[Timeline] Creating segment:', start.toFixed(2), '-', end.toFixed(2), 's');
+            onSegmentSelect({ start, end });
+          } else {
+            console.log('[Timeline] Segment too short, ignoring');
+          }
         }
+      } else if (!hasMoved) {
+        // This was a click - handle timeline seeking
+        const clickTime = pixelToTime(upEvent.clientX);
+        console.log('[Timeline] Click detected - seeking to:', clickTime.toFixed(2), 's');
+        handleClick(
+          upEvent,
+          timelineRef.current,
+          duration,
+          onTimelineClick,
+          getTimeRange(),
+          lastManualPanTime
+        );
       }
 
-      // Clean up
-      setIsDraggingSegment(false);
-      setDragStartTime(null);
-      setDragCurrentTime(null);
-      dragStartRef.current = null;
-      dragCurrentRef.current = null;
-      isDraggingRef.current = false;
+      // Clean up drag state
+      if (onSegmentSelect) {
+        setIsDraggingSegment(false);
+        setDragStartTime(null);
+        setDragCurrentTime(null);
+        dragStartRef.current = null;
+        dragCurrentRef.current = null;
+        isDraggingRef.current = false;
+      }
 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -535,31 +574,22 @@ const TimelineVisualization = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Handle timeline click with zoom consideration
-  const handleTimelineClick = (e) => {
-    // Don't handle click if we're in segment selection mode or if we just finished dragging
-    if (onSegmentSelect || isDraggingSegment) {
-      return;
-    }
-
-    handleClick(
-      e,
-      timelineRef.current,
-      duration,
-      onTimelineClick,
-      getTimeRange(),
-      lastManualPanTime
-    );
-  };
+  // Note: Timeline click handling is now integrated into handleMouseDown
+  // to support both click-to-seek and drag-to-select functionality
 
   return (
     <div className="timeline-container">
       <canvas
         ref={timelineRef}
-        onClick={handleTimelineClick}
-        onMouseDown={onSegmentSelect ? handleSegmentMouseDown : undefined}
+        onMouseDown={handleMouseDown}
         className="subtitle-timeline"
-        style={{ cursor: isDraggingSegment ? 'ew-resize' : 'pointer' }}
+        style={{
+          cursor: isDraggingSegment
+            ? 'ew-resize'
+            : onSegmentSelect
+              ? 'crosshair'
+              : 'pointer'
+        }}
       />
 
       {/* Liquid Glass zoom controls in top right corner */}
