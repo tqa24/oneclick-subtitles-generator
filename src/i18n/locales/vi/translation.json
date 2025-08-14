@@ -53,6 +53,7 @@
   "retryingSegment": "Đang thử lại đoạn {{segment}}...",
   "retrySubtitle": "Thử lại phụ đề này",
   "retryingSubtitle": "Đang thử lại phụ đề {{index}}...",
+  "retryingSubtitleWithContext": "Đang thử lại phụ đề {{subtitle}} với ngữ cảnh xung quanh...",
   "includeRulesDescription": "Bao gồm ngữ cảnh phân tích video và quy tắc với mỗi yêu cầu dịch để đảm bảo tính nhất quán giữa các phần.",
   "noRulesAvailable": "Không có quy tắc phiên âm nào. Tùy chọn này yêu cầu phân tích video với Gemini trước.",
   "customSubtitlesNoRules": "Tùy chọn này bị vô hiệu hóa vì bạn đã cung cấp phụ đề tùy chỉnh. Chế độ phụ đề tùy chỉnh bỏ qua phân tích video và tạo quy tắc.",
