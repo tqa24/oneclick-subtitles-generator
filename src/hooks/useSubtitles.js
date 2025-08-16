@@ -428,6 +428,20 @@ export const useSubtitles = (t) => {
                 // For segment processing, just update the final result
                 // (the save was already triggered before streaming started)
                 setSubtitlesData(subtitles);
+
+                // Auto-save after streaming completion to preserve the new results
+                if (subtitles && subtitles.length > 0) {
+                    setTimeout(() => {
+                        console.log('[Subtitle Generation] Triggering auto-save after streaming completion');
+                        window.dispatchEvent(new CustomEvent('save-after-streaming', {
+                            detail: {
+                                source: 'streaming-complete',
+                                subtitles: subtitles,
+                                segment: segment
+                            }
+                        }));
+                    }, 500); // Wait a bit for UI to update with final results
+                }
             } else {
                 // For non-segment processing, trigger save before updating with new results
                 if (subtitles && subtitles.length > 0) {

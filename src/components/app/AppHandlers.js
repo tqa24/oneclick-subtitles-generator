@@ -303,13 +303,8 @@ export const useAppHandlers = (appState) => {
       // Store the processed file for later use
       setUploadedFileData(processedFile);
 
-        // Clear any cached file URIs for the previous file to ensure fresh uploads
-        try {
-          const { clearAllCachedFileUris } = await import('../../services/gemini/core');
-          clearAllCachedFileUris();
-        } catch (error) {
-          console.warn('Could not clear cached file URIs:', error);
-        }
+        // Note: We don't clear cached file URIs here anymore to allow reuse within the same session
+        // The Files API caching logic in core.js will handle reusing uploaded files efficiently
 
       // Update status to indicate upload is complete and waiting for segment selection
       setIsUploading(false);

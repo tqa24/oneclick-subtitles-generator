@@ -716,6 +716,31 @@ const LyricsDisplay = ({
     };
   }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
 
+  // Listen for save-after-streaming events triggered after streaming completion
+  useEffect(() => {
+    const handleSaveAfterStreaming = (event) => {
+      console.log('[LyricsDisplay] Save-after-streaming event received:', event.detail);
+
+      // Only trigger save if the event is from streaming completion and we have lyrics
+      if (event.detail?.source === 'streaming-complete' && lyrics && lyrics.length > 0) {
+        console.log('[LyricsDisplay] Auto-saving after streaming completion');
+
+        // Trigger the save function to preserve the new streaming results
+        handleSave().then(() => {
+          console.log('[LyricsDisplay] Auto-save after streaming completed successfully');
+        }).catch((error) => {
+          console.error('[LyricsDisplay] Error during auto-save after streaming:', error);
+        });
+      }
+    };
+
+    window.addEventListener('save-after-streaming', handleSaveAfterStreaming);
+
+    return () => {
+      window.removeEventListener('save-after-streaming', handleSaveAfterStreaming);
+    };
+  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
+
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
     e.preventDefault();
