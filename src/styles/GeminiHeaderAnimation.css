@@ -24,7 +24,7 @@
 .header-title-container,
 .settings-button {
   position: relative;
-  z-index: 2; /* Above canvas */
+  z-index: 4; /* Above canvas */
 }
 
 /* Add a subtle glow effect to the header title when header is hovered */
