@@ -224,18 +224,84 @@ export const useSubtitles = (t) => {
             if (segment) {
                 console.log('[Subtitle Generation] Processing specific segment with streaming:', segment);
 
+                // CRITICAL: Ensure cache ID is properly set BEFORE triggering save
+                if (inputType === 'file-upload') {
+                    let cacheId = localStorage.getItem('current_file_cache_id');
+                    if (!cacheId) {
+                        // Generate and store cache ID if not already set
+                        cacheId = await generateFileCacheId(input);
+                        localStorage.setItem('current_file_cache_id', cacheId);
+                        console.log('[Subtitle Generation] Generated cache ID for segment processing:', cacheId);
+                    } else {
+                        console.log('[Subtitle Generation] Using existing cache ID for segment processing:', cacheId);
+                    }
+                }
+
+                // FIRST: Trigger save to preserve any manual edits before processing starts
+                // Use a Promise to wait for the save to actually complete
+                await new Promise((resolve) => {
+                    const handleSaveComplete = (event) => {
+                        if (event.detail?.source === 'segment-processing-start') {
+                            window.removeEventListener('save-complete', handleSaveComplete);
+                            resolve();
+                        }
+                    };
+
+                    window.addEventListener('save-complete', handleSaveComplete);
+
+                    // Trigger the save
+                    window.dispatchEvent(new CustomEvent('save-before-update', {
+                        detail: {
+                            source: 'segment-processing-start',
+                            segment: segment
+                        }
+                    }));
+
+                    // Fallback timeout in case save doesn't complete
+                    setTimeout(() => {
+                        window.removeEventListener('save-complete', handleSaveComplete);
+                        resolve();
+                    }, 2000);
+                });
+
                 // Import the streaming segment processing function and subtitle merger
                 const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
                 const { mergeSegmentSubtitles } = await import('../utils/subtitle/subtitleMerger');
 
-                // Get current subtitles state using functional update to avoid stale closure
+                // IMPORTANT: Load the saved state from cache AFTER save completes
+                // This ensures we merge with the saved state (including manual edits), not the old React state
                 let currentSubtitles = [];
-                setSubtitlesData(current => {
-                    currentSubtitles = current || [];
-                    return current; // Don't change the state, just capture current value
-                });
+                try {
+                    const cacheId = localStorage.getItem('current_file_cache_id');
+                    if (cacheId) {
+                        const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheId}`);
+                        const result = await response.json();
+                        if (result.exists && result.subtitles) {
+                            currentSubtitles = result.subtitles;
+                            console.log('[Subtitle Generation] Loaded saved state from cache for merging:', currentSubtitles.length, 'subtitles');
+                        } else {
+                            console.warn('[Subtitle Generation] Could not load saved state, falling back to React state');
+                            setSubtitlesData(current => {
+                                currentSubtitles = current || [];
+                                return current;
+                            });
+                        }
+                    } else {
+                        console.warn('[Subtitle Generation] No cache ID found, using React state');
+                        setSubtitlesData(current => {
+                            currentSubtitles = current || [];
+                            return current;
+                        });
+                    }
+                } catch (error) {
+                    console.error('[Subtitle Generation] Error loading saved state:', error);
+                    setSubtitlesData(current => {
+                        currentSubtitles = current || [];
+                        return current;
+                    });
+                }
 
-                console.log('[Subtitle Generation] Before streaming:', {
+                console.log('[Subtitle Generation] Before streaming (using saved state):', {
                     existingCount: currentSubtitles.length,
                     segmentRange: `${segment.start}s - ${segment.end}s`,
                     existingSubtitles: currentSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
@@ -326,7 +392,32 @@ export const useSubtitles = (t) => {
                 subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
             }
 
-            setSubtitlesData(subtitles);
+            // For segment processing, the final result is already set during streaming
+            // For non-segment processing, trigger save before updating with new results
+            if (segment) {
+                // For segment processing, just update the final result
+                // (the save was already triggered before streaming started)
+                setSubtitlesData(subtitles);
+            } else {
+                // For non-segment processing, trigger save before updating with new results
+                if (subtitles && subtitles.length > 0) {
+                    // First, trigger save of current state to preserve any manual edits
+                    window.dispatchEvent(new CustomEvent('save-before-update', {
+                        detail: {
+                            source: 'video-processing-complete',
+                            newSubtitles: subtitles
+                        }
+                    }));
+
+                    // Wait a moment for the save to complete, then update with new results
+                    setTimeout(() => {
+                        setSubtitlesData(subtitles);
+                    }, 300);
+                } else {
+                    // If no subtitles, just update normally
+                    setSubtitlesData(subtitles);
+                }
+            }
 
             // Cache the results - but don't cache segment results with the full file cache ID
             if (cacheId && subtitles && subtitles.length > 0 && !segment) {

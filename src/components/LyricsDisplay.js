@@ -410,6 +410,8 @@ const LyricsDisplay = ({
     }
   }, [seekTime]);
 
+
+
   // Generate comprehensive filename based on priority system
   const generateFilename = (source, namingInfo = {}) => {
     const { sourceSubtitleName = '', videoName = '', targetLanguages = [] } = namingInfo;
@@ -667,6 +669,52 @@ const LyricsDisplay = ({
       console.error('Error saving subtitles:', error);
     }
   };
+
+  // Listen for save-before-update events triggered before new video processing results
+  useEffect(() => {
+    const handleSaveBeforeUpdate = (event) => {
+      console.log('[LyricsDisplay] Save-before-update event received:', event.detail);
+
+      // Handle both segment processing start and video processing complete
+      const isSegmentStart = event.detail?.source === 'segment-processing-start';
+      const isProcessingComplete = event.detail?.source === 'video-processing-complete';
+
+      if ((isSegmentStart || isProcessingComplete) && lyrics && lyrics.length > 0) {
+        const action = isSegmentStart ? 'segment processing' : 'video processing completion';
+        console.log(`[LyricsDisplay] Saving current state before ${action}`);
+
+        // Trigger the save function to checkpoint current edits
+        handleSave().then(() => {
+          console.log(`[LyricsDisplay] Checkpoint save completed for ${action}`);
+
+          // Dispatch save-complete event to notify that save is done
+          window.dispatchEvent(new CustomEvent('save-complete', {
+            detail: {
+              source: event.detail?.source,
+              success: true
+            }
+          }));
+        }).catch((error) => {
+          console.error(`[LyricsDisplay] Error during checkpoint save for ${action}:`, error);
+
+          // Dispatch save-complete event even on error to prevent hanging
+          window.dispatchEvent(new CustomEvent('save-complete', {
+            detail: {
+              source: event.detail?.source,
+              success: false,
+              error: error.message
+            }
+          }));
+        });
+      }
+    };
+
+    window.addEventListener('save-before-update', handleSaveBeforeUpdate);
+
+    return () => {
+      window.removeEventListener('save-before-update', handleSaveBeforeUpdate);
+    };
+  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
 
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
