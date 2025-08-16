@@ -567,6 +567,15 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     setIsAtSavedState(true);
   };
 
+  // Function to capture state before merging operations for undo/redo
+  const captureStateBeforeMerge = () => {
+    const currentState = JSON.parse(JSON.stringify(lyrics));
+    setHistory(prevHistory => [...prevHistory, currentState]);
+    // Clear redo stack since we're making a new change
+    setRedoStack([]);
+    console.log('[LyricsEditor] Captured state before merge operation for undo/redo');
+  };
+
   return {
     lyrics,
     isSticky,
@@ -588,6 +597,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleInsertLyric,
     handleMergeLyrics,
     handleSplitSubtitles,
-    updateSavedLyrics
+    updateSavedLyrics,
+    captureStateBeforeMerge
   };
 };

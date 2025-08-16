@@ -287,7 +287,8 @@ const LyricsDisplay = ({
     handleInsertLyric,
     handleMergeLyrics,
     updateSavedLyrics,
-    handleSplitSubtitles
+    handleSplitSubtitles,
+    captureStateBeforeMerge
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -686,6 +687,8 @@ const LyricsDisplay = ({
         // Trigger the save function to checkpoint current edits
         handleSave().then(() => {
           console.log(`[LyricsDisplay] Checkpoint save completed for ${action}`);
+          // Update the saved state to gray out the save button
+          updateSavedLyrics();
 
           // Dispatch save-complete event to notify that save is done
           window.dispatchEvent(new CustomEvent('save-complete', {
@@ -728,6 +731,8 @@ const LyricsDisplay = ({
         // Trigger the save function to preserve the new streaming results
         handleSave().then(() => {
           console.log('[LyricsDisplay] Auto-save after streaming completed successfully');
+          // Update the saved state to gray out the save button
+          updateSavedLyrics();
         }).catch((error) => {
           console.error('[LyricsDisplay] Error during auto-save after streaming:', error);
         });
@@ -740,6 +745,25 @@ const LyricsDisplay = ({
       window.removeEventListener('save-after-streaming', handleSaveAfterStreaming);
     };
   }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
+
+  // Listen for capture-before-merge events to support undo/redo for merging operations
+  useEffect(() => {
+    const handleCaptureBeforeMerge = (event) => {
+      console.log('[LyricsDisplay] Capture-before-merge event received:', event.detail);
+
+      // Capture the current state before merging happens
+      if (lyrics && lyrics.length > 0) {
+        console.log('[LyricsDisplay] Capturing state before merge for undo/redo');
+        captureStateBeforeMerge();
+      }
+    };
+
+    window.addEventListener('capture-before-merge', handleCaptureBeforeMerge);
+
+    return () => {
+      window.removeEventListener('capture-before-merge', handleCaptureBeforeMerge);
+    };
+  }, [lyrics, captureStateBeforeMerge]); // Include captureStateBeforeMerge in dependencies
 
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {

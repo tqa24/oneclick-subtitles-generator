@@ -353,6 +353,15 @@ export const useSubtitles = (t) => {
                         if (streamingSubtitles && streamingSubtitles.length > 0) {
                             console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
+                            // Capture state before progressive merging for undo/redo
+                            window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                detail: {
+                                    type: 'progressive-merge',
+                                    source: 'streaming-update',
+                                    segment: segment
+                                }
+                            }));
+
                             // Use progressive merging for streaming updates (clears left to right)
                             const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
 
@@ -375,6 +384,15 @@ export const useSubtitles = (t) => {
                     newSegmentCount: segmentSubtitles.length,
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
+
+                // Capture state before final merging for undo/redo
+                window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                    detail: {
+                        type: 'final-merge',
+                        source: 'streaming-complete',
+                        segment: segment
+                    }
+                }));
 
                 // Final merge with existing subtitles
                 subtitles = mergeSegmentSubtitles(currentSubtitles, segmentSubtitles, segment);

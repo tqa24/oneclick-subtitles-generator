@@ -90,7 +90,8 @@ const LyricsHeader = ({
             <button
               className="lyrics-save-btn"
               onClick={onSave}
-              title={t('common.save', 'Save progress')}
+              disabled={isAtSavedState}
+              title={isAtSavedState ? t('common.saveDisabled', 'No changes to save') : t('common.save', 'Save progress')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
