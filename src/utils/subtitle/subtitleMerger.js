@@ -64,6 +64,80 @@ export const mergeSegmentSubtitles = (existingSubtitles, newSegmentSubtitles, se
 };
 
 /**
+ * Progressive merge for streaming subtitles - clears left to right as new subtitles come in
+ * Only clears up to the rightmost subtitle received so far, not the entire segment
+ * @param {Array} existingSubtitles - Current subtitle array
+ * @param {Array} newStreamingSubtitles - New subtitles from streaming (partial)
+ * @param {Object} segment - Segment info with start and end times
+ * @returns {Array} - Progressively merged subtitle array
+ */
+export const mergeStreamingSubtitlesProgressively = (existingSubtitles, newStreamingSubtitles, segment) => {
+  if (!existingSubtitles || existingSubtitles.length === 0) {
+    // If no existing subtitles, just return the new ones
+    return newStreamingSubtitles || [];
+  }
+
+  if (!newStreamingSubtitles || newStreamingSubtitles.length === 0) {
+    // If no new subtitles, return existing ones
+    return existingSubtitles;
+  }
+
+  const { start: segmentStart, end: segmentEnd } = segment;
+
+  // Find the rightmost (latest) subtitle in the new streaming results
+  const rightmostNewSubtitle = newStreamingSubtitles.reduce((latest, sub) =>
+    sub.end > latest.end ? sub : latest, newStreamingSubtitles[0]);
+
+  const progressiveEndTime = rightmostNewSubtitle.end;
+
+  console.log(`[SubtitleMerger] Progressive merge:`, {
+    segmentRange: `${segmentStart}s - ${segmentEnd}s`,
+    progressiveEnd: `${progressiveEndTime}s`,
+    existingCount: existingSubtitles.length,
+    newCount: newStreamingSubtitles.length,
+    existing: existingSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 15)}...`),
+    new: newStreamingSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 15)}...`)
+  });
+
+  // Keep subtitles before the segment
+  const subtitlesBeforeSegment = existingSubtitles.filter(sub => sub.end <= segmentStart);
+
+  // Keep subtitles after the progressive end (not yet reached by streaming)
+  const subtitlesAfterProgressive = existingSubtitles.filter(sub => sub.start >= progressiveEndTime);
+
+  // Filter out subtitles in the progressive range (from segment start to progressive end)
+  // These will be replaced by the new streaming subtitles
+
+  console.log(`[SubtitleMerger] Progressive filtering:`, {
+    before: subtitlesBeforeSegment.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 15)}...`),
+    afterProgressive: subtitlesAfterProgressive.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 15)}...`),
+    progressiveRange: `${segmentStart}s - ${progressiveEndTime}s (cleared)`
+  });
+
+  // Combine: before + new streaming + after progressive
+  const mergedSubtitles = [
+    ...subtitlesBeforeSegment,
+    ...newStreamingSubtitles,
+    ...subtitlesAfterProgressive
+  ];
+
+  // Sort by start time to ensure proper order
+  mergedSubtitles.sort((a, b) => a.start - b.start);
+
+  console.log(`[SubtitleMerger] Progressive result:`, {
+    segmentRange: `${segmentStart}s - ${segmentEnd}s`,
+    progressiveEnd: `${progressiveEndTime}s`,
+    before: subtitlesBeforeSegment.length,
+    new: newStreamingSubtitles.length,
+    afterProgressive: subtitlesAfterProgressive.length,
+    total: mergedSubtitles.length,
+    final: mergedSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 15)}...`)
+  });
+
+  return mergedSubtitles;
+};
+
+/**
  * Check if a subtitle overlaps with a time range
  * @param {Object} subtitle - Subtitle object with start and end times
  * @param {number} rangeStart - Start time of the range

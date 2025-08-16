@@ -264,10 +264,40 @@ export const useAppHandlers = (appState) => {
         // Set the uploaded file in the app state so VideoPreview can use it
         setUploadedFile(processedFile);
 
-        setStatus({
-          message: t('output.videoReady', 'Video ready for segment selection...'),
-          type: 'loading'
-        });
+        // IMPORTANT: Check for cached subtitles immediately for file uploads
+        // This ensures the timeline shows cached subtitles right when output container appears
+        try {
+          const { generateFileCacheId } = await import('../../utils/cacheUtils');
+          const cacheId = await generateFileCacheId(processedFile);
+          localStorage.setItem('current_file_cache_id', cacheId);
+
+          console.log('[AppHandlers] Checking for cached subtitles for uploaded file:', cacheId);
+
+          // Check if cached subtitles exist
+          const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheId}`);
+          const result = await response.json();
+
+          if (result.exists && result.subtitles && result.subtitles.length > 0) {
+            console.log('[AppHandlers] Found cached subtitles, loading immediately:', result.subtitles.length, 'subtitles');
+            setSubtitlesData(result.subtitles);
+            setStatus({
+              message: t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache! Select a segment to generate more.'),
+              type: 'success'
+            });
+          } else {
+            console.log('[AppHandlers] No cached subtitles found for this file');
+            setStatus({
+              message: t('output.videoReady', 'Video ready for segment selection...'),
+              type: 'loading'
+            });
+          }
+        } catch (error) {
+          console.error('[AppHandlers] Error checking cached subtitles:', error);
+          setStatus({
+            message: t('output.videoReady', 'Video ready for segment selection...'),
+            type: 'loading'
+          });
+        }
       }
 
       // Store the processed file for later use

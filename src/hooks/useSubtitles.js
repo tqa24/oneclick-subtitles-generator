@@ -86,12 +86,18 @@ export const useSubtitles = (t) => {
             }
 
             // If we have a current video URL, validate that the cache belongs to this URL
-            if (currentVideoUrl && data.metadata && data.metadata.sourceUrl) {
+            // Skip this validation for file uploads since they don't have consistent URLs
+            const currentFileCacheId = localStorage.getItem('current_file_cache_id');
+            const isFileUpload = currentFileCacheId === cacheId;
+
+            if (!isFileUpload && currentVideoUrl && data.metadata && data.metadata.sourceUrl) {
                 if (data.metadata.sourceUrl !== currentVideoUrl) {
                     console.log(`[Cache] Cache ID collision detected. Cache for ${data.metadata.sourceUrl}, current: ${currentVideoUrl}`);
                     return null; // Cache belongs to different video
                 }
             }
+
+            console.log(`[Cache] Cache validation passed for ${isFileUpload ? 'file upload' : 'video URL'}`);
 
             return data.subtitles;
         } catch (error) {
@@ -141,17 +147,20 @@ export const useSubtitles = (t) => {
         setIsGenerating(true);
         setStatus({ message: t('output.processingVideo'), type: 'loading' });
 
-        // Only clear existing subtitles if this is NOT segment processing
-        // For segment processing, we want to keep existing subtitles to merge with
-        if (!segment) {
-            setSubtitlesData(null);
-        }
-
         try {
             let cacheId = null;
 
             // Check if this is a URL-based input (either direct URL or downloaded video)
             const currentVideoUrl = localStorage.getItem('current_video_url');
+            const currentFileCacheId = localStorage.getItem('current_file_cache_id');
+
+            console.log('[Subtitle Generation] Cache ID generation debug:', {
+                inputType,
+                currentVideoUrl,
+                currentFileCacheId,
+                inputIsFile: input instanceof File,
+                inputName: input instanceof File ? input.name : 'not a file'
+            });
 
             if (inputType === 'youtube' || currentVideoUrl) {
                 // Use unified URL-based caching for all video URLs
@@ -199,22 +208,43 @@ export const useSubtitles = (t) => {
                 }
             }
 
-            // Check cache with URL validation - but skip cache when processing a specific segment
+            // IMPORTANT: Check cache FIRST and load cached subtitles immediately
+            // This ensures the timeline shows cached subtitles right when output container appears
+            console.log('[Subtitle Generation] Cache check debug:', {
+                cacheId,
+                segment: !!segment,
+                willCheckCache: !!(cacheId && !segment)
+            });
+
             if (cacheId && !segment) {
+                console.log('[Subtitle Generation] Checking for cached subtitles with cache ID:', cacheId);
                 const cachedSubtitles = await checkCachedSubtitles(cacheId, currentVideoUrl);
+                console.log('[Subtitle Generation] Cache check result:', {
+                    found: !!cachedSubtitles,
+                    count: cachedSubtitles ? cachedSubtitles.length : 0
+                });
+
                 if (cachedSubtitles) {
+                    console.log('[Subtitle Generation] Loading cached subtitles immediately for timeline display');
                     setSubtitlesData(cachedSubtitles);
-                    // Use the translation key directly to ensure it's properly translated
                     setStatus({
                         message: t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!'),
                         type: 'success',
-                        translationKey: 'output.subtitlesLoadedFromCache' // Add a translation key for reference
+                        translationKey: 'output.subtitlesLoadedFromCache'
                     });
                     setIsGenerating(false);
                     return true;
                 }
+                // If no cached subtitles found, clear the timeline for fresh generation
+                console.log('[Subtitle Generation] No cached subtitles found, clearing timeline for fresh generation');
+                setSubtitlesData(null);
             } else if (segment) {
                 console.log('[Subtitle Generation] Skipping cache check for segment processing - generating fresh subtitles');
+                // For segment processing, keep existing subtitles (don't clear)
+            } else {
+                // No cache ID available, clear timeline for fresh generation
+                console.log('[Subtitle Generation] No cache ID available, clearing timeline for fresh generation');
+                setSubtitlesData(null);
             }
 
             // Generate new subtitles
@@ -266,7 +296,7 @@ export const useSubtitles = (t) => {
 
                 // Import the streaming segment processing function and subtitle merger
                 const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
-                const { mergeSegmentSubtitles } = await import('../utils/subtitle/subtitleMerger');
+                const { mergeSegmentSubtitles, mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
 
                 // IMPORTANT: Load the saved state from cache AFTER save completes
                 // This ensures we merge with the saved state (including manual edits), not the old React state
@@ -323,8 +353,8 @@ export const useSubtitles = (t) => {
                         if (streamingSubtitles && streamingSubtitles.length > 0) {
                             console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
-                            // Merge streaming subtitles with existing ones
-                            const mergedStreamingSubtitles = mergeSegmentSubtitles(currentSubtitles, streamingSubtitles, segment);
+                            // Use progressive merging for streaming updates (clears left to right)
+                            const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
 
                             // Update the UI with streaming results
                             setSubtitlesData(mergedStreamingSubtitles);
@@ -694,6 +724,8 @@ export const useSubtitles = (t) => {
             setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
         }
     }, [subtitlesData, t]);
+
+
 
     return {
         subtitlesData,
