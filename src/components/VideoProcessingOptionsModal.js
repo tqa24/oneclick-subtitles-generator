@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
 import { getNextAvailableKey } from '../services/gemini/keyManager';
 import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } from '../services/gemini';
+import CloseButton from './common/CloseButton';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -384,127 +385,130 @@ const VideoProcessingOptionsModal = ({
       >
         <div className="modal-header">
           <h3>{t('processing.configureOptions', 'Configure Processing Options')}</h3>
-          <button className="close-btn" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
-        
+
         <div className="modal-content">
-          {/* Segment Info */}
+          {/* Segment Info and Token Usage - Combined */}
           <div className="segment-info">
-            <h4>{t('processing.selectedSegment', 'Selected Segment')}</h4>
-            <p>
-              {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
-              {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
-            </p>
-          </div>
-          
-          {/* FPS Selection */}
-          <div className="option-group">
-            <label>{t('processing.frameRate', 'Frame Rate')}</label>
-            <select value={fps} onChange={(e) => setFps(parseFloat(e.target.value))}>
-              {fpsOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Media Resolution */}
-          <div className="option-group">
-            <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
-            <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
-              {resolutionOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Model Selection */}
-          <div className="option-group">
-            <label>{t('processing.model', 'Model')}</label>
-            <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
-              {modelOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Prompt Preset Selection */}
-          <div className="option-group">
-            <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
-            <select
-              value={selectedPromptPreset}
-              onChange={(e) => setSelectedPromptPreset(e.target.value)}
-            >
-              {getPromptPresetOptions().map(option => (
-                <option key={option.id} value={option.id}>
-                  {option.title}
-                </option>
-              ))}
-            </select>
-            <p className="option-description">
-              {(() => {
-                const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
-                return selectedOption?.description || '';
-              })()}
-            </p>
-          </div>
-
-          {/* Custom Language Input for Translate Directly */}
-          {selectedPromptPreset === 'translate-directly' && (
-            <div className="option-group">
-              <label>{t('processing.targetLanguage', 'Target Language')}</label>
-              <input
-                type="text"
-                value={customLanguage}
-                onChange={(e) => setCustomLanguage(e.target.value)}
-                placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
-                className="language-input"
-              />
-            </div>
-          )}
-
-          {/* Token Estimation */}
-          <div className="token-estimation">
-            <div className="token-header">
-              <h4>
-                {isCountingTokens
-                  ? t('processing.countingTokens', 'Counting Tokens...')
-                  : realTokenCount !== null
-                    ? t('processing.actualTokens', 'Actual Token Usage')
-                    : t('processing.estimatedTokens', 'Estimated Token Usage')
-                }
-              </h4>
-              {tokenCountError && (
-                <p className="token-error">
-                  {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
+            <div className="segment-token-row">
+              <div className="segment-details">
+                <h4>{t('processing.selectedSegment', 'Selected Segment')}</h4>
+                <p>
+                  {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
+                  {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
                 </p>
-              )}
+              </div>
+              <div className="token-details">
+                <h4>
+                  {isCountingTokens
+                    ? t('processing.countingTokens', 'Counting Tokens...')
+                    : realTokenCount !== null
+                      ? t('processing.actualTokens', 'Actual Token Usage')
+                      : t('processing.estimatedTokens', 'Estimated Token Usage')
+                  }
+                </h4>
+                <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
+                  {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+                </div>
+                <p className="estimation-note">
+                  {isCountingTokens
+                    ? t('processing.countingNote', 'Getting real token count from Gemini API...')
+                    : realTokenCount !== null
+                      ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution.')
+                      : t('processing.fallbackNote', 'Fallback estimation - real count will be calculated automatically.')
+                  }
+                </p>
+                {!isWithinLimit && (
+                  <p className="warning">
+                    {t('processing.exceedsLimit', 'Warning: Token count exceeds model limit. Consider reducing FPS or using a higher-capacity model.')}
+                  </p>
+                )}
+                {tokenCountError && (
+                  <p className="token-error">
+                    {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
-              {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+          </div>
+
+          {/* Two-column grid for options */}
+          <div className="modal-content-grid">
+            {/* FPS Selection */}
+            <div className="option-group">
+              <label>{t('processing.frameRate', 'Frame Rate')}</label>
+              <select value={fps} onChange={(e) => setFps(parseFloat(e.target.value))}>
+                {fpsOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <p className="estimation-note">
-              {isCountingTokens
-                ? t('processing.countingNote', 'Getting real token count from Gemini API...')
-                : realTokenCount !== null
-                  ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution.')
-                  : t('processing.fallbackNote', 'Fallback estimation - real count will be calculated automatically.')
-              }
-            </p>
-            {!isWithinLimit && (
-              <p className="warning">
-                {t('processing.exceedsLimit', 'Warning: Token count exceeds model limit. Consider reducing FPS or using a higher-capacity model.')}
+
+            {/* Media Resolution */}
+            <div className="option-group">
+              <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
+              <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
+                {resolutionOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Model Selection */}
+            <div className="option-group">
+              <label>{t('processing.model', 'Model')}</label>
+              <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
+                {modelOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Prompt Preset Selection */}
+            <div className="option-group">
+              <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
+              <select
+                value={selectedPromptPreset}
+                onChange={(e) => setSelectedPromptPreset(e.target.value)}
+              >
+                {getPromptPresetOptions().map(option => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
+              <p className="option-description">
+                {(() => {
+                  const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
+                  return selectedOption?.description || '';
+                })()}
               </p>
+            </div>
+
+            {/* Custom Language Input for Translate Directly */}
+            {selectedPromptPreset === 'translate-directly' && (
+              <div className="option-group" style={{ gridColumn: '1 / -1' }}>
+                <label>{t('processing.targetLanguage', 'Target Language')}</label>
+                <input
+                  type="text"
+                  value={customLanguage}
+                  onChange={(e) => setCustomLanguage(e.target.value)}
+                  placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
+                  className="language-input"
+                />
+              </div>
             )}
           </div>
-          
+
+
+
           {/* Upload Status */}
           {isUploading && (
             <div className="upload-status">
