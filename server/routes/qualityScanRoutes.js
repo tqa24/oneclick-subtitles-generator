@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { VIDEOS_DIR } = require('../config');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
 
 // Track active quality downloads to prevent duplicates
 const activeQualityDownloads = new Map();
@@ -127,8 +128,23 @@ router.post('/download-video-quality', async (req, res) => {
     });
   }
 
+  // Use provided video ID or generate unique one for progress tracking (outside try block for finally access)
+  const progressVideoId = videoId || `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
   try {
     console.log(`[QUALITY-DOWNLOAD] Downloading ${quality} for: ${url}`);
+
+    // Check global download lock first
+    if (isDownloadActive(progressVideoId)) {
+      const downloadInfo = getDownloadInfo(progressVideoId);
+      console.log(`[QUALITY-DOWNLOAD] Download blocked: ${progressVideoId} is already being downloaded by ${downloadInfo.route}`);
+      return res.status(409).json({
+        success: false,
+        error: 'Video is already being downloaded',
+        activeRoute: downloadInfo.route,
+        videoId: progressVideoId
+      });
+    }
 
     // Create a unique key for this download request
     const downloadKey = `${url}_video_${quality}`;
@@ -145,8 +161,14 @@ router.post('/download-video-quality', async (req, res) => {
       });
     }
 
-    // Use provided video ID or generate unique one for progress tracking
-    const progressVideoId = videoId || `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Acquire global download lock
+    if (!lockDownload(progressVideoId, 'quality-scan-route')) {
+      return res.status(409).json({
+        success: false,
+        error: 'Failed to acquire download lock',
+        videoId: progressVideoId
+      });
+    }
     console.log(`[QUALITY-DOWNLOAD] Using video ID: ${progressVideoId}`);
 
     // Register this download to prevent duplicates
@@ -213,6 +235,9 @@ router.post('/download-video-quality', async (req, res) => {
       success: false,
       error: error.message || 'Failed to download video'
     });
+  } finally {
+    // Always release the global download lock
+    unlockDownload(progressVideoId, 'quality-scan-route');
   }
 });
 

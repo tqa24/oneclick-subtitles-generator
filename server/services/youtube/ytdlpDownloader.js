@@ -81,19 +81,29 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
 
     let stdoutData = '';
     let stderrData = '';
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
 
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdoutData += output;
+      stdoutBuffer += output;
 
-      // Log merge-related messages for debugging
-      if (output.includes('Merging') || output.includes('merger') || output.includes('ffmpeg')) {
-        console.log(`[yt-dlp merge] ${output.trim()}`);
-      }
+      // Process complete lines only
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep the incomplete line in buffer
 
-      // Parse progress information if videoId is provided
-      if (videoId) {
-        updateProgressFromYtdlpOutput(videoId, output);
+      for (const line of lines) {
+        if (line.trim()) {
+          // Log merge-related messages for debugging
+          if (line.includes('Merging') || line.includes('merger') || line.includes('ffmpeg')) {
+            console.log(`[yt-dlp merge] ${line.trim()}`);
+          }
+
+          // Parse progress information if videoId is provided
+          if (videoId) {
+            updateProgressFromYtdlpOutput(videoId, line);
+          }
+        }
       }
     });
 

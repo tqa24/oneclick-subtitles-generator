@@ -328,50 +328,32 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
 
     let stderr = '';
 
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
+
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
+      stdoutBuffer += output;
 
-      // Update progress tracking system if videoId is provided
-      if (videoId) {
-        // Only log progress lines, not all output
-        if (output.includes('%') || output.includes('download')) {
-          console.log(`[downloadWithQuality] yt-dlp progress for ${videoId}:`, output.trim());
-        }
+      // Process complete lines only
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep the incomplete line in buffer
 
-        // Try both the existing progress parser and a simple one
-        updateProgressFromYtdlpOutput(videoId, output);
+      for (const line of lines) {
+        if (line.trim()) {
+          // Update progress tracking system if videoId is provided
+          if (videoId) {
+            // Use ONLY the centralized progress parser - no duplicate manual parsing
+            updateProgressFromYtdlpOutput(videoId, line);
+          }
 
-        // Also try manual parsing as backup (only for actual download progress lines)
-        if (output.includes('[download]') && output.includes('%')) {
-          const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-          if (progressMatch) {
-            const progress = parseFloat(progressMatch[1]);
-            // Only accept reasonable progress values (0-100%)
-            if (progress >= 0 && progress <= 100) {
-              console.log(`[downloadWithQuality] Manual progress parsing: ${progress}%`);
-
-              // Directly set progress and broadcast
-              setDownloadProgress(videoId, progress, 'downloading');
-
-              // Try to broadcast manually
-              try {
-                const { broadcastProgress } = require('./shared/progressWebSocket');
-                broadcastProgress(videoId, progress, 'downloading', 'download');
-                console.log(`[downloadWithQuality] Broadcasted progress: ${progress}%`);
-              } catch (error) {
-                console.warn(`[downloadWithQuality] Failed to broadcast progress:`, error.message);
-              }
+          // Parse progress if callback provided (legacy support)
+          if (progressCallback) {
+            const progressMatch = line.match(/(\d+\.?\d*)%/);
+            if (progressMatch) {
+              const progress = parseFloat(progressMatch[1]);
+              progressCallback(progress);
             }
           }
-        }
-      }
-
-      // Parse progress if callback provided (legacy support)
-      if (progressCallback) {
-        const progressMatch = output.match(/(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = parseFloat(progressMatch[1]);
-          progressCallback(progress);
         }
       }
     });
@@ -380,30 +362,7 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       const errorOutput = data.toString();
       stderr += errorOutput;
 
-      // yt-dlp sometimes outputs progress to stderr, but ignore debug URLs with timestamps
-      if (videoId && errorOutput.includes('[download]') && errorOutput.includes('%')) {
-        console.log(`[downloadWithQuality] yt-dlp stderr progress for ${videoId}:`, errorOutput.trim());
-
-        const progressMatch = errorOutput.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = parseFloat(progressMatch[1]);
-          // Only accept reasonable progress values (0-100%)
-          if (progress >= 0 && progress <= 100) {
-            console.log(`[downloadWithQuality] Manual stderr progress parsing: ${progress}%`);
-
-            // Directly set progress and broadcast
-            setDownloadProgress(videoId, progress, 'downloading');
-
-            try {
-              const { broadcastProgress } = require('./shared/progressWebSocket');
-              broadcastProgress(videoId, progress, 'downloading', 'download');
-              console.log(`[downloadWithQuality] Broadcasted stderr progress: ${progress}%`);
-            } catch (error) {
-              console.warn(`[downloadWithQuality] Failed to broadcast stderr progress:`, error.message);
-            }
-          }
-        }
-      }
+      // Removed duplicate stderr progress parsing to prevent conflicts with centralized parser
     });
 
     ytdlpProcess.on('close', (code) => {

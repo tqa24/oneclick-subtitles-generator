@@ -7,6 +7,7 @@ const { VIDEOS_DIR } = require('../config');
 const { getYtDlpPath, getYtDlpArgs } = require('../services/shared/ytdlpUtils');
 const { setDownloadProgress, getDownloadProgress } = require('../services/shared/progressTracker');
 const { updateProgressFromYtdlpOutput } = require('../services/shared/progressTracker');
+const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
 
 // Track active downloads to prevent duplicates
 const activeDownloads = new Map();
@@ -37,8 +38,24 @@ router.post('/download-only', async (req, res) => {
     });
   }
 
+  // Generate unique video ID for progress tracking (outside try block for finally access)
+  const timestamp = Date.now();
+  const videoId = `${type}_${timestamp}_${Math.random().toString(36).substring(2, 9)}`;
+
   try {
     console.log(`[DOWNLOAD-ONLY] Starting ${type} download:`, { url, type, quality, source });
+
+    // Check global download lock first
+    if (isDownloadActive(videoId)) {
+      const downloadInfo = getDownloadInfo(videoId);
+      console.log(`[DOWNLOAD-ONLY] Download blocked: ${videoId} is already being downloaded by ${downloadInfo.route}`);
+      return res.status(409).json({
+        success: false,
+        error: 'Video is already being downloaded',
+        activeRoute: downloadInfo.route,
+        videoId: videoId
+      });
+    }
 
     // Create a unique key for this download request
     const downloadKey = `${url}_${type}_${quality || 'default'}`;
@@ -55,9 +72,14 @@ router.post('/download-only', async (req, res) => {
       });
     }
 
-    // Generate unique video ID for progress tracking
-    const timestamp = Date.now();
-    const videoId = `download_${type}_${timestamp}`;
+    // Acquire global download lock
+    if (!lockDownload(videoId, 'download-only-route')) {
+      return res.status(409).json({
+        success: false,
+        error: 'Failed to acquire download lock',
+        videoId: videoId
+      });
+    }
 
     // Register this download to prevent duplicates
     activeDownloads.set(downloadKey, videoId);
@@ -138,6 +160,9 @@ router.post('/download-only', async (req, res) => {
       success: false,
       error: error.message || 'Failed to start download'
     });
+  } finally {
+    // Always release the global download lock
+    unlockDownload(videoId, 'download-only-route');
   }
 });
 
@@ -299,16 +324,21 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
 
     const ytdlpProcess = spawn(ytDlpPath, args);
     let stderr = '';
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
 
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
-      
-      // Update progress tracking
-      updateProgressFromYtdlpOutput(videoId, output);
-      
-      // Log progress lines
-      if (output.includes('%') || output.includes('download')) {
-        console.log(`[DOWNLOAD-ONLY] Progress for ${videoId}:`, output.trim());
+      stdoutBuffer += output;
+
+      // Process complete lines only
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep the incomplete line in buffer
+
+      for (const line of lines) {
+        if (line.trim()) {
+          // Update progress tracking
+          updateProgressFromYtdlpOutput(videoId, line);
+        }
       }
     });
 
@@ -316,22 +346,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       const errorOutput = data.toString();
       stderr += errorOutput;
       console.error(`[DOWNLOAD-ONLY] yt-dlp stderr:`, errorOutput);
-
-      // Try to extract progress from stderr as well
-      const progressMatch = errorOutput.match(/\[download\]\s+(\d+\.?\d*)%/);
-      if (progressMatch) {
-        const progress = parseFloat(progressMatch[1]);
-        if (progress >= 0 && progress <= 100) {
-          setDownloadProgress(videoId, progress, 'downloading');
-          
-          try {
-            const { broadcastProgress } = require('../services/shared/progressWebSocket');
-            broadcastProgress(videoId, progress, 'downloading', 'download');
-          } catch (error) {
-            // WebSocket module might not be initialized yet
-          }
-        }
-      }
+      // Removed duplicate progress parsing from stderr to prevent conflicts
     });
 
     ytdlpProcess.on('close', (code) => {

@@ -11,6 +11,7 @@ const { spawn } = require('child_process');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
 const { getFfmpegPath } = require('../services/shared/ffmpegUtils');
 // Legacy video processing is deprecated
 // const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo, convertAudioToVideo } = require('../services/videoProcessingService');
@@ -244,10 +245,19 @@ router.get('/segment-exists/:segmentId', (req, res) => {
 router.post('/download-video', async (req, res) => {
   const { videoId, useCookies = false } = req.body;
 
-
-
   if (!videoId) {
     return res.status(400).json({ error: 'Video ID is required' });
+  }
+
+  // Check global download lock first
+  if (isDownloadActive(videoId)) {
+    const downloadInfo = getDownloadInfo(videoId);
+    console.log(`[VIDEO-ROUTE] Download blocked: ${videoId} is already being downloaded by ${downloadInfo.route}`);
+    return res.status(409).json({
+      error: 'Video is already being downloaded',
+      activeRoute: downloadInfo.route,
+      videoId: videoId
+    });
   }
 
   const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
@@ -261,13 +271,20 @@ router.post('/download-video', async (req, res) => {
     });
   }
 
+  // Acquire global download lock
+  if (!lockDownload(videoId, 'video-route')) {
+    return res.status(409).json({
+      error: 'Failed to acquire download lock',
+      videoId: videoId
+    });
+  }
+
   try {
     // Download the video using JavaScript libraries with audio prioritized
     const result = await downloadYouTubeVideo(videoId, useCookies);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
-
       return res.json({
         success: true,
         message: result.message || 'Video downloaded successfully',
@@ -292,6 +309,9 @@ router.post('/download-video', async (req, res) => {
       error: 'Failed to download video',
       details: error.message
     });
+  } finally {
+    // Always release the global download lock
+    unlockDownload(videoId, 'video-route');
   }
 });
 

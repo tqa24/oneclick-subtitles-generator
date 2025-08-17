@@ -1,12 +1,9 @@
 /**
- * Shared progress tracking system for all video downloads
+ * Shared progress tracking system for all video downloads - CLEANED VERSION
  */
 
 // Global progress tracking for downloads
 const downloadProgress = new Map();
-
-// Track download phases for better progress calculation
-const downloadPhases = new Map();
 
 /**
  * Get download progress for a video
@@ -24,7 +21,6 @@ function getDownloadProgress(videoId) {
  * @param {string} status - Download status
  */
 function setDownloadProgress(videoId, progress, status = 'downloading') {
-  console.log(`[setDownloadProgress] ${videoId}: ${progress}% - ${status}`);
   downloadProgress.set(videoId, { progress, status, timestamp: Date.now() });
 }
 
@@ -37,7 +33,7 @@ function clearDownloadProgress(videoId) {
 }
 
 /**
- * Parse yt-dlp progress output with detailed phase detection
+ * Parse yt-dlp progress output - CLEAN VERSION
  * @param {string} output - Raw output from yt-dlp
  * @returns {Object|null} - Parsed progress info or null
  */
@@ -47,53 +43,21 @@ function parseYtdlpProgress(output) {
   if (progressMatch) {
     const progress = parseFloat(progressMatch[1]);
 
-    // Detect download phase with improved detection
-    let phase = 'video'; // Default to video for first download
-
-    // Check for explicit format indicators
-    if (output.includes('video only') || output.includes('bestvideo')) {
-      phase = 'video';
-    } else if (output.includes('audio only') || output.includes('bestaudio')) {
-      phase = 'audio';
-    } else if (output.includes('Merging formats') || output.includes('[Merger]')) {
-      phase = 'merge';
-    } else {
-      // Try to detect based on file extension or format codes
-      if (output.match(/\.(m4a|mp3|aac|opus|webm)[\s\]]/)) {
-        phase = 'audio';
-      } else if (output.match(/\.(mp4|mkv|webm|avi)[\s\]]/)) {
-        phase = 'video';
-      }
-      // If we can't determine, keep default 'video'
+    // Only return valid progress values
+    if (progress >= 0 && progress <= 100) {
+      return {
+        progress: progress,
+        status: 'downloading'
+      };
     }
-
-    return {
-      progress: progress,
-      status: 'downloading',
-      phase: phase,
-      rawOutput: output.trim()
-    };
   }
 
-  // Check for completion (including merge completion)
+  // Check for completion
   if (output.includes('[download] 100%') ||
-      output.includes('has already been downloaded') ||
-      output.includes('Deleting original file') ||
-      output.includes('merger complete') ||
-      (output.includes('[Merger]') && output.includes('100%'))) {
+      output.includes('has already been downloaded')) {
     return {
       progress: 100,
-      status: 'completed',
-      phase: 'completed'
-    };
-  }
-
-  // Check for merge operations (in progress)
-  if (output.includes('[Merger]') || output.includes('Merging formats')) {
-    return {
-      progress: 95, // Assume 95% when merging
-      status: 'downloading',
-      phase: 'merge'
+      status: 'completed'
     };
   }
 
@@ -101,49 +65,7 @@ function parseYtdlpProgress(output) {
 }
 
 /**
- * Calculate overall progress for dual-phase downloads (video + audio)
- * @param {string} videoId - Video ID
- * @param {number} currentProgress - Current phase progress (0-100)
- * @param {string} phase - Current phase (video, audio, merge)
- * @returns {number} - Overall progress (0-100)
- */
-function calculateOverallProgress(videoId, currentProgress, phase) {
-  if (!downloadPhases.has(videoId)) {
-    downloadPhases.set(videoId, {
-      videoComplete: false,
-      audioComplete: false,
-      currentPhase: phase
-    });
-  }
-
-  const phases = downloadPhases.get(videoId);
-  phases.currentPhase = phase;
-
-  // Handle different phases
-  if (phase === 'video') {
-    // First phase: video download (0-50% of total)
-    return Math.round(currentProgress * 0.5);
-  } else if (phase === 'audio') {
-    // Second phase: audio download (50-90% of total)
-    phases.videoComplete = true;
-    return Math.round(50 + (currentProgress * 0.4));
-  } else if (phase === 'merge') {
-    // Final phase: merging (90-100% of total)
-    phases.videoComplete = true;
-    phases.audioComplete = true;
-    return Math.round(90 + (currentProgress * 0.1));
-  } else if (phase === 'completed') {
-    // Completed
-    downloadPhases.delete(videoId);
-    return 100;
-  } else {
-    // Unknown phase, use raw progress
-    return currentProgress;
-  }
-}
-
-/**
- * Update progress from yt-dlp output with WebSocket broadcasting
+ * Update progress from yt-dlp output - RAW PROGRESS, NO VALIDATION
  * @param {string} videoId - Video ID
  * @param {string} output - Raw output from yt-dlp
  */
@@ -152,20 +74,15 @@ function updateProgressFromYtdlpOutput(videoId, output) {
 
   const progressInfo = parseYtdlpProgress(output);
   if (progressInfo) {
-    // Use raw progress directly - no normalization
-    const rawProgress = progressInfo.progress;
-
-    setDownloadProgress(videoId, rawProgress, progressInfo.status);
+    setDownloadProgress(videoId, progressInfo.progress, progressInfo.status);
 
     // Broadcast to WebSocket clients
     try {
       const { broadcastProgress } = require('./progressWebSocket');
-      broadcastProgress(videoId, rawProgress, progressInfo.status, progressInfo.phase);
+      broadcastProgress(videoId, progressInfo.progress, progressInfo.status);
     } catch (error) {
       // WebSocket module might not be initialized yet, that's okay
     }
-
-    console.log(`[yt-dlp progress] ${videoId}: ${rawProgress}% (${progressInfo.phase || 'unknown'} - raw progress)`);
   }
 }
 
