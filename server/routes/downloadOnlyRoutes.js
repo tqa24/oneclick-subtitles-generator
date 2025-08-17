@@ -15,8 +15,8 @@ const activeDownloads = new Map();
 // Track active file operations to prevent race conditions
 const activeFileOperations = new Set();
 
-// Track active yt-dlp processes to prevent multiple spawns
-const activeYtdlpProcesses = new Map();
+// Track active yt-dlp processes to prevent multiple spawns and enable cancellation
+const activeYtdlpProcesses = new Map(); // processKey -> { videoId, process }
 
 /**
  * POST /api/download-only - Download video or audio only
@@ -243,6 +243,80 @@ router.get('/download-only-file/:videoId', (req, res) => {
 });
 
 /**
+ * POST /api/cancel-download-only/:videoId - Cancel an ongoing download-only process
+ */
+router.post('/cancel-download-only/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Video ID is required'
+    });
+  }
+
+  try {
+    let processFound = false;
+
+    // Find and kill the yt-dlp process for this video
+    for (const [processKey, processInfo] of activeYtdlpProcesses.entries()) {
+      if (processInfo.videoId === videoId) {
+        console.log(`[DOWNLOAD-ONLY] Cancelling download for ${videoId}, killing process`);
+
+        // Kill the yt-dlp process
+        processInfo.process.kill('SIGTERM');
+
+        // Clean up tracking
+        activeYtdlpProcesses.delete(processKey);
+
+        // Update progress to cancelled
+        setDownloadProgress(videoId, 0, 'cancelled');
+
+        // Broadcast cancellation
+        try {
+          const { broadcastProgress } = require('../services/shared/progressWebSocket');
+          broadcastProgress(videoId, 0, 'cancelled', 'download');
+        } catch (error) {
+          // WebSocket module might not be initialized yet
+        }
+
+        processFound = true;
+        break;
+      }
+    }
+
+    // Also clean up from activeDownloads map
+    for (const [downloadKey, downloadVideoId] of activeDownloads.entries()) {
+      if (downloadVideoId === videoId) {
+        activeDownloads.delete(downloadKey);
+        break;
+      }
+    }
+
+    // Release global download lock
+    unlockDownload(videoId, 'download-only-route');
+
+    if (processFound) {
+      res.json({
+        success: true,
+        message: `Download cancelled for ${videoId}`
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: `No active download found for ${videoId}`
+      });
+    }
+  } catch (error) {
+    console.error('[DOWNLOAD-ONLY] Error cancelling download:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to cancel download'
+    });
+  }
+});
+
+/**
  * Async function to download media (video or audio)
  */
 async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies = false) {
@@ -323,6 +397,10 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
     }
 
     const ytdlpProcess = spawn(ytDlpPath, args);
+
+    // Track the process for cancellation
+    activeYtdlpProcesses.set(processKey, { videoId, process: ytdlpProcess });
+
     let stderr = '';
     let stdoutBuffer = ''; // Buffer for line-by-line processing
 
@@ -353,6 +431,10 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       // Clean up the active download tracking
       const cleanupKey = `${url}_${type}_${quality || 'default'}`;
       activeDownloads.delete(cleanupKey);
+
+      // Clean up the process tracking
+      activeYtdlpProcesses.delete(processKey);
+
       console.log(`[DOWNLOAD-ONLY] Cleaned up download tracking for: ${cleanupKey}`);
 
       // Clean up the file operation lock

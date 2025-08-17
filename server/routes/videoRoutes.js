@@ -10,8 +10,9 @@ const multer = require('multer');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
-const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { getDownloadProgress, setDownloadProgress } = require('../services/shared/progressTracker');
 const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
+const { cancelYtdlpProcess } = require('../services/youtube/ytdlpDownloader');
 const { getFfmpegPath } = require('../services/shared/ffmpegUtils');
 // Legacy video processing is deprecated
 // const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo, convertAudioToVideo } = require('../services/videoProcessingService');
@@ -283,6 +284,16 @@ router.post('/download-video', async (req, res) => {
     // Download the video using JavaScript libraries with audio prioritized
     const result = await downloadYouTubeVideo(videoId, useCookies);
 
+    // Check if download was cancelled
+    if (result.cancelled) {
+      return res.json({
+        success: false,
+        cancelled: true,
+        message: result.message || 'Download was cancelled',
+        url: null // Explicitly set url to null for cancelled downloads
+      });
+    }
+
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
       return res.json({
@@ -339,6 +350,52 @@ router.get('/download-progress/:videoId', (req, res) => {
     res.status(500).json({
       error: 'Failed to get download progress',
       details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/cancel-download/:videoId - Cancel an ongoing video download
+ */
+router.post('/cancel-download/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Video ID is required'
+    });
+  }
+
+  try {
+    // Try to kill the yt-dlp process
+    const processKilled = cancelYtdlpProcess(videoId);
+
+    // Release global download lock
+    unlockDownload(videoId, 'video-route');
+
+    // Update progress to cancelled
+    setDownloadProgress(videoId, 0, 'cancelled');
+
+    // Broadcast cancellation
+    try {
+      const { broadcastProgress } = require('../services/shared/progressWebSocket');
+      broadcastProgress(videoId, 0, 'cancelled');
+    } catch (error) {
+      // WebSocket module might not be initialized yet
+    }
+
+    res.json({
+      success: true,
+      message: processKilled ?
+        `Download cancelled and process killed for ${videoId}` :
+        `Download cancellation requested for ${videoId} (no active process found)`
+    });
+  } catch (error) {
+    console.error('[VIDEO-ROUTE] Error cancelling download:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to cancel download'
     });
   }
 });

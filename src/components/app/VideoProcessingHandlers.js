@@ -252,6 +252,14 @@ export const downloadAndPrepareYouTubeVideo = async (
     // Clear the current download ID when done
     setCurrentDownloadId(null);
 
+    // Check if download was cancelled (videoUrl will be null)
+    if (!videoUrl) {
+      console.log('[downloadAndPrepareYouTubeVideo] Download was cancelled, stopping processing');
+      setIsDownloading(false);
+      setStatus({ message: t('output.downloadCancelled', 'Download cancelled'), type: 'warning' });
+      return;
+    }
+
     try {
       // Initialize blob variable
       let blob;

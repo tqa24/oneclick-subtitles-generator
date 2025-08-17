@@ -30,8 +30,14 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false, useC
   }
 
   // Check if already in the queue and not forcing refresh
+  // Allow new downloads if the previous one was cancelled or errored
   if (downloadQueue[videoId] && !forceRefresh) {
-    return videoId;
+    const existingStatus = downloadQueue[videoId].status;
+    if (existingStatus !== 'cancelled' && existingStatus !== 'error') {
+      return videoId;
+    }
+    // If cancelled or errored, continue to start a new download
+    console.log(`[startYoutubeVideoDownload] Previous download was ${existingStatus}, starting new download for ${videoId}`);
   }
 
   // Initialize download queue entry
@@ -107,6 +113,15 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false, useC
 
       const downloadData = await downloadResponse.json();
       console.log(`[startYoutubeVideoDownload] HTTP API response for ${videoId}:`, downloadData);
+
+      // Check if download was cancelled
+      if (downloadData.cancelled) {
+        console.log(`[startYoutubeVideoDownload] Download was cancelled for ${videoId}`);
+        downloadQueue[videoId].status = 'cancelled';
+        downloadQueue[videoId].progress = 0;
+        downloadQueue[videoId].url = null;
+        return; // Exit early for cancelled downloads
+      }
 
       // Update queue entry with success
       downloadQueue[videoId].status = 'completed';
@@ -228,7 +243,15 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
       // Always report current progress (WebSocket updates will override this)
       onProgress(status.progress);
 
-      if (status.status === 'completed') {
+      if (status.status === 'cancelled') {
+        console.log(`[downloadYoutubeVideo] Download cancelled for ${videoId}`);
+        clearInterval(checkInterval);
+        // Unsubscribe from WebSocket progress
+        if (progressSubscribed) {
+          progressWebSocketClient.unsubscribe(videoId);
+        }
+        resolve(null); // Return null for cancelled downloads
+      } else if (status.status === 'completed') {
         console.log(`[downloadYoutubeVideo] Download completed for ${videoId}, URL: ${status.url}`);
         // Check if the video URL is valid by making a HEAD request
         try {
@@ -271,7 +294,14 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
 
               onProgress(newStatus.progress);
 
-              if (newStatus.status === 'completed') {
+              if (newStatus.status === 'cancelled') {
+                clearInterval(newCheckInterval);
+                // Unsubscribe from WebSocket progress
+                if (newProgressSubscribed) {
+                  progressWebSocketClient.unsubscribe(newVideoId);
+                }
+                resolve(null); // Return null for cancelled downloads
+              } else if (newStatus.status === 'completed') {
                 clearInterval(newCheckInterval);
                 // Unsubscribe from WebSocket progress
                 if (newProgressSubscribed) {
@@ -370,7 +400,7 @@ export const cancelYoutubeVideoDownload = (videoId) => {
   fetch(`${SERVER_URL}/api/cancel-download/${videoId}`, { method: 'POST' })
     .then(response => response.json())
     .then(data => {
-
+      console.log('[VideoDownloader] Server cancel response:', data);
     })
     .catch(error => {
       console.error('Error cancelling download on server:', error);

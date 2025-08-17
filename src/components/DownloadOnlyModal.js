@@ -6,6 +6,7 @@ import CloseButton from './common/CloseButton';
 import '../styles/DownloadOnlyModal.css';
 import { scanVideoQualities } from '../utils/qualityScanner';
 import progressWebSocketClient from '../utils/progressWebSocketClient';
+import { cancelDownloadOnly } from '../utils/downloadOnlyUtils';
 
 // Global singleton to prevent multiple download modals
 let activeDownloadModal = null;
@@ -200,6 +201,25 @@ const DownloadOnlyModal = ({
     }
   };
 
+  const handleCancel = async () => {
+    if (isDownloading && downloadVideoId) {
+      console.log('[DownloadOnlyModal] Cancelling download:', downloadVideoId);
+
+      // Cancel the download on the server
+      const success = await cancelDownloadOnly(downloadVideoId);
+
+      if (success) {
+        // Reset states
+        setIsDownloading(false);
+        setDownloadProgress(0);
+        setDownloadVideoId(null);
+
+        // Close the modal
+        onClose();
+      }
+    }
+  };
+
   const canDownload = () => {
     if (!selectedType) return false; // No type selected
     if (selectedType === 'audio') return true;
@@ -328,13 +348,23 @@ const DownloadOnlyModal = ({
 
         {/* Footer */}
         <div className="modal-actions">
-          <button
-            className="cancel-button"
-            onClick={handleClose}
-            disabled={isDownloading}
-          >
-            {t('download.downloadOnly.cancel', 'Cancel')}
-          </button>
+          {isDownloading ? (
+            // Show cancel button during download
+            <button
+              className="cancel-button"
+              onClick={handleCancel}
+            >
+              {t('download.downloadOnly.cancelDownload', 'Cancel Download')}
+            </button>
+          ) : (
+            // Show close button when not downloading
+            <button
+              className="cancel-button"
+              onClick={handleClose}
+            >
+              {t('download.downloadOnly.cancel', 'Cancel')}
+            </button>
+          )}
           <button
             className="confirm-button"
             onClick={handleDownload}
