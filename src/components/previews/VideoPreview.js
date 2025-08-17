@@ -484,7 +484,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       clearInterval(interval);
       // Don't update state during cleanup to avoid React warnings
     };
-  }, [videoId, t, downloadCheckInterval, setVideoUrl, setIsDownloading, setError, setDownloadProgress, setDownloadCheckInterval]);
+  }, [videoId, t]);
 
   // processVideoUrl is now defined inside the useEffect above
 

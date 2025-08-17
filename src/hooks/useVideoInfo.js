@@ -45,12 +45,6 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
         // For downloaded videos, we don't show version options since they can redownload
         // The split_result versions are just processing artifacts
-
-        // Fetch actual dimensions for this video
-        if (selectedVideo.id && !actualDimensions) {
-          console.log('[useVideoInfo] Fetching dimensions for selectedVideo:', selectedVideo.id);
-          fetchActualDimensions(`http://localhost:3031/videos/${selectedVideo.id}.mp4`);
-        }
       }
       // Priority 2: Check if we have an uploaded file
       else if (uploadedFile) {
@@ -131,12 +125,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             url: storedVideoUrl || null // Original URL for redownloading (may be null)
           };
 
-          // Fetch actual dimensions for this video
-          if (uploadedFile && !actualDimensions) {
-            const videoId = uploadedFile.name.replace('.mp4', '');
-            console.log('[useVideoInfo] Fetching dimensions for uploadedFile:', videoId);
-            fetchActualDimensions(`http://localhost:3031/videos/${videoId}.mp4`);
-          }
+
         } else {
           // This is an actual uploaded file
           info = {
@@ -226,19 +215,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
             url: storedVideoUrl // Original URL for redownloading
           };
 
-          // Fetch actual dimensions for this video
-          if (!actualDimensions) {
-            // Try to extract video ID from the file path or URL
-            let videoId = null;
-            if (actualVideoUrl && actualVideoUrl.includes('/videos/')) {
-              videoId = actualVideoUrl.split('/videos/')[1].replace('.mp4', '');
-            }
 
-            if (videoId) {
-              console.log('[useVideoInfo] Fetching dimensions for actualVideoUrl:', videoId);
-              fetchActualDimensions(`http://localhost:3031/videos/${videoId}.mp4`);
-            }
-          }
         }
         // Priority 4: Check if we have a video URL without selectedVideo (edge case)
         else if (actualVideoUrl) {
@@ -264,33 +241,49 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
       setVideoInfo(info);
       setAvailableVersions(versions);
-
-      // Fetch actual dimensions if we have a video URL
-      if (actualVideoUrl && !actualVideoUrl.startsWith('blob:')) {
-        console.log('[useVideoInfo] Attempting to fetch dimensions for URL:', actualVideoUrl);
-        fetchActualDimensions(actualVideoUrl);
-      } else {
-        console.log('[useVideoInfo] Not fetching dimensions. URL:', actualVideoUrl);
-
-        // Also try to fetch dimensions based on selectedVideo if we have it
-        if (selectedVideo && selectedVideo.id) {
-          console.log('[useVideoInfo] Trying to fetch dimensions from selectedVideo:', selectedVideo.id);
-          fetchActualDimensions(`http://localhost:3031/videos/${selectedVideo.id}.mp4`);
-        }
-      }
     };
 
     updateVideoInfo();
   }, [selectedVideo, uploadedFile, actualVideoUrl]);
 
+  // Separate useEffect for fetching dimensions to avoid infinite loops
+  useEffect(() => {
+    let videoIdToFetch = null;
+
+    // Determine which video ID we should fetch dimensions for
+    if (selectedVideo && selectedVideo.id) {
+      videoIdToFetch = selectedVideo.id;
+    } else if (uploadedFile) {
+      const videoId = uploadedFile.name.replace('.mp4', '');
+      videoIdToFetch = videoId;
+    } else if (actualVideoUrl && !actualVideoUrl.startsWith('blob:')) {
+      // Try to extract video ID from the file path or URL
+      if (actualVideoUrl.includes('/videos/')) {
+        videoIdToFetch = actualVideoUrl.split('/videos/')[1].replace('.mp4', '');
+      }
+    }
+
+    // Only fetch if we don't already have dimensions for this video ID
+    if (videoIdToFetch && (!actualDimensions || actualDimensions.videoId !== videoIdToFetch)) {
+      console.log('[useVideoInfo] Fetching dimensions for video ID:', videoIdToFetch);
+      fetchActualDimensions(`http://localhost:3031/videos/${videoIdToFetch}.mp4`);
+    }
+  }, [selectedVideo?.id, uploadedFile?.name, actualVideoUrl]);
+
   // Update video info when actual dimensions are fetched
   useEffect(() => {
-    if (actualDimensions && videoInfo) {
+    if (actualDimensions) {
       console.log('[useVideoInfo] Updating videoInfo with actual dimensions:', actualDimensions.quality);
-      setVideoInfo(prev => ({
-        ...prev,
-        quality: actualDimensions.quality
-      }));
+      setVideoInfo(prev => {
+        // Only update if we have previous videoInfo and the quality is different
+        if (prev && prev.quality !== actualDimensions.quality) {
+          return {
+            ...prev,
+            quality: actualDimensions.quality
+          };
+        }
+        return prev;
+      });
     }
   }, [actualDimensions]);
 
@@ -300,23 +293,30 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
   const fetchActualDimensions = async (videoUrl) => {
     console.log('[useVideoInfo] fetchActualDimensions called with URL:', videoUrl);
 
+    // Extract video ID from URL
+    let videoId = null;
+
+    if (videoUrl && videoUrl.includes('/videos/')) {
+      const urlParts = videoUrl.split('/videos/');
+      if (urlParts.length > 1) {
+        videoId = urlParts[1].replace('.mp4', '');
+      }
+    }
+
+    console.log('[useVideoInfo] Extracted video ID:', videoId);
+
+    if (!videoId) {
+      console.warn('[useVideoInfo] Could not extract video ID from URL:', videoUrl);
+      return null;
+    }
+
+    // Check if we already have dimensions for this video ID
+    if (actualDimensions && actualDimensions.videoId === videoId) {
+      console.log('[useVideoInfo] Already have dimensions for video ID:', videoId);
+      return actualDimensions;
+    }
+
     try {
-      // Extract video ID from URL
-      let videoId = null;
-
-      if (videoUrl && videoUrl.includes('/videos/')) {
-        const urlParts = videoUrl.split('/videos/');
-        if (urlParts.length > 1) {
-          videoId = urlParts[1].replace('.mp4', '');
-        }
-      }
-
-      console.log('[useVideoInfo] Extracted video ID:', videoId);
-
-      if (!videoId) {
-        console.warn('[useVideoInfo] Could not extract video ID from URL:', videoUrl);
-        return null;
-      }
 
       console.log('[useVideoInfo] Making API call to fetch dimensions for video ID:', videoId);
 

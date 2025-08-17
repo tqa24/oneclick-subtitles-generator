@@ -7,12 +7,108 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const { spawn } = require('child_process');
 const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { getFfmpegPath } = require('../services/shared/ffmpegUtils');
 // Legacy video processing is deprecated
-// const { getVideoDimensions } = require('../services/videoProcessing/durationUtils');
 // const { splitVideoIntoSegments, splitMediaIntoSegments, optimizeVideo, createAnalysisVideo, convertAudioToVideo } = require('../services/videoProcessingService');
+
+/**
+ * Get video dimensions and metadata using ffprobe
+ * @param {string} videoPath - Path to the video file
+ * @returns {Promise<Object>} - Video dimensions and metadata
+ */
+function getVideoDimensions(videoPath) {
+  return new Promise((resolve, reject) => {
+    const ffprobePath = getFfmpegPath().replace('ffmpeg', 'ffprobe');
+    const ffprobe = spawn(ffprobePath, [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=width,height,duration',
+      '-of', 'csv=p=0',
+      videoPath
+    ]);
+
+    let output = '';
+    let errorOutput = '';
+
+    ffprobe.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    ffprobe.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffprobe.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`ffprobe error: ${errorOutput}`);
+        return reject(new Error(`ffprobe failed with code ${code}: ${errorOutput}`));
+      }
+
+      const outputLine = output.trim();
+      if (!outputLine) {
+        return reject(new Error('No video stream found'));
+      }
+
+      const [width, height, duration] = outputLine.split(',').map(val => val.trim());
+
+      if (!width || !height) {
+        return reject(new Error('Could not parse video dimensions'));
+      }
+
+      const widthNum = parseInt(width);
+      const heightNum = parseInt(height);
+
+      if (isNaN(widthNum) || isNaN(heightNum)) {
+        return reject(new Error('Invalid video dimensions'));
+      }
+
+      // Determine quality based on height
+      let quality = 'Unknown';
+      let resolution = 'Unknown';
+
+      if (heightNum >= 2160) {
+        quality = '4K';
+        resolution = '4K';
+      } else if (heightNum >= 1440) {
+        quality = '1440p';
+        resolution = '1440p';
+      } else if (heightNum >= 1080) {
+        quality = '1080p';
+        resolution = '1080p';
+      } else if (heightNum >= 720) {
+        quality = '720p';
+        resolution = '720p';
+      } else if (heightNum >= 480) {
+        quality = '480p';
+        resolution = '480p';
+      } else if (heightNum >= 360) {
+        quality = '360p';
+        resolution = '360p';
+      } else {
+        quality = `${heightNum}p`;
+        resolution = `${heightNum}p`;
+      }
+
+      resolve({
+        width: widthNum,
+        height: heightNum,
+        duration: duration ? parseFloat(duration) : null,
+        quality,
+        resolution
+      });
+    });
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      ffprobe.kill();
+      reject(new Error('ffprobe timeout'));
+    }, 10000);
+  });
+}
 
 // Configure multer for large file uploads
 const storage = multer.diskStorage({
