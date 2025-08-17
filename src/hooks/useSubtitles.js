@@ -256,14 +256,24 @@ export const useSubtitles = (t) => {
 
                 // CRITICAL: Ensure cache ID is properly set BEFORE triggering save
                 if (inputType === 'file-upload') {
-                    let cacheId = localStorage.getItem('current_file_cache_id');
-                    if (!cacheId) {
-                        // Generate and store cache ID if not already set
-                        cacheId = await generateFileCacheId(input);
-                        localStorage.setItem('current_file_cache_id', cacheId);
-                        console.log('[Subtitle Generation] Generated cache ID for segment processing:', cacheId);
+                    // Check if this is a downloaded video (has current_video_url) or a true file upload
+                    const currentVideoUrl = localStorage.getItem('current_video_url');
+
+                    if (currentVideoUrl) {
+                        // This is a downloaded video - use URL-based cache ID for subtitle caching
+                        console.log('[Subtitle Generation] Downloaded video detected, using URL-based cache ID for subtitles');
+                        // The URL-based cache ID is already set in the main cache ID generation above
                     } else {
-                        console.log('[Subtitle Generation] Using existing cache ID for segment processing:', cacheId);
+                        // This is a true file upload - use file-based cache ID
+                        let cacheId = localStorage.getItem('current_file_cache_id');
+                        if (!cacheId) {
+                            // Generate and store cache ID if not already set
+                            cacheId = await generateFileCacheId(input);
+                            localStorage.setItem('current_file_cache_id', cacheId);
+                            console.log('[Subtitle Generation] Generated file cache ID for uploaded file:', cacheId);
+                        } else {
+                            console.log('[Subtitle Generation] Using existing file cache ID for uploaded file:', cacheId);
+                        }
                     }
                 }
 
@@ -302,9 +312,22 @@ export const useSubtitles = (t) => {
                 // This ensures we merge with the saved state (including manual edits), not the old React state
                 let currentSubtitles = [];
                 try {
-                    const cacheId = localStorage.getItem('current_file_cache_id');
-                    if (cacheId) {
-                        const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheId}`);
+                    // Determine which cache ID to use based on whether this is a downloaded video or uploaded file
+                    const currentVideoUrl = localStorage.getItem('current_video_url');
+                    let cacheIdToUse = null;
+
+                    if (currentVideoUrl) {
+                        // Downloaded video - use URL-based cache ID
+                        cacheIdToUse = await generateUrlBasedCacheId(currentVideoUrl);
+                        console.log('[Subtitle Generation] Using URL-based cache ID for downloaded video:', cacheIdToUse);
+                    } else {
+                        // Uploaded file - use file-based cache ID
+                        cacheIdToUse = localStorage.getItem('current_file_cache_id');
+                        console.log('[Subtitle Generation] Using file-based cache ID for uploaded file:', cacheIdToUse);
+                    }
+
+                    if (cacheIdToUse) {
+                        const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheIdToUse}`);
                         const result = await response.json();
                         if (result.exists && result.subtitles) {
                             currentSubtitles = result.subtitles;

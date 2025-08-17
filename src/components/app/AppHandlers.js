@@ -248,6 +248,58 @@ export const useAppHandlers = (appState) => {
           setIsSrtOnlyMode,
           t
         );
+
+        // IMPORTANT: Check for cached subtitles immediately for downloaded videos
+        // Use URL-based caching to find existing cached subtitles (like fvkz_wJ3z-4.json)
+        if (processedFile && processedFile instanceof File) {
+          try {
+            // For downloaded videos, use URL-based cache ID to find existing cached subtitles
+            const currentVideoUrl = localStorage.getItem('current_video_url');
+            if (currentVideoUrl) {
+              const { generateUrlBasedCacheId } = await import('../../hooks/useSubtitles');
+              const urlBasedCacheId = await generateUrlBasedCacheId(currentVideoUrl);
+
+              console.log('[AppHandlers] Checking for cached subtitles for downloaded video (URL-based):', urlBasedCacheId);
+
+              // Check if cached subtitles exist using URL-based cache ID
+              const response = await fetch(`http://localhost:3031/api/subtitle-exists/${urlBasedCacheId}`);
+              const result = await response.json();
+
+              if (result.exists && result.subtitles && result.subtitles.length > 0) {
+                console.log('[AppHandlers] Found cached subtitles for downloaded video, loading immediately:', result.subtitles.length, 'subtitles');
+                setSubtitlesData(result.subtitles);
+                setStatus({
+                  message: t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache! Select a segment to generate more.'),
+                  type: 'success'
+                });
+              } else {
+                console.log('[AppHandlers] No cached subtitles found for this downloaded video');
+                setStatus({
+                  message: t('output.videoReady', 'Video ready for segment selection...'),
+                  type: 'loading'
+                });
+              }
+
+              // Also generate file-based cache ID for Files API caching (file upload reuse)
+              const { generateFileCacheId } = await import('../../utils/cacheUtils');
+              const fileCacheId = await generateFileCacheId(processedFile);
+              localStorage.setItem('current_file_cache_id', fileCacheId);
+              console.log('[AppHandlers] Generated file cache ID for Files API caching:', fileCacheId);
+            } else {
+              console.warn('[AppHandlers] No current video URL found for downloaded video');
+              setStatus({
+                message: t('output.videoReady', 'Video ready for segment selection...'),
+                type: 'loading'
+              });
+            }
+          } catch (error) {
+            console.error('[AppHandlers] Error checking cached subtitles for downloaded video:', error);
+            setStatus({
+              message: t('output.videoReady', 'Video ready for segment selection...'),
+              type: 'loading'
+            });
+          }
+        }
       } else {
         // File upload case - prepare the video for the new workflow
         processedFile = input; // uploadedFile
@@ -309,10 +361,11 @@ export const useAppHandlers = (appState) => {
       // Update status to indicate upload is complete and waiting for segment selection
       setIsUploading(false);
       setIsDownloading(false);
-      setStatus({
-        message: t('output.readyForSegmentSelection', 'Video uploaded! Please select a segment on the timeline to process.'),
-        type: 'info'
-      });
+
+      // Only set the default status if we haven't already set a cache-related status
+      // We'll just set the default status since the cache-related status was already set above if needed
+      // The cache logic above handles setting the appropriate status message
+      console.log('[AppHandlers] Video processing complete, ready for segment selection');
 
     } catch (error) {
       console.error('Error in background processing:', error);
