@@ -128,13 +128,48 @@
   margin-bottom: 20px;
 }
 
+.token-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .token-estimation h4 {
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.count-tokens-btn {
+  padding: 6px 12px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.count-tokens-btn:hover:not(:disabled) {
+  background: var(--accent-color-hover);
+  transform: translateY(-1px);
+}
+
+.count-tokens-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.counting-indicator {
+  color: var(--accent-color);
+  font-weight: normal;
+  font-size: 0.8rem;
 }
 
 .token-count {

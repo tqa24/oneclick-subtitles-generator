@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
+import { getNextAvailableKey } from '../services/gemini/keyManager';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -11,16 +12,19 @@ const VideoProcessingOptionsModal = ({
   onClose,
   onProcess,
   selectedSegment, // { start: number, end: number } in seconds
-  videoDuration,
-  isUploading = false
+  isUploading = false,
+  videoFile = null // Optional video file for real token counting
 }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
   
   // Processing options state
   const [fps, setFps] = useState(1); // Default 1 FPS
-  const [mediaResolution, setMediaResolution] = useState('medium'); // low, medium, high
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash'); // Default model
+  const [mediaResolution, setMediaResolution] = useState('medium'); // low, medium, high (default to medium)
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash'); // Default model
+  const [customGeminiModels, setCustomGeminiModels] = useState([]);
+  const [isCountingTokens, setIsCountingTokens] = useState(false);
+  const [realTokenCount, setRealTokenCount] = useState(null);
   
   // Available options
   const fpsOptions = [
@@ -30,34 +34,171 @@ const VideoProcessingOptionsModal = ({
     { value: 2, label: '2 FPS (0.5s intervals)' },
     { value: 5, label: '5 FPS (0.2s intervals)' }
   ];
-  
+
   const resolutionOptions = [
-    { value: 'low', label: t('processing.lowRes', 'Low (~66 tokens/frame)'), tokens: 66 },
-    { value: 'medium', label: t('processing.mediumRes', 'Medium (~150 tokens/frame)'), tokens: 150 },
-    { value: 'high', label: t('processing.highRes', 'High (~258 tokens/frame)'), tokens: 258 }
+    { value: 'low', label: t('processing.lowRes', 'Low (64 tokens/frame)'), tokens: 64 },
+    { value: 'medium', label: t('processing.mediumRes', 'Medium (256 tokens/frame)'), tokens: 256 },
+    { value: 'high', label: t('processing.highRes', 'High (256 tokens/frame)'), tokens: 256 }
   ];
-  
-  const modelOptions = [
-    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (1M tokens)', maxTokens: 1048575 },
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (1M tokens)', maxTokens: 1048575 },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (2M tokens)', maxTokens: 2000000 }
-  ];
-  
-  // Calculate estimated token usage
-  const calculateTokens = () => {
+
+  // Helper function to get all available models (built-in + custom)
+  const getAllAvailableModels = () => {
+    const builtInModels = [
+      { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro - Nghe lời nhất, dễ ra sub ngắn, dễ bị quá tải'), maxTokens: 2000000 },
+      { value: 'gemini-2.5-flash', label: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Độ chính xác thứ hai)'), maxTokens: 1048575 },
+      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, độ chính xác tốt)'), maxTokens: 1048575 },
+      { value: 'gemini-2.0-flash', label: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Độ chính xác thứ ba, dễ bị sub dài)'), maxTokens: 1048575 },
+      { value: 'gemini-2.0-flash-lite', label: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất, dễ bị sub dài)'), maxTokens: 1048575 }
+    ];
+
+    const customModels = customGeminiModels.map(model => ({
+      value: model.id,
+      label: `${model.name} (Custom)`,
+      maxTokens: 1048575, // Default token limit for custom models
+      isCustom: true
+    }));
+
+    return [...builtInModels, ...customModels];
+  };
+
+  const modelOptions = getAllAvailableModels();
+
+  // Load custom models on component mount
+  useEffect(() => {
+    const loadCustomModels = () => {
+      try {
+        const savedCustomModels = localStorage.getItem('custom_gemini_models');
+        if (savedCustomModels) {
+          setCustomGeminiModels(JSON.parse(savedCustomModels));
+        }
+      } catch (error) {
+        console.error('Error loading custom models:', error);
+      }
+    };
+
+    loadCustomModels();
+  }, []);
+
+  // Real token counting using Gemini API with Files API
+  const countTokensWithGeminiAPI = async (videoFile) => {
+    if (!videoFile || !selectedSegment) return null;
+
+    const geminiApiKey = getNextAvailableKey();
+    if (!geminiApiKey) {
+      console.warn('No Gemini API key available for token counting');
+      return null;
+    }
+
+    try {
+      setIsCountingTokens(true);
+
+      // Check if we already have an uploaded file URI for this file (same logic as in core.js)
+      const fileKey = `gemini_file_${videoFile.name}_${videoFile.size}_${videoFile.lastModified}`;
+      let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
+
+      // If no cached file or file doesn't exist, upload it first
+      if (!uploadedFile || !uploadedFile.uri) {
+        console.log('[TokenCounting] No cached file found, uploading for token counting...');
+
+        // Import and use the same upload function as the main processing
+        const { uploadFileToGemini } = await import('../services/gemini');
+        uploadedFile = await uploadFileToGemini(videoFile, `${videoFile.name}_${Date.now()}`);
+
+        // Cache the uploaded file info for reuse
+        localStorage.setItem(fileKey, JSON.stringify(uploadedFile));
+        console.log('[TokenCounting] File uploaded successfully:', uploadedFile.uri);
+      } else {
+        console.log('[TokenCounting] Using cached uploaded file:', uploadedFile.uri);
+      }
+
+      // Create the request data using the uploaded file URI (matching countTokens API format)
+      // Note: countTokens API doesn't support media resolution, so we only count basic video metadata
+      const filePart = {
+        file_data: {
+          file_uri: uploadedFile.uri,
+          mime_type: uploadedFile.mimeType || videoFile.type || "video/mp4"
+        }
+      };
+
+      // Add video metadata to the file_data part if this is a video
+      if (!videoFile.type.startsWith('audio/')) {
+        filePart.video_metadata = {
+          start_offset: `${Math.floor(selectedSegment.start)}s`,
+          end_offset: `${Math.floor(selectedSegment.end)}s`,
+          fps: fps
+        };
+      }
+
+      const requestData = {
+        contents: [{
+          role: "user",
+          parts: [
+            { text: "Transcribe this video segment." },
+            filePart
+          ]
+        }]
+      };
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:countTokens?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Token counting API error:', errorData);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[TokenCounting] Real token count (without media resolution):', data.totalTokens);
+
+      // Note: The countTokens API doesn't support media resolution, so this count
+      // is for the default resolution. We'll adjust it based on the selected resolution.
+      const baseTokens = data.totalTokens;
+
+      // Adjust for media resolution based on official token counts
+      let adjustmentFactor = 1;
+      if (mediaResolution === 'low') {
+        adjustmentFactor = 64 / 256; // low vs medium ratio
+      } else if (mediaResolution === 'high') {
+        adjustmentFactor = 256 / 256; // high vs medium ratio (same)
+      }
+
+      const adjustedTokens = Math.round(baseTokens * adjustmentFactor);
+      console.log('[TokenCounting] Adjusted token count for', mediaResolution, 'resolution:', adjustedTokens);
+
+      return adjustedTokens;
+    } catch (error) {
+      console.error('Error counting tokens with Gemini API:', error);
+      return null;
+    } finally {
+      setIsCountingTokens(false);
+    }
+  };
+
+  // Calculate estimated token usage based on official Gemini API documentation
+  const calculateEstimatedTokens = () => {
     if (!selectedSegment) return 0;
-    
+
     const segmentDuration = selectedSegment.end - selectedSegment.start;
     const resolution = resolutionOptions.find(r => r.value === mediaResolution);
-    const frameTokens = resolution ? resolution.tokens : 150;
-    const audioTokens = 32; // tokens per second for audio
-    
+    const frameTokens = resolution ? resolution.tokens : 256; // Default to medium resolution
+    const audioTokens = 32; // tokens per second for audio (official documentation)
+
     return Math.round(segmentDuration * (fps * frameTokens + audioTokens));
   };
   
-  const estimatedTokens = calculateTokens();
+  const estimatedTokens = calculateEstimatedTokens();
   const selectedModelData = modelOptions.find(m => m.value === selectedModel);
-  const isWithinLimit = estimatedTokens <= (selectedModelData?.maxTokens || 1048575);
+  const displayTokens = realTokenCount !== null ? realTokenCount : estimatedTokens;
+  const isWithinLimit = displayTokens <= (selectedModelData?.maxTokens || 1048575);
   
   // Format time for display
   const formatTime = (seconds) => {
@@ -66,18 +207,31 @@ const VideoProcessingOptionsModal = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
+  // Handle real token counting
+  const handleCountTokens = async () => {
+    if (!videoFile) {
+      console.warn('No video file available for token counting');
+      return;
+    }
+    const realCount = await countTokensWithGeminiAPI(videoFile);
+    if (realCount !== null) {
+      setRealTokenCount(realCount);
+    }
+  };
+
   // Handle form submission
   const handleProcess = () => {
     if (!selectedSegment || isUploading) return;
-    
+
     const options = {
       fps,
       mediaResolution,
       model: selectedModel,
       segment: selectedSegment,
-      estimatedTokens
+      estimatedTokens: displayTokens,
+      realTokenCount
     };
-    
+
     onProcess(options);
   };
   
@@ -161,13 +315,38 @@ const VideoProcessingOptionsModal = ({
           
           {/* Token Estimation */}
           <div className="token-estimation">
-            <h4>{t('processing.estimatedTokens', 'Estimated Token Usage')}</h4>
-            <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
-              {estimatedTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+            <div className="token-header">
+              <h4>
+                {realTokenCount !== null
+                  ? t('processing.actualTokens', 'Actual Token Usage')
+                  : t('processing.estimatedTokens', 'Estimated Token Usage')
+                }
+                {isCountingTokens && (
+                  <span className="counting-indicator"> (Counting...)</span>
+                )}
+              </h4>
+              {videoFile && realTokenCount === null && !isCountingTokens && (
+                <button
+                  className="count-tokens-btn"
+                  onClick={handleCountTokens}
+                  disabled={isCountingTokens}
+                >
+                  {t('processing.getActualCount', 'Get Actual Count')}
+                </button>
+              )}
             </div>
+            <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
+              {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+            </div>
+            <p className="estimation-note">
+              {realTokenCount !== null
+                ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution. More accurate than estimation.')
+                : t('processing.estimationNote', 'Estimation based on official Gemini API documentation. Actual usage may vary.')
+              }
+            </p>
             {!isWithinLimit && (
               <p className="warning">
-                {t('processing.exceedsLimit', 'Warning: Estimated tokens exceed model limit. Consider reducing FPS or using a higher-capacity model.')}
+                {t('processing.exceedsLimit', 'Warning: Token count exceeds model limit. Consider reducing FPS or using a higher-capacity model.')}
               </p>
             )}
           </div>

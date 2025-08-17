@@ -1,0 +1,20 @@
+{
+  "configureOptions": "Configure Processing Options",
+  "selectedSegment": "Selected Segment",
+  "frameRate": "Frame Rate",
+  "mediaResolution": "Media Resolution",
+  "model": "Model",
+  "estimatedTokens": "Estimated Token Usage",
+  "actualTokens": "Actual Token Usage",
+  "getActualCount": "Get Actual Count",
+  "estimationNote": "Estimation based on official Gemini API documentation. Actual usage may vary.",
+  "actualNote": "Actual count from Gemini API. This is the precise token usage.",
+  "adjustedNote": "Real count from Gemini API, adjusted for selected media resolution. More accurate than estimation.",
+  "exceedsLimit": "Warning: Token count exceeds model limit. Consider reducing FPS or using a higher-capacity model.",
+  "lowRes": "Low (64 tokens/frame)",
+  "mediumRes": "Medium (256 tokens/frame)",
+  "highRes": "High (256 tokens/frame)",
+  "uploading": "Uploading video...",
+  "waitingForUpload": "Waiting for upload...",
+  "startProcessing": "Start Processing"
+}

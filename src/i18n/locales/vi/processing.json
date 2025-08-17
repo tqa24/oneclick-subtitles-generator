@@ -1,0 +1,20 @@
+{
+  "configureOptions": "Cấu hình tùy chọn xử lý",
+  "selectedSegment": "Phân đoạn đã chọn",
+  "frameRate": "Tốc độ khung hình",
+  "mediaResolution": "Độ phân giải media",
+  "model": "Mô hình",
+  "estimatedTokens": "Ước tính sử dụng token",
+  "actualTokens": "Sử dụng token thực tế",
+  "getActualCount": "Lấy số lượng thực tế",
+  "estimationNote": "Ước tính dựa trên tài liệu chính thức của Gemini API. Sử dụng thực tế có thể khác.",
+  "actualNote": "Số lượng thực tế từ Gemini API. Đây là mức sử dụng token chính xác.",
+  "adjustedNote": "Số lượng thực tế từ Gemini API, điều chỉnh theo độ phân giải đã chọn. Chính xác hơn Ước tính.",
+  "exceedsLimit": "Cảnh báo: Số lượng token vượt quá giới hạn mô hình. Hãy xem xét giảm FPS hoặc sử dụng mô hình có dung lượng cao hơn.",
+  "lowRes": "Thấp (64 token/khung hình)",
+  "mediumRes": "Trung bình (256 token/khung hình)",
+  "highRes": "Cao (256 token/khung hình)",
+  "uploading": "Đang tải video lên...",
+  "waitingForUpload": "Đang chờ tải lên...",
+  "startProcessing": "Bắt đầu xử lý"
+}

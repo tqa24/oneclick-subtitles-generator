@@ -468,6 +468,7 @@ const AppLayout = ({
           selectedSegment={selectedSegment}
           videoDuration={uploadedFile?.duration || selectedVideo?.duration || 0}
           isUploading={isUploading}
+          videoFile={uploadedFileData || uploadedFile}
         />
       )}
 
