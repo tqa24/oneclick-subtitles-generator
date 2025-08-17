@@ -43,6 +43,7 @@ const VideoProcessingOptionsModal = ({
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
+  const [tokenCountError, setTokenCountError] = useState(null);
   
   // Available options
   const fpsOptions = [
@@ -118,6 +119,20 @@ const VideoProcessingOptionsModal = ({
     localStorage.setItem('video_processing_custom_language', customLanguage);
   }, [customLanguage]);
 
+  // Automatic token counting when modal opens or settings change
+  useEffect(() => {
+    if (isOpen && videoFile && selectedSegment) {
+      console.log('[TokenCounting] Auto-counting tokens due to modal open or settings change');
+      const performTokenCount = async () => {
+        const count = await countTokensWithGeminiAPI(videoFile);
+        if (count !== null) {
+          setRealTokenCount(count);
+        }
+      };
+      performTokenCount();
+    }
+  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage]);
+
   // Get all available prompt presets
   const getPromptPresetOptions = () => {
     const userPresets = getUserPromptPresets();
@@ -187,6 +202,7 @@ const VideoProcessingOptionsModal = ({
 
     try {
       setIsCountingTokens(true);
+      setTokenCountError(null);
 
       // Check if we already have an uploaded file URI for this file
       // Use different caching strategies for uploaded vs downloaded videos
@@ -245,7 +261,7 @@ const VideoProcessingOptionsModal = ({
         contents: [{
           role: "user",
           parts: [
-            { text: "Transcribe this video segment." },
+            { text: getSelectedPromptText() }, // Use the actual selected prompt
             filePart
           ]
         }]
@@ -289,6 +305,7 @@ const VideoProcessingOptionsModal = ({
       return adjustedTokens;
     } catch (error) {
       console.error('Error counting tokens with Gemini API:', error);
+      setTokenCountError(error.message);
       return null;
     } finally {
       setIsCountingTokens(false);
@@ -319,17 +336,7 @@ const VideoProcessingOptionsModal = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Handle real token counting
-  const handleCountTokens = async () => {
-    if (!videoFile) {
-      console.warn('No video file available for token counting');
-      return;
-    }
-    const realCount = await countTokensWithGeminiAPI(videoFile);
-    if (realCount !== null) {
-      setRealTokenCount(realCount);
-    }
-  };
+
 
   // Handle form submission
   const handleProcess = () => {
@@ -467,31 +474,28 @@ const VideoProcessingOptionsModal = ({
           <div className="token-estimation">
             <div className="token-header">
               <h4>
-                {realTokenCount !== null
-                  ? t('processing.actualTokens', 'Actual Token Usage')
-                  : t('processing.estimatedTokens', 'Estimated Token Usage')
+                {isCountingTokens
+                  ? t('processing.countingTokens', 'Counting Tokens...')
+                  : realTokenCount !== null
+                    ? t('processing.actualTokens', 'Actual Token Usage')
+                    : t('processing.estimatedTokens', 'Estimated Token Usage')
                 }
-                {isCountingTokens && (
-                  <span className="counting-indicator"> (Counting...)</span>
-                )}
               </h4>
-              {videoFile && realTokenCount === null && !isCountingTokens && (
-                <button
-                  className="count-tokens-btn"
-                  onClick={handleCountTokens}
-                  disabled={isCountingTokens}
-                >
-                  {t('processing.getActualCount', 'Get Actual Count')}
-                </button>
+              {tokenCountError && (
+                <p className="token-error">
+                  {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
+                </p>
               )}
             </div>
             <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
               {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
             </div>
             <p className="estimation-note">
-              {realTokenCount !== null
-                ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution. More accurate than estimation.')
-                : t('processing.estimationNote', 'Estimation based on official Gemini API documentation. Actual usage may vary.')
+              {isCountingTokens
+                ? t('processing.countingNote', 'Getting real token count from Gemini API...')
+                : realTokenCount !== null
+                  ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution.')
+                  : t('processing.fallbackNote', 'Fallback estimation - real count will be calculated automatically.')
               }
             </p>
             {!isWithinLimit && (
