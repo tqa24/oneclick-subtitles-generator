@@ -92,8 +92,24 @@ const VideoProcessingOptionsModal = ({
     try {
       setIsCountingTokens(true);
 
-      // Check if we already have an uploaded file URI for this file (same logic as in core.js)
-      const fileKey = `gemini_file_${videoFile.name}_${videoFile.size}_${videoFile.lastModified}`;
+      // Check if we already have an uploaded file URI for this file
+      // Use different caching strategies for uploaded vs downloaded videos
+      let fileKey;
+      const currentVideoUrl = localStorage.getItem('current_video_url');
+
+      if (currentVideoUrl) {
+        // This is a downloaded video - use URL-based caching for consistency
+        const { generateUrlBasedCacheId } = await import('../hooks/useSubtitles');
+        const urlBasedId = await generateUrlBasedCacheId(currentVideoUrl);
+        fileKey = `gemini_file_url_${urlBasedId}`;
+        console.log('[TokenCounting] Using URL-based cache key for downloaded video:', fileKey);
+      } else {
+        // This is an uploaded file - use file-based caching
+        const lastModified = videoFile.lastModified || Date.now();
+        fileKey = `gemini_file_${videoFile.name}_${videoFile.size}_${lastModified}`;
+        console.log('[TokenCounting] Using file-based cache key for uploaded file:', fileKey);
+      }
+
       let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
 
       // If no cached file or file doesn't exist, upload it first

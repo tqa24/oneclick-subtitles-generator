@@ -24,20 +24,34 @@ import { streamGeminiContent, isStreamingSupported } from './streamingService';
  * Clear cached file URI for a specific file
  * @param {File} file - The file to clear cache for
  */
-export const clearCachedFileUri = (file) => {
-    const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
-    localStorage.removeItem(fileKey);
-    console.log('[GeminiAPI] Cleared cached file URI for:', file.name);
+export const clearCachedFileUri = async (file) => {
+    // Clear both file-based and URL-based cache keys
+    const currentVideoUrl = localStorage.getItem('current_video_url');
+
+    if (currentVideoUrl) {
+        // Clear URL-based cache for downloaded video
+        const { generateUrlBasedCacheId } = await import('../../hooks/useSubtitles');
+        const urlBasedId = await generateUrlBasedCacheId(currentVideoUrl);
+        const urlKey = `gemini_file_url_${urlBasedId}`;
+        localStorage.removeItem(urlKey);
+        console.log('[GeminiAPI] Cleared URL-based cached file URI for:', file.name);
+    } else {
+        // Clear file-based cache for uploaded file
+        const lastModified = file.lastModified || Date.now();
+        const fileKey = `gemini_file_${file.name}_${file.size}_${lastModified}`;
+        localStorage.removeItem(fileKey);
+        console.log('[GeminiAPI] Cleared file-based cached file URI for:', file.name);
+    }
 };
 
 /**
- * Clear all cached file URIs
+ * Clear all cached file URIs (both file-based and URL-based)
  */
 export const clearAllCachedFileUris = () => {
     const keys = Object.keys(localStorage);
     const fileKeys = keys.filter(key => key.startsWith('gemini_file_'));
     fileKeys.forEach(key => localStorage.removeItem(key));
-    console.log('[GeminiAPI] Cleared all cached file URIs:', fileKeys.length);
+    console.log('[GeminiAPI] Cleared all cached file URIs (file-based and URL-based):', fileKeys.length);
 };
 
 /**
@@ -75,7 +89,23 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
 
     try {
         // Check if we already have an uploaded file URI for this file
-        const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
+        // Use different caching strategies for uploaded vs downloaded videos
+        let fileKey;
+        const currentVideoUrl = localStorage.getItem('current_video_url');
+
+        if (currentVideoUrl) {
+            // This is a downloaded video - use URL-based caching for consistency
+            const { generateUrlBasedCacheId } = await import('../../hooks/useSubtitles');
+            const urlBasedId = await generateUrlBasedCacheId(currentVideoUrl);
+            fileKey = `gemini_file_url_${urlBasedId}`;
+            console.log('[GeminiAPI] Using URL-based cache key for downloaded video:', fileKey);
+        } else {
+            // This is an uploaded file - use file-based caching
+            const lastModified = file.lastModified || Date.now();
+            fileKey = `gemini_file_${file.name}_${file.size}_${lastModified}`;
+            console.log('[GeminiAPI] Using file-based cache key for uploaded file:', fileKey);
+        }
+
         let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
 
         if (uploadedFile && uploadedFile.uri) {
@@ -134,7 +164,23 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
     try {
         // Check if we already have an uploaded file URI for this file
-        const fileKey = `gemini_file_${file.name}_${file.size}_${file.lastModified}`;
+        // Use different caching strategies for uploaded vs downloaded videos
+        let fileKey;
+        const currentVideoUrl = localStorage.getItem('current_video_url');
+
+        if (currentVideoUrl) {
+            // This is a downloaded video - use URL-based caching for consistency
+            const { generateUrlBasedCacheId } = await import('../../hooks/useSubtitles');
+            const urlBasedId = await generateUrlBasedCacheId(currentVideoUrl);
+            fileKey = `gemini_file_url_${urlBasedId}`;
+            console.log('[GeminiAPI] Using URL-based cache key for downloaded video:', fileKey);
+        } else {
+            // This is an uploaded file - use file-based caching
+            const lastModified = file.lastModified || Date.now();
+            fileKey = `gemini_file_${file.name}_${file.size}_${lastModified}`;
+            console.log('[GeminiAPI] Using file-based cache key for uploaded file:', fileKey);
+        }
+
         let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
 
         if (uploadedFile && uploadedFile.uri) {
