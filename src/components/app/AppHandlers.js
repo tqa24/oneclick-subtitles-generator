@@ -405,13 +405,26 @@ export const useAppHandlers = (appState) => {
         model: options.model
       };
 
+      // Add custom prompt if provided
+      if (options.customPrompt) {
+        // Store the custom prompt temporarily for this processing session
+        sessionStorage.setItem('current_session_prompt', options.customPrompt);
+        console.log('[ProcessWithOptions] Using custom prompt for this session:', options.promptPreset);
+      }
+
       // Add user-provided subtitles if available and enabled
       if (useUserProvidedSubtitles && userProvidedSubtitles) {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
       }
 
       // Start processing with the selected segment and options
-      await generateSubtitles(uploadedFileData, 'file-upload', apiKeysSet, subtitleOptions);
+      try {
+        await generateSubtitles(uploadedFileData, 'file-upload', apiKeysSet, subtitleOptions);
+      } finally {
+        // Clear the session prompt after processing
+        sessionStorage.removeItem('current_session_prompt');
+        console.log('[ProcessWithOptions] Cleared session prompt after processing');
+      }
 
     } catch (error) {
       console.error('Error processing with options:', error);

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
 import { getNextAvailableKey } from '../services/gemini/keyManager';
+import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } from '../services/gemini';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -18,10 +19,27 @@ const VideoProcessingOptionsModal = ({
   const { t } = useTranslation();
   const modalRef = useRef(null);
   
-  // Processing options state
-  const [fps, setFps] = useState(1); // Default 1 FPS
-  const [mediaResolution, setMediaResolution] = useState('medium'); // low, medium, high (default to medium)
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash'); // Default model
+  // Processing options state with localStorage persistence
+  const [fps, setFps] = useState(() => {
+    const saved = localStorage.getItem('video_processing_fps');
+    return saved ? parseFloat(saved) : 1;
+  });
+  const [mediaResolution, setMediaResolution] = useState(() => {
+    const saved = localStorage.getItem('video_processing_media_resolution');
+    return saved || 'medium';
+  });
+  const [selectedModel, setSelectedModel] = useState(() => {
+    const saved = localStorage.getItem('video_processing_model');
+    return saved || 'gemini-2.5-flash';
+  });
+  const [selectedPromptPreset, setSelectedPromptPreset] = useState(() => {
+    const saved = localStorage.getItem('video_processing_prompt_preset');
+    return saved || 'settings'; // Default to "Prompt from Settings"
+  });
+  const [customLanguage, setCustomLanguage] = useState(() => {
+    const saved = localStorage.getItem('video_processing_custom_language');
+    return saved || '';
+  });
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
@@ -78,6 +96,84 @@ const VideoProcessingOptionsModal = ({
 
     loadCustomModels();
   }, []);
+
+  // Persist processing options to localStorage
+  useEffect(() => {
+    localStorage.setItem('video_processing_fps', fps.toString());
+  }, [fps]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_media_resolution', mediaResolution);
+  }, [mediaResolution]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_model', selectedModel);
+  }, [selectedModel]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_prompt_preset', selectedPromptPreset);
+  }, [selectedPromptPreset]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_custom_language', customLanguage);
+  }, [customLanguage]);
+
+  // Get all available prompt presets
+  const getPromptPresetOptions = () => {
+    const userPresets = getUserPromptPresets();
+    const options = [
+      {
+        id: 'settings',
+        title: t('processing.promptFromSettings', 'Prompt from Settings'),
+        description: t('processing.promptFromSettingsDesc', 'Use the prompt configured in Settings > Prompts'),
+        isDefault: true
+      },
+      ...PROMPT_PRESETS.map(preset => ({
+        id: preset.id,
+        title: preset.id === 'general' ? t('settings.presetGeneralPurpose', 'General purpose') :
+               preset.id === 'extract-text' ? t('settings.presetExtractText', 'Extract text') :
+               preset.id === 'focus-lyrics' ? t('settings.presetFocusLyrics', 'Focus on Lyrics') :
+               preset.id === 'describe-video' ? t('settings.presetDescribeVideo', 'Describe video') :
+               preset.id === 'translate-directly' ? t('settings.presetTranslateDirectly', 'Translate directly') :
+               preset.id === 'chaptering' ? t('settings.presetChaptering', 'Chaptering') :
+               preset.id === 'diarize-speakers' ? t('settings.presetIdentifySpeakers', 'Identify Speakers') :
+               preset.title,
+        description: preset.prompt.substring(0, 80) + '...',
+        needsLanguage: preset.id === 'translate-directly'
+      })),
+      ...userPresets.map(preset => ({
+        id: preset.id,
+        title: preset.title,
+        description: preset.prompt.substring(0, 80) + '...',
+        isUserPreset: true
+      }))
+    ];
+    return options;
+  };
+
+  // Get the selected prompt text for processing
+  const getSelectedPromptText = () => {
+    if (selectedPromptPreset === 'settings') {
+      // Use prompt from settings
+      return localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+    }
+
+    // Find the preset
+    const allPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
+    const preset = allPresets.find(p => p.id === selectedPromptPreset);
+
+    if (!preset) {
+      // Fallback to settings prompt
+      return localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+    }
+
+    // Handle translate-directly preset with custom language
+    if (preset.id === 'translate-directly' && customLanguage.trim()) {
+      return preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage.trim());
+    }
+
+    return preset.prompt;
+  };
 
   // Real token counting using Gemini API with Files API
   const countTokensWithGeminiAPI = async (videoFile) => {
@@ -245,7 +341,10 @@ const VideoProcessingOptionsModal = ({
       model: selectedModel,
       segment: selectedSegment,
       estimatedTokens: displayTokens,
-      realTokenCount
+      realTokenCount,
+      customPrompt: getSelectedPromptText(), // Include the selected prompt
+      promptPreset: selectedPromptPreset,
+      customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined
     };
 
     onProcess(options);
@@ -328,7 +427,42 @@ const VideoProcessingOptionsModal = ({
               ))}
             </select>
           </div>
-          
+
+          {/* Prompt Preset Selection */}
+          <div className="option-group">
+            <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
+            <select
+              value={selectedPromptPreset}
+              onChange={(e) => setSelectedPromptPreset(e.target.value)}
+            >
+              {getPromptPresetOptions().map(option => (
+                <option key={option.id} value={option.id}>
+                  {option.title}
+                </option>
+              ))}
+            </select>
+            <p className="option-description">
+              {(() => {
+                const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
+                return selectedOption?.description || '';
+              })()}
+            </p>
+          </div>
+
+          {/* Custom Language Input for Translate Directly */}
+          {selectedPromptPreset === 'translate-directly' && (
+            <div className="option-group">
+              <label>{t('processing.targetLanguage', 'Target Language')}</label>
+              <input
+                type="text"
+                value={customLanguage}
+                onChange={(e) => setCustomLanguage(e.target.value)}
+                placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
+                className="language-input"
+              />
+            </div>
+          )}
+
           {/* Token Estimation */}
           <div className="token-estimation">
             <div className="token-header">
