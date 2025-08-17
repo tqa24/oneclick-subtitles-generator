@@ -1,5 +1,5 @@
 {
-  "title": "Tạo thuyết minh (chưa hoàn thiện)",
+  "title": "Tạo thuyết minh",
   "description": "Tạo âm thanh lồng tiếng nhân bản (F5-TTS, vui lòng dùng giọng tham chiếu cùng ngôn ngữ với đầu ra), hoặc thuyết minh bằng Gemini (8 giọng, 29 ngôn ngữ, chất lượng âm thanh rõ).",
   "referenceAudio": "Văn bản tham chiếu",
   "referenceText": "Văn bản tham chiếu",

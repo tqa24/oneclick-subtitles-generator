@@ -356,6 +356,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '--- Checking
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Refreshing environment variables (Cap nhat bien moi truong)...' -ForegroundColor Cyan"
 CALL :RefreshEnvironment
+IF %ERRORLEVEL% NEQ 0 (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Failed to refresh environment variables (Loi cap nhat bien moi truong). Continuing anyway...' -ForegroundColor Red"
+)
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Configuring PowerShell security settings (Cau hinh cai dat bao mat PowerShell)...' -ForegroundColor Cyan"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;" > nul
@@ -596,14 +599,55 @@ REM ============================================================================
 :: Subroutine: Refresh Environment Variables
 :RefreshEnvironment
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Refreshing environment variables (Cap nhat bien moi truong)...' -ForegroundColor Cyan"
-:: Refresh PATH from registry
-FOR /F "usebackq tokens=2,*" %%A IN (`REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH 2^>nul`) DO SET "SystemPATH=%%B"
-FOR /F "usebackq tokens=2,*" %%A IN (`REG QUERY "HKCU\Environment" /v PATH 2^>nul`) DO SET "UserPATH=%%B"
-IF DEFINED UserPATH (
-    SET "PATH=%SystemPATH%;%UserPATH%"
-) ELSE (
-    SET "PATH=%SystemPATH%"
+
+:: Initialize variables
+SET "SystemPATH="
+SET "UserPATH="
+
+:: Use PowerShell to safely read PATH from registry (avoids FOR loop issues)
+:: Create temp files for PowerShell output
+SET "TEMP_SYSTEM_PATH=%TEMP%\osg_system_path.txt"
+SET "TEMP_USER_PATH=%TEMP%\osg_user_path.txt"
+
+:: Use PowerShell to read system PATH
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $systemPath = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey('SYSTEM\CurrentControlSet\Control\Session Manager\Environment').GetValue('PATH', ''); Write-Output $systemPath } catch { Write-Output '' }" > "%TEMP_SYSTEM_PATH%" 2>nul
+
+:: Use PowerShell to read user PATH
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $userPath = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment').GetValue('PATH', ''); Write-Output $userPath } catch { Write-Output '' }" > "%TEMP_USER_PATH%" 2>nul
+
+:: Read system PATH from temp file
+IF EXIST "%TEMP_SYSTEM_PATH%" (
+    SET /P SystemPATH=<"%TEMP_SYSTEM_PATH%"
+    DEL "%TEMP_SYSTEM_PATH%" >nul 2>&1
 )
+
+:: Read user PATH from temp file
+IF EXIST "%TEMP_USER_PATH%" (
+    SET /P UserPATH=<"%TEMP_USER_PATH%"
+    DEL "%TEMP_USER_PATH%" >nul 2>&1
+)
+
+:: Fallback if PowerShell method failed
+IF NOT DEFINED SystemPATH (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARNING] Could not read system PATH from registry, using current PATH (Khong doc duoc system PATH, dung PATH hien tai)' -ForegroundColor Yellow"
+    SET "SystemPATH=%PATH%"
+)
+
+:: Combine paths safely
+IF DEFINED UserPATH (
+    IF DEFINED SystemPATH (
+        SET "PATH=%SystemPATH%;%UserPATH%"
+    ) ELSE (
+        SET "PATH=%UserPATH%"
+    )
+) ELSE (
+    IF DEFINED SystemPATH (
+        SET "PATH=%SystemPATH%"
+    ) ELSE (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARNING] No PATH variables found, keeping current PATH (Khong tim thay PATH, giu PATH hien tai)' -ForegroundColor Yellow"
+    )
+)
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Environment variables refreshed (Bien moi truong da duoc cap nhat).' -ForegroundColor Green"
 EXIT /B 0
 :: End of RefreshEnvironment Subroutine
