@@ -705,6 +705,60 @@ router.post('/optimize-existing-file', async (req, res) => {
 });
 
 /**
+ * POST /api/create-analysis-video - Create a 500-frame analysis video without optimization
+ */
+router.post('/create-analysis-video', streamingUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const timestamp = Date.now();
+    const originalPath = req.file.path;
+    const originalFilename = req.file.filename;
+
+    // Create analysis video filename
+    const analysisFilename = `analysis_${timestamp}.mp4`;
+    const analysisPath = path.join(VIDEOS_DIR, analysisFilename);
+
+    console.log('[CREATE-ANALYSIS-VIDEO] Creating analysis video from:', originalPath);
+
+    // Create analysis video with 500 frames
+    const analysisResult = await createAnalysisVideo(originalPath, analysisPath);
+
+    if (analysisResult.isOriginal) {
+      console.log('[CREATE-ANALYSIS-VIDEO] Using original video for analysis (fewer than 500 frames)');
+    } else {
+      console.log(`[CREATE-ANALYSIS-VIDEO] Created analysis video with ${analysisResult.frameCount} frames from ${analysisResult.originalFrameCount} original frames`);
+    }
+
+    // Return the result
+    res.json({
+      success: true,
+      originalVideo: `/videos/${originalFilename}`,
+      analysis: analysisResult.isOriginal ? {
+        video: `/videos/${originalFilename}`,
+        frameCount: analysisResult.frameCount,
+        message: 'Using original video for analysis (fewer than 500 frames)'
+      } : {
+        video: `/videos/${analysisFilename}`,
+        frameCount: analysisResult.frameCount,
+        originalFrameCount: analysisResult.originalFrameCount,
+        frameInterval: analysisResult.frameInterval,
+        message: `Created 500-frame analysis video from ${analysisResult.originalFrameCount} original frames`
+      }
+    });
+
+  } catch (error) {
+    console.error('[CREATE-ANALYSIS-VIDEO] Error:', error);
+    res.status(500).json({
+      error: 'Failed to create analysis video',
+      details: error.message
+    });
+  }
+});
+
+/**
  * POST /api/optimize-video - Optimize a video by scaling it to a lower resolution and reducing the frame rate using streaming
  * Also creates an analysis video with 500 frames for Gemini analysis
  * Automatically converts audio files to video at the start

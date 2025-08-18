@@ -6,7 +6,7 @@
 // Import from utility modules
 import { getCacheIdForMedia } from './cacheUtils';
 import { createSegmentStatusUpdater, formatTime } from './segmentUtils';
-import { optimizeVideo } from './optimizationUtils';
+import { optimizeVideo, createAnalysisVideo } from './optimizationUtils';
 import { analyzeVideoAndWaitForUserChoice } from './analysisUtils';
 import { processLongVideo, processLongMedia, processShortMedia } from './processingUtils';
 
@@ -31,6 +31,7 @@ export {
   
   // Optimization utilities
   optimizeVideo,
+  createAnalysisVideo,
   
   // Analysis utilities
   analyzeVideoAndWaitForUserChoice,

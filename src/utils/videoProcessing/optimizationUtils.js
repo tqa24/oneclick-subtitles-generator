@@ -189,3 +189,61 @@ export const optimizeVideo = async (mediaFile, optimizedResolution, onStatusUpda
     result
   };
 };
+
+/**
+ * Create a 500-frame analysis video without optimization
+ * @param {File} mediaFile - The media file to create analysis video from
+ * @param {Function} onStatusUpdate - Callback for status updates
+ * @param {Function} t - Translation function
+ * @returns {Promise<Object>} - Object with original file and analysis file
+ */
+export const createAnalysisVideo = async (mediaFile, onStatusUpdate, t) => {
+  console.log('[CREATE-ANALYSIS-VIDEO] Creating analysis video for:', mediaFile.name);
+
+  onStatusUpdate({
+    message: t('output.creatingAnalysisVideo', 'Creating analysis video...'),
+    type: 'loading'
+  });
+
+  // Call the create-analysis-video endpoint using FormData for streaming
+  const formData = new FormData();
+  formData.append('file', mediaFile);
+
+  const response = await fetch(`${SERVER_URL}/api/create-analysis-video`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create analysis video: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  console.log('[CREATE-ANALYSIS-VIDEO] Server response:', result);
+
+  if (!result.success) {
+    throw new Error('Failed to create analysis video on server');
+  }
+
+  // Determine which video to use for analysis
+  const useAnalysisVideo = result.analysis && result.analysis.video && !result.analysis.video.includes(result.originalVideo);
+  const analysisVideoUrl = useAnalysisVideo ? `${SERVER_URL}${result.analysis.video}` : `${SERVER_URL}${result.originalVideo}`;
+
+  console.log('[CREATE-ANALYSIS-VIDEO] Analysis video URL:', analysisVideoUrl);
+
+  // Fetch the analysis video as a blob
+  const analysisResponse = await fetch(analysisVideoUrl);
+  const analysisBlob = await analysisResponse.blob();
+
+  // Create File objects
+  const originalFile = mediaFile; // Keep the original file as-is
+  const analysisFile = new File([analysisBlob], `analysis_${mediaFile.name}`, { type: mediaFile.type });
+
+  console.log('[CREATE-ANALYSIS-VIDEO] Created analysis file:', analysisFile.name);
+
+  return {
+    originalFile,
+    analysisFile,
+    analysisInfo: result.analysis
+  };
+};

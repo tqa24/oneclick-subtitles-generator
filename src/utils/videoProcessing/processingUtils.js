@@ -144,6 +144,29 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
     }
   } else {
     // No optimization requested for video files
+    // Check if we should still create an analysis video for video analysis
+    const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+    const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
+
+    if (!skipAnalysis) {
+      // Create analysis video without optimization
+      try {
+        const { createAnalysisVideo } = await import('./optimizationUtils');
+        const analysisResult = await createAnalysisVideo(mediaFile, onStatusUpdate, t);
+        processedFile = analysisResult.originalFile;
+        analysisFile = analysisResult.analysisFile;
+        console.log('[PROCESS-SHORT-MEDIA] Created analysis video for non-optimized processing');
+      } catch (error) {
+        console.error('[PROCESS-SHORT-MEDIA] Failed to create analysis video:', error);
+        // Fall back to using original file
+        processedFile = mediaFile;
+        analysisFile = mediaFile;
+      }
+    } else {
+      processedFile = mediaFile;
+      analysisFile = mediaFile;
+    }
+
     onStatusUpdate({
       message: t('output.processingVideo', 'Processing video...'),
       type: 'loading'
@@ -174,10 +197,9 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
   }
 
   try {
-    // Analyze the video and wait for user choice (only if optimization was done or it's an audio file)
-    if (optimizeVideos || isAudio) {
-      await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
-    }
+    // Analyze the video and wait for user choice
+    // Note: We've already checked if analysis should be skipped above, so if we reach here, analysis should run
+    await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
 
     // Use the processed file for processing
     onStatusUpdate({
@@ -349,10 +371,55 @@ export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {
       }
     } else {
       // No optimization requested for video files
-      onStatusUpdate({
-        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
-        type: 'loading'
-      });
+      // Check if we should still do video analysis
+      const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+      const skipAnalysis = !!userProvidedSubtitles || !useVideoAnalysis;
+
+      if (skipAnalysis) {
+        // Update status message based on why we're skipping analysis
+        if (userProvidedSubtitles) {
+          onStatusUpdate({
+            message: t('output.processingWithCustomSubtitles', 'Processing video with your provided subtitles...'),
+            type: 'loading'
+          });
+        } else {
+          // Apply default settings when video analysis is disabled
+          applyDefaultSettings();
+          onStatusUpdate({
+            message: t('output.processingWithoutAnalysis', 'Processing video with default settings...'),
+            type: 'loading'
+          });
+        }
+      } else {
+        try {
+          // Create analysis video without optimization first
+          const { createAnalysisVideo } = await import('./optimizationUtils');
+          const analysisResult = await createAnalysisVideo(mediaFile, onStatusUpdate, t);
+          processedFile = analysisResult.originalFile;
+          analysisFile = analysisResult.analysisFile;
+          console.log('[PROCESS-LONG-VIDEO] Created analysis video for non-optimized processing');
+
+          // Analyze the video and wait for user choice
+          await analyzeVideoAndWaitForUserChoice(analysisFile, onStatusUpdate, t);
+
+          // Update status message to indicate we're moving to the next step
+          onStatusUpdate({
+            message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+            type: 'loading'
+          });
+        } catch (analysisError) {
+          console.error('Error analyzing video:', analysisError);
+          // Apply default settings when video analysis fails
+          applyDefaultSettings();
+          onStatusUpdate({
+            message: t('output.analysisError', 'Video analysis failed, proceeding with default settings.'),
+            type: 'warning'
+          });
+          // Fall back to using original file
+          processedFile = mediaFile;
+          analysisFile = mediaFile;
+        }
+      }
     }
 
     // Upload the media to the server and split it into segments
