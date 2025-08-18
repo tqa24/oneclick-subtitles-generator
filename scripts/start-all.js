@@ -24,47 +24,80 @@ async function startAllServices() {
     
     console.log('✅ Cleanup complete, starting services...');
     
-    // Start all services using concurrently with proper command escaping
-    const concurrentlyArgs = [
-      'concurrently',
-      '--names', 'FRONTEND,SERVER',
-      '--prefix-colors', 'cyan,green',
-      '--prefix', '[{name}]',
-      'npm run start --silent',
-      'npm run server:start'
+    // Start all services including the video renderer (same as dev but with CUDA support)
+    console.log('🚀 Starting all services: FRONTEND, SERVER, RENDERER with CUDA support...');
+
+    // Use the same cross-platform approach as dev-server.js
+    const { spawn } = require('child_process');
+
+    // Commands to run - cross-platform approach (same as dev-server.js)
+    const commands = [
+      { name: 'FRONTEND', cmd: 'npm', args: ['run', 'start'], cwd: '.' },
+      { name: 'SERVER', cmd: 'npm', args: ['run', 'server:start'], cwd: '.' },
+      { name: 'RENDERER', cmd: 'npm', args: ['run', 'video-renderer:start'], cwd: '.' }
     ];
 
-    console.log('🚀 Starting services with command:', 'npx', concurrentlyArgs.join(' '));
+    // Colors for different services (same as dev-server.js)
+    const colors = {
+      FRONTEND: '\x1b[36m', // cyan
+      SERVER: '\x1b[32m',   // green
+      RENDERER: '\x1b[35m'  // magenta
+    };
 
-    const concurrentlyProcess = spawn('npm', ['run', 'dev:cuda-legacy'], {
-      stdio: 'inherit',
-      shell: true,
-      env: {
-        ...process.env,
-        START_PYTHON_SERVER: 'true'
-      }
+    // Function to prefix output with colored service name
+    function prefixOutput(serviceName, data) {
+      const color = colors[serviceName];
+      const reset = '\x1b[0m';
+      const lines = data.toString().split('\n');
+      return lines
+        .filter(line => line.trim() !== '')
+        .map(line => `${color}[${serviceName}]${reset} ${line}`)
+        .join('\n');
+    }
+
+    // Start all services with proper sequencing (same approach as dev-server.js)
+    commands.forEach(({ name, cmd, args, cwd }) => {
+      const childProcess = spawn(cmd, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        shell: true, // Use shell: true for cross-platform npm compatibility
+        cwd: cwd,
+        env: {
+          ...process.env,
+          START_PYTHON_SERVER: 'true',
+          DEV_SERVER_MANAGED: 'true'
+        }
+      });
+
+      childProcess.stdout.on('data', (data) => {
+        console.log(prefixOutput(name, data));
+      });
+
+      childProcess.stderr.on('data', (data) => {
+        console.log(prefixOutput(name, data));
+      });
+
+      childProcess.on('close', (code) => {
+        const color = colors[name];
+        const reset = '\x1b[0m';
+        console.log(`${color}[${name}]${reset} Process exited with code ${code}`);
+      });
+
+      childProcess.on('error', (err) => {
+        const color = colors[name];
+        const reset = '\x1b[0m';
+        console.log(`${color}[${name}]${reset} Error: ${err.message}`);
+      });
     });
 
-    // Handle process events
-    concurrentlyProcess.on('error', (error) => {
-      console.error('❌ Failed to start services:', error);
-      process.exit(1);
-    });
-
-    concurrentlyProcess.on('close', (code) => {
-      console.log(`Services exited with code ${code}`);
-      process.exit(code);
-    });
-
-    // Handle shutdown
+    // Handle shutdown gracefully
     process.on('SIGINT', () => {
       console.log('\n🛑 Shutting down all services...');
-      concurrentlyProcess.kill('SIGINT');
+      process.exit(0);
     });
 
     process.on('SIGTERM', () => {
       console.log('\n🛑 Shutting down all services...');
-      concurrentlyProcess.kill('SIGTERM');
+      process.exit(0);
     });
 
   } catch (error) {
