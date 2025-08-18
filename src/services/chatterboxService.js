@@ -142,18 +142,12 @@ export const wakeUpChatterboxService = async () => {
   try {
     console.log('🔧 Attempting to wake up Chatterbox service...');
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for model loading
-
     const response = await fetch(`${CHATTERBOX_API_BASE_URL}/wake-up`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return {
@@ -170,12 +164,6 @@ export const wakeUpChatterboxService = async () => {
       message: result.message || 'Chatterbox service awakened successfully'
     };
   } catch (error) {
-    if (error.name === 'AbortError') {
-      return {
-        success: false,
-        message: 'Chatterbox service wake-up timeout - models may be loading'
-      };
-    }
 
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       return {
@@ -344,17 +332,11 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
       // Don't set Content-Type header, let browser set it with boundary
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body,
-      signal: controller.signal,
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -365,10 +347,6 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
     return await response.blob();
   } catch (error) {
     console.error('Error generating Chatterbox speech:', error);
-
-    if (error.name === 'AbortError') {
-      throw new Error('Chatterbox generation timeout - text may be too long');
-    }
 
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       throw new Error('Chatterbox API is not running. Please start the Chatterbox service.');
