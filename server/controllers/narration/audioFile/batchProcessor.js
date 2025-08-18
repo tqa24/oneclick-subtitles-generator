@@ -188,7 +188,7 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
     }
   }
 
-  // Second pass: Detect and resolve overlaps with group-shifting algorithm
+  // Second pass: Detect and resolve overlaps naturally (like in Premiere Pro)
   const adjustedSegments = [];
 
   for (let i = 0; i < segmentsWithDuration.length; i++) {
@@ -226,11 +226,10 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
       let finalAdjustedStart = basicAdjustedStart;
       let finalShiftAmount = basicShiftAmount;
       let adjustmentStrategy = 'push-right';
-      let groupShiftApplied = false;
 
-      // If the adjustment is significant (>0.5s), try to shift the group left into blank spaces
+      // If the adjustment is significant (>0.5s), try to shift THIS segment left into blank spaces
       if (basicShiftAmount > 0.5) {
-        console.log(`Large adjustment needed (${basicShiftAmount.toFixed(2)}s), looking for blank spaces to shift group left...`);
+        console.log(`Large adjustment needed (${basicShiftAmount.toFixed(2)}s), looking for blank spaces to shift this segment left...`);
 
         // Find all blank spaces in the current adjusted segments
         const blankSpaces = findBlankSpaces(adjustedSegments);
@@ -239,48 +238,23 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
           console.log(`Found ${blankSpaces.length} blank spaces:`,
             blankSpaces.map(space => `${space.duration.toFixed(2)}s gap after segment ${space.afterSegmentId}`));
 
-          // Get all remaining segments (current and following) that might need to be shifted
-          const remainingSegments = segmentsWithDuration.slice(i);
-
-          // Calculate distributed group shift across multiple blank spaces
-          const distributedShiftResult = calculateDistributedGroupShift(remainingSegments, blankSpaces, basicShiftAmount);
+          // Calculate distributed shift for ONLY this segment across multiple blank spaces
+          const distributedShiftResult = calculateDistributedGroupShift([segment], blankSpaces, basicShiftAmount);
 
           if (distributedShiftResult.canUseBlankSpaces && distributedShiftResult.totalShiftAmount > 0) {
-            // Apply the distributed shift
+            // Apply the distributed shift to ONLY this segment
             const totalLeftShift = Math.min(distributedShiftResult.totalShiftAmount, basicShiftAmount);
 
             console.log(`Applying distributed shift across ${distributedShiftResult.distributedShifts.length} blank spaces:`);
             distributedShiftResult.distributedShifts.forEach((shift, index) => {
               console.log(`  Space ${index + 1}: ${shift.shiftAmount.toFixed(2)}s into gap after segment ${shift.blankSpace.afterSegmentId} (weight: ${shift.weight.toFixed(1)})`);
             });
-            console.log(`  Total shift: ${totalLeftShift.toFixed(2)}s left for ${remainingSegments.length} segments`);
+            console.log(`  Total shift: ${totalLeftShift.toFixed(2)}s left for segment ${segment.subtitle_id} only`);
 
-            // Shift the current segment left instead of right
+            // Shift ONLY the current segment left instead of right
             finalAdjustedStart = segment.start - totalLeftShift;
             finalShiftAmount = -totalLeftShift; // Negative because moving left
             adjustmentStrategy = distributedShiftResult.strategy;
-            groupShiftApplied = true;
-
-            // Apply distributed shifts to all following segments
-            // Each segment gets shifted by the cumulative amount from spaces to its left
-            for (let j = i + 1; j < segmentsWithDuration.length; j++) {
-              // Calculate how much this segment should be shifted based on its position
-              const segmentIndex = j - i; // 0-based index within the group being shifted
-
-              // For now, apply the same total shift to all segments in the group
-              // In a more advanced version, we could apply different amounts based on position
-              const segmentShift = totalLeftShift;
-
-              segmentsWithDuration[j] = {
-                ...segmentsWithDuration[j],
-                start: segmentsWithDuration[j].start - segmentShift,
-                naturalEnd: segmentsWithDuration[j].start - segmentShift + segmentsWithDuration[j].actualDuration,
-                groupShiftAmount: -segmentShift,
-                distributedShiftApplied: true
-              };
-            }
-
-            console.log(`Distributed shift applied: moved segments ${segment.subtitle_id}-${segmentsWithDuration[segmentsWithDuration.length - 1].subtitle_id} left by ${totalLeftShift.toFixed(2)}s total`);
           }
         }
       }
@@ -295,8 +269,7 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
         originalStart: segment.start,
         // Note how much we shifted this segment
         shiftAmount: finalShiftAmount,
-        adjustmentStrategy,
-        groupShiftApplied
+        adjustmentStrategy
       };
 
       // Log the adjustment
@@ -305,20 +278,8 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
 
       adjustedSegments.push(adjustedSegment);
     } else {
-      // No overlap, but check if this segment was affected by a previous distributed shift
-      let segmentToAdd = segment;
-      if (segment.groupShiftAmount) {
-        const strategyName = segment.distributedShiftApplied ? 'distributed-shift' : 'group-shift-left';
-        segmentToAdd = {
-          ...segment,
-          shiftAmount: segment.groupShiftAmount,
-          adjustmentStrategy: strategyName,
-          groupShiftApplied: true
-        };
-        console.log(`Segment ${segment.subtitle_id}: affected by ${strategyName}, moved ${Math.abs(segment.groupShiftAmount).toFixed(2)}s left to start at ${segment.start.toFixed(2)}s`);
-      }
-
-      adjustedSegments.push(segmentToAdd);
+      // No overlap detected, add segment as-is
+      adjustedSegments.push(segment);
     }
   }
 
