@@ -15,7 +15,9 @@ const VideoProcessingOptionsModal = ({
   onProcess,
   selectedSegment, // { start: number, end: number } in seconds
   isUploading = false,
-  videoFile = null // Optional video file for real token counting
+  videoFile = null, // Optional video file for real token counting
+  userProvidedSubtitles = '', // User-provided subtitles text
+  useUserProvidedSubtitles = false // Whether user-provided subtitles are enabled
 }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
@@ -37,6 +39,16 @@ const VideoProcessingOptionsModal = ({
     const saved = localStorage.getItem('video_processing_prompt_preset');
     return saved || 'settings'; // Default to "Prompt from Settings"
   });
+
+  // Check if user has provided subtitles
+  const hasUserProvidedSubtitles = useUserProvidedSubtitles && userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
+
+  // Auto-select timing generation preset when subtitles are added
+  useEffect(() => {
+    if (isOpen && hasUserProvidedSubtitles) {
+      setSelectedPromptPreset('timing-generation');
+    }
+  }, [isOpen, hasUserProvidedSubtitles]);
   const [customLanguage, setCustomLanguage] = useState(() => {
     const saved = localStorage.getItem('video_processing_custom_language');
     return saved || '';
@@ -143,7 +155,21 @@ const VideoProcessingOptionsModal = ({
         title: t('processing.promptFromSettings', 'Prompt from Settings'),
         description: t('processing.promptFromSettingsDesc', 'Use the prompt configured in Settings > Prompts'),
         isDefault: true
-      },
+      }
+    ];
+
+    // Add timing generation option if user has provided subtitles
+    if (hasUserProvidedSubtitles) {
+      options.push({
+        id: 'timing-generation',
+        title: t('processing.timingGeneration', 'Timing generation (Subtitles added)'),
+        description: t('processing.timingGenerationDesc', 'Generate timing for your provided subtitles'),
+        isTimingGeneration: true
+      });
+    }
+
+    // Add regular presets
+    options.push(
       ...PROMPT_PRESETS.map(preset => ({
         id: preset.id,
         title: preset.id === 'general' ? t('settings.presetGeneralPurpose', 'General purpose') :
@@ -163,7 +189,8 @@ const VideoProcessingOptionsModal = ({
         description: preset.prompt.substring(0, 80) + '...',
         isUserPreset: true
       }))
-    ];
+    );
+
     return options;
   };
 
@@ -172,6 +199,13 @@ const VideoProcessingOptionsModal = ({
     if (selectedPromptPreset === 'settings') {
       // Use prompt from settings
       return localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+    }
+
+    // Handle timing generation preset (special case for user-provided subtitles)
+    if (selectedPromptPreset === 'timing-generation') {
+      // Return a placeholder - the actual prompt will be generated in promptManagement.js
+      // when userProvidedSubtitles is detected
+      return DEFAULT_TRANSCRIPTION_PROMPT;
     }
 
     // Find the preset

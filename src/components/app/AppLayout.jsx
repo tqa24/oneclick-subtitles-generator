@@ -469,6 +469,8 @@ const AppLayout = ({
           videoDuration={uploadedFile?.duration || selectedVideo?.duration || 0}
           isUploading={isUploading}
           videoFile={uploadedFileData || uploadedFile}
+          userProvidedSubtitles={userProvidedSubtitles}
+          useUserProvidedSubtitles={useUserProvidedSubtitles}
         />
       )}
 

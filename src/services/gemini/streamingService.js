@@ -6,6 +6,7 @@
 import { getNextAvailableKey } from './keyManager';
 import { getTranscriptionPrompt } from './promptManagement';
 import { parseGeminiResponse } from '../../utils/subtitle';
+import { createSubtitleSchema, addResponseSchema } from '../../utils/schemaUtils';
 
 /**
  * Stream content generation from Gemini API
@@ -58,6 +59,10 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     if (videoMetadata && !isAudio) {
       requestData.contents[0].parts[1].video_metadata = videoMetadata;
     }
+
+    // Add structured output schema
+    const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
+    requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
 
     // Add generation config with media resolution if provided
     if (mediaResolution) {

@@ -24,5 +24,7 @@
   "highRes": "High (256 tokens/frame)",
   "uploading": "Uploading video...",
   "waitingForUpload": "Waiting for upload...",
-  "startProcessing": "Start Processing"
+  "startProcessing": "Start Processing",
+  "timingGeneration": "Timing generation (Subtitles added)",
+  "timingGenerationDesc": "Generate timing for your provided subtitles"
 }

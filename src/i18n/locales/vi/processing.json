@@ -24,5 +24,7 @@
   "highRes": "Cao (256 token/khung hình)",
   "uploading": "Đang tải video lên...",
   "waitingForUpload": "Đang chờ tải lên...",
-  "startProcessing": "Bắt đầu xử lý"
+  "startProcessing": "Bắt đầu xử lý",
+  "timingGeneration": "Tạo thời gian (Đã thêm phụ đề)",
+  "timingGenerationDesc": "Tạo thời gian cho phụ đề bạn đã cung cấp"
 }
