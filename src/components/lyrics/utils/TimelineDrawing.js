@@ -126,15 +126,43 @@ export const drawTimeline = (
           opacity = 0.15 + pulse * 0.25; // Oscillate between 0.15 and 0.4
           borderOpacity = 0.6 + pulse * 0.4; // Oscillate between 0.6 and 1.0
           
-          // Add shimmer effect
-          const shimmerX = (animationTime * 0.1) % (endX - startX);
-          const gradient = ctx.createLinearGradient(
-            Math.max(0, startX) + shimmerX - 50, 0,
-            Math.max(0, startX) + shimmerX + 50, 0
-          );
-          gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
-          gradient.addColorStop(0.5, `rgba(99, 170, 255, ${opacity + 0.1})`);
-          gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+          // Add seamless shimmer effect
+          const segmentWidth = endX - startX;
+          const shimmerWidth = 100; // Width of the shimmer gradient
+          const totalCycleWidth = segmentWidth + shimmerWidth;
+          
+          // Create a seamless loop by having the shimmer go beyond the segment and wrap around
+          const shimmerProgress = (animationTime * 0.08) % totalCycleWidth;
+          const shimmerX = shimmerProgress - shimmerWidth / 2;
+          
+          // Create two gradients for seamless looping
+          const gradient = ctx.createLinearGradient(startX, 0, endX, 0);
+          
+          // Calculate normalized positions for gradient stops
+          const shimmerPos = shimmerX / segmentWidth;
+          const shimmerStart = Math.max(0, Math.min(1, shimmerPos - 0.1));
+          const shimmerMid = Math.max(0, Math.min(1, shimmerPos));
+          const shimmerEnd = Math.max(0, Math.min(1, shimmerPos + 0.1));
+          
+          // Build gradient with smooth transitions
+          if (shimmerPos < 0.1) {
+            // Shimmer entering from left
+            gradient.addColorStop(0, `rgba(99, 170, 255, ${opacity + 0.15})`);
+            gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+          } else if (shimmerPos > 0.9) {
+            // Shimmer exiting to right
+            gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(1, `rgba(99, 170, 255, ${opacity + 0.15})`);
+          } else {
+            // Shimmer in middle
+            gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(shimmerMid, `rgba(99, 170, 255, ${opacity + 0.15})`);
+            gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
+            gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+          }
           ctx.fillStyle = gradient;
         } else {
           // Static blue when not processing

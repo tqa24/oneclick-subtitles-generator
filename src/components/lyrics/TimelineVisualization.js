@@ -515,6 +515,24 @@ const TimelineVisualization = ({
     return Math.max(0, Math.min(effectiveDuration, timeRange.start + (relativeX * timePerPixel)));
   };
 
+  // Handle right-click on selected segment
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check if we have a selected segment and the click is within its bounds
+    if (selectedSegment && onSegmentSelect) {
+      const clickTime = pixelToTime(e.clientX);
+      
+      // Check if the click is within the selected segment range
+      if (clickTime >= selectedSegment.start && clickTime <= selectedSegment.end) {
+        console.log('[Timeline] Right-click on selected segment - opening video processing modal');
+        // Trigger the segment selection callback to open the modal
+        onSegmentSelect(selectedSegment);
+      }
+    }
+  };
+  
   // Handle mouse down - supports both click and drag
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -616,6 +634,7 @@ const TimelineVisualization = ({
       <canvas
         ref={timelineRef}
         onMouseDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
         className="subtitle-timeline"
         style={{
           cursor: isDraggingSegment
