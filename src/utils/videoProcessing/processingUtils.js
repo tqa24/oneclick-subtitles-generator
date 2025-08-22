@@ -169,6 +169,16 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
             console.log(`[ProcessingUtils] Filtered ${data.subtitles.length} subtitles to ${filteredSubtitles.length} for segment ${segmentStart}-${segmentEnd}`);
           }
           
+          // Dispatch streaming-update event for timeline animations
+          if (data.isStreaming) {
+            window.dispatchEvent(new CustomEvent('streaming-update', {
+              detail: {
+                subtitles: filteredSubtitles,
+                segment: segment
+              }
+            }));
+          }
+          
           if (onSubtitleUpdate) {
             onSubtitleUpdate(filteredSubtitles, data.isStreaming);
           }
@@ -197,6 +207,14 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
             
             console.log(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
           }
+          
+          // Dispatch streaming-complete event for timeline animations
+          window.dispatchEvent(new CustomEvent('streaming-complete', {
+            detail: {
+              subtitles: filteredFinal,
+              segment: segment
+            }
+          }));
           
           resolve(filteredFinal);
         },

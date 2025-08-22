@@ -81,7 +81,7 @@ export const drawTimeline = (
     timeFormat
   );
 
-  // Draw lyric segments
+  // Draw lyric segments with new segment animations
   drawLyricSegments(
     ctx,
     lyrics,
@@ -91,7 +91,8 @@ export const drawTimeline = (
     displayWidth,
     displayHeight,
     isDark,
-    isActivePanning
+    isActivePanning,
+    segmentData ? segmentData.newSegments : null
   );
 
   // Draw current time indicator
@@ -144,36 +145,68 @@ export const drawTimeline = (
           const shimmerMid = Math.max(0, Math.min(1, shimmerPos));
           const shimmerEnd = Math.max(0, Math.min(1, shimmerPos + 0.1));
           
-          // Build gradient with smooth transitions
-          if (shimmerPos < 0.1) {
-            // Shimmer entering from left
-            gradient.addColorStop(0, `rgba(99, 170, 255, ${opacity + 0.15})`);
-            gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
-          } else if (shimmerPos > 0.9) {
-            // Shimmer exiting to right
-            gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(1, `rgba(99, 170, 255, ${opacity + 0.15})`);
+          // Build gradient with smooth transitions - theme aware
+          if (isDark) {
+            // Dark theme - use lighter blues for shimmer
+            if (shimmerPos < 0.1) {
+              // Shimmer entering from left
+              gradient.addColorStop(0, `rgba(99, 170, 255, ${opacity + 0.15})`);
+              gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+            } else if (shimmerPos > 0.9) {
+              // Shimmer exiting to right
+              gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(1, `rgba(99, 170, 255, ${opacity + 0.15})`);
+            } else {
+              // Shimmer in middle
+              gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(shimmerMid, `rgba(99, 170, 255, ${opacity + 0.15})`);
+              gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+            }
           } else {
-            // Shimmer in middle
-            gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(shimmerMid, `rgba(99, 170, 255, ${opacity + 0.15})`);
-            gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
-            gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+            // Light theme - use stronger blues for better visibility
+            const baseOpacity = opacity * 1.2; // Slightly stronger opacity for light theme
+            if (shimmerPos < 0.1) {
+              // Shimmer entering from left
+              gradient.addColorStop(0, `rgba(59, 130, 246, ${baseOpacity + 0.2})`);
+              gradient.addColorStop(shimmerEnd, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(1, `rgba(37, 99, 235, ${baseOpacity})`);
+            } else if (shimmerPos > 0.9) {
+              // Shimmer exiting to right
+              gradient.addColorStop(0, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(shimmerStart, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(1, `rgba(59, 130, 246, ${baseOpacity + 0.2})`);
+            } else {
+              // Shimmer in middle
+              gradient.addColorStop(0, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(shimmerStart, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(shimmerMid, `rgba(59, 130, 246, ${baseOpacity + 0.2})`);
+              gradient.addColorStop(shimmerEnd, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(1, `rgba(37, 99, 235, ${baseOpacity})`);
+            }
           }
           ctx.fillStyle = gradient;
         } else {
-          // Static blue when not processing
-          ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
+          // Static blue when not processing - theme aware
+          if (isDark) {
+            ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
+          } else {
+            ctx.fillStyle = `rgba(37, 99, 235, ${opacity * 1.2})`; // Stronger blue for light theme
+          }
         }
         
         // Draw segment background
         ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
 
-        // Draw segment borders with animation
-        ctx.strokeStyle = `rgba(59, 130, 246, ${borderOpacity})`;
+        // Draw segment borders with animation - theme aware
+        if (isDark) {
+          ctx.strokeStyle = `rgba(59, 130, 246, ${borderOpacity})`;
+        } else {
+          ctx.strokeStyle = `rgba(37, 99, 235, ${Math.min(1, borderOpacity * 1.2)})`; // Stronger blue for light theme
+        }
         ctx.lineWidth = isProcessing ? 2.5 : 2;
         ctx.beginPath();
         if (startX >= 0 && startX <= displayWidth) {
@@ -196,12 +229,20 @@ export const drawTimeline = (
       const endX = timeToX(end, visibleStart, visibleDuration, displayWidth);
 
       if (startX < displayWidth && endX > 0) {
-        // Draw drag preview background
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+        // Draw drag preview background - theme aware
+        if (isDark) {
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+        } else {
+          ctx.fillStyle = 'rgba(37, 99, 235, 0.18)';
+        }
         ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
 
-        // Draw drag preview borders
-        ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+        // Draw drag preview borders - theme aware
+        if (isDark) {
+          ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+        } else {
+          ctx.strokeStyle = 'rgba(37, 99, 235, 0.7)';
+        }
         ctx.lineWidth = 1;
         ctx.setLineDash([5, 5]);
         ctx.beginPath();
@@ -291,7 +332,8 @@ const drawLyricSegments = (
   displayWidth,
   displayHeight,
   isDark,
-  isActivePanning
+  isActivePanning,
+  newSegments = null
 ) => {
   // Minimum segment width - always show segments with at least 1px
   const minSegmentWidth = 1;
@@ -377,7 +419,24 @@ const drawLyricSegments = (
     const useFixedHeights = isVeryLongVideo && isActivePanning;
     const fixedHeightPercentage = 0.6; // 60% of available height
 
+    // Track segments that need animation
+    const animatedSegments = [];
+    
     for (const { lyric, startX, width } of visibleLyrics) {
+      // Check if this segment is new and needs animation
+      let isNewSegment = false;
+      let animationProgress = 0;
+      
+      if (newSegments) {
+        const segmentKey = `${lyric.start}-${lyric.end}`;
+        const segmentData = newSegments.get(segmentKey);
+        if (segmentData) {
+          isNewSegment = true;
+          const elapsed = performance.now() - segmentData.startTime;
+          animationProgress = Math.min(elapsed / 800, 1); // 800ms animation
+        }
+      }
+      
       // For very long videos during panning, use a simplified color scheme
       let fillStyle, strokeStyle;
 
@@ -394,24 +453,40 @@ const drawLyricSegments = (
 
       // Calculate height - either fixed or random
       const heightPercentage = useFixedHeights ? fixedHeightPercentage : getRandomHeight(lyric.text);
+      
+      // Store animated segments separately for special rendering
+      if (isNewSegment) {
+        animatedSegments.push({
+          x: startX,
+          width: width,
+          height: heightPercentage,
+          actualHeight: availableHeight * heightPercentage,
+          y: timeMarkerSpace + (availableHeight * 0.5 - (availableHeight * heightPercentage * 0.5)),
+          fillStyle,
+          strokeStyle,
+          animationProgress,
+          lyric
+        });
+      } else {
+        // Regular segments
+        if (!colorGroups.has(fillStyle)) {
+          colorGroups.set(fillStyle, {
+            fill: fillStyle,
+            stroke: strokeStyle,
+            segments: []
+          });
+        }
 
-      if (!colorGroups.has(fillStyle)) {
-        colorGroups.set(fillStyle, {
-          fill: fillStyle,
-          stroke: strokeStyle,
-          segments: []
+        colorGroups.get(fillStyle).segments.push({
+          x: startX,
+          width: width,
+          height: heightPercentage,
+          // Calculate the actual pixel height based on available height (after reserving space for time markers)
+          actualHeight: availableHeight * heightPercentage,
+          // Position segments below the time marker space and center them in the remaining available height
+          y: timeMarkerSpace + (availableHeight * 0.5 - (availableHeight * heightPercentage * 0.5))
         });
       }
-
-      colorGroups.get(fillStyle).segments.push({
-        x: startX,
-        width: width,
-        height: heightPercentage,
-        // Calculate the actual pixel height based on available height (after reserving space for time markers)
-        actualHeight: availableHeight * heightPercentage,
-        // Position segments below the time marker space and center them in the remaining available height
-        y: timeMarkerSpace + (availableHeight * 0.5 - (availableHeight * heightPercentage * 0.5))
-      });
     }
 
     // Render each color group in a batch
@@ -448,6 +523,89 @@ const drawLyricSegments = (
         }
       }
     });
+    
+    // Draw animated segments with smooth effects
+    for (const segment of animatedSegments) {
+      const progress = segment.animationProgress;
+      
+      // Simple easing function
+      const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+      
+      // Draw the segment with animation effects
+      ctx.save();
+      
+      // Apply a subtle scale effect for the first half of animation
+      let scale = 1;
+      if (progress < 0.5) {
+        scale = 1 + (0.15 * (1 - progress * 2)); // Start 15% larger, quickly scale to normal
+      }
+      const scaledWidth = segment.width * scale;
+      const scaledHeight = segment.actualHeight * scale;
+      const xOffset = (scaledWidth - segment.width) / 2;
+      const yOffset = (scaledHeight - segment.actualHeight) / 2;
+      
+      // Draw a colored background flash for the first 40% of animation
+      if (progress < 0.4) {
+        const flashAlpha = (1 - progress / 0.4) * 0.3;
+        // Use theme-appropriate flash color
+        if (isDark) {
+          ctx.fillStyle = `rgba(100, 200, 255, ${flashAlpha})`; // Cyan for dark theme
+        } else {
+          ctx.fillStyle = `rgba(59, 130, 246, ${flashAlpha * 0.7})`; // Softer blue for light theme
+        }
+        ctx.fillRect(
+          segment.x - xOffset - 3,
+          segment.y - yOffset - 3,
+          scaledWidth + 6,
+          scaledHeight + 6
+        );
+      }
+      
+      // Draw the segment with full opacity
+      ctx.fillStyle = segment.fillStyle;
+      ctx.fillRect(
+        segment.x - xOffset,
+        segment.y - yOffset,
+        scaledWidth,
+        scaledHeight
+      );
+      
+      // Draw borders with smooth fade-out
+      if (!isActivePanning) {
+        // First draw the normal border (always visible)
+        ctx.strokeStyle = segment.strokeStyle;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          segment.x - xOffset,
+          segment.y - yOffset,
+          scaledWidth,
+          scaledHeight
+        );
+        
+        // Then draw an animated highlight border that smoothly fades
+        if (progress < 0.8) {
+          // Smooth fade from 1.0 to 0 over the animation
+          const borderAlpha = Math.pow(1 - progress / 0.8, 2); // Quadratic fade for smoothness
+          const borderIntensity = borderAlpha;
+          
+          // Use theme-appropriate border highlight color
+          if (isDark) {
+            ctx.strokeStyle = `rgba(150, 220, 255, ${borderAlpha * 0.6})`; // Light blue for dark theme
+          } else {
+            ctx.strokeStyle = `rgba(59, 130, 246, ${borderAlpha * 0.8})`; // Stronger blue for light theme
+          }
+          ctx.lineWidth = 2 + borderIntensity;
+          ctx.strokeRect(
+            segment.x - xOffset,
+            segment.y - yOffset,
+            scaledWidth,
+            scaledHeight
+          );
+        }
+      }
+      
+      ctx.restore();
+    }
   }
 };
 

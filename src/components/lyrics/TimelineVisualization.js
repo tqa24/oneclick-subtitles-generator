@@ -48,6 +48,12 @@ const TimelineVisualization = ({
   const [animationTime, setAnimationTime] = useState(0);
   const processingAnimationRef = useRef(null);
   
+  // Track new segments for animation (only during streaming)
+  const [newSegments, setNewSegments] = useState(new Map());
+  const [isStreamingActive, setIsStreamingActive] = useState(false);
+  const previousLyricsRef = useRef([]);
+  const newSegmentAnimationRef = useRef(null);
+  
   // Handle processing animation
   useEffect(() => {
     if (isProcessingSegment) {
@@ -74,6 +80,90 @@ const TimelineVisualization = ({
       }
     }
   }, [isProcessingSegment]);
+  
+  // Listen for streaming events
+  useEffect(() => {
+    const handleStreamingStart = () => {
+      console.log('[Timeline] Streaming started - enabling segment animations');
+      setIsStreamingActive(true);
+    };
+    
+    const handleStreamingComplete = () => {
+      console.log('[Timeline] Streaming complete - disabling segment animations');
+      // Keep animations active for a bit after streaming completes
+      setTimeout(() => {
+        setIsStreamingActive(false);
+        setNewSegments(new Map());
+      }, 1000);
+    };
+    
+    // Listen for custom streaming events
+    window.addEventListener('streaming-update', handleStreamingStart);
+    window.addEventListener('streaming-complete', handleStreamingComplete);
+    window.addEventListener('save-after-streaming', handleStreamingComplete);
+    
+    return () => {
+      window.removeEventListener('streaming-update', handleStreamingStart);
+      window.removeEventListener('streaming-complete', handleStreamingComplete);
+      window.removeEventListener('save-after-streaming', handleStreamingComplete);
+    };
+  }, []);
+  
+  // Track new segments only during streaming
+  useEffect(() => {
+    // Only track changes if streaming is active
+    if (!isStreamingActive) {
+      previousLyricsRef.current = [...lyrics];
+      return;
+    }
+    
+    const previousLyrics = previousLyricsRef.current;
+    const newSegmentMap = new Map();
+    
+    // Find segments that are new (not in previous lyrics)
+    lyrics.forEach(lyric => {
+      const isNew = !previousLyrics.some(prev => 
+        prev.start === lyric.start && 
+        prev.end === lyric.end && 
+        prev.text === lyric.text
+      );
+      
+      if (isNew) {
+        // Mark this segment as new with current timestamp
+        newSegmentMap.set(`${lyric.start}-${lyric.end}`, {
+          startTime: performance.now(),
+          lyric: lyric
+        });
+      }
+    });
+    
+    // Merge with existing new segments (keep animations running)
+    if (newSegmentMap.size > 0) {
+      setNewSegments(prevMap => {
+        const mergedMap = new Map(prevMap);
+        
+        // Add new segments
+        newSegmentMap.forEach((value, key) => {
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, value);
+          }
+        });
+        
+        // Remove segments that have finished animating (after 800ms)
+        const now = performance.now();
+        mergedMap.forEach((value, key) => {
+          if (now - value.startTime > 800) {
+            mergedMap.delete(key);
+          }
+        });
+        
+        return mergedMap;
+      });
+    }
+    
+    // Update previous lyrics reference
+    previousLyricsRef.current = [...lyrics];
+  }, [lyrics, isStreamingActive]);
 
   // Calculate minimum zoom level - now always return 1 to allow 100% zoom
   const calculateMinZoom = (duration) => {
@@ -246,7 +336,8 @@ const TimelineVisualization = ({
       dragStartTime,
       dragCurrentTime,
       isProcessing: isProcessingSegment,
-      animationTime
+      animationTime,
+      newSegments: newSegments // Pass new segments for animation
     };
 
     // Draw the timeline
@@ -261,7 +352,50 @@ const TimelineVisualization = ({
       timeFormat,
       segmentData
     );
-  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime]);
+  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments]);
+  
+  // Animate new segments - must be after renderTimeline definition
+  useEffect(() => {
+    if (newSegments.size > 0) {
+      const animate = () => {
+        const now = performance.now();
+        let hasActiveAnimations = false;
+        
+        // Check if any animations are still active (800ms duration)
+        newSegments.forEach((value) => {
+          if (now - value.startTime < 800) {
+            hasActiveAnimations = true;
+          }
+        });
+        
+        if (hasActiveAnimations) {
+          // Trigger re-render to update animations
+          renderTimeline();
+          newSegmentAnimationRef.current = requestAnimationFrame(animate);
+        } else {
+          // Clean up finished animations
+          setNewSegments(prevMap => {
+            const cleanedMap = new Map();
+            const now = performance.now();
+            prevMap.forEach((value, key) => {
+              if (now - value.startTime < 800) {
+                cleanedMap.set(key, value);
+              }
+            });
+            return cleanedMap;
+          });
+        }
+      };
+      
+      newSegmentAnimationRef.current = requestAnimationFrame(animate);
+      
+      return () => {
+        if (newSegmentAnimationRef.current) {
+          cancelAnimationFrame(newSegmentAnimationRef.current);
+        }
+      };
+    }
+  }, [newSegments, renderTimeline]);
 
   // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {
