@@ -69,7 +69,7 @@ export const clearAllCachedFileUris = () => {
  * @param {Function} onError - Callback for errors
  * @returns {Promise<void>}
  */
-export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, onComplete, onError) => {
+export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, onComplete, onError, retryCount = 0) => {
     const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
     const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
 
@@ -107,19 +107,22 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
         }
 
         let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
+        let shouldUpload = !uploadedFile || !uploadedFile.uri || retryCount > 0;
 
-        if (uploadedFile && uploadedFile.uri) {
+        if (uploadedFile && uploadedFile.uri && retryCount === 0) {
             console.log('Reusing existing uploaded file URI:', uploadedFile.uri);
             // Dispatch event to update status if needed
             window.dispatchEvent(new CustomEvent('gemini-file-reused', {
                 detail: { fileName: file.name, uri: uploadedFile.uri }
             }));
-        } else {
+        }
+        
+        if (shouldUpload) {
             // Upload file to Gemini Files API
-            console.log('Uploading file to Gemini Files API...');
+            console.log(retryCount > 0 ? 'Re-uploading expired file to Gemini Files API...' : 'Uploading file to Gemini Files API...');
             // Dispatch event to update status if needed
             window.dispatchEvent(new CustomEvent('gemini-file-uploading', {
-                detail: { fileName: file.name }
+                detail: { fileName: file.name, isRetry: retryCount > 0 }
             }));
 
             uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
@@ -130,25 +133,62 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
 
             // Dispatch event to update status
             window.dispatchEvent(new CustomEvent('gemini-file-uploaded', {
-                detail: { fileName: file.name, uri: uploadedFile.uri }
+                detail: { fileName: file.name, uri: uploadedFile.uri, isRetry: retryCount > 0 }
             }));
         }
 
-        // Start streaming
-        await streamGeminiContent(
-            file,
-            uploadedFile.uri,
-            {
-                userProvidedSubtitles,
-                modelId,
-                videoMetadata,
-                mediaResolution,
-                segmentInfo: options.segmentInfo
-            },
-            onChunk,
-            onComplete,
-            onError
-        );
+        // Start streaming with error handling wrapper
+        const streamWithErrorHandling = async () => {
+            await streamGeminiContent(
+                file,
+                uploadedFile.uri,
+                {
+                    userProvidedSubtitles,
+                    modelId,
+                    videoMetadata,
+                    mediaResolution,
+                    segmentInfo: options.segmentInfo
+                },
+                onChunk,
+                onComplete,
+                async (error) => {
+                    // Check if this is a file permission error (expired or deleted file)
+                    if (error && error.message && 
+                        (error.message.includes('403') && 
+                         (error.message.includes('PERMISSION_DENIED') || 
+                          error.message.includes('You do not have permission to access the File') ||
+                          error.message.includes('it may not exist')))) {
+                        
+                        console.warn('[GeminiAPI] Cached file URI is no longer valid, clearing cache and retrying...');
+                        
+                        // Clear the invalid cached URI
+                        localStorage.removeItem(fileKey);
+                        
+                        // Retry only once to avoid infinite loops
+                        if (retryCount === 0) {
+                            console.log('[GeminiAPI] Retrying with fresh file upload...');
+                            // Retry the entire operation with fresh upload
+                            await streamGeminiApiWithFilesApi(
+                                file, 
+                                options, 
+                                onChunk, 
+                                onComplete, 
+                                onError, 
+                                retryCount + 1
+                            );
+                        } else {
+                            console.error('[GeminiAPI] Failed after retry, giving up');
+                            onError(error);
+                        }
+                    } else {
+                        // For other errors, just pass them through
+                        onError(error);
+                    }
+                }
+            );
+        };
+
+        await streamWithErrorHandling();
 
     } catch (error) {
         console.error('Error in streaming Files API:', error);
@@ -156,7 +196,7 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
     }
 };
 
-export const callGeminiApiWithFilesApi = async (file, options = {}) => {
+export const callGeminiApiWithFilesApi = async (file, options = {}, retryCount = 0) => {
     const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
     const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
 
@@ -182,19 +222,22 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
         }
 
         let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
+        let shouldUpload = !uploadedFile || !uploadedFile.uri || retryCount > 0;
 
-        if (uploadedFile && uploadedFile.uri) {
+        if (uploadedFile && uploadedFile.uri && retryCount === 0) {
             console.log('Reusing existing uploaded file URI:', uploadedFile.uri);
             // Dispatch event to update status if needed
             window.dispatchEvent(new CustomEvent('gemini-file-reused', {
                 detail: { fileName: file.name, uri: uploadedFile.uri }
             }));
-        } else {
+        }
+        
+        if (shouldUpload) {
             // Upload file to Gemini Files API
-            console.log('Uploading file to Gemini Files API...');
+            console.log(retryCount > 0 ? 'Re-uploading expired file to Gemini Files API...' : 'Uploading file to Gemini Files API...');
             // Dispatch event to update status if needed
             window.dispatchEvent(new CustomEvent('gemini-file-uploading', {
-                detail: { fileName: file.name }
+                detail: { fileName: file.name, isRetry: retryCount > 0 }
             }));
 
             uploadedFile = await uploadFileToGemini(file, `${file.name}_${Date.now()}`);
@@ -205,7 +248,7 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
             // Dispatch event to update status
             window.dispatchEvent(new CustomEvent('gemini-file-uploaded', {
-                detail: { fileName: file.name, uri: uploadedFile.uri }
+                detail: { fileName: file.name, uri: uploadedFile.uri, isRetry: retryCount > 0 }
             }));
         }
 
@@ -284,7 +327,32 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+                const errorMessage = errorData.error?.message || response.statusText;
+                
+                // Check if this is a file permission error (expired or deleted file)
+                if (response.status === 403 && 
+                    (errorMessage.includes('PERMISSION_DENIED') || 
+                     errorMessage.includes('You do not have permission to access the File') ||
+                     errorMessage.includes('it may not exist'))) {
+                    
+                    console.warn('[GeminiAPI] Cached file URI is no longer valid (403 error), clearing cache...');
+                    
+                    // Clear the invalid cached URI
+                    localStorage.removeItem(fileKey);
+                    
+                    // Retry only once to avoid infinite loops
+                    if (retryCount === 0) {
+                        console.log('[GeminiAPI] Retrying with fresh file upload...');
+                        removeRequestController(requestId);
+                        // Retry the entire operation with fresh upload
+                        return await callGeminiApiWithFilesApi(file, options, retryCount + 1);
+                    } else {
+                        console.error('[GeminiAPI] Failed after retry, giving up');
+                        throw new Error(`API error: ${errorMessage}`);
+                    }
+                }
+                
+                throw new Error(`API error: ${errorMessage}`);
             }
 
             const data = await response.json();
@@ -301,6 +369,26 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
     } catch (error) {
         console.error('Error with Files API:', error);
+        
+        // Check again at the outer level for file permission errors
+        if (error && error.message && 
+            (error.message.includes('403') && 
+             (error.message.includes('PERMISSION_DENIED') || 
+              error.message.includes('You do not have permission to access the File') ||
+              error.message.includes('it may not exist'))) &&
+            retryCount === 0) {
+            
+            console.warn('[GeminiAPI] Detected permission error in outer catch, clearing cache and retrying...');
+            
+            // Clear the invalid cached URI
+            if (fileKey) {
+                localStorage.removeItem(fileKey);
+            }
+            
+            // Retry the entire operation with fresh upload
+            return await callGeminiApiWithFilesApi(file, options, retryCount + 1);
+        }
+        
         throw error;
     }
 };
