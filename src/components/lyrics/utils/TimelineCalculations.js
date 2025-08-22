@@ -3,13 +3,12 @@
  */
 
 /**
- * Calculate minimum zoom level to limit visible timeline to 300 seconds
+ * Calculate minimum zoom level - now always returns 1 to allow full zoom out
  * @param {number} totalDuration - Total duration of the timeline in seconds
- * @returns {number} - Minimum zoom level
+ * @returns {number} - Minimum zoom level (always 1)
  */
 export const calculateMinZoom = (totalDuration) => {
-  if (!totalDuration || totalDuration <= 300) return 1;
-  return totalDuration / 300; // Ensure max visible time is 300 seconds
+  return 1; // Always allow 100% zoom (showing entire timeline)
 };
 
 /**
@@ -27,18 +26,14 @@ export const getVisibleTimeRange = (lyrics, duration, panOffset, zoom, currentZo
     : duration;
   const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
 
-  // Ensure zoom respects minimum zoom level
-  const minZoom = calculateMinZoom(timelineEnd);
-  const effectiveZoom = Math.max(minZoom, zoom);
+  // Use zoom directly without minimum restriction
+  const effectiveZoom = zoom;
 
-  // Calculate visible duration based on effective zoom
+  // Calculate visible duration based on zoom
   const visibleDuration = timelineEnd / effectiveZoom;
 
-  // Ensure visible duration doesn't exceed 300 seconds
-  const maxVisibleDuration = Math.min(visibleDuration, 300);
-
   const start = panOffset;
-  const end = Math.min(timelineEnd, start + maxVisibleDuration);
+  const end = Math.min(timelineEnd, start + visibleDuration);
 
   return { start, end, total: timelineEnd, effectiveZoom };
 };
@@ -57,18 +52,14 @@ export const calculateVisibleTimeRange = (lyrics, duration, tempPanOffset, curre
     : duration;
   const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
 
-  // Ensure zoom respects minimum zoom level
-  const minZoom = calculateMinZoom(timelineEnd);
-  const effectiveZoom = Math.max(minZoom, currentZoom);
+  // Use zoom directly without minimum restriction
+  const effectiveZoom = currentZoom;
 
-  // Calculate visible duration based on effective zoom
+  // Calculate visible duration based on zoom
   const visibleDuration = timelineEnd / effectiveZoom;
 
-  // Ensure visible duration doesn't exceed 300 seconds
-  const maxVisibleDuration = Math.min(visibleDuration, 300);
-
   const start = tempPanOffset;
-  const end = Math.min(timelineEnd, start + maxVisibleDuration);
+  const end = Math.min(timelineEnd, start + visibleDuration);
 
   return { start, end, total: timelineEnd };
 };

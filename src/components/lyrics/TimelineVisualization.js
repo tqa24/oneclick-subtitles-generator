@@ -75,10 +75,9 @@ const TimelineVisualization = ({
     }
   }, [isProcessingSegment]);
 
-  // Calculate minimum zoom level based on duration to limit view to 300 seconds
+  // Calculate minimum zoom level - now always return 1 to allow 100% zoom
   const calculateMinZoom = (duration) => {
-    if (!duration || duration <= 300) return 1;
-    return duration / 300; // Ensure max visible time is 300 seconds
+    return 1; // Always allow 100% zoom (showing entire timeline)
   };
 
   // Get current video duration from the video element
@@ -89,11 +88,8 @@ const TimelineVisualization = ({
         if (videoElement.duration && !isNaN(videoElement.duration)) {
           durationRef.current = videoElement.duration;
 
-          // Enforce minimum zoom level when duration changes
-          const minZoom = calculateMinZoom(durationRef.current);
-          if (zoom < minZoom && setZoom) {
-            setZoom(minZoom);
-          }
+          // No longer enforce minimum zoom level
+          // Allow users to zoom out to 100% for any video duration
         }
       };
 
@@ -142,14 +138,8 @@ const TimelineVisualization = ({
 
   // Update currentZoomRef immediately when zoom prop changes
   useEffect(() => {
-    // Ensure we respect the minimum zoom level
-    if (duration) {
-      const minZoom = calculateMinZoom(duration);
-      const effectiveZoom = Math.max(minZoom, zoom);
-      currentZoomRef.current = effectiveZoom;
-    } else {
-      currentZoomRef.current = zoom;
-    }
+    // Use zoom directly without minimum restriction
+    currentZoomRef.current = zoom;
   }, [zoom, duration]);
   const autoScrollRef = useRef(null);
   const isScrollingRef = useRef(false);
@@ -164,20 +154,8 @@ const TimelineVisualization = ({
   // Debug counter to track state updates
   const debugCounter = useRef(0);
 
-  // Ensure zoom level respects the minimum zoom
-  useEffect(() => {
-    if (duration) {
-      const minZoom = calculateMinZoom(duration);
-      if (zoom < minZoom) {
-        // Use requestAnimationFrame to avoid state update during render
-        requestAnimationFrame(() => {
-          setPanOffset(Math.min(panOffset, Math.max(0, duration - 300)));
-          // We don't call setZoom here as it would create a loop with the parent component
-          // The parent component's useEffect will handle this
-        });
-      }
-    }
-  }, [duration, zoom, panOffset, setPanOffset]);
+  // No longer need to enforce minimum zoom
+  // Users can zoom out to see the entire timeline
 
   // Calculate visible time range with playhead-centered zoom
   const getTimeRange = useCallback(() => {
@@ -457,12 +435,11 @@ const TimelineVisualization = ({
       debugCounter.current++;
 
 
-      // Ensure we respect the minimum zoom level
-      const minZoom = calculateMinZoom(timelineEnd);
-      const effectiveZoom = Math.max(minZoom, currentZoomRef.current);
+      // Use current zoom directly without minimum restriction
+      const effectiveZoom = currentZoomRef.current;
 
-      // Limit visible duration to 300 seconds
-      const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
+      // Calculate visible duration based on zoom
+      const totalVisibleDuration = timelineEnd / effectiveZoom;
       const halfVisibleDuration = totalVisibleDuration / 2;
 
       // Center the view on the current time
@@ -681,13 +658,12 @@ const TimelineVisualization = ({
             onMouseDown={(e) => {
               const startX = e.clientX;
               const startZoom = zoom;
-              const minZoom = calculateMinZoom(durationRef.current);
-
+              // No minimum zoom restriction - allow zoom out to 1 (100%)
               const handleMouseMove = (moveEvent) => {
                 const deltaX = moveEvent.clientX - startX;
                 // Increased sensitivity for more responsive zooming
-                // Increased maximum zoom level from 50 to 200 for more detailed view
-                const newZoom = Math.max(minZoom, Math.min(200, startZoom + (deltaX * 0.05)));
+                // Allow zoom from 1 (100% - full timeline) to 200 (very detailed view)
+                const newZoom = Math.max(1, Math.min(200, startZoom + (deltaX * 0.05)));
                 setZoom(newZoom);
               };
 

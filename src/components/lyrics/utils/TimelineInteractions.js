@@ -2,7 +2,7 @@
  * Utility functions for timeline interactions
  */
 
-import { calculateMinZoom } from './TimelineCalculations';
+// calculateMinZoom is no longer needed since we removed zoom restrictions
 
 /**
  * Center the timeline view on a specific time
@@ -29,12 +29,11 @@ export const centerTimelineOnTime = (
     : duration;
   const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
 
-  // Ensure we respect the minimum zoom level
-  const minZoom = calculateMinZoom(timelineEnd);
-  const effectiveZoom = Math.max(minZoom, currentZoom);
+  // Use zoom directly without restrictions
+  const effectiveZoom = currentZoom;
 
-  // Calculate visible duration based on effective zoom
-  const totalVisibleDuration = Math.min(timelineEnd / effectiveZoom, 300);
+  // Calculate visible duration based on zoom
+  const totalVisibleDuration = timelineEnd / effectiveZoom;
   const halfVisibleDuration = totalVisibleDuration / 2;
 
   // Center the view on the specified time
@@ -116,18 +115,8 @@ export const animateZoom = (
     cancelAnimationFrame(animationFrameRef.current);
   }
 
-  // Ensure target zoom respects minimum zoom level
-  const maxLyricTime = lyrics.length > 0
-    ? Math.max(...lyrics.map(lyric => lyric.end))
-    : duration;
-  const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
-  const minZoom = calculateMinZoom(timelineEnd);
-  const effectiveTargetZoom = Math.max(minZoom, targetZoom);
-
-  // Log the zoom adjustment if it's different from the target
-  if (effectiveTargetZoom !== targetZoom) {
-
-  }
+  // Use target zoom directly without restrictions
+  const effectiveTargetZoom = targetZoom;
 
   // Let getVisibleTimeRange recalculate panOffset to center on playhead
   currentZoomRef.current = effectiveTargetZoom;
