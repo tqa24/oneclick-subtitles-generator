@@ -227,13 +227,13 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
                 {
                     role: "user",
                     parts: [
-                        { text: promptText },
                         {
                             file_data: {
                                 file_uri: uploadedFile.uri,
                                 mime_type: uploadedFile.mimeType
                             }
-                        }
+                        },
+                        { text: promptText }
                     ]
                 }
             ]
@@ -242,9 +242,9 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
         // Add video metadata if provided
         if (videoMetadata && !isAudio) {
             console.log('[GeminiAPI] Adding video metadata to request:', JSON.stringify(videoMetadata, null, 2));
-            // Add video metadata to the file_data part
-            requestData.contents[0].parts[1].video_metadata = videoMetadata;
-            console.log('[GeminiAPI] Request structure with video_metadata:', JSON.stringify(requestData.contents[0].parts[1], null, 2));
+            // Add video metadata to the file_data part (now at index 0 since video is first)
+            requestData.contents[0].parts[0].video_metadata = videoMetadata;
+            console.log('[GeminiAPI] Request structure with video_metadata:', JSON.stringify(requestData.contents[0].parts[0], null, 2));
         }
 
         // Add response schema
@@ -346,12 +346,12 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             {
                 role: "user",
                 parts: [
-                    { text: getTranscriptionPrompt('video') },
                     {
                         fileData: {
                             fileUri: input
                         }
-                    }
+                    },
+                    { text: getTranscriptionPrompt('video') }
                 ]
             }
         ];
@@ -411,13 +411,13 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                     {
                         role: "user",
                         parts: [
-                            { text: promptText },
                             {
                                 inlineData: {
                                     mimeType: mimeType,
                                     data: base64Data
                                 }
-                            }
+                            },
+                            { text: promptText }
                         ]
                     }
                 ]
@@ -546,13 +546,13 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
             {
                 role: "user",
                 parts: [
-                    { text: promptText },
                     {
                         inlineData: {
                             mimeType: mimeType,
                             data: base64Data
                         }
-                    }
+                    },
+                    { text: promptText }
                 ]
             }
         ];
