@@ -153,7 +153,7 @@ const CustomGeminiModelsCard = ({ customGeminiModels, setCustomGeminiModels }) =
                   type="text"
                   value={newModelId}
                   onChange={(e) => setNewModelId(e.target.value)}
-                  placeholder={t('settings.customModels.modelIdPlaceholder', 'e.g., gemini-1.5-pro')}
+                  placeholder={t('settings.customModels.modelIdPlaceholder', 'e.g., gemini-2.5-pro-preview-03-25')}
                   className="model-input"
                 />
               </div>
@@ -166,7 +166,7 @@ const CustomGeminiModelsCard = ({ customGeminiModels, setCustomGeminiModels }) =
                   type="text"
                   value={newModelName}
                   onChange={(e) => setNewModelName(e.target.value)}
-                  placeholder={t('settings.customModels.modelNamePlaceholder', 'e.g., Gemini 1.5 Pro')}
+                  placeholder={t('settings.customModels.modelNamePlaceholder', 'e.g., Gemini 2.5 Pro Preview')}
                   className="model-input"
                 />
               </div>

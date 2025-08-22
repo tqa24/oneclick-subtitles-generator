@@ -96,8 +96,8 @@
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -206,7 +206,6 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .form-row {
-    grid-template-columns: 1fr;
     gap: 12px;
   }
   

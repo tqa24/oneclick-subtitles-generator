@@ -1469,7 +1469,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const handleKeyDown = (event) => {
       // Handle multiple keyboard shortcuts
       const validKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyM', 'KeyF', 'KeyK'];
-      if (!validKeys.includes(event.code) && !['j', 'l', 'k', 'm', 'f', ' '].includes(event.key.toLowerCase())) return;
+      // Safely check event.key - it might be undefined during browser autocomplete
+      const eventKey = event.key ? event.key.toLowerCase() : '';
+      if (!validKeys.includes(event.code) && !['j', 'l', 'k', 'm', 'f', ' '].includes(eventKey)) return;
 
       // Don't handle spacebar if user is typing in an input field
       const activeElement = document.activeElement;
@@ -1514,7 +1516,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       event.stopPropagation();
 
       // Handle different keyboard shortcuts
-      switch (event.code || event.key.toLowerCase()) {
+      // Safely check event.key - it might be undefined during browser autocomplete
+      switch (event.code || eventKey) {
         case 'Space':
         case ' ':
         case 'KeyK':
