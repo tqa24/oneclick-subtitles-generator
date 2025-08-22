@@ -41,6 +41,7 @@ export const processVideoWithFilesApi = async (mediaFile, onStatusUpdate, t, opt
       // Get FPS setting from localStorage (default to 1 for optimal processing)
       const customFps = localStorage.getItem('video_processing_fps');
       if (customFps && !isAudio) {
+        // FPS compatibility is now handled in the UI (VideoProcessingOptionsModal)
         videoMetadata.fps = parseFloat(customFps);
       }
 
@@ -182,6 +183,7 @@ export const createVideoMetadata = (options = {}) => {
   const metadata = {};
 
   if (fps !== null) {
+    // FPS compatibility is now handled in the UI (VideoProcessingOptionsModal)
     metadata.fps = fps;
   }
 

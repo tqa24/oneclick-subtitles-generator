@@ -58,14 +58,25 @@ const VideoProcessingOptionsModal = ({
   const [realTokenCount, setRealTokenCount] = useState(null);
   const [tokenCountError, setTokenCountError] = useState(null);
   
-  // Available options
-  const fpsOptions = [
-    { value: 0.25, label: '0.25 FPS (4s intervals)' },
-    { value: 0.5, label: '0.5 FPS (2s intervals)' },
-    { value: 1, label: '1 FPS (1s intervals)' },
-    { value: 2, label: '2 FPS (0.5s intervals)' },
-    { value: 5, label: '5 FPS (0.2s intervals)' }
-  ];
+  // Available options - filter based on selected model
+  const getFpsOptions = () => {
+    const allOptions = [
+      { value: 0.25, label: '0.25 FPS (4s intervals)', minModel: null },
+      { value: 0.5, label: '0.5 FPS (2s intervals)', minModel: null },
+      { value: 1, label: '1 FPS (1s intervals)', minModel: null },
+      { value: 2, label: '2 FPS (0.5s intervals)', minModel: null },
+      { value: 5, label: '5 FPS (0.2s intervals)', minModel: null }
+    ];
+    
+    // For Gemini 2.5 Pro, filter out options below 1 FPS
+    if (selectedModel === 'gemini-2.5-pro') {
+      return allOptions.filter(option => option.value >= 1);
+    }
+    
+    return allOptions;
+  };
+  
+  const fpsOptions = getFpsOptions();
 
   const resolutionOptions = [
     { value: 'low', label: t('processing.lowRes', 'Low (64 tokens/frame)'), tokens: 64 },
@@ -110,6 +121,15 @@ const VideoProcessingOptionsModal = ({
 
     loadCustomModels();
   }, []);
+
+  // Auto-adjust FPS when Gemini 2.5 Pro is selected
+  useEffect(() => {
+    // Check if Gemini 2.5 Pro is selected and FPS is less than 1
+    if (selectedModel === 'gemini-2.5-pro' && fps < 1) {
+      console.log('[VideoProcessingModal] Gemini 2.5 Pro selected with low FPS, adjusting to 1 FPS for compatibility');
+      setFps(1); // Set to minimum 1 FPS for Gemini 2.5 Pro
+    }
+  }, [selectedModel]); // Only run when model changes
 
   // Persist processing options to localStorage
   useEffect(() => {
@@ -474,6 +494,11 @@ const VideoProcessingOptionsModal = ({
                   </option>
                 ))}
               </select>
+              {selectedModel === 'gemini-2.5-pro' && (
+                <p className="option-note" style={{ fontSize: '0.85em', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  {t('processing.gemini25ProFpsNote', 'Note: Gemini 2.5 Pro requires FPS ≥ 1 for compatibility')}
+                </p>
+              )}
             </div>
 
             {/* Media Resolution */}

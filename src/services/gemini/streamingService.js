@@ -21,6 +21,15 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
   const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
   const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
   
+  // Log which model is being used for debugging
+  console.log('[StreamingService] Model selected:', MODEL);
+  
+  // Check if this is Gemini 2.5 Pro which might have specific requirements
+  const isGemini25Pro = MODEL.includes('gemini-2.5-pro');
+  if (isGemini25Pro) {
+    console.log('[StreamingService] Using Gemini 2.5 Pro - checking for compatibility issues...');
+  }
+  
   const geminiApiKey = getNextAvailableKey();
   if (!geminiApiKey) {
     onError(new Error('No valid Gemini API key available. Please add at least one API key in Settings.'));
@@ -77,6 +86,9 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     console.log('[StreamingService] Starting streaming request with model:', MODEL);
 
     // Make streaming request
+    console.log('[StreamingService] Request URL:', `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`);
+    console.log('[StreamingService] Request body:', JSON.stringify(requestData, null, 2));
+    
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`,
       {
@@ -89,8 +101,12 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
       }
     );
 
+    console.log('[StreamingService] Response status:', response.status);
+    console.log('[StreamingService] Response headers:', [...response.headers.entries()]);
+    
     if (!response.ok) {
       const errorData = await response.text();
+      console.error('[StreamingService] Error response body:', errorData);
       throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 
@@ -162,8 +178,36 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
             }
           }
 
+          if (eventData) {
+            console.log('[StreamingService] Event data received:', JSON.stringify(eventData).substring(0, 200));
+            
+            // Check for error in the event data
+            if (eventData.error) {
+              console.error('[StreamingService] Error in event data:', eventData.error);
+              onError(new Error(`Gemini API error: ${eventData.error.message || JSON.stringify(eventData.error)}`));
+              return;
+            }
+            
+            // Check if the response has no candidates (empty response)
+            if (!eventData.candidates || eventData.candidates.length === 0) {
+              console.warn('[StreamingService] No candidates in response:', JSON.stringify(eventData));
+            }
+          }
+          
           if (eventData && eventData.candidates && eventData.candidates.length > 0) {
             const candidate = eventData.candidates[0];
+            
+            // Check for finish reasons that might indicate why no content was generated
+            if (candidate.finishReason) {
+              console.log('[StreamingService] Finish reason:', candidate.finishReason);
+              if (candidate.finishReason === 'SAFETY' || candidate.finishReason === 'RECITATION') {
+                console.warn('[StreamingService] Content blocked due to:', candidate.finishReason);
+                if (candidate.safetyRatings) {
+                  console.warn('[StreamingService] Safety ratings:', JSON.stringify(candidate.safetyRatings));
+                }
+              }
+            }
+            
             if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
               const textPart = candidate.content.parts[0];
               if (textPart.text) {

@@ -268,6 +268,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
 
       // Prepare video metadata for segment processing
       // Using string format that was working before
+      // FPS compatibility is now handled in the UI (VideoProcessingOptionsModal)
       const videoMetadata = {
         start_offset: `${Math.floor(segment.start)}s`,
         end_offset: `${Math.floor(segment.end)}s`,
