@@ -84,7 +84,8 @@ const LyricsDisplay = ({
   translatedSubtitles = null, // Translated subtitles
   videoTitle = 'subtitles', // Video title for download filenames
   onSegmentSelect = null, // Callback for segment selection
-  selectedSegment = null // Currently selected segment
+  selectedSegment = null, // Currently selected segment
+  isProcessingSegment = false // Whether a segment is being processed
 }) => {
   const { t } = useTranslation();
   // Initialize zoom with a function that calculates the minimum zoom based on duration
@@ -841,6 +842,7 @@ const LyricsDisplay = ({
           showWaveform={showWaveform}
           onSegmentSelect={onSegmentSelect}
           selectedSegment={selectedSegment}
+          isProcessingSegment={isProcessingSegment}
         />
       </div>
 

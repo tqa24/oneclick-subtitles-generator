@@ -29,7 +29,8 @@ const TimelineVisualization = ({
   videoSource, // Video source URL for audio analysis
   showWaveform = true, // Whether to show the waveform visualization
   onSegmentSelect, // Callback for when a segment is selected via drag
-  selectedSegment = null // Currently selected segment { start, end }
+  selectedSegment = null, // Currently selected segment { start, end }
+  isProcessingSegment = false // New prop to indicate if processing is active
 }) => {
   const { t } = useTranslation();
   const [showWaveformDisabledNotice, setShowWaveformDisabledNotice] = useState(false);
@@ -42,6 +43,37 @@ const TimelineVisualization = ({
   const dragStartRef = useRef(null);
   const dragCurrentRef = useRef(null);
   const isDraggingRef = useRef(false);
+  
+  // Animation state for processing
+  const [animationTime, setAnimationTime] = useState(0);
+  const processingAnimationRef = useRef(null);
+  
+  // Handle processing animation
+  useEffect(() => {
+    if (isProcessingSegment) {
+      const startTime = performance.now();
+      
+      const animate = () => {
+        const elapsed = performance.now() - startTime;
+        setAnimationTime(elapsed);
+        processingAnimationRef.current = requestAnimationFrame(animate);
+      };
+      
+      processingAnimationRef.current = requestAnimationFrame(animate);
+      
+      return () => {
+        if (processingAnimationRef.current) {
+          cancelAnimationFrame(processingAnimationRef.current);
+        }
+      };
+    } else {
+      // Reset animation when processing stops
+      setAnimationTime(0);
+      if (processingAnimationRef.current) {
+        cancelAnimationFrame(processingAnimationRef.current);
+      }
+    }
+  }, [isProcessingSegment]);
 
   // Calculate minimum zoom level based on duration to limit view to 300 seconds
   const calculateMinZoom = (duration) => {
@@ -234,7 +266,9 @@ const TimelineVisualization = ({
       selectedSegment,
       isDraggingSegment,
       dragStartTime,
-      dragCurrentTime
+      dragCurrentTime,
+      isProcessing: isProcessingSegment,
+      animationTime
     };
 
     // Draw the timeline
@@ -249,7 +283,7 @@ const TimelineVisualization = ({
       timeFormat,
       segmentData
     );
-  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime]);
+  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime]);
 
   // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {

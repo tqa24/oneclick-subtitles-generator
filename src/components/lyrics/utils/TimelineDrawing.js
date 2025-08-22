@@ -108,7 +108,7 @@ export const drawTimeline = (
 
   // Draw segment selection overlay
   if (segmentData) {
-    const { selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime } = segmentData;
+    const { selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessing, animationTime } = segmentData;
 
     // Draw selected segment
     if (selectedSegment && !isDraggingSegment) {
@@ -116,13 +116,37 @@ export const drawTimeline = (
       const endX = timeToX(selectedSegment.end, visibleStart, visibleDuration, displayWidth);
 
       if (startX < displayWidth && endX > 0) {
+        // Calculate animation values for processing state
+        let opacity = 0.2;
+        let borderOpacity = 0.8;
+        
+        if (isProcessing && animationTime !== undefined) {
+          // Create a pulsing effect while processing
+          const pulse = Math.sin(animationTime * 0.003) * 0.5 + 0.5; // 0 to 1 oscillation
+          opacity = 0.15 + pulse * 0.25; // Oscillate between 0.15 and 0.4
+          borderOpacity = 0.6 + pulse * 0.4; // Oscillate between 0.6 and 1.0
+          
+          // Add shimmer effect
+          const shimmerX = (animationTime * 0.1) % (endX - startX);
+          const gradient = ctx.createLinearGradient(
+            Math.max(0, startX) + shimmerX - 50, 0,
+            Math.max(0, startX) + shimmerX + 50, 0
+          );
+          gradient.addColorStop(0, `rgba(59, 130, 246, ${opacity})`);
+          gradient.addColorStop(0.5, `rgba(99, 170, 255, ${opacity + 0.1})`);
+          gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+          ctx.fillStyle = gradient;
+        } else {
+          // Static blue when not processing
+          ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
+        }
+        
         // Draw segment background
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // Blue with transparency
         ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
 
-        // Draw segment borders
-        ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
-        ctx.lineWidth = 2;
+        // Draw segment borders with animation
+        ctx.strokeStyle = `rgba(59, 130, 246, ${borderOpacity})`;
+        ctx.lineWidth = isProcessing ? 2.5 : 2;
         ctx.beginPath();
         if (startX >= 0 && startX <= displayWidth) {
           ctx.moveTo(startX, 0);

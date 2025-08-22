@@ -61,6 +61,7 @@ export const useAppState = () => {
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [showProcessingModal, setShowProcessingModal] = useState(false);
   const [uploadedFileData, setUploadedFileData] = useState(null);
+  const [isProcessingSegment, setIsProcessingSegment] = useState(false);
 
   // Rules editor state
   const [showRulesEditor, setShowRulesEditor] = useState(false);
@@ -294,6 +295,7 @@ export const useAppState = () => {
     isUploading, setIsUploading,
     selectedSegment, setSelectedSegment,
     showProcessingModal, setShowProcessingModal,
-    uploadedFileData, setUploadedFileData
+    uploadedFileData, setUploadedFileData,
+    isProcessingSegment, setIsProcessingSegment
   };
 };

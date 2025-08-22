@@ -44,6 +44,7 @@ export const useAppHandlers = (appState) => {
     setShowProcessingModal,
     uploadedFileData,
     setUploadedFileData,
+    setIsProcessingSegment,
     t = (key, defaultValue) => defaultValue // Provide a default implementation if t is not available
   } = appState;
 
@@ -392,6 +393,10 @@ export const useAppHandlers = (appState) => {
   const handleProcessWithOptions = async (options) => {
     try {
       setShowProcessingModal(false);
+      
+      // Set processing state to true when starting
+      setIsProcessingSegment(true);
+      console.log('[ProcessWithOptions] Started processing segment, animation should begin');
 
       if (!uploadedFileData) {
         throw new Error('No uploaded file data available');
@@ -424,6 +429,10 @@ export const useAppHandlers = (appState) => {
         // Clear the session prompt after processing
         sessionStorage.removeItem('current_session_prompt');
         console.log('[ProcessWithOptions] Cleared session prompt after processing');
+        
+        // Clear processing state when done
+        setIsProcessingSegment(false);
+        console.log('[ProcessWithOptions] Processing complete, animation should stop');
       }
 
     } catch (error) {
@@ -432,6 +441,9 @@ export const useAppHandlers = (appState) => {
         message: `${t('errors.processingFailed', 'Processing failed')}: ${error.message}`,
         type: 'error'
       });
+      
+      // Also clear processing state on error
+      setIsProcessingSegment(false);
     }
   };
 

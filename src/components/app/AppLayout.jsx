@@ -104,7 +104,8 @@ const AppLayout = ({
     isUploading,
     selectedSegment, setSelectedSegment,
     showProcessingModal, setShowProcessingModal,
-    uploadedFileData
+    uploadedFileData,
+    isProcessingSegment
   } = appState;
 
   const {
@@ -353,6 +354,7 @@ const AppLayout = ({
               onSegmentSelect={handleSegmentSelect}
               selectedSegment={selectedSegment}
               isUploading={isUploading}
+              isProcessingSegment={isProcessingSegment}
             />
           </div>
 

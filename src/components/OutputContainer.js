@@ -37,7 +37,8 @@ const OutputContainer = ({
   onActualVideoUrlChange,
   onSegmentSelect = null, // Callback for segment selection
   selectedSegment = null, // Currently selected segment
-  isUploading = false // Whether video is currently uploading
+  isUploading = false, // Whether video is currently uploading
+  isProcessingSegment = false // Whether a segment is being processed
 }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
@@ -284,6 +285,7 @@ const OutputContainer = ({
               videoTitle={selectedVideo?.title || uploadedFile?.name?.replace(/\.[^/.]+$/, '') || 'subtitles'}
               onSegmentSelect={onSegmentSelect}
               selectedSegment={selectedSegment}
+              isProcessingSegment={isProcessingSegment}
             />
 
             {/* Download buttons moved to LyricsDisplay component */}
