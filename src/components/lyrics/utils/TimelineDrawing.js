@@ -293,9 +293,8 @@ const drawLyricSegments = (
   isDark,
   isActivePanning
 ) => {
-  // Optimize lyric segments rendering
-  // Increase minimum segment width during panning for better performance
-  const minSegmentWidth = isActivePanning ? 4 : 2;
+  // Minimum segment width - always show segments with at least 1px
+  const minSegmentWidth = 1;
 
   // Estimate the total duration based on the last lyric's end time
   const duration = lyrics.length > 0 ? Math.max(...lyrics.map(lyric => lyric.end)) * 1.05 : 0;
@@ -303,9 +302,9 @@ const drawLyricSegments = (
   // Use our optimized segments handler for long videos
   const isLongVideo = duration > 1800; // 30 minutes
 
-  // Filter visible lyrics - use a more efficient approach with segment limiting
+  // Filter visible lyrics - remove segment limit to show all segments
   const visibleLyrics = [];
-  const maxSegmentsToRender = isLongVideo ? 200 : 300; // Reduce for long videos
+  const maxSegmentsToRender = Number.MAX_SAFE_INTEGER; // Show all segments
 
   // For long videos, use simple filtering (legacy optimization no longer needed)
   let optimizedLyrics = lyrics;
@@ -344,15 +343,17 @@ const drawLyricSegments = (
     const startX = timeToX(lyric.start, visibleStart, visibleDuration, displayWidth);
     const endX = timeToX(lyric.end, visibleStart, visibleDuration, displayWidth);
 
-    // Only add if the segment is wide enough to be visible
-    if ((endX - startX) >= minSegmentWidth) {
-      visibleLyrics.push({
-        lyric,
-        startX,
-        width: endX - startX
-      });
-      segmentCount++;
-    }
+    // Calculate width with minimum 1px guarantee
+    const calculatedWidth = endX - startX;
+    const width = Math.max(minSegmentWidth, calculatedWidth); // Ensure at least 1px width
+    
+    // Always add the segment - no filtering by width
+    visibleLyrics.push({
+      lyric,
+      startX,
+      width: width
+    });
+    segmentCount++;
   }
 
   // If we hit the segment limit, add an indicator
