@@ -284,13 +284,8 @@ const VideoProcessingOptionsModal = ({
       };
 
       // Add video metadata to the file_data part if this is a video
-      if (!videoFile.type.startsWith('audio/')) {
-        filePart.video_metadata = {
-          start_offset: `${Math.floor(selectedSegment.start)}s`,
-          end_offset: `${Math.floor(selectedSegment.end)}s`,
-          fps: fps
-        };
-      }
+      // Note: video_metadata should be a sibling to file_data, not nested inside it
+      // This matches the structure used in the actual processing
 
       const requestData = {
         contents: [{

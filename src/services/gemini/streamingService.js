@@ -57,7 +57,9 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
 
     // Add video metadata if provided
     if (videoMetadata && !isAudio) {
+      console.log('[StreamingService] Adding video metadata:', JSON.stringify(videoMetadata, null, 2));
       requestData.contents[0].parts[1].video_metadata = videoMetadata;
+      console.log('[StreamingService] Part with video_metadata:', JSON.stringify(requestData.contents[0].parts[1], null, 2));
     }
 
     // Add structured output schema

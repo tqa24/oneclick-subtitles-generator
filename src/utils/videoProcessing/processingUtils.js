@@ -86,8 +86,8 @@ export const processSegmentWithFilesApi = async (file, segment, options, setStat
       type: 'loading'
     });
 
-    // Prepare video metadata for segment processing according to Gemini API docs
-    // Format: start_offset: "60s", end_offset: "120s", fps: 5
+    // Prepare video metadata for segment processing
+    // Using string format that was working before
     const videoMetadata = {
       start_offset: `${Math.floor(segment.start)}s`,
       end_offset: `${Math.floor(segment.end)}s`,
@@ -134,6 +134,12 @@ export const processSegmentWithFilesApi = async (file, segment, options, setStat
 export const processSegmentWithStreaming = async (file, segment, options, setStatus, onSubtitleUpdate, t) => {
   return new Promise((resolve, reject) => {
     const { fps, mediaResolution, model, userProvidedSubtitles } = options;
+    
+    // Check if this is a Gemini 2.0 model (they don't respect video_metadata offsets)
+    const isGemini20Model = model && (model.includes('gemini-2.0') || model.includes('gemini-1.5'));
+    if (isGemini20Model) {
+      console.warn(`[ProcessingUtils] Model ${model} may not respect video segment offsets - will filter results`);
+    }
 
     // Import streaming processor
     import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
@@ -141,14 +147,58 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       const processor = createRealtimeProcessor({
         onSubtitleUpdate: (data) => {
           console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
+          
+          // Filter subtitles for Gemini 2.0 models that don't respect segment offsets
+          let filteredSubtitles = data.subtitles;
+          if (isGemini20Model && data.subtitles && data.subtitles.length > 0) {
+            const segmentStart = segment.start;
+            const segmentEnd = segment.end;
+            
+            filteredSubtitles = data.subtitles.filter(sub => {
+              // Keep subtitles that overlap with the segment
+              return sub.start < segmentEnd && sub.end > segmentStart;
+            }).map(sub => {
+              // Clip subtitles to segment boundaries
+              return {
+                ...sub,
+                start: Math.max(sub.start, segmentStart),
+                end: Math.min(sub.end, segmentEnd)
+              };
+            });
+            
+            console.log(`[ProcessingUtils] Filtered ${data.subtitles.length} subtitles to ${filteredSubtitles.length} for segment ${segmentStart}-${segmentEnd}`);
+          }
+          
           if (onSubtitleUpdate) {
-            onSubtitleUpdate(data.subtitles, data.isStreaming);
+            onSubtitleUpdate(filteredSubtitles, data.isStreaming);
           }
         },
         onStatusUpdate: setStatus,
         onComplete: (finalSubtitles) => {
           console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
-          resolve(finalSubtitles);
+          
+          // Filter final subtitles for Gemini 2.0 models
+          let filteredFinal = finalSubtitles;
+          if (isGemini20Model && finalSubtitles && finalSubtitles.length > 0) {
+            const segmentStart = segment.start;
+            const segmentEnd = segment.end;
+            
+            filteredFinal = finalSubtitles.filter(sub => {
+              // Keep subtitles that overlap with the segment
+              return sub.start < segmentEnd && sub.end > segmentStart;
+            }).map(sub => {
+              // Clip subtitles to segment boundaries
+              return {
+                ...sub,
+                start: Math.max(sub.start, segmentStart),
+                end: Math.min(sub.end, segmentEnd)
+              };
+            });
+            
+            console.log(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
+          }
+          
+          resolve(filteredFinal);
         },
         onError: (error) => {
           console.error('[ProcessingUtils] Streaming error:', error);
@@ -157,6 +207,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       });
 
       // Prepare video metadata for segment processing
+      // Using string format that was working before
       const videoMetadata = {
         start_offset: `${Math.floor(segment.start)}s`,
         end_offset: `${Math.floor(segment.end)}s`,

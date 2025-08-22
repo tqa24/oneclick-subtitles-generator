@@ -241,8 +241,10 @@ export const callGeminiApiWithFilesApi = async (file, options = {}) => {
 
         // Add video metadata if provided
         if (videoMetadata && !isAudio) {
+            console.log('[GeminiAPI] Adding video metadata to request:', JSON.stringify(videoMetadata, null, 2));
             // Add video metadata to the file_data part
             requestData.contents[0].parts[1].video_metadata = videoMetadata;
+            console.log('[GeminiAPI] Request structure with video_metadata:', JSON.stringify(requestData.contents[0].parts[1], null, 2));
         }
 
         // Add response schema
