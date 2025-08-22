@@ -108,6 +108,7 @@
   "videoProcessing": "Processing",
   "displaySettings": "Display Settings",
   "downloadSettings": "Download Settings",
+  "displayDownloadSettings": "Display & Download Settings",
   "modelSettings": "AI Model",
   "segmentSettings": "Segment Settings",
   "processingSettings": "Processing Settings",

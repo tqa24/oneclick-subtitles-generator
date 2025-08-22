@@ -114,50 +114,16 @@ const VideoProcessingTab = ({
       {/* Grid layout for settings cards */}
       <div className="video-processing-grid">
 
-        {/* Download Settings Card */}
-        <div className="settings-card download-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7,10 12,15 17,10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-            </div>
-            <h4>{t('settings.downloadSettings', 'Download Settings')}</h4>
-          </div>
-          <div className="settings-card-content">
-            <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="use-cookies-download">
-                  {t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="use-cookies-download"
-                    checked={useCookiesForDownload}
-                    onChange={(e) => setUseCookiesForDownload(e.target.checked)}
-                    ariaLabel={t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p className="setting-description">
-                {t('settings.useCookiesForDownloadDescription', 'Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content.')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Display Settings Card */}
-        <div className="settings-card display-card">
+        {/* Display & Download Settings Card (Merged) */}
+        <div className="settings-card display-download-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
               <DisplayIcon />
             </div>
-            <h4>{t('settings.displaySettings', 'Display Settings')}</h4>
+            <h4>{t('settings.displayDownloadSettings', 'Display & Download Settings')}</h4>
           </div>
           <div className="settings-card-content">
+            {/* Time Format Setting */}
             <div className="compact-setting">
               <label htmlFor="time-format">
                 {t('settings.timeFormat', 'Time Format')}
@@ -176,6 +142,7 @@ const VideoProcessingTab = ({
               </select>
             </div>
 
+            {/* Audio Waveform Setting */}
             <div className="compact-setting">
               <div className="setting-header">
                 <label htmlFor="show-waveform">
@@ -193,6 +160,27 @@ const VideoProcessingTab = ({
               </div>
               <p className="setting-description">
                 {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+              </p>
+            </div>
+
+            {/* Download Cookies Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="use-cookies-download">
+                  {t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="use-cookies-download"
+                    checked={useCookiesForDownload}
+                    onChange={(e) => setUseCookiesForDownload(e.target.checked)}
+                    ariaLabel={t('settings.useCookiesForDownload', 'Use browser cookies for video downloads')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.useCookiesForDownloadDescription', 'Enable browser cookie authentication to access higher quality videos and bypass login restrictions. Disabling this will make downloads faster but may limit available video qualities and cause failures on restricted content.')}
               </p>
             </div>
           </div>
