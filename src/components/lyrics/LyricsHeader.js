@@ -80,12 +80,19 @@ const LyricsHeader = ({
               onClick={() => setShowSplitModal(true)}
               title="Chia sub"
             >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M3 12h18"/>
-                <path d="M3 6h18"/>
-                <path d="M3 18h18"/>
-                <path d="M8 9l4-4 4 4"/>
-                <path d="M8 15l4 4 4-4"/>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                {/* Left rectangle (before cut) */}
+                <path d="M2 8L8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 16L8 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 8L2 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                
+                {/* Right rectangle (after cut) */}
+                <path d="M16 8L22 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 16L22 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 8L22 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                
+                {/* Vertical cutting line (knife) */}
+                <path d="M12 4L12 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
