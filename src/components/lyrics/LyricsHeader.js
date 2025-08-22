@@ -8,11 +8,13 @@ const LyricsHeader = ({
   setIsSticky,
   canUndo,
   canRedo,
+  canJumpToCheckpoint,
   isAtOriginalState,
   isAtSavedState,
   onUndo,
   onRedo,
   onReset,
+  onJumpToCheckpoint,
   onSave,
   autoScrollEnabled,
   setAutoScrollEnabled,
@@ -138,6 +140,20 @@ const LyricsHeader = ({
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M21 10h-10c-4.42 0-8 3.58-8 8v2M21 10l-6-6M21 10l-6 6"/>
+              </svg>
+            </button>
+            
+            <button
+              className="checkpoint-btn"
+              onClick={onJumpToCheckpoint}
+              disabled={!canJumpToCheckpoint}
+              title={t('common.jumpToCheckpoint', 'Jump to last checkpoint (undo multiple steps)')}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                <path d="M3 10h10c4.42 0 8 3.58 8 8v2M3 10l6-6M3 10l6 6"/>
+                <circle cx="3" cy="10" r="2" fill="currentColor"/>
+                <circle cx="7" cy="10" r="1" fill="currentColor"/>
+                <circle cx="11" cy="10" r="1" fill="currentColor"/>
               </svg>
             </button>
           </div>

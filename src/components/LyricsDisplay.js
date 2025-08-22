@@ -254,9 +254,11 @@ const LyricsDisplay = ({
     isAtSavedState,
     canUndo,
     canRedo,
+    canJumpToCheckpoint,
     handleUndo,
     handleRedo,
     handleReset,
+    handleJumpToCheckpoint,
     startDrag,
     handleDrag,
     endDrag,
@@ -268,7 +270,8 @@ const LyricsDisplay = ({
     handleMergeLyrics,
     updateSavedLyrics,
     handleSplitSubtitles,
-    captureStateBeforeMerge
+    captureStateBeforeMerge,
+    createCheckpoint
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -794,11 +797,13 @@ const LyricsDisplay = ({
           setIsSticky={setIsSticky}
           canUndo={canUndo}
           canRedo={canRedo}
+          canJumpToCheckpoint={canJumpToCheckpoint}
           isAtOriginalState={isAtOriginalState}
           isAtSavedState={isAtSavedState}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onReset={handleReset}
+          onJumpToCheckpoint={handleJumpToCheckpoint}
           onSave={handleSave}
           autoScrollEnabled={autoScrollEnabled}
           setAutoScrollEnabled={setAutoScrollEnabled}

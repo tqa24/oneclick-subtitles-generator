@@ -94,8 +94,8 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
       throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 
-    // Process streaming response
-    await processStreamingResponse(response, onChunk, onComplete, onError);
+    // Process streaming response with options for early termination
+    await processStreamingResponse(response, onChunk, onComplete, onError, options);
 
   } catch (error) {
     console.error('[StreamingService] Error:', error);
@@ -109,13 +109,19 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
  * @param {Function} onChunk - Callback for each chunk
  * @param {Function} onComplete - Callback when complete
  * @param {Function} onError - Callback for errors
+ * @param {Object} options - Additional options like segment info
  */
-const processStreamingResponse = async (response, onChunk, onComplete, onError) => {
+const processStreamingResponse = async (response, onChunk, onComplete, onError, options = {}) => {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let accumulatedText = '';
   let chunkCount = 0;
+  
+  // Extract segment end offset if provided
+  const segmentEndOffset = options?.segmentInfo?.endOffset || null;
+  let shouldTerminate = false;
+  let lastValidSubtitleEndTime = 0;
 
   try {
     while (true) {
@@ -179,26 +185,74 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError) 
                     }]
                   };
 
-                  const parsedSubtitles = parseGeminiResponse(mockResponse);
-                  if (parsedSubtitles && parsedSubtitles.length > 0) {
-                    // Call the chunk callback with parsed subtitles
-                    onChunk({
-                      text: textPart.text,
-                      accumulatedText,
-                      subtitles: parsedSubtitles,
-                      chunkCount,
-                      isComplete: false
-                    });
+                const parsedSubtitles = parseGeminiResponse(mockResponse);
+                
+                // Check if we should terminate based on segment end offset
+                if (segmentEndOffset !== null && parsedSubtitles && parsedSubtitles.length > 0) {
+                  // Find the last subtitle that's within the segment bounds
+                  let validSubtitles = [];
+                  let foundExceeding = false;
+                  
+                  for (const subtitle of parsedSubtitles) {
+                    if (subtitle.start <= segmentEndOffset) {
+                      validSubtitles.push(subtitle);
+                      lastValidSubtitleEndTime = Math.max(lastValidSubtitleEndTime, subtitle.end || subtitle.start);
+                    } else {
+                      // Found subtitle that exceeds segment end
+                      foundExceeding = true;
+                      console.log(`[StreamingService] Found subtitle exceeding segment end (${subtitle.start} > ${segmentEndOffset}), preparing to terminate...`);
+                    }
+                  }
+                  
+                  // If we found subtitles exceeding the segment, terminate after this chunk
+                  if (foundExceeding) {
+                    shouldTerminate = true;
+                    
+                    // Send only valid subtitles
+                    if (validSubtitles.length > 0) {
+                      onChunk({
+                        text: textPart.text,
+                        accumulatedText,
+                        subtitles: validSubtitles,
+                        chunkCount,
+                        isComplete: false
+                      });
+                    }
+                    
+                    // Terminate the stream
+                    console.log(`[StreamingService] Terminating stream - reached segment end offset at ${segmentEndOffset}`);
+                    reader.cancel(); // Cancel the reader to stop receiving more data
+                    onComplete(accumulatedText);
+                    return;
                   } else {
-                    // Call with raw text if parsing fails
+                    // All subtitles are valid, send them normally
                     onChunk({
                       text: textPart.text,
                       accumulatedText,
-                      subtitles: [],
+                      subtitles: validSubtitles,
                       chunkCount,
                       isComplete: false
                     });
                   }
+                } else if (parsedSubtitles && parsedSubtitles.length > 0) {
+                  // No segment limit, send all subtitles
+                  onChunk({
+                    text: textPart.text,
+                    accumulatedText,
+                    subtitles: parsedSubtitles,
+                    chunkCount,
+                    isComplete: false
+                  });
+                } else {
+                  // Call with raw text if parsing fails
+                  onChunk({
+                    text: textPart.text,
+                    accumulatedText,
+                    subtitles: [],
+                    chunkCount,
+                    isComplete: false
+                  });
+                }
                 } catch (parseError) {
                   // Parsing failed, but that's okay - we'll try again with more text
                   onChunk({
