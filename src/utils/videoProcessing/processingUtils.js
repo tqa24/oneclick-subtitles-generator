@@ -138,8 +138,12 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
     // Check if this is a Gemini 2.0 model (they don't respect video_metadata offsets)
     const isGemini20Model = model && (model.includes('gemini-2.0') || model.includes('gemini-1.5'));
     if (isGemini20Model) {
-      console.warn(`[ProcessingUtils] Model ${model} may not respect video segment offsets - will filter results`);
+      console.warn(`[ProcessingUtils] Model ${model} may not respect video segment offsets - will filter results and use early stopping`);
     }
+    
+    // Track if we've stopped early due to subtitles going past segment
+    let hasStoppedEarly = false;
+    let earlyStopController = null;
 
     // Import streaming processor
     import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
@@ -147,6 +151,44 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       const processor = createRealtimeProcessor({
         onSubtitleUpdate: (data) => {
           console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
+          
+          // For Gemini 2.0 models: implement early stopping when subtitles exceed segment
+          if (isGemini20Model && data.subtitles && data.subtitles.length > 0 && !hasStoppedEarly) {
+            const segmentStart = segment.start;
+            const segmentEnd = segment.end;
+            
+            // Check if we have subtitles that are significantly past the segment end
+            // We add a small buffer (5 seconds) to avoid stopping too early
+            const bufferTime = 5;
+            const lastSubtitle = data.subtitles[data.subtitles.length - 1];
+            
+            if (lastSubtitle && lastSubtitle.start > (segmentEnd + bufferTime)) {
+              console.warn(`[ProcessingUtils] Early stopping: Last subtitle at ${lastSubtitle.start}s exceeds segment end ${segmentEnd}s by more than ${bufferTime}s`);
+              hasStoppedEarly = true;
+              
+              // Trigger early completion with filtered subtitles
+              const filteredForCompletion = data.subtitles.filter(sub => {
+                return sub.start < segmentEnd && sub.end > segmentStart;
+              }).map(sub => {
+                return {
+                  ...sub,
+                  start: Math.max(sub.start, segmentStart),
+                  end: Math.min(sub.end, segmentEnd)
+                };
+              });
+              
+              console.log(`[ProcessingUtils] Early stop: Completing with ${filteredForCompletion.length} subtitles (from ${data.subtitles.length} total)`);
+              
+              // Cancel the streaming if we have a controller
+              if (earlyStopController && typeof earlyStopController.abort === 'function') {
+                earlyStopController.abort();
+              }
+              
+              // Manually trigger completion
+              processor.complete(JSON.stringify(filteredForCompletion));
+              return; // Stop processing further updates
+            }
+          }
           
           // Filter subtitles for Gemini 2.0 models that don't respect segment offsets
           let filteredSubtitles = data.subtitles;

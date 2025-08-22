@@ -112,53 +112,80 @@ export class RealtimeSubtitleProcessor {
 
   /**
    * Handle completion of streaming
-   * @param {string} finalText - Final accumulated text
+   * @param {string|Array} finalText - Final accumulated text or pre-filtered subtitles array (for early stopping)
    */
   complete(finalText) {
     console.log('[RealtimeProcessor] Stream completed, final processing...');
     
-    this.accumulatedText = finalText;
     this.isProcessing = false;
-
-    // Final parsing attempt
-    try {
-      // Create a mock response object for the parser
-      const mockResponse = {
-        candidates: [{
-          content: {
-            parts: [{
-              text: finalText
-            }]
-          }
-        }]
-      };
-
-      const finalSubtitles = parseGeminiResponse(mockResponse);
-
-      if (finalSubtitles && finalSubtitles.length > 0) {
-        this.currentSubtitles = finalSubtitles;
-
-        console.log(`[RealtimeProcessor] Final result: ${finalSubtitles.length} subtitles`);
-
-        this.onSubtitleUpdate({
-          subtitles: finalSubtitles,
-          isStreaming: false,
-          isComplete: true,
-          chunkCount: this.chunkCount,
-          textLength: finalText.length
-        });
-
-        this.onStatusUpdate({
-          message: `Processing complete! Generated ${finalSubtitles.length} subtitles.`,
-          type: 'success'
-        });
-
-        this.onComplete(finalSubtitles);
-      } else {
-        throw new Error('No valid subtitles found in final response');
+    
+    // Check if we received pre-filtered subtitles (early stop scenario)
+    let finalSubtitles = null;
+    
+    if (typeof finalText === 'string' && finalText.startsWith('[') && finalText.includes('"start"')) {
+      // This looks like a JSON array of subtitles (early stop scenario)
+      try {
+        finalSubtitles = JSON.parse(finalText);
+        console.log('[RealtimeProcessor] Using pre-filtered subtitles from early stop:', finalSubtitles.length, 'subtitles');
+        this.accumulatedText = 'Early stop - pre-filtered subtitles';
+      } catch (e) {
+        // Not JSON, treat as regular text
+        this.accumulatedText = finalText;
       }
-    } catch (error) {
-      console.error('[RealtimeProcessor] Final parsing failed:', error);
+    } else if (Array.isArray(finalText)) {
+      // Direct array of subtitles
+      finalSubtitles = finalText;
+      console.log('[RealtimeProcessor] Using direct subtitle array:', finalSubtitles.length, 'subtitles');
+      this.accumulatedText = 'Early stop - pre-filtered subtitles';
+    } else {
+      // Regular text, need to parse
+      this.accumulatedText = finalText;
+    }
+
+    // Final parsing attempt if we don't have subtitles yet
+    if (!finalSubtitles) {
+      try {
+        // Create a mock response object for the parser
+        const mockResponse = {
+          candidates: [{
+            content: {
+              parts: [{
+                text: this.accumulatedText
+              }]
+            }
+          }]
+        };
+
+        finalSubtitles = parseGeminiResponse(mockResponse);
+      } catch (error) {
+        console.error('[RealtimeProcessor] Final parsing failed:', error);
+        // Will handle fallback below
+      }
+    }
+
+    // Process the final subtitles (either from early stop or parsed)
+    if (finalSubtitles && finalSubtitles.length > 0) {
+      this.currentSubtitles = finalSubtitles;
+
+      console.log(`[RealtimeProcessor] Final result: ${finalSubtitles.length} subtitles`);
+
+      this.onSubtitleUpdate({
+        subtitles: finalSubtitles,
+        isStreaming: false,
+        isComplete: true,
+        chunkCount: this.chunkCount,
+        textLength: typeof finalText === 'string' ? finalText.length : 0
+      });
+
+      this.onStatusUpdate({
+        message: `Processing complete! Generated ${finalSubtitles.length} subtitles.`,
+        type: 'success'
+      });
+
+      this.onComplete(finalSubtitles);
+    } else {
+      // No valid subtitles found
+      console.error('[RealtimeProcessor] No valid subtitles found in final response');
 
       // Fall back to last valid subtitles if available
       if (this.lastValidSubtitles.length > 0) {
@@ -169,7 +196,7 @@ export class RealtimeSubtitleProcessor {
           type: 'success'
         });
       } else {
-        this.onError(error);
+        this.onError(new Error('No valid subtitles found in final response'));
       }
     }
   }
