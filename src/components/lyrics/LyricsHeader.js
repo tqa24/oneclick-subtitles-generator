@@ -122,6 +122,28 @@ const LyricsHeader = ({
         {allowEditing && (
           <div className="bottom-row-buttons">
             <button
+              className="checkpoint-btn"
+              onClick={onJumpToCheckpoint}
+              disabled={!canJumpToCheckpoint}
+              title={t('common.jumpToCheckpoint', 'Jump to last checkpoint (undo multiple steps)')}
+            >
+              {/* Flag with curved arrow icon - active */}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                <path d="M3 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 5H14L11 8L14 11H3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 13C21 15.5 18.5 18 15 18H11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M13 20L11 18L13 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              
+              {/* Clock with reverse arrow icon - alternative (commented out) */}
+              {/* <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                <path d="M10 9V12H12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 12C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 4"/>
+                <path d="M5 12V7L7 8L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg> */}
+            </button>
+            
+            <button
               className="undo-btn"
               onClick={onUndo}
               disabled={!canUndo}
@@ -140,20 +162,6 @@ const LyricsHeader = ({
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M21 10h-10c-4.42 0-8 3.58-8 8v2M21 10l-6-6M21 10l-6 6"/>
-              </svg>
-            </button>
-            
-            <button
-              className="checkpoint-btn"
-              onClick={onJumpToCheckpoint}
-              disabled={!canJumpToCheckpoint}
-              title={t('common.jumpToCheckpoint', 'Jump to last checkpoint (undo multiple steps)')}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M3 10h10c4.42 0 8 3.58 8 8v2M3 10l6-6M3 10l6 6"/>
-                <circle cx="3" cy="10" r="2" fill="currentColor"/>
-                <circle cx="7" cy="10" r="1" fill="currentColor"/>
-                <circle cx="11" cy="10" r="1" fill="currentColor"/>
               </svg>
             </button>
           </div>

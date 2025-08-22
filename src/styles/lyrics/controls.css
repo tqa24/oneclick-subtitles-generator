@@ -140,7 +140,7 @@
 }
 
 /* Material Design 3 pill-shaped buttons */
-.lyrics-save-btn, .undo-btn, .redo-btn, .reset-btn, .split-sub-btn {
+.lyrics-save-btn, .undo-btn, .redo-btn, .reset-btn, .split-sub-btn, .checkpoint-btn {
   background-color: transparent;
   border: none;
   border-radius: 50%;
@@ -163,7 +163,7 @@
   min-width: 24px;
 }
 
-.lyrics-save-btn svg, .undo-btn svg, .redo-btn svg, .reset-btn svg, .split-sub-btn svg {
+.lyrics-save-btn svg, .undo-btn svg, .redo-btn svg, .reset-btn svg, .split-sub-btn svg, .checkpoint-btn svg {
   width: 16px;
   height: 16px;
   stroke: currentColor;
@@ -171,7 +171,7 @@
 }
 
 /* State layer for hover effect */
-.lyrics-save-btn::before, .undo-btn::before, .redo-btn::before, .reset-btn::before, .split-sub-btn::before {
+.lyrics-save-btn::before, .undo-btn::before, .redo-btn::before, .reset-btn::before, .split-sub-btn::before, .checkpoint-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -184,15 +184,15 @@
   border-radius: 50%;
 }
 
-.lyrics-save-btn:hover::before, .undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before, .split-sub-btn:hover::before {
+.lyrics-save-btn:hover::before, .undo-btn:hover::before, .redo-btn:hover::before, .reset-btn:hover::before, .split-sub-btn:hover::before, .checkpoint-btn:hover::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
-.lyrics-save-btn:active::before, .undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before, .split-sub-btn:active::before {
+.lyrics-save-btn:active::before, .undo-btn:active::before, .redo-btn:active::before, .reset-btn:active::before, .split-sub-btn:active::before, .checkpoint-btn:active::before {
   background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-pressed-opacity));
 }
 
-.lyrics-save-btn:hover, .undo-btn:hover, .redo-btn:hover, .reset-btn:hover, .split-sub-btn:hover {
+.lyrics-save-btn:hover, .undo-btn:hover, .redo-btn:hover, .reset-btn:hover, .split-sub-btn:hover, .checkpoint-btn:hover {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   transform: scale(1.1);
@@ -218,7 +218,11 @@
   transform: scale(1.1) rotate(5deg);
 }
 
-.lyrics-save-btn:disabled, .undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled, .split-sub-btn:disabled {
+.checkpoint-btn:hover svg {
+  transform: translateX(-3px) scale(1.05);
+}
+
+.lyrics-save-btn:disabled, .undo-btn:disabled, .redo-btn:disabled, .reset-btn:disabled, .split-sub-btn:disabled, .checkpoint-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
