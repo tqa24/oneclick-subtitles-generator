@@ -239,12 +239,19 @@ export const useAppState = () => {
         setStatus({});
       }
     }
-    // If we don't have a Gemini API key and there's no current status message, show the required message
-    else if (!apiKeysSet.gemini && (!status?.message || status.type !== 'info')) {
-      setStatus({
-        message: t('errors.apiKeyRequired', 'Please set your API key in the settings first.'),
-        type: 'info'
-      });
+    // If we don't have a Gemini API key, show the required message
+    // This will update the message when language changes or when API key is missing
+    else if (!apiKeysSet.gemini) {
+      const currentMessage = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
+
+      // Only update if the message is different (to avoid unnecessary re-renders)
+      // or if there's no current status message
+      if (!status?.message || status.message !== currentMessage || status.type !== 'info') {
+        setStatus({
+          message: currentMessage,
+          type: 'info'
+        });
+      }
     }
   }, [apiKeysSet.gemini, status, setStatus, t]);
 
