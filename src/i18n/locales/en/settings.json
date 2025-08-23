@@ -152,7 +152,7 @@
   "structuredOutputSetting": "Structured Output",
   "videoAnalysis": "Video Analysis",
   "useVideoAnalysis": "Detect Patterns + Context Memory/Rules",
-  "useVideoAnalysisDescription": "Before splitting video, analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules. Turn off for faster processing.",
+  "useVideoAnalysisDescription": "Settings for the \"Add analysis\" button, which analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules.",
   "videoAnalysisSection": "Video Analysis",
   "videoAnalysisModel": "Analysis Model",
   "videoAnalysisModelDescription": "Select the Gemini model to use for video analysis. 2.5 models have higher censorship and are prone to \"unsafe content\" errors.",

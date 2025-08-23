@@ -128,8 +128,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
   const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Gemini 2.0 Flash
-  const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
-  const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
+
   const [optimizeVideos, setOptimizeVideos] = useState(false); // Default to no optimization
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
@@ -203,8 +202,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     youtubeClientSecret: '',
     useVideoAnalysis: true,
     videoAnalysisModel: 'gemini-2.0-flash',
-    videoAnalysisTimeout: '20',
-    autoSelectDefaultPreset: false,
+
     optimizeVideos: false,
     optimizedResolution: '360p',
     useOptimizedPreview: false,
@@ -244,7 +242,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
       const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
-      const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
+      const savedUseVideoAnalysis = true; // Video analysis is always enabled
       const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to 2.0 Flash
       const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
@@ -299,8 +297,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setUseVideoAnalysis(savedUseVideoAnalysis);
       setVideoAnalysisModel(savedVideoAnalysisModel);
-      setVideoAnalysisTimeout(savedVideoAnalysisTimeout);
-      setAutoSelectDefaultPreset(savedAutoSelectDefaultPreset);
+
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUseOAuth(savedUseOAuth);
       setYoutubeClientId(clientId);
@@ -426,8 +423,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientSecret !== originalSettings.youtubeClientSecret ||
       useVideoAnalysis !== originalSettings.useVideoAnalysis ||
       videoAnalysisModel !== originalSettings.videoAnalysisModel ||
-      videoAnalysisTimeout !== originalSettings.videoAnalysisTimeout ||
-      autoSelectDefaultPreset !== originalSettings.autoSelectDefaultPreset ||
+
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview ||
@@ -438,7 +434,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     setHasChanges(settingsChanged);
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
+      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel,
       optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, customGeminiModels, originalSettings]);
 
   // Handle save button click
@@ -454,8 +450,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
     localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
-    localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
-    localStorage.setItem('auto_select_default_preset', autoSelectDefaultPreset.toString());
+
     // Save the user's video optimization preference
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
@@ -524,8 +519,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       youtubeClientSecret,
       useVideoAnalysis,
       videoAnalysisModel,
-      videoAnalysisTimeout,
-      autoSelectDefaultPreset,
+
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview,
@@ -702,10 +696,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setUseVideoAnalysis={setUseVideoAnalysis}
               videoAnalysisModel={videoAnalysisModel}
               setVideoAnalysisModel={setVideoAnalysisModel}
-              videoAnalysisTimeout={videoAnalysisTimeout}
-              setVideoAnalysisTimeout={setVideoAnalysisTimeout}
-              autoSelectDefaultPreset={autoSelectDefaultPreset}
-              setAutoSelectDefaultPreset={setAutoSelectDefaultPreset}
+
               optimizeVideos={optimizeVideos}
               setOptimizeVideos={setOptimizeVideos}
               optimizedResolution={optimizedResolution}

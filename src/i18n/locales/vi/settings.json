@@ -152,7 +152,7 @@
   "structuredOutputSetting": "Đầu ra cấu trúc",
   "videoAnalysis": "Phân tích video",
   "useVideoAnalysis": "Phát hiện mẫu + Bộ nhớ/Quy tắc ngữ cảnh",
-  "useVideoAnalysisDescription": "Trước khi chia video, phân tích toàn bộ video với Gemini để xác định mẫu prompt tốt nhất và tạo quy tắc phiên âm. Tắt để xử lý nhanh hơn.",
+  "useVideoAnalysisDescription": "Cài đặt cho nút \"Thêm phân tích\", phân tích toàn bộ video với Gemini để xác định mẫu prompt tốt nhất và tạo quy tắc phiên âm.",
   "videoAnalysisSection": "Phân tích video",
   "videoAnalysisModel": "Mô hình phân tích",
   "videoAnalysisModelDescription": "Chọn mô hình Gemini để sử dụng cho phân tích video. Các mô hình 2.5 có kiểm duyệt cao hơn và dễ xảy ra lỗi \"nội dung không an toàn\".",

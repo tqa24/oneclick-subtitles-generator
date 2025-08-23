@@ -152,7 +152,7 @@
   "structuredOutputSetting": "구조화된 출력",
   "videoAnalysis": "비디오 분석",
   "useVideoAnalysis": "패턴 감지 + 컨텍스트 메모리/규칙",
-  "useVideoAnalysisDescription": "비디오를 분할하기 전에 제미나이로 전체 비디오를 분석하여 최적의 프롬프트 패턴을 식별하고 자막 생성 규칙을 생성합니다. 더 빠른 처리를 위해 끄세요.",
+  "useVideoAnalysisDescription": "\"분석 추가\" 버튼에 대한 설정으로, 제미나이로 전체 비디오를 분석하여 최적의 프롬프트 패턴을 식별하고 자막 생성 규칙을 생성합니다.",
   "videoAnalysisSection": "비디오 분석",
   "videoAnalysisModel": "분석 모델",
   "videoAnalysisModelDescription": "비디오 분석에 사용할 제미나이 모델을 선택하세요. 2.5 모델은 검열이 더 엄격하고 \"안전하지 않은 콘텐츠\" 오류가 발생하기 쉽습니다.",

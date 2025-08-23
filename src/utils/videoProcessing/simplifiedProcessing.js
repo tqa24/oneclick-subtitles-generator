@@ -29,8 +29,8 @@ export const processVideoWithFilesApi = async (mediaFile, onStatusUpdate, t, opt
       setSubtitlesCacheId(cacheId);
     }
 
-    // Check if video analysis is enabled
-    const useVideoAnalysis = localStorage.getItem('use_video_analysis') === 'true';
+    // Video analysis is always enabled
+    const useVideoAnalysis = true;
     const skipAnalysis = localStorage.getItem('skip_video_analysis') === 'true';
 
     // Prepare video metadata options

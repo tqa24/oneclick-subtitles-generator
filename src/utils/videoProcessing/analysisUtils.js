@@ -71,53 +71,26 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       localStorage.setItem('video_analysis_result', JSON.stringify(fallbackResult));
     }
 
-    // Dispatch event with the analysis result
-
-    const analysisCompleteEvent = new CustomEvent('videoAnalysisComplete', {
-      detail: analysisResult
-    });
-    window.dispatchEvent(analysisCompleteEvent);
-
-
-    // Force the modal to show by directly setting the state in localStorage
-    localStorage.setItem('show_video_analysis', 'true');
-    localStorage.setItem('video_analysis_timestamp', Date.now().toString());
-
-    // Add a small delay to ensure the modal is shown, but only if it's not already shown
-    setTimeout(() => {
-      // Check if the modal should still be shown
-      if (localStorage.getItem('show_video_analysis') === 'true') {
-
-        // Dispatch events again after a delay
-        const startEvent = new CustomEvent('videoAnalysisStarted');
-        window.dispatchEvent(startEvent);
-
-        const completeEvent = new CustomEvent('videoAnalysisComplete', {
-          detail: analysisResult
-        });
-        window.dispatchEvent(completeEvent);
-      } else {
-
-      }
-    }, 500);
-
-    // Create a promise that will be resolved when the user makes a choice
-    const userChoicePromise = new Promise((resolve) => {
-      const handleUserChoice = (event) => {
-        window.removeEventListener('videoAnalysisUserChoice', handleUserChoice);
-        resolve(event.detail);
-      };
-      window.addEventListener('videoAnalysisUserChoice', handleUserChoice);
-    });
-
-    // Wait for the user's choice
-    const userChoice = await userChoicePromise;
-
-
+    // Skip the countdown modal and go directly to rules editor
     // Set the transcription rules globally
-    if (userChoice.transcriptionRules) {
-      setTranscriptionRules(userChoice.transcriptionRules);
+    if (analysisResult.transcriptionRules) {
+      setTranscriptionRules(analysisResult.transcriptionRules);
     }
+
+    // Dispatch event to open the rules editor directly
+    const openRulesEditorEvent = new CustomEvent('openRulesEditor', {
+      detail: {
+        transcriptionRules: analysisResult.transcriptionRules,
+        analysisResult: analysisResult
+      }
+    });
+    window.dispatchEvent(openRulesEditorEvent);
+
+    // Return the analysis result with a default choice (use recommended preset)
+    const userChoice = {
+      presetId: analysisResult.recommendedPreset?.id || 'settings',
+      transcriptionRules: analysisResult.transcriptionRules
+    };
 
     return {
       analysisResult,

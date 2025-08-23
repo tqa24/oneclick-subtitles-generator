@@ -5,6 +5,8 @@ import '../styles/VideoProcessingOptionsModal.css';
 import { getNextAvailableKey } from '../services/gemini/keyManager';
 import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } from '../services/gemini';
 import CloseButton from './common/CloseButton';
+import MaterialSwitch from './common/MaterialSwitch';
+import StandardSlider from './common/StandardSlider';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -93,6 +95,12 @@ const VideoProcessingOptionsModal = ({
     { value: 'medium', label: t('processing.mediumRes', 'Medium (256 tokens/frame)'), tokens: 256 },
     { value: 'high', label: t('processing.highRes', 'High (256 tokens/frame)'), tokens: 256 }
   ];
+
+  // Helper function to get FPS label for slider
+  const getFpsLabel = (value) => {
+    const option = fpsOptions.find(opt => opt.value === value);
+    return option ? option.label : `${value} FPS`;
+  };
 
   // Helper function to get all available models (built-in + custom)
   const getAllAvailableModels = () => {
@@ -444,99 +452,87 @@ const VideoProcessingOptionsModal = ({
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [isOpen, onClose]);
-  
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-  
+
   if (!isOpen) return null;
   
   return ReactDOM.createPortal(
-    <div className="video-processing-modal-overlay" onClick={handleOverlayClick}>
+    <div className="video-processing-modal-overlay">
       <div
         className="video-processing-modal"
         ref={modalRef}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h3>{t('processing.configureOptions', 'Configure Processing Options')}</h3>
+          <div className="header-content">
+            <h3>
+              {t('processing.generateForRange', 'Generate/update subtitles for range:')}
+              <span className="segment-time">
+                {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
+                {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
+              </span>
+            </h3>
+          </div>
           <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
 
         <div className="modal-content">
-          {/* Segment Info and Token Usage - Combined */}
-          <div className="segment-info">
-            <div className="segment-token-row">
-              <div className="segment-details">
-                <h4>{t('processing.selectedSegment', 'Selected Segment')}</h4>
-                <p>
-                  {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
-                  {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
-                </p>
-              </div>
-              <div className="token-details">
-                <h4>
-                  {isCountingTokens
-                    ? t('processing.countingTokens', 'Counting Tokens...')
-                    : realTokenCount !== null
-                      ? t('processing.actualTokens', 'Actual Token Usage')
-                      : t('processing.estimatedTokens', 'Estimated Token Usage')
-                  }
-                </h4>
-                <div className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
-                  {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
-                </div>
-                <p className="estimation-note">
-                  {isCountingTokens
-                    ? t('processing.countingNote', 'Getting real token count from Gemini API...')
-                    : realTokenCount !== null
-                      ? t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution.')
-                      : t('processing.fallbackNote', 'Fallback estimation - real count will be calculated automatically.')
-                  }
-                </p>
-                {!isWithinLimit && (
-                  <p className="warning">
-                    {t('processing.exceedsLimit', 'Warning: Token count exceeds model limit. Consider reducing FPS or using a higher-capacity model.')}
-                  </p>
-                )}
-                {tokenCountError && (
-                  <p className="token-error">
-                    {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* Two-column grid for options */}
           <div className="modal-content-grid">
-            {/* FPS Selection */}
+            {/* Frame Rate and Media Resolution Combined */}
             <div className="option-group">
-              <label>{t('processing.frameRate', 'Frame Rate')}</label>
-              <select value={fps} onChange={(e) => setFps(parseFloat(e.target.value))}>
-                {fpsOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {selectedModel === 'gemini-2.5-pro' && (
-                <p className="option-note" style={{ fontSize: '0.85em', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  {t('processing.gemini25ProFpsNote', 'Note: Gemini 2.5 Pro requires FPS ≥ 1 for compatibility')}
-                </p>
-              )}
-            </div>
+              <div className="combined-options-row">
+                {/* Frame Rate Slider */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.frameRate', 'Frame Rate')}</label>
+                    {selectedModel === 'gemini-2.5-pro' && (
+                      <div
+                        className="help-icon-container"
+                        title={t('processing.gemini25ProFpsNote', 'Note: Gemini 2.5 Pro requires FPS ≥ 1 for compatibility')}
+                      >
+                        <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="slider-control">
+                    <StandardSlider
+                      value={fps}
+                      onChange={(value) => setFps(parseFloat(value))}
+                      min={selectedModel === 'gemini-2.5-pro' ? 1 : 0.25}
+                      max={5}
+                      step={0.25}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      className="fps-slider"
+                      id="fps-slider"
+                      ariaLabel={t('processing.frameRate', 'Frame Rate')}
+                    />
+                    <div className="slider-value-display">
+                      {getFpsLabel(fps)}
+                    </div>
+                  </div>
+                </div>
 
-            {/* Media Resolution */}
-            <div className="option-group">
-              <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
-              <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
-                {resolutionOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                {/* Media Resolution */}
+                <div className="combined-option-half">
+                  <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
+                  <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
+                    {resolutionOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {/* Model Selection */}
@@ -551,59 +547,77 @@ const VideoProcessingOptionsModal = ({
               </select>
             </div>
 
-            {/* Prompt Preset Selection */}
-            <div className="option-group">
-              <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
-              <select
-                value={selectedPromptPreset}
-                onChange={(e) => setSelectedPromptPreset(e.target.value)}
-              >
-                {getPromptPresetOptions().map(option => (
-                  <option key={option.id} value={option.id}>
-                    {option.title}
-                  </option>
-                ))}
-              </select>
-              <p className="option-description">
-                {(() => {
-                  const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
-                  return selectedOption?.description || '';
-                })()}
-              </p>
-            </div>
-
-            {/* Custom Language Input for Translate Directly */}
-            {selectedPromptPreset === 'translate-directly' && (
-              <div className="option-group" style={{ gridColumn: '1 / -1' }}>
-                <label>{t('processing.targetLanguage', 'Target Language')}</label>
-                <input
-                  type="text"
-                  value={customLanguage}
-                  onChange={(e) => setCustomLanguage(e.target.value)}
-                  placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
-                  className="language-input"
-                />
-              </div>
-            )}
-
-            {/* Transcription Rules Toggle */}
+            {/* Prompt Preset and Settings Row */}
             <div className="option-group" style={{ gridColumn: '1 / -1' }}>
-              <div className="toggle-option">
-                <label className="toggle-label">
-                  <input
-                    type="checkbox"
-                    checked={useTranscriptionRules}
-                    onChange={(e) => setUseTranscriptionRules(e.target.checked)}
-                    className="toggle-checkbox"
-                  />
-                  <span className="toggle-slider"></span>
-                  <span className="toggle-text">
-                    {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
-                  </span>
-                </label>
-                <p className="option-description">
-                  {t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')}
-                </p>
+              <div className="prompt-settings-row">
+                {/* Left: Prompt Preset Selection */}
+                <div className="prompt-preset-section">
+                  <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
+                  <select
+                    value={selectedPromptPreset}
+                    onChange={(e) => setSelectedPromptPreset(e.target.value)}
+                  >
+                    {getPromptPresetOptions().map(option => (
+                      <option key={option.id} value={option.id}>
+                        {option.title}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="option-description">
+                    {(() => {
+                      const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
+                      return selectedOption?.description || '';
+                    })()}
+                  </p>
+                </div>
+
+                {/* Right: Target Language and Analysis Switch Group */}
+                <div className="settings-group">
+                  <div className="settings-row">
+                    {/* Target Language (only when translate-directly is selected) */}
+                    {selectedPromptPreset === 'translate-directly' && (
+                      <div className="setting-item">
+                        <label>{t('processing.targetLanguage', 'Target Language')}</label>
+                        <input
+                          type="text"
+                          value={customLanguage}
+                          onChange={(e) => setCustomLanguage(e.target.value)}
+                          placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
+                          className="language-input"
+                        />
+                      </div>
+                    )}
+
+                    {/* Transcription Rules Toggle */}
+                    <div className="setting-item">
+                      <div className="label-with-help">
+                        <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
+                        <div
+                          className="help-icon-container"
+                          title={t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')}
+                        >
+                          <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="material-switch-container">
+                        <MaterialSwitch
+                          id="use-transcription-rules"
+                          checked={useTranscriptionRules}
+                          onChange={(e) => setUseTranscriptionRules(e.target.checked)}
+                          ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                          icons={true}
+                        />
+                        <label htmlFor="use-transcription-rules" className="material-switch-label">
+                          {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -620,19 +634,47 @@ const VideoProcessingOptionsModal = ({
         </div>
         
         <div className="modal-footer">
-          <button className="cancel-btn" onClick={onClose}>
-            {t('common.cancel', 'Cancel')}
-          </button>
-          <button 
-            className="process-btn" 
-            onClick={handleProcess}
-            disabled={isUploading || !isWithinLimit}
-          >
-            {isUploading 
-              ? t('processing.waitingForUpload', 'Waiting for upload...') 
-              : t('processing.startProcessing', 'Start Processing')
-            }
-          </button>
+          <div className="footer-content">
+            {/* Token Usage Info */}
+            <div className="footer-token-info">
+              <div className="token-usage">
+                <span className="token-label">
+                  {isCountingTokens
+                    ? t('processing.countingTokens', 'Counting Tokens...')
+                    : realTokenCount !== null
+                      ? t('processing.actualTokens', 'Actual Token Usage')
+                      : t('processing.estimatedTokens', 'Estimated Token Usage')
+                  }:
+                </span>
+                <span className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
+                  {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+                </span>
+              </div>
+              {realTokenCount !== null && (
+                <div className="token-note">
+                  {t('processing.adjustedNote', 'Real count from Gemini API, adjusted for selected media resolution.')}
+                </div>
+              )}
+              {tokenCountError && (
+                <div className="token-error">
+                  {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
+                </div>
+              )}
+            </div>
+
+            <div className="footer-buttons">
+              <button
+                className="process-btn"
+                onClick={handleProcess}
+                disabled={isUploading || !isWithinLimit}
+              >
+                {isUploading
+                  ? t('processing.waitingForUpload', 'Waiting for upload...')
+                  : t('processing.startProcessing', 'Start Processing')
+                }
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>,

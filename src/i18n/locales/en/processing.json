@@ -29,5 +29,7 @@
   "timingGenerationDesc": "Generate timing for your provided subtitles",
   "recommendedByAnalysis": "(Recommended by analysis)",
   "useTranscriptionRules": "Use transcription rules from analysis",
-  "useTranscriptionRulesDesc": "Include context, terminology, and formatting rules from video analysis in the prompt"
+  "useTranscriptionRulesDesc": "Include context, terminology, and formatting rules from video analysis in the prompt",
+  "generateForRange": "Generate/update subtitles for range:",
+  "analysisRules": "Analysis Rules"
 }

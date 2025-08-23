@@ -29,5 +29,7 @@
   "timingGenerationDesc": "Tạo thời gian cho phụ đề bạn đã cung cấp",
   "recommendedByAnalysis": "(Được đề xuất bởi phân tích)",
   "useTranscriptionRules": "Sử dụng quy tắc phiên âm từ phân tích",
-  "useTranscriptionRulesDesc": "Bao gồm ngữ cảnh, thuật ngữ và quy tắc định dạng từ phân tích video trong prompt"
+  "useTranscriptionRulesDesc": "Bao gồm ngữ cảnh, thuật ngữ và quy tắc định dạng từ phân tích video trong prompt",
+  "generateForRange": "Tạo/cập nhật phụ đề cho phạm vi:",
+  "analysisRules": "Quy tắc phân tích"
 }

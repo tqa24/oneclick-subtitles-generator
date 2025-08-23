@@ -21,10 +21,6 @@ const VideoProcessingTab = ({
   setUseVideoAnalysis,
   videoAnalysisModel,
   setVideoAnalysisModel,
-  videoAnalysisTimeout,
-  setVideoAnalysisTimeout,
-  autoSelectDefaultPreset,
-  setAutoSelectDefaultPreset,
   optimizeVideos,
   setOptimizeVideos,
   optimizedResolution,
@@ -213,22 +209,8 @@ const VideoProcessingTab = ({
           </div>
           <div className="settings-card-content">
             <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="use-video-analysis">
-                  {t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="use-video-analysis"
-                    checked={useVideoAnalysis}
-                    onChange={(e) => setUseVideoAnalysis(e.target.checked)}
-                    ariaLabel={t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
-                    icons={true}
-                  />
-                </div>
-              </div>
               <p className="setting-description">
-                {t('settings.useVideoAnalysisDescription', 'Before splitting video, analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules. Turn off for faster processing.')}
+                {t('settings.useVideoAnalysisDescription', 'Settings for the "Add analysis" button, which analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules.')}
               </p>
             </div>
 
@@ -244,7 +226,6 @@ const VideoProcessingTab = ({
                 value={videoAnalysisModel}
                 onChange={(e) => setVideoAnalysisModel(e.target.value)}
                 className="enhanced-select"
-                disabled={!useVideoAnalysis}
               >
                 {getAnalysisModels().map((model) => (
                   <option key={model.id} value={model.id}>
@@ -254,46 +235,7 @@ const VideoProcessingTab = ({
               </select>
             </div>
 
-            <div className="compact-setting">
-             <label htmlFor="video-analysis-timeout">
-                {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
-              </label>
-              <p className="setting-description">
-                {t('settings.videoAnalysisTimeout.simplified', 'Maximum time to wait for video analysis results before proceeding with default settings.')}
-              </p>
-              <select
-                id="video-analysis-timeout"
-                value={videoAnalysisTimeout}
-                onChange={(e) => setVideoAnalysisTimeout(e.target.value)}
-                className="enhanced-select"
-                disabled={!useVideoAnalysis}
-              >
-                <option value="none">{t('settings.timeoutNone', 'No Timeout')}</option>
-                <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
-                <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
-              </select>
-            </div>
 
-            <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="auto-select-default-preset">
-                  {t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="auto-select-default-preset"
-                    checked={autoSelectDefaultPreset}
-                    onChange={(e) => setAutoSelectDefaultPreset(e.target.checked)}
-                    disabled={!useVideoAnalysis}
-                    ariaLabel={t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p className="setting-description">
-                {t('settings.autoSelectDefaultPresetDescription', "If enabled, the 'Use My Default Preset' option will be automatically selected in the Video Analysis Results pop-up when the timer expires. Otherwise, the 'Use Recommended' preset will be selected.")}
-              </p>
-            </div>
           </div>
         </div>
 

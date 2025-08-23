@@ -30,6 +30,22 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
     };
 
     checkExistingRules();
+
+    // Listen for openRulesEditor event to skip countdown modal
+    const handleOpenRulesEditor = (event) => {
+      const { transcriptionRules } = event.detail;
+      if (transcriptionRules) {
+        setTranscriptionRulesState(transcriptionRules);
+        setHasAnalysis(true);
+        setShowRulesEditor(true);
+      }
+    };
+
+    window.addEventListener('openRulesEditor', handleOpenRulesEditor);
+
+    return () => {
+      window.removeEventListener('openRulesEditor', handleOpenRulesEditor);
+    };
   }, []);
 
   // Get current video file for analysis (same logic as VideoProcessingOptionsModal)
@@ -66,12 +82,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
       return;
     }
 
-    // Check if video analysis is enabled
-    const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
-    if (!useVideoAnalysis) {
-      alert(t('videoAnalysis.disabled', 'Video analysis is disabled in settings. Please enable it in the Video Processing tab.'));
-      return;
-    }
+    // Video analysis is always enabled
 
     setIsAnalyzing(true);
 

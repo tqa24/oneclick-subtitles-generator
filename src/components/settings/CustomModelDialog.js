@@ -17,12 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 const CustomModelDialog = ({ isOpen, onClose, title, children, footer }) => {
   const modalRef = useRef(null);
 
-  // Handle click outside to close
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+  // Click outside to close is disabled for this modal
 
   // Handle escape key to close
   useEffect(() => {
@@ -57,12 +52,11 @@ const CustomModelDialog = ({ isOpen, onClose, title, children, footer }) => {
 
   // Create a portal to render the modal at the root level of the DOM
   return ReactDOM.createPortal(
-    <div className="custom-modal-overlay" onClick={handleOverlayClick}>
+    <div className="custom-modal-overlay">
       <div
         className="custom-modal"
         ref={modalRef}
         tabIndex="-1"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="custom-modal-header">
           <h4 className="custom-modal-title">{title}</h4>
