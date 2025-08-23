@@ -165,6 +165,8 @@
   "timeoutNone": "No limit",
   "timeout10Seconds": "10 seconds",
   "timeout20Seconds": "20 seconds",
+  "autoSelectDefaultPreset": "Auto-select default preset on timeout",
+  "autoSelectDefaultPresetDescription": "If enabled, the 'Use My Default Preset' option will be automatically selected in the Video Analysis Results pop-up when the timer expires. Otherwise, the 'Use Recommended' preset will be selected.",
   "videoOptimization": "Video Optimization",
   "optimizeVideos": "Optimize videos for processing",
   "optimizeVideosDescription": "Reduces video resolution and frame rate to 1 FPS for smaller file sizes and to fit <a href=\"https://ai.google.dev/gemini-api/docs/video-understanding\" target=\"_blank\" rel=\"noopener noreferrer\">Gemini's input requirements</a> (disabling will skip resize but take longer during upload/retry to Gemini)",
