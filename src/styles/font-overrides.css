@@ -35,8 +35,7 @@ h1, h2, h3, h4, h5, h6,
 .buttons-container button,
 .buttons-container .gemini-icon-container,
 .buttons-container .processing-text-container,
-.buttons-container .processing-text,
-.buttons-container .processing-gemini-icon {
+.buttons-container .processing-text {
   font-family: var(--font-title);
 }
 
